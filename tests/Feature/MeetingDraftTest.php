@@ -195,13 +195,14 @@ class MeetingDraftTest extends TestCase
             ->assertRedirect(route('sales.follow-ups.index'));
     }
 
-    public function test_follow_ups_page_shows_daily_update_section(): void
+    public function test_follow_ups_page_is_follow_up_only(): void
     {
         $sales = $this->loginAs('sales');
 
         $this->actingAs($sales)
             ->get(route('sales.follow-ups.index'))
             ->assertOk()
-            ->assertSee('Daily Update', false);
+            ->assertSee('Follow Up', false)
+            ->assertDontSee('Daily Update', false);
     }
 }

@@ -66,22 +66,6 @@ class SalesAjaxTest extends TestCase
         $this->assertSoftDeleted('meetings', ['id' => $meeting->id]);
     }
 
-    public function test_meeting_filter_ajax_returns_table_html(): void
-    {
-        $sales = $this->loginAsSales();
-        $customer = Customer::create(['name' => 'PT Filter Unik']);
-        // created_by diisi seperti jalur produksi (SalesService::createMeeting),
-        // kalau tidak scopeToOwnLeads memang menyembunyikannya dari sales.
-        Meeting::create(['customer_id' => $customer->id, 'meeting_date' => now(), 'created_by' => $sales->id]);
-
-        $res = $this->actingAs($sales)->getJson(route('sales.follow-ups.index', ['form' => 'meetings', 'search' => 'Filter Unik']));
-
-        $res->assertOk()->assertJsonPath('ok', true);
-        $this->assertStringContainsString('PT Filter Unik', $res->json('html'));
-        // Partial tidak boleh membawa id wrapper (mencegah tabel bersarang).
-        $this->assertStringNotContainsString('id="meetings-table"', $res->json('html'));
-    }
-
     public function test_followup_store_and_destroy_ajax(): void
     {
         $sales = $this->loginAsSales();
