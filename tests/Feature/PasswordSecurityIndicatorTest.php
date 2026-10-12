@@ -42,7 +42,7 @@ class PasswordSecurityIndicatorTest extends TestCase
         $this->actingAs($user)
             ->get(route('profile.edit'))
             ->assertOk()
-            ->assertSee(__('Account Secure'));
+            ->assertDontSee(__('Password not changed yet'));
     }
 
     public function test_admin_reset_does_not_mark_account_secure(): void

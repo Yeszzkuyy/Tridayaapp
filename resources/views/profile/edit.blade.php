@@ -29,7 +29,7 @@
 
             <div class="relative grid grid-cols-1 gap-6 rounded-3xl border border-white/40 bg-white/40 p-6 shadow-2xl backdrop-blur-xl sm:p-10 lg:grid-cols-3 dark:border-white/10 dark:bg-slate-800/40 dark:shadow-black/30">
                 {{-- KIRI: kartu profil glassmorphism + cover/banner --}}
-                <section class="overflow-hidden rounded-2xl border border-white/40 bg-white/60 text-center shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/50 dark:shadow-black/20">
+                <section class="self-start overflow-hidden rounded-2xl border border-white/40 bg-white/60 text-center shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/50 dark:shadow-black/20">
                     {{-- Banner/cover --}}
                     <div class="relative h-40 w-full bg-gradient-to-br from-accent-500 via-accent-700 to-slate-900 sm:h-48">
                         @if($coverUrl)
@@ -107,16 +107,11 @@
                                     <x-icon name="user" class="h-4 w-4" />
                                     {{ $roleLabel }}
                                 </span>
-                                @if($secure)
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-5 py-2 text-sm font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-                                        <x-icon name="check-circle" class="h-4 w-4" />
-                                        {{ __('Account Secure') }}
-                                    </span>
-                                @else
+                                @unless($secure)
                                     <span class="inline-flex items-center rounded-full bg-amber-100 px-5 py-2 text-sm font-bold uppercase tracking-wider text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
                                         {{ __('Password not changed yet') }}
                                     </span>
-                                @endif
+                                @endunless
                             </div>
                             <p class="flex items-center justify-center gap-1.5 pt-1 text-base text-slate-500 dark:text-slate-400">
                                 <x-icon name="mail" class="h-5 w-5" />
