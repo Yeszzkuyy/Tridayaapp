@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadDocument;
@@ -494,7 +495,9 @@ class LeadController extends Controller
         ])->concat($lead->followUps->map(fn ($f) => [
             'type' => 'follow-up',
             'date' => $f->follow_up_date ?? $f->created_at,
-            'title' => __('Follow Up'),
+            'time' => $f->activity_time,
+            'location' => $f->location,
+            'title' => FollowUp::typeLabel($f->type),
             'summary' => $f->description,
             'by' => $f->creator?->name,
             'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,

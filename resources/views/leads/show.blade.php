@@ -343,26 +343,72 @@
                 </div>
             </section>
 
-            <section aria-labelledby="card-riwayat" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
+            <section x-data="{ open: {{ $errors->any() ? 'true' : 'false' }}, activity: @js(old('type', 'whatsapp')) }" aria-labelledby="card-riwayat" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
                     <h2 id="card-riwayat" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="chat" class="h-5 w-5 text-slate-400" />
-                        {{ __('Riwayat Meeting & Follow Up') }}
+                        {{ __('Log Follow Up') }}
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ ($timeline ?? collect())->count() }}</span>
                     </h2>
                     @can('manage-sales')
-                        <div class="flex shrink-0 items-center gap-2">
-                            <a href="{{ route('sales.meetings.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Add meeting') }}" aria-label="{{ __('Add meeting') }}"
-                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="calendar" class="h-5 w-5" />
-                            </a>
-                            <a href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Add follow up') }}" aria-label="{{ __('Add follow up') }}"
-                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="chat" class="h-5 w-5" />
-                            </a>
-                        </div>
+                        <x-icon-button icon="add" :title="__('Log follow up')" x-on:click="open = !open" />
                     @endcan
                 </div>
+                @can('manage-sales')
+                    <form x-show="open" x-cloak method="POST" action="{{ route('sales.follow-ups.store') }}"
+                          class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700/40">
+                        @csrf
+                        <input type="hidden" name="return" value="lead">
+                        <input type="hidden" name="customer_id" value="{{ $lead->customer_id }}">
+                        <input type="hidden" name="lead_id" value="{{ $lead->id }}">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <label for="log-activity-type" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Activity Type') }}</label>
+                                <select id="log-activity-type" name="type" x-model="activity" required
+                                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                                    @foreach(\App\Models\FollowUp::LOG_TYPES as $logType)
+                                        <option value="{{ $logType }}" @selected(old('type') === $logType)>{{ \App\Models\FollowUp::typeLabel($logType) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="log-activity-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Date') }}</label>
+                                <input type="date" id="log-activity-date" name="follow_up_date" required
+                                       value="{{ old('follow_up_date', date('Y-m-d')) }}"
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                            </div>
+                            <div x-show="activity === 'meeting'" x-cloak>
+                                <label for="log-activity-time" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Time (optional)') }}</label>
+                                <input type="time" id="log-activity-time" name="activity_time" value="{{ old('activity_time') }}"
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                            </div>
+                            <div x-show="activity === 'meeting'" x-cloak>
+                                <label for="log-activity-location" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Location (optional)') }}</label>
+                                <input type="text" id="log-activity-location" name="location" maxlength="150" value="{{ old('location') }}"
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="log-activity-detail" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Detail') }} <span class="text-red-500">*</span></label>
+                            <textarea id="log-activity-detail" name="description" rows="3" required
+                                      placeholder="{{ __('What did you do or learn? Keep it short...') }}"
+                                      class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">{{ old('description') }}</textarea>
+                            @error('description') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="submit"
+                                    class="group relative overflow-hidden rounded-xl bg-accent-600 px-5 py-2 font-medium text-white transition-all duration-300 hover:scale-105 hover:bg-accent-500 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
+                                {{ __('Save') }}
+                            </button>
+                            <button type="button" x-on:click="open = false"
+                                    class="group relative overflow-hidden rounded-xl border border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-300 hover:scale-105 hover:bg-white active:scale-95 dark:border-slate-600 dark:text-slate-200">
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
+                                {{ __('Cancel') }}
+                            </button>
+                        </div>
+                    </form>
+                @endcan
                 <div class="mt-3 space-y-2">
                     @forelse($timeline ?? [] as $item)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
@@ -373,6 +419,8 @@
                                 <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $item['summary'] ?: '-' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">
                                     {{ $item['date'] ? \Carbon\Carbon::parse($item['date'])->format('d M Y') : '-' }}
+                                    @if(!empty($item['time'])) • {{ substr((string) $item['time'], 0, 5) }} @endif
+                                    @if(!empty($item['location'])) • {{ $item['location'] }} @endif
                                     @if($item['by']) • {{ $item['by'] }} @endif
                                 </p>
                             </div>
@@ -384,7 +432,7 @@
                             @endif
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada meeting atau follow up untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('Belum ada log follow up untuk lead ini.') }}</p>
                     @endforelse
                 </div>
             </section>

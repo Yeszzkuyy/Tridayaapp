@@ -18,6 +18,9 @@ class FollowUp extends Model
 
     public const LEGACY_TYPES = ['follow_up', 'meeting'];
 
+    /** Opsi Log Follow Up di detail lead (urutan tampil di form). */
+    public const LOG_TYPES = ['whatsapp', 'call', 'email', 'meeting', 'proposal'];
+
     protected $fillable = [
         'customer_id',
         'lead_id',
@@ -25,6 +28,8 @@ class FollowUp extends Model
         'description',
         'type',
         'follow_up_date',
+        'activity_time',
+        'location',
         'next_follow_up_date',
         'reminder_sent_at',
         'completed_at',
@@ -44,7 +49,8 @@ class FollowUp extends Model
             'call' => __('Telepon'),
             'whatsapp' => 'WhatsApp',
             'email' => 'Email',
-            'meeting' => __('Meeting'),
+            'meeting' => __('Kunjungan/Meeting'),
+            'proposal' => __('Kirim Penawaran'),
             'note' => __('Catatan'),
             default => __('Follow Up'),
         };

@@ -79,15 +79,23 @@ class FollowUpController extends Controller
             'lead_id' => 'nullable|exists:leads,id',
             'meeting_id' => 'nullable|exists:meetings,id',
             'description' => 'required|string',
-            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES)),
+            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
             'follow_up_date' => 'nullable|date',
+            'activity_time' => 'nullable|date_format:H:i',
+            'location' => 'nullable|string|max:150',
             'next_follow_up_date' => 'nullable|date',
         ]);
 
         $this->assertConsistentRelations($validated);
         $this->lockLeadLink($validated);
 
-        $this->salesService->createFollowUp($validated);
+        $followUp = $this->salesService->createFollowUp($validated);
+
+        // Form Log Follow Up di detail lead minta balik ke lead-nya.
+        if ($request->input('return') === 'lead' && $followUp->lead_id) {
+            return redirect()->route('leads.show', $followUp->lead_id)
+                ->with('success', __('Log follow up berhasil dicatat.'));
+        }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
             __('Follow up berhasil dicatat.'), ['redirect' => route('sales.follow-ups.index')]);
@@ -125,8 +133,10 @@ class FollowUpController extends Controller
             'lead_id' => 'nullable|exists:leads,id',
             'meeting_id' => 'nullable|exists:meetings,id',
             'description' => 'required|string',
-            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES)),
+            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
             'follow_up_date' => 'nullable|date',
+            'activity_time' => 'nullable|date_format:H:i',
+            'location' => 'nullable|string|max:150',
             'next_follow_up_date' => 'nullable|date',
         ]);
 
