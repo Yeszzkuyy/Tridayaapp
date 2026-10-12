@@ -13,8 +13,6 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadTaskController;
 use App\Http\Controllers\ManageSalesController;
-use App\Http\Controllers\MeetingController;
-use App\Http\Controllers\MeetingDraftController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OfficeAssistantController;
@@ -137,12 +135,9 @@ Route::middleware('auth')->group(function () {
     });
 
     // ============================================
-    // SALES — Meeting & Follow Up
+    // SALES — Follow Up
     // ============================================
     Route::middleware('permission:manage-sales')->prefix('sales')->name('sales.')->group(function () {
-        Route::resource('meetings', MeetingController::class)->except(['show']);
-        Route::get('meetings/{meeting}', [MeetingController::class, 'show'])->name('meetings.show');
-
         Route::resource('follow-ups', FollowUpController::class)->except(['show']);
         Route::get('follow-ups/{followUp}', [FollowUpController::class, 'show'])->name('follow-ups.show');
 
@@ -152,13 +147,8 @@ Route::middleware('auth')->group(function () {
         Route::post('follow-ups/{followUp}/reopen', [FollowUpController::class, 'reopen'])->name('follow-ups.reopen');
         Route::post('follow-ups/{followUp}/snooze', [FollowUpController::class, 'snooze'])->name('follow-ups.snooze');
 
-        // Follow Up create with optional pre-selected customer/meeting
+        // Follow Up create with optional pre-selected customer
         Route::get('follow-ups/create/{customer?}', [FollowUpController::class, 'create'])->name('follow-ups.create-with-customer');
-
-        // AI daily meeting drafts (generate → approve/discard)
-        Route::post('meeting-drafts', [MeetingDraftController::class, 'generate'])->name('meeting-drafts.generate');
-        Route::post('meeting-drafts/{meetingDraft}/approve', [MeetingDraftController::class, 'approve'])->name('meeting-drafts.approve');
-        Route::post('meeting-drafts/{meetingDraft}/discard', [MeetingDraftController::class, 'discard'])->name('meeting-drafts.discard');
     });
 
     // ============================================
@@ -208,7 +198,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:view-sales|manage-sales')->prefix('sales')->name('sales.')->group(function () {
-        Route::get('meetings', [MeetingController::class, 'index'])->name('meetings.index');
         Route::get('follow-ups', [FollowUpController::class, 'index'])->name('follow-ups.index');
         Route::get('pocs', [PocController::class, 'index'])->name('pocs.index');
     });
