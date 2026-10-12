@@ -56,11 +56,6 @@ class Customer extends Model
         return $this->hasMany(Project::class);
     }
 
-    public function meetings()
-    {
-        return $this->hasMany(Meeting::class);
-    }
-
     public function followUps()
     {
         return $this->hasMany(FollowUp::class);

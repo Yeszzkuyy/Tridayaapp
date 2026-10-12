@@ -485,22 +485,15 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
-        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'meetings.creator', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
+        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
         $documents = $lead->customer ? $lead->customer->projects->flatMap->documents : collect();
         $projectStatuses = ProjectStatus::orderBy('sort_order')->get(['id', 'name']);
         $workTypes = WorkType::orderBy('name')->get(['id', 'name']);
 
-        // Riwayat gabungan meeting + follow-up milik lead ini, terbaru dulu.
+        // Riwayat follow-up milik lead ini, terbaru dulu.
         // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
         $canOpenDetail = auth()->user()?->can('manage-sales');
-        $timeline = $lead->meetings->map(fn ($m) => [
-            'type' => 'meeting',
-            'date' => $m->meeting_date,
-            'title' => __('Meeting'),
-            'summary' => $m->user_needs ?: $m->notes,
-            'by' => $m->creator?->name,
-            'url' => $canOpenDetail ? route('sales.meetings.show', $m) : null,
-        ])->concat($lead->followUps->map(fn ($f) => [
+        $timeline = $lead->followUps->map(fn ($f) => [
             'type' => 'follow-up',
             'date' => $f->follow_up_date ?? $f->created_at,
             'time' => $f->activity_time,
@@ -509,7 +502,7 @@ class LeadController extends Controller
             'summary' => $f->description,
             'by' => $f->creator?->name,
             'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
-        ]))->sortByDesc('date')->values();
+        ])->sortByDesc('date')->values();
 
         // Sales flow: jadwal (upcoming/past), technical request, proposal milik lead ini.
         $upcomingSchedules = $lead->salesSchedules

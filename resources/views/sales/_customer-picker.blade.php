@@ -1,4 +1,4 @@
-{{-- Searchable customer picker (Add Follow Up, Daily Update, filter Meetings, ...).
+{{-- Searchable customer picker (Add Follow Up, filter Follow Up, ...).
      Params: $name, $options ([id => label]), $selected = null,
              $placeholder = null, $required = false, $hint = null,
              $submitOnPick = false (mode filter: pilih = isi teks + submit form).

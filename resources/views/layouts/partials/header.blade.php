@@ -36,7 +36,6 @@
                 ['sales.dashboard',                 ['Sales', 'Sales Dashboard']],
                 ['sales.my-leads',                  ['Sales', 'My Leads']],
                 ['sales.follow-ups',                ['Sales', 'Follow Up']],
-                ['sales.meetings',                  ['Sales', 'Meeting']],
                 ['sales.schedules',                 ['Sales', 'Schedule']],
                 ['sales.proposals',                 ['Sales', 'Proposal']],
                 ['sales.pocs',                      ['Sales', 'POC/Demo']],

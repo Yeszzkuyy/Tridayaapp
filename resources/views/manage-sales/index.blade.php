@@ -129,7 +129,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-center">
-                                @php $touched = ($lead->meetings_count ?? 0) + ($lead->follow_ups_count ?? 0) > 0; @endphp
+                                @php $touched = ($lead->follow_ups_count ?? 0) > 0; @endphp
                                 @if($touched)
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 whitespace-nowrap">
                                         <x-icon name="check-circle" class="h-3.5 w-3.5" />
@@ -142,7 +142,7 @@
                                     </span>
                                 @endif
                                 <span class="block mt-1 text-[11px] text-slate-500 whitespace-nowrap">
-                                    {{ $lead->meetings_count ?? 0 }} {{ __('meeting') }} • {{ $lead->follow_ups_count ?? 0 }} {{ __('follow up') }}
+                                    {{ $lead->follow_ups_count ?? 0 }} {{ __('follow up') }}
                                 </span>
                                 @if($lead->last_follow_up_at)
                                     <span class="block text-[11px] text-slate-400 whitespace-nowrap">

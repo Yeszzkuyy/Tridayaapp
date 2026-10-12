@@ -76,7 +76,7 @@
                                     {{ $lead->customer->contact_person ? 'PIC: '.$lead->customer->contact_person : '' }}
                                 </div>
                                 <div class="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
-                                    {{ $lead->meetings_count }} {{ __('meeting') }} • {{ $lead->follow_ups_count }} {{ __('follow up') }}
+                                    {{ $lead->follow_ups_count }} {{ __('follow up') }}
                                 </div>
                                 <div class="mt-1">
                                     @if($lead->has_done_fu)

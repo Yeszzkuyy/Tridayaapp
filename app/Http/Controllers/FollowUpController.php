@@ -7,7 +7,6 @@ use App\Http\Controllers\Concerns\LocksLeadLink;
 use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
-use App\Models\Meeting;
 use App\Services\SalesService;
 use App\Support\PtAccess;
 use Carbon\Carbon;
@@ -49,7 +48,6 @@ class FollowUpController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
-            'meeting_id' => 'nullable|exists:meetings,id',
             'description' => 'required|string',
             'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
             'follow_up_date' => 'nullable|date',
@@ -75,7 +73,7 @@ class FollowUpController extends Controller
 
     public function show(FollowUp $followUp)
     {
-        $followUp->load(['customer', 'meeting', 'creator', 'lead.customer']);
+        $followUp->load(['customer', 'creator', 'lead.customer']);
         return view('sales.follow-ups.show', compact('followUp'));
     }
 
@@ -101,7 +99,6 @@ class FollowUpController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
-            'meeting_id' => 'nullable|exists:meetings,id',
             'description' => 'required|string',
             'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
             'follow_up_date' => 'nullable|date',
@@ -160,7 +157,7 @@ class FollowUpController extends Controller
     }
 
     /**
-     * Opsi lead untuk blok Daily Update (model, sama seperti halaman meeting lama).
+     * Opsi lead untuk form follow-up.
      */
     private function leadOptions()
     {
@@ -216,7 +213,7 @@ class FollowUpController extends Controller
     }
 
     /**
-     * Pastikan customer/lead/meeting saling terkait dan customer
+     * Pastikan customer/lead saling terkait dan customer
      * memang boleh ditulis user ini. Gagalkan, jangan diam-diam timpa.
      */
     private function assertConsistentRelations(array $validated): void
@@ -228,12 +225,6 @@ class FollowUpController extends Controller
             $lead = Lead::find($validated['lead_id']);
             abort_if(!$lead || (int) $lead->customer_id !== (int) $validated['customer_id'],
                 422, __('Lead yang dipilih bukan milik customer ini.'));
-        }
-
-        if (!empty($validated['meeting_id'])) {
-            $meeting = Meeting::find($validated['meeting_id']);
-            abort_if(!$meeting || (int) $meeting->customer_id !== (int) $validated['customer_id'],
-                422, __('Meeting yang dipilih bukan milik customer ini.'));
         }
     }
 }

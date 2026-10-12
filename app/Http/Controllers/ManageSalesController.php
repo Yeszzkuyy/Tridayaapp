@@ -7,7 +7,6 @@ use App\Models\FollowUp;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\LeadActivity;
-use App\Models\Meeting;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
@@ -21,7 +20,7 @@ class ManageSalesController extends Controller
     public function index(Request $request)
     {
         $query = Lead::with(['customer', 'assignee', 'partner'])
-            ->withCount(['meetings', 'followUps'])
+            ->withCount(['followUps'])
             ->withMax('followUps as last_follow_up_at', 'follow_up_date')
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
                 fn ($c) => $c->whereLike('name', $request->search)))
@@ -29,8 +28,8 @@ class ManageSalesController extends Controller
                 ? $q->whereNotNull('assigned_to')
                 : $q->whereNull('assigned_to'))
             ->when($request->filled('touched'), fn ($q) => $request->touched === 'yes'
-                ? $q->where(fn ($w) => $w->has('meetings')->orHas('followUps'))
-                : $q->whereDoesntHave('meetings')->whereDoesntHave('followUps'));
+                ? $q->whereHas('followUps')
+                : $q->whereDoesntHave('followUps'));
 
         $leads = $query->latest()->paginate(15)->withQueryString();
 
@@ -170,8 +169,6 @@ class ManageSalesController extends Controller
             'won_month' => $mine()->where('status', 'won')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)->count(),
-            'meetings_week' => Meeting::where($ownActivity)
-                ->whereBetween('meeting_date', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'overdue' => FollowUp::where($ownActivity)
                 ->whereNull('completed_at')
                 ->whereNotNull('follow_up_date')
@@ -191,11 +188,6 @@ class ManageSalesController extends Controller
             ->whereNotNull('follow_up_date')
             ->whereDate('follow_up_date', '<=', today()->addWeek())
             ->orderBy('follow_up_date')
-            ->limit(5)->get();
-        $weekMeetings = Meeting::with('customer')
-            ->where($ownActivity)
-            ->whereBetween('meeting_date', [now()->startOfWeek(), now()->endOfWeek()])
-            ->orderBy('meeting_date')
             ->limit(5)->get();
         $myTasks = \App\Models\LeadTask::with(['lead.customer', 'assignee'])
             ->whereHas('lead', $ownLead)
@@ -221,7 +213,7 @@ class ManageSalesController extends Controller
         ])->values();
         $funnelTotal = $donutSales->sum('value');
 
-        // Rentang minggu berjalan untuk drill-down "Meeting Minggu Ini".
+        // Rentang minggu berjalan untuk drill-down kartu follow-up.
         $weekStart = now()->startOfWeek()->toDateString();
         $weekEnd = now()->endOfWeek()->toDateString();
 
@@ -256,7 +248,7 @@ class ManageSalesController extends Controller
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
 
-        return view('sales.dashboard', compact('kpi', 'dueFollowUps', 'weekMeetings', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes'));
+        return view('sales.dashboard', compact('kpi', 'dueFollowUps', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes'));
     }
 
     public function myLeads(Request $request)
@@ -279,7 +271,7 @@ class ManageSalesController extends Controller
         return response()->streamDownload(function () use ($request) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF"); // BOM agar Excel baca UTF-8.
-            fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Meeting', 'Jml Follow Up', 'Follow Up Terakhir']);
+            fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Follow Up', 'Follow Up Terakhir']);
             $this->myLeadsQuery($request)
                 ->with(['customer'])
                 ->withMax('followUps as last_follow_up_at', 'follow_up_date')
@@ -297,7 +289,6 @@ class ManageSalesController extends Controller
                             $safe($lead->solusi ?? '-'),
                             $safe($lead->progress_notes ?? '-'),
                             $lead->incoming_date?->format('Y-m-d') ?? '-',
-                            $lead->meetings_count,
                             $lead->follow_ups_count,
                             $lead->last_follow_up_at ?? '-',
                         ]);
@@ -386,7 +377,7 @@ class ManageSalesController extends Controller
     private function myLeadsQuery(Request $request)
     {
         $query = Lead::with(['customer', 'partner'])
-            ->withCount(['meetings', 'followUps'])
+            ->withCount(['followUps'])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
             ->where('assigned_to', auth()->id())
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
@@ -397,8 +388,8 @@ class ManageSalesController extends Controller
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year))
             ->when($request->filled('touched'), fn ($q) => $request->touched === 'yes'
-                ? $q->where(fn ($w) => $w->has('meetings')->orHas('followUps'))
-                : $q->whereDoesntHave('meetings')->whereDoesntHave('followUps'));
+                ? $q->whereHas('followUps')
+                : $q->whereDoesntHave('followUps'));
 
         // Urutan: terbaru (default), terlama, atau nama customer A-Z.
         return match ($request->input('sort')) {
