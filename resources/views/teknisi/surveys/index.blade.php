@@ -5,7 +5,13 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Daftar Survey') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Semua data survey untuk setiap project') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" />
+        <div class="flex items-center gap-2">
+            <x-icon-button as="a" href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
+                           title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}">
+                <x-icon name="file-text" class="h-5 w-5" />
+            </x-icon-button>
+            <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" />
+        </div>
     </div>
 
     {{-- Filter --}}
@@ -142,7 +148,8 @@
                     @empty
                         <tr>
                             <td colspan="7" class="py-16 text-center text-slate-400">
-                                {{ __('Belum ada data survey.') }}
+                                <p>{{ __('Belum ada data survey.') }}</p>
+                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ __('Buat survey dulu, lalu unggah laporan PDF dari barisnya.') }}</p>
                             </td>
                         </tr>
                     @endforelse
