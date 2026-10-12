@@ -991,5 +991,8 @@
     "Lampiran dikirim": "Attachment sent",
     "Terjadi kesalahan saat menghubungi AI.": "An error occurred while contacting the AI.",
     "Gagal terhubung ke server. Silakan coba lagi.": "Failed to connect to the server. Please try again.",
-    "Aksi percakapan": "Conversation actions"
+    "Aksi percakapan": "Conversation actions",
+    "Laporan survey berhasil diunggah.": "Survey report uploaded successfully.",
+    "Gagal menyimpan file laporan. Silakan coba lagi.": "Failed to store the report file. Please try again.",
+    "Gagal menyimpan laporan. Coba lagi.": "Failed to save the report. Please try again."
 }

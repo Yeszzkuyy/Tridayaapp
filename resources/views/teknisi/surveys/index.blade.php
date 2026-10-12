@@ -77,6 +77,38 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    @if($survey->hasReport())
+                                        <a href="{{ route('teknisi.surveys.report.view', $survey) }}" target="_blank" rel="noopener"
+                                           title="{{ __('View Report') }}" aria-label="{{ __('View Report') }}"
+                                           class="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
+                                            <x-icon name="eye" class="w-4 h-4" />
+                                        </a>
+                                        <a href="{{ route('teknisi.surveys.report.download', $survey) }}"
+                                           title="{{ __('Download Report') }}" aria-label="{{ __('Download Report') }}"
+                                           class="p-2 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition">
+                                            <x-icon name="file-text" class="w-4 h-4" />
+                                        </a>
+                                        @can('manage-technician')
+                                            <button type="button" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
+                                                    title="{{ __('Replace Report') }}" aria-label="{{ __('Replace Report') }}"
+                                                    class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition">
+                                                <x-icon name="edit" class="w-4 h-4" />
+                                            </button>
+                                        @endcan
+                                    @else
+                                        <a href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
+                                           title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}"
+                                           class="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
+                                            <x-icon name="file-text" class="w-4 h-4" />
+                                        </a>
+                                        @can('manage-technician')
+                                            <button type="button" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
+                                                    title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
+                                                    class="p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition">
+                                                <x-icon name="folder" class="w-4 h-4" />
+                                            </button>
+                                        @endcan
+                                    @endif
                                     <a href="{{ route('teknisi.surveys.show', $survey) }}"
                                        title="{{ __('Lihat') }}"
                                        class="p-2 rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700 transition">
@@ -119,5 +151,7 @@
         <div class="mt-4">{{ $surveys->links() }}</div>
         </div>
     </div>
+
+    @include('teknisi.surveys._report-modal')
 </div>
 </x-app-layout>

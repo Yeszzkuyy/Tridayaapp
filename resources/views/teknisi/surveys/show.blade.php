@@ -91,7 +91,55 @@
                 <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Catatan') }}</p>
                 <p class="text-slate-800 dark:text-slate-100 whitespace-pre-wrap">{{ $survey->notes ?: '-' }}</p>
             </div>
+
+            <hr class="border-slate-200 dark:border-slate-600">
+
+            {{-- Laporan Survey (PDF) --}}
+            <div>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs uppercase tracking-wider text-slate-400">{{ __('Survey Report File') }}</p>
+                    <div class="flex items-center gap-2">
+                        @if($survey->hasReport())
+                            <a href="{{ route('teknisi.surveys.report.view', $survey) }}" target="_blank" rel="noopener"
+                               title="{{ __('View Report') }}" aria-label="{{ __('View Report') }}"
+                               class="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
+                                <x-icon name="eye" class="w-4 h-4" />
+                            </a>
+                            <a href="{{ route('teknisi.surveys.report.download', $survey) }}"
+                               title="{{ __('Download Report') }}" aria-label="{{ __('Download Report') }}"
+                               class="p-2 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition">
+                                <x-icon name="file-text" class="w-4 h-4" />
+                            </a>
+                            @can('manage-technician')
+                                <button type="button" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
+                                        title="{{ __('Replace Report') }}" aria-label="{{ __('Replace Report') }}"
+                                        class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition">
+                                    <x-icon name="edit" class="w-4 h-4" />
+                                </button>
+                            @endcan
+                        @else
+                            <a href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
+                               title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}"
+                               class="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
+                                <x-icon name="file-text" class="w-4 h-4" />
+                            </a>
+                            @can('manage-technician')
+                                <button type="button" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
+                                        title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
+                                        class="p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition">
+                                    <x-icon name="folder" class="w-4 h-4" />
+                                </button>
+                            @endcan
+                        @endif
+                    </div>
+                </div>
+                <p class="mt-1 text-slate-800 dark:text-slate-100">
+                    {{ $survey->hasReport() ? __('Report uploaded.') : __('No report uploaded yet.') }}
+                </p>
+            </div>
         </div>
     </div>
+
+    @include('teknisi.surveys._report-modal')
 </div>
 </x-app-layout>

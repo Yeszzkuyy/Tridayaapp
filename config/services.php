@@ -41,4 +41,11 @@ return [
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    /*
+    | URL template Google Docs untuk laporan survey. Diisi copy-link template
+    | Google Docs milik tim (configurable, bukan template id palsu).
+    | Bila kosong, tombol "Create Report" memakai halaman buat dokumen Google Docs.
+    */
+    'survey-report-template' => env('SURVEY_REPORT_TEMPLATE_URL', 'https://docs.google.com/document/create'),
+
 ];

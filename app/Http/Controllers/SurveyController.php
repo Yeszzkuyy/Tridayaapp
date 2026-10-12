@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Survey;
 use App\Models\Project;
+use App\Models\Survey;
+use App\Rules\SecureFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SurveyController extends Controller
 {
@@ -93,5 +97,108 @@ class SurveyController extends Controller
 
         return redirect()->route('teknisi.surveys.index')
             ->with('success', 'Survey berhasil dihapus.');
+    }
+
+    /**
+     * Unggah (atau ganti) laporan survey dalam format PDF.
+     *
+     * Mutasi tetap di belakang permission manage-technician (sama dengan aksi
+     * tulis survey lain), dan diperiksa ulang di sini sebagai pertahanan backend —
+     * bukan hanya menyembunyikan tombol di frontend.
+     */
+    public function uploadReport(Request $request, Survey $survey)
+    {
+        abort_unless($request->user()?->can('manage-technician'), 403);
+
+        $request->validate([
+            'report' => [
+                'required',
+                'file',
+                'mimes:pdf',
+                'max:5120',
+                new SecureFile(['pdf'], ['application/pdf']),
+            ],
+            'report_survey_id' => 'nullable|integer',
+        ]);
+
+        $file = $request->file('report');
+        $oldPath = $survey->report_file;
+
+        // Nama file dibuat server-side (uuid) dengan ekstensi PDF tetap;
+        // nama/ekstensi dari user tidak dipercaya.
+        $newPath = $file->storeAs(
+            'surveys/'.$survey->id.'/reports',
+            Str::uuid()->toString().'.pdf',
+            'private'
+        );
+
+        if (! $newPath) {
+            return back()->withInput()
+                ->withErrors(['report' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+        }
+
+        try {
+            DB::transaction(function () use ($survey, $newPath) {
+                $survey->update([
+                    'report_file' => $newPath,
+                    'status' => Survey::STATUS_COMPLETED,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            // DB gagal: file baru dibuang, laporan lama tetap utuh,
+            // status survey tidak berubah.
+            Storage::disk('private')->delete($newPath);
+            report($e);
+
+            return back()->withInput()
+                ->withErrors(['report' => __('Gagal menyimpan laporan. Coba lagi.')]);
+        }
+
+        // Baru setelah DB sukses, file lama (jika ada) dibersihkan.
+        // Transaksi DB tidak mencakup filesystem, jadi urutannya dijaga manual.
+        if ($oldPath && $oldPath !== $newPath) {
+            Storage::disk('private')->delete($oldPath);
+        }
+
+        return redirect()->route('teknisi.surveys.index')
+            ->with('success', __('Laporan survey berhasil diunggah.'));
+    }
+
+    /**
+     * Sajikan laporan PDF secara inline (aman, dari disk privat).
+     */
+    public function viewReport(Request $request, Survey $survey)
+    {
+        abort_unless($request->user()?->can('view-technician'), 403);
+
+        abort_if(! $survey->hasReport(), 404);
+
+        return SecureFile::fileResponse('private', $survey->report_file, $this->reportFileName($survey));
+    }
+
+    /**
+     * Unduh laporan PDF.
+     */
+    public function downloadReport(Request $request, Survey $survey)
+    {
+        abort_unless($request->user()?->can('view-technician'), 403);
+
+        abort_if(! $survey->hasReport(), 404);
+
+        abort_unless(Storage::disk('private')->exists($survey->report_file), 404);
+
+        return Storage::disk('private')->download(
+            $survey->report_file,
+            $this->reportFileName($survey),
+            ['X-Content-Type-Options' => 'nosniff'],
+        );
+    }
+
+    /**
+     * Nama file unduhan yang aman & mudah dibaca (nama asli user tidak disimpan).
+     */
+    private function reportFileName(Survey $survey): string
+    {
+        return 'Survey-Report-'.$survey->id.'.pdf';
     }
 }

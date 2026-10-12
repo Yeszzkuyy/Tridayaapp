@@ -173,5 +173,17 @@
     "Change cover photo": "Ubah foto sampul",
     "Remove cover photo": "Hapus foto sampul",
     "Click the photo to change your profile picture": "Klik foto untuk mengganti foto profil",
-    "Edit Profile": "Edit Profil"
+    "Edit Profile": "Edit Profil",
+    "Create Report": "Buat Laporan",
+    "Upload PDF": "Unggah PDF",
+    "View Report": "Lihat Laporan",
+    "Download Report": "Unduh Laporan",
+    "Replace Report": "Ganti Laporan",
+    "Survey Report File": "File Laporan Survey",
+    "Report uploaded.": "Laporan sudah diunggah.",
+    "No report uploaded yet.": "Belum ada laporan diunggah.",
+    "Upload Survey Report": "Unggah Laporan Survey",
+    "Choose PDF file (max 5 MB)": "Pilih file PDF (maks 5 MB)",
+    "PDF file only, maximum 5 MB.": "Hanya file PDF, maksimal 5 MB.",
+    "Uploading...": "Mengunggah..."
 }
