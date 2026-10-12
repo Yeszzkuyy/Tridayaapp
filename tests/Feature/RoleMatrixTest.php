@@ -38,7 +38,7 @@ class RoleMatrixTest extends TestCase
 
         $this->post(route('leads.store'), [])->assertForbidden();
         $this->post(route('admin.invoices.store'), [])->assertForbidden();
-        $this->post(route('sales.meetings.store'), [])->assertForbidden();
+        $this->get('/sales/meetings')->assertNotFound();
     }
 
     public function test_cross_division_read_only(): void
@@ -51,7 +51,7 @@ class RoleMatrixTest extends TestCase
         // Admin baca sales, tidak bisa tulis.
         $this->actingAs($this->loginAs('admin'));
         $this->get(route('sales.dashboard'))->assertOk();
-        $this->post(route('sales.meetings.store'), [])->assertForbidden();
+        $this->get('/sales/meetings')->assertNotFound();
 
         // Lead technician baca sales + admin.
         $this->actingAs($this->loginAs('lead-technician'));

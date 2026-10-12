@@ -41,7 +41,7 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
         $this->actingAs($u)->get('/leads')->assertForbidden();
         $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
-        $this->actingAs($u)->get('/sales/meetings')->assertForbidden();
+        $this->actingAs($u)->get('/sales/meetings')->assertNotFound();
         $this->actingAs($u)->get('/monitoring')->assertForbidden();
     }
 

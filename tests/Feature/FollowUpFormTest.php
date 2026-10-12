@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
-use App\Models\Meeting;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,7 +71,7 @@ class FollowUpFormTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_store_rejects_lead_and_meeting_from_other_customer(): void
+    public function test_store_rejects_lead_from_other_customer(): void
     {
         $sales = $this->salesMgk();
         $customers = $this->seedCustomers();
@@ -83,23 +82,11 @@ class FollowUpFormTest extends TestCase
             'status' => 'cool',
             'assigned_to' => $sales->id,
         ]);
-        $otherMeeting = Meeting::create([
-            'customer_id' => $customers['nti']->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Meeting NTI.',
-            'created_by' => $sales->id,
-        ]);
 
         $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
             'customer_id' => $customers['mgk']->id,
             'lead_id' => $otherLead->id,
             'description' => 'Lead silang.',
-        ])->assertStatus(422);
-
-        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
-            'customer_id' => $customers['mgk']->id,
-            'meeting_id' => $otherMeeting->id,
-            'description' => 'Meeting silang.',
         ])->assertStatus(422);
     }
 
@@ -146,24 +133,16 @@ class FollowUpFormTest extends TestCase
             'status' => 'cool',
             'assigned_to' => $sales->id,
         ]);
-        $meeting = Meeting::create([
-            'customer_id' => $customers['mgk']->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Kickoff.',
-            'created_by' => $sales->id,
-        ]);
 
         $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
             'customer_id' => $customers['mgk']->id,
             'lead_id' => $lead->id,
-            'meeting_id' => $meeting->id,
             'type' => 'whatsapp',
             'description' => 'Kirim penawaran.',
         ])->assertRedirect(route('sales.follow-ups.index'));
 
         $fu = FollowUp::first();
         $this->assertSame($lead->id, $fu->lead_id);
-        $this->assertSame($meeting->id, $fu->meeting_id);
     }
 
     public function test_edit_page_renders_with_current_values(): void
