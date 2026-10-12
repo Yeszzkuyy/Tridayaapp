@@ -96,10 +96,10 @@ class RoleMenuTest extends TestCase
     public function test_sales_menu_and_access()
     {
         $u = $this->loginAs('sales');
-        $res = $this->actingAs($u)->get('/sales/follow-ups')->assertOk();
+        $res = $this->actingAs($u)->get('/sales/my-leads')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/sales/follow-ups', '/customers', '/trash', '/admin/invoices'] as $link) {
+        foreach (['/sales/my-leads', '/customers', '/trash', '/admin/invoices'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for sales");
         }
         foreach (['/leads"', '/monitoring'] as $link) {
@@ -123,7 +123,7 @@ class RoleMenuTest extends TestCase
         $res = $this->actingAs($u)->get('/admin/invoices')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/admin/invoices', '/admin/pos', '/admin/payments', '/trash', '/customers', '/sales/follow-ups'] as $link) {
+        foreach (['/admin/invoices', '/admin/pos', '/admin/payments', '/trash', '/customers', '/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for admin");
         }
         foreach (['/leads"', '/monitoring'] as $link) {

@@ -89,7 +89,7 @@ class DivisionAccessTest extends TestCase
         $res = $this->actingAs($u)->get('/admin/invoices')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/admin/invoices', '/trash', '/customers', '/sales/follow-ups'] as $link) {
+        foreach (['/admin/invoices', '/trash', '/customers', '/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for admin");
         }
         foreach (['/leads"', '/monitoring'] as $link) {

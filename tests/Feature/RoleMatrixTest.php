@@ -89,7 +89,7 @@ class RoleMatrixTest extends TestCase
         foreach ([
             '/teknisi/dashboard', '/projects', '/teknisi/jadwal', '/teknisi/instalasis',
             '/marketing/dashboard', '/leads', '/partners',
-            '/sales/dashboard', '/sales/follow-ups',
+            '/sales/dashboard',
         ] as $link) {
             $this->assertStringContainsString($link, $html, "$link harus terlihat untuk management");
         }
@@ -123,7 +123,7 @@ class RoleMatrixTest extends TestCase
             ->getContent();
 
         // Sales: menu kerja penuh (own-lead).
-        foreach (['/sales/my-leads', '/sales/follow-ups'] as $link) {
+        foreach (['/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html);
         }
         // Teknisi & marketing: recap saja.
