@@ -152,6 +152,10 @@ class LeadController extends Controller
             $this->logActivity($lead, 'status_changed', [
                 'status' => ['old' => $old, 'new' => $validated['status']],
             ]);
+        } elseif ($lead->acknowledged_at === null) {
+            // Status sama (mis. geser New -> Cool padahal DB-nya sudah cool):
+            // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
+            $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
         }
 
         return response()->noContent();
@@ -188,6 +192,10 @@ class LeadController extends Controller
                 ]);
 
                 $results[] = ['lead_id' => $lead->id, 'old' => $old, 'new' => $change['status']];
+            } elseif ($lead->acknowledged_at === null) {
+                // Status sama (mis. geser New -> Cool padahal DB-nya sudah cool):
+                // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
+                $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
             }
         }
 

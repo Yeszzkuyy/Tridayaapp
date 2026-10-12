@@ -208,6 +208,33 @@ class FollowUpFormTest extends TestCase
         $this->assertStringNotContainsString('id="meetings-table"', $html);
     }
 
+    public function test_index_shows_real_lead_status_not_new_label(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+        ]);
+        FollowUp::create([
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'description' => 'Cek label status.',
+            'follow_up_date' => now()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
+            ->assertOk()->getContent();
+
+        // Status asli (Cool) tampil, bukan label New khas pipeline virtual.
+        $this->assertStringContainsString('>Cool<', $html);
+        $this->assertStringNotContainsString('>New<', $html);
+    }
+
     public function test_index_uses_glider_for_status_filter(): void
     {
         $sales = $this->salesMgk();
