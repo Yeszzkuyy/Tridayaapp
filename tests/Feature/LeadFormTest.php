@@ -308,4 +308,21 @@ class LeadFormTest extends TestCase
             ])
             ->assertSessionHasErrors(['segment']);
     }
+
+    public function test_segment_and_kebutuhan_have_custom_required_messages(): void
+    {
+        $customer = Customer::create(['name' => 'PT Wajib Isi']);
+
+        $this->actingAs($this->marketingUser())
+            ->post(route('leads.store'), [
+                'customer_mode' => 'existing',
+                'customer_id' => $customer->id,
+                'pt_group' => 'MGK',
+                'incoming_date' => now()->toDateString(),
+            ])
+            ->assertSessionHasErrors([
+                'segment' => 'Kategori (Segment) wajib dipilih.',
+                'kebutuhan' => 'Kebutuhan klien wajib diisi.',
+            ]);
+    }
 }

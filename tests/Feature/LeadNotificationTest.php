@@ -58,6 +58,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
+            'kebutuhan' => 'IP Phone 10 unit.',
             'incoming_date' => now()->toDateString(),
         ])
             ->assertRedirect(route('leads.index'))
@@ -150,6 +151,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
+            'kebutuhan' => 'IP Phone 10 unit.',
             'assigned_to' => $salesB->id,
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));

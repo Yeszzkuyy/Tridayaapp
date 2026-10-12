@@ -412,13 +412,16 @@ class LeadController extends Controller
             'whatsapp_account_id' => 'nullable|exists:whatsapp_accounts,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
-            'kebutuhan' => 'nullable|string|max:2000',
+            'kebutuhan' => 'required|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
             'incoming_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => ['file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'segment.required' => 'Kategori (Segment) wajib dipilih.',
+            'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
@@ -550,13 +553,16 @@ class LeadController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
-            'kebutuhan' => 'nullable|string|max:2000',
+            'kebutuhan' => 'required|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
             'incoming_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => ['file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'segment.required' => 'Kategori (Segment) wajib dipilih.',
+            'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);

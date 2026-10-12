@@ -64,6 +64,7 @@ class LeadLifecycleTest extends TestCase
             'customer_name' => 'PT Lifecycle',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
+            'kebutuhan' => 'CCTV 8 channel + instalasi.',
             'incoming_date' => '2026-09-29',
         ])->assertRedirect(route('leads.index'));
         $lead = Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Lifecycle'))->first();
