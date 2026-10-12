@@ -115,6 +115,37 @@ class LeadPipelineTest extends TestCase
         $this->assertSame(1, $response->viewData('leads')->where('status', 'warm')->count());
     }
 
+    public function test_moving_new_lead_to_same_status_still_acknowledges_it(): void
+    {
+        $user = $this->userWithRole('sales');
+        // Lead baru default cool + belum ditangani (kolom New virtual).
+        $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+        $this->assertSame('cool', $lead->status);
+
+        // Geser New -> Cool: status DB sama, tapi lead tetap harus diakui.
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'cool']],
+        ])->assertOk();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+
+        $response = $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+        $this->assertFalse($response->viewData('newLeads')->contains($lead));
+        $this->assertSame(1, $response->viewData('leads')->where('status', 'cool')->count());
+    }
+
+    public function test_single_status_update_with_same_status_still_acknowledges_it(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+
+        $this->actingAs($user)
+            ->patch(route('leads.update-status', $lead), ['status' => 'cool'])
+            ->assertNoContent();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+    }
+
     public function test_reassign_returns_lead_to_new_column(): void
     {
         $management = $this->userWithRole('management');
