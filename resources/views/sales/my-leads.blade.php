@@ -6,6 +6,11 @@
         </div>
         <div class="flex gap-2">
             <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="Export CSV" />
+            <x-icon-button as="a" href="{{ route('sales.dar.export', request()->only(['date_from', 'date_to', 'user_id'])) }}" title="Export DAR">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75h6m-6-3h6m-7.5 10.5h9a2.25 2.25 0 0 0 2.25-2.25v-7.19a2.25 2.25 0 0 0-.66-1.59l-2.81-2.81a2.25 2.25 0 0 0-1.59-.66H6.75A2.25 2.25 0 0 0 4.5 7.5v11.25A2.25 2.25 0 0 0 6.75 21Z" />
+                </svg>
+            </x-icon-button>
             <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="Dashboard Sales" />
         </div>
     </div>

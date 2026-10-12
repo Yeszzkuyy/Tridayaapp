@@ -13,6 +13,8 @@ use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ManageSalesController extends Controller
 {
@@ -303,6 +305,82 @@ class ManageSalesController extends Controller
                 });
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Export DAR (Daily Activity Report) ke Excel: satu baris per Log Follow Up.
+     * Kolom mengikuti DAR manual: TANGGAL, CUSTOMER, CATEGORY, ADDRESS, PIC,
+     * PHONE, EMAIL, STATUS, KEBUTUHAN, DETAIL.
+     */
+    public function exportDar(Request $request)
+    {
+        $validated = $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'user_id' => 'nullable|exists:users,id',
+        ]);
+
+        $from = $validated['date_from'] ?? today()->toDateString();
+        $to = $validated['date_to'] ?? $from;
+
+        // Sales hanya melihat aktivitasnya sendiri; management boleh pilih sales.
+        $userId = auth()->id();
+        if (auth()->user()->can('manage-sales-leads') && !empty($validated['user_id'])) {
+            $userId = (int) $validated['user_id'];
+        }
+
+        $rows = FollowUp::query()
+            ->with(['lead.customer'])
+            ->where('created_by', $userId)
+            ->whereDate('follow_up_date', '>=', $from)
+            ->whereDate('follow_up_date', '<=', $to)
+            ->orderBy('follow_up_date')
+            ->orderBy('activity_time')
+            ->get();
+
+        $headers = ['TANGGAL', 'CUSTOMER', 'CATEGORY', 'ADDRESS', 'PIC', 'PHONE', 'EMAIL', 'STATUS', 'KEBUTUHAN', 'DETAIL'];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('DAR');
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:J1')->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($rows as $followUp) {
+            $customer = $followUp->lead?->customer;
+
+            $detail = (string) $followUp->description;
+            if ($followUp->activity_time) {
+                $detail .= ' — '.substr((string) $followUp->activity_time, 0, 5);
+            }
+            if ($followUp->location) {
+                $detail .= ' ('.$followUp->location.')';
+            }
+
+            $sheet->fromArray([
+                $followUp->follow_up_date?->format('Y-m-d') ?? '-',
+                $customer?->name ?? '-',
+                $followUp->lead?->segment ? \App\Http\Controllers\LeadController::label($followUp->lead->segment) : '-',
+                $customer?->address ?? '-',
+                $customer?->contact_person ?? '-',
+                $customer?->phone ?? $customer?->whatsapp ?? '-',
+                $customer?->email ?? '-',
+                $followUp->lead ? Lead::salesStatusLabel($followUp->lead->status) : '-',
+                $followUp->lead?->kebutuhan ?? '-',
+                $detail,
+            ], null, 'A'.$row);
+
+            $row++;
+        }
+
+        $filename = 'dar-'.($from === $to ? $from : $from.'_'.$to).'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     private function myLeadsQuery(Request $request)
