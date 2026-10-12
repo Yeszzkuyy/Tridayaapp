@@ -91,16 +91,17 @@ $cum = 0.0;
         from { stroke-dashoffset: var(--c); opacity: 0; }
         to { stroke-dashoffset: var(--off); opacity: 1; }
     }
-    /* Mode scroll: tidak lagi menahan sweep (animasi donat main tiap load,
-       konsisten dengan bar chart). Aturan dipertahankan agar markup lama
-       dengan :scroll tetap valid. */
-    .donut-svg.donut-scroll .donut-seg { animation-play-state: running; }
-    [data-reveal].in-view .donut-svg.donut-scroll .donut-seg { animation-play-state: running; }
+    /* Sweep hanya dimulai saat kartu induk tampil (.in-view) — sama seperti
+       bar chart ([data-grow-*]). Tanpa gating ini, pada kunjungan pertama
+       per sesi (reveal-on) sweep jalan saat kartu masih opacity:0 sehingga
+       donut tampil statis. :scroll tidak lagi menahan sweep (aturan lama
+       yang memaksa running setiap load dihapus). */
+    html.js [data-reveal]:not(.in-view) .donut-svg .donut-seg { animation-play-state: paused; }
     @media (prefers-reduced-motion: reduce) {
         .donut-svg .donut-seg { animation: none; }
     }
 </style>
-<noscript><style>.donut-svg.donut-scroll .donut-seg { animation: none !important; opacity: 1 !important; }</style></noscript>
+<noscript><style>.donut-svg .donut-seg { animation: none !important; opacity: 1 !important; }</style></noscript>
 <script>
     // ponytail: hanya klik (donut-select); hover sengaja tidak dipasang agar diagram diam
     (function () {
@@ -130,6 +131,18 @@ $cum = 0.0;
         }
         bindAll();
         document.addEventListener('DOMContentLoaded', bindAll);
+        // Pindah halaman via wire:navigate me-morph konten; elemen <circle>
+        // yang di-reuse tidak me-restart CSS animation, jadi sweep diputar
+        // ulang manual tiap navigasi (pola sama dengan modul lain di repo).
+        // Ikut terpanggil saat load awal — harmless (sweep sekali main).
+        function restartSweep() {
+            document.querySelectorAll('svg.donut-svg .donut-seg').forEach(function (seg) {
+                seg.style.animation = 'none';
+                seg.getBoundingClientRect();
+                seg.style.animation = '';
+            });
+        }
+        document.addEventListener('livewire:navigated', restartSweep);
     })();
 </script>
 @endonce
