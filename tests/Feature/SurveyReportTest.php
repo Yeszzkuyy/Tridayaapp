@@ -202,6 +202,19 @@ class SurveyReportTest extends TestCase
         Storage::disk('private')->assertExists($oldPath);
     }
 
+    public function test_index_empty_state_guides_to_upload(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+
+        $html = $this->actingAs($technician)->get(route('teknisi.surveys.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('No survey data yet.', $html);
+        $this->assertStringContainsString('Create a survey first, then upload the PDF report from its row.', $html);
+        // Tombol header "Create Report" selalu tampil (membuka template Google Docs).
+        $this->assertStringContainsString(config('services.survey-report-template'), $html);
+    }
+
     public function test_index_shows_correct_report_actions(): void
     {
         Storage::fake('private');
