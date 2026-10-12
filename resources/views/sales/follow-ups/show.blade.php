@@ -6,9 +6,6 @@
                 <p class="text-slate-500 mt-1">{{ $followUp->customer?->name ?? '-' }}</p>
             </div>
             <div class="flex gap-2">
-                <x-icon-button as="a" href="{{ route('sales.meetings.create', array_filter(['customer_id' => $followUp->customer_id, 'lead_id' => $followUp->lead_id])) }}" title="Create Meeting">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2" /><path d="M3.5 10h17" /><path d="M8 3v4" /><path d="M16 3v4" /></svg>
-                </x-icon-button>
                 @can('manage-sales')
                     <a href="{{ route('sales.follow-ups.edit', $followUp) }}"
                        class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium transition">
@@ -37,16 +34,20 @@
                     <dd class="font-medium text-slate-800">{{ $followUp->follow_up_date ? $followUp->follow_up_date->format('d M Y') : '-' }}</dd>
                 </div>
                 <div>
+                    <dt class="text-xs text-slate-400">{{ __('Jam') }}</dt>
+                    <dd class="font-medium text-slate-800">{{ $followUp->activity_time ? substr((string) $followUp->activity_time, 0, 5) : '-' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Lokasi') }}</dt>
+                    <dd class="font-medium text-slate-800">{{ $followUp->location ?: '-' }}</dd>
+                </div>
+                <div>
                     <dt class="text-xs text-slate-400">{{ __('Next Follow Up') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $followUp->next_follow_up_date ? $followUp->next_follow_up_date->format('d M Y') : '-' }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Terkait Lead') }}</dt>
-                    <dd class="font-medium text-slate-800">{{ $followUp->lead?->customer?->name ?? '-' }}</dd>
-                </div>
-                <div>
-                    <dt class="text-xs text-slate-400">{{ __('Terkait Meeting') }}</dt>
-                    <dd class="font-medium text-slate-800">{{ $followUp->meeting ? $followUp->meeting->meeting_date->format('d M Y') : __('Tidak') }}</dd>
+                    <dd class="font-medium text-slate-800">{{ $followUp->lead ? '#'.$followUp->lead->id.' — '.\App\Models\Lead::salesStatusLabel($followUp->lead->status) : '-' }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Dicatat oleh') }}</dt>

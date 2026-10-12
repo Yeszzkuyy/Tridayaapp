@@ -5,8 +5,9 @@
                 <tr>
                     <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">Customer</th>
                     <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Deskripsi') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Terkait Meeting') }}</th>
                     <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Tanggal Follow Up') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Lokasi') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Terkait Lead') }}</th>
                     <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Oleh') }}</th>
                     <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Aksi') }}</th>
                 </tr>
@@ -27,15 +28,26 @@
                             {{ Str::limit($fu->description, 100) }}
                         </td>
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {{ $fu->meeting ? $fu->meeting->meeting_date->format('d M Y') : '-' }}
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                             {{ $fu->follow_up_date ? $fu->follow_up_date->format('d M Y') : '-' }}
+                            @if($fu->activity_time)
+                                <span class="block mt-0.5 text-[11px] text-slate-500">{{ substr((string) $fu->activity_time, 0, 5) }}</span>
+                            @endif
                             @if(!$fu->completed_at && $fu->follow_up_date && $fu->follow_up_date->isBefore(today()))
                                 <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{{ __('Terlambat') }}</span>
                             @endif
                             @if($fu->next_follow_up_date)
                                 <span class="block mt-1 text-[11px] text-slate-500">{{ __('Berikutnya:') }} {{ $fu->next_follow_up_date->format('d M Y') }}</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            {{ $fu->location ?: '-' }}
+                        </td>
+                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            @if($fu->lead)
+                                <span class="text-slate-800 dark:text-slate-100">#{{ $fu->lead->id }}</span>
+                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ \App\Models\Lead::salesStatusLabel($fu->lead->status) }}</span>
+                            @else
+                                -
                             @endif
                         </td>
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $fu->creator?->name ?? '-' }}</td>
@@ -67,12 +79,6 @@
                                         <x-icon name="mail" class="h-4 w-4" />
                                     </a>
                                 @endif
-                                <a href="{{ route('sales.meetings.create', array_filter(['customer_id' => $fu->customer_id, 'lead_id' => $fu->lead_id])) }}"
-                                   title="{{ __('Create Meeting') }}"
-                                   aria-label="{{ __('Create Meeting') }} {{ $fu->customer?->name }}"
-                                   class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition hover:bg-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
-                                    <x-icon name="calendar" class="h-4 w-4" />
-                                </a>
                                 <x-dropdown align="right" width="w-52">
                                     <x-slot name="trigger">
                                         <button type="button"
@@ -165,7 +171,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center">
+                        <td colspan="7" class="px-6 py-12 text-center">
                             <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300">
                                 <x-icon name="chat" class="h-6 w-6" />
                             </span>

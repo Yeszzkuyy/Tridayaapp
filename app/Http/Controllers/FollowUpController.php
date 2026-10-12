@@ -8,12 +8,10 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\Meeting;
-use App\Models\MeetingDraft;
 use App\Services\SalesService;
 use App\Support\PtAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class FollowUpController extends Controller
 {
@@ -24,39 +22,15 @@ class FollowUpController extends Controller
     public function index(Request $request)
     {
         $followUps = $this->salesService->getFollowUps($request->only(['search', 'customer_id', 'lead_id', 'overdue']));
-        $meetings = $this->salesService->getMeetings($request->only(['search', 'customer_id', 'lead_id', 'date_from', 'date_to']));
-
-        // Filter section Meetings via AJAX: refresh hanya tabel meetings.
-        if (($request->ajax() || $request->wantsJson()) && $request->get('form') === 'meetings') {
-            return response()->json(['ok' => true, 'html' => view('sales.meetings._table', compact('meetings'))->render()]);
-        }
-
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
-        $leads = $this->leadOptions();
-        $drafts = MeetingDraft::pending()->ownedBy(auth()->id())
-            ->with(['customer:id,name', 'lead:id,customer_id,status'])
-            ->latest()
-            ->limit(5)
-            ->get();
-
-        // Opsi siap-pakai untuk picker di blok Daily Update (scoped PT).
-        $duCustomers = $this->customerOptions(auth()->user());
-        $filterCustomers = $this->customerOptions(auth()->user(), false);
-        $duLeads = $leads->map(fn ($lead) => [
-            'id' => (string) $lead->id,
-            'customer_id' => (string) $lead->customer_id,
-            'label' => "Lead #{$lead->id} — ".($lead->customer->name ?? '?').' — '.Lead::salesStatusLabel($lead->status),
-        ])->all();
 
         return $this->ajaxPartial($request, 'sales.follow-ups._table',
-            compact('followUps', 'meetings', 'customers', 'leads', 'drafts', 'duCustomers', 'duLeads', 'filterCustomers'),
+            compact('followUps'),
             'sales.follow-ups.index');
     }
 
     public function create(Request $request)
     {
         $customerId = $request->integer('customer_id') ?: null;
-        $meetingId = $request->integer('meeting_id') ?: null;
         $leadId = $request->integer('lead_id') ?: null;
         if ($leadId && ($lead = Lead::find($leadId))) {
             $customerId = $lead->customer_id;
@@ -65,9 +39,7 @@ class FollowUpController extends Controller
         return view('sales.follow-ups.create', [
             'customerOptions' => $this->customerOptions(auth()->user()),
             'leadItems' => $this->leadItems(auth()->user()),
-            'meetingItems' => $this->meetingItems(auth()->user()),
             'customerId' => $customerId,
-            'meetingId' => $meetingId,
             'leadId' => $leadId,
         ]);
     }
@@ -119,10 +91,8 @@ class FollowUpController extends Controller
             'followUp' => $followUp,
             'customerOptions' => $options,
             'leadItems' => $this->leadItems(auth()->user()),
-            'meetingItems' => $this->meetingItems(auth()->user()),
             'customerId' => $followUp->customer_id,
             'leadId' => $followUp->lead_id,
-            'meetingId' => $followUp->meeting_id,
         ]);
     }
 
@@ -242,28 +212,6 @@ class FollowUpController extends Controller
                 'customer_id' => (string) $lead->customer_id,
                 'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
                     .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
-            ])->all();
-    }
-
-    /**
-     * Meeting untuk dropdown: label unik "tgl — ringkasan".
-     */
-    private function meetingItems($user): array
-    {
-        $query = Meeting::latest('meeting_date')->limit(200);
-        if (PtAccess::isSalesLike($user) && !$user->can('manage-marketing')) {
-            $ownCustomerIds = Lead::where('assigned_to', $user->id)->pluck('customer_id');
-            $query->where(fn ($q) => $q
-                ->whereIn('customer_id', $ownCustomerIds)
-                ->orWhere('created_by', $user->id));
-        }
-
-        return $query->get(['id', 'customer_id', 'meeting_date', 'notes', 'user_needs'])
-            ->map(fn ($meeting) => [
-                'id' => (string) $meeting->id,
-                'customer_id' => (string) $meeting->customer_id,
-                'label' => $meeting->meeting_date->format('d M Y').' — '
-                    .Str::limit($meeting->notes ?: $meeting->user_needs ?: '-', 40),
             ])->all();
     }
 
