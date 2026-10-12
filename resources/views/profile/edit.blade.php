@@ -29,7 +29,7 @@
 
             <div class="relative grid grid-cols-1 gap-6 rounded-3xl border border-white/40 bg-white/40 p-6 shadow-2xl backdrop-blur-xl sm:p-10 lg:grid-cols-3 dark:border-white/10 dark:bg-slate-800/40 dark:shadow-black/30">
                 {{-- KIRI: kartu profil glassmorphism + cover/banner --}}
-                <section class="self-start overflow-hidden rounded-2xl border border-white/40 bg-white/60 text-center shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-slate-800/50 dark:shadow-black/20">
+                <section class="flex flex-col self-start overflow-hidden rounded-2xl border border-white/40 bg-white/60 text-center shadow-lg backdrop-blur-xl lg:min-h-[32rem] dark:border-white/10 dark:bg-slate-800/50 dark:shadow-black/20">
                     {{-- Banner/cover --}}
                     <div class="relative h-40 w-full bg-gradient-to-br from-accent-500 via-accent-700 to-slate-900 sm:h-48">
                         @if($coverUrl)
@@ -63,7 +63,7 @@
                         </div>
                     </div>
 
-                    <div class="px-6 pb-6 sm:px-8 sm:pb-8">
+                    <div class="flex flex-1 flex-col justify-center px-6 pb-6 sm:px-8 sm:pb-10">
                         {{-- Foto profil — menumpuk di atas banner --}}
                         <form method="POST" action="{{ route('profile.avatar.update') }}" enctype="multipart/form-data"
                               x-data="{ preview: @js($user->avatar ? asset('storage/' . $user->avatar) : null) }"
@@ -79,9 +79,9 @@
                                           class="absolute -inset-2 rounded-full animate-spin [animation-duration:3.5s] motion-reduce:animate-none bg-[conic-gradient(from_0deg,rgb(var(--accent-500))_0deg,rgb(var(--accent-300))_120deg,rgb(var(--accent-300)/0.35)_150deg,transparent_180deg,rgb(var(--accent-500))_185deg,rgb(var(--accent-300))_305deg,rgb(var(--accent-300)/0.35)_335deg,transparent_360deg)] shadow-[0_0_14px_3px_rgb(var(--accent-500)/0.55)]"></span>
                                 @endif
                                 <img x-show="preview" x-cloak :src="preview" alt="{{ __('Profile photo') }}"
-                                     class="relative h-28 w-28 rounded-full object-cover shadow-xl ring-4 sm:h-32 sm:w-32 {{ $isYeski ? 'ring-transparent' : 'ring-white dark:ring-slate-900' }}">
+                                     class="relative h-28 w-28 rounded-full object-cover shadow-xl ring-4 sm:h-36 sm:w-36 {{ $isYeski ? 'ring-transparent' : 'ring-white dark:ring-slate-900' }}">
                                 <div x-show="!preview" x-cloak aria-hidden="true"
-                                     class="relative flex h-28 w-28 items-center justify-center rounded-full shadow-xl ring-4 sm:h-32 sm:w-32 {{ $isYeski ? 'bg-slate-900 ring-transparent' : 'bg-accent-100 ring-white dark:bg-accent-900/40 dark:ring-slate-900' }}">
+                                     class="relative flex h-28 w-28 items-center justify-center rounded-full shadow-xl ring-4 sm:h-36 sm:w-36 {{ $isYeski ? 'bg-slate-900 ring-transparent' : 'bg-accent-100 ring-white dark:bg-accent-900/40 dark:ring-slate-900' }}">
                                     <span class="text-4xl font-bold sm:text-5xl {{ $isYeski ? 'text-amber-300' : 'text-accent-600 dark:text-accent-300' }}">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                                 </div>
                                 {{-- Overlay hover: gelap + ikon kamera --}}
