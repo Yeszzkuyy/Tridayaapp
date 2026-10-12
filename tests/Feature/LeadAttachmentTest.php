@@ -32,6 +32,7 @@ class LeadAttachmentTest extends TestCase
             'pt_group' => 'NTI',
             'assigned_to' => User::first()->id,
             'segment' => 'vendor',
+            'kebutuhan' => 'BOQ awal lampiran.',
             'incoming_date' => '2026-08-26',
         ], $overrides);
     }

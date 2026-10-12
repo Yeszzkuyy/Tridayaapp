@@ -230,6 +230,7 @@ class LeadFormTest extends TestCase
             'customer_name' => 'PT Salah Assign',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
+            'kebutuhan' => 'Butuh review assign.',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $technician->id,
         ])->assertStatus(422);
@@ -256,6 +257,7 @@ class LeadFormTest extends TestCase
             'customer_name' => 'PT Korban Diambil',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
+            'kebutuhan' => 'Butuh review akses.',
             'incoming_date' => now()->toDateString(),
         ])->assertForbidden();
 
