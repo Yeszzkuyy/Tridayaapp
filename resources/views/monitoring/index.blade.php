@@ -76,21 +76,6 @@
             </div>
         </div>
 
-        {{-- Meeting Bulan Ini --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div class="flex items-center gap-3">
-                <div class="p-3 rounded-xl bg-green-50">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-sm text-slate-500">{{ __('Meeting Bulan Ini') }}</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ $stats['meeting_bulan_ini'] ?? 0 }}</p>
-                </div>
-            </div>
-        </div>
-
         {{-- Invoice Outstanding --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div class="flex items-center gap-3">
@@ -191,7 +176,6 @@
                                             'Lead: hot' => 'bg-orange-100 text-orange-800',
                                             'Lead: won' => 'bg-green-100 text-green-800',
                                             'Lead: lost' => 'bg-red-100 text-red-800',
-                                            'Meeting' => 'bg-green-100 text-green-800',
                                             'Invoice: unpaid' => 'bg-red-100 text-red-800',
                                             'Invoice: paid' => 'bg-green-100 text-green-800',
                                             'Invoice: cancelled' => 'bg-slate-100 text-slate-800',
