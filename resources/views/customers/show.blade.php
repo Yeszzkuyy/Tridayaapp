@@ -541,34 +541,6 @@
                 <div x-show="tab === 'followups'" x-transition>
                     <div class="space-y-8">
                         <div>
-                            <x-section-header title="Meetings">
-                                @can('manage-sales')
-                                    <x-add-button href="{{ route('sales.meetings.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('+ Log Meeting') }}
-                                    </x-add-button>
-                                @endcan
-                            </x-section-header>
-                            @php $meetings = $customer->meetings()->with('creator')->latest('meeting_date')->get(); @endphp
-                            @if($meetings->isNotEmpty())
-                                @foreach($meetings as $meeting)
-                                    <div class="border-b border-slate-100 py-4 last:border-0">
-                                        <div class="flex items-start justify-between">
-                                            <div>
-                                                <p class="font-semibold text-slate-800 dark:text-slate-100">{{ $meeting->meeting_date->format('d M Y') }}</p>
-                                                <p class="text-sm text-slate-500 mt-1">{{ Str::limit($meeting->notes, 120) }}</p>
-                                            </div>
-                                            <a href="{{ route('sales.meetings.show', $meeting) }}"
-                                               class="text-accent-600 hover:text-accent-800 text-sm">Detail</a>
-                                        </div>
-                                        <p class="text-xs text-slate-400 mt-2">{{ __('by') }} {{ $meeting->creator?->name ?? '-' }}</p>
-                                    </div>
-                                @endforeach
-                            @else
-                                <x-empty-state label="{{ __('meeting') }}" />
-                            @endif
-                        </div>
-
-                        <div>
                             <x-section-header title="Follow Up">
                                 @can('manage-sales')
                                     <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
@@ -576,7 +548,7 @@
                                     </x-add-button>
                                 @endcan
                             </x-section-header>
-                            @php $followups = $customer->followUps()->with(['meeting', 'creator'])->latest('follow_up_date')->get(); @endphp
+                            @php $followups = $customer->followUps()->with(['creator'])->latest('follow_up_date')->get(); @endphp
                             @if($followups->isNotEmpty())
                                 <div class="space-y-3">
                                     @foreach($followups as $fu)
@@ -588,9 +560,6 @@
                                                         <span>{{ $fu->creator?->name ?? '-' }}</span>
                                                         @if($fu->follow_up_date)
                                                             <span>· {{ $fu->follow_up_date->format('d M Y') }}</span>
-                                                        @endif
-                                                        @if($fu->meeting)
-                                                            <span>· {{ __('Related Meeting') }} {{ $fu->meeting->meeting_date->format('d M Y') }}</span>
                                                         @endif
                                                     </div>
                                                 </div>
