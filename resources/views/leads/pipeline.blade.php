@@ -92,10 +92,16 @@
 
     @if(auth()->user()->can('manage-marketing') || auth()->user()->can('manage-sales'))
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    function initPipelineDnD(retry) {
         var board = document.querySelector('.kanban-board[data-editable]');
         if (!board) return;
         if (typeof Sortable === 'undefined') {
+            // Modul pipeline-dnd.js bisa belum selesai dimuat saat tiba via
+            // wire:navigate (SPA): coba lagi sesaat, baru menyerah.
+            if ((retry || 0) < 10) {
+                setTimeout(function () { initPipelineDnD((retry || 0) + 1); }, 100);
+                return;
+            }
             console.warn('SortableJS not available, pipeline drag & drop disabled.');
             return;
         }
@@ -105,6 +111,10 @@
         var pendingChanges = new Map();
 
         board.querySelectorAll('.kanban-list').forEach(function (list) {
+            // Idempoten: lewati list yang sudah di-init (navigasi SPA bisa
+            // memanggil init ini berulang pada DOM yang sama).
+            if (list.dataset.dndInit) return;
+            list.dataset.dndInit = '1';
             // Kolom New hanya sumber geser (tidak bisa jadi target drop).
             var isNewSource = list.hasAttribute('data-new-source');
             new Sortable(list, {
@@ -205,7 +215,11 @@
                 setTimeout(function () { toast.remove(); }, 300);
             }, 3000);
         }
-    });
+    }
+    // Full load: script di ujung body sehingga DOM sudah siap.
+    // Navigasi SPA (wire:navigate): DOMContentLoaded tidak fire lagi.
+    initPipelineDnD();
+    document.addEventListener('livewire:navigated', function () { initPipelineDnD(); });
     </script>
     @vite(['resources/js/pipeline-dnd.js'])
     @endif
