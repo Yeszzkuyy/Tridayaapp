@@ -87,13 +87,6 @@
     @endif
 
     @php
-        $statusColors = [
-            'cool' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-            'warm' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-            'hot' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
-            'won' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-            'lost' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-        ];
         $nextSchedule = $upcomingSchedules->first();
         $lastTimeline = ($timeline ?? collect())->first();
     @endphp
@@ -101,7 +94,7 @@
     {{-- Hero ringkasan: status + info sekilas + langkah berikutnya --}}
     <section aria-label="{{ __('Ringkasan Lead') }}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
         <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusColors[$lead->status] ?? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' }}">
+            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ \App\Models\Lead::statusBadgeClasses($lead->status) }}">
                 {{ ucfirst($lead->status) }}
             </span>
             @if($lead->segment)

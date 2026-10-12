@@ -35,6 +35,22 @@ class Lead extends Model
         return $status === 'cool' ? __('New') : ucfirst((string) $status);
     }
 
+    /**
+     * Kelas warna badge status (sama dengan hero detail lead):
+     * cool/New biru, warm kuning, hot oranye, won hijau, lost merah.
+     */
+    public static function statusBadgeClasses(?string $status): string
+    {
+        return match ($status) {
+            'cool' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+            'warm' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+            'hot' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+            'won' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            'lost' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+            default => 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+        };
+    }
+
     public const PT_COLORS = [
         'NTI' => 'bg-sky-500 text-white',
         'MGK' => 'bg-blue-900 text-white',

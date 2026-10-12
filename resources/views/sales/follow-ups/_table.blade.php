@@ -45,7 +45,7 @@
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                             @if($fu->lead)
                                 <span class="text-slate-800 dark:text-slate-100">#{{ $fu->lead->id }}</span>
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ \App\Models\Lead::salesStatusLabel($fu->lead->status) }}</span>
+                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold {{ \App\Models\Lead::statusBadgeClasses($fu->lead->status) }}">{{ \App\Models\Lead::salesStatusLabel($fu->lead->status) }}</span>
                             @else
                                 -
                             @endif
