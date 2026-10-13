@@ -76,37 +76,51 @@ class SalesScheduleController extends Controller
     }
 
     /**
-     * JSON feed untuk Weekly Strip: jadwal kunjungan hari tertentu
+     * JSON feed untuk Weekly Strip + Month Grid: jadwal kunjungan
      * dari tabel follow_ups (type = meeting). Sales biasa hanya
      * melihat yang ia buat; management (manage-sales-leads)
      * melihat semua jadwal.
+     *
+     * Mode ?date=YYYY-MM-DD → jadwal satu hari.
+     * Mode ?start=..&end=.. → jadwal rentang (untuk grid bulanan).
      */
     public function getSchedulesApi(Request $request)
     {
-        $date = $request->query('date', today()->toDateString());
-
-        try {
-            $parsed = \Carbon\Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
-        } catch (\Throwable) {
-            return response()->json(['message' => __('Tanggal tidak valid.')], 422);
-        }
-
         $query = FollowUp::with(['customer', 'lead.customer', 'creator'])
-            ->whereDate('follow_up_date', $parsed)
             ->where('type', 'meeting');
+
+        if ($request->filled('start') && $request->filled('end')) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
+                $end = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('follow_up_date', '>=', $start)
+                ->whereDate('follow_up_date', '<=', $end);
+        } else {
+            $date = $request->query('date', today()->toDateString());
+            try {
+                $parsed = \Carbon\Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('follow_up_date', $parsed);
+        }
 
         $user = auth()->user();
         if (!$user->can('manage-sales-leads')) {
             $query->where('created_by', $user->id);
         }
 
-        $schedules = $query->orderBy('activity_time')->get()->map(function (FollowUp $fu) {
+        $schedules = $query->orderBy('follow_up_date')->orderBy('activity_time')->get()->map(function (FollowUp $fu) {
             $customerName = $fu->customer?->name
                 ?? $fu->lead?->customer?->name
                 ?? ($fu->lead_id ? 'Lead #'.$fu->lead_id : __('Jadwal'));
 
             return [
                 'id' => $fu->id,
+                'date' => $fu->follow_up_date->toDateString(),
                 'description' => $fu->description,
                 'activity_time' => $fu->activity_time ? substr($fu->activity_time, 0, 5) : null,
                 'location' => $fu->location,
