@@ -1010,5 +1010,12 @@
     "Semua data survey lapangan": "All field survey data",
     "Semua Sales": "All Sales",
     "Cari": "Search",
-    "Cari judul...": "Search title..."
+    "Cari judul...": "Search title...",
+    "Survey Terkait": "Related Survey",
+    "Laporan sudah diunggah": "Report has been uploaded",
+    "Laporan belum diunggah": "Report not uploaded yet",
+    "Pilih customer dulu sebelum melampirkan laporan.": "Select a customer before attaching a report.",
+    "Isi customer survey dulu (lewat Edit) sebelum mengunggah laporan.": "Fill in the survey customer (via Edit) before uploading a report.",
+    "Survey belum memiliki laporan. Unggah laporan survey dulu sebelum menyelesaikan request ini.": "The survey has no report yet. Upload the survey report before completing this request.",
+    "PDF or common documents — max 5 MB. Can be uploaded later from the survey detail.": "PDF or common documents — max 5 MB. Can be uploaded later from the survey detail."
 }

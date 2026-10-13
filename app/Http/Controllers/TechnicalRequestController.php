@@ -4,17 +4,57 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
+use App\Notifications\SurveyCreatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 class TechnicalRequestController extends Controller
 {
+    /**
+     * Buat (atau ambil) Survey untuk Technical Request tipe survey.
+     *
+     * IDEMPOTEN: memakai firstOrCreate dengan kunci technical_request_id
+     * (juga dijamin UNIQUE di database) — memproses request yang sama
+     * berapa kali pun tetap menghasilkan tepat satu Survey. Survey yang
+     * pernah di-soft-delete dipulihkan, bukan digandakan.
+     */
+    private function ensureSurvey(TechnicalRequest $technicalRequest): ?Survey
+    {
+        if ($technicalRequest->request_type !== 'survey') {
+            return null;
+        }
+
+        $survey = Survey::withTrashed()->firstOrCreate(
+            ['technical_request_id' => $technicalRequest->id],
+            [
+                'title' => $technicalRequest->title,
+                'customer_id' => $technicalRequest->lead?->customer_id,
+                'sales_user_id' => $technicalRequest->lead?->assigned_to
+                    ?? $technicalRequest->requested_by,
+                'sales_request' => $technicalRequest->requirement
+                    ?: $technicalRequest->problem_description,
+                'survey_date' => $technicalRequest->target_date,
+                'location' => $technicalRequest->lead?->customer?->address,
+                'status' => 'scheduled',
+            ]
+        );
+
+        if ($survey->trashed()) {
+            // Jangan digandakan (kunci unik melarang) dan jangan dibiarkan
+            // terhapus sementara request-nya masih diproses — pulihkan saja.
+            $survey->restore();
+        }
+
+        return $survey;
+    }
+
     private function log(Lead $lead, string $action, array $changes = []): void
     {
         LeadActivity::create([
@@ -140,6 +180,13 @@ class TechnicalRequestController extends Controller
             'status' => 'assigned',
         ]);
 
+        // Request tipe survey: buatkan Survey untuk dikerjakan teknisi.
+        // Idempoten — request yang sama diproses ulang tetap satu survey.
+        $survey = $this->ensureSurvey($technicalRequest);
+        if ($survey?->wasRecentlyCreated) {
+            $technicalRequest->requester?->notify(new SurveyCreatedNotification($survey));
+        }
+
         $this->log($technicalRequest->lead, 'technician_assigned', [
             'title' => $technicalRequest->title,
             'technician' => $technician->name,
@@ -190,7 +237,25 @@ class TechnicalRequestController extends Controller
         abort_unless(in_array($technicalRequest->status, ['assigned', 'in_progress']), 422);
         abort_unless(filled($technicalRequest->technical_result), 422, __('Isi hasil teknis dulu sebelum menyelesaikan.'));
 
+        // Konsistensi status: request tipe survey TIDAK boleh selesai sebelum
+        // Survey-nya punya laporan — jangan sampai request menyatakan selesai
+        // padahal laporan belum ada.
+        $survey = null;
+        if ($technicalRequest->request_type === 'survey') {
+            $survey = $technicalRequest->survey;
+            abort_unless(
+                $survey?->hasReport(),
+                422,
+                __('Survey belum memiliki laporan. Unggah laporan survey dulu sebelum menyelesaikan request ini.')
+            );
+        }
+
         $technicalRequest->update(['status' => 'completed', 'completed_at' => now()]);
+
+        // Baru setelah request selesai tersimpan, status survey ikut
+        // diperbarui agar konsisten.
+        $survey?->update(['status' => Survey::STATUS_COMPLETED]);
+
         $this->log($technicalRequest->lead, 'tech_request_completed', ['title' => $technicalRequest->title]);
         $technicalRequest->requester?->notify(new TechnicalWorkCompletedNotification($technicalRequest));
 

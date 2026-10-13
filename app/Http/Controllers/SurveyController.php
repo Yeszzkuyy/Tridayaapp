@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Survey;
 use App\Models\User;
+use App\Notifications\SurveyCreatedNotification;
+use App\Notifications\SurveyReportUploadedNotification;
 use App\Rules\SecureFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -73,10 +75,19 @@ class SurveyController extends Controller
             'location' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
             'survey_data' => 'nullable|string',
-            'report' => ['required', 'file', 'max:5120', SecureFile::documents()],
+            // Laporan boleh menyusul — survey bisa dijadwalkan dulu.
+            'report' => ['nullable', 'file', 'max:5120', SecureFile::documents()],
         ]);
 
         $file = $request->file('report');
+
+        // Konsistensi data: laporan baru boleh menutup survey (completed)
+        // bila rumahnya sudah jelas (customer atau project) — supaya survey
+        // tidak "hilang" dari timeline.
+        if ($file && blank($validated['customer_id'] ?? null) && blank($validated['project_id'] ?? null)) {
+            return back()->withInput()
+                ->withErrors(['customer_id' => __('Pilih customer dulu sebelum melampirkan laporan.')]);
+        }
 
         try {
             $survey = Survey::create([
@@ -88,12 +99,23 @@ class SurveyController extends Controller
                 'location' => $validated['location'] ?? null,
                 'pic' => $validated['pic'] ?? null,
                 'survey_data' => $validated['survey_data'] ?? null,
+                // Tanpa laporan = masih rencana; dengan laporan = selesai.
+                'status' => $file ? Survey::STATUS_COMPLETED : 'scheduled',
             ]);
         } catch (\Throwable $e) {
             report($e);
 
             return back()->withInput()
                 ->withErrors(['report' => __('Gagal membuat survey. Coba lagi.')]);
+        }
+
+        // Laporan menyusul nanti juga bisa — baru kirim notifikasi + simpan
+        // file bila memang dilampirkan sekarang.
+        if (! $file) {
+            $survey->sales?->notify(new SurveyCreatedNotification($survey));
+
+            return redirect()->route('teknisi.surveys.show', $survey)
+                ->with('success', 'Survey berhasil ditambahkan.');
         }
 
         // Nama file dibuat server-side; ekstensi dari MIME (bukan nama user),
@@ -132,6 +154,8 @@ class SurveyController extends Controller
             return back()->withInput()
                 ->withErrors(['report' => __('Gagal menyimpan laporan. Coba lagi.')]);
         }
+
+        $survey->sales?->notify(new SurveyReportUploadedNotification($survey));
 
         return redirect()->route('teknisi.surveys.show', $survey)
             ->with('success', 'Survey berhasil ditambahkan.');
@@ -198,6 +222,14 @@ class SurveyController extends Controller
     {
         abort_unless($request->user()?->can('manage-technician'), 403);
 
+        // Konsistensi data: laporan baru menutup survey bila rumahnya sudah jelas
+        // (punya customer atau project) — supaya survey tidak "hilang" dari
+        // timeline. Survey lama yang nempel project tetap bisa ganti laporan.
+        if (blank($survey->customer_id) && blank($survey->project_id)) {
+            return back()->withInput()
+                ->withErrors(['report' => __('Isi customer survey dulu (lewat Edit) sebelum mengunggah laporan.')]);
+        }
+
         $request->validate([
             'report' => [
                 'required',
@@ -248,6 +280,8 @@ class SurveyController extends Controller
         if ($oldPath && $oldPath !== $newPath) {
             Storage::disk('private')->delete($oldPath);
         }
+
+        $survey->sales?->notify(new SurveyReportUploadedNotification($survey));
 
         return redirect()->route('teknisi.surveys.index')
             ->with('success', __('Laporan survey berhasil diunggah.'));

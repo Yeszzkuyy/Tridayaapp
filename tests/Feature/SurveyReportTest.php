@@ -378,20 +378,39 @@ class SurveyReportTest extends TestCase
         $this->assertDatabaseCount('surveys', 0);
     }
 
-    public function test_create_survey_rejects_missing_report(): void
+    public function test_create_survey_without_report_schedules_later(): void
     {
         Storage::fake('private');
         $technician = $this->userWithRole('technician');
         $this->actingAs($technician);
         $project = $this->makeProject('TanpaFile');
 
+        // Laporan boleh menyusul — survey bisa dijadwalkan dulu.
         $this->post(route('teknisi.surveys.store'), [
             'title' => 'Survey Tanpa File',
             'sales_user_id' => $technician->id,
             'project_id' => $project->id,
-        ])->assertSessionHasErrors('report');
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertDatabaseMissing('surveys', ['project_id' => $project->id]);
+        $survey = Survey::where('title', 'Survey Tanpa File')->firstOrFail();
+        $this->assertFalse($survey->hasReport());
+        $this->assertSame('scheduled', $survey->status);
+    }
+
+    public function test_create_survey_with_report_requires_house(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+
+        // Laporan yang menutup survey harus jelas rumahnya (customer/project).
+        $this->post(route('teknisi.surveys.store'), [
+            'title' => 'Survey Yatim',
+            'sales_user_id' => $technician->id,
+            'report' => UploadedFile::fake()->create('laporan.pdf', 100, 'application/pdf'),
+        ])->assertSessionHasErrors('customer_id');
+
+        $this->assertDatabaseMissing('surveys', ['title' => 'Survey Yatim']);
     }
 
     public function test_create_accepts_common_document(): void
@@ -404,6 +423,7 @@ class SurveyReportTest extends TestCase
         $this->post(route('teknisi.surveys.store'), [
             'title' => 'Survey Dokumen',
             'sales_user_id' => $technician->id,
+            'project_id' => $project->id,
             'report' => UploadedFile::fake()->create('boq.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertRedirect()->assertSessionHasNoErrors();
 
