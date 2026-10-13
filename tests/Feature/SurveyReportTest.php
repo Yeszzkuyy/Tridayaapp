@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\Lead;
 use App\Models\Project;
+use App\Models\ProjectStatus;
 use App\Models\Survey;
 use App\Models\User;
 use App\Models\WorkType;
@@ -461,5 +463,31 @@ class SurveyReportTest extends TestCase
         Survey::create(['project_id' => $project->id]);
 
         $this->get(route('teknisi.surveys.index'))->assertForbidden();
+    }
+
+    public function test_convert_lead_sets_sales_owner(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $customer = Customer::create(['name' => 'PT Convert']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'assigned_to' => $sales->id,
+        ]);
+        $status = ProjectStatus::create(['name' => 'Open']);
+        $workType = WorkType::create(['name' => 'Instalasi']);
+
+        $this->actingAs($sales)->patch(route('leads.convert', $lead), [
+            'project_name' => 'Project Convert',
+            'project_status_id' => $status->id,
+            'work_type_id' => $workType->id,
+        ])->assertRedirect();
+
+        $project = Project::where('project_name', 'Project Convert')->firstOrFail();
+        $this->assertSame((int) $sales->id, (int) $project->sales_user_id);
     }
 }

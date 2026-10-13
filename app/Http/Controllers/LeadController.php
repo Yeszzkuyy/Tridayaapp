@@ -723,6 +723,7 @@ class LeadController extends Controller
             'customer_id' => $lead->customer_id,
             'project_status_id' => $validated['project_status_id'],
             'work_type_id' => $validated['work_type_id'] ?? null,
+            'sales_user_id' => $lead->assigned_to,
             'start_date' => now()->toDateString(),
         ]);
 
