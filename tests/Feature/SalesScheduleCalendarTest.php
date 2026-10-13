@@ -200,6 +200,8 @@ class SalesScheduleCalendarTest extends TestCase
         $res->assertSee('Location / Meeting Link');
         $res->assertSee('Agenda / Notes');
         $res->assertSee('Next follow-up date');
+        $res->assertSee('Add Schedule');
+        $res->assertSee('Type to search customer', false);
         $res->assertSee("followUpUrl('snooze')", false);
         $res->assertSee('openDrawer(ev)', false);
         $res->assertSee(route('sales.schedules.api'), false);
