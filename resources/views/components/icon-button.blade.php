@@ -19,6 +19,8 @@
        size    : md (= h-10 w-10) | lg (= h-11 w-11, ala tombol Cari customer)
        title   : tooltip + title/aria-label
        tooltip : teks tooltip (default: = title; kosong = tanpa tooltip)
+       label   : teks nama di samping ikon (bila diisi tombol jadi lebih lebar,
+                 bukan kotak icon-only)
 --}}
 @props([
     'as' => 'button',
@@ -29,6 +31,7 @@
     'size' => 'md',
     'title' => '',
     'tooltip' => null,
+    'label' => null,
 ])
 
 @php
@@ -50,6 +53,11 @@ $sizes = [
 $sizeClass = $sizes[$size] ?? $sizes['md'];
 
 $btnClass = "relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-xl text-white shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 active:scale-95 {$colors}";
+
+// Label: tombol jadi lebih lebar (ikon + teks) dengan gap, bukan kotak icon-only.
+if ($label) {
+    $btnClass = "relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 text-sm font-medium text-white shadow-sm transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 active:scale-95 {$colors}";
+}
 
 $paths = [
     'leads' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />',
@@ -75,6 +83,9 @@ $gifIcons = ['filter' => 'filter', 'reset' => 'reset'];
             @elseif(isset($paths[$icon]))
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">{!! $paths[$icon] !!}</svg>
             @endif
+            @if($label)
+                <span>{{ $label }}</span>
+            @endif
             <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
         </a>
     @else
@@ -87,6 +98,9 @@ $gifIcons = ['filter' => 'filter', 'reset' => 'reset'];
                      class="block h-5 w-5" />
             @elseif(isset($paths[$icon]))
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">{!! $paths[$icon] !!}</svg>
+            @endif
+            @if($label)
+                <span>{{ $label }}</span>
             @endif
             <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
         </button>

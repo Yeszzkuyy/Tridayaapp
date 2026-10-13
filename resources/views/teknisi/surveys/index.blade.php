@@ -6,7 +6,12 @@
             <p class="text-slate-500 mt-1">{{ __('Semua data survey untuk setiap project') }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" />
+            {{-- Template laporan survey (Google Docs) — selalu kelihatan di daftar --}}
+            <x-icon-button as="a" href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
+                           title="{{ __('Template') }}" aria-label="{{ __('Template') }}" label="{{ __('Template') }}">
+                <x-icon name="file-text" class="h-5 w-5" />
+            </x-icon-button>
+            <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" aria-label="{{ __('Tambah Survey') }}" label="{{ __('Tambah Survey') }}" />
         </div>
     </div>
 
