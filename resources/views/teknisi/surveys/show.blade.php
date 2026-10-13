@@ -103,8 +103,13 @@
                         </div>
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">{{ __('Survey Report File') }}</p>
+                            @php $reportName = $survey->report_file_name ?: basename((string) $survey->report_file); @endphp
                             @if($survey->hasReport())
                                 <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ __('Report ready to review') }}</p>
+                                <p class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-white/70 px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-accent-500/30 dark:bg-slate-800/70 dark:text-slate-300">
+                                    <x-icon name="file-text" class="h-3.5 w-3.5" />
+                                    {{ basename($reportName) }}
+                                </p>
                                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('The private PDF report is stored securely.') }}</p>
                             @else
                                 <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ __('No PDF report yet') }}</p>

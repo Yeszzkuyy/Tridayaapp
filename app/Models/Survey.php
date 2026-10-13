@@ -11,7 +11,7 @@ class Survey extends Model
 
     protected $fillable = [
         'project_id', 'sales_request', 'survey_date', 'location', 'pic',
-        'survey_data', 'documentation', 'survey_report', 'report_file', 'status', 'notes',
+        'survey_data', 'documentation', 'survey_report', 'report_file', 'report_file_name', 'status', 'notes',
     ];
 
     /**

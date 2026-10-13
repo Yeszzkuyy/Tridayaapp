@@ -211,10 +211,10 @@ class SurveyReportTest extends TestCase
 
         $this->assertStringContainsString('No survey data yet.', $html);
         $this->assertStringContainsString('Create a survey first, then upload the PDF report from its row.', $html);
-        // Template report tetap tersedia di header, sedangkan upload kontekstual.
-        $this->assertStringContainsString(config('services.survey-report-template'), $html);
         // Upload dipicu dari baris/detail agar Survey selalu sudah diketahui.
         $this->assertStringNotContainsString('report-upload-open', $html);
+        // Template report tidak lagi di header daftar (hanya di detail survey).
+        $this->assertStringNotContainsString(config('services.survey-report-template'), $html);
     }
 
     public function test_index_shows_correct_report_actions(): void
@@ -241,6 +241,22 @@ class SurveyReportTest extends TestCase
         // Trigger baris membawa ID survey melalui CustomEvent native.
         $this->assertStringContainsString("new CustomEvent('report-upload'", $html);
         $this->assertStringContainsString('data-report-upload-form', $html);
+    }
+
+    public function test_view_and_download_use_original_filename(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $survey = $this->makeSurvey();
+        $path = 'surveys/'.$survey->id.'/reports/x.pdf';
+        Storage::disk('private')->put($path, 'pdf-content');
+        $survey->update(['report_file' => $path, 'report_file_name' => 'laporan-akhir-survey.pdf', 'status' => 'completed']);
+
+        $view = $this->actingAs($technician)->get(route('teknisi.surveys.report.view', $survey))->assertOk();
+        $this->assertStringContainsString('laporan-akhir-survey.pdf', $view->headers->get('content-disposition') ?? '');
+
+        $download = $this->actingAs($technician)->get(route('teknisi.surveys.report.download', $survey))->assertOk();
+        $this->assertStringContainsString('laporan-akhir-survey.pdf', $download->headers->get('content-disposition') ?? '');
     }
 
     public function test_survey_regression_pages_still_work(): void

@@ -89,6 +89,7 @@ class SurveyController extends Controller
         try {
             $survey->update([
                 'report_file' => $path,
+                'report_file_name' => SecureFile::sanitizeName($file->getClientOriginalName()),
                 'status' => Survey::STATUS_COMPLETED,
             ]);
         } catch (\Throwable $e) {
@@ -186,9 +187,10 @@ class SurveyController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($survey, $newPath) {
+            DB::transaction(function () use ($survey, $newPath, $file) {
                 $survey->update([
                     'report_file' => $newPath,
+                    'report_file_name' => SecureFile::sanitizeName($file->getClientOriginalName()),
                     'status' => Survey::STATUS_COMPLETED,
                 ]);
             });
@@ -213,7 +215,9 @@ class SurveyController extends Controller
     }
 
     /**
-     * Sajikan laporan PDF secara inline (aman, dari disk privat).
+     * Sajikan laporan secara aman dari disk privat.
+     * Keputusan inline berdasarkan MIME/ekstensi file yang tersimpan:
+     * PDF & gambar tampil inline (viewer browser), dokumen lain diunduh.
      */
     public function viewReport(Request $request, Survey $survey)
     {
@@ -221,11 +225,25 @@ class SurveyController extends Controller
 
         abort_if(! $survey->hasReport(), 404);
 
-        return SecureFile::fileResponse('private', $survey->report_file, $this->reportFileName($survey));
+        abort_unless(Storage::disk('private')->exists($survey->report_file), 404);
+
+        $path = $survey->report_file;
+        $name = SecureFile::sanitizeName($this->reportFileName($survey));
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        if (! in_array($extension, SecureFile::INLINE_EXTENSIONS, true)) {
+            return Storage::disk('private')->download($path, $name, ['X-Content-Type-Options' => 'nosniff']);
+        }
+
+        return response()->file(Storage::disk('private')->path($path), [
+            'Content-Type' => SecureFile::serverMime(Storage::disk('private')->path($path), $extension),
+            'Content-Disposition' => 'inline; filename="'.$name.'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**
-     * Unduh laporan PDF.
+     * Unduh laporan dengan nama file asli upload.
      */
     public function downloadReport(Request $request, Survey $survey)
     {
@@ -237,16 +255,18 @@ class SurveyController extends Controller
 
         return Storage::disk('private')->download(
             $survey->report_file,
-            $this->reportFileName($survey),
+            SecureFile::sanitizeName($this->reportFileName($survey)),
             ['X-Content-Type-Options' => 'nosniff'],
         );
     }
 
     /**
-     * Nama file unduhan yang aman & mudah dibaca (nama asli user tidak disimpan).
+     * Nama file unduhan: pakai nama asli upload (tersimpan aman & disanitasi);
+     * fallback ke nama generik bila kolom lama kosong.
      */
     private function reportFileName(Survey $survey): string
     {
-        return 'Survey-Report-'.$survey->id.'.pdf';
+        return $survey->report_file_name
+            ?: 'Survey-Report-'.$survey->id.'.pdf';
     }
 }
