@@ -67,6 +67,12 @@ class FollowUpController extends Controller
                 ->with('success', __('Log follow up berhasil dicatat.'));
         }
 
+        // Modal tambah jadwal di Weekly Strip minta balik ke kalendernya.
+        if ($request->input('return') === 'schedule') {
+            return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
+                ->with('success', __('Jadwal kunjungan berhasil ditambah.'));
+        }
+
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
             __('Follow up berhasil dicatat.'), ['redirect' => route('sales.follow-ups.index')]);
     }

@@ -181,7 +181,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
         Route::get('schedules', [SalesScheduleController::class, 'index'])->name('schedules.index');
-        Route::get('schedules/events', [SalesScheduleController::class, 'getEvents'])->name('schedules.events');
+        Route::get('schedules/api', [SalesScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('schedules/{schedule}', [SalesScheduleController::class, 'show'])->name('schedules.show');
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');

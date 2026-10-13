@@ -63,74 +63,62 @@ class SalesScheduleController extends Controller
 
     public function index(Request $request)
     {
-        $tab = $request->get('tab', 'upcoming');
-
-        $query = $this->ownScope(
-            SalesSchedule::with(['lead.customer', 'assignee'])->orderBy('start_at')
-        );
-
-        if ($tab === 'past') {
-            $query->where(function ($q) {
-                $q->where('start_at', '<', now()->startOfDay())
-                    ->orWhereIn('status', ['completed', 'cancelled']);
-            })->orderByDesc('start_at');
-        } else {
-            $query->where('start_at', '>=', now()->startOfDay())
-                ->whereNotIn('status', ['completed', 'cancelled']);
+        $activeDate = $request->query('date', today()->toDateString());
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $activeDate)) {
+            $activeDate = today()->toDateString();
         }
-
-        if ($request->filled('type')) {
-            $query->where('type', $request->get('type'));
-        }
-
-        $schedules = $query->paginate(15)->withQueryString();
 
         return view('sales.schedules.index', [
-            'schedules' => $schedules,
-            'tab' => $tab,
             'customers' => $this->customerOptions(auth()->user()),
             'leadItems' => $this->leadItems(auth()->user()),
+            'activeDate' => $activeDate,
         ]);
     }
 
     /**
-     * JSON feed untuk FullCalendar: jadwal kunjungan dari tabel follow_ups.
-     * Sales biasa hanya melihat yang ia buat; management (manage-sales-leads)
+     * JSON feed untuk Weekly Strip: jadwal kunjungan hari tertentu
+     * dari tabel follow_ups (type = meeting). Sales biasa hanya
+     * melihat yang ia buat; management (manage-sales-leads)
      * melihat semua jadwal.
      */
-    public function getEvents(Request $request)
+    public function getSchedulesApi(Request $request)
     {
-        $query = FollowUp::with(['customer', 'lead', 'creator'])
-            ->whereNotNull('follow_up_date');
+        $date = $request->query('date', today()->toDateString());
+
+        try {
+            $parsed = \Carbon\Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
+        } catch (\Throwable) {
+            return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+        }
+
+        $query = FollowUp::with(['customer', 'lead.customer', 'creator'])
+            ->whereDate('follow_up_date', $parsed)
+            ->where('type', 'meeting');
 
         $user = auth()->user();
         if (!$user->can('manage-sales-leads')) {
             $query->where('created_by', $user->id);
         }
 
-        if ($request->filled('start') && $request->filled('end')) {
-            $query->whereDate('follow_up_date', '>=', substr($request->query('start'), 0, 10))
-                ->whereDate('follow_up_date', '<=', substr($request->query('end'), 0, 10));
-        }
-
-        $events = $query->orderBy('follow_up_date')->get()->map(function (FollowUp $fu) {
-            $time = $fu->activity_time ?: '09:00';
-            $start = $fu->follow_up_date->format('Y-m-d').'T'.$time.':00';
-            $customerName = $fu->customer?->name ?? ($fu->lead_id ? 'Lead #'.$fu->lead_id : __('Jadwal'));
-            $creatorName = $fu->creator?->name ?? '';
+        $schedules = $query->orderBy('activity_time')->get()->map(function (FollowUp $fu) {
+            $customerName = $fu->customer?->name
+                ?? $fu->lead?->customer?->name
+                ?? ($fu->lead_id ? 'Lead #'.$fu->lead_id : __('Jadwal'));
 
             return [
                 'id' => $fu->id,
-                'title' => trim(__('Kunjungan').' - '.$customerName.($creatorName ? " ({$creatorName})" : '')),
-                'start' => $start,
                 'description' => $fu->description,
+                'activity_time' => $fu->activity_time ? substr($fu->activity_time, 0, 5) : null,
+                'location' => $fu->location,
+                'customer' => $customerName,
+                'creator' => $fu->creator?->name,
                 'url' => $fu->lead_id
                     ? route('leads.show', $fu->lead_id)
                     : route('customers.show', $fu->customer_id),
             ];
         });
 
-        return response()->json($events);
+        return response()->json($schedules);
     }
 
     public function create(Request $request)
