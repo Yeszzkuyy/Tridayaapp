@@ -89,12 +89,12 @@
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left rounded-xl border border-slate-200 dark:border-slate-600 p-4 hover:shadow-md transition">
+                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left p-4 shadow-sm transition hover:shadow-md" :class="cardColor(event.id).wrap">
                         <div class="flex items-start justify-between gap-3">
                             <span class="text-base font-semibold text-slate-800 dark:text-slate-100" x-text="event.description"></span>
                             <span class="flex shrink-0 items-center gap-1.5">
                                 <span x-show="event.completed" class="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="event.activity_time || '--:--'"></span>
+                                <span class="font-semibold text-sm tabular-nums" :class="cardColor(event.id).time" x-text="event.activity_time || '--:--'"></span>
                             </span>
                         </div>
                         <p class="text-sm text-slate-500 mt-1">
@@ -151,7 +151,7 @@
                 <p class="mb-4 text-center text-xs text-slate-400" x-text="weekLabel"></p>
 
                 <template x-for="event in events" :key="event.id">
-                    <div class="border border-gray-200 dark:border-slate-600 rounded-xl p-5 mb-4 last:mb-0 bg-white dark:bg-slate-800">
+                    <div class="p-5 mb-4 last:mb-0 shadow-sm bg-white dark:bg-slate-800" :class="cardColor(event.id).wrap">
                         <div class="relative flex items-start justify-between gap-3">
                             <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" x-text="event.description"></button>
                             <div class="flex shrink-0 items-center gap-1">
@@ -188,7 +188,7 @@
                                 </form>
                             </div>
                         </div>
-                        <p class="mt-1 text-sm text-slate-400" x-text="fmtTime(event.activity_time)"></p>
+                        <p class="mt-1 text-sm font-semibold" :class="cardColor(event.id).time" x-text="fmtTime(event.activity_time)"></p>
                         <div class="mt-2 flex items-center gap-2">
                             <span class="inline-flex min-w-0 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
                                 <span class="truncate" x-text="event.customer"></span>
@@ -224,12 +224,12 @@
                     </button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left rounded-xl border border-slate-200 dark:border-slate-600 p-4 hover:shadow-md transition">
+                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left p-4 shadow-sm transition hover:shadow-md" :class="cardColor(event.id).wrap">
                         <div class="flex items-start justify-between gap-3">
                             <span class="text-base font-semibold text-slate-800 dark:text-slate-100" x-text="event.description"></span>
                             <span class="flex shrink-0 items-center gap-1.5">
                                 <span x-show="event.completed" class="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="event.activity_time || '--:--'"></span>
+                                <span class="font-semibold text-sm tabular-nums" :class="cardColor(event.id).time" x-text="event.activity_time || '--:--'"></span>
                             </span>
                         </div>
                         <p class="text-sm text-slate-500 mt-1">
@@ -459,6 +459,21 @@
                 customerId: @json((string) old('customer_id', '')),
                 leadId: @json((string) old('lead_id', '')),
                 leads: window.__scheduleLeads || [],
+                cardPalette: {
+                    blue:   { wrap: 'border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/40 rounded-r-lg',
+                              time: 'text-blue-600 dark:text-blue-300' },
+                    violet: { wrap: 'border-l-4 border-violet-500 bg-violet-50 dark:bg-violet-950/40 rounded-r-lg',
+                              time: 'text-violet-600 dark:text-violet-300' },
+                    emerald:{ wrap: 'border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 rounded-r-lg',
+                              time: 'text-emerald-600 dark:text-emerald-300' },
+                    amber:  { wrap: 'border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/40 rounded-r-lg',
+                              time: 'text-amber-600 dark:text-amber-300' },
+                },
+
+                cardColor(id) {
+                    const keys = Object.keys(this.cardPalette);
+                    return this.cardPalette[keys[(id || 0) % keys.length]];
+                },
 
                 init() {
                     const urlDate = new URLSearchParams(window.location.search).get('date');
