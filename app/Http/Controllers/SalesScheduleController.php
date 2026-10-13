@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\SalesSchedule;
 use App\Models\User;
 use App\Notifications\SalesScheduleAssignedNotification;
+use App\Support\PtAccess;
 use Illuminate\Http\Request;
 
 class SalesScheduleController extends Controller
@@ -82,7 +85,52 @@ class SalesScheduleController extends Controller
 
         $schedules = $query->paginate(15)->withQueryString();
 
-        return view('sales.schedules.index', compact('schedules', 'tab'));
+        return view('sales.schedules.index', [
+            'schedules' => $schedules,
+            'tab' => $tab,
+            'customers' => $this->customerOptions(auth()->user()),
+            'leadItems' => $this->leadItems(auth()->user()),
+        ]);
+    }
+
+    /**
+     * JSON feed untuk FullCalendar: jadwal kunjungan dari tabel follow_ups.
+     * Sales biasa hanya melihat yang ia buat; management (manage-sales-leads)
+     * melihat semua jadwal.
+     */
+    public function getEvents(Request $request)
+    {
+        $query = FollowUp::with(['customer', 'lead', 'creator'])
+            ->whereNotNull('follow_up_date');
+
+        $user = auth()->user();
+        if (!$user->can('manage-sales-leads')) {
+            $query->where('created_by', $user->id);
+        }
+
+        if ($request->filled('start') && $request->filled('end')) {
+            $query->whereDate('follow_up_date', '>=', substr($request->query('start'), 0, 10))
+                ->whereDate('follow_up_date', '<=', substr($request->query('end'), 0, 10));
+        }
+
+        $events = $query->orderBy('follow_up_date')->get()->map(function (FollowUp $fu) {
+            $time = $fu->activity_time ?: '09:00';
+            $start = $fu->follow_up_date->format('Y-m-d').'T'.$time.':00';
+            $customerName = $fu->customer?->name ?? ($fu->lead_id ? 'Lead #'.$fu->lead_id : __('Jadwal'));
+            $creatorName = $fu->creator?->name ?? '';
+
+            return [
+                'id' => $fu->id,
+                'title' => trim(__('Kunjungan').' - '.$customerName.($creatorName ? " ({$creatorName})" : '')),
+                'start' => $start,
+                'description' => $fu->description,
+                'url' => $fu->lead_id
+                    ? route('leads.show', $fu->lead_id)
+                    : route('customers.show', $fu->customer_id),
+            ];
+        });
+
+        return response()->json($events);
     }
 
     public function create(Request $request)
@@ -196,5 +244,43 @@ class SalesScheduleController extends Controller
         $this->log($schedule->lead, 'schedule_cancelled', ['title' => $schedule->title]);
 
         return back()->with('success', __('Jadwal dibatalkan.'));
+    }
+
+    /**
+     * Dropdown customer untuk modal tambah jadwal (scope PT sama
+     * seperti form follow-up).
+     */
+    private function customerOptions($user): array
+    {
+        $pts = PtAccess::userPts($user);
+
+        return Customer::query()
+            ->when($pts !== [], fn ($q) => $q->where(
+                fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
+            ))
+            ->orderBy('name')
+            ->get(['id', 'name', 'pt_group'])
+            ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])
+            ->all();
+    }
+
+    /**
+     * Dropdown lead untuk modal tambah jadwal. Sales-like hanya
+     * melihat lead miliknya sendiri.
+     */
+    private function leadItems($user): array
+    {
+        $query = Lead::with('customer')->latest()->limit(200);
+        if (PtAccess::isSalesLike($user) && !$user->can('manage-marketing')) {
+            $query->where('assigned_to', $user->id);
+        }
+
+        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'assigned_to'])
+            ->map(fn ($lead) => [
+                'id' => (string) $lead->id,
+                'customer_id' => (string) $lead->customer_id,
+                'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
+                    .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
+            ])->all();
     }
 }
