@@ -10,7 +10,7 @@
                            title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}">
                 <x-icon name="file-text" class="h-5 w-5" />
             </x-icon-button>
-            <x-icon-button icon="import" type="button"
+            <x-icon-button icon="import" type="button" x-data=""
                            title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
                            @click="$dispatch('report-upload-open')" />
             <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" />
@@ -98,7 +98,7 @@
                                             <x-icon name="file-text" class="w-4 h-4" />
                                         </a>
                                         @can('manage-technician')
-                                            <button type="button" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
+                                            <button type="button" x-data="" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
                                                     title="{{ __('Replace Report') }}" aria-label="{{ __('Replace Report') }}"
                                                     class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition">
                                                 <x-icon name="edit" class="w-4 h-4" />
@@ -111,7 +111,7 @@
                                             <x-icon name="file-text" class="w-4 h-4" />
                                         </a>
                                         @can('manage-technician')
-                                            <button type="button" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
+                                            <button type="button" x-data="" @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
                                                     title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
                                                     class="p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition">
                                                 <x-icon name="folder" class="w-4 h-4" />

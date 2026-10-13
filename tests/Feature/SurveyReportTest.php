@@ -215,6 +215,8 @@ class SurveyReportTest extends TestCase
         // Tombol header "Create Report" & "Upload PDF" selalu tampil.
         $this->assertStringContainsString(config('services.survey-report-template'), $html);
         $this->assertStringContainsString('report-upload-open', $html);
+        // Tombol dispatch harus punya scope Alpine (x-data="") agar @click ter-bind.
+        $this->assertStringContainsString('x-data=""', $html);
     }
 
     public function test_index_shows_correct_report_actions(): void
@@ -241,6 +243,8 @@ class SurveyReportTest extends TestCase
         // Tombol header Upload PDF + dropdown pilihan survey di modal.
         $this->assertStringContainsString('report-upload-open', $html);
         $this->assertStringContainsString('Select Survey', $html);
+        // Tombol dispatch pakai scope Alpine (x-data="") agar berfungsi.
+        $this->assertStringContainsString('x-data=""', $html);
     }
 
     public function test_survey_regression_pages_still_work(): void
