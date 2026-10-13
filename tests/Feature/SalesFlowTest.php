@@ -160,10 +160,10 @@ class SalesFlowTest extends TestCase
         $mgmt = $this->userWithRole('management');
 
         $this->actingAs($sales)->get(route('sales.schedules.index'))
-            ->assertOk()->assertSee('sales-strip', false);
+            ->assertOk()->assertSee('Sales Schedule');
 
         $this->actingAs($mgmt)->get(route('sales.schedules.index'))
-            ->assertOk()->assertSee('sales-strip', false);
+            ->assertOk()->assertSee('Sales Schedule');
     }
 
     public function test_sales_creates_technical_request_and_lead_tech_is_notified(): void
