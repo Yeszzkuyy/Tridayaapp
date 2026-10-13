@@ -291,24 +291,53 @@
                             </button>
                         </div>
                         <div class="flex-1 overflow-y-auto px-5 py-4">
-                            <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" x-text="selectedEvent.description"></h3>
-                            <p class="mt-1 text-sm text-slate-500" x-text="selectedEvent.customer"></p>
-                            <template x-if="selectedEvent.location">
-                                <div class="mt-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300" x-text="selectedEvent.location"></div>
-                            </template>
-                            <dl class="mt-4 space-y-2 text-sm">
-                                <div class="flex justify-between gap-3">
-                                    <dt class="text-slate-400">{{ __('Date') }}</dt>
-                                    <dd class="font-semibold tabular-nums text-slate-700 dark:text-slate-200" x-text="selectedEvent.date"></dd>
-                                </div>
-                                <template x-if="selectedEvent.creator">
-                                    <div class="flex justify-between gap-3">
-                                        <dt class="text-slate-400">{{ __('Created by') }}</dt>
-                                        <dd class="font-semibold text-slate-700 dark:text-slate-200" x-text="selectedEvent.creator"></dd>
+                            <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" x-text="selectedEvent.customer"></h3>
+                            <p class="mt-0.5 text-sm text-slate-500" x-text="selectedEvent.date + (selectedEvent.activity_time ? ', ' + selectedEvent.activity_time : '')"></p>
+
+                            <template x-if="selectedEvent.pic_name">
+                                <div class="mt-3 flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-700/50">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="selectedEvent.pic_name"></p>
+                                        <p class="truncate text-xs text-slate-400" x-text="selectedEvent.pic_position || 'PIC'"></p>
                                     </div>
-                                </template>
-                            </dl>
-                            <a :href="selectedEvent.url" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View lead') }} →</a>
+                                    <div class="flex shrink-0 items-center gap-1.5">
+                                        <a x-show="selectedEvent.pic_phone" :href="'tel:' + selectedEvent.pic_phone" title="Call" aria-label="Call"
+                                           class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200 dark:bg-green-900/50 dark:text-green-200">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.678a2.25 2.25 0 00-.659-1.591l-2.358-2.358a2.25 2.25 0 00-3.182 0l-.51.51a12.034 12.034 0 01-4.746-4.746l.51-.51a2.25 2.25 0 000-3.182L8.172 3.562A2.25 2.25 0 006.58 2.903H4.5A2.25 2.25 0 002.25 5.153v1.598z"/></svg>Call</a>
+                                        <a x-show="selectedEvent.pic_whatsapp" :href="'https://wa.me/' + selectedEvent.pic_whatsapp" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"
+                                           class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>WA</a>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="selectedEvent.location">
+                                <div class="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                                    <span x-text="selectedEvent.location"></span>
+                                </div>
+                            </template>
+
+                            <div class="mt-4 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/50">
+                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Agenda / Notes') }}</p>
+                                <p class="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200" x-text="selectedEvent.description"></p>
+                            </div>
+
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <template x-if="selectedEvent.creator_avatar">
+                                        <img :src="selectedEvent.creator_avatar" alt="" class="h-8 w-8 rounded-full object-cover">
+                                    </template>
+                                    <template x-if="!selectedEvent.creator_avatar">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-600 text-xs font-bold text-white" x-text="initials(selectedEvent.creator)"></span>
+                                    </template>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-bold text-slate-700 dark:text-slate-200" x-text="selectedEvent.creator || '-'"></p>
+                                        <p class="truncate text-xs text-slate-400" x-text="selectedEvent.creator_role || 'Sales'"></p>
+                                    </div>
+                                </div>
+                                <a :href="selectedEvent.url" class="shrink-0 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View lead') }} →</a>
+                            </div>
                         </div>
                         <div x-show="canWrite && !selectedEvent.completed" class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
                             <form method="GET" :action="followUpUrl('edit')" class="inline">
@@ -641,6 +670,11 @@
                 followUpUrl(action) {
                     if (!this.selectedEvent) return '#';
                     return String(this.followUpBase).replace(/\/follow-ups\/?$/, '/follow-ups/' + this.selectedEvent.id + '/' + action);
+                },
+
+                initials(name) {
+                    return String(name || '?').trim().split(/\s+/).slice(0, 2)
+                        .map((w) => w[0].toUpperCase()).join('');
                 },
 
                 fetchEvents() {

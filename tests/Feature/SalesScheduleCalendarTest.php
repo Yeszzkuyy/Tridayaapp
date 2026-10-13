@@ -109,6 +109,40 @@ class SalesScheduleCalendarTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_api_includes_pic_and_creator_profile(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $customer = Customer::create(['name' => 'PT Kontak '.uniqid()]);
+        \App\Models\CustomerContact::create([
+            'customer_id' => $customer->id,
+            'name' => 'Budi Santoso',
+            'position' => 'Purchasing',
+            'phone' => '081234567890',
+            'whatsapp' => '081234567890',
+            'is_primary' => true,
+        ]);
+
+        FollowUp::create([
+            'customer_id' => $customer->id,
+            'description' => 'Kunjungan kontak',
+            'type' => 'meeting',
+            'follow_up_date' => '2026-10-28',
+            'activity_time' => '10:00',
+            'created_by' => $sales->id,
+        ]);
+
+        $res = $this->actingAs($sales)->getJson(route('sales.schedules.api', ['date' => '2026-10-28']));
+        $res->assertOk();
+        $event = collect($res->json())->firstWhere('description', 'Kunjungan kontak');
+
+        $this->assertSame('Budi Santoso', $event['pic_name']);
+        $this->assertSame('Purchasing', $event['pic_position']);
+        $this->assertSame('081234567890', $event['pic_phone']);
+        $this->assertSame('6281234567890', $event['pic_whatsapp']);
+        $this->assertSame($sales->name, $event['creator']);
+        $this->assertArrayHasKey('creator_avatar', $event);
+    }
+
     public function test_api_includes_completed_flag(): void
     {
         $sales = $this->userWithRole('sales');
@@ -164,6 +198,7 @@ class SalesScheduleCalendarTest extends TestCase
         $res->assertSee('id="sales-week-list"', false);
         $res->assertSee('Weekly Schedule');
         $res->assertSee('Location / Meeting Link');
+        $res->assertSee('Agenda / Notes');
         $res->assertSee('openDrawer(ev)', false);
         $res->assertSee(route('sales.schedules.api'), false);
         $res->assertSee(route('sales.follow-ups.store'), false);
