@@ -215,8 +215,25 @@ class SurveyReportTest extends TestCase
         $this->assertStringContainsString('Create a survey first, then upload the PDF report from its row.', $html);
         // Upload dipicu dari baris/detail agar Survey selalu sudah diketahui.
         $this->assertStringNotContainsString('report-upload-open', $html);
-        // Template report tidak lagi di header daftar (hanya di detail survey).
-        $this->assertStringNotContainsString(config('services.survey-report-template'), $html);
+        // Tombol template laporan survey tetap tampil di header daftar (bukan hilang).
+        $this->assertStringContainsString(config('services.survey-report-template'), $html);
+    }
+
+    public function test_index_header_shows_template_and_labeled_add_buttons(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $survey = $this->makeSurvey(['location' => 'Bandung']);
+
+        $html = $this->actingAs($technician)->get(route('teknisi.surveys.index'))->assertOk()->getContent();
+
+        // Tombol template report (ikon + label) ada di header daftar survey.
+        $this->assertStringContainsString(config('services.survey-report-template'), $html);
+        $this->assertStringContainsString('>Template</span>', $html);
+        // Tombol tambah survey kini icon + label "Add Survey", bukan icon saja.
+        $this->assertStringContainsString('>Add Survey</span>', $html);
+        // Tetap ada akses ke halaman buat survey.
+        $this->assertStringContainsString(route('teknisi.surveys.create'), $html);
     }
 
     public function test_index_has_no_report_actions_in_rows(): void
