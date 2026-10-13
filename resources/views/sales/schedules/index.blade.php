@@ -73,7 +73,7 @@
         {{-- Modal tambah jadwal kunjungan (self-service, simpan ke follow_ups) --}}
         <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-slate-900/50" @click="open = false"></div>
-            <div class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 p-6 max-h-[90vh] overflow-y-auto">
+            <div class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 p-6 overflow-y-auto" style="max-height:90vh">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Tambah Jadwal Kunjungan') }}</h3>
                 <p class="text-sm text-slate-500 mb-4">{{ __('Tersimpan sebagai follow-up dan masuk Activity Timeline Lead.') }}</p>
 
