@@ -3,25 +3,68 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Jadwal Sales') }}</h1>
-                <p class="text-slate-500 mt-1" x-text="weekLabel"></p>
+                <p class="text-slate-500 mt-1" x-text="monthLabel"></p>
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
-                <x-icon-button title="{{ __('Previous week') }}" @click="prevWeek()">
+                <x-icon-button title="{{ __('Previous month') }}" @click="prevMonth()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 </x-icon-button>
                 <x-icon-button title="{{ __('Today') }}" @click="goToday()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </x-icon-button>
-                <x-icon-button title="{{ __('Next week') }}" @click="nextWeek()">
+                <x-icon-button title="{{ __('Next month') }}" @click="nextMonth()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                 </x-icon-button>
                 <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
             </div>
         </div>
 
-        {{-- Weekly strip --}}
+        {{-- Month grid --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 mb-4">
+            <div class="grid grid-cols-7 gap-1 text-center mb-1" id="sales-month-grid">
+                <template x-for="name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="name">
+                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 py-1" x-text="name"></span>
+                </template>
+                <template x-for="cell in monthCells" :key="cell.date">
+                    <button type="button" @click="selectDay(cell.date)"
+                            :class="cell.date === activeDate
+                                ? 'bg-slate-800 text-white dark:bg-accent-600 shadow-md'
+                                : (cell.inMonth
+                                    ? 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/50'
+                                    : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
+                            class="flex min-h-14 sm:min-h-16 flex-col items-center justify-start rounded-xl py-1.5 px-1 transition">
+                        <span :class="(cell.isToday && cell.date !== activeDate) ? 'bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-300' : ''"
+                              class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold" x-text="cell.num"></span>
+                        <span class="mt-0.5 hidden sm:block w-full truncate px-1 text-[11px] leading-tight opacity-80"
+                              x-text="dayEvents(cell.date).length ? dayEvents(cell.date)[0].activity_time + ' ' + dayEvents(cell.date)[0].description : ''"></span>
+                        <span class="mt-auto flex items-center gap-0.5 h-2">
+                            <template x-for="i in dayDots(cell.date)" :key="i">
+                                <span class="h-1.5 w-1.5 rounded-full bg-accent-500"></span>
+                            </template>
+                            <span x-show="dayEvents(cell.date).length > 3" class="text-[10px] font-semibold text-slate-400"
+                                  x-text="'+' + (dayEvents(cell.date).length - 3)"></span>
+                        </span>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        {{-- Weekly strip (quick nav) --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="weekLabel"></p>
+                <div class="flex items-center gap-1">
+                    <button type="button" @click="shiftWeek(-1)" title="{{ __('Previous week') }}" aria-label="{{ __('Previous week') }}"
+                            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/50 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <button type="button" @click="shiftWeek(1)" title="{{ __('Next week') }}" aria-label="{{ __('Next week') }}"
+                            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/50 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                </div>
+            </div>
             <div class="grid grid-cols-7 gap-1 sm:gap-2" id="sales-strip">
                 <template x-for="day in weekDays" :key="day.date">
                     <button type="button" @click="selectDay(day.date)"
@@ -31,7 +74,11 @@
                             class="flex flex-col items-center rounded-xl py-2 sm:py-3 transition">
                         <span class="text-[11px] font-semibold uppercase tracking-wide opacity-70" x-text="day.name"></span>
                         <span class="text-lg sm:text-xl font-bold leading-tight" x-text="day.num"></span>
-                        <span x-show="day.isToday" class="mt-1 h-1.5 w-1.5 rounded-full bg-accent-500"></span>
+                        <span class="mt-1 flex items-center gap-0.5 h-1.5">
+                            <template x-for="i in dayDots(day.date)" :key="i">
+                                <span :class="day.date === activeDate ? 'bg-white/90' : 'bg-accent-500'" class="h-1.5 w-1.5 rounded-full"></span>
+                            </template>
+                        </span>
                     </button>
                 </template>
             </div>
@@ -39,6 +86,7 @@
 
         {{-- Event cards --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3" x-text="dayLabel"></p>
             <div x-show="loading" class="text-center text-sm text-slate-500 py-8">{{ __('Memuat jadwal...') }}</div>
             <div x-show="!loading && events.length === 0" x-cloak class="text-center py-8">
                 <p class="text-slate-500 text-sm mb-3">{{ __('Belum ada jadwal kunjungan hari ini.') }}</p>
@@ -154,9 +202,14 @@
             return {
                 apiUrl: document.getElementById('sales-schedule-root')?.dataset.apiUrl || '',
                 activeDate: @json($activeDate),
-                weekOffset: 0,
+                viewYear: null,
+                viewMonth: null,
+                monthCells: [],
+                monthLabel: '',
+                monthEvents: {},
                 weekDays: [],
                 weekLabel: '',
+                dayLabel: '',
                 events: [],
                 loading: false,
                 isModalOpen: {{ $errors->any() ? 'true' : 'false' }},
@@ -171,15 +224,13 @@
                         this.activeDate = urlDate;
                     }
                     this.modalDate = this.activeDate;
+                    const active = new Date(this.activeDate + 'T12:00:00');
+                    this.viewYear = active.getFullYear();
+                    this.viewMonth = active.getMonth();
+                    this.buildMonth();
                     this.buildWeek();
+                    this.fetchMonth();
                     this.fetchEvents();
-                },
-
-                mondayOf(date) {
-                    const d = new Date(date + 'T12:00:00');
-                    const dow = (d.getDay() + 6) % 7;
-                    d.setDate(d.getDate() - dow);
-                    return d;
                 },
 
                 fmt(date) {
@@ -189,34 +240,89 @@
                     return y + '-' + m + '-' + day;
                 },
 
+                mondayOf(date) {
+                    const d = new Date(date);
+                    d.setHours(12, 0, 0, 0);
+                    const dow = (d.getDay() + 6) % 7;
+                    d.setDate(d.getDate() - dow);
+                    return d;
+                },
+
+                buildMonth() {
+                    const first = new Date(this.viewYear, this.viewMonth, 1);
+                    const start = this.mondayOf(first);
+                    const todayStr = this.fmt(new Date());
+                    this.monthCells = [];
+                    for (let i = 0; i < 42; i++) {
+                        const d = new Date(start);
+                        d.setDate(d.getDate() + i);
+                        const date = this.fmt(d);
+                        this.monthCells.push({
+                            date,
+                            num: d.getDate(),
+                            inMonth: d.getMonth() === this.viewMonth,
+                            isToday: date === todayStr,
+                        });
+                    }
+                    this.monthLabel = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+                },
+
                 buildWeek() {
                     const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                    const todayStr = this.fmt(new Date());
-                    const monday = this.mondayOf(new Date(Date.now() + this.weekOffset * 7 * 86400000));
+                    const monday = this.mondayOf(new Date(this.activeDate + 'T12:00:00'));
                     this.weekDays = names.map((name, i) => {
                         const d = new Date(monday);
                         d.setDate(d.getDate() + i);
                         const date = this.fmt(d);
-                        return { date, name, num: d.getDate(), isToday: date === todayStr };
+                        return { date, name, num: d.getDate() };
                     });
-                    const first = this.weekDays[0];
-                    const last = this.weekDays[6];
                     const opt = { day: 'numeric', month: 'short' };
-                    const a = new Date(first.date + 'T12:00:00').toLocaleDateString('en-GB', opt);
-                    const b = new Date(last.date + 'T12:00:00').toLocaleDateString('en-GB', opt);
-                    const year = new Date(last.date + 'T12:00:00').getFullYear();
-                    this.weekLabel = a + ' – ' + b + ' ' + year;
+                    const a = new Date(this.weekDays[0].date + 'T12:00:00').toLocaleDateString('en-GB', opt);
+                    const b = new Date(this.weekDays[6].date + 'T12:00:00').toLocaleDateString('en-GB', opt);
+                    this.weekLabel = a + ' – ' + b;
+                    this.dayLabel = new Date(this.activeDate + 'T12:00:00')
+                        .toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
                 },
 
-                prevWeek() { this.weekOffset--; this.buildWeek(); },
-                nextWeek() { this.weekOffset++; this.buildWeek(); },
-                goToday() {
-                    this.weekOffset = 0;
-                    this.buildWeek();
-                    this.selectDay(this.fmt(new Date()));
+                prevMonth() {
+                    if (this.viewMonth === 0) { this.viewMonth = 11; this.viewYear--; }
+                    else { this.viewMonth--; }
+                    this.buildMonth();
+                    this.fetchMonth();
                 },
+
+                nextMonth() {
+                    if (this.viewMonth === 11) { this.viewMonth = 0; this.viewYear++; }
+                    else { this.viewMonth++; }
+                    this.buildMonth();
+                    this.fetchMonth();
+                },
+
+                goToday() {
+                    const now = new Date();
+                    this.viewYear = now.getFullYear();
+                    this.viewMonth = now.getMonth();
+                    this.buildMonth();
+                    this.fetchMonth();
+                    this.selectDay(this.fmt(now));
+                },
+
+                shiftWeek(dir) {
+                    const d = new Date(this.activeDate + 'T12:00:00');
+                    d.setDate(d.getDate() + dir * 7);
+                    this.selectDay(this.fmt(d));
+                },
+
                 selectDay(date) {
                     this.activeDate = date;
+                    const d = new Date(date + 'T12:00:00');
+                    if (d.getFullYear() !== this.viewYear || d.getMonth() !== this.viewMonth) {
+                        this.viewYear = d.getFullYear();
+                        this.viewMonth = d.getMonth();
+                        this.buildMonth();
+                        this.fetchMonth();
+                    }
+                    this.buildWeek();
                     this.fetchEvents();
                 },
 
@@ -224,9 +330,36 @@
                     this.loading = true;
                     fetch(this.apiUrl + '?date=' + encodeURIComponent(this.activeDate))
                         .then((r) => r.json())
-                        .then((data) => { this.events = Array.isArray(data) ? data : []; })
+                        .then((data) => {
+                            this.events = Array.isArray(data) ? data : [];
+                            this.monthEvents[this.activeDate] = this.events;
+                        })
                         .catch(() => { this.events = []; })
                         .finally(() => { this.loading = false; });
+                },
+
+                fetchMonth() {
+                    if (!this.monthCells.length) return;
+                    const start = this.monthCells[0].date;
+                    const end = this.monthCells[this.monthCells.length - 1].date;
+                    fetch(this.apiUrl + '?start=' + start + '&end=' + end)
+                        .then((r) => r.json())
+                        .then((data) => {
+                            const grouped = {};
+                            (Array.isArray(data) ? data : []).forEach((e) => {
+                                (grouped[e.date] = grouped[e.date] || []).push(e);
+                            });
+                            this.monthEvents = { ...this.monthEvents, ...grouped };
+                        })
+                        .catch(() => {});
+                },
+
+                dayEvents(date) {
+                    return this.monthEvents[date] || [];
+                },
+
+                dayDots(date) {
+                    return [0, 1, 2].filter((i) => (this.monthEvents[date] || []).length > i);
                 },
 
                 openModal(date) {

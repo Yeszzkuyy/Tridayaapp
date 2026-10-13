@@ -92,12 +92,29 @@ class SalesScheduleCalendarTest extends TestCase
         $this->assertContains($fu->id, collect($res->json())->pluck('id')->all());
     }
 
+    public function test_api_range_returns_flat_list_with_dates(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $this->makeVisit($sales, ['follow_up_date' => '2026-10-01', 'description' => 'Awal']);
+        $this->makeVisit($sales, ['follow_up_date' => '2026-10-28', 'description' => 'Akhir']);
+        $this->makeVisit($sales, ['follow_up_date' => '2026-11-15', 'description' => 'Luar']);
+
+        $res = $this->actingAs($sales)->getJson(route('sales.schedules.api', ['start' => '2026-09-29', 'end' => '2026-11-09']));
+        $res->assertOk();
+        $this->assertSame(['Awal', 'Akhir'], collect($res->json())->pluck('description')->all());
+        $this->assertSame('2026-10-01', $res->json()[0]['date']);
+
+        $this->actingAs($sales)->getJson(route('sales.schedules.api', ['start' => 'rusak', 'end' => '2026-11-09']))
+            ->assertStatus(422);
+    }
+
     public function test_index_renders_strip_and_modal(): void
     {
         $sales = $this->userWithRole('sales');
 
         $res = $this->actingAs($sales)->get(route('sales.schedules.index'));
         $res->assertOk();
+        $res->assertSee('id="sales-month-grid"', false);
         $res->assertSee('id="sales-strip"', false);
         $res->assertSee(route('sales.schedules.api'), false);
         $res->assertSee(route('sales.follow-ups.store'), false);
