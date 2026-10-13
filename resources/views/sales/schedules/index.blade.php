@@ -66,8 +66,8 @@
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
                                     <button type="button" @click.stop="openDrawer(ev)"
-                                            class="block w-full truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:ring-1 hover:ring-accent-500"
-                                            :class="cell.date === activeDate ? 'bg-white/20 text-white' : 'bg-accent-500/10 text-slate-600 dark:text-slate-300'"
+                                            class="block w-full truncate px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:ring-1 hover:ring-accent-500"
+                                            :class="cardColor(ev.id).wrap + ' ' + cardColor(ev.id).time"
                                             x-text="(ev.activity_time || '') + ' ' + ev.description"></button>
                                 </template>
                             </span>
@@ -460,14 +460,14 @@
                 leadId: @json((string) old('lead_id', '')),
                 leads: window.__scheduleLeads || [],
                 cardPalette: {
-                    blue:   { wrap: 'border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/40 rounded-r-lg',
-                              time: 'text-blue-600 dark:text-blue-300' },
-                    violet: { wrap: 'border-l-4 border-violet-500 bg-violet-50 dark:bg-violet-950/40 rounded-r-lg',
-                              time: 'text-violet-600 dark:text-violet-300' },
-                    emerald:{ wrap: 'border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 rounded-r-lg',
-                              time: 'text-emerald-600 dark:text-emerald-300' },
-                    amber:  { wrap: 'border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/40 rounded-r-lg',
-                              time: 'text-amber-600 dark:text-amber-300' },
+                    blue:   { wrap: 'border-l-[3px] border-blue-500 bg-blue-50 dark:bg-blue-500/20 rounded-r shadow-sm',
+                              time: 'text-blue-600 dark:text-blue-300 text-xs leading-tight font-semibold' },
+                    violet: { wrap: 'border-l-[3px] border-violet-500 bg-violet-50 dark:bg-violet-500/20 rounded-r shadow-sm',
+                              time: 'text-violet-600 dark:text-violet-300 text-xs leading-tight font-semibold' },
+                    emerald:{ wrap: 'border-l-[3px] border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 rounded-r shadow-sm',
+                              time: 'text-emerald-600 dark:text-emerald-300 text-xs leading-tight font-semibold' },
+                    amber:  { wrap: 'border-l-[3px] border-amber-500 bg-amber-50 dark:bg-amber-500/20 rounded-r shadow-sm',
+                              time: 'text-amber-600 dark:text-amber-300 text-xs leading-tight font-semibold' },
                 },
 
                 cardColor(id) {
