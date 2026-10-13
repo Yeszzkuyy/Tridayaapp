@@ -10,9 +10,6 @@
                            title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}">
                 <x-icon name="file-text" class="h-5 w-5" />
             </x-icon-button>
-            <x-icon-button icon="import" type="button"
-                           title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
-                           onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),s=c&&c.querySelector('[data-report-survey-select]'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]');if(!c||!r)return;if(s)s.value='';if(h)h.value='';if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__','');r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload-open'))})()" />
             <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" />
         </div>
     </div>
@@ -162,12 +159,6 @@
         </div>
     </div>
 
-    @php
-        $reportSurveyOptions = collect($surveys->items())->map(fn ($s) => [
-            'id' => $s->id,
-            'name' => ($s->project?->project_name ?? 'Survey #' . $s->id) . ' — ' . ($s->project?->customer?->name ?? ''),
-        ])->values();
-    @endphp
-    @include('teknisi.surveys._report-modal', ['reportSurveyOptions' => $reportSurveyOptions])
+    @include('teknisi.surveys._report-modal')
 </div>
 </x-app-layout>

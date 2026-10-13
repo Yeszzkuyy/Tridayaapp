@@ -211,14 +211,10 @@ class SurveyReportTest extends TestCase
 
         $this->assertStringContainsString('No survey data yet.', $html);
         $this->assertStringContainsString('Create a survey first, then upload the PDF report from its row.', $html);
-        $this->assertStringContainsString('No surveys yet. Create a survey first.', $html);
-        // Tombol header "Create Report" & "Upload PDF" selalu tampil.
+        // Template report tetap tersedia di header, sedangkan upload kontekstual.
         $this->assertStringContainsString(config('services.survey-report-template'), $html);
-        $this->assertStringContainsString('report-upload-open', $html);
-        // Trigger memakai event browser native agar tetap berfungsi setelah
-        // navigasi Livewire/wire:navigate.
-        $this->assertStringContainsString("new CustomEvent('report-upload-open')", $html);
-        $this->assertStringContainsString('data-survey-report-modal', $html);
+        // Upload dipicu dari baris/detail agar Survey selalu sudah diketahui.
+        $this->assertStringNotContainsString('report-upload-open', $html);
     }
 
     public function test_index_shows_correct_report_actions(): void
@@ -242,9 +238,6 @@ class SurveyReportTest extends TestCase
         $this->assertStringContainsString(route('teknisi.surveys.report.view', $with), $html);
         $this->assertStringContainsString(route('teknisi.surveys.report.download', $with), $html);
 
-        // Tombol header Upload PDF + dropdown pilihan survey di modal.
-        $this->assertStringContainsString('report-upload-open', $html);
-        $this->assertStringContainsString('Select Survey', $html);
         // Trigger baris membawa ID survey melalui CustomEvent native.
         $this->assertStringContainsString("new CustomEvent('report-upload'", $html);
         $this->assertStringContainsString('data-report-upload-form', $html);

@@ -186,5 +186,9 @@
     "Choose PDF file (max 5 MB)": "Pilih file PDF (maks 5 MB)",
     "PDF file only, maximum 5 MB.": "Hanya file PDF, maksimal 5 MB.",
     "Uploading...": "Mengunggah...",
-    "Select Survey": "Pilih Survey"
+    "Select Survey": "Pilih Survey",
+    "Report ready to review": "Laporan siap ditinjau",
+    "The private PDF report is stored securely.": "Laporan PDF privat tersimpan dengan aman.",
+    "No PDF report yet": "Belum ada laporan PDF",
+    "Create the report from the template, then upload the completed PDF here.": "Buat laporan dari template, lalu unggah PDF yang sudah selesai di sini."
 }

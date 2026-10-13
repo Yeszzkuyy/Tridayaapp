@@ -53,7 +53,7 @@ class SurveyController extends Controller
 
         Survey::create($validated);
 
-        return redirect()->route('teknisi.surveys.index')
+        return redirect()->route('teknisi.surveys.show', $survey)
             ->with('success', 'Survey berhasil ditambahkan.');
     }
 

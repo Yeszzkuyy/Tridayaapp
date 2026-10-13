@@ -95,47 +95,59 @@
             <hr class="border-slate-200 dark:border-slate-600">
 
             {{-- Laporan Survey (PDF) --}}
-            <div>
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p class="text-xs uppercase tracking-wider text-slate-400">{{ __('Survey Report File') }}</p>
-                    <div class="flex items-center gap-2">
+            <div class="overflow-hidden rounded-2xl border border-accent-200 bg-accent-50/60 dark:border-accent-500/30 dark:bg-accent-500/10">
+                <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-600 text-white shadow-lg shadow-accent-500/20">
+                            <x-icon name="file-text" class="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">{{ __('Survey Report File') }}</p>
+                            @if($survey->hasReport())
+                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ __('Report ready to review') }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('The private PDF report is stored securely.') }}</p>
+                            @else
+                                <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ __('No PDF report yet') }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Create the report from the template, then upload the completed PDF here.') }}</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="flex shrink-0 items-center gap-2 self-end sm:self-center">
                         @if($survey->hasReport())
                             <a href="{{ route('teknisi.surveys.report.view', $survey) }}" target="_blank" rel="noopener"
                                title="{{ __('View Report') }}" aria-label="{{ __('View Report') }}"
-                               class="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
-                                <x-icon name="eye" class="w-4 h-4" />
+                               class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 transition-all duration-300 hover:scale-105 hover:bg-indigo-100 active:scale-95">
+                                <x-icon name="eye" class="h-5 w-5" />
                             </a>
                             <a href="{{ route('teknisi.surveys.report.download', $survey) }}"
                                title="{{ __('Download Report') }}" aria-label="{{ __('Download Report') }}"
-                               class="p-2 rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition">
-                                <x-icon name="file-text" class="w-4 h-4" />
+                               class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-700 transition-all duration-300 hover:scale-105 hover:bg-green-200 active:scale-95">
+                                <x-icon name="file-text" class="h-5 w-5" />
                             </a>
                             @can('manage-technician')
-                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),s=c&&c.querySelector('[data-report-survey-select]'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(s)s.value=id;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
+                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
                                         title="{{ __('Replace Report') }}" aria-label="{{ __('Replace Report') }}"
-                                        class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition">
-                                    <x-icon name="edit" class="w-4 h-4" />
+                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700 transition-all duration-300 hover:scale-105 hover:bg-blue-200 active:scale-95">
+                                    <x-icon name="edit" class="h-5 w-5" />
                                 </button>
                             @endcan
                         @else
                             <a href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
                                title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}"
-                               class="p-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
-                                <x-icon name="file-text" class="w-4 h-4" />
+                               class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 transition-all duration-300 hover:scale-105 hover:bg-indigo-100 active:scale-95">
+                                <x-icon name="file-text" class="h-5 w-5" />
                             </a>
                             @can('manage-technician')
-                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),s=c&&c.querySelector('[data-report-survey-select]'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(s)s.value=id;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
+                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
                                         title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
-                                        class="p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition">
-                                    <x-icon name="folder" class="w-4 h-4" />
+                                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-accent-600 text-white transition-all duration-300 hover:scale-105 hover:bg-accent-500 active:scale-95">
+                                    <x-icon name="import" class="h-5 w-5" />
                                 </button>
                             @endcan
                         @endif
                     </div>
                 </div>
-                <p class="mt-1 text-slate-800 dark:text-slate-100">
-                    {{ $survey->hasReport() ? __('Report uploaded.') : __('No report uploaded yet.') }}
-                </p>
             </div>
         </div>
     </div>
