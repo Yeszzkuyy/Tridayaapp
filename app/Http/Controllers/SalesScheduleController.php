@@ -125,6 +125,8 @@ class SalesScheduleController extends Controller
                 'activity_time' => $fu->activity_time ? substr($fu->activity_time, 0, 5) : null,
                 'location' => $fu->location,
                 'customer' => $customerName,
+                'customer_id' => $fu->customer_id,
+                'lead_id' => $fu->lead_id,
                 'creator' => $fu->creator?->name,
                 'completed' => $fu->completed_at !== null,
                 'url' => $fu->lead_id
