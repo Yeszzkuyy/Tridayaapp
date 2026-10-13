@@ -10,6 +10,9 @@
                            title="{{ __('Create Report') }}" aria-label="{{ __('Create Report') }}">
                 <x-icon name="file-text" class="h-5 w-5" />
             </x-icon-button>
+            <x-icon-button icon="import" type="button"
+                           title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
+                           @click="$dispatch('report-upload-open')" />
             <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" />
         </div>
     </div>
@@ -159,6 +162,12 @@
         </div>
     </div>
 
-    @include('teknisi.surveys._report-modal')
+    @php
+        $reportSurveyOptions = collect($surveys->items())->map(fn ($s) => [
+            'id' => $s->id,
+            'name' => ($s->project?->project_name ?? 'Survey #' . $s->id) . ' — ' . ($s->project?->customer?->name ?? ''),
+        ])->values();
+    @endphp
+    @include('teknisi.surveys._report-modal', ['reportSurveyOptions' => $reportSurveyOptions])
 </div>
 </x-app-layout>
