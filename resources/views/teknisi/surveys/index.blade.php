@@ -59,10 +59,16 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($surveys as $survey)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-6 py-4 font-semibold text-slate-800 dark:text-slate-100">{{ $survey->project?->project_name ?? '-' }}</td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $survey->project?->customer?->name ?? '-' }}</td>
+                            <td class="px-6 py-4 font-semibold text-slate-800 dark:text-slate-100">
+                                <span class="block max-w-[220px] truncate" title="{{ $survey->project?->project_name ?? '' }}">{{ $survey->project?->project_name ?? '-' }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                <span class="block max-w-[180px] truncate" title="{{ $survey->project?->customer?->name ?? '' }}">{{ $survey->project?->customer?->name ?? '-' }}</span>
+                            </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $survey->survey_date ? \Carbon\Carbon::parse($survey->survey_date)->format('d M Y') : '-' }}</td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $survey->location ?? '-' }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                <span class="block max-w-[180px] truncate" title="{{ $survey->location ?? '' }}">{{ $survey->location ?? '-' }}</span>
+                            </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $survey->pic ?? '-' }}</td>
                             <td class="px-6 py-4">
                                 @php
