@@ -86,7 +86,7 @@ class SalesScheduleController extends Controller
      */
     public function getSchedulesApi(Request $request)
     {
-        $query = FollowUp::with(['customer', 'lead.customer', 'creator'])
+        $query = FollowUp::with(['customer', 'lead.customer', 'creator.roles', 'customer.contacts'])
             ->where('type', 'meeting');
 
         if ($request->filled('start') && $request->filled('end')) {
@@ -118,6 +118,12 @@ class SalesScheduleController extends Controller
                 ?? $fu->lead?->customer?->name
                 ?? ($fu->lead_id ? 'Lead #'.$fu->lead_id : __('Jadwal'));
 
+            // PIC utama customer (fallback kontak pertama) untuk aksi cepat.
+            $contact = $fu->customer?->contacts?->sortByDesc('is_primary')->first();
+            $wa = preg_replace('/\D/', '', (string) ($contact?->whatsapp ?: $contact?->phone));
+            $wa = $wa === '' ? null : (str_starts_with($wa, '0') ? '62'.substr($wa, 1) : $wa);
+            $phone = preg_replace('/[^0-9+]/', '', (string) ($contact?->phone ?: $contact?->whatsapp));
+
             return [
                 'id' => $fu->id,
                 'date' => $fu->follow_up_date->toDateString(),
@@ -128,6 +134,12 @@ class SalesScheduleController extends Controller
                 'customer_id' => $fu->customer_id,
                 'lead_id' => $fu->lead_id,
                 'creator' => $fu->creator?->name,
+                'creator_avatar' => $fu->creator?->avatar ? asset('storage/'.$fu->creator->avatar) : null,
+                'creator_role' => $fu->creator?->roles->first() ? \Illuminate\Support\Str::headline($fu->creator->roles->first()->name) : null,
+                'pic_name' => $contact?->name,
+                'pic_position' => $contact?->position,
+                'pic_phone' => $phone === '' ? null : $phone,
+                'pic_whatsapp' => $wa,
                 'completed' => $fu->completed_at !== null,
                 'url' => $fu->lead_id
                     ? route('leads.show', $fu->lead_id)
