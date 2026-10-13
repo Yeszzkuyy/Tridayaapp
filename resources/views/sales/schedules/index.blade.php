@@ -449,14 +449,14 @@
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
-                            <label for="su-activity_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Time') }}</label>
+                            <label for="su-activity_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Time') }} <span class="text-xs font-normal text-slate-400">(WIB)</span></label>
                             <input id="su-activity_time" type="time" name="activity_time" x-model="modalTime"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                            <div class="mt-2 flex flex-wrap gap-1.5">
-                                <template x-for="t in ['09:00','10:00','13:00','15:00','16:00']" :key="t">
+                            <div class="mt-2 grid max-h-40 grid-cols-3 gap-1.5 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-600">
+                                <template x-for="t in timeSlots" :key="t">
                                     <button type="button" @click="modalTime = t"
                                             :class="modalTime === t ? 'bg-slate-800 text-white dark:bg-accent-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'"
-                                            class="rounded-full px-3 py-1 text-xs font-semibold tabular-nums transition" x-text="t"></button>
+                                            class="rounded-lg px-2 py-1.5 text-xs font-semibold tabular-nums transition" x-text="t"></button>
                                 </template>
                             </div>
                         </div>
@@ -532,6 +532,13 @@
                 customerId: @json((string) old('customer_id', '')),
                 leadId: @json((string) old('lead_id', '')),
                 leads: window.__scheduleLeads || [],
+                timeSlots: (() => {
+                    const slots = [];
+                    for (let m = 8 * 60; m <= 18 * 60; m += 30) {
+                        slots.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'));
+                    }
+                    return slots;
+                })(),
                 cardPalette: {
                     blue:   { wrap: 'border-l-[3px] border-blue-500 bg-blue-50 dark:bg-blue-500/20 rounded-r shadow-sm',
                               time: 'text-blue-600 dark:text-blue-300 text-xs leading-tight font-semibold' },
