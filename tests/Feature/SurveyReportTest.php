@@ -45,6 +45,7 @@ class SurveyReportTest extends TestCase
         ]);
 
         return Survey::create(array_merge([
+            'title' => 'Survey Uji',
             'project_id' => $project->id,
             'location' => 'Jakarta',
             'status' => 'scheduled',
@@ -328,6 +329,8 @@ class SurveyReportTest extends TestCase
         $project = $this->makeProject('Baru');
 
         $this->post(route('teknisi.surveys.store'), [
+            'title' => 'Survey Kebutuhan CCTV',
+            'sales_user_id' => $technician->id,
             'project_id' => $project->id,
             'survey_date' => '2026-10-13',
             'location' => 'Jakarta',
@@ -335,9 +338,44 @@ class SurveyReportTest extends TestCase
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $survey = Survey::where('project_id', $project->id)->firstOrFail();
+        $this->assertSame('Survey Kebutuhan CCTV', $survey->title);
         $this->assertSame(Survey::STATUS_COMPLETED, $survey->status);
         $this->assertNotNull($survey->report_file);
         Storage::disk('private')->assertExists($survey->report_file);
+    }
+
+    public function test_create_survey_without_project_is_allowed(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+        $customer = Customer::create(['name' => 'PT Tanpa Project']);
+
+        // Survey bisa dibuat sebelum project ada: cukup judul + sales.
+        $this->post(route('teknisi.surveys.store'), [
+            'title' => 'Survey Awal Lapangan',
+            'customer_id' => $customer->id,
+            'sales_user_id' => $technician->id,
+            'report' => UploadedFile::fake()->create('laporan.pdf', 100, 'application/pdf'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $survey = Survey::where('title', 'Survey Awal Lapangan')->firstOrFail();
+        $this->assertNull($survey->project_id);
+        $this->assertSame($customer->id, $survey->customer_id);
+        $this->assertSame($technician->id, $survey->sales_user_id);
+    }
+
+    public function test_create_survey_requires_title_and_sales(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+
+        $this->post(route('teknisi.surveys.store'), [
+            'report' => UploadedFile::fake()->create('laporan.pdf', 100, 'application/pdf'),
+        ])->assertSessionHasErrors(['title', 'sales_user_id']);
+
+        $this->assertDatabaseCount('surveys', 0);
     }
 
     public function test_create_survey_rejects_missing_report(): void
@@ -348,6 +386,8 @@ class SurveyReportTest extends TestCase
         $project = $this->makeProject('TanpaFile');
 
         $this->post(route('teknisi.surveys.store'), [
+            'title' => 'Survey Tanpa File',
+            'sales_user_id' => $technician->id,
             'project_id' => $project->id,
         ])->assertSessionHasErrors('report');
 
@@ -362,11 +402,12 @@ class SurveyReportTest extends TestCase
         $project = $this->makeProject('Dokumen');
 
         $this->post(route('teknisi.surveys.store'), [
-            'project_id' => $project->id,
+            'title' => 'Survey Dokumen',
+            'sales_user_id' => $technician->id,
             'report' => UploadedFile::fake()->create('boq.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('surveys', ['project_id' => $project->id]);
+        $this->assertDatabaseHas('surveys', ['title' => 'Survey Dokumen']);
     }
 
     public function test_create_rejects_oversized_report(): void
@@ -377,11 +418,50 @@ class SurveyReportTest extends TestCase
         $project = $this->makeProject('Besar');
 
         $this->post(route('teknisi.surveys.store'), [
+            'title' => 'Survey Besar',
+            'sales_user_id' => $technician->id,
             'project_id' => $project->id,
             'report' => UploadedFile::fake()->create('besar.pdf', 6000, 'application/pdf'),
         ])->assertSessionHasErrors('report');
 
         $this->assertDatabaseMissing('surveys', ['project_id' => $project->id]);
+    }
+
+    public function test_sales_sees_survey_via_sales_user_id_without_project(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $owner = User::factory()->create();
+        $owner->assignRole('sales');
+        $other = User::factory()->create();
+        $other->assignRole('sales');
+
+        // Survey tanpa project (dibuat sebelum project ada), pemilik langsung via sales_user_id.
+        $mine = Survey::create(['title' => 'Survey Milik Saya', 'sales_user_id' => $owner->id, 'status' => 'completed']);
+        $theirs = Survey::create(['title' => 'Survey Orang Lain', 'sales_user_id' => $other->id, 'status' => 'completed']);
+
+        $html = $this->actingAs($owner)->get(route('teknisi.surveys.index'))->assertOk()->getContent();
+        $this->assertStringContainsString($mine->title, $html);
+        $this->assertStringNotContainsString($theirs->title, $html);
+
+        // Detail juga hanya untuk pemiliknya.
+        $this->get(route('teknisi.surveys.show', $mine))->assertOk();
+        $this->get(route('teknisi.surveys.show', $theirs))->assertForbidden();
+    }
+
+    public function test_index_searches_by_title(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        Survey::create(['title' => 'Survey Kebutuhan CCTV', 'sales_user_id' => $technician->id]);
+        Survey::create(['title' => 'Survey Kebutuhan Jaringan', 'sales_user_id' => $technician->id]);
+
+        $html = $this->actingAs($technician)
+            ->get(route('teknisi.surveys.index', ['q' => 'CCTV']))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Survey Kebutuhan CCTV', $html);
+        $this->assertStringNotContainsString('Survey Kebutuhan Jaringan', $html);
     }
 
     public function test_sales_sees_only_owned_surveys(): void

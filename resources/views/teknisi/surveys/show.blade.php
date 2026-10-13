@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Detail Survey') }}</h1>
-            <p class="text-slate-500 mt-1 max-w-[560px] truncate" title="{{ $survey->project?->project_name ?? '' }}">{{ $survey->project?->project_name ?? '-' }}</p>
+            <p class="text-slate-500 mt-1 max-w-[560px] truncate" title="{{ $survey->title ?? '' }}">{{ $survey->title ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
             <a href="{{ route('teknisi.surveys.edit', $survey) }}"
@@ -35,16 +35,22 @@
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {{-- Project --}}
+                {{-- Judul --}}
                 <div>
-                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">Project</p>
-                    <p class="text-slate-800 dark:text-slate-100 font-semibold break-words">{{ $survey->project?->project_name ?? '-' }}</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Judul') }}</p>
+                    <p class="text-slate-800 dark:text-slate-100 font-semibold break-words">{{ $survey->title ?? '-' }}</p>
                 </div>
 
                 {{-- Customer --}}
                 <div>
-                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">Customer</p>
-                    <p class="text-slate-800 dark:text-slate-100 break-words">{{ $survey->project?->customer?->name ?? '-' }}</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Customer') }}</p>
+                    <p class="text-slate-800 dark:text-slate-100 break-words">{{ $survey->customer?->name ?? '-' }}</p>
+                </div>
+
+                {{-- Sales --}}
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Sales') }}</p>
+                    <p class="text-slate-800 dark:text-slate-100 break-words">{{ $survey->sales?->name ?? '-' }}</p>
                 </div>
 
                 {{-- Tanggal Survey --}}

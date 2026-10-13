@@ -998,5 +998,17 @@
     "Gagal menyimpan file laporan. Silakan coba lagi.": "Failed to store the report file. Please try again.",
     "Gagal menyimpan laporan. Coba lagi.": "Failed to save the report. Please try again.",
     "Laporan Survey (PDF)": "Survey Report (PDF)",
-    "Gagal membuat survey. Coba lagi.": "Failed to create the survey. Please try again."
+    "Gagal membuat survey. Coba lagi.": "Failed to create the survey. Please try again.",
+    "Judul": "Title",
+    "Judul Survey": "Survey Title",
+    "Pilih Sales": "Select Sales",
+    "Tanpa Customer": "No Customer",
+    "Belum ada project": "No project yet",
+    "Opsional — pilih bila project sudah ada.": "Optional — select if the project already exists.",
+    "Contoh: Survey Kebutuhan CCTV Gedung A": "Example: Building A CCTV Needs Survey",
+    "Isi data survey — judul dan sales wajib diisi": "Fill in the survey data — title and sales are required",
+    "Semua data survey lapangan": "All field survey data",
+    "Semua Sales": "All Sales",
+    "Cari": "Search",
+    "Cari judul...": "Search title..."
 }
