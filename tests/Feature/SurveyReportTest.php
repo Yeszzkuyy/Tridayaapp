@@ -364,4 +364,102 @@ class SurveyReportTest extends TestCase
 
         $this->assertDatabaseMissing('surveys', ['project_id' => $project->id]);
     }
+
+    public function test_sales_sees_only_owned_surveys(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $owner = User::factory()->create();
+        $owner->assignRole('sales');
+        $other = User::factory()->create();
+        $other->assignRole('sales');
+        $this->actingAs($owner);
+
+        $mine = $this->makeProject('Milik');
+        $mine->update(['sales_user_id' => $owner->id]);
+        $s1 = Survey::create(['project_id' => $mine->id, 'status' => 'completed']);
+        $theirs = $this->makeProject('Lain');
+        $theirs->update(['sales_user_id' => $other->id]);
+        $s2 = Survey::create(['project_id' => $theirs->id, 'status' => 'completed']);
+
+        $html = $this->get(route('teknisi.surveys.index'))->assertOk()->getContent();
+        $this->assertStringContainsString(route('teknisi.surveys.show', $s1), $html);
+        $this->assertStringNotContainsString(route('teknisi.surveys.show', $s2), $html);
+    }
+
+    public function test_sales_cannot_access_survey_of_other_owner(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $owner = User::factory()->create();
+        $owner->assignRole('sales');
+        $other = User::factory()->create();
+        $other->assignRole('sales');
+        $this->actingAs($other);
+
+        $project = $this->makeProject('Milik Orang Lain');
+        $project->update(['sales_user_id' => $owner->id]);
+        $survey = Survey::create(['project_id' => $project->id, 'status' => 'completed']);
+        $path = 'surveys/'.$survey->id.'/reports/x.pdf';
+        Storage::disk('private')->put($path, 'pdf');
+        $survey->update(['report_file' => $path, 'status' => 'completed']);
+
+        $this->get(route('teknisi.surveys.show', $survey))->assertForbidden();
+        $this->get(route('teknisi.surveys.report.view', $survey))->assertForbidden();
+        $this->get(route('teknisi.surveys.report.download', $survey))->assertForbidden();
+    }
+
+    public function test_sales_owner_can_view_and_download_report(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $this->actingAs($sales);
+
+        $project = $this->makeProject('Milik Saya');
+        $project->update(['sales_user_id' => $sales->id]);
+        $survey = Survey::create(['project_id' => $project->id]);
+        $path = 'surveys/'.$survey->id.'/reports/x.pdf';
+        Storage::disk('private')->put($path, 'pdf');
+        $survey->update(['report_file' => $path, 'report_file_name' => 'lap.pdf', 'status' => 'completed']);
+
+        $this->get(route('teknisi.surveys.show', $survey))->assertOk();
+        $this->get(route('teknisi.surveys.report.view', $survey))->assertOk();
+        $this->get(route('teknisi.surveys.report.download', $survey))->assertOk();
+    }
+
+    public function test_sales_cannot_upload_or_edit_survey(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $this->actingAs($sales);
+
+        $project = $this->makeProject('Milik');
+        $project->update(['sales_user_id' => $sales->id]);
+        $survey = Survey::create(['project_id' => $project->id]);
+
+        $this->post(route('teknisi.surveys.report.upload', $survey), [
+            'report' => UploadedFile::fake()->create('a.pdf', 100, 'application/pdf'),
+        ])->assertForbidden();
+        $this->get(route('teknisi.surveys.edit', $survey))->assertForbidden();
+        $this->get(route('teknisi.surveys.create'))->assertForbidden();
+    }
+
+    public function test_admin_with_view_sales_not_unlocked(): void
+    {
+        Storage::fake('private');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin'); // punya view-sales tapi bukan role sales
+        $this->actingAs($admin);
+
+        $project = $this->makeProject('Admin');
+        $project->update(['sales_user_id' => $admin->id]);
+        Survey::create(['project_id' => $project->id]);
+
+        $this->get(route('teknisi.surveys.index'))->assertForbidden();
+    }
 }

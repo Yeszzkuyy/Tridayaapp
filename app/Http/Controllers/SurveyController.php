@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Survey;
+use App\Models\User;
 use App\Rules\SecureFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,14 @@ class SurveyController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $query = Survey::with('project.customer')->latest();
+
+        // Sales (tanpa izin teknisi) hanya melihat survey project miliknya (read-only).
+        if (! $user?->can('view-technician')) {
+            abort_unless($this->isSalesRole($user), 403);
+            $query->whereHas('project', fn ($q) => $q->where('sales_user_id', $user->id));
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -106,8 +114,10 @@ class SurveyController extends Controller
             ->with('success', 'Survey berhasil ditambahkan.');
     }
 
-    public function show(Survey $survey)
+    public function show(Request $request, Survey $survey)
     {
+        $this->guardRead($request->user(), $survey);
+
         $survey->load('project.customer');
 
         return view('teknisi.surveys.show', compact('survey'));
@@ -221,7 +231,7 @@ class SurveyController extends Controller
      */
     public function viewReport(Request $request, Survey $survey)
     {
-        abort_unless($request->user()?->can('view-technician'), 403);
+        $this->guardRead($request->user(), $survey);
 
         abort_if(! $survey->hasReport(), 404);
 
@@ -247,7 +257,7 @@ class SurveyController extends Controller
      */
     public function downloadReport(Request $request, Survey $survey)
     {
-        abort_unless($request->user()?->can('view-technician'), 403);
+        $this->guardRead($request->user(), $survey);
 
         abort_if(! $survey->hasReport(), 404);
 
@@ -268,5 +278,32 @@ class SurveyController extends Controller
     {
         return $survey->report_file_name
             ?: 'Survey-Report-'.$survey->id.'.pdf';
+    }
+
+    /**
+     * Izin baca survey.
+     * Pemegang izin teknisi: penuh. Sales (sales/sales-{pt}): hanya survey
+     * project yang dimiliki (project.sales_user_id = user). Read-only.
+     */
+    private function guardRead(?User $user, Survey $survey): void
+    {
+        abort_unless($user !== null, 401);
+
+        if ($user->can('view-technician')) {
+            return;
+        }
+
+        abort_unless($this->isSalesRole($user) && (int) $survey->project?->sales_user_id === (int) $user->id, 403);
+    }
+
+    /**
+     * Apakah user berrole sales atau sales-{pt}.
+     */
+    private function isSalesRole(?User $user): bool
+    {
+        return $user !== null && $user->roles()
+            ->where('name', 'sales')
+            ->orWhere('name', 'like', 'sales-%')
+            ->exists();
     }
 }

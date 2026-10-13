@@ -13,6 +13,8 @@ class Project extends Model
 
     protected $fillable = [
         'customer_id',
+        'sales_user_id',
+        'teknisi_user_id',
         'account_manager_id',
         'work_type_id',
         'project_status_id',
