@@ -53,21 +53,22 @@
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 py-1" x-text="name"></span>
                     </template>
                     <template x-for="cell in monthCells" :key="cell.date">
-                        <button type="button" @click="createOn(cell.date)"
-                                :title="canWrite ? '{{ __('Add visit') }}' : dayEvents(cell.date).length + ' {{ __('visits') }}'"
+                        <div @click="createOn(cell.date)" @keydown.enter="createOn(cell.date)" tabindex="0" role="button"
+                                :aria-label="dayEvents(cell.date).length + ' {{ __('visits') }}'"
                                 :class="cell.date === activeDate
                                     ? 'bg-slate-800 text-white shadow-md dark:bg-accent-600'
                                     : (cell.inMonth
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
-                                class="group flex min-h-20 sm:min-h-28 flex-col items-center justify-start rounded-xl py-1.5 px-1 transition active:scale-95">
+                                class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                             <span :class="cell.isToday ? (cell.date === activeDate ? 'bg-white/25 text-white' : 'bg-accent-500/15 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200') : ''"
-                                  class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold tabular-nums transition-transform duration-200 hover:scale-125" x-text="cell.num"></span>
+                                  class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
-                                    <span class="block truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight"
-                                          :class="cell.date === activeDate ? 'bg-white/20 text-white' : 'bg-accent-500/10 text-slate-600 dark:text-slate-300'"
-                                          x-text="(ev.activity_time || '') + ' ' + ev.description"></span>
+                                    <button type="button" @click.stop="openDrawer(ev)"
+                                            class="block w-full truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:ring-1 hover:ring-accent-500"
+                                            :class="cell.date === activeDate ? 'bg-white/20 text-white' : 'bg-accent-500/10 text-slate-600 dark:text-slate-300'"
+                                            x-text="(ev.activity_time || '') + ' ' + ev.description"></button>
                                 </template>
                             </span>
                             <span class="mt-auto flex items-center gap-1 h-2.5 pt-0.5">
@@ -77,7 +78,7 @@
                                 <span x-show="dayEvents(cell.date).length > 3" class="text-[10px] font-semibold tabular-nums opacity-70"
                                       x-text="'+' + (dayEvents(cell.date).length - 3)"></span>
                             </span>
-                        </button>
+                        </div>
                     </template>
                 </div>
             </div>
@@ -117,7 +118,7 @@
                     <div :class="day.date === activeDate ? 'rounded-xl bg-slate-50 dark:bg-slate-700/40 -mx-1 px-1 py-1' : 'py-1'">
                         <button type="button" @click="gotoDay(day.date)" class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-slate-100 dark:hover:bg-slate-700/50">
                             <span :class="day.isToday ? 'bg-accent-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200'"
-                                  class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl leading-none transition-transform duration-200 hover:scale-110">
+                                  class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl leading-none">
                                 <span class="text-[9px] font-bold uppercase" x-text="day.name"></span>
                                 <span class="text-sm font-bold tabular-nums" x-text="day.num"></span>
                             </span>

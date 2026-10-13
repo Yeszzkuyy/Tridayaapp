@@ -161,6 +161,7 @@ class SalesScheduleCalendarTest extends TestCase
         $res->assertSee('id="sales-month-grid"', false);
         $res->assertSee('id="sales-view-switcher"', false);
         $res->assertSee('id="sales-week-list"', false);
+        $res->assertSee('openDrawer(ev)', false);
         $res->assertSee(route('sales.schedules.api'), false);
         $res->assertSee(route('sales.follow-ups.store'), false);
     }
