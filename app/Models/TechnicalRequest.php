@@ -57,6 +57,14 @@ class TechnicalRequest extends Model
         return $this->belongsTo(User::class, 'assigned_technician_id');
     }
 
+    /**
+     * Survey yang lahir dari request ini (maksimal satu — dijamin unik di DB).
+     */
+    public function survey()
+    {
+        return $this->hasOne(Survey::class);
+    }
+
     public static function typeLabel(string $type): string
     {
         return match ($type) {

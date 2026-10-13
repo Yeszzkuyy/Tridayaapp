@@ -99,12 +99,12 @@
                     @error('survey_data') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Report file (wajib) --}}
+                {{-- Report file (opsional — boleh menyusul setelah survey dikerjakan) --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Laporan Survey (PDF)') }} <span class="text-red-500">*</span></label>
-                    <input type="file" name="report" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.txt,.csv"
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Laporan Survey (PDF)') }}</label>
+                    <input type="file" name="report" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.txt,.csv"
                            class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium">
-                    <p class="mt-2 text-xs text-slate-400">{{ __('PDF or common documents — max 5 MB. Upload is required.') }}</p>
+                    <p class="mt-2 text-xs text-slate-400">{{ __('PDF or common documents — max 5 MB. Can be uploaded later from the survey detail.') }}</p>
                     @error('report') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>

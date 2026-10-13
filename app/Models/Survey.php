@@ -10,9 +10,9 @@ class Survey extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'title', 'project_id', 'customer_id', 'sales_user_id', 'sales_request', 'survey_date',
-        'location', 'pic', 'survey_data', 'documentation', 'survey_report',
-        'report_file', 'report_file_name', 'status', 'notes',
+        'title', 'project_id', 'customer_id', 'sales_user_id', 'technical_request_id',
+        'sales_request', 'survey_date', 'location', 'pic', 'survey_data', 'documentation',
+        'survey_report', 'report_file', 'report_file_name', 'status', 'notes',
     ];
 
     /**
@@ -46,5 +46,10 @@ class Survey extends Model
     public function sales()
     {
         return $this->belongsTo(User::class, 'sales_user_id');
+    }
+
+    public function technicalRequest()
+    {
+        return $this->belongsTo(TechnicalRequest::class);
     }
 }

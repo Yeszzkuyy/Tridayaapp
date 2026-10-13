@@ -37,6 +37,23 @@
                 <a href="{{ route('sales.technical-requests.attachment', $technicalRequest) }}"
                    class="inline-block px-3 py-1.5 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">{{ __('Download Lampiran') }}</a>
             @endif
+
+            {{-- Survey terkait request ini (otomatis dibuat saat assign) --}}
+            @if($technicalRequest->survey)
+                <div class="p-3 rounded-xl bg-accent-50/60 dark:bg-accent-500/10 border border-accent-200 dark:border-accent-500/30">
+                    <p class="text-xs font-semibold text-accent-700 dark:text-accent-300 uppercase">{{ __('Survey Terkait') }}</p>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <a href="{{ route('teknisi.surveys.show', $technicalRequest->survey) }}"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">
+                            <x-icon name="eye" class="h-3.5 w-3.5" />
+                            {{ $technicalRequest->survey->title }}
+                        </a>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">
+                            {{ $technicalRequest->survey->hasReport() ? __('Laporan sudah diunggah') : __('Laporan belum diunggah') }}
+                        </span>
+                    </div>
+                </div>
+            @endif
             @if($technicalRequest->technical_result)
                 <div class="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                     <p class="text-xs font-semibold text-green-700 dark:text-green-300 uppercase">{{ __('Hasil Teknis') }}</p>
