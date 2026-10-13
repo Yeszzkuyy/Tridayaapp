@@ -126,6 +126,7 @@ class SalesScheduleController extends Controller
                 'location' => $fu->location,
                 'customer' => $customerName,
                 'creator' => $fu->creator?->name,
+                'completed' => $fu->completed_at !== null,
                 'url' => $fu->lead_id
                     ? route('leads.show', $fu->lead_id)
                     : route('customers.show', $fu->customer_id),

@@ -133,6 +133,12 @@ class FollowUpController extends Controller
     {
         $this->salesService->completeFollowUp($followUp);
 
+        // Drawer detail di jadwal sales minta balik ke kalendernya.
+        if ($request->input('return') === 'schedule') {
+            return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
+                ->with('success', __('Jadwal kunjungan selesai.'));
+        }
+
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
             __('Follow up selesai.'), ['redirect' => route('sales.follow-ups.index')]);
     }
