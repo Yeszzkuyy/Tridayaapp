@@ -217,7 +217,7 @@ class SurveyReportTest extends TestCase
         $this->assertStringNotContainsString(config('services.survey-report-template'), $html);
     }
 
-    public function test_index_shows_correct_report_actions(): void
+    public function test_index_has_no_report_actions_in_rows(): void
     {
         Storage::fake('private');
         $technician = $this->userWithRole('technician');
@@ -229,18 +229,36 @@ class SurveyReportTest extends TestCase
 
         $html = $this->actingAs($technician)->get(route('teknisi.surveys.index'))->assertOk()->getContent();
 
-        // Survey tanpa laporan: tombol upload (trigger modal), tanpa tombol view report.
-        $this->assertStringContainsString('report-upload', $html);
+        // Aksi laporan hanya di halaman detail, bukan di baris daftar.
+        $this->assertStringNotContainsString(route('teknisi.surveys.report.view', $with), $html);
+        $this->assertStringNotContainsString(route('teknisi.surveys.report.download', $with), $html);
         $this->assertStringNotContainsString(route('teknisi.surveys.report.view', $without), $html);
-        $this->assertStringNotContainsString(route('teknisi.surveys.report.download', $without), $html);
-
-        // Survey dengan laporan: tombol view & download.
-        $this->assertStringContainsString(route('teknisi.surveys.report.view', $with), $html);
-        $this->assertStringContainsString(route('teknisi.surveys.report.download', $with), $html);
-
-        // Trigger baris membawa ID survey melalui CustomEvent native.
-        $this->assertStringContainsString("new CustomEvent('report-upload'", $html);
+        $this->assertStringNotContainsString("new CustomEvent('report-upload'", $html);
+        // Menu baris tetap ada (view/edit/delete) dan modal tetap dirender.
+        $this->assertStringContainsString('View details', $html);
         $this->assertStringContainsString('data-report-upload-form', $html);
+    }
+
+    public function test_show_lists_report_actions(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+
+        // Belum ada laporan → Create + Upload.
+        $noReport = $this->makeSurvey(['location' => 'Bandung']);
+        $html = $this->actingAs($technician)->get(route('teknisi.surveys.show', $noReport))->assertOk()->getContent();
+        $this->assertStringContainsString(config('services.survey-report-template'), $html);
+        $this->assertStringContainsString("new CustomEvent('report-upload'", $html);
+
+        // Sudah ada laporan → View + Download + Replace.
+        $with = $this->makeSurvey(['location' => 'Surabaya']);
+        $path = 'surveys/'.$with->id.'/reports/y.pdf';
+        Storage::disk('private')->put($path, 'pdf');
+        $with->update(['report_file' => $path, 'report_file_name' => 'laporan.pdf', 'status' => 'completed']);
+
+        $html2 = $this->actingAs($technician)->get(route('teknisi.surveys.show', $with))->assertOk()->getContent();
+        $this->assertStringContainsString(route('teknisi.surveys.report.view', $with), $html2);
+        $this->assertStringContainsString(route('teknisi.surveys.report.download', $with), $html2);
     }
 
     public function test_view_and_download_use_original_filename(): void

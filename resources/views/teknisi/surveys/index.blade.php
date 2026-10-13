@@ -90,23 +90,6 @@
                                             <div class="py-1">
                                                 <x-dropdown-link :href="route('teknisi.surveys.show', $survey)">{{ __('View details') }}</x-dropdown-link>
                                                 <x-dropdown-link :href="route('teknisi.surveys.edit', $survey)">{{ __('Edit') }}</x-dropdown-link>
-                                                @if($survey->hasReport())
-                                                    <x-dropdown-link :href="route('teknisi.surveys.report.view', $survey)" target="_blank" rel="noopener">{{ __('View Report') }}</x-dropdown-link>
-                                                    <x-dropdown-link :href="route('teknisi.surveys.report.download', $survey)">{{ __('Download Report') }}</x-dropdown-link>
-                                                    @can('manage-technician')
-                                                        <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
-                                                                class="block w-full px-4 py-2 text-start text-sm leading-5 text-slate-700 transition duration-150 ease-in-out hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
-                                                            {{ __('Replace Report') }}
-                                                        </button>
-                                                    @endcan
-                                                @else
-                                                    @can('manage-technician')
-                                                        <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
-                                                                class="block w-full px-4 py-2 text-start text-sm leading-5 text-slate-700 transition duration-150 ease-in-out hover:bg-slate-100 focus:bg-slate-100 focus:outline-none dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:bg-slate-700">
-                                                            {{ __('Upload PDF') }}
-                                                        </button>
-                                                    @endcan
-                                                @endif
                                                 <hr class="my-1 border-slate-200 dark:border-slate-600">
                                                 <form action="{{ route('teknisi.surveys.destroy', $survey) }}" method="POST" x-data
                                                       @submit.prevent="if(confirm('{{ __('Yakin ingin menghapus survey ini?') }}')) $el.submit()">

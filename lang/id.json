@@ -193,5 +193,10 @@
     "Create the report from the template, then upload the completed PDF here.": "Buat laporan dari template, lalu unggah PDF yang sudah selesai di sini.",
     "PDF or common documents — max 5 MB. Upload is required.": "PDF atau dokumen umum — maks 5 MB. Upload wajib diisi.",
     "Actions": "Aksi",
-    "View details": "Lihat detail"
+    "View details": "Lihat detail",
+    "View": "Lihat",
+    "Download": "Unduh",
+    "Replace": "Ganti",
+    "Upload": "Unggah",
+    "Create": "Buat"
 }
