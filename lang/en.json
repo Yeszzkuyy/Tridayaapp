@@ -996,5 +996,7 @@
     "Aksi percakapan": "Conversation actions",
     "Laporan survey berhasil diunggah.": "Survey report uploaded successfully.",
     "Gagal menyimpan file laporan. Silakan coba lagi.": "Failed to store the report file. Please try again.",
-    "Gagal menyimpan laporan. Coba lagi.": "Failed to save the report. Please try again."
+    "Gagal menyimpan laporan. Coba lagi.": "Failed to save the report. Please try again.",
+    "Laporan Survey (PDF)": "Survey Report (PDF)",
+    "Gagal membuat survey. Coba lagi.": "Failed to create the survey. Please try again."
 }

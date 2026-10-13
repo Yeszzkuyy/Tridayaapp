@@ -254,4 +254,80 @@ class SurveyReportTest extends TestCase
         $this->actingAs($technician)->get(route('teknisi.surveys.create'))->assertOk();
         $this->actingAs($technician)->get(route('teknisi.surveys.edit', $survey))->assertOk();
     }
+
+    private function makeProject(string $name): Project
+    {
+        $customer = Customer::create(['name' => 'PT '.$name]);
+        $workType = WorkType::create(['name' => 'Instalasi']);
+
+        return Project::create([
+            'customer_id' => $customer->id,
+            'work_type_id' => $workType->id,
+            'project_name' => 'Project '.$name,
+        ]);
+    }
+
+    public function test_create_survey_requires_report_and_saves_completed(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+        $project = $this->makeProject('Baru');
+
+        $this->post(route('teknisi.surveys.store'), [
+            'project_id' => $project->id,
+            'survey_date' => '2026-10-13',
+            'location' => 'Jakarta',
+            'report' => UploadedFile::fake()->create('laporan.pdf', 200, 'application/pdf'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $survey = Survey::where('project_id', $project->id)->firstOrFail();
+        $this->assertSame(Survey::STATUS_COMPLETED, $survey->status);
+        $this->assertNotNull($survey->report_file);
+        Storage::disk('private')->assertExists($survey->report_file);
+    }
+
+    public function test_create_survey_rejects_missing_report(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+        $project = $this->makeProject('TanpaFile');
+
+        $this->post(route('teknisi.surveys.store'), [
+            'project_id' => $project->id,
+        ])->assertSessionHasErrors('report');
+
+        $this->assertDatabaseMissing('surveys', ['project_id' => $project->id]);
+    }
+
+    public function test_create_accepts_common_document(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+        $project = $this->makeProject('Dokumen');
+
+        $this->post(route('teknisi.surveys.store'), [
+            'project_id' => $project->id,
+            'report' => UploadedFile::fake()->create('boq.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('surveys', ['project_id' => $project->id]);
+    }
+
+    public function test_create_rejects_oversized_report(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $this->actingAs($technician);
+        $project = $this->makeProject('Besar');
+
+        $this->post(route('teknisi.surveys.store'), [
+            'project_id' => $project->id,
+            'report' => UploadedFile::fake()->create('besar.pdf', 6000, 'application/pdf'),
+        ])->assertSessionHasErrors('report');
+
+        $this->assertDatabaseMissing('surveys', ['project_id' => $project->id]);
+    }
 }

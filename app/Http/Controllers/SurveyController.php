@@ -41,17 +41,65 @@ class SurveyController extends Controller
     {
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
-            'sales_request' => 'nullable|string',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
             'survey_data' => 'nullable|string',
-            'survey_report' => 'nullable|string',
-            'status' => 'required|in:draft,scheduled,on_survey,completed',
-            'notes' => 'nullable|string',
+            'report' => ['required', 'file', 'max:5120', SecureFile::documents()],
         ]);
 
-        Survey::create($validated);
+        $file = $request->file('report');
+
+        try {
+            $survey = Survey::create([
+                'project_id' => $validated['project_id'],
+                'survey_date' => $validated['survey_date'] ?? null,
+                'location' => $validated['location'] ?? null,
+                'pic' => $validated['pic'] ?? null,
+                'survey_data' => $validated['survey_data'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()
+                ->withErrors(['report' => __('Gagal membuat survey. Coba lagi.')]);
+        }
+
+        // Nama file dibuat server-side; ekstensi dari MIME (bukan nama user),
+        // dan jenis file sudah diverifikasi SecureFile::documents().
+        $extension = strtolower($file->guessExtension() ?? '');
+        if (! in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'zip', 'rar', 'txt', 'csv'], true)) {
+            $extension = 'dat';
+        }
+
+        $path = $file->storeAs(
+            'surveys/'.$survey->id.'/reports',
+            Str::uuid()->toString().'.'.$extension,
+            'private'
+        );
+
+        if (! $path) {
+            // File gagal disimpan: survey tidak jadi dibuat.
+            $survey->delete();
+
+            return back()->withInput()
+                ->withErrors(['report' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+        }
+
+        try {
+            $survey->update([
+                'report_file' => $path,
+                'status' => Survey::STATUS_COMPLETED,
+            ]);
+        } catch (\Throwable $e) {
+            // DB gagal: hapus file dan survey agar tidak ada data menggantung.
+            Storage::disk('private')->delete($path);
+            $survey->delete();
+            report($e);
+
+            return back()->withInput()
+                ->withErrors(['report' => __('Gagal menyimpan laporan. Coba lagi.')]);
+        }
 
         return redirect()->route('teknisi.surveys.show', $survey)
             ->with('success', 'Survey berhasil ditambahkan.');

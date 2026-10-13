@@ -9,7 +9,7 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 w-full">
-        <form action="{{ route('teknisi.surveys.store') }}" method="POST">
+        <form action="{{ route('teknisi.surveys.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <div class="space-y-4">
@@ -50,14 +50,6 @@
                     @error('project_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Sales Request --}}
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Sales Request</label>
-                    <textarea name="sales_request" rows="3"
-                              class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">{{ old('sales_request') }}</textarea>
-                    @error('sales_request') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {{-- Survey Date --}}
                     <div>
@@ -67,21 +59,6 @@
                         @error('survey_date') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- Status --}}
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Status <span class="text-red-500">*</span></label>
-                        <select name="status" required
-                                class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                            <option value="draft" {{ old('status') === 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="scheduled" {{ old('status') === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
-                            <option value="on_survey" {{ old('status') === 'on_survey' ? 'selected' : '' }}>On Survey</option>
-                            <option value="completed" {{ old('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                        </select>
-                        @error('status') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {{-- Location --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Lokasi') }}</label>
@@ -89,14 +66,14 @@
                                class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
                         @error('location') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
+                </div>
 
-                    {{-- PIC --}}
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('PIC') }}</label>
-                        <input type="text" name="pic" value="{{ old('pic') }}"
-                               class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                        @error('pic') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                    </div>
+                {{-- PIC --}}
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('PIC') }}</label>
+                    <input type="text" name="pic" value="{{ old('pic') }}"
+                           class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                    @error('pic') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Survey Data --}}
@@ -107,26 +84,19 @@
                     @error('survey_data') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Survey Report --}}
+                {{-- Report file (wajib) --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Laporan Survey') }}</label>
-                    <textarea name="survey_report" rows="4"
-                              class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">{{ old('survey_report') }}</textarea>
-                    @error('survey_report') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-
-                {{-- Notes --}}
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Catatan') }}</label>
-                    <textarea name="notes" rows="3"
-                              class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">{{ old('notes') }}</textarea>
-                    @error('notes') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Laporan Survey (PDF)') }} <span class="text-red-500">*</span></label>
+                    <input type="file" name="report" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.txt,.csv"
+                           class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium">
+                    <p class="mt-2 text-xs text-slate-400">{{ __('PDF or common documents — max 5 MB. Upload is required.') }}</p>
+                    @error('report') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 
             <div class="mt-6 flex gap-3">
                 <button type="submit"
-                        class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                        class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
                     {{ __('Save') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </button>
