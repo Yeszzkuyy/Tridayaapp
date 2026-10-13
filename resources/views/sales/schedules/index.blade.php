@@ -394,7 +394,7 @@
                  class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-y-auto" style="max-height:92vh">
                 <div class="pt-3 sm:hidden" aria-hidden="true"><div class="mx-auto h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600"></div></div>
                 <div class="p-6 pt-3 sm:pt-6">
-                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Add Visit Schedule') }}</h3>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Add Schedule') }}</h3>
                 <p class="text-sm text-slate-500 mb-1">{{ __('Saved as a follow-up and shown in the Lead activity timeline.') }}</p>
                 <p class="text-sm font-semibold text-accent-600 dark:text-accent-400 mb-4" x-text="modalSummary()"></p>
 
@@ -414,15 +414,21 @@
                     <input type="hidden" name="return" value="schedule">
                     <input type="hidden" name="date" :value="modalDate">
 
-                    <div>
-                        <label for="su-customer_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
-                        <select id="su-customer_id" name="customer_id" x-model="customerId" @change="filterLeads()" required
-                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                            <option value="">{{ __('Choose a customer') }}</option>
-                            @foreach($customers as $id => $label)
-                                <option value="{{ $id }}" @selected(old('customer_id') == $id)>{{ $label }}</option>
-                            @endforeach
-                        </select>
+                    <div class="relative" @click.outside="customerOpen = false">
+                        <label for="su-customer_search" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
+                        <input type="hidden" name="customer_id" :value="customerId">
+                        <input id="su-customer_search" type="text" x-model="customerQuery"
+                               @focus="customerOpen = true" @input="customerOpen = true" autocomplete="off"
+                               placeholder="{{ __('Type to search customer...') }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                        <div x-show="customerOpen && filteredCustomers().length" x-cloak
+                             class="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-700">
+                            <template x-for="c in filteredCustomers()" :key="c.id">
+                                <button type="button" @click="selectCustomer(c)"
+                                        class="block w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600"
+                                        x-text="c.label"></button>
+                            </template>
+                        </div>
                     </div>
 
                     <div>
@@ -511,6 +517,10 @@
                 events: [],
                 loading: false,
                 loadError: false,
+                fetchSeq: 0,
+                customerQuery: @json((string) collect($customers)->get((int) old('customer_id'), '')),
+                customerOpen: false,
+                customerList: @json(collect($customers)->map(fn ($label, $id) => ['id' => (string) $id, 'label' => $label])->values()),
                 drawerOpen: false,
                 selectedEvent: null,
                 openMenuId: null,
@@ -652,20 +662,31 @@
 
                 fmtTime(hhmm) {
                     if (!hhmm) return '--:--';
-                    const parts = String(hhmm).split(':');
-                    let h = parseInt(parts[0], 10);
-                    const m = (parts[1] || '00').padStart(2, '0');
-                    if (isNaN(h)) return hhmm;
-                    const suffix = h >= 12 ? 'PM' : 'AM';
-                    h = h % 12 || 12;
-                    return h + ':' + m + ' ' + suffix;
+                    return String(hhmm).slice(0, 5) + ' WIB';
                 },
 
                 quickAdd(customerId) {
                     if (!this.canWrite) return;
                     this.customerId = customerId ? String(customerId) : '';
+                    const match = this.customerList.find((c) => c.id === this.customerId);
+                    this.customerQuery = match ? match.label : '';
                     this.leadId = '';
                     this.openModal(this.activeDate);
+                },
+
+                filteredCustomers() {
+                    const q = String(this.customerQuery || '').toLowerCase().trim();
+                    if (!q || this.customerQuery === this.customerList.find((c) => c.id === this.customerId)?.label) {
+                        return this.customerList;
+                    }
+                    return this.customerList.filter((c) => c.label.toLowerCase().includes(q));
+                },
+
+                selectCustomer(c) {
+                    this.customerId = String(c.id);
+                    this.customerQuery = c.label;
+                    this.customerOpen = false;
+                    this.filterLeads();
                 },
 
                 selectDay(date) {
@@ -713,16 +734,26 @@
                 },
 
                 fetchEvents() {
+                    const date = this.activeDate;
+                    const seq = ++this.fetchSeq;
                     this.loading = true;
                     this.loadError = false;
-                    fetch(this.apiUrl + '?date=' + encodeURIComponent(this.activeDate))
+                    fetch(this.apiUrl + '?date=' + encodeURIComponent(date))
                         .then((r) => r.json())
                         .then((data) => {
+                            if (seq !== this.fetchSeq) return;
                             this.events = Array.isArray(data) ? data : [];
-                            this.monthEvents[this.activeDate] = this.events;
+                            this.monthEvents[date] = this.events;
                         })
-                        .catch(() => { this.events = []; this.loadError = true; })
-                        .finally(() => { this.loading = false; });
+                        .catch(() => {
+                            if (seq !== this.fetchSeq) return;
+                            this.events = [];
+                            this.loadError = true;
+                        })
+                        .finally(() => {
+                            if (seq !== this.fetchSeq) return;
+                            this.loading = false;
+                        });
                 },
 
                 fetchMonth() {
