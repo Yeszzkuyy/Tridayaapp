@@ -211,8 +211,10 @@ class SurveyReportTest extends TestCase
 
         $this->assertStringContainsString('No survey data yet.', $html);
         $this->assertStringContainsString('Create a survey first, then upload the PDF report from its row.', $html);
-        // Tombol header "Create Report" selalu tampil (membuka template Google Docs).
+        $this->assertStringContainsString('No surveys yet. Create a survey first.', $html);
+        // Tombol header "Create Report" & "Upload PDF" selalu tampil.
         $this->assertStringContainsString(config('services.survey-report-template'), $html);
+        $this->assertStringContainsString('report-upload-open', $html);
     }
 
     public function test_index_shows_correct_report_actions(): void
@@ -235,6 +237,10 @@ class SurveyReportTest extends TestCase
         // Survey dengan laporan: tombol view & download.
         $this->assertStringContainsString(route('teknisi.surveys.report.view', $with), $html);
         $this->assertStringContainsString(route('teknisi.surveys.report.download', $with), $html);
+
+        // Tombol header Upload PDF + dropdown pilihan survey di modal.
+        $this->assertStringContainsString('report-upload-open', $html);
+        $this->assertStringContainsString('Select Survey', $html);
     }
 
     public function test_survey_regression_pages_still_work(): void
