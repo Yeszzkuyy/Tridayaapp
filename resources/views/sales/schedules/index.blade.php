@@ -13,7 +13,9 @@
                 <x-icon-button title="{{ __('Today') }}" @click="goToday()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </x-icon-button>
-                <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
+                @can('manage-sales')
+                    <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
+                @endcan
             </div>
         </div>
 
@@ -52,21 +54,27 @@
                     </template>
                     <template x-for="cell in monthCells" :key="cell.date">
                         <button type="button" @click="createOn(cell.date)"
+                                :title="canWrite ? '{{ __('Add visit') }}' : dayEvents(cell.date).length + ' {{ __('visits') }}'"
                                 :class="cell.date === activeDate
                                     ? 'bg-slate-800 text-white shadow-md dark:bg-accent-600'
                                     : (cell.inMonth
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
-                                class="group flex min-h-14 sm:min-h-20 flex-col items-center justify-start rounded-xl py-1.5 px-1 transition active:scale-95">
-                            <span :class="(cell.isToday && cell.date !== activeDate) ? 'bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-300' : ''"
-                                  class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
-                            <span class="mt-0.5 hidden sm:block w-full truncate px-1.5 text-[11px] leading-tight opacity-80"
-                                  x-text="dayEvents(cell.date).length ? dayEvents(cell.date)[0].activity_time + ' ' + dayEvents(cell.date)[0].description : ''"></span>
-                            <span class="mt-auto flex items-center gap-1 h-2.5">
+                                class="group flex min-h-20 sm:min-h-28 flex-col items-center justify-start rounded-xl py-1.5 px-1 transition active:scale-95">
+                            <span :class="cell.isToday ? (cell.date === activeDate ? 'bg-white/25 text-white' : 'bg-accent-500/15 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200') : ''"
+                                  class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold tabular-nums transition-transform duration-200 hover:scale-125" x-text="cell.num"></span>
+                            <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
+                                <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
+                                    <span class="block truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight"
+                                          :class="cell.date === activeDate ? 'bg-white/20 text-white' : 'bg-accent-500/10 text-slate-600 dark:text-slate-300'"
+                                          x-text="(ev.activity_time || '') + ' ' + ev.description"></span>
+                                </template>
+                            </span>
+                            <span class="mt-auto flex items-center gap-1 h-2.5 pt-0.5">
                                 <template x-for="i in dayDots(cell.date)" :key="i">
                                     <span class="h-1.5 w-1.5 rounded-full bg-accent-500"></span>
                                 </template>
-                                <span x-show="dayEvents(cell.date).length > 3" class="text-[10px] font-semibold tabular-nums text-slate-400"
+                                <span x-show="dayEvents(cell.date).length > 3" class="text-[10px] font-semibold tabular-nums opacity-70"
                                       x-text="'+' + (dayEvents(cell.date).length - 3)"></span>
                             </span>
                         </button>
@@ -79,7 +87,26 @@
                     <p class="text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="dayLabel"></p>
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
-                <div x-html="agendaHtml(events)"></div>
+                <template x-for="event in events" :key="event.id">
+                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left rounded-xl border border-slate-200 dark:border-slate-600 p-4 hover:shadow-md transition">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-base font-semibold text-slate-800 dark:text-slate-100" x-text="event.description"></span>
+                            <span class="flex shrink-0 items-center gap-1.5">
+                                <span x-show="event.completed" class="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="event.activity_time || '--:--'"></span>
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-500 mt-1">
+                            <span x-text="event.customer"></span>
+                            <template x-if="event.creator">
+                                <span> • <span x-text="event.creator"></span></span>
+                            </template>
+                        </p>
+                        <template x-if="event.location">
+                            <div class="mt-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300" x-text="event.location"></div>
+                        </template>
+                    </button>
+                </template>
             </div>
         </div>
 
@@ -90,7 +117,7 @@
                     <div :class="day.date === activeDate ? 'rounded-xl bg-slate-50 dark:bg-slate-700/40 -mx-1 px-1 py-1' : 'py-1'">
                         <button type="button" @click="gotoDay(day.date)" class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-slate-100 dark:hover:bg-slate-700/50">
                             <span :class="day.isToday ? 'bg-accent-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200'"
-                                  class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl leading-none">
+                                  class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl leading-none transition-transform duration-200 hover:scale-110">
                                 <span class="text-[9px] font-bold uppercase" x-text="day.name"></span>
                                 <span class="text-sm font-bold tabular-nums" x-text="day.num"></span>
                             </span>
@@ -106,10 +133,11 @@
                         </button>
                         <div class="ml-14 space-y-2 pb-2" x-show="dayEvents(day.date).length > 0">
                             <template x-for="event in dayEvents(day.date).slice(0, 3)" :key="event.id">
-                                <a :href="event.url" class="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2 transition hover:shadow-md dark:border-slate-600">
+                                <button type="button" @click="openDrawer(event)" class="flex w-full items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2 text-left transition hover:shadow-md dark:border-slate-600">
                                     <span class="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold tabular-nums text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="event.activity_time || '--:--'"></span>
                                     <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200" x-text="event.description"></span>
-                                </a>
+                                    <span x-show="event.completed" class="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
+                                </button>
                             </template>
                             <button type="button" x-show="dayEvents(day.date).length > 3" @click="gotoDay(day.date)"
                                     class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400"
@@ -134,7 +162,26 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </button>
                 </div>
-                <div x-html="agendaHtml(events)"></div>
+                <template x-for="event in events" :key="event.id">
+                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left rounded-xl border border-slate-200 dark:border-slate-600 p-4 hover:shadow-md transition">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-base font-semibold text-slate-800 dark:text-slate-100" x-text="event.description"></span>
+                            <span class="flex shrink-0 items-center gap-1.5">
+                                <span x-show="event.completed" class="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="event.activity_time || '--:--'"></span>
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-500 mt-1">
+                            <span x-text="event.customer"></span>
+                            <template x-if="event.creator">
+                                <span> • <span x-text="event.creator"></span></span>
+                            </template>
+                        </p>
+                        <template x-if="event.location">
+                            <div class="mt-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300" x-text="event.location"></div>
+                        </template>
+                    </button>
+                </template>
             </div>
         </div>
 
@@ -155,11 +202,76 @@
         </div>
         <div x-show="!loading && !loadError && view !== 'week' && events.length === 0" x-cloak class="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 px-4 py-8 text-center">
             <p class="text-sm text-slate-500 mb-3">{{ __('Belum ada jadwal kunjungan.') }}</p>
-            <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
+            @can('manage-sales')
+                <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
+            @endcan
         </div>
 
-        {{-- Modal tambah jadwal --}}
-        <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+        {{-- Detail drawer --}}
+        <div x-show="drawerOpen" x-cloak class="fixed inset-0 z-50" id="sales-drawer" @keydown.escape.window="closeDrawer()">
+            <div class="absolute inset-0 bg-slate-900/40" @click="closeDrawer()"
+                 x-show="drawerOpen" x-transition.opacity></div>
+            <aside class="absolute right-0 top-0 flex h-full w-full flex-col bg-white shadow-2xl dark:bg-slate-800 sm:max-w-md sm:border-l sm:border-slate-200 dark:sm:border-slate-600"
+                   x-show="drawerOpen"
+                   x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+                   x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+                   role="dialog" aria-modal="true" aria-label="{{ __('Schedule detail') }}">
+                <template x-if="selectedEvent">
+                    <div class="flex h-full flex-col">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200" x-text="selectedEvent.activity_time || '--:--'"></span>
+                                <span x-show="selectedEvent.completed" class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
+                                <span x-show="!selectedEvent.completed" class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">{{ __('Scheduled') }}</span>
+                            </div>
+                            <button type="button" @click="closeDrawer()" title="{{ __('Close') }}" aria-label="{{ __('Close') }}"
+                                    class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" /></svg>
+                            </button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto px-5 py-4">
+                            <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" x-text="selectedEvent.description"></h3>
+                            <p class="mt-1 text-sm text-slate-500" x-text="selectedEvent.customer"></p>
+                            <template x-if="selectedEvent.location">
+                                <div class="mt-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm text-slate-600 dark:text-slate-300" x-text="selectedEvent.location"></div>
+                            </template>
+                            <dl class="mt-4 space-y-2 text-sm">
+                                <div class="flex justify-between gap-3">
+                                    <dt class="text-slate-400">{{ __('Date') }}</dt>
+                                    <dd class="font-semibold tabular-nums text-slate-700 dark:text-slate-200" x-text="selectedEvent.date"></dd>
+                                </div>
+                                <template x-if="selectedEvent.creator">
+                                    <div class="flex justify-between gap-3">
+                                        <dt class="text-slate-400">{{ __('Created by') }}</dt>
+                                        <dd class="font-semibold text-slate-700 dark:text-slate-200" x-text="selectedEvent.creator"></dd>
+                                    </div>
+                                </template>
+                            </dl>
+                            <a :href="selectedEvent.url" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View lead') }} →</a>
+                        </div>
+                        <div x-show="canWrite && !selectedEvent.completed" class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                            <form method="GET" :action="followUpUrl('edit')" class="inline">
+                                <x-icon-button type="submit" title="{{ __('Edit') }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                                </x-icon-button>
+                            </form>
+                            <form method="POST" :action="followUpUrl('complete')" class="inline">
+                                @csrf
+                                <input type="hidden" name="return" value="schedule">
+                                <input type="hidden" name="date" :value="selectedEvent.date">
+                                <x-icon-button type="submit" title="{{ __('Mark as done') }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                </x-icon-button>
+                            </form>
+                        </div>
+                    </div>
+                </template>
+            </aside>
+        </div>
+
+        {{-- Modal tambah jadwal (writers only) --}}
+        @can('manage-sales')
+        <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" id="sales-add-modal">
             <div class="absolute inset-0 bg-slate-900/50" @click="isModalOpen = false"
                  x-show="isModalOpen" x-transition.opacity></div>
             <div x-show="isModalOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -252,6 +364,7 @@
                 </div>
             </div>
         </div>
+        @endcan
     </div>
 
     <script>
@@ -260,6 +373,8 @@
         function scheduleManager() {
             return {
                 apiUrl: document.getElementById('sales-schedule-root')?.dataset.apiUrl || '',
+                canWrite: {{ auth()->user()->can('manage-sales') ? 'true' : 'false' }},
+                followUpBase: @json(route('sales.follow-ups.index')),
                 view: 'month',
                 activeDate: @json($activeDate),
                 viewYear: null,
@@ -273,18 +388,15 @@
                 events: [],
                 loading: false,
                 loadError: false,
-                isModalOpen: {{ $errors->any() ? 'true' : 'false' }},
+                drawerOpen: false,
+                selectedEvent: null,
+                isModalOpen: {{ $errors->any() && auth()->user()->can('manage-sales') ? 'true' : 'false' }},
                 modalDate: @json($activeDate),
                 modalTime: @json((string) old('activity_time', '')),
                 modalLocation: @json((string) old('location', '')),
                 customerId: @json((string) old('customer_id', '')),
                 leadId: @json((string) old('lead_id', '')),
                 leads: window.__scheduleLeads || [],
-                esc(s) {
-                    return String(s ?? '').replace(/[&<>"']/g, (c) => ({
-                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-                    }[c]));
-                },
 
                 init() {
                     const urlDate = new URLSearchParams(window.location.search).get('date');
@@ -408,12 +520,31 @@
 
                 createOn(date) {
                     this.selectDay(date);
-                    this.openModal(date);
+                    if (this.canWrite) this.openModal(date);
+                    else {
+                        const evts = this.dayEvents(date);
+                        if (evts.length === 1) this.openDrawer(evts[0]);
+                        else this.setView('day');
+                    }
                 },
 
                 gotoDay(date) {
                     this.selectDay(date);
                     this.setView('day');
+                },
+
+                openDrawer(event) {
+                    this.selectedEvent = { ...event };
+                    this.drawerOpen = true;
+                },
+
+                closeDrawer() {
+                    this.drawerOpen = false;
+                },
+
+                followUpUrl(action) {
+                    if (!this.selectedEvent) return '#';
+                    return String(this.followUpBase).replace(/\/follow-ups\/?$/, '/follow-ups/' + this.selectedEvent.id + '/' + action);
                 },
 
                 fetchEvents() {
@@ -471,20 +602,8 @@
                     return [0, 1, 2].filter((i) => (this.monthEvents[date] || []).length > i);
                 },
 
-                agendaHtml(list) {
-                    if (!list.length) return '';
-                    return list.map((e) => `
-                        <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 hover:shadow-md transition mb-3">
-                            <div class="flex items-start justify-between gap-3">
-                                <a href="${this.esc(e.url)}" class="text-base font-semibold text-slate-800 dark:text-slate-100 hover:text-accent-600 dark:hover:text-accent-400">${this.esc(e.description)}</a>
-                                <span class="inline-flex shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">${this.esc(e.activity_time) || '--:--'}</span>
-                            </div>
-                            <p class="text-sm text-slate-500 mt-1">${this.esc(e.customer)}${e.creator ? ' • ' + this.esc(e.creator) : ''}</p>
-                            ${e.location ? `<div class="mt-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">${this.esc(e.location)}</div>` : ''}
-                        </div>`).join('');
-                },
-
                 openModal(date) {
+                    if (!this.canWrite) return;
                     this.modalDate = date || this.activeDate;
                     this.isModalOpen = true;
                 },

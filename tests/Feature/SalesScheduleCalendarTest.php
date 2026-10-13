@@ -108,6 +108,50 @@ class SalesScheduleCalendarTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_api_includes_completed_flag(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $done = $this->makeVisit($sales, ['description' => 'Sudah']);
+        $done->forceFill(['completed_at' => now()])->save();
+        $this->makeVisit($sales, ['description' => 'Belum']);
+
+        $res = $this->actingAs($sales)->getJson(route('sales.schedules.api', ['date' => '2026-10-28']));
+        $res->assertOk();
+        $byDesc = collect($res->json())->mapWithKeys(fn ($e) => [$e['description'] => $e['completed']])->all();
+        $this->assertTrue($byDesc['Sudah']);
+        $this->assertFalse($byDesc['Belum']);
+    }
+
+    public function test_readonly_role_sees_calendar_without_write_ui(): void
+    {
+        $admin = $this->userWithRole('admin');
+
+        $res = $this->actingAs($admin)->get(route('sales.schedules.index'));
+        $res->assertOk();
+        $res->assertSee('id="sales-drawer"', false);
+        $res->assertDontSee('Tambah Jadwal Kunjungan');
+        $res->assertDontSee('sales-add-modal', false);
+
+        $sales = $this->userWithRole('sales');
+        $res = $this->actingAs($sales)->get(route('sales.schedules.index'));
+        $res->assertOk();
+        $res->assertSee('id="sales-add-modal"', false);
+    }
+
+    public function test_complete_from_drawer_redirects_back_to_schedule(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $fu = $this->makeVisit($sales);
+
+        $res = $this->actingAs($sales)->post(route('sales.follow-ups.complete', $fu), [
+            'return' => 'schedule',
+            'date' => '2026-10-28',
+        ]);
+
+        $res->assertRedirect(route('sales.schedules.index', ['date' => '2026-10-28']));
+        $this->assertNotNull($fu->fresh()->completed_at);
+    }
+
     public function test_index_renders_strip_and_modal(): void
     {
         $sales = $this->userWithRole('sales');
