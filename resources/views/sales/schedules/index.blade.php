@@ -56,12 +56,12 @@
                         <div @click="createOn(cell.date)" @keydown.enter="createOn(cell.date)" tabindex="0" role="button"
                                 :aria-label="dayEvents(cell.date).length + ' {{ __('visits') }}'"
                                 :class="cell.date === activeDate
-                                    ? 'bg-slate-800 text-white shadow-md dark:bg-accent-600'
-                                    : (cell.inMonth
+                                    ? 'bg-accent-500/10 text-slate-800 ring-2 ring-inset ring-accent-500 shadow-sm dark:bg-accent-500/20 dark:text-slate-100'"
+                                            : (cell.inMonth
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
                                 class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
-                            <span :class="cell.isToday ? (cell.date === activeDate ? 'bg-white/25 text-white' : 'bg-accent-500/15 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200') : ''"
+                            <span :class="cell.isToday ? 'bg-accent-500/20 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200' : ''"
                                   class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
@@ -140,7 +140,7 @@
                     <template x-for="day in weekDays" :key="day.date">
                         <button type="button" @click="selectDay(day.date)"
                                 :class="day.date === activeDate
-                                    ? 'bg-slate-800 text-white shadow dark:bg-accent-600'
+                                    ? 'bg-accent-500/10 text-slate-800 ring-2 ring-inset ring-accent-500 shadow-sm dark:bg-accent-500/20 dark:text-slate-100'
                                     : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50'"
                                 class="flex flex-col items-center rounded-xl py-2 sm:py-3 transition">
                             <span class="text-[11px] font-semibold uppercase tracking-wide opacity-70" x-text="day.name"></span>
