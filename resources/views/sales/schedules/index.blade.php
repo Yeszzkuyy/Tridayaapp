@@ -61,8 +61,8 @@
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
                                 class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
-                            <span :class="cell.isToday || cell.date === activeDate ? 'bg-accent-500/20 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200' : ''"
-                                  class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
+                            <span @click.stop="selectDay(cell.date)" :class="cell.isToday || cell.date === activeDate ? 'bg-accent-500/20 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200' : ''"
+                                  class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
                                     <button type="button" @click.stop="openDrawer(ev)"
@@ -89,24 +89,29 @@
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left p-4 shadow-sm transition hover:shadow-md" :class="cardColor(event.id).wrap">
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-base font-semibold text-slate-800 dark:text-slate-100" x-text="event.description"></span>
-                            <span class="flex shrink-0 items-center gap-1.5">
-                                <span x-show="event.completed" class="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
-                                <span class="font-semibold text-sm tabular-nums" :class="cardColor(event.id).time" x-text="event.activity_time || '--:--'"></span>
-                            </span>
-                        </div>
-                        <p class="text-sm text-slate-500 mt-1">
-                            <span x-text="event.customer"></span>
-                            <template x-if="event.creator">
-                                <span> • <span x-text="event.creator"></span></span>
-                            </template>
-                        </p>
-                        <template x-if="event.location">
-                            <div class="mt-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300" x-text="event.location"></div>
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                        <template x-if="event.creator_avatar">
+                            <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
-                    </button>
+                        <template x-if="!event.creator_avatar">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-white" x-text="initials(event.customer)"></span>
+                        </template>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.customer"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                                <span x-text="event.date"></span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span x-text="'at ' + fmtTime(event.activity_time)"></span>
+                            </div>
+                        </div>
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
+                            <span x-text="event.location || '—'"></span>
+                        </div>
+                    </div>
                 </template>
             </div>
         </div>
@@ -224,24 +229,29 @@
                     </button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <button type="button" @click="openDrawer(event)" class="mb-3 block w-full text-left p-4 shadow-sm transition hover:shadow-md" :class="cardColor(event.id).wrap">
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-base font-semibold text-slate-800 dark:text-slate-100" x-text="event.description"></span>
-                            <span class="flex shrink-0 items-center gap-1.5">
-                                <span x-show="event.completed" class="inline-flex px-2 py-1 rounded-full text-[11px] font-bold bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">{{ __('Done') }}</span>
-                                <span class="font-semibold text-sm tabular-nums" :class="cardColor(event.id).time" x-text="event.activity_time || '--:--'"></span>
-                            </span>
-                        </div>
-                        <p class="text-sm text-slate-500 mt-1">
-                            <span x-text="event.customer"></span>
-                            <template x-if="event.creator">
-                                <span> • <span x-text="event.creator"></span></span>
-                            </template>
-                        </p>
-                        <template x-if="event.location">
-                            <div class="mt-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-600 dark:text-slate-300" x-text="event.location"></div>
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                        <template x-if="event.creator_avatar">
+                            <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
-                    </button>
+                        <template x-if="!event.creator_avatar">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-white" x-text="initials(event.customer)"></span>
+                        </template>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.customer"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                                <span x-text="event.date"></span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span x-text="'at ' + fmtTime(event.activity_time)"></span>
+                            </div>
+                        </div>
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
+                            <span x-text="event.location || '—'"></span>
+                        </div>
+                    </div>
                 </template>
             </div>
         </div>
