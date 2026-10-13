@@ -17,7 +17,7 @@
     $reportSurveyOptions = $reportSurveyOptions ?? collect();
 @endphp
 
-<div
+<div data-survey-report-modal data-upload-url="{{ $reportUploadBase }}"
     x-data="{
         surveyId: @json((string) old('report_survey_id', '')),
         submitting: false,
@@ -40,19 +40,20 @@
     @report-upload-open.window="openPicker()"
 >
     <x-modal name="survey-report-upload" maxWidth="md" :show="$errors->has('report')">
-        <form :action="submitUrl()" method="POST" enctype="multipart/form-data" @submit="submitting = true">
+        <form data-report-upload-form :action="submitUrl()" method="POST" enctype="multipart/form-data" @submit="submitting = true">
             @csrf
 
             <div class="p-6">
                 <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Upload Survey Report') }}</h3>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Choose PDF file (max 5 MB)') }}</p>
 
-                <input type="hidden" name="report_survey_id" :value="surveyId">
+                <input type="hidden" name="report_survey_id" data-report-survey-id :value="surveyId">
 
                 {{-- Pilih survey bila dibuka dari header tanpa konteks baris --}}
                 <div class="mt-4" x-show="!surveyId && options.length">
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Survey') }}</label>
-                    <select x-model="surveyId"
+                    <select x-model="surveyId" data-report-survey-select required
+                            onchange="(function(s){var c=s.closest('[data-survey-report-modal]'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]');if(h)h.value=s.value;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',s.value)})(this)"
                             class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
                         <option value="">{{ __('Select Survey') }}</option>
                         <template x-for="s in options" :key="s.id">
@@ -76,6 +77,7 @@
 
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button"
+                            onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50');if(r){r.style.display='none';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='none'})}document.body.classList.remove('overflow-y-hidden');window.dispatchEvent(new CustomEvent('close-modal',{detail:'survey-report-upload'}))})()"
                             @click="$dispatch('close-modal', 'survey-report-upload')"
                             class="inline-flex items-center justify-center rounded-xl bg-accent-500 px-5 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-600 hover:shadow-lg active:scale-95">
                         {{ __('Cancel') }}

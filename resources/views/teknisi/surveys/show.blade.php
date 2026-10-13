@@ -111,7 +111,7 @@
                                 <x-icon name="file-text" class="w-4 h-4" />
                             </a>
                             @can('manage-technician')
-                                <button type="button" onclick="window.dispatchEvent(new CustomEvent('report-upload', { detail: { id: {{ $survey->id }} } }))"
+                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),s=c&&c.querySelector('[data-report-survey-select]'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(s)s.value=id;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
                                         title="{{ __('Replace Report') }}" aria-label="{{ __('Replace Report') }}"
                                         class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition">
                                     <x-icon name="edit" class="w-4 h-4" />
@@ -124,7 +124,7 @@
                                 <x-icon name="file-text" class="w-4 h-4" />
                             </a>
                             @can('manage-technician')
-                                <button type="button" onclick="window.dispatchEvent(new CustomEvent('report-upload', { detail: { id: {{ $survey->id }} } }))"
+                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),s=c&&c.querySelector('[data-report-survey-select]'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(s)s.value=id;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
                                         title="{{ __('Upload PDF') }}" aria-label="{{ __('Upload PDF') }}"
                                         class="p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition">
                                     <x-icon name="folder" class="w-4 h-4" />

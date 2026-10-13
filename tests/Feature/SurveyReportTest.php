@@ -217,7 +217,8 @@ class SurveyReportTest extends TestCase
         $this->assertStringContainsString('report-upload-open', $html);
         // Trigger memakai event browser native agar tetap berfungsi setelah
         // navigasi Livewire/wire:navigate.
-        $this->assertStringContainsString("onclick=\"window.dispatchEvent(new CustomEvent('report-upload-open'))\"", $html);
+        $this->assertStringContainsString("new CustomEvent('report-upload-open')", $html);
+        $this->assertStringContainsString('data-survey-report-modal', $html);
     }
 
     public function test_index_shows_correct_report_actions(): void
@@ -246,6 +247,7 @@ class SurveyReportTest extends TestCase
         $this->assertStringContainsString('Select Survey', $html);
         // Trigger baris membawa ID survey melalui CustomEvent native.
         $this->assertStringContainsString("new CustomEvent('report-upload'", $html);
+        $this->assertStringContainsString('data-report-upload-form', $html);
     }
 
     public function test_survey_regression_pages_still_work(): void
