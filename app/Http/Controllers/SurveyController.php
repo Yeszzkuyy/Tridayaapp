@@ -16,39 +16,59 @@ class SurveyController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Survey::with('project.customer')->latest();
+        $query = Survey::with(['customer:id,name', 'sales:id,name', 'project:id,project_name'])->latest();
 
-        // Sales (tanpa izin teknisi) hanya melihat survey project miliknya (read-only).
+        // Sales (tanpa izin teknisi) hanya melihat survey miliknya (read-only).
+        // Pemilik langsung lewat surveys.sales_user_id; fallback data lama
+        // lewat project.sales_user_id.
         if (! $user?->can('view-technician')) {
             abort_unless($this->isSalesRole($user), 403);
-            $query->whereHas('project', fn ($q) => $q->where('sales_user_id', $user->id));
+            $query->where(function ($q) use ($user) {
+                $q->where('sales_user_id', $user->id)
+                    ->orWhereHas('project', fn ($p) => $p->where('sales_user_id', $user->id));
+            });
         }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->filled('project_id')) {
-            $query->where('project_id', $request->project_id);
+        if ($request->filled('sales_user_id')) {
+            $query->where('sales_user_id', $request->sales_user_id);
+        }
+        if ($request->filled('q')) {
+            $query->where('title', 'like', '%'.$request->q.'%');
         }
 
         $surveys = $query->paginate(15)->withQueryString();
-        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
+        $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
+            ->orderBy('name')->limit(200)->get(['id', 'name']);
 
-        return view('teknisi.surveys.index', compact('surveys', 'projects'));
+        return view('teknisi.surveys.index', compact('surveys', 'salesUsers'));
     }
 
     public function create(Request $request)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $selectedProject = $request->query('project_id');
+        $customers = \App\Models\Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
+            ->orderBy('name')->limit(200)->get(['id', 'name']);
 
-        return view('teknisi.surveys.create', compact('projects', 'selectedProject'));
+        // Dari timeline project: bawa project + customer-nya otomatis,
+        // teknisi cukup mengisi judul + sales (tidak ada pilihan project yang membingungkan).
+        $presetProjectId = $request->query('project_id');
+        $presetCustomerId = $request->query('customer_id')
+            ?? Project::find($presetProjectId)?->customer_id;
+
+        return view('teknisi.surveys.create', compact('projects', 'customers', 'salesUsers', 'presetProjectId', 'presetCustomerId'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'title' => 'required|string|max:255',
+            'customer_id' => 'nullable|exists:customers,id',
+            'project_id' => 'nullable|exists:projects,id',
+            'sales_user_id' => 'required|exists:users,id',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
@@ -60,7 +80,10 @@ class SurveyController extends Controller
 
         try {
             $survey = Survey::create([
-                'project_id' => $validated['project_id'],
+                'title' => $validated['title'],
+                'customer_id' => $validated['customer_id'] ?? null,
+                'project_id' => $validated['project_id'] ?? null,
+                'sales_user_id' => $validated['sales_user_id'],
                 'survey_date' => $validated['survey_date'] ?? null,
                 'location' => $validated['location'] ?? null,
                 'pic' => $validated['pic'] ?? null,
@@ -118,7 +141,7 @@ class SurveyController extends Controller
     {
         $this->guardRead($request->user(), $survey);
 
-        $survey->load('project.customer');
+        $survey->load(['customer:id,name', 'sales:id,name', 'project:id,project_name']);
 
         return view('teknisi.surveys.show', compact('survey'));
     }
@@ -126,14 +149,20 @@ class SurveyController extends Controller
     public function edit(Survey $survey)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
+        $customers = \App\Models\Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
+            ->orderBy('name')->limit(200)->get(['id', 'name']);
 
-        return view('teknisi.surveys.edit', compact('survey', 'projects'));
+        return view('teknisi.surveys.edit', compact('survey', 'projects', 'customers', 'salesUsers'));
     }
 
     public function update(Request $request, Survey $survey)
     {
         $validated = $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'title' => 'required|string|max:255',
+            'customer_id' => 'nullable|exists:customers,id',
+            'project_id' => 'nullable|exists:projects,id',
+            'sales_user_id' => 'required|exists:users,id',
             'sales_request' => 'nullable|string',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
@@ -283,7 +312,8 @@ class SurveyController extends Controller
     /**
      * Izin baca survey.
      * Pemegang izin teknisi: penuh. Sales (sales/sales-{pt}): hanya survey
-     * project yang dimiliki (project.sales_user_id = user). Read-only.
+     * miliknya (surveys.sales_user_id = user), dengan fallback data lama
+     * lewat project pemiliknya. Read-only.
      */
     private function guardRead(?User $user, Survey $survey): void
     {
@@ -293,7 +323,10 @@ class SurveyController extends Controller
             return;
         }
 
-        abort_unless($this->isSalesRole($user) && (int) $survey->project?->sales_user_id === (int) $user->id, 403);
+        $owns = (int) $survey->sales_user_id === (int) $user->id
+            || (int) $survey->project?->sales_user_id === (int) $user->id;
+
+        abort_unless($this->isSalesRole($user) && $owns, 403);
     }
 
     /**

@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Daftar Survey') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Semua data survey untuk setiap project') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Semua data survey lapangan') }}</p>
         </div>
         <div class="flex items-center gap-2">
             {{-- Template laporan survey (Google Docs) — selalu kelihatan di daftar --}}
@@ -19,15 +19,20 @@
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 mb-4 flex flex-wrap items-center gap-3">
         <form method="GET" action="{{ route('teknisi.surveys.index') }}" class="flex flex-wrap items-center gap-3 w-full">
             <div class="flex items-center gap-2 min-w-48 flex-1">
-                <label class="text-sm text-slate-500 whitespace-nowrap">Project:</label>
-                <select name="project_id" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
-                    <option value="">{{ __('Semua Project') }}</option>
-                    @foreach($projects as $project)
-                        <option value="{{ $project->id }}" {{ request('project_id') == $project->id ? 'selected' : '' }}>
-                            {{ $project->project_name }}
+                <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Sales') }}:</label>
+                <select name="sales_user_id" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
+                    <option value="">{{ __('Semua Sales') }}</option>
+                    @foreach($salesUsers as $sales)
+                        <option value="{{ $sales->id }}" {{ request('sales_user_id') == $sales->id ? 'selected' : '' }}>
+                            {{ $sales->name }}
                         </option>
                     @endforeach
                 </select>
+            </div>
+            <div class="flex items-center gap-2 min-w-48 flex-1">
+                <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Cari') }}:</label>
+                <input type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('Cari judul...') }}"
+                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
             </div>
             <div class="flex items-center gap-2 min-w-48 flex-1">
                 <label class="text-sm text-slate-500 whitespace-nowrap">Status:</label>
@@ -52,8 +57,9 @@
             <table class="min-w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Project</th>
-                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Customer</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Judul') }}</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Sales') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Tanggal Survey') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Lokasi') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('PIC') }}</th>
@@ -65,10 +71,13 @@
                     @forelse($surveys as $survey)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
                             <td class="px-6 py-4 font-semibold text-slate-800 dark:text-slate-100">
-                                <span class="block max-w-[220px] truncate" title="{{ $survey->project?->project_name ?? '' }}">{{ $survey->project?->project_name ?? '-' }}</span>
+                                <span class="block max-w-[220px] truncate" title="{{ $survey->title ?? '' }}">{{ $survey->title ?? '-' }}</span>
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                <span class="block max-w-[180px] truncate" title="{{ $survey->project?->customer?->name ?? '' }}">{{ $survey->project?->customer?->name ?? '-' }}</span>
+                                <span class="block max-w-[180px] truncate" title="{{ $survey->customer?->name ?? '' }}">{{ $survey->customer?->name ?? '-' }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                <span class="block max-w-[180px] truncate" title="{{ $survey->sales?->name ?? '' }}">{{ $survey->sales?->name ?? '-' }}</span>
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $survey->survey_date ? \Carbon\Carbon::parse($survey->survey_date)->format('d M Y') : '-' }}</td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
@@ -119,7 +128,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="py-16 text-center text-slate-400">
+                            <td colspan="8" class="py-16 text-center text-slate-400">
                                 <p>{{ __('Belum ada data survey.') }}</p>
                                 <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ __('Buat survey dulu, lalu unggah laporan PDF dari barisnya.') }}</p>
                             </td>
