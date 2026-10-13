@@ -3,8 +3,8 @@
     Dipakai dari halaman daftar & detail survey.
 
     Trigger:
-        - Dari baris:   @click="$dispatch('report-upload', { id: {{ $survey->id }} })"
-        - Dari header:  @click="$dispatch('report-upload-open')"  (pilih survey di dropdown)
+        - Dari baris:   event browser `report-upload` dengan ID survey
+        - Dari header:  event browser `report-upload-open` (pilih survey di dropdown)
 
     Modal menerima ID survey dari baris yang diklik (atau pilihan dropdown),
     mengirim multipart/form-data dengan CSRF, mencegah double submit,
