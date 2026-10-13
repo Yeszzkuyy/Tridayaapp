@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div>
+    <div x-data="{ open: {{ $errors->any() ? 'true' : 'false' }} }" @open-schedule-modal.window="open = true">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Sales Schedule') }}</h1>
@@ -14,6 +14,15 @@
                     <x-icon-button as="a" icon="add" href="{{ route('sales.schedules.create') }}" title="{{ __('Add') }}" />
                 @endif
             </div>
+        </div>
+
+        {{-- Kalender interaktif kunjungan (sumber: follow_ups) --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-100">{{ __('Visit Calendar') }}</h2>
+                <p class="text-xs text-slate-500">{{ __('Klik tanggal untuk tambah jadwal kunjungan.') }}</p>
+            </div>
+            <div id="sales-calendar" style="min-height:480px" data-events-url="{{ route('sales.schedules.events') }}"></div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -60,5 +69,140 @@
             @endforelse
             <div class="mt-4">{{ $schedules->links() }}</div>
         </div>
+
+        {{-- Modal tambah jadwal kunjungan (self-service, simpan ke follow_ups) --}}
+        <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-slate-900/50" @click="open = false"></div>
+            <div class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 p-6 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Tambah Jadwal Kunjungan') }}</h3>
+                <p class="text-sm text-slate-500 mb-4">{{ __('Tersimpan sebagai follow-up dan masuk Activity Timeline Lead.') }}</p>
+
+                @if($errors->any())
+                    <div class="mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+                        <ul class="list-disc list-inside">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('sales.follow-ups.store') }}" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="type" value="meeting">
+
+                    <div>
+                        <label for="su-customer_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
+                        <select id="su-customer_id" name="customer_id" required
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                            <option value="">{{ __('Pilih customer') }}</option>
+                            @foreach($customers as $id => $label)
+                                <option value="{{ $id }}" @selected(old('customer_id') == $id)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="su-lead_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Lead') }}</label>
+                        <select id="su-lead_id" name="lead_id"
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                            <option value="">{{ __('Pilih lead (opsional)') }}</option>
+                            @foreach($leadItems as $lead)
+                                <option value="{{ $lead['id'] }}" data-customer="{{ $lead['customer_id'] }}" @selected(old('lead_id') == $lead['id'])>{{ $lead['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="su-follow_up_date" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Tanggal') }}</label>
+                            <input id="su-follow_up_date" type="date" name="follow_up_date" value="{{ old('follow_up_date') }}" required
+                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                        </div>
+                        <div>
+                            <label for="su-activity_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Jam') }}</label>
+                            <input id="su-activity_time" type="time" name="activity_time" value="{{ old('activity_time') }}"
+                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="su-location" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Lokasi') }}</label>
+                        <input id="su-location" type="text" name="location" value="{{ old('location') }}" maxlength="150" placeholder="{{ __('Alamat / titik kumpul') }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                    </div>
+
+                    <div>
+                        <label for="su-description" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Agenda') }}</label>
+                        <textarea id="su-description" name="description" rows="3" required placeholder="{{ __('Contoh: Presentasi BOQ') }}"
+                                  class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button type="button" @click="open = false"
+                                class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Cancel') }}</button>
+                        <button type="submit"
+                                class="group relative overflow-hidden px-4 py-2 rounded-xl text-sm font-medium bg-accent-600 hover:bg-accent-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
+                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
+                            {{ __('Save') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+        function initSalesCalendar() {
+            var el = document.getElementById('sales-calendar');
+            if (!el || typeof FullCalendar === 'undefined') return;
+            if (el.dataset.rendered === '1') return;
+            el.dataset.rendered = '1';
+            var calendar = new FullCalendar.Calendar(el, {
+                initialView: 'dayGridMonth',
+                firstDay: 1,
+                height: 'auto',
+                timeZone: 'Asia/Jakarta',
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+                events: el.dataset.eventsUrl,
+                dateClick: function (info) {
+                    var input = document.getElementById('su-follow_up_date');
+                    if (input) input.value = info.dateStr;
+                    window.dispatchEvent(new CustomEvent('open-schedule-modal'));
+                },
+                eventClick: function (info) {
+                    if (info.event.url) {
+                        info.jsEvent.preventDefault();
+                        window.location.href = info.event.url;
+                    }
+                },
+                dayMaxEvents: 3
+            });
+            calendar.render();
+        }
+
+        function filterScheduleLeads() {
+            var customerId = document.getElementById('su-customer_id')?.value || '';
+            var leadSelect = document.getElementById('su-lead_id');
+            if (!leadSelect) return;
+            leadSelect.querySelectorAll('option[data-customer]').forEach(function (opt) {
+                opt.hidden = customerId !== '' && opt.dataset.customer !== customerId;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initSalesCalendar();
+            document.getElementById('su-customer_id')?.addEventListener('change', filterScheduleLeads);
+            document.getElementById('su-lead_id')?.addEventListener('change', function () {
+                var selected = this.querySelector('option:checked');
+                var customerSelect = document.getElementById('su-customer_id');
+                if (selected && selected.dataset.customer && customerSelect && !customerSelect.value) {
+                    customerSelect.value = selected.dataset.customer;
+                    filterScheduleLeads();
+                }
+            });
+            filterScheduleLeads();
+        });
+        document.addEventListener('livewire:navigated', initSalesCalendar);
+    </script>
 </x-app-layout>
