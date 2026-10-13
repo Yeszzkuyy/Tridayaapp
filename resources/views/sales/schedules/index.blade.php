@@ -61,7 +61,7 @@
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
                                 class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
-                            <span :class="cell.isToday ? 'bg-accent-500/20 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200' : ''"
+                            <span :class="cell.isToday || cell.date === activeDate ? 'bg-accent-500/20 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200' : ''"
                                   class="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
@@ -339,8 +339,24 @@
                                 <a :href="selectedEvent.url" class="shrink-0 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View lead') }} →</a>
                             </div>
                         </div>
-                        <div x-show="canWrite && !selectedEvent.completed" class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
-                            <form method="GET" :action="followUpUrl('edit')" class="inline">
+                        <div x-show="canWrite && !selectedEvent.completed" class="flex items-center justify-between gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                            <div class="relative">
+                                <button type="button" @click="snoozeOpen = !snoozeOpen" title="{{ __('Postpone') }}" aria-label="{{ __('Postpone') }}"
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </button>
+                                <div x-show="snoozeOpen" @click.outside="snoozeOpen = false" x-cloak
+                                     class="absolute bottom-11 left-0 z-20 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-600 dark:bg-slate-800">
+                                    <form x-for="d in [1, 3, 7]" :key="d" method="POST" :action="followUpUrl('snooze')">
+                                        @csrf
+                                        <input type="hidden" name="days" :value="d">
+                                        <button type="submit" class="w-full px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/60"
+                                                x-text="d + ' {{ __('day(s)') }}'"></button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <form method="GET" :action="followUpUrl('edit')" class="inline">
                                 <x-icon-button type="submit" title="{{ __('Edit') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
                                 </x-icon-button>
@@ -368,8 +384,8 @@
                  class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-y-auto" style="max-height:92vh">
                 <div class="pt-3 sm:hidden" aria-hidden="true"><div class="mx-auto h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600"></div></div>
                 <div class="p-6 pt-3 sm:pt-6">
-                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Tambah Jadwal Kunjungan') }}</h3>
-                <p class="text-sm text-slate-500 mb-1">{{ __('Tersimpan sebagai follow-up dan masuk Activity Timeline Lead.') }}</p>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Add Visit Schedule') }}</h3>
+                <p class="text-sm text-slate-500 mb-1">{{ __('Saved as a follow-up and shown in the Lead activity timeline.') }}</p>
                 <p class="text-sm font-semibold text-accent-600 dark:text-accent-400 mb-4" x-text="modalSummary()"></p>
 
                 @if($errors->any())
@@ -392,7 +408,7 @@
                         <label for="su-customer_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
                         <select id="su-customer_id" name="customer_id" x-model="customerId" @change="filterLeads()" required
                                 class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                            <option value="">{{ __('Pilih customer') }}</option>
+                            <option value="">{{ __('Choose a customer') }}</option>
                             @foreach($customers as $id => $label)
                                 <option value="{{ $id }}" @selected(old('customer_id') == $id)>{{ $label }}</option>
                             @endforeach
@@ -403,7 +419,7 @@
                         <label for="su-lead_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Lead') }}</label>
                         <select id="su-lead_id" name="lead_id" x-model="leadId" @change="syncCustomerFromLead()"
                                 class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                            <option value="">{{ __('Pilih lead (opsional)') }}</option>
+                            <option value="">{{ __('Choose a lead (optional)') }}</option>
                             <template x-for="lead in filteredLeads()" :key="lead.id">
                                 <option :value="lead.id" x-text="lead.label"></option>
                             </template>
@@ -412,12 +428,12 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label for="su-follow_up_date" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Tanggal') }}</label>
+                            <label for="su-follow_up_date" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Date') }}</label>
                             <input id="su-follow_up_date" type="date" name="follow_up_date" :value="modalDate" @change="modalDate = $event.target.value" required
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
-                            <label for="su-activity_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Jam') }}</label>
+                            <label for="su-activity_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Time') }}</label>
                             <input id="su-activity_time" type="time" name="activity_time" x-model="modalTime"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                             <div class="mt-2 flex flex-wrap gap-1.5">
@@ -431,15 +447,22 @@
                     </div>
 
                     <div>
-                        <label for="su-location" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Lokasi') }}</label>
-                        <input id="su-location" type="text" name="location" x-model="modalLocation" maxlength="150" placeholder="{{ __('Alamat / titik kumpul') }}"
+                        <label for="su-location" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Location') }}</label>
+                        <input id="su-location" type="text" name="location" x-model="modalLocation" maxlength="150" placeholder="{{ __('Address / meeting point') }}"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                     </div>
 
                     <div>
-                        <label for="su-description" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Agenda') }}</label>
-                        <textarea id="su-description" name="description" rows="3" required placeholder="{{ __('Contoh: Presentasi BOQ') }}"
+                        <label for="su-description" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Agenda / Notes') }}</label>
+                        <textarea id="su-description" name="description" rows="3" required placeholder="{{ __('e.g. Presenting the BOQ') }}"
                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="su-next_follow_up_date" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Next follow-up date') }}</label>
+                        <input id="su-next_follow_up_date" type="date" name="next_follow_up_date" value="{{ old('next_follow_up_date') }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Optional — you will be reminded to follow up.') }}</p>
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
@@ -481,6 +504,7 @@
                 drawerOpen: false,
                 selectedEvent: null,
                 openMenuId: null,
+                snoozeOpen: false,
                 isModalOpen: {{ $errors->any() && auth()->user()->can('manage-sales') ? 'true' : 'false' }},
                 modalDate: @json($activeDate),
                 modalTime: @json((string) old('activity_time', '')),
@@ -661,6 +685,7 @@
                 openDrawer(event) {
                     this.selectedEvent = { ...event };
                     this.drawerOpen = true;
+                    this.snoozeOpen = false;
                 },
 
                 closeDrawer() {
