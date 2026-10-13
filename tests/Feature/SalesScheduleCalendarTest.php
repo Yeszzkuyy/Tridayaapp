@@ -63,6 +63,7 @@ class SalesScheduleCalendarTest extends TestCase
         $this->assertSame('10:00', $event['activity_time']);
         $this->assertSame('Kantor customer', $event['location']);
         $this->assertStringContainsString('PT Strip', $event['customer']);
+        $this->assertNotEmpty($event['customer_id']);
         $this->assertNotEmpty($event['url']);
     }
 
@@ -161,6 +162,8 @@ class SalesScheduleCalendarTest extends TestCase
         $res->assertSee('id="sales-month-grid"', false);
         $res->assertSee('id="sales-view-switcher"', false);
         $res->assertSee('id="sales-week-list"', false);
+        $res->assertSee('Weekly Schedule');
+        $res->assertSee('Location / Meeting Link');
         $res->assertSee('openDrawer(ev)', false);
         $res->assertSee(route('sales.schedules.api'), false);
         $res->assertSee(route('sales.follow-ups.store'), false);
