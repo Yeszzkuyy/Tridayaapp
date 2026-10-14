@@ -231,6 +231,25 @@ class TechnicianScheduleCalendarTest extends TestCase
         \Illuminate\Support\Facades\Queue::assertNotPushed(\App\Jobs\SyncGoogleCalendarJob::class);
     }
 
+    public function test_create_schedule_with_status_key_succeeds(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        // Form mengirim KEY status (scheduled/dst), bukan label — harus lolos validasi.
+        foreach (array_keys(\App\Models\TechnicianSchedule::STATUSES) as $status) {
+            $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
+                'title' => 'Status '.$status, 'date' => '2026-10-25',
+                'start_time' => '09:00', 'end_time' => '11:00', 'status' => $status,
+            ])->assertSessionHasNoErrors();
+        }
+
+        // Label (Scheduled) harus DITOLAK — ini penyebab bug lama.
+        $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
+            'title' => 'Salah', 'date' => '2026-10-25',
+            'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'Scheduled',
+        ])->assertSessionHasErrors('status');
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');
