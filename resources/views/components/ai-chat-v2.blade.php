@@ -20,7 +20,7 @@
             @pointermove="dragMove($event, 'launcher')"
             @pointerup="dragEnd($event, 'launcher')"
             @pointercancel="dragCancel()"
-            @click.capture.stop="guardClick($event)"
+            @click.capture.stop="guardClick()"
             :style="triggerStyle()"
             :aria-expanded="open"
             aria-label="{{ __('Toggle 3DY AI') }}"
@@ -37,7 +37,7 @@
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95"
          :style="chatStyle()"
-          class="fixed z-[1000] flex h-[560px] max-h-[calc(100dvh-8rem)] w-[332px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+          class="fixed z-[1000] flex h-[560px] w-[332px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
          role="dialog" aria-modal="false" aria-label="3DY AI">
         {{-- Header (gagang geser offset; tombol di dalamnya tetap diklik biasa) --}}
         <div @pointerdown="dragStart($event, 'chat')"
@@ -130,7 +130,7 @@
 
         {{-- Conversation list --}}
         <div x-show="showList"
-             class="min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-slate-50 px-3 py-3 dark:bg-slate-900/60"
+             class="aiv2-safe-bottom min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-slate-50 px-3 py-3 dark:bg-slate-900/60"
              aria-label="{{ __('Daftar percakapan') }}">
             <button type="button" @click="newChat()" :disabled="busy || loadingConvo"
                     class="w-full rounded-xl bg-accent-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50">
@@ -156,7 +156,7 @@
         </div>
 
         {{-- Input --}}
-        <div x-show="!showList" class="border-t border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-800">
+        <div x-show="!showList" class="aiv2-safe-bottom border-t border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-end gap-2">
                 <textarea x-ref="input" x-model="draft" rows="1" maxlength="2000"
                           @input="resize()" @keydown.enter="onEnter($event)"
@@ -177,6 +177,8 @@
 .aiv2-dot { width: 7px; height: 7px; border-radius: 9999px; background: rgb(var(--accent-500)); animation: aiv2-typing 1.2s infinite ease-in-out; }
 .aiv2-dot:nth-child(2) { animation-delay: .15s; } .aiv2-dot:nth-child(3) { animation-delay: .3s; }
 @keyframes aiv2-typing { 0%,60%,100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+/* Ruang untuk home indicator / gesture bar HP (konsisten dengan ai/chat). */
+.aiv2-safe-bottom { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
 .aiv2-md { font-size: .875rem; line-height: 1.5; }
 .aiv2-md p { margin: .25rem 0; } .aiv2-md p:first-child { margin-top: 0; } .aiv2-md p:last-child { margin-bottom: 0; }
 .aiv2-md ul, .aiv2-md ol { margin: .25rem 0; padding-left: 1.1rem; } .aiv2-md ul { list-style: disc; } .aiv2-md ol { list-style: decimal; }
@@ -202,7 +204,18 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
         // dari jangkarnya (tersimpan per user). Jendela = jangkar + offset.
         // Gandeng dua arah: geser jendela ikut menggeser launcher.
         pos: null, chatOff: null,
-        dragging: false, dragWhich: null, moved: false, suppressUntil: 0,
+        // Ukuran viewport (reaktif): semua geometri (clamp/trigger/anchor)
+        // membaca state ini, bukan window.* langsung — binding :style hanya
+        // dihitung ulang saat state berubah, jadi tanpa ini posisi/ukuran
+        // membeku pada viewport lama (bubble bisa keluar layar setelah putar
+        // layar HP; jendela bisa tetap selebar layar setelah maximize).
+        // vv* = visual viewport (bagian layar yang benar-benar terlihat —
+        // di iOS tingginya mengecil saat keyboard terbuka).
+        vw: Math.max(window.innerWidth || 0, 0),
+        vh: Math.max(window.innerHeight || 0, 0),
+        vvh: window.visualViewport ? window.visualViewport.height : window.innerHeight,
+        vvo: window.visualViewport ? (window.visualViewport.offsetTop || 0) : 0,
+        dragging: false, dragWhich: null, moved: false, suppressUntil: 0, dragThreshold: 10,
         sx: 0, sy: 0, ox: 0, oy: 0, bx: 0, by: 0,
         quicks: @js([__('Jelaskan data server saya'), __('Bantu analisis masalah'), __('Buatkan kode Laravel'), __('Jelaskan konsep jaringan')]),
         key() { return '3dy.ai.v2.conv.' + this.uid; },
@@ -228,6 +241,14 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             if (this.conversationId && !this.convos.some(c => c.id === this.conversationId)) {
                 this.conversationId = null;
                 try { localStorage.removeItem(this.key()); } catch (e) {}
+            }
+            // Keyboard HP & URL bar mengubah visual viewport tanpa selalu
+            // memicu resize window — dengarkan keduanya.
+            const vv = window.visualViewport;
+            if (vv && !this.__vvBound) {
+                this.__vvBound = true;
+                vv.addEventListener('resize', () => this.clampAll());
+                vv.addEventListener('scroll', () => this.clampAll());
             }
         },
         activeTitle() {
@@ -287,22 +308,32 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             this.$nextTick(() => this.resize());
         },
         // --- Geser: launcher pindah jangkar, header jendela set offset.
-        // Pola: threshold 10px, klik launcher tertelan bila habis drag;
-        // keyboard (detail 0) selalu membuka.
+        // Pola: threshold 10px (16px untuk sentuh), klik launcher tertelan
+        // bila habis drag.
         isNarrow() { return window.innerWidth < 640; },
         clamp(p, w, h) {
-            const vw = window.innerWidth, vh = window.innerHeight;
+            const vw = this.vw, vh = this.vh;
             return {
                 left: Math.min(Math.max(p.left, 8), Math.max(vw - w - 8, 8)),
                 top: Math.min(Math.max(p.top, 8), Math.max(vh - h - 8, 8)),
             };
         },
         clampAll() {
+            // Selalu perbarui ukuran viewport dulu (state reaktif) supaya
+            // binding :style bubble/jendela dihitung ulang tiap resize.
+            // Ukuran degenerat (window di-minimize: innerWidth/Height bisa 0)
+            // diabaikan agar posisi tidak nyangkut di (8,8).
+            const w = window.innerWidth, h = window.innerHeight;
+            if (w < 2 || h < 2) return;
+            this.vw = w; this.vh = h;
+            const vv = window.visualViewport;
+            this.vvh = vv ? vv.height : h;
+            this.vvo = vv ? (vv.offsetTop || 0) : 0;
             if (this.pos) this.pos = this.clamp(this.pos, 56, 56);
         },
         triggerPos() {
             if (this.pos) return this.clamp(this.pos, 56, 56);
-            return { left: window.innerWidth - 24 - 56, top: window.innerHeight - 24 - 56 };
+            return { left: this.vw - 24 - 56, top: this.vh - 24 - 56 };
         },
         triggerStyle() {
             // WAJIB object (bukan string): :style string menimpa seluruh
@@ -312,9 +343,9 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             return { left: `${p.left}px`, top: `${p.top}px` };
         },
         anchorGeom() {
-            const vw = window.innerWidth, vh = window.innerHeight;
+            const vw = this.vw, vh = this.vh;
             if (vw < 640) return null;
-            const w = Math.min(332, vw - 24), h = Math.min(560, vh - 24);
+            const w = Math.min(332, vw - 24), h = Math.min(560, Math.max(vh - 24, 160));
             const p = this.triggerPos(), GAP = 16;
             const left = (p.left + 56 + GAP + w <= vw) ? p.left + 56 + GAP : Math.max(p.left - GAP - w, 12);
             const top = Math.min(Math.max(p.top + 56 - h, 12), vh - h - 12);
@@ -344,13 +375,23 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             // Sisa right/bottom saat pindah desktop↔mobile diabaikan browser
             // (over-constrained LTR) — width/height selalu di-set eksplisit.
             const g = this.chatGeom();
-            if (!g) return { left: '12px', right: '12px', top: '64px', bottom: '12px', width: 'auto', height: 'auto' };
-            return { left: `${g.left}px`, top: `${g.top}px`, width: `${g.w}px`, height: `${g.h}px` };
+            // Bagian layar yang tertutup keyboard HP: visual viewport lebih
+            // pendek dari layout viewport (iOS tidak mengecilkan layout
+            // viewport) — angkat dasar jendela setinggi itu supaya baris
+            // input tetap terlihat.
+            const hidden = Math.max(0, this.vh - (this.vvo + this.vvh));
+            if (!g) {
+                // Layar sempit: jendela mengisi layar (left/right/top/bottom).
+                return { left: '12px', right: '12px', top: '64px', bottom: (12 + hidden) + 'px', width: 'auto', height: 'auto' };
+            }
+            return { left: `${g.left}px`, top: `${Math.max(12, g.top - hidden)}px`, width: `${g.w}px`, height: `${g.h}px` };
         },
         dragStart(e, which) {
             if (which === 'chat' && (this.isNarrow() || e.target?.closest?.('button'))) return;
             if (e.pointerType === 'mouse' && e.button !== undefined && e.button !== 0) return;
             this.dragging = true; this.dragWhich = which; this.moved = false;
+            // Jari di layar sentuh bergetar lebih jauh saat tap murni.
+            this.dragThreshold = e.pointerType === 'touch' ? 16 : 10;
             this.sx = e.clientX; this.sy = e.clientY;
             if (which === 'chat') {
                 const g = this.chatGeom();
@@ -370,7 +411,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
                 if (which === 'launcher' && (e.buttons & 1) && e.target?.closest?.('.aiv2-launcher')) this.dragStart(e, which);
                 return;
             }
-            if (Math.hypot(e.clientX - this.sx, e.clientY - this.sy) > 10) this.moved = true;
+            if (Math.hypot(e.clientX - this.sx, e.clientY - this.sy) > this.dragThreshold) this.moved = true;
             if (!this.moved) return;
             if (which === 'chat') {
                 // Gandeng: delta pointer yang sama diterapkan ke launcher —
@@ -384,21 +425,21 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             if (!this.dragging || this.dragWhich !== which) return;
             this.dragging = false; this.dragWhich = null;
             const dx = (e.clientX ?? this.sx) - this.sx, dy = (e.clientY ?? this.sy) - this.sy;
-            if (!this.moved && Math.hypot(dx, dy) <= 10) return;
+            const dragged = this.moved || Math.hypot(dx, dy) > this.dragThreshold;
             // Telan klik sintetis susulan (lambat di HP/WebView) tanpa timer race.
             // Hanya relevan untuk launcher (header tak punya aksi klik).
-            if (which === 'launcher') this.suppressUntil = Date.now() + 600;
+            if (which === 'launcher' && dragged) this.suppressUntil = Date.now() + 600;
+            this.moved = false;
+            if (!dragged) return;
             try { localStorage.setItem(this.posKey(), JSON.stringify(this.triggerPos())); } catch (err) {}
         },
-        dragCancel() { this.dragging = false; this.dragWhich = null; },
-        guardClick(e) {
+        dragCancel() { this.dragging = false; this.dragWhich = null; this.moved = false; },
+        guardClick() {
             // Toggle ala komik: klik bubble saat terbuka = minimize.
-            // Keyboard Enter/Space (detail 0) selalu toggle; klik habis
-            // drag tetap ditelan.
-            const toggle = () => { this.open ? this.minimize() : this.openChat(); };
-            if (e && e.detail === 0) { toggle(); return; }
+            // Klik sintetis habis drag (termasuk klik keyboard yang datang
+            // tepat setelahnya) ditelan lebih dulu; sisanya toggle biasa.
             if (this.dragging || this.moved || Date.now() < this.suppressUntil) return;
-            toggle();
+            this.open ? this.minimize() : this.openChat();
         },
         newChat() {
             this.messages = []; this.error = ''; this.lastUserText = '';
@@ -416,8 +457,13 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
         onEnter(e) {
             if (e.isComposing) return;
             if (e.shiftKey) return;
+            // Keyboard virtual HP tak punya Shift+Enter: di perangkat sentuh
+            // Enter membuat baris baru (pola chat mobile) dan kirim lewat
+            // tombol — Ctrl/Cmd+Enter tetap mengirim.
+            if (this.isTouch() && !e.ctrlKey && !e.metaKey) return;
             e.preventDefault(); this.send();
         },
+        isTouch() { return window.matchMedia('(pointer: coarse)').matches; },
         // Samakan dengan backend cleanMessage(): buang karakter tak
         // terlihat + pangkas spasi unicode di kedua ujung.
         cleanText() {
