@@ -162,7 +162,7 @@
                     </template>
                 </div>
                 <p class="mb-4 text-center text-xs text-slate-400" x-text="weekLabel"></p>
-                <template x-for="event in events" :key="event.id">
+                <template x-for="event in weekEvents" :key="event.id">
                     <div @click="openDrawer(event)" class="border border-gray-200 dark:border-slate-600 rounded-xl p-5 mb-4 last:mb-0 bg-white dark:bg-slate-800 cursor-pointer hover:shadow-md transition" :style="'border-left:4px solid ' + colorFor(event.technician_user_id)">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0 flex-1">
@@ -507,9 +507,11 @@
                 weekLabel: '',
                 dayLabel: '',
                 events: [],
+                weekEvents: [],
                 loading: false,
                 loadError: false,
                 fetchSeq: 0,
+                rangeSeq: 0,
                 drawerOpen: false,
                 selected: null,
                 isModalOpen: false,
@@ -707,13 +709,17 @@
                 },
 
                 fetchRange(start, end) {
-                    const seq = ++this.fetchSeq;
-                    fetch(this.apiUrl + '?start=' + start + '&end=' + end)
+                    // Isi weekEvents (kartu Weekly) + monthEvents (dots/preview).
+                    // JANGAN sentuh this.events (agenda hari terpilih) — itu
+                    // tugas fetchEvents. Sequence terpisah agar tak saling buang.
+                    const seq = ++this.rangeSeq;
+                    fetch(this.apiUrl + '?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end))
                         .then((r) => r.json())
                         .then((data) => {
-                            if (seq !== this.fetchSeq) return;
-                            this.events = Array.isArray(data) ? data : [];
-                            this.groupByDate(this.events);
+                            if (seq !== this.rangeSeq) return;
+                            const list = Array.isArray(data) ? data : [];
+                            this.weekEvents = list;
+                            this.groupByDate(list);
                         })
                         .catch(() => {});
                 },

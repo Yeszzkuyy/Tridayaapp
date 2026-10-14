@@ -128,6 +128,7 @@ class TechnicianScheduleController extends Controller
         ]);
 
         GoogleAppCredential::current()->fill($validated)->save();
+        $this->google->forgetReachableCache();
 
         return back()->with('success', __('Kredensial Google Calendar tersimpan.'));
     }
@@ -162,6 +163,8 @@ class TechnicianScheduleController extends Controller
             }
         }
 
+        $this->google->forgetReachableCache();
+
         try {
             $stats = $this->google->syncFromGoogle();
         } catch (\Throwable $e) {
@@ -188,8 +191,15 @@ class TechnicianScheduleController extends Controller
      */
     public function googleStatus()
     {
+        $importOk = $this->google->isApiReachable();
+        $oauth = $this->google->hasOAuthConnection(auth()->user());
+
+        // "Connected" = koneksi Google berfungsi: import (baca) jalan.
+        // oauth_connected dilaporkan terpisah untuk transparansi tulis-balik.
         return response()->json([
-            'connected' => $this->google->isApiReachable(),
+            'connected' => $importOk,
+            'import_ok' => $importOk,
+            'oauth_connected' => $oauth,
         ]);
     }
 

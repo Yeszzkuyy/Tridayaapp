@@ -27,16 +27,33 @@ class GoogleCalendarService
      */
     public function isApiReachable(): bool
     {
-        // Hasil live call di-cache 5 menit: dipanggil tiap render jadwal.
-        return Cache::remember('gcal:reachable', 300, function () {
-            try {
-                $this->upcomingEvents(1);
+        // Cache hasil: sukses 2 menit, gagal hanya 15 detik (recovery cepat).
+        // Kegagalan transient (timeout) tidak boleh membuat badge "Disconnected"
+        // selama 5 menit penuh.
+        $cached = Cache::get('gcal:reachable');
+        if (is_bool($cached)) {
+            return $cached;
+        }
 
-                return true;
-            } catch (\Throwable) {
-                return false;
-            }
-        });
+        try {
+            $this->upcomingEvents(1);
+            Cache::put('gcal:reachable', true, 120);
+
+            return true;
+        } catch (\Throwable) {
+            Cache::put('gcal:reachable', false, 15);
+
+            return false;
+        }
+    }
+
+    /**
+     * Buang cache status koneksi — dipanggil setelah kredensial berubah
+     * atau sync, supaya badge langsung akurat tanpa tunggu TTL.
+     */
+    public function forgetReachableCache(): void
+    {
+        Cache::forget('gcal:reachable');
     }
 
     /**
@@ -239,8 +256,8 @@ class GoogleCalendarService
     }
 
     /**
-     * Apakah ada koneksi OAuth (tulis/sync 2-arah) yang aktif untuk user ini
-     * atau untuk user lain (token tersimpan global). Badge memakai ini.
+     * Apakah ada koneksi OAuth (tulis/sync 2-arah) — token tersimpan untuk
+     * user ini, atau user lain mana pun (token global dipakai sync).
      */
     public function hasOAuthConnection(?User $user = null): bool
     {
