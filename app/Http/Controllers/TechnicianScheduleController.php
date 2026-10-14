@@ -148,7 +148,18 @@ class TechnicianScheduleController extends Controller
         ]);
 
         if ($validated !== []) {
-            GoogleAppCredential::current()->fill($validated)->save();
+            try {
+                GoogleAppCredential::current()->fill($validated)->save();
+            } catch (\Throwable $e) {
+                try {
+                    \Illuminate\Support\Facades\Log::warning('Simpan kredensial Google gagal: '.$e->getMessage());
+                } catch (\Throwable) {
+                }
+
+                return back()->with('sync_message', __('Kredensial Google gagal disimpan: :error', [
+                    'error' => $e->getMessage(),
+                ]));
+            }
         }
 
         try {
