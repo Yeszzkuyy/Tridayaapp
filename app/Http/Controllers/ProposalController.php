@@ -91,10 +91,46 @@ class ProposalController extends Controller
 
     public function index(Request $request)
     {
+        $base = $this->scopedQuery();
+
+        $kpi = [
+            'draft' => (clone $base)->where('status', 'draft')->count(),
+            'pending_technical' => (clone $base)->where('status', 'pending_technical')->count(),
+            'sent' => (clone $base)->where('status', 'sent')->count(),
+            'viewed' => (clone $base)->where('status', 'viewed')->count(),
+            'expiring' => (clone $base)->whereIn('status', ['ready', 'sent', 'viewed'])
+                ->whereNotNull('valid_until')
+                ->whereDate('valid_until', '>=', today())
+                ->whereDate('valid_until', '<=', today()->addDays(7))->count(),
+            'won_month' => (clone $base)->where('status', 'accepted')
+                ->whereMonth('updated_at', now()->month)
+                ->whereYear('updated_at', now()->year)->count(),
+        ];
+
+        $query = (clone $base)->with(['lead.customer', 'creator'])->orderByDesc('created_at');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(fn ($q) => $q->whereLike('proposal_number', "%{$search}%")
+                ->orWhereLike('customer', "%{$search}%"));
+        }
+
+        $proposals = $query->paginate(15)->withQueryString();
+        $statuses = Proposal::STATUSES;
+
+        return view('sales.proposals.index', compact('proposals', 'kpi', 'statuses'));
+    }
+
+    /** Scope proposal milik user (sales biasa hanya buatannya / lead-nya). */
+    private function scopedQuery()
+    {
         $user = auth()->user();
 
-        $query = Proposal::with(['lead.customer', 'creator'])
-            ->orderByDesc('created_at');
+        $query = Proposal::query();
 
         if (! $user->can('manage-sales-leads')) {
             $query->where(function ($q) use ($user) {
@@ -103,13 +139,7 @@ class ProposalController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->get('status'));
-        }
-
-        $proposals = $query->paginate(15)->withQueryString();
-
-        return view('sales.proposals.index', compact('proposals'));
+        return $query;
     }
 
     public function create(Request $request)
