@@ -239,6 +239,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-technician|manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::get('/dashboard', [TechnicianDashboardController::class, 'index'])->name('dashboard');
         Route::get('/kalender/events', [TechnicianScheduleController::class, 'events'])->name('kalender.events');
+        Route::get('/kalender/status', [TechnicianScheduleController::class, 'googleStatus'])->name('kalender.status');
         Route::get('/schedules/api', [TechnicianScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('/jadwal/google-events', [CalendarController::class, 'googleEvents'])->name('google-events');
         Route::get('/jadwal', [TechnicianScheduleController::class, 'jadwal'])->name('jadwal');

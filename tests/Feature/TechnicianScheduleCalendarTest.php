@@ -99,6 +99,19 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res->assertDontSee('Google Calendar API');
     }
 
+    public function test_google_status_endpoint_and_badge(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        $res = $this->actingAs($lead)->getJson(route('teknisi.kalender.status'));
+        $res->assertOk()->assertJsonStructure(['connected']);
+
+        // badge realtime: punya state Alpine + teks Connected/Disconnected
+        $res = $this->actingAs($lead)->get(route('teknisi.jadwal'));
+        $res->assertSee('googleConnected', false);
+        $res->assertSee('Disconnected');
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');
