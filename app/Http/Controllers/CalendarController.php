@@ -33,7 +33,7 @@ class CalendarController extends Controller
     public function index(GoogleCalendarService $calendar)
     {
         try {
-            $stats = $calendar->syncFromGoogle();
+            $stats = $calendar->syncTwoWay();
             $events = $calendar->upcomingEvents(20);
         } catch (\Throwable $e) {
             return view('calendar', [
