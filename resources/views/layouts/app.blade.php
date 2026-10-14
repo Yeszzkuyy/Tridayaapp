@@ -50,6 +50,22 @@
         };
         window.__applyAppearance();
         document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); });
+        // wire:navigate: Livewire menyalin atribut <html> dari hasil render server
+        // (replaceHtmlAttributes) — data-theme/class bisa beda dengan localStorage,
+        // sehingga halaman baru sempat ter-paint dengan tema salah (frame putih di
+        // border kartu + aksen ungu) sampai livewire:navigated memulihkannya.
+        // Hook onSwap dipanggil SETELAH body baru terpasang tapi SEBELUM paint
+        // pertama, jadi koreksi temanya tak pernah terlihat mata.
+        document.addEventListener('livewire:navigating', function (e) {
+            if (!e.detail || typeof e.detail.onSwap !== 'function') return;
+            e.detail.onSwap(function () {
+                window.__applyAppearance();
+                // Class yang dipasang JS ikut ter-reset oleh replaceHtmlAttributes.
+                var root = document.documentElement;
+                root.classList.add('js');
+                try { if (localStorage.getItem('sidebar-collapsed') === '1') root.classList.add('sidebar-collapsed'); } catch (err) {}
+            });
+        });
     </script>
 
     <script>

@@ -32,13 +32,24 @@ function applyAppearance(mode, accent) {
     window.dispatchEvent(new CustomEvent('appearance:change'));
 }
 
-function persistAppearance(mode, accent) {
+function persistAppearance(mode, accent, attempt = 1) {
     const token = document.querySelector('meta[name="csrf-token"]')?.content;
     fetch('/settings/appearance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
         body: JSON.stringify({ theme: mode, accent }),
-    }).catch(() => {});
+    }).then((res) => {
+        // fetch() tidak melempar error untuk status 4xx/5xx — tanpa cek ini
+        // kegagalan simpan (mis. 419 token kedaluwarsa) berjalan diam-diam dan
+        // nilai DB vs localStorage nyimpang → kilatan tema salah saat navigasi.
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+    }).catch((err) => {
+        if (attempt < 2) {
+            setTimeout(() => persistAppearance(mode, accent, attempt + 1), 3000);
+            return;
+        }
+        console.warn('[appearance] gagal menyimpan preferensi tema ke server:', err);
+    });
 }
 
 window.getAppearanceColors = function () {
