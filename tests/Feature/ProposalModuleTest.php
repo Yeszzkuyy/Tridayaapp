@@ -239,4 +239,22 @@ class ProposalModuleTest extends TestCase
         $res->assertSee(__('Pending Technical'));
         $res->assertSee(__('Won This Month'));
     }
+
+    public function test_show_renders_per_status(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        // Draft: tombol Ke Teknis.
+        $draft = $this->makeProposal($lead, 'draft', $sales->id);
+        $this->actingAs($sales)->get(route('sales.proposals.show', $draft))
+            ->assertOk()->assertSee(__('Ke Teknis'));
+
+        // Accepted: form PO + modal convert.
+        $won = $this->makeProposal($lead, 'accepted', $sales->id);
+        $this->actingAs($sales)->get(route('sales.proposals.show', $won))
+            ->assertOk()
+            ->assertSee(__('Upload PO'))
+            ->assertSee(__('Convert to Project'));
+    }
 }
