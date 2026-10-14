@@ -343,7 +343,7 @@
                             </div>
                         </div>
                         <div x-show="canManage" class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
-                            <form method="POST" :action="scheduleUrl(selected.id)" class="inline">
+                            <form method="POST" :action="scheduleUrl(selected.id)" @submit.prevent="deleteSchedule($event)" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <x-icon-button type="submit" title="{{ __('Delete') }}">
@@ -379,7 +379,8 @@
                             </ul>
                         </div>
                     @endif
-                    <form method="POST" :action="editingId ? scheduleUrl(editingId) : '{{ route('teknisi.schedules.store') }}'" class="space-y-4">
+                    <div x-show="saveError" x-cloak class="mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3" x-text="saveError"></div>
+                    <form method="POST" :action="editingId ? scheduleUrl(editingId) : '{{ route('teknisi.schedules.store') }}'" @submit.prevent="submitForm($event)" class="space-y-4">
                         @csrf
                         <template x-if="editingId"><input type="hidden" name="_method" value="PUT"></template>
 
@@ -587,6 +588,7 @@
                 drawerOpen: false,
                 selected: null,
                 isModalOpen: {{ $errors->any() && auth()->user()->can('manage-technician') ? 'true' : 'false' }},
+                saveError: null,
                 apiOpen: false,
                 editingId: null,
                 form: { title: '', project_id: '', technician_user_id: '', date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
@@ -758,6 +760,68 @@
                         this.editingId = null;
                         this.form = { title: '', project_id: '', technician_user_id: '', date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
                     }
+                },
+
+                // Simpan jadwal via AJAX — tanpa reload halaman.
+                submitForm(e) {
+                    const form = e.target;
+                    const fd = new FormData(form);
+                    const action = form.getAttribute('action');
+                    const method = (fd.get('_method') || form.getAttribute('method') || 'POST').toUpperCase();
+                    this.saveError = null;
+
+                    fetch(action, {
+                        method: method,
+                        body: fd,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                        },
+                    }).then(async (r) => {
+                        if (r.ok) {
+                            this.isModalOpen = false;
+                            this.drawerOpen = false;
+                            this.refreshAll();
+                            return;
+                        }
+                        if (r.status === 422) {
+                            const data = await r.json().catch(() => ({}));
+                            this.saveError = Object.values(data.errors || {}).flat().join(' ');
+                            return;
+                        }
+                        this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                    }).catch(() => {
+                        this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                    });
+                },
+
+                // Hapus jadwal via AJAX — tanpa reload halaman.
+                deleteSchedule(e) {
+                    const form = e.target;
+                    const fd = new FormData(form);
+                    const action = form.getAttribute('action');
+                    fetch(action, {
+                        method: 'POST',
+                        body: fd,
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                        },
+                    }).then((r) => {
+                        if (r.ok) {
+                            this.drawerOpen = false;
+                            this.refreshAll();
+                        }
+                    }).catch(() => {});
+                },
+
+                // Muat ulang semua data kalender (bulan + hari terpilih) tanpa reload.
+                refreshAll() {
+                    this.fetchMonth();
+                    if (this.view === 'week') this.fetchRange(this.weekDays[0].date, this.weekDays[6].date);
+                    else this.fetchEvents();
                 },
 
                 fetchEvents() {

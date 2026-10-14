@@ -217,6 +217,10 @@ class TechnicianScheduleController extends Controller
 
         $schedule = $this->google->createSchedule(auth()->user(), $data);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dibuat.']);
+        }
+
         return back()->with('success', 'Jadwal berhasil dibuat.')
             ->with('sync_message', $this->syncMessage($schedule));
     }
@@ -230,17 +234,25 @@ class TechnicianScheduleController extends Controller
         $data = $this->validateSchedule($request);
         $schedule = $this->google->updateSchedule($schedule, $data);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil diupdate.']);
+        }
+
         return back()->with('success', 'Jadwal berhasil diupdate.')
             ->with('sync_message', $this->syncMessage($schedule));
     }
 
-    public function destroy(TechnicianSchedule $schedule)
+    public function destroy(Request $request, TechnicianSchedule $schedule)
     {
         if ($schedule->user_id !== auth()->id() && ! auth()->user()->can('manage-admin')) {
             abort(403);
         }
 
         $this->google->deleteSchedule($schedule);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dihapus.']);
+        }
 
         return back()->with('success', 'Jadwal berhasil dihapus.');
     }
