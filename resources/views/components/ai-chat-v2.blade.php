@@ -20,7 +20,7 @@
             @pointermove="dragMove($event, 'launcher')"
             @pointerup="dragEnd($event, 'launcher')"
             @pointercancel="dragCancel()"
-            @click.capture.stop="guardClick($event)"
+            @click.capture.stop="guardClick()"
             :style="triggerStyle()"
             :aria-expanded="open"
             aria-label="{{ __('Toggle 3DY AI') }}"
@@ -213,7 +213,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
         vh: Math.max(window.innerHeight || 0, 0),
         vvh: window.visualViewport ? window.visualViewport.height : window.innerHeight,
         vvo: window.visualViewport ? (window.visualViewport.offsetTop || 0) : 0,
-        dragging: false, dragWhich: null, moved: false, suppressUntil: 0,
+        dragging: false, dragWhich: null, moved: false, suppressUntil: 0, dragThreshold: 10,
         sx: 0, sy: 0, ox: 0, oy: 0, bx: 0, by: 0,
         quicks: @js([__('Jelaskan data server saya'), __('Bantu analisis masalah'), __('Buatkan kode Laravel'), __('Jelaskan konsep jaringan')]),
         key() { return '3dy.ai.v2.conv.' + this.uid; },
@@ -306,8 +306,8 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             this.$nextTick(() => this.resize());
         },
         // --- Geser: launcher pindah jangkar, header jendela set offset.
-        // Pola: threshold 10px, klik launcher tertelan bila habis drag;
-        // keyboard (detail 0) selalu membuka.
+        // Pola: threshold 10px (16px untuk sentuh), klik launcher tertelan
+        // bila habis drag.
         isNarrow() { return window.innerWidth < 640; },
         clamp(p, w, h) {
             const vw = this.vw, vh = this.vh;
@@ -388,6 +388,8 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             if (which === 'chat' && (this.isNarrow() || e.target?.closest?.('button'))) return;
             if (e.pointerType === 'mouse' && e.button !== undefined && e.button !== 0) return;
             this.dragging = true; this.dragWhich = which; this.moved = false;
+            // Jari di layar sentuh bergetar lebih jauh saat tap murni.
+            this.dragThreshold = e.pointerType === 'touch' ? 16 : 10;
             this.sx = e.clientX; this.sy = e.clientY;
             if (which === 'chat') {
                 const g = this.chatGeom();
@@ -407,7 +409,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
                 if (which === 'launcher' && (e.buttons & 1) && e.target?.closest?.('.aiv2-launcher')) this.dragStart(e, which);
                 return;
             }
-            if (Math.hypot(e.clientX - this.sx, e.clientY - this.sy) > 10) this.moved = true;
+            if (Math.hypot(e.clientX - this.sx, e.clientY - this.sy) > this.dragThreshold) this.moved = true;
             if (!this.moved) return;
             if (which === 'chat') {
                 // Gandeng: delta pointer yang sama diterapkan ke launcher —
@@ -421,21 +423,21 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             if (!this.dragging || this.dragWhich !== which) return;
             this.dragging = false; this.dragWhich = null;
             const dx = (e.clientX ?? this.sx) - this.sx, dy = (e.clientY ?? this.sy) - this.sy;
-            if (!this.moved && Math.hypot(dx, dy) <= 10) return;
+            const dragged = this.moved || Math.hypot(dx, dy) > this.dragThreshold;
             // Telan klik sintetis susulan (lambat di HP/WebView) tanpa timer race.
             // Hanya relevan untuk launcher (header tak punya aksi klik).
-            if (which === 'launcher') this.suppressUntil = Date.now() + 600;
+            if (which === 'launcher' && dragged) this.suppressUntil = Date.now() + 600;
+            this.moved = false;
+            if (!dragged) return;
             try { localStorage.setItem(this.posKey(), JSON.stringify(this.triggerPos())); } catch (err) {}
         },
-        dragCancel() { this.dragging = false; this.dragWhich = null; },
-        guardClick(e) {
+        dragCancel() { this.dragging = false; this.dragWhich = null; this.moved = false; },
+        guardClick() {
             // Toggle ala komik: klik bubble saat terbuka = minimize.
-            // Keyboard Enter/Space (detail 0) selalu toggle; klik habis
-            // drag tetap ditelan.
-            const toggle = () => { this.open ? this.minimize() : this.openChat(); };
-            if (e && e.detail === 0) { toggle(); return; }
+            // Klik sintetis habis drag (termasuk klik keyboard yang datang
+            // tepat setelahnya) ditelan lebih dulu; sisanya toggle biasa.
             if (this.dragging || this.moved || Date.now() < this.suppressUntil) return;
-            toggle();
+            this.open ? this.minimize() : this.openChat();
         },
         newChat() {
             this.messages = []; this.error = ''; this.lastUserText = '';
