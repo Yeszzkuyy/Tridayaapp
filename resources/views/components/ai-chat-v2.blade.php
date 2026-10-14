@@ -130,7 +130,7 @@
 
         {{-- Conversation list --}}
         <div x-show="showList"
-             class="min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-slate-50 px-3 py-3 dark:bg-slate-900/60"
+             class="aiv2-safe-bottom min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-slate-50 px-3 py-3 dark:bg-slate-900/60"
              aria-label="{{ __('Daftar percakapan') }}">
             <button type="button" @click="newChat()" :disabled="busy || loadingConvo"
                     class="w-full rounded-xl bg-accent-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50">
@@ -156,7 +156,7 @@
         </div>
 
         {{-- Input --}}
-        <div x-show="!showList" class="border-t border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-800">
+        <div x-show="!showList" class="aiv2-safe-bottom border-t border-slate-200 bg-white px-3.5 py-3 dark:border-slate-700 dark:bg-slate-800">
             <div class="flex items-end gap-2">
                 <textarea x-ref="input" x-model="draft" rows="1" maxlength="2000"
                           @input="resize()" @keydown.enter="onEnter($event)"
@@ -177,6 +177,8 @@
 .aiv2-dot { width: 7px; height: 7px; border-radius: 9999px; background: rgb(var(--accent-500)); animation: aiv2-typing 1.2s infinite ease-in-out; }
 .aiv2-dot:nth-child(2) { animation-delay: .15s; } .aiv2-dot:nth-child(3) { animation-delay: .3s; }
 @keyframes aiv2-typing { 0%,60%,100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+/* Ruang untuk home indicator / gesture bar HP (konsisten dengan ai/chat). */
+.aiv2-safe-bottom { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
 .aiv2-md { font-size: .875rem; line-height: 1.5; }
 .aiv2-md p { margin: .25rem 0; } .aiv2-md p:first-child { margin-top: 0; } .aiv2-md p:last-child { margin-bottom: 0; }
 .aiv2-md ul, .aiv2-md ol { margin: .25rem 0; padding-left: 1.1rem; } .aiv2-md ul { list-style: disc; } .aiv2-md ol { list-style: decimal; }
@@ -455,8 +457,13 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
         onEnter(e) {
             if (e.isComposing) return;
             if (e.shiftKey) return;
+            // Keyboard virtual HP tak punya Shift+Enter: di perangkat sentuh
+            // Enter membuat baris baru (pola chat mobile) dan kirim lewat
+            // tombol — Ctrl/Cmd+Enter tetap mengirim.
+            if (this.isTouch() && !e.ctrlKey && !e.metaKey) return;
             e.preventDefault(); this.send();
         },
+        isTouch() { return window.matchMedia('(pointer: coarse)').matches; },
         // Samakan dengan backend cleanMessage(): buang karakter tak
         // terlihat + pangkas spasi unicode di kedua ujung.
         cleanText() {
