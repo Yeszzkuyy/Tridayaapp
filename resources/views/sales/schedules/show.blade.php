@@ -14,7 +14,10 @@
                 <p class="text-slate-500">{{ __('PIC') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->assignee?->name ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Mulai') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->start_at?->format('d M Y H:i') ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Selesai') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->end_at?->format('d M Y H:i') ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Lokasi') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->location ?? '-' }}</span></p>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-slate-500 shrink-0">{{ __('Lokasi') }}:</span>
+                    <x-location-link :location="$schedule->location" preview class="font-medium min-w-0 flex-1" />
+                </div>
                 <p class="text-slate-500">{{ __('Dibuat oleh') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->creator?->name ?? '-' }}</span></p>
             </div>
             @if($schedule->description)

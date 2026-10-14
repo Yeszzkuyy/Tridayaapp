@@ -40,7 +40,7 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {{ $fu->location ?: '-' }}
+                            <x-location-link :location="$fu->location" compact />
                         </td>
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                             @if($fu->lead)

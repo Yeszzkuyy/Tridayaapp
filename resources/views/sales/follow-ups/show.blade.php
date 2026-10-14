@@ -39,7 +39,7 @@
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Lokasi') }}</dt>
-                    <dd class="font-medium text-slate-800">{{ $followUp->location ?: '-' }}</dd>
+                    <dd class="font-medium text-slate-800"><x-location-link :location="$followUp->location" preview /></dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Next Follow Up') }}</dt>
