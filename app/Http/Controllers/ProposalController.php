@@ -54,13 +54,17 @@ class ProposalController extends Controller
     /** Aksi tim teknis/admin: owner tidak wajib, cukup permission teknis. */
     private function authorizeTechnical(Proposal $proposal): void
     {
-        $this->authorize('view', $proposal->lead);
-
         $user = auth()->user();
-        $owner = in_array($user->id, [$proposal->created_by, $proposal->lead->assigned_to]);
 
-        abort_unless($owner || $user->can('manage-sales-leads')
-            || $user->can('manage-technician') || $user->can('manage-admin'), 403);
+        // Tim teknis/admin kerja lintas divisi by design: cukup viewAny.
+        // (LeadPolicy::view menjebak admin di cabang sales karena ia juga
+        // pegang view-sales, jadi authorize penuh tidak dipakai di sini.)
+        if ($user->can('manage-technician') || $user->can('manage-admin')) {
+            $this->authorize('viewAny', Lead::class);
+            return;
+        }
+
+        $this->authorizeProposal($proposal);
     }
 
     private function generateNumber(): string
