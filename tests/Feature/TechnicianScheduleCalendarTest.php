@@ -250,6 +250,18 @@ class TechnicianScheduleCalendarTest extends TestCase
         ])->assertSessionHasErrors('status');
     }
 
+    public function test_end_time_optional_and_create_succeeds(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
+            'title' => 'Tanpa jam selesai', 'date' => '2026-10-25',
+            'start_time' => '09:00', 'status' => 'scheduled',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('technician_schedules', ['title' => 'Tanpa jam selesai']);
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');
