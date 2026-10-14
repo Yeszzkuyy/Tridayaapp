@@ -151,6 +151,26 @@ class TechnicianScheduleCalendarTest extends TestCase
             ->assertJsonValidationErrors(['title']);
     }
 
+    public function test_gcal_sync_command_runs_and_is_safe(): void
+    {
+        // Command harus exit sukses walau Google gagal (tidak boleh melempar).
+        $this->artisan('gcal:sync')->assertExitCode(0);
+    }
+
+    public function test_fetch_dispatches_auto_sync_job_throttled(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        $tech = $this->userWithRole('technician');
+
+        $this->actingAs($tech)->getJson(route('teknisi.schedules.api', ['date' => '2026-10-20']));
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\SyncGoogleCalendarJob::class);
+
+        // Fetch berikutnya dalam throttle window tidak dispatch ulang.
+        \Illuminate\Support\Facades\Queue::fake();
+        $this->actingAs($tech)->getJson(route('teknisi.schedules.api', ['date' => '2026-10-21']));
+        \Illuminate\Support\Facades\Queue::assertNotPushed(\App\Jobs\SyncGoogleCalendarJob::class);
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');
