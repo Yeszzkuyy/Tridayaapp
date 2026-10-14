@@ -23,7 +23,7 @@ class SyncGoogleCalendar extends Command
         }
 
         try {
-            $stats = $google->syncFromGoogle();
+            $stats = $google->syncTwoWay();
 
             Log::info('gcal:sync selesai', $stats);
             $this->info(sprintf(

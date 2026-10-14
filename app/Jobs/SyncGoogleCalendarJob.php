@@ -17,7 +17,7 @@ class SyncGoogleCalendarJob implements ShouldQueue
     public function handle(GoogleCalendarService $google): void
     {
         try {
-            $google->syncFromGoogle();
+            $google->syncTwoWay();
         } catch (\Throwable $e) {
             // Auto-sync best-effort: jangan gagalkan job / worker.
             try {

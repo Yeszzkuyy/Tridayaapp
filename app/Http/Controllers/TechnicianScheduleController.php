@@ -172,7 +172,7 @@ class TechnicianScheduleController extends Controller
         $this->google->forgetReachableCache();
 
         try {
-            $stats = $this->google->syncFromGoogle();
+            $stats = $this->google->syncTwoWay();
         } catch (\Throwable $e) {
             // Logging best-effort: kegagalan menulis log tidak boleh
             // mengubah pesan ramah ini jadi error 500.
@@ -187,8 +187,14 @@ class TechnicianScheduleController extends Controller
         }
 
         return back()->with('sync_message', __(
-            'Sinkron selesai: :created baru, :updated diperbarui, :restored dipulihkan, :skipped dilewati.',
-            $stats
+            'Sinkron 2-arah: :created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim ke Google, :skipped dilewati.',
+            [
+                'created' => $stats['created'] ?? 0,
+                'updated' => $stats['updated'] ?? 0,
+                'deleted' => $stats['deleted'] ?? 0,
+                'pushed' => $stats['pushed'] ?? 0,
+                'skipped' => $stats['skipped'] ?? 0,
+            ]
         ));
     }
 

@@ -151,6 +151,66 @@ class TechnicianScheduleCalendarTest extends TestCase
             ->assertJsonValidationErrors(['title']);
     }
 
+    public function test_sync_deletes_local_when_removed_from_google(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        // Jadwal lokal yang BER-google_event_id (akan dihapus oleh Google) + yang lokal murni.
+        $fromGoogle = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'From Google', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-123', 'google_sync_status' => 'synced',
+        ]);
+        $localOnly = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Local only', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+        ]);
+
+        // Google sekarang TIDAK punya gcal-123 (sudah dihapus user di Google).
+        \Illuminate\Support\Facades\Http::fake([
+            'www.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['items' => []], 200),
+        ]);
+
+        app(\App\Services\GoogleCalendarService::class)->syncFromGoogle();
+
+        // Yang dari Google → soft-delete; yang lokal murni → tetap aman.
+        $this->assertSoftDeleted('technician_schedules', ['id' => $fromGoogle->id]);
+        $this->assertDatabaseHas('technician_schedules', ['id' => $localOnly->id, 'deleted_at' => null]);
+    }
+
+    public function test_sync_newest_wins_and_preserves_app_fields(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        $schedule = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Judul lama', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'completed',
+            'technician_user_id' => $lead->id, 'google_event_id' => 'gcal-999', 'google_sync_status' => 'synced',
+        ]);
+        // Buat updated_at lokal JAUH di masa depan → lokal lebih baru dari Google.
+        \Illuminate\Support\Facades\DB::table('technician_schedules')->where('id', $schedule->id)
+            ->update(['updated_at' => now()->addDay()]);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'www.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
+                'items' => [[
+                    'id' => 'gcal-999', 'summary' => 'Judul dari Google',
+                    'start' => ['dateTime' => '2026-10-20T09:00:00'],
+                    'end' => ['dateTime' => '2026-10-20T11:00:00'],
+                    'updated' => now()->subDay()->toIso8601String(),
+                ]],
+            ], 200),
+        ]);
+
+        app(\App\Services\GoogleCalendarService::class)->syncFromGoogle();
+
+        // Google lebih lama → lokal TIDAK ditimpa; status/teknisi tetap.
+        $fresh = $schedule->fresh();
+        $this->assertSame('Judul lama', $fresh->title);
+        $this->assertSame('completed', $fresh->status);
+        $this->assertSame($lead->id, $fresh->technician_user_id);
+    }
+
     public function test_gcal_sync_command_runs_and_is_safe(): void
     {
         // Command harus exit sukses walau Google gagal (tidak boleh melempar).
