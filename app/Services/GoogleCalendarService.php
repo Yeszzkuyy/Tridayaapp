@@ -238,6 +238,19 @@ class GoogleCalendarService
         return GoogleCredential::where('user_id', $user->id)->exists();
     }
 
+    /**
+     * Apakah ada koneksi OAuth (tulis/sync 2-arah) yang aktif untuk user ini
+     * atau untuk user lain (token tersimpan global). Badge memakai ini.
+     */
+    public function hasOAuthConnection(?User $user = null): bool
+    {
+        if ($user && GoogleCredential::where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
+        return GoogleCredential::query()->exists();
+    }
+
     public function getAuthUrl(User $user, string $state): string
     {
         $client = $this->clientFor();

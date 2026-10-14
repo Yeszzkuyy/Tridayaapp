@@ -86,8 +86,10 @@
             <div class="flex items-center gap-2">
                 <input id="fu-location" type="text" name="location" maxlength="150" value="{{ old('location', $followUp?->location) }}"
                        placeholder="{{ __('Address / meeting point or meeting link') }}"
+                       data-location-autocomplete
                        class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 <x-maps-open-button input="fu-location" />
+                <x-location-autocomplete />
             </div>
             <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
             @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

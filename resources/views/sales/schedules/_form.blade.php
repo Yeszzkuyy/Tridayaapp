@@ -52,8 +52,10 @@
             <div class="flex items-center gap-2">
                 <input id="ss-location" type="text" name="location" value="{{ old('location', $schedule->location ?? '') }}"
                        placeholder="{{ __('Address / meeting point or meeting link') }}"
+                       data-location-autocomplete
                        class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <x-maps-open-button input="ss-location" />
+                <x-location-autocomplete />
             </div>
             <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
         </div>

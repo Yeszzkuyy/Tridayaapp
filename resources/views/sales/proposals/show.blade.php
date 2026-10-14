@@ -69,11 +69,29 @@
                         @csrf
                         <button type="submit" class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition">{{ __('Ready') }}</button>
                     </form>
+                    <form action="{{ route('sales.proposals.submit-technical', $proposal) }}" method="POST" class="inline"
+                          onsubmit="return confirm('{{ __('Serahkan draft ini ke tim teknis?') }}')">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-700 text-sm font-medium transition">{{ __('Ke Teknis') }}</button>
+                    </form>
                     <form action="{{ route('sales.proposals.cancel', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Batalkan proposal ini?') }}')">
                         @csrf
                         <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Cancel') }}</button>
                     </form>
+                @endif
+                @if($proposal->status === 'pending_technical')
+                    <p class="text-sm text-purple-700 dark:text-purple-300">{{ __('Menunggu penyesuaian tim teknis.') }}</p>
+                    @canany(['manage-technician', 'manage-admin'])
+                        <form action="{{ route('sales.proposals.complete-technical', $proposal) }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Selesai & Siapkan') }}</button>
+                        </form>
+                        <form action="{{ route('sales.proposals.return-technical', $proposal) }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm font-medium transition">{{ __('Kembalikan') }}</button>
+                        </form>
+                    @endcanany
                 @endif
                 @if($proposal->status === 'ready')
                     <form action="{{ route('sales.proposals.send', $proposal) }}" method="POST" class="inline"
@@ -81,6 +99,19 @@
                         @csrf
                         <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Send') }}</button>
                     </form>
+                @endif
+                @if(in_array($proposal->status, ['ready', 'sent', 'viewed']) && ($wa = $proposal->lead->customer?->whatsapp))
+                    @php
+                        $waNumber = preg_replace('/\D/', '', $wa);
+                        if (str_starts_with($waNumber, '0')) $waNumber = '62' . substr($waNumber, 1);
+                        $waText = __('Halo, berikut penawaran *{number}* senilai Rp {total} (berlaku sampai {until}). Mohon konfirmasinya, terima kasih.', [
+                            'number' => $proposal->proposal_number,
+                            'total' => number_format($proposal->grand_total, 0, ',', '.'),
+                            'until' => $proposal->valid_until?->format('d M Y') ?? '-',
+                        ]);
+                    @endphp
+                    <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode($waText) }}" target="_blank" rel="noopener"
+                       class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Kirim via WhatsApp') }}</a>
                 @endif
                 @if($proposal->status === 'sent')
                     <form action="{{ route('sales.proposals.viewed', $proposal) }}" method="POST" class="inline">

@@ -8,6 +8,7 @@ class ProposalItem extends Model
 {
     protected $fillable = [
         'proposal_id',
+        'product_id',
         'description',
         'quantity',
         'unit',
@@ -19,6 +20,11 @@ class ProposalItem extends Model
     public function proposal()
     {
         return $this->belongsTo(Proposal::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public static function subtotalFor(float $quantity, float $unitPrice, float $discount): float

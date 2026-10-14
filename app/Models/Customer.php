@@ -18,6 +18,8 @@ class Customer extends Model
         'phone',
         'whatsapp',
         'email',
+        'npwp',
+        'npwp_document_path',
         'notes',
         'status',
         'deleted_by',

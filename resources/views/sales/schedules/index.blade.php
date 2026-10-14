@@ -500,8 +500,10 @@
                         <label for="su-location" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Location') }}</label>
                         <div class="flex items-center gap-2">
                             <input id="su-location" type="text" name="location" x-model="modalLocation" maxlength="150" placeholder="{{ __('Address / meeting point or meeting link') }}"
+                                   data-location-autocomplete
                                    class="flex-1 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                             <x-maps-open-button input="su-location" />
+                            <x-location-autocomplete />
                         </div>
                         <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
                     </div>
