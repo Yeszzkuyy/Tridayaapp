@@ -125,6 +125,32 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res->assertSee('Disconnected');
     }
 
+    public function test_store_update_delete_return_json_for_ajax(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $schedule = $this->makeSchedule($lead);
+
+        $res = $this->actingAs($lead)->postJson(route('teknisi.schedules.store'), [
+            'title' => 'Ajax create', 'date' => '2026-10-25',
+            'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'scheduled',
+        ]);
+        $res->assertOk()->assertJson(['ok' => true]);
+
+        $res = $this->actingAs($lead)->putJson(route('teknisi.schedules.update', $schedule), [
+            'title' => 'Ajax update', 'date' => '2026-10-20',
+            'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'scheduled',
+        ]);
+        $res->assertOk()->assertJson(['ok' => true]);
+
+        $res = $this->actingAs($lead)->deleteJson(route('teknisi.schedules.destroy', $schedule));
+        $res->assertOk()->assertJson(['ok' => true]);
+
+        // validasi gagal → 422 JSON, bukan redirect
+        $this->actingAs($lead)->postJson(route('teknisi.schedules.store'), ['title' => ''])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['title']);
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');

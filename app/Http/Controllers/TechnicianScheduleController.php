@@ -49,9 +49,10 @@ class TechnicianScheduleController extends Controller
         $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
         $connected = $this->google->isApiReachable();
+        $oauth = $this->google->hasOAuthConnection(auth()->user());
         $credential = GoogleAppCredential::current();
 
-        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential'));
+        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential', 'oauth'));
     }
 
     /**
@@ -106,6 +107,8 @@ class TechnicianScheduleController extends Controller
             'technician_user_id' => $s->technician_user_id,
             'project' => $s->project?->project_name,
             'customer' => $s->project?->customer?->name,
+            'creator' => $s->owner?->name,
+            'creator_avatar' => $s->owner?->avatar ? asset('storage/'.$s->owner->avatar) : null,
             'url' => $s->project_id ? route('projects.show', $s->project_id) : route('teknisi.jadwal'),
         ]);
 
@@ -128,6 +131,7 @@ class TechnicianScheduleController extends Controller
         ]);
 
         GoogleAppCredential::current()->fill($validated)->save();
+        $this->google->forgetReachableCache();
 
         return back()->with('success', __('Kredensial Google Calendar tersimpan.'));
     }
@@ -162,6 +166,8 @@ class TechnicianScheduleController extends Controller
             }
         }
 
+        $this->google->forgetReachableCache();
+
         try {
             $stats = $this->google->syncFromGoogle();
         } catch (\Throwable $e) {
@@ -188,8 +194,15 @@ class TechnicianScheduleController extends Controller
      */
     public function googleStatus()
     {
+        $importOk = $this->google->isApiReachable();
+        $oauth = $this->google->hasOAuthConnection(auth()->user());
+
+        // "Connected" = koneksi Google berfungsi: import (baca) jalan.
+        // oauth_connected dilaporkan terpisah untuk transparansi tulis-balik.
         return response()->json([
-            'connected' => $this->google->isApiReachable(),
+            'connected' => $importOk,
+            'import_ok' => $importOk,
+            'oauth_connected' => $oauth,
         ]);
     }
 
@@ -204,6 +217,10 @@ class TechnicianScheduleController extends Controller
 
         $schedule = $this->google->createSchedule(auth()->user(), $data);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dibuat.']);
+        }
+
         return back()->with('success', 'Jadwal berhasil dibuat.')
             ->with('sync_message', $this->syncMessage($schedule));
     }
@@ -217,17 +234,25 @@ class TechnicianScheduleController extends Controller
         $data = $this->validateSchedule($request);
         $schedule = $this->google->updateSchedule($schedule, $data);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil diupdate.']);
+        }
+
         return back()->with('success', 'Jadwal berhasil diupdate.')
             ->with('sync_message', $this->syncMessage($schedule));
     }
 
-    public function destroy(TechnicianSchedule $schedule)
+    public function destroy(Request $request, TechnicianSchedule $schedule)
     {
         if ($schedule->user_id !== auth()->id() && ! auth()->user()->can('manage-admin')) {
             abort(403);
         }
 
         $this->google->deleteSchedule($schedule);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dihapus.']);
+        }
 
         return back()->with('success', 'Jadwal berhasil dihapus.');
     }
