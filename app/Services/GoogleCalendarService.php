@@ -40,12 +40,35 @@ class GoogleCalendarService
     }
 
     /**
+     * Kredensial aplikasi: diprioritaskan dari tabel (di-manage via UI),
+     * fallback ke config/env.
+     */
+    private function appCredentials(): array
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $cred = \App\Models\GoogleAppCredential::current();
+
+        return $cached = [
+            'client_id' => $cred->client_id ?: config('services.google-calendar.client_id'),
+            'client_secret' => $cred->client_secret ?: config('services.google-calendar.client_secret'),
+            'api_key' => $cred->api_key ?: config('services.google-calendar.api_key'),
+            'calendar_id' => $cred->calendar_id ?: config('services.google-calendar.calendar_id'),
+        ];
+    }
+
+    /**
      * Ambil event mendatang dari kalender publik via API key (read-only).
      */
     public function upcomingEvents(int $maxResults = 20, ?Carbon $from = null, ?Carbon $to = null): array
     {
+        $app = $this->appCredentials();
+
         $params = [
-            'key' => config('services.google-calendar.api_key'),
+            'key' => $app['api_key'],
             'singleEvents' => 'true',
             'maxResults' => $maxResults,
             'orderBy' => 'startTime',
@@ -59,7 +82,7 @@ class GoogleCalendarService
             $params['timeMax'] = $to->toRfc3339String();
         }
 
-        $url = 'https://www.googleapis.com/calendar/v3/calendars/'.urlencode(config('services.google-calendar.calendar_id')).'/events';
+        $url = 'https://www.googleapis.com/calendar/v3/calendars/'.urlencode($this->appCredentials()['calendar_id']).'/events';
 
         try {
             // Timeout + retry: jangan gantung worker bila Google lambat.
@@ -89,7 +112,7 @@ class GoogleCalendarService
                 ->all();
         } catch (\Throwable $e) {
             Log::error('Gagal mengambil event Google Calendar', [
-                'calendar_id' => config('services.google-calendar.calendar_id'),
+                'calendar_id' => $this->appCredentials()['calendar_id'],
                 'message' => $e->getMessage(),
             ]);
 
@@ -146,7 +169,7 @@ class GoogleCalendarService
                 'end_at' => $event['end'] ?? $event['start'],
                 'status' => 'scheduled',
                 'google_event_id' => $id,
-                'google_calendar_id' => config('services.google-calendar.calendar_id'),
+                'google_calendar_id' => $this->appCredentials()['calendar_id'],
                 'google_sync_status' => 'synced',
                 'google_sync_error' => null,
             ];
@@ -196,9 +219,9 @@ class GoogleCalendarService
     {
         $client = new Client;
         $client->setApplicationName(config('app.name'));
-        $client->setClientId(config('services.google-calendar.client_id'));
-        $client->setClientSecret(config('services.google-calendar.client_secret'));
-        $client->setRedirectUri(config('services.google-calendar.redirect_uri') ?: url('/teknisi/kalender/callback'));
+        $client->setClientId($this->appCredentials()['client_id']);
+        $client->setClientSecret($this->appCredentials()['client_secret']);
+        $client->setRedirectUri(route('teknisi.kalender.callback'));
         $client->setScopes([Calendar::CALENDAR_EVENTS]);
         $client->setAccessType('offline');
         $client->setPrompt('consent');

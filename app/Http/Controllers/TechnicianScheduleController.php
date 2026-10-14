@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GoogleAppCredential;
 use App\Models\Project;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
@@ -48,8 +49,107 @@ class TechnicianScheduleController extends Controller
         $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
         $connected = $this->google->isApiReachable();
+        $credential = GoogleAppCredential::current();
 
-        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected'));
+        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential'));
+    }
+
+    /**
+     * JSON feed untuk kalender: jadwal per hari (`?date=`) atau rentang
+     * (`?start=&end=`). Format mirip sales.schedules.api + info teknisi.
+     */
+    public function getSchedulesApi(Request $request)
+    {
+        $query = TechnicianSchedule::with(['project.customer', 'technician', 'owner']);
+
+        if ($request->filled('start') && $request->filled('end')) {
+            try {
+                $start = Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
+                $end = Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('start_at', '<=', $end)
+                ->whereDate('end_at', '>=', $start);
+        } else {
+            $date = $request->query('date', today()->toDateString());
+            try {
+                $parsed = Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('start_at', '<=', $parsed)
+                ->whereDate('end_at', '>=', $parsed);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->query('search');
+            $query->where(function ($q) use ($s) {
+                $q->whereLike('title', $s)
+                    ->orWhereLike('location', $s)
+                    ->orWhereHas('project', fn ($p) => $p->whereLike('project_name', $s))
+                    ->orWhereHas('technician', fn ($t) => $t->whereLike('name', $s));
+            });
+        }
+
+        $schedules = $query->orderBy('start_at')->get()->map(fn (TechnicianSchedule $s) => [
+            'id' => $s->id,
+            'title' => $s->title,
+            'description' => $s->description,
+            'location' => $s->location,
+            'date' => $s->start_at->toDateString(),
+            'start_time' => $s->start_at->format('H:i'),
+            'end_time' => $s->end_at?->format('H:i'),
+            'status' => $s->status,
+            'sync_status' => $s->google_sync_status,
+            'technician' => $s->technician?->name,
+            'technician_user_id' => $s->technician_user_id,
+            'project' => $s->project?->project_name,
+            'customer' => $s->project?->customer?->name,
+            'url' => $s->project_id ? route('projects.show', $s->project_id) : route('teknisi.jadwal'),
+        ]);
+
+        return response()->json($schedules);
+    }
+
+    /**
+     * Simpan kredensial aplikasi Google (client ID/secret + API key).
+     * Hanya super-admin / lead-technician.
+     */
+    public function saveCredentials(Request $request)
+    {
+        abort_unless($this->canManageApi(), 403);
+
+        $validated = $request->validate([
+            'client_id' => 'nullable|string|max:255',
+            'client_secret' => 'nullable|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'calendar_id' => 'nullable|string|max:255',
+        ]);
+
+        GoogleAppCredential::current()->fill($validated)->save();
+
+        return back()->with('success', __('Kredensial Google Calendar tersimpan.'));
+    }
+
+    /**
+     * Tarik event dari Google ke jadwal lokal. Hanya super-admin / lead-technician.
+     */
+    public function syncNow(Request $request)
+    {
+        abort_unless($this->canManageApi(), 403);
+
+        $stats = $this->google->syncFromGoogle();
+
+        return back()->with('sync_message', __(
+            'Sinkron selesai: :created baru, :updated diperbarui, :restored dipulihkan, :skipped dilewati.',
+            $stats
+        ));
+    }
+
+    private function canManageApi(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']) ?? false;
     }
 
     public function store(Request $request)

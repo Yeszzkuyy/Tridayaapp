@@ -239,6 +239,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-technician|manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::get('/dashboard', [TechnicianDashboardController::class, 'index'])->name('dashboard');
         Route::get('/kalender/events', [TechnicianScheduleController::class, 'events'])->name('kalender.events');
+        Route::get('/schedules/api', [TechnicianScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('/jadwal/google-events', [CalendarController::class, 'googleEvents'])->name('google-events');
         Route::get('/jadwal', [TechnicianScheduleController::class, 'jadwal'])->name('jadwal');
     });
@@ -247,6 +248,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/schedules', [TechnicianScheduleController::class, 'store'])->name('schedules.store');
         Route::put('/schedules/{schedule}', [TechnicianScheduleController::class, 'update'])->name('schedules.update');
         Route::delete('/schedules/{schedule}', [TechnicianScheduleController::class, 'destroy'])->name('schedules.destroy');
+        Route::post('/kalender/credentials', [TechnicianScheduleController::class, 'saveCredentials'])->name('kalender.credentials');
+        Route::post('/kalender/sync', [TechnicianScheduleController::class, 'syncNow'])->name('kalender.sync');
         Route::get('/kalender/connect', [TechnicianScheduleController::class, 'connect'])->name('kalender.connect');
         Route::get('/kalender/callback', [TechnicianScheduleController::class, 'callback'])->name('kalender.callback');
         Route::delete('/kalender/disconnect', [TechnicianScheduleController::class, 'disconnect'])->name('kalender.disconnect');
