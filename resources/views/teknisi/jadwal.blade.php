@@ -14,8 +14,9 @@
                     {{ $connected ? __('Google Calendar Connected') : __('Google Calendar Not Connected') }}
                 </x-status-badge>
                 @if(auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']))
-                    <x-icon-button icon="settings" title="{{ __('Google Calendar API') }}" @click="apiOpen = true" />
-                    <x-icon-button icon="sparkles" title="{{ __('Sync now') }}" @click="syncOpen = true" />
+                    <x-icon-button title="{{ __('Google Calendar API') }}" @click="apiOpen = true">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.384 3.18A1.5 1.5 0 014.06 17.1V6.9a1.5 1.5 0 011.976-1.424l5.384 3.18m0 0l5.384-3.18A1.5 1.5 0 0118.776 6.9v10.2a1.5 1.5 0 01-1.976 1.424l-5.384-3.18z"/></svg>
+                    </x-icon-button>
                 @endif
                 <x-icon-button title="{{ __('Today') }}" @click="goToday()">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -477,26 +478,20 @@
                             </div>
                         </div>
                     </form>
+                    <form method="POST" action="{{ route('teknisi.kalender.sync') }}" class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                        @csrf
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Sync from Google Calendar') }}</p>
+                                <p class="text-xs text-slate-400">{{ __('Import events into the local schedule.') }}</p>
+                            </div>
+                            <button type="submit"
+                                    class="group relative overflow-hidden flex shrink-0 items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:brightness-110 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
+                                {{ __('Sync Now') }}</button>
+                        </div>
+                    </form>
                 </div>
-            </div>
-        </div>
-
-        {{-- Konfirmasi sync --}}
-        <div x-show="syncOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-slate-900/50" @click="syncOpen = false" x-show="syncOpen" x-transition.opacity></div>
-            <div x-show="syncOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                 class="relative w-full sm:max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 p-6">
-                <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{{ __('Sync now') }}</h3>
-                <p class="text-sm text-slate-500 mb-4">{{ __('Import events from Google Calendar into the local schedule.') }}</p>
-                <form method="POST" action="{{ route('teknisi.kalender.sync') }}" class="flex items-center justify-end gap-2">
-                    @csrf
-                    <button type="button" @click="syncOpen = false"
-                            class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Cancel') }}</button>
-                    <button type="submit"
-                            class="group relative overflow-hidden px-4 py-2 rounded-xl text-sm font-medium bg-accent-600 hover:bg-accent-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
-                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
-                        {{ __('Sync') }}</button>
-                </form>
             </div>
         </div>
         @endif
@@ -528,7 +523,6 @@
                 selected: null,
                 isModalOpen: false,
                 apiOpen: false,
-                syncOpen: false,
                 editingId: null,
                 form: { title: '', project_id: '', technician_user_id: '', date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
 
