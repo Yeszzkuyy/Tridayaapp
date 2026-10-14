@@ -262,6 +262,23 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->assertDatabaseHas('technician_schedules', ['title' => 'Tanpa jam selesai']);
     }
 
+    public function test_complete_marks_done_and_gates_ownership(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $other = $this->userWithRole('technician');
+        $schedule = $this->makeSchedule($lead);
+
+        // Owner boleh menandai selesai.
+        $this->actingAs($lead)->patchJson(route('teknisi.schedules.complete', $schedule))
+            ->assertOk()->assertJson(['ok' => true]);
+        $this->assertSame('completed', $schedule->fresh()->status);
+
+        // User lain (bukan owner/admin) ditolak.
+        $schedule2 = $this->makeSchedule($lead);
+        $this->actingAs($other)->patchJson(route('teknisi.schedules.complete', $schedule2))
+            ->assertForbidden();
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');
