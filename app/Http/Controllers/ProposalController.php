@@ -36,7 +36,26 @@ class ProposalController extends Controller
     private function authorizeEdit(Proposal $proposal): void
     {
         $this->authorizeProposal($proposal);
+
+        // Selama pending_technical, BOQ dikunci dari sales; hanya tim teknis/admin yang boleh ubah.
+        if ($proposal->status === 'pending_technical') {
+            abort_unless(auth()->user()->can('manage-technician') || auth()->user()->can('manage-admin'), 422);
+            return;
+        }
+
         abort_unless(in_array($proposal->status, ['draft', 'revision']), 422);
+    }
+
+    /** Aksi tim teknis/admin: owner tidak wajib, cukup permission teknis. */
+    private function authorizeTechnical(Proposal $proposal): void
+    {
+        $this->authorize('view', $proposal->lead);
+
+        $user = auth()->user();
+        $owner = in_array($user->id, [$proposal->created_by, $proposal->lead->assigned_to]);
+
+        abort_unless($owner || $user->can('manage-sales-leads')
+            || $user->can('manage-technician') || $user->can('manage-admin'), 403);
     }
 
     private function generateNumber(): string
@@ -257,6 +276,55 @@ class ProposalController extends Controller
         $proposal->update(['status' => 'ready']);
 
         return back()->with('success', __('Proposal siap dikirim.'));
+    }
+
+    /** Sales menyerahkan draft ke tim teknis untuk penyesuaian BOQ/harga. */
+    public function submitTechnical(Proposal $proposal)
+    {
+        $this->authorizeProposal($proposal);
+        abort_unless($proposal->status === 'draft', 422);
+
+        $proposal->update(['status' => 'pending_technical']);
+        $this->log($proposal->lead, 'proposal_pending_technical', ['number' => $proposal->proposal_number]);
+
+        \App\Models\User::role(['admin', 'lead-technician'])->get()
+            ->each(fn ($u) => $u->notify(new ProposalStatusNotification($proposal, 'pending_technical')));
+
+        return back()->with('success', __('Proposal diserahkan ke tim teknis.'));
+    }
+
+    /** Tim teknis/admin mengembalikan ke draft (butuh koreksi sales). */
+    public function returnTechnical(Proposal $proposal)
+    {
+        $this->authorizeTechnical($proposal);
+        abort_unless($proposal->status === 'pending_technical', 422);
+
+        $proposal->update(['status' => 'draft']);
+        $this->log($proposal->lead, 'proposal_revised', ['number' => $proposal->proposal_number]);
+
+        $assignee = $proposal->lead->assignee;
+        if ($assignee) {
+            $assignee->notify(new ProposalStatusNotification($proposal, 'returned_to_draft'));
+        }
+
+        return back()->with('success', __('Proposal dikembalikan ke draft.'));
+    }
+
+    /** Tim teknis/admin selesai menyesuaikan → siap dikirim sales. */
+    public function completeTechnical(Proposal $proposal)
+    {
+        $this->authorizeTechnical($proposal);
+        abort_unless($proposal->status === 'pending_technical', 422);
+
+        $proposal->update(['status' => 'ready']);
+        $this->log($proposal->lead, 'proposal_ready', ['number' => $proposal->proposal_number]);
+
+        $assignee = $proposal->lead->assignee;
+        if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
+            $assignee->notify(new ProposalStatusNotification($proposal, 'ready'));
+        }
+
+        return back()->with('success', __('Penyesuaian teknis selesai, proposal siap dikirim.'));
     }
 
     public function send(Proposal $proposal)

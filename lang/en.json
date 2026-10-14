@@ -1047,5 +1047,13 @@
     "Daftar penawaran sales.": "Sales quotation list.",
     "Cari di katalog...": "Search catalog...",
     "Tidak ketemu di katalog, ketik manual.": "Not in catalog, type manually.",
-    "Estimasi otomatis, dihitung ulang di server.": "Auto estimate, recalculated on server."
+    "Estimasi otomatis, dihitung ulang di server.": "Auto estimate, recalculated on server.",
+    "Serahkan draft ini ke tim teknis?": "Submit this draft to the technical team?",
+    "Proposal diserahkan ke tim teknis.": "Proposal submitted to the technical team.",
+    "Proposal dikembalikan ke draft.": "Proposal returned to draft.",
+    "Penyesuaian teknis selesai, proposal siap dikirim.": "Technical adjustment done, proposal ready to send.",
+    "Menunggu penyesuaian tim teknis.": "Waiting for technical team adjustment.",
+    "Ke Teknis": "To Technical",
+    "Selesai & Siapkan": "Done & Ready",
+    "Kembalikan": "Return"
 }

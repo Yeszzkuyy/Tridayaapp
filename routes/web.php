@@ -178,6 +178,12 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/revise', [ProposalController::class, 'revise'])->name('proposals.revise');
         Route::post('proposals/{proposal}/respond', [ProposalController::class, 'respond'])->name('proposals.respond');
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
+        Route::post('proposals/{proposal}/submit-technical', [ProposalController::class, 'submitTechnical'])->name('proposals.submit-technical');
+    });
+
+    Route::middleware('permission:manage-technician|manage-admin')->prefix('sales')->name('sales.')->group(function () {
+        Route::post('proposals/{proposal}/return-technical', [ProposalController::class, 'returnTechnical'])->name('proposals.return-technical');
+        Route::post('proposals/{proposal}/complete-technical', [ProposalController::class, 'completeTechnical'])->name('proposals.complete-technical');
     });
 
     // ============================================
