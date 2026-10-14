@@ -12,7 +12,7 @@
     $marketingActive = (request()->routeIs(['leads*', 'partners*', 'marketing.dashboard', 'whatsapp-center*']) && !request()->routeIs('leads.pipeline'));
     // Grup Sales tampil juga untuk role inside-sales; sub-menu dirakit per-item di bawah
     // (user only melihat item yang boleh ia akses).
-    $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*');
+    $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
     $adminActive = request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*');
     $adminPanelActive = request()->routeIs('admin-panel*');
 
@@ -29,6 +29,7 @@
         $canViewSales ? ['route' => route('sales.follow-ups.index'), 'match' => 'sales.follow-ups.*', 'label' => 'Follow Up', 'dot' => 'bg-green-400'] : null,
         (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.schedules.index'), 'match' => 'sales.schedules.*', 'label' => 'Schedule', 'dot' => 'bg-teal-400'] : null,
         (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.proposals.index'), 'match' => 'sales.proposals.*', 'label' => 'Proposal', 'dot' => 'bg-lime-400'] : null,
+        ($canViewSales || auth()->user()->can('view-admin')) ? ['route' => route('products.index'), 'match' => 'products.*', 'label' => 'Products', 'dot' => 'bg-cyan-400'] : null,
         $canViewSales ? ['route' => route('sales.pocs.index'), 'match' => 'sales.pocs.*', 'label' => 'POC/Demo', 'dot' => 'bg-orange-400'] : null,
         $canViewSales ? ['route' => route('leads.pipeline'), 'match' => 'leads.pipeline', 'label' => 'Pipeline', 'dot' => 'bg-sky-400'] : null,
         $hasSalesProject ? ['route' => route('projects.index'), 'match' => 'projects*', 'label' => 'Project', 'dot' => 'bg-cyan-400'] : null,

@@ -19,6 +19,7 @@ use App\Http\Controllers\OfficeAssistantController;
 use App\Http\Controllers\ProductKnowledgeController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PocController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectDocumentController;
@@ -177,6 +178,22 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/revise', [ProposalController::class, 'revise'])->name('proposals.revise');
         Route::post('proposals/{proposal}/respond', [ProposalController::class, 'respond'])->name('proposals.respond');
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
+    });
+
+    // ============================================
+    // MASTER PRODUK (katalog BOQ proposal)
+    // ============================================
+    Route::middleware('permission:manage-sales|manage-admin')->group(function () {
+        Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::post('products', [ProductController::class, 'store'])->name('products.store');
+        Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+        Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    });
+
+    Route::middleware('permission:view-sales|manage-sales|view-admin|manage-admin')->group(function () {
+        Route::get('products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('products/picker', [ProductController::class, 'picker'])->name('products.picker');
     });
 
     Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
