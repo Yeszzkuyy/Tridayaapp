@@ -100,6 +100,19 @@
                         <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Send') }}</button>
                     </form>
                 @endif
+                @if(in_array($proposal->status, ['ready', 'sent', 'viewed']) && ($wa = $proposal->lead->customer?->whatsapp))
+                    @php
+                        $waNumber = preg_replace('/\D/', '', $wa);
+                        if (str_starts_with($waNumber, '0')) $waNumber = '62' . substr($waNumber, 1);
+                        $waText = __('Halo, berikut penawaran *{number}* senilai Rp {total} (berlaku sampai {until}). Mohon konfirmasinya, terima kasih.', [
+                            'number' => $proposal->proposal_number,
+                            'total' => number_format($proposal->grand_total, 0, ',', '.'),
+                            'until' => $proposal->valid_until?->format('d M Y') ?? '-',
+                        ]);
+                    @endphp
+                    <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode($waText) }}" target="_blank" rel="noopener"
+                       class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Kirim via WhatsApp') }}</a>
+                @endif
                 @if($proposal->status === 'sent')
                     <form action="{{ route('sales.proposals.viewed', $proposal) }}" method="POST" class="inline">
                         @csrf

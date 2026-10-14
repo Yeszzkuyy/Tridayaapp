@@ -1055,5 +1055,6 @@
     "Menunggu penyesuaian tim teknis.": "Waiting for technical team adjustment.",
     "Ke Teknis": "To Technical",
     "Selesai & Siapkan": "Done & Ready",
-    "Kembalikan": "Return"
+    "Kembalikan": "Return",
+    "Halo, berikut penawaran *{number}* senilai Rp {total} (berlaku sampai {until}). Mohon konfirmasinya, terima kasih.": "Hello, here is quotation *{number}* worth Rp {total} (valid until {until}). Please confirm, thank you."
 }
