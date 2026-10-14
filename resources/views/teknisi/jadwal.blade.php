@@ -479,8 +479,8 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Status') }}</label>
                                 <select name="status" x-model="form.status"
                                         class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                                    @foreach(\App\Models\TechnicianSchedule::STATUSES as $st)
-                                        <option value="{{ $st }}">{{ \Illuminate\Support\Str::headline($st) }}</option>
+                                    @foreach(\App\Models\TechnicianSchedule::STATUSES as $value => $label)
+                                        <option value="{{ $value }}">{{ $label }}</option>
                                     @endforeach
                                 </select>
                             </div>
