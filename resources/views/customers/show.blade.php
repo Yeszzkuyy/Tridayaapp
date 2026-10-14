@@ -114,6 +114,7 @@
                             ['icon' => 'chat', 'label' => __('WA Perusahaan'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Perusahaan'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('WA PIC'), 'value' => \App\Support\PhoneFormatter::format($customer->contacts->first()?->whatsapp), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
                             ['icon' => 'mail', 'label' => 'Email', 'value' => $customer->email],
+                            ['icon' => 'file-text', 'label' => 'NPWP', 'value' => $customer->npwp],
                         ];
                         $stats = [
                             ['icon' => 'folder', 'label' => __('Total Project'), 'value' => $totalProjects, 'chip' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'],
@@ -138,6 +139,11 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @if($customer->npwp_document_path)
+                                <a href="{{ route('customers.npwp', $customer) }}" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
+                                    <x-icon name="file-text" class="w-4 h-4" />{{ __('Unduh Dokumen NPWP') }}
+                                </a>
+                            @endif
                         </div>
 
                         {{-- Statistik --}}

@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <form action="{{ route('customers.store') }}" method="POST"
+    <form action="{{ route('customers.store') }}" method="POST" enctype="multipart/form-data"
           data-loading-text="Saving…"
           class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-4 w-full">
         @csrf
@@ -83,6 +83,25 @@
             <input type="email" id="email" name="email" value="{{ old('email') }}"
                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
             @error('email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="npwp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                    NPWP
+                </label>
+                <input type="text" id="npwp" name="npwp" value="{{ old('npwp') }}" placeholder="cth: 01.234.567.8-901.234"
+                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                @error('npwp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="npwp_document" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                    {{ __('Dokumen NPWP') }}
+                </label>
+                <input type="file" id="npwp_document" name="npwp_document" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                       class="w-full text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                @error('npwp_document') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
         </div>
 
         <div>

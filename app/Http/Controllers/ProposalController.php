@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Project;
+use App\Models\ProjectStatus;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
+use App\Models\WorkType;
 use App\Notifications\ProposalStatusNotification;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProposalController extends Controller
 {
@@ -219,10 +224,14 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'items', 'creator']);
+        $proposal->load(['lead.customer', 'items', 'creator', 'project']);
         $this->authorizeProposal($proposal);
 
-        return view('sales.proposals.show', compact('proposal'));
+        $workTypes = $proposal->status === 'accepted' && ! $proposal->project
+            ? WorkType::orderBy('name')->get(['id', 'name'])
+            : collect();
+
+        return view('sales.proposals.show', compact('proposal', 'workTypes'));
     }
 
     public function preview(Proposal $proposal)
@@ -376,8 +385,20 @@ class ProposalController extends Controller
 
         $validated = $request->validate(['decision' => 'required|in:accepted,rejected']);
 
-        $proposal->update(['status' => $validated['decision']]);
-        $this->log($proposal->lead, 'proposal_' . $validated['decision'], ['number' => $proposal->proposal_number]);
+        DB::transaction(function () use ($proposal, $validated) {
+            $proposal->update(['status' => $validated['decision']]);
+            $this->log($proposal->lead, 'proposal_' . $validated['decision'], ['number' => $proposal->proposal_number]);
+
+            // Proposal diterima = lead WON (ikuti konvensi pipeline: closed_at + acknowledged).
+            if ($validated['decision'] === 'accepted' && $proposal->lead->status !== 'won') {
+                $leadPayload = ['status' => 'won', 'closed_at' => now()];
+                if ($proposal->lead->acknowledged_at === null) {
+                    $leadPayload['acknowledged_at'] = now();
+                }
+                $proposal->lead->update($leadPayload);
+                $this->log($proposal->lead, 'status_changed', ['status' => 'won', 'via' => 'proposal_accepted']);
+            }
+        });
 
         $assignee = $proposal->lead->assignee;
         if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
@@ -395,5 +416,84 @@ class ProposalController extends Controller
         $proposal->update(['status' => 'cancelled']);
 
         return back()->with('success', __('Proposal dibatalkan.'));
+    }
+
+    /** Upload dokumen PO klien (hanya saat proposal accepted/WON). */
+    public function uploadPo(Request $request, Proposal $proposal)
+    {
+        $this->authorizeProposal($proposal);
+        abort_unless($proposal->status === 'accepted', 422);
+
+        $validated = $request->validate([
+            'po_file' => ['required', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ]);
+
+        $file = $validated['po_file'];
+        $path = $file->storeAs(
+            "proposals/{$proposal->id}/po",
+            Str::uuid() . '.' . strtolower($file->getClientOriginalExtension()),
+            'private'
+        );
+
+        if ($proposal->po_document_path) {
+            Storage::disk('private')->delete($proposal->po_document_path);
+        }
+        $proposal->update(['po_document_path' => $path]);
+
+        return back()->with('success', __('Dokumen PO berhasil diunggah.'));
+    }
+
+    public function downloadPo(Proposal $proposal)
+    {
+        $this->authorizeProposal($proposal);
+        abort_if(! $proposal->po_document_path, 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $proposal->po_document_path,
+            'PO-' . $proposal->proposal_number . '.' . pathinfo($proposal->po_document_path, PATHINFO_EXTENSION)
+        );
+    }
+
+    /** Convert proposal WON menjadi Project untuk divisi Teknisi (sekali saja). */
+    public function convertToProject(Request $request, Proposal $proposal)
+    {
+        $this->authorizeProposal($proposal);
+        abort_unless($proposal->status === 'accepted', 422);
+        abort_if($proposal->project()->exists(), 422, __('Proposal ini sudah dikonversi.'));
+
+        $validated = $request->validate([
+            'work_type_id' => 'required|exists:work_types,id',
+            'start_date' => 'nullable|date',
+        ]);
+
+        $lead = $proposal->lead;
+        $customerName = $lead->customer?->name ?? $proposal->customer;
+
+        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated) {
+            $project = Project::create([
+                'customer_id' => $lead->customer_id,
+                'sales_user_id' => $lead->assigned_to ?? $proposal->created_by,
+                'work_type_id' => $validated['work_type_id'],
+                'project_status_id' => ProjectStatus::default()->value('id'),
+                'project_name' => $customerName . ' — ' . $proposal->proposal_number,
+                'quotation_number' => $proposal->proposal_number,
+                'proposal_id' => $proposal->id,
+                'start_date' => $validated['start_date'] ?? null,
+                'description' => trim(($lead->kebutuhan ? "Kebutuhan: {$lead->kebutuhan}\n" : '')
+                    . ($proposal->notes ?? '')),
+                'progress' => 0,
+            ]);
+
+            $this->log($lead, 'proposal_converted', [
+                'number' => $proposal->proposal_number,
+                'project_id' => $project->id,
+            ]);
+
+            return $project;
+        });
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', __('Project berhasil dibuat dari proposal.'));
     }
 }

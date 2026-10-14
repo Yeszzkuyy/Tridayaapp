@@ -19,7 +19,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
-            <form action="{{ route('customers.update', $customer) }}" method="POST" data-loading-text="Saving…">
+            <form action="{{ route('customers.update', $customer) }}" method="POST" enctype="multipart/form-data" data-loading-text="Saving…">
                 @csrf
                 @method('PUT')
 
@@ -94,6 +94,33 @@
                                value="{{ old('email', $customer->email) }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @error('email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    {{-- NPWP --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                NPWP
+                            </label>
+                            <input type="text"
+                                   name="npwp"
+                                   value="{{ old('npwp', $customer->npwp) }}"
+                                   placeholder="cth: 01.234.567.8-901.234"
+                                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                            @error('npwp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                {{ __('Dokumen NPWP') }}
+                            </label>
+                            @if($customer->npwp_document_path)
+                                <p class="mb-1"><a href="{{ route('customers.npwp', $customer) }}" class="text-sm text-indigo-600 hover:underline">{{ __('Unduh dokumen saat ini') }}</a></p>
+                            @endif
+                            <input type="file"
+                                   name="npwp_document" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                   class="w-full text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            @error('npwp_document') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
                     </div>
 
                     {{-- Notes --}}

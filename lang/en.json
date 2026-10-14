@@ -1056,5 +1056,17 @@
     "Ke Teknis": "To Technical",
     "Selesai & Siapkan": "Done & Ready",
     "Kembalikan": "Return",
-    "Halo, berikut penawaran *{number}* senilai Rp {total} (berlaku sampai {until}). Mohon konfirmasinya, terima kasih.": "Hello, here is quotation *{number}* worth Rp {total} (valid until {until}). Please confirm, thank you."
+    "Halo, berikut penawaran *{number}* senilai Rp {total} (berlaku sampai {until}). Mohon konfirmasinya, terima kasih.": "Hello, here is quotation *{number}* worth Rp {total} (valid until {until}). Please confirm, thank you.",
+    "Dokumen PO berhasil diunggah.": "PO document uploaded successfully.",
+    "Project berhasil dibuat dari proposal.": "Project created from proposal successfully.",
+    "Proposal ini sudah dikonversi.": "This proposal has already been converted.",
+    "Unduh PO": "Download PO",
+    "Upload PO": "Upload PO",
+    "Lihat Project": "View Project",
+    "Jenis Pekerjaan": "Work Type",
+    "Pilih...": "Select...",
+    "Project baru dibuat untuk divisi Teknisi dari proposal ini.": "A new project will be created for the Technician division from this proposal.",
+    "Dokumen NPWP": "NPWP Document",
+    "Unduh dokumen saat ini": "Download current document",
+    "Unduh Dokumen NPWP": "Download NPWP Document"
 }
