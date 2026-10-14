@@ -150,8 +150,9 @@ class ProposalController extends Controller
         $this->authorize('view', $lead);
 
         $completedTech = $lead->technicalRequests()->where('status', 'completed')->latest()->first();
+        $prefillNotes = $lead->kebutuhan;
 
-        return view('sales.proposals.create', compact('lead', 'completedTech'));
+        return view('sales.proposals.create', compact('lead', 'completedTech', 'prefillNotes'));
     }
 
     public function store(Request $request)
