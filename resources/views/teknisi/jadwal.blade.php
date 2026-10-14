@@ -79,10 +79,10 @@
                                   class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
-                                    <span class="block truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight"
-                                          :class="cell.date === activeDate ? 'bg-white/20 text-white' : 'text-slate-600 dark:text-slate-300'"
-                                          :style="'border-left:3px solid ' + colorFor(ev.technician_user_id) + ';background:' + colorFor(ev.technician_user_id) + '22'"
-                                          x-text="(ev.start_time || '') + ' ' + ev.title"></span>
+                                    <button type="button" @click.stop="openDrawer(ev)"
+                                            class="block w-full truncate px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:ring-1 hover:ring-accent-500"
+                                            :class="cardColor(ev.id).wrap + ' ' + cardColor(ev.id).time"
+                                            x-text="(ev.start_time || '') + ' ' + ev.title"></button>
                                 </template>
                             </span>
                             <span class="mt-auto flex items-center gap-1 h-2.5 pt-0.5">
@@ -104,21 +104,28 @@
                 </div>
                 <template x-for="event in events" :key="event.id">
                     <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
-                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                              :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
+                        <template x-if="event.creator_avatar">
+                            <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
+                        </template>
+                        <template x-if="!event.creator_avatar">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                                  :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
+                        </template>
                         <div class="min-w-0 flex-1">
                             <p class="text-lg font-bold text-slate-100 truncate" x-text="event.title"></p>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
-                                <span class="mx-1 opacity-50">•</span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="(event.start_time || '') + ' – ' + (event.end_time || '')"></span>
+                                <span x-text="'at ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
-                            <span x-text="event.location || event.technician || '—'"></span>
+                            <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
+                            <span x-show="!event.location" x-text="event.technician || '—'"></span>
                         </div>
                     </div>
                 </template>
@@ -163,16 +170,18 @@
                 </div>
                 <p class="mb-4 text-center text-xs text-slate-400" x-text="weekLabel"></p>
                 <template x-for="event in weekEvents" :key="event.id">
-                    <div @click="openDrawer(event)" class="border border-gray-200 dark:border-slate-600 rounded-xl p-5 mb-4 last:mb-0 bg-white dark:bg-slate-800 cursor-pointer hover:shadow-md transition" :style="'border-left:4px solid ' + colorFor(event.technician_user_id)">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0 flex-1">
-                                <p class="text-lg sm:text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 truncate" x-text="event.title"></p>
-                                <p class="mt-1 text-sm text-slate-400" x-text="(event.start_time || '') + ' – ' + (event.end_time || '')"></p>
-                            </div>
+                    <div class="p-5 mb-4 last:mb-0 shadow-sm bg-white dark:bg-slate-800" :class="cardColor(event.id).wrap">
+                        <div class="relative flex items-start justify-between gap-3">
+                            <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" x-text="event.title"></button>
                             <div class="flex shrink-0 items-center gap-1">
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="statusClass(event.status)" x-text="statusLabel(event.status)"></span>
+                                <button type="button" @click="openDrawer(event)" title="{{ __('View detail') }}" aria-label="{{ __('View detail') }}"
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </button>
                             </div>
                         </div>
+                        <p class="mt-1 text-sm font-semibold" :class="cardColor(event.id).time" x-text="fmtTime(event.start_time) + (event.end_time ? ' – ' + fmtTime(event.end_time) : '')"></p>
                         <div class="mt-2 flex items-center gap-2">
                             <span class="inline-flex min-w-0 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
                                 <span class="truncate" x-text="event.technician || event.customer || '—'"></span>
@@ -181,7 +190,11 @@
                         <template x-if="event.location">
                             <div class="mt-3 rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2.5">
                                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Location / Meeting Link') }}</p>
-                                <p class="mt-0.5 text-sm text-slate-600 dark:text-slate-300" x-text="event.location"></p>
+                                <div class="mt-1 flex items-center justify-between gap-2">
+                                    <a :href="locHref(event.location)" target="_blank" rel="noopener" class="min-w-0 truncate text-sm text-slate-600 hover:underline dark:text-slate-300" x-text="event.location"></a>
+                                    <a :href="mapsDirectionsUrl(event.location)" target="_blank" rel="noopener" class="shrink-0 text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('Directions') }}</a>
+                                </div>
+                                <iframe :src="mapsEmbedUrl(event.location)" class="mt-2 h-28 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
                             </div>
                         </template>
                     </div>
@@ -205,21 +218,28 @@
                 </div>
                 <template x-for="event in events" :key="event.id">
                     <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
-                        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                              :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
+                        <template x-if="event.creator_avatar">
+                            <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
+                        </template>
+                        <template x-if="!event.creator_avatar">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                                  :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
+                        </template>
                         <div class="min-w-0 flex-1">
                             <p class="text-lg font-bold text-slate-100 truncate" x-text="event.title"></p>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
-                                <span class="mx-1 opacity-50">•</span>
+                            </div>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="(event.start_time || '') + ' – ' + (event.end_time || '')"></span>
+                                <span x-text="'at ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
-                            <span x-text="event.location || event.technician || '—'"></span>
+                            <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
+                            <span x-show="!event.location" x-text="event.technician || '—'"></span>
                         </div>
                     </div>
                 </template>
@@ -276,9 +296,13 @@
                             </template>
 
                             <template x-if="selected.location">
-                                <div class="mt-3 flex items-start gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
-                                    <span x-text="selected.location"></span>
+                                <div class="mt-3 rounded-xl border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                                    <div class="flex items-start gap-2">
+                                        <svg class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                                        <a :href="locHref(selected.location)" target="_blank" rel="noopener" class="min-w-0 flex-1 hover:underline" x-text="selected.location"></a>
+                                        <a :href="mapsDirectionsUrl(selected.location)" target="_blank" rel="noopener" class="shrink-0 text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('Directions') }}</a>
+                                    </div>
+                                    <iframe :src="mapsEmbedUrl(selected.location)" class="mt-2 h-40 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
                                 </div>
                             </template>
 
@@ -302,7 +326,21 @@
                                 </template>
                             </dl>
 
-                            <a x-show="selected.url" :href="selected.url" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View project') }} →</a>
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <template x-if="selected.creator_avatar">
+                                        <img :src="selected.creator_avatar" alt="" class="h-8 w-8 rounded-full object-cover">
+                                    </template>
+                                    <template x-if="!selected.creator_avatar">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-600 text-xs font-bold text-white" x-text="initials(selected.creator)"></span>
+                                    </template>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-bold text-slate-700 dark:text-slate-200" x-text="selected.creator || '-'"></p>
+                                        <p class="truncate text-xs text-slate-400">{{ __('Created by') }}</p>
+                                    </div>
+                                </div>
+                                <a x-show="selected.url" :href="selected.url" class="shrink-0 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View project') }} →</a>
+                            </div>
                         </div>
                         <div x-show="canManage" class="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
                             <form method="POST" :action="scheduleUrl(selected.id)" class="inline">
@@ -330,7 +368,8 @@
                  class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-y-auto" style="max-height:92vh">
                 <div class="pt-3 sm:hidden" aria-hidden="true"><div class="mx-auto h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600"></div></div>
                 <div class="p-6 pt-3 sm:pt-6">
-                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4" x-text="editingId ? '{{ __('Edit Schedule') }}' : '{{ __('Add Schedule') }}'"></h3>
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1" x-text="editingId ? '{{ __('Edit Schedule') }}' : '{{ __('Add Schedule') }}'"></h3>
+                    <p class="text-sm font-semibold text-accent-600 dark:text-accent-400 mb-4" x-text="modalSummary()"></p>
                     @if($errors->any())
                         <div class="mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm p-3">
                             <ul class="list-disc list-inside">
@@ -383,6 +422,13 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Start time') }} <span class="text-xs font-normal text-slate-400">(WIB)</span></label>
                                 <input type="time" name="start_time" x-model="form.start_time" required
                                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                                <div class="mt-2 grid grid-cols-3 gap-1.5">
+                                    <template x-for="t in timeSlots" :key="t">
+                                        <button type="button" @click="form.start_time = t"
+                                                :class="form.start_time === t ? 'bg-slate-800 text-white dark:bg-accent-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'"
+                                                class="rounded-lg px-2 py-1 text-xs font-semibold tabular-nums transition" x-text="t"></button>
+                                    </template>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('End time') }} <span class="text-xs font-normal text-slate-400">(WIB)</span></label>
@@ -540,7 +586,7 @@
                 rangeSeq: 0,
                 drawerOpen: false,
                 selected: null,
-                isModalOpen: false,
+                isModalOpen: {{ $errors->any() && auth()->user()->can('manage-technician') ? 'true' : 'false' }},
                 apiOpen: false,
                 editingId: null,
                 form: { title: '', project_id: '', technician_user_id: '', date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
@@ -782,8 +828,68 @@
                     return palette[h % palette.length];
                 },
 
+                cardPalette: {
+                    blue:   { wrap: 'border-l-[3px] border-blue-500 bg-blue-50 dark:bg-blue-500/20 rounded-r shadow-sm',
+                              time: 'text-blue-600 dark:text-blue-300 text-xs leading-tight font-semibold' },
+                    violet: { wrap: 'border-l-[3px] border-violet-500 bg-violet-50 dark:bg-violet-500/20 rounded-r shadow-sm',
+                              time: 'text-violet-600 dark:text-violet-300 text-xs leading-tight font-semibold' },
+                    emerald:{ wrap: 'border-l-[3px] border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 rounded-r shadow-sm',
+                              time: 'text-emerald-600 dark:text-emerald-300 text-xs leading-tight font-semibold' },
+                    amber:  { wrap: 'border-l-[3px] border-amber-500 bg-amber-50 dark:bg-amber-500/20 rounded-r shadow-sm',
+                              time: 'text-amber-600 dark:text-amber-300 text-xs leading-tight font-semibold' },
+                },
+
+                cardColor(id) {
+                    const keys = Object.keys(this.cardPalette);
+                    return this.cardPalette[keys[(id || 0) % keys.length]];
+                },
+
+                timeSlots: (() => {
+                    const slots = [];
+                    for (let m = 8 * 60; m <= 18 * 60; m += 30) {
+                        slots.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'));
+                    }
+                    return slots;
+                })(),
+
                 initials(name) {
                     return String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+                },
+
+                fmtTime(hhmm) {
+                    if (!hhmm) return '--:--';
+                    return String(hhmm).slice(0, 5) + ' WIB';
+                },
+
+                // === Lokasi ala Google Calendar ===
+                isWebUrl(loc) {
+                    const s = String(loc || '').trim();
+                    return !!s && (/^https?:\/\//i.test(s) || (/^([a-z0-9-]+\.)+[a-z]{2,}(\/.*)?$/i.test(s) && !/\s/.test(s)));
+                },
+
+                locHref(loc) {
+                    const s = String(loc || '').trim();
+                    return this.isWebUrl(s)
+                        ? (/^https?:\/\//i.test(s) ? s : 'https://' + s)
+                        : this.mapsSearchUrl(s);
+                },
+
+                mapsSearchUrl(loc) {
+                    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(loc || '').trim());
+                },
+
+                mapsDirectionsUrl(loc) {
+                    return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(String(loc || '').trim()) + '&travelmode=driving';
+                },
+
+                mapsEmbedUrl(loc) {
+                    return 'https://maps.google.com/maps?q=' + encodeURIComponent(String(loc || '').trim()) + '&z=15&output=embed';
+                },
+
+                modalSummary() {
+                    const d = new Date((this.form.date || this.activeDate) + 'T12:00:00');
+                    const dateStr = isNaN(d) ? this.form.date : d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+                    return dateStr + (this.form.start_time ? ', ' + this.form.start_time : '');
                 },
 
                 statusClass(status) {

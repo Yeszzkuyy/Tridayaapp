@@ -107,6 +107,8 @@ class TechnicianScheduleController extends Controller
             'technician_user_id' => $s->technician_user_id,
             'project' => $s->project?->project_name,
             'customer' => $s->project?->customer?->name,
+            'creator' => $s->owner?->name,
+            'creator_avatar' => $s->owner?->avatar ? asset('storage/'.$s->owner->avatar) : null,
             'url' => $s->project_id ? route('projects.show', $s->project_id) : route('teknisi.jadwal'),
         ]);
 
