@@ -99,6 +99,19 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res->assertDontSee('Google Calendar API');
     }
 
+    public function test_sync_failure_returns_message_not_500(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        // API key kosong → upcomingEvents() melempar, harus ditangkap controller.
+        $res = $this->actingAs($lead)->post(route('teknisi.kalender.sync'), [
+            'api_key' => 'salah', 'calendar_id' => 'bukan@kalender.ada',
+        ]);
+
+        $res->assertRedirect();
+        $res->assertSessionHas('sync_message');
+    }
+
     public function test_google_status_endpoint_and_badge(): void
     {
         $lead = $this->userWithRole('lead-technician');
