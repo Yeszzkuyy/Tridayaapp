@@ -373,8 +373,16 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             // Sisa right/bottom saat pindah desktop↔mobile diabaikan browser
             // (over-constrained LTR) — width/height selalu di-set eksplisit.
             const g = this.chatGeom();
-            if (!g) return { left: '12px', right: '12px', top: '64px', bottom: '12px', width: 'auto', height: 'auto' };
-            return { left: `${g.left}px`, top: `${g.top}px`, width: `${g.w}px`, height: `${g.h}px` };
+            // Bagian layar yang tertutup keyboard HP: visual viewport lebih
+            // pendek dari layout viewport (iOS tidak mengecilkan layout
+            // viewport) — angkat dasar jendela setinggi itu supaya baris
+            // input tetap terlihat.
+            const hidden = Math.max(0, this.vh - (this.vvo + this.vvh));
+            if (!g) {
+                // Layar sempit: jendela mengisi layar (left/right/top/bottom).
+                return { left: '12px', right: '12px', top: '64px', bottom: (12 + hidden) + 'px', width: 'auto', height: 'auto' };
+            }
+            return { left: `${g.left}px`, top: `${Math.max(12, g.top - hidden)}px`, width: `${g.w}px`, height: `${g.h}px` };
         },
         dragStart(e, which) {
             if (which === 'chat' && (this.isNarrow() || e.target?.closest?.('button'))) return;
