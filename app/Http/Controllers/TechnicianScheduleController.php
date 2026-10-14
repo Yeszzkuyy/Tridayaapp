@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncGoogleCalendarJob;
 use App\Models\GoogleAppCredential;
 use App\Models\Project;
 use App\Models\TechnicianSchedule;
@@ -46,6 +47,7 @@ class TechnicianScheduleController extends Controller
 
     public function jadwal(Request $request)
     {
+        $this->autoSyncSoon();
         $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
         $connected = $this->google->isApiReachable();
@@ -61,6 +63,7 @@ class TechnicianScheduleController extends Controller
      */
     public function getSchedulesApi(Request $request)
     {
+        $this->autoSyncSoon();
         $query = TechnicianSchedule::with(['project.customer', 'technician', 'owner']);
 
         if ($request->filled('start') && $request->filled('end')) {
@@ -209,6 +212,18 @@ class TechnicianScheduleController extends Controller
     private function canManageApi(): bool
     {
         return auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']) ?? false;
+    }
+
+    /**
+     * Minta sync Google berjalan di background (queue) saat halaman dibuka,
+     * di-throttle maksimal 1x per 3 menit supaya tidak memanggil Google
+     * berlebihan saat banyak user / banyak fetch.
+     */
+    private function autoSyncSoon(): void
+    {
+        if (\Illuminate\Support\Facades\Cache::add('gcal:last_auto_sync', true, 180)) {
+            SyncGoogleCalendarJob::dispatch();
+        }
     }
 
     public function store(Request $request)
