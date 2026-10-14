@@ -151,7 +151,20 @@ class TechnicianScheduleController extends Controller
             GoogleAppCredential::current()->fill($validated)->save();
         }
 
-        $stats = $this->google->syncFromGoogle();
+        try {
+            $stats = $this->google->syncFromGoogle();
+        } catch (\Throwable $e) {
+            // Logging best-effort: kegagalan menulis log tidak boleh
+            // mengubah pesan ramah ini jadi error 500.
+            try {
+                \Illuminate\Support\Facades\Log::warning('Google sync gagal: '.$e->getMessage());
+            } catch (\Throwable) {
+            }
+
+            return back()->with('sync_message', __('Gagal sinkron ke Google Calendar: :error', [
+                'error' => $e->getMessage(),
+            ]));
+        }
 
         return back()->with('sync_message', __(
             'Sinkron selesai: :created baru, :updated diperbarui, :restored dipulihkan, :skipped dilewati.',

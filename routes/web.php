@@ -133,6 +133,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-sales|manage-sales|view-customer')->group(function () {
         Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::get('/customers/{customer}/npwp', [CustomerController::class, 'downloadNpwp'])->name('customers.npwp');
     });
 
     // ============================================
@@ -179,6 +180,8 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/respond', [ProposalController::class, 'respond'])->name('proposals.respond');
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
         Route::post('proposals/{proposal}/submit-technical', [ProposalController::class, 'submitTechnical'])->name('proposals.submit-technical');
+        Route::post('proposals/{proposal}/po', [ProposalController::class, 'uploadPo'])->name('proposals.upload-po');
+        Route::post('proposals/{proposal}/convert', [ProposalController::class, 'convertToProject'])->name('proposals.convert');
     });
 
     Route::middleware('permission:manage-technician|manage-admin')->prefix('sales')->name('sales.')->group(function () {
@@ -211,6 +214,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
     });
 
     Route::middleware('permission:manage-technician')->prefix('sales')->name('sales.')->group(function () {

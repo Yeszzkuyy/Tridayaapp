@@ -4,7 +4,7 @@
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $proposal->proposal_number }}</h1>
                 <p class="text-slate-500 mt-1">
-                    {{ \App\Models\Proposal::statusLabel($proposal->status) }} •
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($proposal->status) }}">{{ \App\Models\Proposal::statusLabel($proposal->status) }}</span> •
                     Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}
                 </p>
             </div>
@@ -137,7 +137,60 @@
                         <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Reject') }}</button>
                     </form>
                 @endif
+                @if($proposal->status === 'accepted')
+                    @if($proposal->po_document_path)
+                        <a href="{{ route('sales.proposals.download-po', $proposal) }}"
+                           class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition">{{ __('Unduh PO') }}</a>
+                    @else
+                        <form action="{{ route('sales.proposals.upload-po', $proposal) }}" method="POST" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+                            @csrf
+                            <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                   class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition">{{ __('Upload PO') }}</button>
+                        </form>
+                        @error('po_file') <p class="text-red-500 text-xs w-full">{{ $message }}</p> @enderror
+                    @endif
+                    @if($proposal->project)
+                        <a href="{{ route('projects.show', $proposal->project) }}"
+                           class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}</a>
+                    @else
+                        <button type="button" onclick="document.getElementById('convert-modal').classList.remove('hidden')"
+                                class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition">{{ __('Convert to Project') }}</button>
+                    @endif
+                @endif
             </div>
+
+            @if($proposal->status === 'accepted' && !$proposal->project)
+                <div id="convert-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+                    <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Convert to Project') }}</h2>
+                        <p class="text-sm text-slate-500 mt-1">{{ __('Project baru dibuat untuk divisi Teknisi dari proposal ini.') }}</p>
+                        <form action="{{ route('sales.proposals.convert', $proposal) }}" method="POST" class="mt-4 space-y-3">
+                            @csrf
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Jenis Pekerjaan') }} <span class="text-red-500">*</span></label>
+                                <select name="work_type_id" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                    <option value="">{{ __('Pilih...') }}</option>
+                                    @foreach($workTypes as $wt)
+                                        <option value="{{ $wt->id }}">{{ $wt->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Tanggal Mulai') }}</label>
+                                <input type="date" name="start_date" value="{{ now()->format('Y-m-d') }}"
+                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div class="flex justify-end gap-2 pt-2">
+                                <button type="button" onclick="document.getElementById('convert-modal').classList.add('hidden')"
+                                        class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 text-sm font-medium transition">{{ __('Cancel') }}</button>
+                                <button type="submit"
+                                        class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition">{{ __('Convert to Project') }}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>
