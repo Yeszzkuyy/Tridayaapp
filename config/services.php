@@ -43,6 +43,13 @@ return [
         'calendar_id' => env('GOOGLE_CALENDAR_ID'),
     ],
 
+    // Google Maps / Places (autocomplete lokasi jadwal sales). Dipakai di sisi
+    // browser — batasi key-nya di Google Cloud (HTTP referrer + Maps/Places API).
+    'google-maps' => [
+        'api_key' => env('GOOGLE_MAPS_API_KEY', env('GOOGLE_API_KEY')),
+        'region' => env('GOOGLE_MAPS_REGION', 'id'),
+    ],
+
     /*
     | URL template Google Docs untuk laporan survey. Diisi copy-link template
     | Google Docs milik tim (configurable, bukan template id palsu).
