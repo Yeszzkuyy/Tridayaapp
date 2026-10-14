@@ -159,6 +159,16 @@ class TechnicianScheduleController extends Controller
         ));
     }
 
+    /**
+     * Status koneksi Google Calendar (JSON) untuk badge realtime.
+     */
+    public function googleStatus()
+    {
+        return response()->json([
+            'connected' => $this->google->isApiReachable(),
+        ]);
+    }
+
     private function canManageApi(): bool
     {
         return auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']) ?? false;
