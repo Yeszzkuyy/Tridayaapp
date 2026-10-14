@@ -454,14 +454,19 @@
                         <label for="su-customer_search" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
                         <input type="hidden" name="customer_id" :value="customerId">
                         <input id="su-customer_search" type="text" x-model="customerQuery"
-                               @focus="customerOpen = true" @input="customerOpen = true" autocomplete="off"
+                               @focus="customerOpen = true; customerActive = 0" @input="customerOpen = true; customerActive = 0" autocomplete="off"
+                               @keydown.down.prevent="customerNavigate(1)" @keydown.up.prevent="customerNavigate(-1)"
+                               @keydown.enter="customerChoose($event)" @keydown.escape="customerOpen = false"
                                placeholder="{{ __('Type to search customer...') }}"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         <div x-show="customerOpen && filteredCustomers().length" x-cloak
                              class="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-700">
-                            <template x-for="c in filteredCustomers()" :key="c.id">
-                                <button type="button" @click="selectCustomer(c)"
-                                        class="block w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600"
+                            <template x-for="(c, idx) in filteredCustomers()" :key="c.id">
+                                <button type="button" @click="selectCustomer(c)" @mouseenter="customerActive = idx"
+                                        :class="idx === customerActive
+                                            ? 'bg-accent-500/10 text-accent-700 dark:bg-accent-500/20 dark:text-accent-200'
+                                            : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600'"
+                                        class="block w-full px-3 py-2 text-left text-sm transition"
                                         x-text="c.label"></button>
                             </template>
                         </div>
@@ -562,6 +567,7 @@
                 fetchSeq: 0,
                 customerQuery: @json((string) collect($customers)->get((int) old('customer_id'), '')),
                 customerOpen: false,
+                customerActive: -1,
                 customerList: @json(collect($customers)->map(fn ($label, $id) => ['id' => (string) $id, 'label' => $label])->values()),
                 drawerOpen: false,
                 selectedEvent: null,
@@ -760,7 +766,25 @@
                     this.customerId = String(c.id);
                     this.customerQuery = c.label;
                     this.customerOpen = false;
+                    this.customerActive = -1;
                     this.filterLeads();
+                },
+
+                customerNavigate(dir) {
+                    const list = this.filteredCustomers();
+                    if (!list.length) return;
+                    this.customerOpen = true;
+                    const cur = this.customerActive < 0 ? (dir > 0 ? -1 : 0) : this.customerActive;
+                    this.customerActive = Math.min(Math.max(cur + dir, 0), list.length - 1);
+                },
+
+                customerChoose(e) {
+                    const list = this.filteredCustomers();
+                    const idx = this.customerActive >= 0 ? this.customerActive : 0;
+                    if (this.customerOpen && list.length && list[idx]) {
+                        if (e) e.preventDefault();
+                        this.selectCustomer(list[idx]);
+                    }
                 },
 
                 selectDay(date) {

@@ -47,6 +47,7 @@
             let seq = 0;
             let active = -1;
             let items = [];
+            let preds = [];
             let timer = null;
 
             const box = document.createElement('div');
@@ -60,7 +61,7 @@
                 box.style.top = (r.bottom + 4) + 'px';
                 box.style.width = r.width + 'px';
             };
-            const hide = () => { box.classList.add('hidden'); box.innerHTML = ''; items = []; active = -1; };
+            const hide = () => { box.classList.add('hidden'); box.innerHTML = ''; items = []; preds = []; active = -1; };
 
             const highlight = (idx) => {
                 items.forEach((el, i) => {
@@ -108,9 +109,10 @@
                         el.children[1].textContent = p.secondaryText ? p.secondaryText.text : '';
                         el.addEventListener('mousedown', (e) => { e.preventDefault(); choose(p); });
                         items.push(el);
+                        preds.push(p);
                         box.appendChild(el);
                     });
-                    if (items.length) { place(); box.classList.remove('hidden'); highlight(0); }
+                    if (items.length) { place(); box.classList.remove('hidden'); active = 0; highlight(0); }
                     else hide();
                 } catch (e) {
                     if (mySeq === seq) hide();
@@ -126,9 +128,10 @@
                 if (box.classList.contains('hidden')) return;
                 if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, items.length - 1); highlight(active); }
                 else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); highlight(active); }
-                else if (e.key === 'Enter' && active >= 0 && items[active]) {
+                else if (e.key === 'Enter' && items.length) {
                     e.preventDefault();
-                    items[active].dispatchEvent(new Event('mousedown'));
+                    const idx = active >= 0 ? active : 0;
+                    if (preds[idx]) choose(preds[idx]);
                 } else if (e.key === 'Escape') hide();
             });
             input.addEventListener('blur', () => setTimeout(hide, 150));
