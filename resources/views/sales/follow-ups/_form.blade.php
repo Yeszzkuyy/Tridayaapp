@@ -76,8 +76,8 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Waktu (opsional)') }}</label>
-            <input type="time" name="activity_time" value="{{ old('activity_time', $followUp?->activity_time ? substr((string) $followUp->activity_time, 0, 5) : '') }}"
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Waktu (WIB, opsional)') }}</label>
+            <input type="time" name="activity_time" lang="id-ID" value="{{ old('activity_time', $followUp?->activity_time ? substr((string) $followUp->activity_time, 0, 5) : '') }}"
                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
             @error('activity_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
