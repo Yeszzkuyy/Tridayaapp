@@ -56,8 +56,8 @@
                         <div @click="createOn(cell.date)" @keydown.enter="createOn(cell.date)" tabindex="0" role="button"
                                 :aria-label="dayEvents(cell.date).length + ' {{ __('visits') }}'"
                                 :class="cell.date === activeDate
-                                    ? 'bg-accent-500/10 text-slate-800 ring-2 ring-inset ring-accent-500 shadow-sm dark:bg-accent-500/20 dark:text-slate-100'"
-                                            : (cell.inMonth
+                                    ? 'bg-accent-500/10 text-slate-800 ring-2 ring-inset ring-accent-500 shadow-sm dark:bg-accent-500/20 dark:text-slate-100'
+                                    : (cell.inMonth
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
                                 class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
@@ -391,12 +391,14 @@
                                 </button>
                                 <div x-show="snoozeOpen" @click.outside="snoozeOpen = false" x-cloak
                                      class="absolute bottom-11 left-0 z-20 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-600 dark:bg-slate-800">
-                                    <form x-for="d in [1, 3, 7]" :key="d" method="POST" :action="followUpUrl('snooze')">
-                                        @csrf
-                                        <input type="hidden" name="days" :value="d">
-                                        <button type="submit" class="w-full px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/60"
-                                                x-text="d + ' {{ __('day(s)') }}'"></button>
-                                    </form>
+                                    <template x-for="d in [1, 3, 7]" :key="d">
+                                        <form method="POST" :action="followUpUrl('snooze')">
+                                            @csrf
+                                            <input type="hidden" name="days" :value="d">
+                                            <button type="submit" class="w-full px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/60"
+                                                    x-text="d + ' {{ __('day(s)') }}'"></button>
+                                        </form>
+                                    </template>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
