@@ -447,25 +447,24 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Start time') }} <span class="text-xs font-normal text-slate-400">(WIB)</span></label>
                                 <input type="time" name="start_time" x-model="form.start_time" required
                                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                                <div class="mt-2 grid grid-cols-3 gap-1.5">
-                                    <template x-for="t in timeSlots" :key="t">
-                                        <button type="button" @click="form.start_time = t"
-                                                :class="form.start_time === t ? 'bg-slate-800 text-white dark:bg-accent-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'"
-                                                class="rounded-lg px-2 py-1 text-xs font-semibold tabular-nums transition" x-text="t"></button>
-                                    </template>
-                                </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('End time') }} <span class="text-xs font-normal text-slate-400">(WIB)</span></label>
-                                <input type="time" name="end_time" x-model="form.end_time" required
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('End time') }} <span class="text-xs font-normal text-slate-400">(WIB, {{ __('optional') }})</span></label>
+                                <input type="time" name="end_time" x-model="form.end_time"
                                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Location') }}</label>
-                            <input type="text" name="location" x-model="form.location" maxlength="255"
-                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                            <label for="tek-location" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Location') }}</label>
+                            <div class="flex items-center gap-2">
+                                <input id="tek-location" type="text" name="location" x-model="form.location" maxlength="255" placeholder="{{ __('Address / meeting point or meeting link') }}"
+                                       data-location-autocomplete
+                                       class="flex-1 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                                <x-maps-open-button input="tek-location" />
+                                <x-location-autocomplete />
+                            </div>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
                         </div>
 
                         <div>

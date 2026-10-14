@@ -103,7 +103,7 @@ class TechnicianScheduleController extends Controller
             'location' => $s->location,
             'date' => $s->start_at->toDateString(),
             'start_time' => $s->start_at->format('H:i'),
-            'end_time' => $s->end_at?->format('H:i'),
+            'end_time' => ($s->end_at && !$s->end_at->eq($s->start_at)) ? $s->end_at->format('H:i') : null,
             'status' => $s->status,
             'sync_status' => $s->google_sync_status,
             'technician' => $s->technician?->name,
@@ -342,7 +342,7 @@ class TechnicianScheduleController extends Controller
             'technician_user_id' => 'nullable|exists:users,id',
             'date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
+            'end_time' => 'nullable|date_format:H:i|after:start_time',
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:2000',
             'status' => 'required|in:'.implode(',', array_keys(TechnicianSchedule::STATUSES)),
@@ -357,10 +357,12 @@ class TechnicianScheduleController extends Controller
             $tz
         )->setTimezone(config('app.timezone'));
 
-        $validated['end_at'] = Carbon::parse(
-            $validated['date'].' '.$validated['end_time'],
-            $tz
-        )->setTimezone(config('app.timezone'));
+        // End time opsional: bila kosong, samakan dengan jam mulai (kolom
+        // end_at not-null) dan disembunyikan di tampilan.
+        $endTime = $validated['end_time'] ?? null;
+        $validated['end_at'] = $endTime
+            ? Carbon::parse($validated['date'].' '.$endTime, $tz)->setTimezone(config('app.timezone'))
+            : $validated['start_at'];
 
         unset($validated['date'], $validated['start_time'], $validated['end_time']);
 
