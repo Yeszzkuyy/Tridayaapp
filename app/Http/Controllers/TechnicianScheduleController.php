@@ -49,9 +49,10 @@ class TechnicianScheduleController extends Controller
         $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
         $connected = $this->google->isApiReachable();
+        $oauth = $this->google->hasOAuthConnection(auth()->user());
         $credential = GoogleAppCredential::current();
 
-        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential'));
+        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential', 'oauth'));
     }
 
     /**

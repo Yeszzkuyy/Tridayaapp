@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}">
+    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
         {{-- Top bar --}}
         <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3 min-w-0">
@@ -480,6 +480,31 @@
                                 {{ __('Sync Now') }}</button>
                         </div>
                     </form>
+
+                    {{-- Sync dua arah (OAuth) — tulis balik ke Google --}}
+                    <div class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Two-way sync (write to Google)') }}</p>
+                                <p class="text-xs text-slate-400">
+                                    <span x-show="oauthConnected" class="text-emerald-500">{{ __('Connected — schedules will be pushed to Google.') }}</span>
+                                    <span x-show="!oauthConnected">{{ __('Connect to push schedules back to Google Calendar.') }}</span>
+                                </p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <a x-show="!oauthConnected" href="{{ route('teknisi.kalender.connect') }}"
+                                   class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-accent-600 hover:bg-accent-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:brightness-110 active:scale-95">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.02a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                    {{ __('Connect') }}</a>
+                                <form x-show="oauthConnected" method="POST" action="{{ route('teknisi.kalender.disconnect') }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="px-4 py-2 rounded-xl text-sm font-medium border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Disconnect') }}</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -494,6 +519,7 @@
                 apiUrl: document.getElementById('teknisi-schedule-root')?.dataset.apiUrl || '',
                 statusUrl: document.getElementById('teknisi-schedule-root')?.dataset.statusUrl || '',
                 googleConnected: document.getElementById('teknisi-schedule-root')?.dataset.connected === '1',
+                oauthConnected: document.getElementById('teknisi-schedule-root')?.dataset.oauth === '1',
                 canManage: {{ auth()->user()->can('manage-technician') ? 'true' : 'false' }},
                 scheduleBase: @json(route('teknisi.schedules.store')),
                 view: 'month',
@@ -541,6 +567,9 @@
                         .then((data) => {
                             if (typeof data?.connected === 'boolean') {
                                 this.googleConnected = data.connected;
+                            }
+                            if (typeof data?.oauth_connected === 'boolean') {
+                                this.oauthConnected = data.oauth_connected;
                             }
                         })
                         .catch(() => {});
