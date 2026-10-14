@@ -1044,5 +1044,8 @@
     "Produk berhasil diperbarui.": "Product updated successfully.",
     "Belum ada produk.": "No products yet.",
     "Master barang & jasa untuk BOQ proposal.": "Master goods & services for proposal BOQ.",
-    "Daftar penawaran sales.": "Sales quotation list."
+    "Daftar penawaran sales.": "Sales quotation list.",
+    "Cari di katalog...": "Search catalog...",
+    "Tidak ketemu di katalog, ketik manual.": "Not in catalog, type manually.",
+    "Estimasi otomatis, dihitung ulang di server.": "Auto estimate, recalculated on server."
 }

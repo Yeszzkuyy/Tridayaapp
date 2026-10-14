@@ -59,6 +59,7 @@ class ProposalController extends Controller
     {
         return [
             'items' => 'required|array|min:1|max:50',
+            'items.*.product_id' => 'nullable|exists:products,id',
             'items.*.description' => 'required|string|max:255',
             'items.*.quantity' => 'required|numeric|min:0.01|max:999999',
             'items.*.unit' => 'nullable|string|max:16',
@@ -77,6 +78,7 @@ class ProposalController extends Controller
             $disc = (float) ($item['discount'] ?? 0);
 
             $proposal->items()->create([
+                'product_id' => $item['product_id'] ?? null,
                 'description' => $item['description'],
                 'quantity' => $qty,
                 'unit' => $item['unit'] ?? 'pcs',
