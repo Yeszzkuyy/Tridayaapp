@@ -133,11 +133,23 @@ class TechnicianScheduleController extends Controller
     }
 
     /**
-     * Tarik event dari Google ke jadwal lokal. Hanya super-admin / lead-technician.
+     * Simpan kredensial lalu tarik event dari Google ke jadwal lokal
+     * (satu tombol "Sync Now"). Hanya super-admin / lead-technician.
      */
     public function syncNow(Request $request)
     {
         abort_unless($this->canManageApi(), 403);
+
+        $validated = $request->validate([
+            'client_id' => 'nullable|string|max:255',
+            'client_secret' => 'nullable|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'calendar_id' => 'nullable|string|max:255',
+        ]);
+
+        if ($validated !== []) {
+            GoogleAppCredential::current()->fill($validated)->save();
+        }
 
         $stats = $this->google->syncFromGoogle();
 
