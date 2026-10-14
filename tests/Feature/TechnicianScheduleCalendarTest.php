@@ -180,6 +180,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res->assertSee('id="teknisi-month-grid"', false);
         $res->assertSee('id="teknisi-view-switcher"', false);
         $res->assertSee('id="teknisi-week-list"', false);
+        $res->assertSee('openMore(cell.date', false);
         $res->assertSee('Weekly Schedule');
     }
 }

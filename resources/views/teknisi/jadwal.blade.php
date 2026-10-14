@@ -74,23 +74,21 @@
                                     : (cell.inMonth
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
-                                class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+                                class="group flex min-h-24 sm:min-h-36 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                             <span @click.stop="selectDay(cell.date)" :class="cell.date === activeDate ? 'bg-accent-500/20 text-accent-700 dark:bg-accent-500/25 dark:text-accent-200' : (cell.isToday ? 'underline decoration-accent-500 decoration-2 underline-offset-4' : '')"
                                   class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-sm font-semibold tabular-nums" x-text="cell.num"></span>
                             <span class="mt-1 hidden sm:block w-full space-y-0.5 px-1">
-                                <template x-for="ev in dayEvents(cell.date).slice(0, 2)" :key="ev.id">
+                                <template x-for="ev in dayEvents(cell.date).slice(0, 3)" :key="ev.id">
                                     <button type="button" @click.stop="openDrawer(ev)"
                                             class="block w-full truncate px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:ring-1 hover:ring-accent-500"
                                             :class="cardColor(ev.id).wrap + ' ' + cardColor(ev.id).time"
                                             x-text="(ev.start_time || '') + ' ' + ev.title"></button>
                                 </template>
-                            </span>
-                            <span class="mt-auto flex items-center gap-1 h-2.5 pt-0.5">
-                                <template x-for="i in dayDots(cell.date)" :key="i">
-                                    <span class="h-1.5 w-1.5 rounded-full bg-accent-500"></span>
-                                </template>
-                                <span x-show="dayEvents(cell.date).length > 3" class="text-[10px] font-semibold tabular-nums opacity-70"
-                                      x-text="'+' + (dayEvents(cell.date).length - 3)"></span>
+                                <button type="button" x-show="dayEvents(cell.date).length > 3"
+                                        @click.stop="openMore(cell.date, $event)"
+                                        class="w-full rounded-md px-1.5 py-0.5 text-left text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/60"
+                                        :aria-label="dayEvents(cell.date).length - 3 + ' {{ __('more events') }}'"
+                                        x-text="'+' + (dayEvents(cell.date).length - 3) + ' {{ __('more') }}'"></button>
                             </span>
                         </div>
                     </template>
@@ -258,6 +256,32 @@
             @can('manage-technician')
                 <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
             @endcan
+        </div>
+
+        {{-- Popover "+N more" — daftar lengkap event sehari --}}
+        <div x-show="moreDate" x-cloak @keydown.escape.window="moreDate = null" class="fixed inset-0 z-40">
+            <div class="absolute inset-0" @click="moreDate = null"></div>
+            <div class="absolute z-50 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-800"
+                 :style="moreStyle">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="moreDate ? new Date(moreDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : ''"></p>
+                    <button type="button" @click="moreDate = null" title="{{ __('Close') }}" aria-label="{{ __('Close') }}"
+                            class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
+                </div>
+                <template x-for="ev in (moreDate ? dayEvents(moreDate) : [])" :key="ev.id">
+                    <button type="button" @click="moreDate = null; openDrawer(ev)"
+                            class="mb-1.5 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-left transition hover:shadow-md dark:border-slate-600"
+                            :class="cardColor(ev.id).wrap">
+                        <div class="flex items-center gap-2">
+                            <span class="shrink-0 text-xs font-semibold tabular-nums" :class="cardColor(ev.id).time" x-text="fmtTime(ev.start_time)"></span>
+                            <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200" x-text="ev.title"></span>
+                        </div>
+                        <p x-show="ev.location" class="mt-0.5 truncate text-xs text-slate-400" x-text="ev.location"></p>
+                    </button>
+                </template>
+            </div>
         </div>
 
         {{-- Detail drawer --}}
@@ -587,6 +611,8 @@
                 rangeSeq: 0,
                 drawerOpen: false,
                 selected: null,
+                moreDate: null,
+                moreStyle: '',
                 isModalOpen: {{ $errors->any() && auth()->user()->can('manage-technician') ? 'true' : 'false' }},
                 saveError: null,
                 apiOpen: false,
@@ -729,6 +755,19 @@
                 openDrawer(event) {
                     this.selected = { ...event };
                     this.drawerOpen = true;
+                },
+
+                openMore(date, e) {
+                    // Posisikan popover di dekat tombol "+N more" (fallback tengah layar).
+                    const vw = window.innerWidth, vh = window.innerHeight;
+                    let left = vw / 2 - 144, top = vh / 2 - 160;
+                    if (e && e.currentTarget) {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        left = Math.min(Math.max(r.left - 120, 12), vw - 288 - 12);
+                        top = Math.min(r.bottom + 8, vh - 320 - 12);
+                    }
+                    this.moreStyle = 'left:' + left + 'px;top:' + Math.max(top, 12) + 'px';
+                    this.moreDate = date;
                 },
 
                 closeDrawer() {
