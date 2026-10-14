@@ -532,7 +532,9 @@
 
                 fetchStatus() {
                     if (!this.statusUrl) return;
-                    fetch(this.statusUrl)
+                    // Cache-buster: cegah browser memakai respons status basi.
+                    const sep = this.statusUrl.includes('?') ? '&' : '?';
+                    fetch(this.statusUrl + sep + '_=' + Date.now())
                         .then((r) => r.json())
                         .then((data) => {
                             if (typeof data?.connected === 'boolean') {
