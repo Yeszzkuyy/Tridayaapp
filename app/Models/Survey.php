@@ -10,9 +10,23 @@ class Survey extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'project_id', 'sales_request', 'survey_date', 'location', 'pic',
-        'survey_data', 'documentation', 'survey_report', 'status', 'notes',
+        'title', 'project_id', 'customer_id', 'sales_user_id', 'technical_request_id',
+        'sales_request', 'survey_date', 'location', 'pic', 'survey_data', 'documentation',
+        'survey_report', 'report_file', 'report_file_name', 'status', 'notes',
     ];
+
+    /**
+     * Status selesai yang diakui aplikasi (lihat validasi controller & badge view).
+     */
+    public const STATUS_COMPLETED = 'completed';
+
+    /**
+     * Apakah survey sudah punya file laporan PDF.
+     */
+    public function hasReport(): bool
+    {
+        return filled($this->report_file);
+    }
 
     protected $casts = [
         'survey_date' => 'date',
@@ -22,5 +36,20 @@ class Survey extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function sales()
+    {
+        return $this->belongsTo(User::class, 'sales_user_id');
+    }
+
+    public function technicalRequest()
+    {
+        return $this->belongsTo(TechnicalRequest::class);
     }
 }

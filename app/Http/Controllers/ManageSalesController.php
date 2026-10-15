@@ -7,19 +7,20 @@ use App\Models\FollowUp;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\LeadActivity;
-use App\Models\Meeting;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ManageSalesController extends Controller
 {
     public function index(Request $request)
     {
         $query = Lead::with(['customer', 'assignee', 'partner'])
-            ->withCount(['meetings', 'followUps'])
+            ->withCount(['followUps'])
             ->withMax('followUps as last_follow_up_at', 'follow_up_date')
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
                 fn ($c) => $c->whereLike('name', $request->search)))
@@ -27,8 +28,8 @@ class ManageSalesController extends Controller
                 ? $q->whereNotNull('assigned_to')
                 : $q->whereNull('assigned_to'))
             ->when($request->filled('touched'), fn ($q) => $request->touched === 'yes'
-                ? $q->where(fn ($w) => $w->has('meetings')->orHas('followUps'))
-                : $q->whereDoesntHave('meetings')->whereDoesntHave('followUps'));
+                ? $q->whereHas('followUps')
+                : $q->whereDoesntHave('followUps'));
 
         $leads = $query->latest()->paginate(15)->withQueryString();
 
@@ -71,7 +72,7 @@ class ManageSalesController extends Controller
             'kebutuhan' => 'nullable|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
-            'notes' => 'nullable',
+            'notes' => 'nullable|string|max:5000',
             'pt_group' => 'nullable|in:NTI,MGK,TPS,WANI',
             'assigned_to' => 'nullable|exists:users,id',
         ]);
@@ -168,8 +169,6 @@ class ManageSalesController extends Controller
             'won_month' => $mine()->where('status', 'won')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)->count(),
-            'meetings_week' => Meeting::where($ownActivity)
-                ->whereBetween('meeting_date', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'overdue' => FollowUp::where($ownActivity)
                 ->whereNull('completed_at')
                 ->whereNotNull('follow_up_date')
@@ -190,11 +189,6 @@ class ManageSalesController extends Controller
             ->whereDate('follow_up_date', '<=', today()->addWeek())
             ->orderBy('follow_up_date')
             ->limit(5)->get();
-        $weekMeetings = Meeting::with('customer')
-            ->where($ownActivity)
-            ->whereBetween('meeting_date', [now()->startOfWeek(), now()->endOfWeek()])
-            ->orderBy('meeting_date')
-            ->limit(5)->get();
         $myTasks = \App\Models\LeadTask::with(['lead.customer', 'assignee'])
             ->whereHas('lead', $ownLead)
             ->whereNotIn('status', ['done'])
@@ -205,10 +199,9 @@ class ManageSalesController extends Controller
         $statusCounts = $mine()->selectRaw('status, count(*) as total')
             ->groupBy('status')->pluck('total', 'status');
         $statusPalette = [
-            'new' => '#3b82f6',
-            'contacted' => '#eab308',
-            'qualified' => '#a855f7',
-            'proposal' => '#f97316',
+            'cool' => '#3b82f6',
+            'warm' => '#eab308',
+            'hot' => '#f97316',
             'won' => '#22c55e',
             'lost' => '#ef4444',
         ];
@@ -220,7 +213,7 @@ class ManageSalesController extends Controller
         ])->values();
         $funnelTotal = $donutSales->sum('value');
 
-        // Rentang minggu berjalan untuk drill-down "Meeting Minggu Ini".
+        // Rentang minggu berjalan untuk drill-down kartu follow-up.
         $weekStart = now()->startOfWeek()->toDateString();
         $weekEnd = now()->endOfWeek()->toDateString();
 
@@ -237,7 +230,25 @@ class ManageSalesController extends Controller
             ->mapWithKeys(fn ($pt) => [$pt => (float) ($incomeRows[$pt] ?? 0)]);
         $incomeTotal = $incomeMonth->sum();
 
-        return view('sales.dashboard', compact('kpi', 'dueFollowUps', 'weekMeetings', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal'));
+        // Ringkasan agenda sales milik sendiri (jadwal saya: PIC/creator/lead saya).
+        $ownSchedules = fn ($q) => $q->where(function ($w) {
+            $w->where('sales_schedules.assigned_to', auth()->id())
+                ->orWhere('sales_schedules.created_by', auth()->id())
+                ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', auth()->id()));
+        });
+        $scheduleSummary = [
+            'today' => \App\Models\SalesSchedule::where($ownSchedules)
+                ->whereDate('start_at', today())->whereNotIn('status', ['completed', 'cancelled'])->count(),
+            'upcoming' => \App\Models\SalesSchedule::where($ownSchedules)
+                ->where('start_at', '>=', now()->startOfDay())->whereNotIn('status', ['completed', 'cancelled'])->count(),
+            'completed' => \App\Models\SalesSchedule::where($ownSchedules)->where('status', 'completed')->count(),
+            'cancelled' => \App\Models\SalesSchedule::where($ownSchedules)->where('status', 'cancelled')->count(),
+        ];
+        $scheduleTypes = \App\Models\SalesSchedule::where($ownSchedules)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
+
+        return view('sales.dashboard', compact('kpi', 'dueFollowUps', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes'));
     }
 
     public function myLeads(Request $request)
@@ -253,41 +264,120 @@ class ManageSalesController extends Controller
 
     public function exportMyLeads(Request $request)
     {
-        $leads = $this->myLeadsQuery($request)
-            ->with(['customer'])
-            ->withMax('followUps as last_follow_up_at', 'follow_up_date')
-            ->get();
-
         $filename = 'my-leads-'.now()->format('Ymd-Hi').'.csv';
 
-        return response()->streamDownload(function () use ($leads) {
+        // Streaming per 1000 baris (chunkById + eager per chunk):
+        // memori tetap datar berapa pun jumlah lead.
+        return response()->streamDownload(function () use ($request) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF"); // BOM agar Excel baca UTF-8.
-            fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Meeting', 'Jml Follow Up', 'Follow Up Terakhir']);
-            foreach ($leads as $lead) {
-                fputcsv($handle, [
-                    $lead->customer?->name ?? '-',
-                    $lead->pt_group ?? '-',
-                    $lead->customer?->contact_person ?? '-',
-                    $lead->customer?->phone ?? $lead->customer?->whatsapp ?? '-',
-                    ucfirst($lead->status),
-                    $lead->kebutuhan ?? '-',
-                    $lead->solusi ?? '-',
-                    $lead->progress_notes ?? '-',
-                    $lead->incoming_date?->format('Y-m-d') ?? '-',
-                    $lead->meetings_count,
-                    $lead->follow_ups_count,
-                    $lead->last_follow_up_at ?? '-',
-                ]);
-            }
+            fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Follow Up', 'Follow Up Terakhir']);
+            $this->myLeadsQuery($request)
+                ->with(['customer'])
+                ->withMax('followUps as last_follow_up_at', 'follow_up_date')
+                ->chunk(1000, function ($leads) use ($handle) {
+                    foreach ($leads as $lead) {
+                        // Cegah CSV formula injection: sel yang diawali = + - @ dinetralkan.
+                        $safe = fn ($value) => is_string($value) && preg_match('/^[=+\-@]/', $value) ? "'".$value : $value;
+                        fputcsv($handle, [
+                            $safe($lead->customer?->name ?? '-'),
+                            $safe($lead->pt_group ?? '-'),
+                            $safe($lead->customer?->contact_person ?? '-'),
+                            $safe($lead->customer?->phone ?? $lead->customer?->whatsapp ?? '-'),
+                            $safe(ucfirst($lead->status)),
+                            $safe($lead->kebutuhan ?? '-'),
+                            $safe($lead->solusi ?? '-'),
+                            $safe($lead->progress_notes ?? '-'),
+                            $lead->incoming_date?->format('Y-m-d') ?? '-',
+                            $lead->follow_ups_count,
+                            $lead->last_follow_up_at ?? '-',
+                        ]);
+                    }
+                });
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Export DAR (Daily Activity Report) ke Excel: satu baris per Log Follow Up.
+     * Kolom mengikuti DAR manual: TANGGAL, CUSTOMER, CATEGORY, ADDRESS, PIC,
+     * PHONE, EMAIL, STATUS, KEBUTUHAN, DETAIL.
+     */
+    public function exportDar(Request $request)
+    {
+        $validated = $request->validate([
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'user_id' => 'nullable|exists:users,id',
+        ]);
+
+        $from = $validated['date_from'] ?? today()->toDateString();
+        $to = $validated['date_to'] ?? $from;
+
+        // Sales hanya melihat aktivitasnya sendiri; management boleh pilih sales.
+        $userId = auth()->id();
+        if (auth()->user()->can('manage-sales-leads') && !empty($validated['user_id'])) {
+            $userId = (int) $validated['user_id'];
+        }
+
+        $rows = FollowUp::query()
+            ->with(['lead.customer'])
+            ->where('created_by', $userId)
+            ->whereDate('follow_up_date', '>=', $from)
+            ->whereDate('follow_up_date', '<=', $to)
+            ->orderBy('follow_up_date')
+            ->orderBy('activity_time')
+            ->get();
+
+        $headers = ['TANGGAL', 'CUSTOMER', 'CATEGORY', 'ADDRESS', 'PIC', 'PHONE', 'EMAIL', 'STATUS', 'KEBUTUHAN', 'DETAIL'];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('DAR');
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:J1')->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($rows as $followUp) {
+            $customer = $followUp->lead?->customer;
+
+            $detail = (string) $followUp->description;
+            if ($followUp->activity_time) {
+                $detail .= ' — '.substr((string) $followUp->activity_time, 0, 5);
+            }
+            if ($followUp->location) {
+                $detail .= ' ('.$followUp->location.')';
+            }
+
+            $sheet->fromArray([
+                $followUp->follow_up_date?->format('Y-m-d') ?? '-',
+                $customer?->name ?? '-',
+                $followUp->lead?->segment ? \App\Http\Controllers\LeadController::label($followUp->lead->segment) : '-',
+                $customer?->address ?? '-',
+                $customer?->contact_person ?? '-',
+                $customer?->phone ?? $customer?->whatsapp ?? '-',
+                $customer?->email ?? '-',
+                $followUp->lead ? Lead::salesStatusLabel($followUp->lead->status) : '-',
+                $followUp->lead?->kebutuhan ?? '-',
+                $detail,
+            ], null, 'A'.$row);
+
+            $row++;
+        }
+
+        $filename = 'dar-'.($from === $to ? $from : $from.'_'.$to).'.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     private function myLeadsQuery(Request $request)
     {
         $query = Lead::with(['customer', 'partner'])
-            ->withCount(['meetings', 'followUps'])
+            ->withCount(['followUps'])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
             ->where('assigned_to', auth()->id())
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
@@ -298,8 +388,8 @@ class ManageSalesController extends Controller
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year))
             ->when($request->filled('touched'), fn ($q) => $request->touched === 'yes'
-                ? $q->where(fn ($w) => $w->has('meetings')->orHas('followUps'))
-                : $q->whereDoesntHave('meetings')->whereDoesntHave('followUps'));
+                ? $q->whereHas('followUps')
+                : $q->whereDoesntHave('followUps'));
 
         // Urutan: terbaru (default), terlama, atau nama customer A-Z.
         return match ($request->input('sort')) {
@@ -341,6 +431,8 @@ class ManageSalesController extends Controller
         $lead->assigned_to = $assignedTo;
         $lead->assigned_by = $assignedTo ? auth()->id() : null;
         $lead->assigned_at = $assignedTo ? now() : null;
+        // Assign (baru/reassign) = belum ditangani -> kembali ke kolom New pipeline.
+        $lead->acknowledged_at = $assignedTo ? null : $lead->acknowledged_at;
     }
 
     /**
@@ -367,6 +459,14 @@ class ManageSalesController extends Controller
         DatabaseNotification::where('type', NewLeadNotification::class)
             ->get()
             ->filter(fn ($n) => ($n->data['lead_id'] ?? null) == $lead->id)
+            ->each->delete();
+
+        // Bersihkan notif assign basi milik sales lain (mis. reassign):
+        // bell tiap sales hanya berisi lead miliknya sendiri.
+        DatabaseNotification::where('type', LeadAssignedNotification::class)
+            ->get()
+            ->filter(fn ($n) => ($n->data['lead_id'] ?? null) == $lead->id
+                && (int) $n->notifiable_id !== (int) $lead->assigned_to)
             ->each->delete();
     }
 

@@ -38,6 +38,13 @@ class AppServiceProvider extends ServiceProvider
             $term = '%'.mb_strtolower(trim((string) $search)).'%';
             $columns = (array) $columns;
 
+            // Nama kolom diinterpolasi ke SQL: hanya pola identifier valid.
+            foreach ($columns as $column) {
+                if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', (string) $column)) {
+                    throw new \InvalidArgumentException('Kolom whereLike tidak valid.');
+                }
+            }
+
             return $this->where(function ($q) use ($columns, $term) {
                 $q->whereRaw('LOWER('.$columns[0].') LIKE ?', [$term]);
                 foreach (array_slice($columns, 1) as $column) {

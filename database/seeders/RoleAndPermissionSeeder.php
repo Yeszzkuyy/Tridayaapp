@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\Lead;
 use App\Models\User;
 
 class RoleAndPermissionSeeder extends Seeder
@@ -65,6 +66,13 @@ class RoleAndPermissionSeeder extends Seeder
         // Divisi
         $mk('marketing', ['manage-marketing', 'view-marketing', ...$common]);
         $mk('sales', ['manage-sales', 'view-sales', 'view-admin', ...$common]);
+
+        // Sales per PT: izin sama dengan sales, tulis dibatasi PT-nya (PtAccess).
+        // Satu user boleh pegang banyak PT. Tanpa role PT = tanpa batas.
+        $salesPerms = ['manage-sales', 'view-sales', 'view-admin', ...$common];
+        foreach (Lead::PT_GROUPS as $pt) {
+            $mk('sales-'.strtolower($pt), $salesPerms);
+        }
         $mk('admin', ['manage-admin', 'view-admin', 'view-sales', ...$common]);
         $mk('technician', ['manage-technician', 'view-technician', ...$common]);
 
@@ -128,22 +136,17 @@ class RoleAndPermissionSeeder extends Seeder
             }
         }
 
-        // === 4. Buat 1 akun Super Admin baru (placeholder) ===
-        $superAdminUser = User::firstOrCreate(
-            ['email' => 'superadmin@dbteknisi.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => bcrypt('gantiPassword123'),
-            ]
-        );
-        $superAdminUser->assignRole('super-admin');
-
-        // === 5. Kembalikan super-admin ke user yang punya kolom role=super-admin ===
+        // === 4. Kembalikan super-admin ke user yang punya kolom role=super-admin ===
         User::where('role', 'super-admin')->get()
             ->each(fn (User $u) => $u->assignRole('super-admin'));
 
-        // === 6. Kembalikan super-admin yang hilang akibat wipe (kolom role=guest tapi tadinya super-admin) ===
+        // === 5. Kembalikan super-admin yang hilang akibat wipe (kolom role=guest tapi tadinya super-admin) ===
         User::whereIn('id', $prevSuperAdmins)->get()
             ->each(fn (User $u) => $u->hasRole('super-admin') ?: $u->assignRole('super-admin'));
+
+        // Forget di AWAL saja tidak cukup: seeder tidak transaksional — request web
+        // yang datang di tengah (saat roles/permissions ke-reset) bisa meng-cache
+        // kondisi setengah jadi selama 24 jam → user kehilangan menu/403 padahal DB benar.
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

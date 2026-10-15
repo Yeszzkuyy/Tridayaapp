@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProjectStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ProjectStatusController extends Controller
 {
@@ -27,6 +28,8 @@ class ProjectStatusController extends Controller
         ]);
 
         ProjectStatus::create($validated);
+        Cache::forget('master:project-statuses');
+        Cache::forget('tek:status-counts');
 
         return redirect()
             ->route('admin-panel.project-statuses.index')
@@ -47,6 +50,8 @@ class ProjectStatusController extends Controller
         ]);
 
         $projectStatus->update($validated);
+        Cache::forget('master:project-statuses');
+        Cache::forget('tek:status-counts');
 
         return redirect()
             ->route('admin-panel.project-statuses.index')
@@ -56,6 +61,8 @@ class ProjectStatusController extends Controller
     public function destroy(ProjectStatus $projectStatus)
     {
         $projectStatus->delete();
+        Cache::forget('master:project-statuses');
+        Cache::forget('tek:status-counts');
         return redirect()
             ->route('admin-panel.project-statuses.index')
             ->with('success', __('Project Status berhasil dihapus.'));

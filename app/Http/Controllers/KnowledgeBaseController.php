@@ -29,12 +29,13 @@ class KnowledgeBaseController extends Controller
                 fn ($query) => $query->where('status', $request->query('status'))
             )
             ->latest()
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return view('knowledge-base.index', [
             'documents' => $documents,
             'categories' => KnowledgeBaseCategory::cases(),
-            'projects' => Project::orderBy('project_name')->get(),
+            'projects' => Project::orderBy('project_name')->limit(200)->get(['id', 'project_name']),
             'filters' => $request->only(['category', 'status']),
         ]);
     }
@@ -44,7 +45,7 @@ class KnowledgeBaseController extends Controller
         $this->authorize('manage-admin');
 
         $validated = $request->validate([
-            'document' => ['required', 'file', 'max:'.(config('ai.knowledge_base.max_file_size') / 1024)],
+            'document' => ['required', 'file', 'max:'.(config('ai.knowledge_base.max_file_size') / 1024), \App\Rules\SecureFile::knowledgeBase()],
             'category' => ['required', 'string', Rule::enum(KnowledgeBaseCategory::class)],
             'project_id' => ['nullable', 'exists:projects,id'],
         ]);
@@ -65,11 +66,13 @@ class KnowledgeBaseController extends Controller
         try {
             $store = Stores::get($storeId);
 
+            $safeName = \App\Rules\SecureFile::sanitizeName($file->getClientOriginalName());
+
             $added = $store->add(
                 $file,
                 metadata: [
                     'category' => $validated['category'],
-                    'original_name' => $file->getClientOriginalName(),
+                    'original_name' => $safeName,
                     'uploaded_by' => (string) $request->user()->id,
                     'project_id' => (string) ($validated['project_id'] ?? ''),
                 ],
@@ -77,7 +80,7 @@ class KnowledgeBaseController extends Controller
 
             try {
                 KnowledgeBaseDocument::create([
-                    'original_name' => $file->getClientOriginalName(),
+                    'original_name' => $safeName,
                     'category' => $validated['category'],
                     'project_id' => $validated['project_id'] ?? null,
                     'user_id' => $request->user()->id,

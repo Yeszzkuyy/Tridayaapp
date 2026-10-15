@@ -37,19 +37,6 @@
                 </span>
             </div>
         </a>
-        <a href="{{ route('sales.meetings.index', ['date_from' => $weekStart ?? null, 'date_to' => $weekEnd ?? null]) }}"
-           class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
-            <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-indigo-500/5"></div>
-            <div class="relative flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Meeting Minggu Ini') }}</p>
-                    <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $kpi['meetings_week'] ?? 0 }}</p>
-                </div>
-                <span class="shrink-0 p-2.5 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
-                    <x-icon name="calendar" class="h-5 w-5" />
-                </span>
-            </div>
-        </a>
         <a href="{{ route('sales.follow-ups.index', ['overdue' => 1]) }}"
            class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-red-500/5"></div>
@@ -91,6 +78,33 @@
         </a>
     </div>
 
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
+        <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
+            <div>
+                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Jadwal Saya') }}</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Ringkasan agenda sales Anda.') }}</p>
+            </div>
+            <a href="{{ route('sales.schedules.index') }}" class="text-sm font-medium text-accent-600 hover:text-accent-500">{{ __('Lihat agenda') }}</a>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            @foreach(['today' => __('Today'), 'upcoming' => __('Upcoming'), 'completed' => __('Completed'), 'cancelled' => __('Cancelled')] as $key => $label)
+                <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ $label }}</p>
+                    <p class="mt-1.5 text-2xl font-extrabold text-slate-800 dark:text-white">{{ $scheduleSummary[$key] ?? 0 }}</p>
+                </div>
+            @endforeach
+        </div>
+        @if(($scheduleTypes ?? collect())->isNotEmpty())
+            <div class="flex flex-wrap gap-2 mt-3">
+                @foreach($scheduleTypes as $type => $total)
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800">
+                        {{ \App\Models\SalesSchedule::typeLabel($type) }}: {{ $total }}
+                    </span>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6" data-reveal>
         <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
             <div>
@@ -109,8 +123,8 @@
         </div>
     </div>
 
-    @if(($dueFollowUps ?? collect())->isNotEmpty() || ($weekMeetings ?? collect())->isNotEmpty() || ($myTasks ?? collect())->isNotEmpty())
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    @if(($dueFollowUps ?? collect())->isNotEmpty() || ($myTasks ?? collect())->isNotEmpty())
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 min-w-0">
                 <div class="flex items-center gap-2 mb-3">
                     <span class="shrink-0 rounded-lg p-2 bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">
@@ -122,22 +136,6 @@
                     <a href="{{ route('sales.follow-ups.show', $fu) }}" class="block py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:underline min-w-0">
                         <span class="block text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{{ $fu->customer?->name ?? '-' }}</span>
                         <span class="block text-xs text-slate-500">{{ $fu->follow_up_date?->format('d M Y') ?? '-' }}</span>
-                    </a>
-                @empty
-                    <p class="text-sm text-slate-400">{{ __('Tidak ada.') }}</p>
-                @endforelse
-            </div>
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 min-w-0">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="shrink-0 rounded-lg p-2 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
-                        <x-icon name="calendar" class="h-4 w-4" />
-                    </span>
-                    <h3 class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Meeting Minggu Ini') }}</h3>
-                </div>
-                @forelse($weekMeetings as $meeting)
-                    <a href="{{ route('sales.meetings.show', $meeting) }}" class="block py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 hover:underline min-w-0">
-                        <span class="block text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{{ $meeting->customer?->name ?? '-' }}</span>
-                        <span class="block text-xs text-slate-500">{{ $meeting->meeting_date?->format('d M Y') ?? '-' }}</span>
                     </a>
                 @empty
                     <p class="text-sm text-slate-400">{{ __('Tidak ada.') }}</p>

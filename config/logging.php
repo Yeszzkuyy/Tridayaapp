@@ -70,6 +70,8 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
+            // File log dibuat CLI (scheduler) & FPM bergantian — pastikan grup bisa tulis.
+            'permission' => 0664,
             'replace_placeholders' => true,
         ],
 

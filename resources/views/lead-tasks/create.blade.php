@@ -6,10 +6,7 @@
                 {{ isset($lead) && $lead ? ($lead->customer?->name ?? 'Lead #'.$lead->id) : __('Pilih lead terlebih dahulu.') }}
             </p>
         </div>
-        <a href="{{ url()->previous() }}"
-           class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 text-sm font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ url()->previous() }}" title="{{ __('Kembali') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">

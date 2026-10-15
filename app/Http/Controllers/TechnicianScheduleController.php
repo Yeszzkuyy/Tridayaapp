@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncGoogleCalendarJob;
+use App\Models\GoogleAppCredential;
 use App\Models\Project;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
@@ -45,11 +47,189 @@ class TechnicianScheduleController extends Controller
 
     public function jadwal(Request $request)
     {
-        $technicians = User::orderBy('name')->get(['id', 'name']);
-        $projects = Project::whereNotNull('project_name')->orderBy('project_name')->get(['id', 'project_name']);
+        $this->autoSyncSoon();
+        $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
+        $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
         $connected = $this->google->isApiReachable();
+        $oauth = $this->google->hasOAuthConnection(auth()->user());
+        $credential = GoogleAppCredential::current();
 
-        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected'));
+        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential', 'oauth'));
+    }
+
+    /**
+     * JSON feed untuk kalender: jadwal per hari (`?date=`) atau rentang
+     * (`?start=&end=`). Format mirip sales.schedules.api + info teknisi.
+     */
+    public function getSchedulesApi(Request $request)
+    {
+        $this->autoSyncSoon();
+        $query = TechnicianSchedule::with(['project.customer', 'technician', 'owner']);
+
+        if ($request->filled('start') && $request->filled('end')) {
+            try {
+                $start = Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
+                $end = Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('start_at', '<=', $end)
+                ->whereDate('end_at', '>=', $start);
+        } else {
+            $date = $request->query('date', today()->toDateString());
+            try {
+                $parsed = Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('start_at', '<=', $parsed)
+                ->whereDate('end_at', '>=', $parsed);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->query('search');
+            $query->where(function ($q) use ($s) {
+                $q->whereLike('title', $s)
+                    ->orWhereLike('location', $s)
+                    ->orWhereHas('project', fn ($p) => $p->whereLike('project_name', $s))
+                    ->orWhereHas('technician', fn ($t) => $t->whereLike('name', $s));
+            });
+        }
+
+        $schedules = $query->orderBy('start_at')->get()->map(fn (TechnicianSchedule $s) => [
+            'id' => $s->id,
+            'title' => $s->title,
+            'description' => $s->description,
+            'location' => $s->location,
+            'date' => $s->start_at->toDateString(),
+            'start_time' => $s->start_at->format('H:i'),
+            'end_time' => ($s->end_at && !$s->end_at->eq($s->start_at)) ? $s->end_at->format('H:i') : null,
+            'status' => $s->status,
+            'sync_status' => $s->google_sync_status,
+            'technician' => $s->technician?->name,
+            'technician_user_id' => $s->technician_user_id,
+            'project' => $s->project?->project_name,
+            'customer' => $s->project?->customer?->name,
+            'creator' => $s->owner?->name,
+            'creator_avatar' => $s->owner?->avatar ? asset('storage/'.$s->owner->avatar) : null,
+            'url' => $s->project_id ? route('projects.show', $s->project_id) : route('teknisi.jadwal'),
+        ]);
+
+        return response()->json($schedules);
+    }
+
+    /**
+     * Simpan kredensial aplikasi Google (client ID/secret + API key).
+     * Hanya super-admin / lead-technician.
+     */
+    public function saveCredentials(Request $request)
+    {
+        abort_unless($this->canManageApi(), 403);
+
+        $validated = $request->validate([
+            'client_id' => 'nullable|string|max:255',
+            'client_secret' => 'nullable|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'calendar_id' => 'nullable|string|max:255',
+        ]);
+
+        GoogleAppCredential::current()->fill($validated)->save();
+        $this->google->forgetReachableCache();
+
+        return back()->with('success', __('Kredensial Google Calendar tersimpan.'));
+    }
+
+    /**
+     * Simpan kredensial lalu tarik event dari Google ke jadwal lokal
+     * (satu tombol "Sync Now"). Hanya super-admin / lead-technician.
+     */
+    public function syncNow(Request $request)
+    {
+        abort_unless($this->canManageApi(), 403);
+
+        $validated = $request->validate([
+            'client_id' => 'nullable|string|max:255',
+            'client_secret' => 'nullable|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'calendar_id' => 'nullable|string|max:255',
+        ]);
+
+        if ($validated !== []) {
+            try {
+                GoogleAppCredential::current()->fill($validated)->save();
+            } catch (\Throwable $e) {
+                try {
+                    \Illuminate\Support\Facades\Log::warning('Simpan kredensial Google gagal: '.$e->getMessage());
+                } catch (\Throwable) {
+                }
+
+                return back()->with('sync_message', __('Kredensial Google gagal disimpan: :error', [
+                    'error' => $e->getMessage(),
+                ]));
+            }
+        }
+
+        $this->google->forgetReachableCache();
+
+        try {
+            $stats = $this->google->syncTwoWay();
+        } catch (\Throwable $e) {
+            // Logging best-effort: kegagalan menulis log tidak boleh
+            // mengubah pesan ramah ini jadi error 500.
+            try {
+                \Illuminate\Support\Facades\Log::warning('Google sync gagal: '.$e->getMessage());
+            } catch (\Throwable) {
+            }
+
+            return back()->with('sync_message', __('Gagal sinkron ke Google Calendar: :error', [
+                'error' => $e->getMessage(),
+            ]));
+        }
+
+        return back()->with('sync_message', __(
+            'Sinkron 2-arah: :created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim ke Google, :skipped dilewati.',
+            [
+                'created' => $stats['created'] ?? 0,
+                'updated' => $stats['updated'] ?? 0,
+                'deleted' => $stats['deleted'] ?? 0,
+                'pushed' => $stats['pushed'] ?? 0,
+                'skipped' => $stats['skipped'] ?? 0,
+            ]
+        ));
+    }
+
+    /**
+     * Status koneksi Google Calendar (JSON) untuk badge realtime.
+     */
+    public function googleStatus()
+    {
+        $importOk = $this->google->isApiReachable();
+        $oauth = $this->google->hasOAuthConnection(auth()->user());
+
+        // "Connected" = koneksi Google berfungsi: import (baca) jalan.
+        // oauth_connected dilaporkan terpisah untuk transparansi tulis-balik.
+        return response()->json([
+            'connected' => $importOk,
+            'import_ok' => $importOk,
+            'oauth_connected' => $oauth,
+        ]);
+    }
+
+    private function canManageApi(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']) ?? false;
+    }
+
+    /**
+     * Minta sync Google berjalan di background (queue) saat halaman dibuka,
+     * di-throttle maksimal 1x per 3 menit supaya tidak memanggil Google
+     * berlebihan saat banyak user / banyak fetch.
+     */
+    private function autoSyncSoon(): void
+    {
+        if (\Illuminate\Support\Facades\Cache::add('gcal:last_auto_sync', true, 180)) {
+            SyncGoogleCalendarJob::dispatch();
+        }
     }
 
     public function store(Request $request)
@@ -57,6 +237,10 @@ class TechnicianScheduleController extends Controller
         $data = $this->validateSchedule($request);
 
         $schedule = $this->google->createSchedule(auth()->user(), $data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dibuat.']);
+        }
 
         return back()->with('success', 'Jadwal berhasil dibuat.')
             ->with('sync_message', $this->syncMessage($schedule));
@@ -71,11 +255,15 @@ class TechnicianScheduleController extends Controller
         $data = $this->validateSchedule($request);
         $schedule = $this->google->updateSchedule($schedule, $data);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil diupdate.']);
+        }
+
         return back()->with('success', 'Jadwal berhasil diupdate.')
             ->with('sync_message', $this->syncMessage($schedule));
     }
 
-    public function destroy(TechnicianSchedule $schedule)
+    public function destroy(Request $request, TechnicianSchedule $schedule)
     {
         if ($schedule->user_id !== auth()->id() && ! auth()->user()->can('manage-admin')) {
             abort(403);
@@ -83,7 +271,29 @@ class TechnicianScheduleController extends Controller
 
         $this->google->deleteSchedule($schedule);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dihapus.']);
+        }
+
         return back()->with('success', 'Jadwal berhasil dihapus.');
+    }
+
+    /**
+     * Tandai jadwal selesai (status = completed). Hanya owner / manage-admin.
+     */
+    public function complete(Request $request, TechnicianSchedule $schedule)
+    {
+        if ($schedule->user_id !== auth()->id() && ! auth()->user()->can('manage-admin')) {
+            abort(403);
+        }
+
+        $schedule->update(['status' => 'completed']);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Jadwal ditandai selesai.']);
+        }
+
+        return back()->with('success', 'Jadwal ditandai selesai.');
     }
 
     public function connect()
@@ -150,7 +360,7 @@ class TechnicianScheduleController extends Controller
             'technician_user_id' => 'nullable|exists:users,id',
             'date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
+            'end_time' => 'nullable|date_format:H:i|after:start_time',
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:2000',
             'status' => 'required|in:'.implode(',', array_keys(TechnicianSchedule::STATUSES)),
@@ -165,10 +375,12 @@ class TechnicianScheduleController extends Controller
             $tz
         )->setTimezone(config('app.timezone'));
 
-        $validated['end_at'] = Carbon::parse(
-            $validated['date'].' '.$validated['end_time'],
-            $tz
-        )->setTimezone(config('app.timezone'));
+        // End time opsional: bila kosong, samakan dengan jam mulai (kolom
+        // end_at not-null) dan disembunyikan di tampilan.
+        $endTime = $validated['end_time'] ?? null;
+        $validated['end_at'] = $endTime
+            ? Carbon::parse($validated['date'].' '.$endTime, $tz)->setTimezone(config('app.timezone'))
+            : $validated['start_at'];
 
         unset($validated['date'], $validated['start_time'], $validated['end_time']);
 

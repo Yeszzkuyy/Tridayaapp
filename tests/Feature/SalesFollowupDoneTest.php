@@ -85,7 +85,57 @@ class SalesFollowupDoneTest extends TestCase
         $fu = $this->makeFollowUp(['created_by' => $sales->id]);
 
         $this->actingAs($sales)
-            ->post(route('sales.follow-ups.snooze', $fu), ['days' => 30])
+            ->post(route('sales.follow-ups.snooze', $fu), ['days' => 61])
             ->assertSessionHasErrors('days');
+
+        $this->actingAs($sales)
+            ->post(route('sales.follow-ups.snooze', $fu), [])
+            ->assertSessionHasErrors('days');
+    }
+
+    public function test_snooze_accepts_any_days_up_to_60(): void
+    {
+        $sales = $this->salesUser();
+        $fu = $this->makeFollowUp([
+            'created_by' => $sales->id,
+            'follow_up_date' => today()->subDays(5)->toDateString(),
+        ]);
+
+        $this->actingAs($sales)
+            ->post(route('sales.follow-ups.snooze', $fu), ['days' => 10])
+            ->assertRedirect(route('sales.follow-ups.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            today()->addDays(10)->toDateString(),
+            $fu->fresh()->follow_up_date->toDateString()
+        );
+    }
+
+    public function test_snooze_accepts_absolute_date(): void
+    {
+        $sales = $this->salesUser();
+        $fu = $this->makeFollowUp(['created_by' => $sales->id]);
+
+        $target = today()->addDays(5)->toDateString();
+
+        $this->actingAs($sales)
+            ->post(route('sales.follow-ups.snooze', $fu), ['date' => $target])
+            ->assertRedirect(route('sales.follow-ups.index'))
+            ->assertSessionHasNoErrors();
+
+        $fresh = $fu->fresh();
+        $this->assertSame($target, $fresh->follow_up_date->toDateString());
+        $this->assertNull($fresh->reminder_sent_at);
+    }
+
+    public function test_snooze_rejects_past_date(): void
+    {
+        $sales = $this->salesUser();
+        $fu = $this->makeFollowUp(['created_by' => $sales->id]);
+
+        $this->actingAs($sales)
+            ->post(route('sales.follow-ups.snooze', $fu), ['date' => today()->subDay()->toDateString()])
+            ->assertSessionHasErrors('date');
     }
 }

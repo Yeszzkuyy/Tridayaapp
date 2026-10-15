@@ -15,6 +15,15 @@ class FollowUpOverdueNotification extends Notification
 
     public function __construct(public FollowUp $followUp) {}
 
+    /**
+     * Tujuan klik reminder: daftar Follow Up (filter jatuh tempo),
+     * bukan halaman detail — sesuai menu Sales hasil penggabungan.
+     */
+    public static function indexUrl(): string
+    {
+        return route('sales.follow-ups.index', ['overdue' => 1]).'#followups-table';
+    }
+
     public function via(object $notifiable): array
     {
         if ($this->muted($notifiable)) {
@@ -34,7 +43,7 @@ class FollowUpOverdueNotification extends Notification
             'follow_up_id' => $this->followUp->id,
             'customer' => $customer,
             'preview' => Str::limit($this->followUp->description, 80),
-            'url' => route('sales.follow-ups.show', $this->followUp),
+            'url' => self::indexUrl(),
         ];
     }
 
@@ -43,7 +52,7 @@ class FollowUpOverdueNotification extends Notification
         return [
             'title' => __('Follow up jatuh tempo'),
             'body' => ($this->followUp->customer?->name ?? '').' — '.Str::limit($this->followUp->description, 80),
-            'url' => route('sales.follow-ups.show', $this->followUp),
+            'url' => self::indexUrl(),
         ];
     }
 }

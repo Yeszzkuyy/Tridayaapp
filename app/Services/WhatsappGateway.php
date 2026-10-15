@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\WhatsappAccount;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsappGateway
 {
@@ -112,8 +113,17 @@ class WhatsappGateway
         return data_get($response->json(), 'messages.0.id');
     }
 
-    private function getStateMeta(WhatsappAccount $account): ?string
+    /**
+     * Cek koneksi Meta sekali jalan untuk indikator UI: status + alasan
+     * gagal (pesan error Meta, tanpa token). ID yang bukan Phone Number ID
+     * terdeteksi di sini — Graph mengembalikan error #100.
+     */
+    public function checkMetaConnection(WhatsappAccount $account): array
     {
+        if (! $this->configured($account)) {
+            return ['status' => null, 'connected' => false, 'detail' => 'not_configured'];
+        }
+
         $response = Http::timeout(20)
             ->withToken($account->gateway_token)
             ->get(sprintf(
@@ -127,9 +137,19 @@ class WhatsappGateway
 
         // Pastikan ID benar-benar Phone Number ID (punya display_phone_number),
         // bukan App ID / ID lain yang kebetulan bisa di-GET.
-        return $response->successful() && $response->json('display_phone_number')
-            ? 'authorized'
-            : null;
+        if ($response->successful() && $response->json('display_phone_number')) {
+            return ['status' => 'authorized', 'connected' => true, 'detail' => null];
+        }
+
+        $detail = mb_substr((string) ($response->json('error.message') ?: 'http_'.$response->status()), 0, 200);
+        Log::warning('Cek koneksi Meta gagal.', ['account_id' => $account->id, 'detail' => $detail]);
+
+        return ['status' => null, 'connected' => false, 'detail' => $detail];
+    }
+
+    private function getStateMeta(WhatsappAccount $account): ?string
+    {
+        return $this->checkMetaConnection($account)['status'];
     }
 
     /**

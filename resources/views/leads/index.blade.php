@@ -86,10 +86,9 @@
                             <td class="px-6 py-4 text-center">
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium
                                     @switch($lead->status)
-                                        @case('new') bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 @break
-                                        @case('contacted') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 @break
-                                        @case('qualified') bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 @break
-                                        @case('proposal') bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 @break
+                                        @case('cool') bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 @break
+                                        @case('warm') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 @break
+                                        @case('hot') bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 @break
                                         @case('won') bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 @break
                                         @case('lost') bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 @break
                                         @default bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200
@@ -130,36 +129,15 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <div class="flex min-w-max items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     @can('view-marketing')
-                                        <a href="{{ route('leads.show', $lead) }}" title="{{ __('Lihat detail lead') }}"
-                                           class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                            <img src="{{ asset('icons/lead-view.svg') }}" alt="" loading="lazy"
-                                                 class="block h-5 w-5 group-hover/btn:hidden" />
-                                            <img src="{{ asset('icons/lead-view.gif') }}" alt="" loading="lazy"
-                                                 class="hidden h-5 w-5 group-hover/btn:block" />
-                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                        </a>
+                                        <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('Lihat detail lead') }}" />
                                     @endcan
                                     @can('manage-marketing')
-                                        <a href="{{ route('leads.edit', $lead) }}" title="Edit lead"
-                                           class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                            <img src="{{ asset('icons/lead-edit.svg') }}" alt="" loading="lazy"
-                                                 class="block h-5 w-5 group-hover/btn:hidden" />
-                                            <img src="{{ asset('icons/lead-edit.gif') }}" alt="" loading="lazy"
-                                                 class="hidden h-5 w-5 group-hover/btn:block" />
-                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                        </a>
+                                        <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="Edit lead" />
                                         <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Hapus lead ini?') }}')" class="inline">
                                             @csrf @method('DELETE')
-                                            <button type="submit" title="{{ __('Hapus lead') }}"
-                                                    class="group/btn relative overflow-hidden p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                                <img src="{{ asset('icons/lead-delete.svg') }}" alt="" loading="lazy"
-                                                     class="block h-5 w-5 group-hover/btn:hidden" />
-                                                <img src="{{ asset('icons/lead-delete.gif') }}" alt="" loading="lazy"
-                                                     class="hidden h-5 w-5 group-hover/btn:block" />
-                                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                            </button>
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus lead') }}" />
                                         </form>
                                     @endcan
                                 </div>

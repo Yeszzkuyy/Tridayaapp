@@ -16,6 +16,7 @@ use App\Services\WhatsappBot;
 use App\Services\WhatsappGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 
@@ -37,6 +38,7 @@ class WhatsAppCenterController extends Controller
             'phone_number' => $a->phone_number,
             'gateway_type' => $a->gateway_type,
             'gateway_status' => $a->gateway_status,
+            'has_credentials' => filled($a->gateway_instance) && filled($a->gateway_token),
         ])->values();
 
         return view('whatsapp-center.index', compact('accounts', 'accountTabs'));
@@ -50,6 +52,7 @@ class WhatsAppCenterController extends Controller
                 'account_code' => $account->account_code,
                 'unread' => $this->unreadCount($account),
                 'gateway_status' => $account->gateway_status,
+                'has_credentials' => filled($account->gateway_instance) && filled($account->gateway_token),
             ];
         });
 
@@ -68,14 +71,18 @@ class WhatsAppCenterController extends Controller
             ]);
         }
 
-        $state = $this->gateway->getState($account);
-        $status = $state;
+        $check = $this->gateway->checkMetaConnection($account);
+        $status = $check['status'];
 
         if ($status !== $account->gateway_status) {
             $account->update(['gateway_status' => $status]);
         }
 
-        return response()->json(['gateway_status' => $status]);
+        return response()->json([
+            'gateway_status' => $status,
+            'connected' => $check['connected'],
+            'detail' => $check['detail'],
+        ]);
     }
 
     public function conversations(WhatsappAccount $account)
@@ -94,29 +101,56 @@ class WhatsAppCenterController extends Controller
 
         $blocked = $this->foreignOwnedSenderNumbers($account);
 
-        $rows = WhatsappMessage::where('whatsapp_account_id', $account->id)
-            ->orderBy('id')
-            ->get()
+        // 1 query: pesan terakhir per pengirim (eager lead, tanpa N+1).
+        $latestIds = WhatsappMessage::where('whatsapp_account_id', $account->id)
+            ->selectRaw('max(id) as id')
             ->groupBy('sender_number')
-            ->map(function ($messages, $sender) use ($preferences, $conversations, $account, $blocked) {
-                if (in_array($this->normalizeNumber((string) $sender), $blocked, true)) {
+            ->pluck('id');
+        $lasts = WhatsappMessage::whereIn('id', $latestIds)
+            ->with('lead:id')
+            ->orderByDesc('id')
+            ->get();
+
+        $unreads = $this->senderUnreads($account);
+
+        // Kandidat customer sekali per request (bukan per pengirim).
+        $byNumber = [];
+        foreach (Customer::whereNotNull('whatsapp')->orWhereNotNull('phone')->get(['id', 'whatsapp', 'phone']) as $candidate) {
+            foreach ([$candidate->whatsapp, $candidate->phone] as $number) {
+                $normalized = $this->normalizeNumber((string) $number);
+                if ($normalized !== '' && ! isset($byNumber[$normalized])) {
+                    $byNumber[$normalized] = $candidate->id;
+                }
+            }
+        }
+        $senders = $lasts->map(fn ($m) => $this->normalizeNumber((string) $m->sender_number))->filter()->unique()->values();
+        $matchedIds = $senders->map(fn ($n) => $byNumber[$n] ?? null)->filter()->unique()->values()->all();
+        $customersById = Customer::whereIn('id', $matchedIds)->get()->keyBy('id');
+
+        $rows = $lasts
+            ->map(function ($last) use ($preferences, $conversations, $account, $blocked, $unreads, $byNumber, $customersById) {
+                $sender = (string) $last->sender_number;
+                if (in_array($this->normalizeNumber($sender), $blocked, true)) {
                     return null;
                 }
-                $last = $messages->last();
-                $lastOutboundId = $messages->where('direction', 'outbound')->last()?->id ?? 0;
-                $lead = $messages->whereNotNull('lead_id')->first()?->lead;
+                $customer = isset($byNumber[$this->normalizeNumber($sender)])
+                    ? ($customersById[$byNumber[$this->normalizeNumber($sender)]] ?? null)
+                    : null;
+                if ($customer && $customer->whatsapp_account_id && (int) $customer->whatsapp_account_id !== (int) $account->id) {
+                    $customer = null;
+                }
                 $preference = $preferences->get($sender);
-                $conversation = $conversations->get((string) $sender);
+                $conversation = $conversations->get($sender);
 
                 return [
-                    'sender_number' => (string) $sender,
+                    'sender_number' => $sender,
                     'sender_name' => $last->sender_name ?? 'Kontak WA',
                     'last_message' => $last->message_body,
                     'last_direction' => $last->direction,
                     'last_at' => $last->created_at->toIso8601String(),
-                    'unread' => $messages->where('direction', 'inbound')->where('id', '>', $lastOutboundId)->whereNull('read_at')->count(),
-                    'customer' => $this->visibleCustomer($account, $sender),
-                    'lead_id' => $lead?->id,
+                    'unread' => (int) ($unreads[$sender] ?? 0),
+                    'customer' => $customer,
+                    'lead_id' => $last->lead?->id,
                     'is_pinned' => (bool) $preference?->is_pinned,
                     'is_muted' => (bool) $preference?->is_muted,
                     'is_archived' => (bool) $preference?->is_archived,
@@ -131,6 +165,27 @@ class WhatsAppCenterController extends Controller
             ->values();
 
         return response()->json($rows);
+    }
+
+    /**
+     * Hitungan unread eksak per pengirim dalam 1 query: inbound yang
+     * belum dibaca dan datang setelah balasan outbound terakhir.
+     */
+    private function senderUnreads(WhatsappAccount $account): \Illuminate\Support\Collection
+    {
+        $perSender = WhatsappMessage::where('whatsapp_account_id', $account->id)
+            ->selectRaw("sender_number, max(case when direction = 'outbound' then id else 0 end) as last_out")
+            ->groupBy('sender_number');
+
+        return WhatsappMessage::from('whatsapp_messages as m')
+            ->joinSub($perSender, 't', 't.sender_number', '=', 'm.sender_number')
+            ->where('m.whatsapp_account_id', $account->id)
+            ->where('m.direction', 'inbound')
+            ->whereNull('m.read_at')
+            ->whereColumn('m.id', '>', 't.last_out')
+            ->selectRaw('m.sender_number, count(*) as c')
+            ->groupBy('m.sender_number')
+            ->pluck('c', 'sender_number');
     }
 
     public function messages(Request $request, WhatsappAccount $account, string $sender)
@@ -417,7 +472,7 @@ class WhatsAppCenterController extends Controller
             'whatsapp_account_id' => $account->id,
             'segment' => $validated['segment'],
             'source' => 'whatsapp',
-            'status' => 'new',
+            'status' => 'cool',
             'kebutuhan' => $validated['kebutuhan'] ?? null,
             'incoming_date' => now()->toDateString(),
         ]);
@@ -456,9 +511,12 @@ class WhatsAppCenterController extends Controller
         $token = $request->query('hub_verify_token');
         $challenge = $request->query('hub_challenge');
 
-        if ($mode === 'subscribe'
+        $expected = (string) config('whatsapp.meta.verify_token');
+
+        if ($expected !== ''
+            && $mode === 'subscribe'
             && $token
-            && hash_equals(config('whatsapp.meta.verify_token'), $token)) {
+            && hash_equals($expected, $token)) {
             return response($challenge);
         }
 
@@ -470,10 +528,40 @@ class WhatsAppCenterController extends Controller
         $payload = $request->json()->all();
 
         if (data_get($payload, 'entry.0.changes.0.value')) {
+            $this->verifyMetaSignature($request);
+
             return $this->handleMetaNotification($payload);
         }
 
         return $this->handleNotification($payload);
+    }
+
+    /**
+     * Verifikasi HMAC X-Hub-Signature-256 dari Meta memakai app secret.
+     * Dilewati bila META_WA_APP_SECRET kosong (dev/test) dengan peringatan log.
+     * Green API tidak menandatangani webhook sehingga perlindungannya
+     * berupa throttle route + akun is_active + error generik di bawah.
+     */
+    private function verifyMetaSignature(Request $request): void
+    {
+        $secret = (string) config('whatsapp.meta.app_secret');
+
+        if ($secret === '') {
+            try {
+                Log::warning('Webhook Meta tanpa verifikasi signature (META_WA_APP_SECRET belum diset).');
+            } catch (\Throwable) {
+                // ponytail: best-effort — logging gagal (mis. izin file) tak boleh menggagalkan webhook.
+            }
+
+            return;
+        }
+
+        $signature = (string) $request->header('X-Hub-Signature-256', '');
+        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $secret);
+
+        if (! hash_equals($expected, $signature)) {
+            abort(403, 'Forbidden.');
+        }
     }
 
     /**
@@ -489,11 +577,13 @@ class WhatsAppCenterController extends Controller
 
         $instance = data_get($payload, 'instanceData.idInstance');
         $account = $instance
-            ? WhatsappAccount::where('gateway_instance', $instance)->first()
+            ? WhatsappAccount::where('gateway_instance', $instance)
+                ->where('is_active', true)
+                ->first()
             : null;
 
         if (! $account) {
-            return response()->json(['error' => 'unknown instance'], 422);
+            return response()->json(['error' => 'rejected'], 422);
         }
 
         return match ($type) {
@@ -516,7 +606,7 @@ class WhatsAppCenterController extends Controller
             $phoneNumberId = data_get($value, 'metadata.phone_number_id');
 
             if (! $phoneNumberId) {
-                return response()->json(['error' => 'missing phone_number_id'], 422);
+                return response()->json(['error' => 'rejected'], 422);
             }
 
             $account = WhatsappAccount::where('gateway_type', WhatsappAccount::GATEWAY_META)
@@ -525,7 +615,9 @@ class WhatsAppCenterController extends Controller
                 ->first();
 
             if (! $account) {
-                return response()->json(['error' => 'unknown account'], 422);
+                Log::warning('Webhook Meta untuk phone_number_id tak dikenal.', ['phone_number_id' => $phoneNumberId]);
+
+                return response()->json(['error' => 'rejected'], 422);
             }
 
             foreach (data_get($value, 'statuses', []) as $status) {
@@ -557,6 +649,9 @@ class WhatsAppCenterController extends Controller
         $text = null;
         if (data_get($msg, 'type') === 'text') {
             $text = data_get($msg, 'text.body');
+        } else {
+            // Non-teks (gambar/audio/dokumen) tetap dicatat agar percakapan muncul di list.
+            $text = '[Pesan '.data_get($msg, 'type', 'media').' diterima — belum didukung, minta pengirim kirim teks.]';
         }
 
         if ($text === null) {
@@ -593,10 +688,15 @@ class WhatsAppCenterController extends Controller
             'bot_enabled' => 'nullable|boolean',
         ]);
 
-        $account->update(array_merge($validated, [
-            'bot_enabled' => $request->boolean('bot_enabled'),
-            'gateway_status' => null,
-        ]));
+        // Token kosong = tidak diubah (input password sengaja tidak di-prefill di form).
+        $account->update(array_merge(
+            [
+                'gateway_instance' => $validated['gateway_instance'] ?? null,
+                'bot_enabled' => $request->boolean('bot_enabled'),
+                'gateway_status' => null,
+            ],
+            filled($validated['gateway_token'] ?? null) ? ['gateway_token' => $validated['gateway_token']] : []
+        ));
 
         if ($state = $this->gateway->getState($account)) {
             $account->update(['gateway_status' => $state]);
@@ -604,6 +704,25 @@ class WhatsAppCenterController extends Controller
 
         return redirect()->route('whatsapp-center.index')
             ->with('success', 'Kredensial gateway disimpan.');
+    }
+
+    /**
+     * Pengaturan sapaan/instruksi bot per akun — boleh diubah tim marketing
+     * (manage-marketing), tidak seperti kredensial gateway yang terbatas pengelola.
+     */
+    public function updateBotSettings(Request $request, WhatsappAccount $account)
+    {
+        $this->authorizeAccount($account);
+        $this->authorize('manage-marketing');
+
+        $validated = $request->validate([
+            'bot_instructions' => 'nullable|string|max:2000',
+        ]);
+
+        $account->update(['bot_instructions' => $validated['bot_instructions'] ?? null]);
+
+        return redirect()->route('whatsapp-center.index')
+            ->with('success', 'Pengaturan bot disimpan.');
     }
 
     private function handleIncoming(WhatsappAccount $account, array $payload): JsonResponse
@@ -675,10 +794,12 @@ class WhatsAppCenterController extends Controller
             'wa_message_id' => 'nullable|string',
         ])->validate();
 
-        $account = WhatsappAccount::where('account_code', $validated['account_code'])->first();
+        $account = WhatsappAccount::where('account_code', $validated['account_code'])
+            ->where('is_active', true)
+            ->first();
 
         if (! $account) {
-            return response()->json(['error' => 'unknown account'], 422);
+            return response()->json(['error' => 'rejected'], 422);
         }
 
         if (! empty($validated['wa_message_id'])
@@ -758,7 +879,8 @@ class WhatsAppCenterController extends Controller
         return WhatsappAccount::where('is_active', true)
             ->when(
                 ! $user->hasRole('super-admin') && ! $user->hasPermissionTo('manage-sales-leads'),
-                fn ($q) => $q->where('assigned_to', $user->id)
+                // Akun tanpa pemilik = pool bersama, terlihat semua marketing.
+                fn ($q) => $q->where(fn ($qq) => $qq->where('assigned_to', $user->id)->orWhereNull('assigned_to'))
             )
             ->orderBy('account_code');
     }
@@ -774,19 +896,9 @@ class WhatsAppCenterController extends Controller
     {
         $blocked = $this->foreignOwnedSenderNumbers($account);
 
-        return WhatsappMessage::where('whatsapp_account_id', $account->id)
-            ->where('direction', 'inbound')
-            ->orderBy('id')
-            ->get()
-            ->groupBy('sender_number')
-            ->sum(function ($messages) use ($blocked) {
-                if (in_array($this->normalizeNumber((string) $messages->first()->sender_number), $blocked, true)) {
-                    return 0;
-                }
-                $lastOutboundId = $messages->where('direction', 'outbound')->last()?->id ?? 0;
-
-                return $messages->where('id', '>', $lastOutboundId)->whereNull('read_at')->count();
-            });
+        return (int) $this->senderUnreads($account)
+            ->reject(fn ($count, $sender) => in_array($this->normalizeNumber((string) $sender), $blocked, true))
+            ->sum();
     }
 
     private function findCustomer(string $number): ?Customer

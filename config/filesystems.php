@@ -30,10 +30,12 @@ return [
 
     'disks' => [
 
+        // File non-sensitif per-framework (mis. lampiran sementara AI).
+        // serve=false: tidak ada route /storage/{path} publik untuk disk ini.
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'serve' => true,
+            'root' => storage_path('app/local'),
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -48,11 +50,12 @@ return [
         ],
 
         // Dokumen sensitif (lead/BOQ, project document, bukti pembayaran).
-        // Tidak punya symlink ke public — hanya bisa diakses via controller
-        // yang sudah authentication + authorization.
+        // Tidak punya symlink ke public dan tidak di-serve via route —
+        // hanya bisa diakses via controller yang authentication + authorization.
         'private' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

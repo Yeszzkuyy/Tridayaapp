@@ -54,5 +54,13 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect('/');
     }
 
+    public function test_expired_session_logout_redirects_to_login(): void
+    {
+        // Token CSRF basi (sesi kedaluwarsa/hilang): bukan 419, melainkan ke login.
+        $response = $this->call('POST', '/logout', ['_token' => 'token-basi']);
+
+        $response->assertRedirect(route('login', absolute: false));
+        $this->assertGuest();
+    }
 
 }

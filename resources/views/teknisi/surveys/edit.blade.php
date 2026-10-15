@@ -3,12 +3,9 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Edit Survey') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Ubah data survey — ') }}<span class="font-semibold text-slate-700">{{ $survey->project?->project_name ?? '-' }}</span></p>
+            <p class="text-slate-500 mt-1">{{ __('Ubah data survey — ') }}<span class="font-semibold text-slate-700">{{ $survey->title ?? '-' }}</span></p>
         </div>
-        <a href="{{ route('teknisi.surveys.index') }}"
-           class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('teknisi.surveys.index') }}" title="{{ __('Kembali') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 w-full">
@@ -17,41 +14,56 @@
             @method('PUT')
 
             <div class="space-y-4">
-                {{-- Project --}}
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Project <span class="text-red-500">*</span></label>
-                    <div x-data="{
-                        query: {{ json_encode($survey->project?->project_name . ' — ' . ($survey->project?->customer?->name ?? '')) }},
-                        selectedId: {{ $survey->project_id }},
-                        open: false,
-                        projects: {{ Js::from($projects->map(fn($p) => ['id' => $p->id, 'name' => $p->project_name . ' — ' . ($p->customer?->name ?? '')])) }},
-                        get filtered() {
-                            const q = this.query.toLowerCase().trim();
-                            return this.projects.filter(p => !q || p.name.toLowerCase().includes(q));
-                        }
-                    }" class="relative">
-                        <input type="hidden" name="project_id" x-model="selectedId">
-                        <input type="text" x-model="query"
-                               @focus="open = true"
-                               @input="if (query !== '') selectedId = null; open = true"
-                               @keydown.escape="open = false"
-                               @blur="setTimeout(() => open = false, 150)"
-                               placeholder="{{ __('Cari project...') }}"
-                               autocomplete="off"
+                {{-- Judul + Sales --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Judul Survey') }} <span class="text-red-500">*</span></label>
+                        <input type="text" name="title" value="{{ old('title', $survey->title) }}" required maxlength="255"
+                               placeholder="{{ __('Contoh: Survey Kebutuhan CCTV Gedung A') }}"
                                class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                        <div x-show="open" x-cloak x-transition
-                             class="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                            <template x-for="p in filtered" :key="p.id">
-                                <button type="button"
-                                        @mousedown.prevent="selectedId = p.id; query = p.name; open = false"
-                                        class="w-full text-left px-4 py-2.5 text-sm hover:bg-accent-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
-                                        :class="String(p.id) === String(selectedId) ? .bg-accent-50 dark:bg-slate-700. : ''"
-                                        x-text="p.name"></button>
-                            </template>
-                            <p x-show="filtered.length === 0" class="px-4 py-3 text-sm text-slate-400">{{ __('Tidak ada hasil.') }}</p>
-                        </div>
+                        @error('title') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
-                    @error('project_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+
+                    {{-- Sales (pemilik survey — yang bisa memantau hasilnya) --}}
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Sales') }} <span class="text-red-500">*</span></label>
+                        <select name="sales_user_id" required
+                                class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                            <option value="">{{ __('Pilih Sales') }}</option>
+                            @foreach($salesUsers as $sales)
+                                <option value="{{ $sales->id }}" {{ old('sales_user_id', $survey->sales_user_id) == $sales->id ? 'selected' : '' }}>{{ $sales->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('sales_user_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                {{-- Customer + Project (opsional) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
+                        <select name="customer_id"
+                                class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                            <option value="">{{ __('Tanpa Customer') }}</option>
+                            @foreach($customers as $customer)
+                                <option value="{{ $customer->id }}" {{ old('customer_id', $survey->customer_id) == $customer->id ? 'selected' : '' }}>{{ $customer->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('customer_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Project') }}</label>
+                        <select name="project_id"
+                                class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                            <option value="">{{ __('Belum ada project') }}</option>
+                            @foreach($projects as $project)
+                                <option value="{{ $project->id }}" {{ old('project_id', $survey->project_id) == $project->id ? 'selected' : '' }}>{{ $project->project_name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Opsional — pilih bila project sudah ada.') }}</p>
+                        @error('project_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
 
                 {{-- Sales Request --}}

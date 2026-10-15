@@ -24,7 +24,7 @@ class SalesFollowUpLeadLinkTest extends TestCase
         return $user;
     }
 
-    private function makeLead(User $assignee, Customer $customer, string $status = 'new'): Lead
+    private function makeLead(User $assignee, Customer $customer, string $status = 'cool'): Lead
     {
         return Lead::create([
             'customer_id' => $customer->id,
@@ -73,8 +73,8 @@ class SalesFollowUpLeadLinkTest extends TestCase
     {
         $sales = $this->salesUser();
         $customer = Customer::create(['name' => 'PT Banyak Lead']);
-        $this->makeLead($sales, $customer, 'contacted');
-        $this->makeLead($sales, $customer, 'qualified');
+        $this->makeLead($sales, $customer, 'warm');
+        $this->makeLead($sales, $customer, 'hot');
 
         $this->actingAs($sales)
             ->post(route('sales.follow-ups.store'), $this->followUpPayload($customer))
@@ -109,7 +109,7 @@ class SalesFollowUpLeadLinkTest extends TestCase
         $this->makeLead($sales, $customer, 'won');
         $other = User::factory()->create();
         $other->assignRole('sales');
-        $this->makeLead($other, $customer, 'new');
+        $this->makeLead($other, $customer, 'cool');
 
         $this->actingAs($sales)
             ->post(route('sales.follow-ups.store'), $this->followUpPayload($customer))

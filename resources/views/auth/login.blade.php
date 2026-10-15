@@ -363,6 +363,9 @@
                         aria-hidden="true"
                         loading="eager"
                         decoding="async"
+                        fetchpriority="high"
+                        width="1024"
+                        height="1024"
                     >
                 </picture>
             </aside>
@@ -464,9 +467,6 @@
                     </button>
                 </form>
 
-                @if (Route::has('register'))
-                    <p class="foot" style="--i:5">Not registered yet? <a class="login-link" href="{{ route('register') }}">Create an account</a></p>
-                @endif
             </div>
         </section>
     </main>
@@ -551,6 +551,18 @@
                 setTimeout(() => sub.classList.remove('typing'), (.95 + n * .03 + 1.2) * 1000);
             }
         })();
+    </script>
+    <script>
+        // Reset posisi chatbot ke kanan-bawah tiap tiba di halaman login
+        // (habis logout / sesi berakhir / ganti user di browser yang sama).
+        // Kunci per-user tak diketahui saat guest → sapu semua ber-prefix.
+        // Riwayat percakapan (3dy.ai.v2.conv.*) sengaja dipertahankan.
+        try {
+            Object.keys(localStorage)
+                .filter((k) => k.indexOf('3dy.ai.v2.pos.') === 0
+                             || k.indexOf('3dy.ai.v2.chatoff.') === 0)
+                .forEach((k) => localStorage.removeItem(k));
+        } catch (e) {}
     </script>
 </body>
 </html>

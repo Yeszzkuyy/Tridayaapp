@@ -20,6 +20,22 @@ class RoleMenuTest extends TestCase
     }
 
     /**
+     * Menu Monitoring lintas divisi hanya untuk management, ceo, super-admin.
+     */
+    public function test_monitoring_menu_visible_only_for_management_ceo_super_admin(): void
+    {
+        foreach (['management', 'ceo', 'super-admin'] as $role) {
+            $html = $this->actingAs($this->loginAs($role))->get(route('dashboard'))->getContent();
+            $this->assertStringContainsString(route('monitoring.index'), $html, "menu Monitoring harus tampil untuk {$role}");
+        }
+
+        foreach (['marketing', 'sales', 'technician', 'admin'] as $role) {
+            $html = $this->actingAs($this->loginAs($role))->get(route('dashboard'))->getContent();
+            $this->assertStringNotContainsString(route('monitoring.index'), $html, "menu Monitoring harus sembunyi untuk {$role}");
+        }
+    }
+
+    /**
      * Header grup sidebar: label berupa link navigasi + tombol chevron
      * toggle buka/tutup (@click="open = !open", aria-controls ke menu).
      * Lipatan juga tetap mengikuti halaman aktif via JS.
@@ -63,7 +79,7 @@ class RoleMenuTest extends TestCase
             $this->assertStringContainsString($link, $html, "$link should be visible for teknisi");
         }
         // tersembunyi
-        foreach (['/leads"', '/admin/invoices', '/sales/meetings', '/monitoring'] as $link) {
+        foreach (['/leads"', '/admin/invoices', '/sales/follow-ups', '/monitoring'] as $link) {
             $this->assertStringNotContainsString($link, $html, "$link should be hidden for teknisi");
         }
 
@@ -74,16 +90,16 @@ class RoleMenuTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
         $this->actingAs($u)->get('/leads')->assertForbidden();
         $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
-        $this->actingAs($u)->get('/sales/meetings')->assertForbidden();
+        $this->actingAs($u)->get('/sales/meetings')->assertNotFound();
     }
 
     public function test_sales_menu_and_access()
     {
         $u = $this->loginAs('sales');
-        $res = $this->actingAs($u)->get('/sales/meetings')->assertOk();
+        $res = $this->actingAs($u)->get('/sales/my-leads')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/sales/follow-ups', '/customers', '/trash', '/admin/invoices'] as $link) {
+        foreach (['/sales/my-leads', '/customers', '/trash', '/admin/invoices'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for sales");
         }
         foreach (['/leads"', '/monitoring'] as $link) {
@@ -107,7 +123,7 @@ class RoleMenuTest extends TestCase
         $res = $this->actingAs($u)->get('/admin/invoices')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/admin/invoices', '/admin/pos', '/admin/payments', '/trash', '/customers', '/sales/meetings'] as $link) {
+        foreach (['/admin/invoices', '/admin/pos', '/admin/payments', '/trash', '/customers', '/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for admin");
         }
         foreach (['/leads"', '/monitoring'] as $link) {
@@ -132,7 +148,7 @@ class RoleMenuTest extends TestCase
         foreach (['/partners', '/customers', '/trash'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for marketing");
         }
-        foreach (['/admin/invoices', '/projects"', '/sales/meetings', '/monitoring'] as $link) {
+        foreach (['/admin/invoices', '/projects"', '/sales/follow-ups', '/monitoring'] as $link) {
             $this->assertStringNotContainsString($link, $html, "$link should be hidden for marketing");
         }
 

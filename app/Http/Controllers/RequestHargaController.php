@@ -19,15 +19,15 @@ class RequestHargaController extends Controller
             $query->where('project_id', $request->project_id);
         }
 
-        $requestHargas = $query->get();
-        $projects = Project::with('customer')->orderBy('project_name')->get();
+        $requestHargas = $query->paginate(15)->withQueryString();
+        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
 
         return view('teknisi.request-hargas.index', compact('requestHargas', 'projects'));
     }
 
     public function create(Request $request)
     {
-        $projects = Project::with('customer')->orderBy('project_name')->get();
+        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
         $selectedProject = $request->query('project_id');
 
         return view('teknisi.request-hargas.create', compact('projects', 'selectedProject'));
@@ -60,7 +60,7 @@ class RequestHargaController extends Controller
 
     public function edit(RequestHarga $requestHarga)
     {
-        $projects = Project::with('customer')->orderBy('project_name')->get();
+        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
 
         return view('teknisi.request-hargas.edit', compact('requestHarga', 'projects'));
     }

@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Preferensi bahasa per-user (Profil > Setting > Bahasa).
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\SetSecurityHeaders::class,
         ]);
 
         // Percayai proxy (nginx/ngrok) agar Laravel melihat skema https asli
@@ -38,7 +39,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Token CSRF basi (sesi kedaluwarsa/hilang) pada request logout
+        // atau dari user yang sudah guest: antar ke login, bukan 419.
+        // Mismatch lain saat masih login tetap 419 (proteksi CSRF utuh).
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->routeIs('logout') || $request->user() === null) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => __('Sesi berakhir. Silakan login kembali.')], 419);
+                }
+
+                return redirect()->route('login')->with('status', __('Sesi berakhir. Silakan login kembali.'));
+            }
+
+            return null;
+        });
     })
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
         // Polling pesan masuk & status WhatsApp (Green API) — untuk localhost tanpa webhook publik

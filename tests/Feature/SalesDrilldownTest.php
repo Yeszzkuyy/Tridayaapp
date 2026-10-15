@@ -47,8 +47,8 @@ class SalesDrilldownTest extends TestCase
     public function test_my_leads_sort_oldest_and_customer(): void
     {
         $sales = $this->loginAsSales();
-        $this->makeLead($sales, 'new', 'PT Zulu');
-        $this->makeLead($sales, 'new', 'PT Alpha');
+        $this->makeLead($sales, 'cool', 'PT Zulu');
+        $this->makeLead($sales, 'cool', 'PT Alpha');
 
         $oldest = $this->actingAs($sales)
             ->get(route('sales.my-leads', ['sort' => 'oldest']))
@@ -82,7 +82,7 @@ class SalesDrilldownTest extends TestCase
     public function test_my_leads_active_filter_hides_won_and_lost(): void
     {
         $sales = $this->loginAsSales();
-        $this->makeLead($sales, 'new', 'PT Aktif');
+        $this->makeLead($sales, 'cool', 'PT Aktif');
         $this->makeLead($sales, 'won', 'PT Menang');
 
         $response = $this->actingAs($sales)
@@ -98,8 +98,8 @@ class SalesDrilldownTest extends TestCase
         $sales = $this->loginAsSales();
         $other = User::factory()->create();
         $other->assignRole('sales');
-        $this->makeLead($sales, 'new', 'PT Milik Saya');
-        $this->makeLead($other, 'new', 'PT Orang Lain');
+        $this->makeLead($sales, 'cool', 'PT Milik Saya');
+        $this->makeLead($other, 'cool', 'PT Orang Lain');
 
         $response = $this->actingAs($sales)
             ->get(route('sales.my-leads.export'));

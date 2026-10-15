@@ -101,7 +101,7 @@ class TrashTest extends TestCase
         $this->get(route('trash.index'))->assertSee(__('Tidak ada customer yang terhapus.'));
     }
 
-    public function test_trash_membutuhkan_permission_view_admin(): void
+    public function test_trash_membutuhkan_permission_view_trash(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
         $user = User::factory()->create();

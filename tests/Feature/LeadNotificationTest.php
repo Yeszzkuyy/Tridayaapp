@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\NotificationController;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LeadNotificationTest extends TestCase
@@ -56,6 +58,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
+            'kebutuhan' => 'IP Phone 10 unit.',
             'incoming_date' => now()->toDateString(),
         ])
             ->assertRedirect(route('leads.index'))
@@ -138,7 +141,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'assigned_to' => $salesA->id,
             'incoming_date' => now()->toDateString(),
         ]);
@@ -148,6 +151,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
+            'kebutuhan' => 'IP Phone 10 unit.',
             'assigned_to' => $salesB->id,
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
@@ -169,7 +173,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'assigned_to' => $sales->id,
             'incoming_date' => now()->toDateString(),
         ]);
@@ -194,7 +198,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => Customer::create(['name' => 'PT Notif Lagi'])->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
         ]);
 
@@ -215,7 +219,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => Customer::create(['name' => 'PT Baca Hapus'])->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
         ]);
         $management->notify(new NewLeadNotification($lead));
@@ -246,7 +250,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => Customer::create(['name' => 'PT Milik Orang'])->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
         ]);
         $owner->notify(new NewLeadNotification($lead));
@@ -270,7 +274,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => Customer::create(['name' => 'PT Notif JSON'])->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
         ]);
         $management->notify(new NewLeadNotification($lead));
@@ -292,7 +296,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => Customer::create(['name' => 'PT Assign Hapus Notif'])->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
         ]);
         $management->notify(new NewLeadNotification($lead));
@@ -305,6 +309,175 @@ class LeadNotificationTest extends TestCase
         $this->assertSame(0, $management->fresh()->notifications()->count());
     }
 
+    public function test_assigned_notification_links_to_my_leads(): void
+    {
+        $sales = $this->loginAs('sales');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Notif My Leads'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+            'incoming_date' => now()->toDateString(),
+        ]);
+        $sales->notify(new LeadAssignedNotification($lead));
+
+        $expected = route('sales.my-leads', ['search' => 'PT Notif My Leads']);
+        $this->assertSame($expected, $sales->notifications()->first()->data['url']);
+
+        $items = NotificationController::itemsFor($sales);
+        $this->assertCount(1, $items);
+        $this->assertSame($expected, $items[0]['url']);
+    }
+
+    public function test_items_for_repairs_legacy_assigned_url_to_my_leads(): void
+    {
+        $sales = $this->loginAs('sales');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Notif Lama'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+            'incoming_date' => now()->toDateString(),
+        ]);
+        // Baris lama yang masih menyimpan URL leads.show.
+        $sales->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => LeadAssignedNotification::class,
+            'data' => [
+                'type' => 'assigned',
+                'lead_id' => $lead->id,
+                'customer' => 'PT Notif Lama',
+                'url' => route('leads.show', $lead),
+            ],
+        ]);
+
+        $items = NotificationController::itemsFor($sales);
+        $this->assertCount(1, $items);
+        $this->assertSame(route('sales.my-leads', ['search' => 'PT Notif Lama']), $items[0]['url']);
+    }
+
+    public function test_reassign_removes_previous_sales_assigned_notification(): void
+    {
+        $management = $this->loginAs('management');
+        $salesA = User::factory()->create();
+        $salesA->assignRole('sales');
+        $salesB = User::factory()->create();
+        $salesB->assignRole('sales');
+
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Reassign Notif'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'assigned_to' => $salesA->id,
+            'incoming_date' => now()->toDateString(),
+        ]);
+        $salesA->notify(new LeadAssignedNotification($lead));
+        $this->assertSame(1, $salesA->notifications()->count());
+
+        $this->actingAs($management)
+            ->post(route('manage-sales.assign', $lead), ['assigned_to' => $salesB->id])
+            ->assertRedirect(route('manage-sales.index'));
+
+        $this->assertSame(0, $salesA->fresh()->notifications()->count());
+        $this->assertSame(1, $salesB->fresh()->notifications()
+            ->where('type', LeadAssignedNotification::class)->count());
+    }
+
+    public function test_items_for_drops_stale_assigned_notification(): void
+    {
+        $salesA = $this->loginAs('sales');
+        $salesB = User::factory()->create();
+        $salesB->assignRole('sales');
+
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Basi Notif'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'assigned_to' => $salesA->id,
+            'incoming_date' => now()->toDateString(),
+        ]);
+        $salesA->notify(new LeadAssignedNotification($lead));
+
+        // Lead pindah tangan tanpa lewat controller (simulasi baris basi).
+        $lead->forceFill(['assigned_to' => $salesB->id])->saveQuietly();
+
+        $this->assertSame([], NotificationController::itemsFor($salesA));
+        $this->assertSame(0, $salesA->fresh()->notifications()->count());
+    }
+
+    public function test_items_for_drops_management_notification_for_sales(): void
+    {
+        $sales = $this->loginAs('sales');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Nyasar Notif'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+        ]);
+        // Baris NewLead (untuk management) yang nyasar ke sales.
+        $sales->notify(new NewLeadNotification($lead));
+        $this->assertSame(1, $sales->notifications()->count());
+
+        $this->actingAs($sales)
+            ->get(route('notifications.status'))
+            ->assertOk()
+            ->assertJson(['unread' => 0, 'items' => []]);
+
+        $this->assertSame(0, $sales->fresh()->notifications()->count());
+    }
+
+    public function test_new_lead_notification_links_to_manage_sales(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Notif Kelola'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+        ]);
+        $management->notify(new NewLeadNotification($lead));
+
+        $expected = route('manage-sales.index');
+        $this->assertSame($expected, $management->notifications()->first()->data['url']);
+
+        $items = NotificationController::itemsFor($management);
+        $this->assertCount(1, $items);
+        $this->assertSame($expected, $items[0]['url']);
+    }
+
+    public function test_items_for_repairs_legacy_new_lead_url_to_manage_sales(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Notif Lama Kelola'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+        ]);
+        // Baris lama: tanpa URL, atau masih menyimpan URL halaman edit.
+        $management->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => NewLeadNotification::class,
+            'data' => [
+                'type' => 'lead',
+                'lead_id' => $lead->id,
+                'customer' => 'PT Notif Lama Kelola',
+                'url' => route('manage-sales.edit', $lead),
+            ],
+        ]);
+
+        $items = NotificationController::itemsFor($management);
+        $this->assertCount(1, $items);
+        $this->assertSame(route('manage-sales.index'), $items[0]['url']);
+    }
+
     public function test_management_can_open_lead_page_from_notification_link(): void
     {
         $management = $this->loginAs('management');
@@ -312,7 +485,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => Customer::create(['name' => 'PT Link Notif'])->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
         ]);
 

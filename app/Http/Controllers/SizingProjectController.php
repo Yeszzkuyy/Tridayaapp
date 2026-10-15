@@ -19,15 +19,15 @@ class SizingProjectController extends Controller
             $query->where('project_id', $request->project_id);
         }
 
-        $sizings = $query->get();
-        $projects = Project::with('customer')->orderBy('project_name')->get();
+        $sizings = $query->paginate(15)->withQueryString();
+        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
 
         return view('teknisi.sizing-projects.index', compact('sizings', 'projects'));
     }
 
     public function create(Request $request)
     {
-        $projects = Project::with('customer')->orderBy('project_name')->get();
+        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
         $selectedProject = $request->query('project_id');
 
         return view('teknisi.sizing-projects.create', compact('projects', 'selectedProject'));
@@ -62,7 +62,7 @@ class SizingProjectController extends Controller
 
     public function edit(SizingProject $sizingProject)
     {
-        $projects = Project::with('customer')->orderBy('project_name')->get();
+        $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
 
         return view('teknisi.sizing-projects.edit', compact('sizingProject', 'projects'));
     }

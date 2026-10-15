@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Models\Lead;
+use App\Support\PtAccess;
 
 trait LocksLeadLink
 {
@@ -17,7 +18,7 @@ trait LocksLeadLink
     private function lockLeadLink(array &$validated): void
     {
         $user = auth()->user();
-        if (!$user || !$user->hasRole('sales') || $user->can('manage-marketing') || $user->can('manage-sales-leads')) {
+        if (!$user || !PtAccess::isSalesLike($user) || $user->can('manage-marketing') || $user->can('manage-sales-leads')) {
             return;
         }
 

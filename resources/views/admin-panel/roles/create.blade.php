@@ -32,8 +32,8 @@
                         </select>
                     </div>
                     <div class="flex gap-2">
-                        <button type="button" id="select-all" class="px-3 py-1 text-xs bg-accent-500 hover:bg-accent-600 text-white">{{ __('Pilih Semua') }}</button>
-                        <button type="button" id="deselect-all" class="px-3 py-1 text-xs bg-accent-500 hover:bg-accent-600 text-white">{{ __('Batal Pilih') }}</button>
+                        <x-icon-button id="select-all" icon="leads" label="{{ __('Pilih Semua') }}" title="{{ __('Pilih Semua') }}" />
+                        <x-icon-button id="deselect-all" icon="reset" label="{{ __('Batal Pilih') }}" title="{{ __('Batal Pilih') }}" />
                     </div>
                 </div>
                 <p class="text-xs text-slate-400 mb-3">{{ __('Acuan matriks resmi: management, lead-marketing, marketing, sales, admin, technician, lead-technician, inside-sales, prakerin-technician, prakerin-admin, ceo.') }}</p>

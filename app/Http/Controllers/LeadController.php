@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadDocument;
@@ -26,7 +27,7 @@ class LeadController extends Controller
 {
     public const SEGMENTS = ['end_user', 'vendor', 'system_integrator', 'kontraktor', 'gov', 'principle', 'distributor', 'other'];
     public const SOURCES = ['whatsapp', 'email', 'telpon', 'canvasing', 'event', 'website', 'referral', 'social_media', 'other'];
-    public const STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'];
+    public const STATUSES = ['cool', 'warm', 'hot', 'won', 'lost'];
 
     public static function label(string $value): string
     {
@@ -86,9 +87,15 @@ class LeadController extends Controller
                 || ($lead->closed_at ?? $lead->updated_at)?->gte($weekStart))->values();
         }
 
+        // Kolom New (virtual, bukan status DB): lead yang di-assign ke sales
+        // tapi belum pernah digeser/diubah statusnya. won/lost tidak pernah New.
+        $newLeads = $leads->filter(fn ($lead) => $lead->acknowledged_at === null
+            && !in_array($lead->status, ['won', 'lost'], true))->values();
+        $leads = $leads->reject(fn ($lead) => $newLeads->contains($lead))->values();
+
         $statuses = self::STATUSES;
 
-        return view('leads.pipeline', compact('leads', 'statuses', 'showAllClosed', 'weekStart'));
+        return view('leads.pipeline', compact('leads', 'newLeads', 'statuses', 'showAllClosed', 'weekStart'));
     }
 
     private function authorizeLeadStatus(Lead $lead): void
@@ -103,6 +110,23 @@ class LeadController extends Controller
         abort(403);
     }
 
+    /**
+     * Target assignment harus user divisi yang memang memegang lead
+     * (sales/marketing), bukan id sembarang lintas divisi.
+     */
+    private function guardSalesAssignee(mixed $assignedTo): void
+    {
+        if (empty($assignedTo)) {
+            return;
+        }
+
+        $assignee = User::find($assignedTo);
+
+        if (! $assignee?->hasAnyRole(['sales', 'marketing'])) {
+            abort(422, __('Target assignment harus user Sales atau Marketing.'));
+        }
+    }
+
     public function updateStatus(Request $request, Lead $lead)
     {
         $this->authorizeLeadStatus($lead);
@@ -114,6 +138,9 @@ class LeadController extends Controller
         if ($validated['status'] !== $lead->status) {
             $old = $lead->status;
             $payload = ['status' => $validated['status']];
+            if ($lead->acknowledged_at === null) {
+                $payload['acknowledged_at'] = now();
+            }
             if ($validated['status'] !== 'lost') {
                 $payload['lost_reason'] = null;
                 $payload['lost_note'] = null;
@@ -125,6 +152,10 @@ class LeadController extends Controller
             $this->logActivity($lead, 'status_changed', [
                 'status' => ['old' => $old, 'new' => $validated['status']],
             ]);
+        } elseif ($lead->acknowledged_at === null) {
+            // Status sama (mis. geser New -> Cool padahal DB-nya sudah cool):
+            // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
+            $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
         }
 
         return response()->noContent();
@@ -146,6 +177,9 @@ class LeadController extends Controller
 
             if ($old !== $change['status']) {
                 $payload = ['status' => $change['status']];
+                if ($lead->acknowledged_at === null) {
+                    $payload['acknowledged_at'] = now();
+                }
                 if ($change['status'] !== 'lost') {
                     $payload['lost_reason'] = null;
                     $payload['lost_note'] = null;
@@ -158,6 +192,10 @@ class LeadController extends Controller
                 ]);
 
                 $results[] = ['lead_id' => $lead->id, 'old' => $old, 'new' => $change['status']];
+            } elseif ($lead->acknowledged_at === null) {
+                // Status sama (mis. geser New -> Cool padahal DB-nya sudah cool):
+                // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
+                $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
             }
         }
 
@@ -197,20 +235,26 @@ class LeadController extends Controller
             'conversion' => ($won + $lost) > 0 ? (int) round($won / ($won + $lost) * 100) : 0,
         ];
 
-        // ponytail: grouping source di PHP agar portabel antar driver (MySQL/Postgres/SQLite)
+        // Agregat di SQL; COALESCE/NULLIF portabel MySQL/Postgres/SQLite.
         $perSource = Lead::whereDate('incoming_date', '>=', $dateFrom)->whereDate('incoming_date', '<=', $dateTo)
-            ->pluck('source')
-            ->map(fn ($source) => ($source === null || $source === '') ? 'lainnya' : $source)
-            ->countBy()
-            ->map(fn ($total, $source) => (object) ['source' => $source, 'total' => $total])
-            ->values()
-            ->sortByDesc('total')
+            ->selectRaw("COALESCE(NULLIF(source, ''), 'lainnya') as source, count(*) as total")
+            ->groupBy('source')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => (object) ['source' => $row->source ?? 'lainnya', 'total' => (int) $row->total])
             ->values();
 
-        // ponytail: tren per bulan dikelompokkan di PHP (portabel antar driver DB); pindah ke SQL native kalau datanya jutaan
+        // Agregat per bulan di SQL; ekspresi bulan beda per driver
+        // (substr(date) jalan di SQLite tapi tidak di Postgres).
+        $monthExpr = match (\Illuminate\Support\Facades\DB::getDriverName()) {
+            'pgsql' => "to_char(incoming_date, 'YYYY-MM')",
+            'mysql' => "DATE_FORMAT(incoming_date, '%Y-%m')",
+            default => 'substr(incoming_date, 1, 7)',
+        };
         $trendQuery = Lead::whereDate('incoming_date', '>=', $dateFrom)->whereDate('incoming_date', '<=', $dateTo)
-            ->pluck('incoming_date')
-            ->countBy(fn ($date) => $date->format('Y-m'));
+            ->selectRaw("{$monthExpr} as ym, count(*) as total")
+            ->groupBy('ym')
+            ->pluck('total', 'ym');
 
         $months = max(0, now()->parse($dateFrom)->diffInMonths(now()->parse($dateTo)));
         $trend = $months < 1
@@ -241,10 +285,9 @@ class LeadController extends Controller
         //  Laravel menelan @php(...) inline sebagai pembuka blok bila ada
         //  @endphp lain di file yang sama.)
         $statusPalette = [
-            'new' => '#3b82f6',
-            'contacted' => '#eab308',
-            'qualified' => '#a855f7',
-            'proposal' => '#f97316',
+            'cool' => '#3b82f6',
+            'warm' => '#eab308',
+            'hot' => '#f97316',
             'won' => '#22c55e',
             'lost' => '#ef4444',
         ];
@@ -369,14 +412,19 @@ class LeadController extends Controller
             'whatsapp_account_id' => 'nullable|exists:whatsapp_accounts,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
-            'kebutuhan' => 'nullable|string|max:2000',
+            'kebutuhan' => 'required|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
-            'notes' => 'nullable',
+            'notes' => 'nullable|string|max:5000',
             'incoming_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => ['file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'segment.required' => 'Kategori (Segment) wajib dipilih.',
+            'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
         ]);
+
+        $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
         if ($validated['customer_mode'] === 'new') {
             $validated['customer_id'] = Customer::create([
@@ -390,11 +438,12 @@ class LeadController extends Controller
                 'contact_person' => $validated['customer_contact_person'] ?? null,
             ])->id;
         } else {
+            $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
             $customerSync = ['pt_group' => $validated['pt_group']];
             if (!empty($validated['customer_contact_person'])) {
                 $customerSync['contact_person'] = $validated['customer_contact_person'];
             }
-            Customer::withTrashed()->whereKey($validated['customer_id'])->update($customerSync);
+            $customer->update($customerSync);
         }
 
         unset(
@@ -409,7 +458,7 @@ class LeadController extends Controller
             $validated['attachments'],
         );
 
-        $validated['status'] ??= 'new';
+        $validated['status'] ??= 'cool';
 
         $lead = Lead::create($validated);
         $this->saveAttachments($request, $lead);
@@ -439,31 +488,37 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
-        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'meetings.creator', 'followUps.creator']);
+        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
         $documents = $lead->customer ? $lead->customer->projects->flatMap->documents : collect();
         $projectStatuses = ProjectStatus::orderBy('sort_order')->get(['id', 'name']);
         $workTypes = WorkType::orderBy('name')->get(['id', 'name']);
 
-        // Riwayat gabungan meeting + follow-up milik lead ini, terbaru dulu.
+        // Riwayat follow-up milik lead ini, terbaru dulu.
         // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
         $canOpenDetail = auth()->user()?->can('manage-sales');
-        $timeline = $lead->meetings->map(fn ($m) => [
-            'type' => 'meeting',
-            'date' => $m->meeting_date,
-            'title' => __('Meeting'),
-            'summary' => $m->user_needs ?: $m->notes,
-            'by' => $m->creator?->name,
-            'url' => $canOpenDetail ? route('sales.meetings.show', $m) : null,
-        ])->concat($lead->followUps->map(fn ($f) => [
+        $timeline = $lead->followUps->map(fn ($f) => [
             'type' => 'follow-up',
             'date' => $f->follow_up_date ?? $f->created_at,
-            'title' => __('Follow Up'),
+            'time' => $f->activity_time,
+            'location' => $f->location,
+            'title' => FollowUp::typeLabel($f->type),
             'summary' => $f->description,
             'by' => $f->creator?->name,
             'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
-        ]))->sortByDesc('date')->values();
+        ])->sortByDesc('date')->values();
 
-        return view('leads.show', compact('lead', 'documents', 'projectStatuses', 'workTypes', 'timeline'));
+        // Sales flow: jadwal (upcoming/past), technical request, proposal milik lead ini.
+        $upcomingSchedules = $lead->salesSchedules
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->sortBy('start_at')->values();
+        $pastSchedules = $lead->salesSchedules
+            ->where(fn ($s) => in_array($s->status, ['completed', 'cancelled']) || ($s->start_at && $s->start_at->isPast()))
+            ->sortByDesc('start_at')->values();
+        $techRequests = $lead->technicalRequests->sortByDesc('created_at')->values();
+        $activeTechRequest = $techRequests->first(fn ($r) => ! in_array($r->status, ['completed', 'cancelled', 'rejected']));
+        $proposalsList = $lead->proposals->sortByDesc('created_at')->values();
+
+        return view('leads.show', compact('lead', 'documents', 'projectStatuses', 'workTypes', 'timeline', 'upcomingSchedules', 'pastSchedules', 'techRequests', 'activeTechRequest', 'proposalsList'));
     }
 
     public function edit(Lead $lead)
@@ -498,14 +553,19 @@ class LeadController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
-            'kebutuhan' => 'nullable|string|max:2000',
+            'kebutuhan' => 'required|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
-            'notes' => 'nullable',
+            'notes' => 'nullable|string|max:5000',
             'incoming_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => ['file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'segment.required' => 'Kategori (Segment) wajib dipilih.',
+            'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
         ]);
+
+        $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
         if ($validated['customer_mode'] === 'new') {
             $validated['customer_id'] = Customer::create([
@@ -530,7 +590,15 @@ class LeadController extends Controller
             ], fn ($value) => $value !== null);
 
             if ($customerData) {
-                Customer::withTrashed()->whereKey($validated['customer_id'])->update($customerData);
+                $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
+
+                // Pindah lead ke customer lain = butuh hak tulis customer.
+                // Touch-up customer yang sama tetap boleh (alur marketing).
+                if ((int) $customer->id !== (int) $lead->customer_id) {
+                    $this->authorize('update', $customer);
+                }
+
+                $customer->update($customerData);
             }
         }
 
@@ -655,6 +723,7 @@ class LeadController extends Controller
             'customer_id' => $lead->customer_id,
             'project_status_id' => $validated['project_status_id'],
             'work_type_id' => $validated['work_type_id'] ?? null,
+            'sales_user_id' => $lead->assigned_to,
             'start_date' => now()->toDateString(),
         ]);
 
@@ -687,7 +756,7 @@ class LeadController extends Controller
 
     public function monitoring()
     {
-        $statuses = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'];
+        $statuses = ['cool', 'warm', 'hot', 'won', 'lost'];
 
         $groups = collect([
             'Marketing' => User::role('marketing')->orderBy('name')->get(['id', 'name']),
@@ -728,14 +797,11 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
-        if ($document->lead_id !== $lead->id || !Storage::disk('private')->exists($document->file_path)) {
+        if ($document->lead_id !== $lead->id) {
             abort(404);
         }
 
-        return response()->file(Storage::disk('private')->path($document->file_path), [
-            'Content-Type' => $document->mime_type ?? 'application/octet-stream',
-            'Content-Disposition' => 'inline; filename="'.$document->file_name.'"',
-        ]);
+        return \App\Rules\SecureFile::fileResponse('private', $document->file_path, $document->file_name);
     }
 
     public function downloadAttachment(Lead $lead, LeadDocument $document)
@@ -778,7 +844,7 @@ class LeadController extends Controller
             $lead->documents()->create([
                 'file_name' => \App\Rules\SecureFile::sanitizeName($file->getClientOriginalName()),
                 'file_path' => $path,
-                'mime_type' => $file->getClientMimeType(),
+                'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
             ]);
         }
     }
@@ -794,7 +860,7 @@ class LeadController extends Controller
             $lead->documents()->create([
                 'file_name' => \App\Rules\SecureFile::sanitizeName($file->getClientOriginalName()),
                 'file_path' => $path,
-                'mime_type' => $file->getClientMimeType(),
+                'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
             ]);
         }
     }
@@ -835,30 +901,8 @@ class LeadController extends Controller
             abort(404);
         }
 
-        if (!Storage::disk('private')->exists($document->file_path)) {
-            abort(404, 'File tidak ditemukan.');
-        }
-
-        $filePath = Storage::disk('private')->path($document->file_path);
-
-        $mimeType = $document->mime_type ?? mime_content_type($filePath);
-        $extension = strtolower(pathinfo($document->file_name, PATHINFO_EXTENSION));
-
-        $inlineTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'mp4', 'webm', 'ogg', 'mp3', 'wav'];
-
-        if (in_array($extension, $inlineTypes)) {
-            return response()->file($filePath, [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"'
-            ]);
-        }
-
-        $officeTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-        if (in_array($extension, $officeTypes)) {
-            return Storage::disk('private')->download($document->file_path, $document->file_name);
-        }
-
-        return Storage::disk('private')->download($document->file_path, $document->file_name);
+        // MIME dari isi file + hanya tipe aman yang inline (svg ikut download).
+        return \App\Rules\SecureFile::fileResponse('private', $document->file_path, $document->file_name);
     }
 
     public function downloadDocument(Lead $lead, ProjectDocument $document)
@@ -879,6 +923,85 @@ class LeadController extends Controller
     public function importForm()
     {
         return view('leads.import');
+    }
+
+    /**
+     * Normalisasi 1 baris import (murni, tanpa query).
+     *
+     * @return array{row:int, company:string, sales:mixed, customer_attrs:array, lead_attrs:array}
+     */
+    private function normalizeImportRow(array $data): array
+    {
+        $companyName = $data['nama_perusahaan'] ?? $data['company'] ?? $data['perusahaan'] ?? null;
+        if (empty($companyName) || ! is_string($companyName)) {
+            throw new \Exception('Nama perusahaan kosong');
+        }
+        $companyName = trim($companyName);
+
+        $ptGroup = $data['pt'] ?? $data['pt_group'] ?? 'NTI';
+        if (! in_array($ptGroup, Lead::PT_GROUPS, true)) {
+            throw new \Exception("PT grup '{$ptGroup}' tidak valid");
+        }
+
+        $segment = $data['segment'] ?? 'other';
+        if (! in_array($segment, self::SEGMENTS, true)) {
+            throw new \Exception("Segment '{$segment}' tidak valid");
+        }
+
+        $source = $data['source'] ?? $data['masuk_by'] ?? null;
+        if ($source !== null && $source !== '' && ! in_array($source, self::SOURCES, true)) {
+            throw new \Exception("Source '{$source}' tidak valid");
+        }
+
+        $incomingDate = $data['tanggal'] ?? $data['date'] ?? $data['incoming_date'] ?? now()->toDateString();
+        try {
+            $incomingDate = \Illuminate\Support\Carbon::parse($incomingDate)->toDateString();
+        } catch (\Throwable) {
+            $incomingDate = now()->toDateString();
+        }
+
+        return [
+            'company' => $companyName,
+            'sales' => $data['sales'] ?? $data['assigned_to'] ?? null,
+            'customer_attrs' => [
+                'name' => $companyName,
+                'company' => $companyName,
+                'pt_group' => $ptGroup,
+                'address' => $data['alamat'] ?? $data['address'] ?? null,
+                'phone' => $data['telp'] ?? $data['phone'] ?? $data['telepon'] ?? null,
+                'whatsapp' => $data['wa'] ?? $data['whatsapp'] ?? null,
+                'email' => $data['email'] ?? null,
+                'contact_person' => $data['pic'] ?? $data['contact_person'] ?? null,
+            ],
+            'lead_attrs' => [
+                'pt_group' => $ptGroup,
+                'segment' => $segment,
+                'source' => $source ?: null,
+                'kebutuhan' => $data['kebutuhan'] ?? null,
+                'solusi' => $data['solusi'] ?? null,
+                'progress_notes' => $data['progress'] ?? $data['followup'] ?? null,
+                'notes' => $data['catatan'] ?? $data['notes'] ?? null,
+                'incoming_date' => $incomingDate,
+            ],
+        ];
+    }
+
+    /**
+     * Cocokkan kolom sales ke user: id eksak dulu, lalu nama eksak
+     * (case-insensitive). Tanpa LIKE fuzzy — salah assign lebih buruk
+     * daripada tidak assign.
+     */
+    private function resolveImportAssignee(mixed $salesVal, array $usersById, array $usersByNameLower): mixed
+    {
+        if (empty($salesVal)) {
+            return null;
+        }
+
+        if (is_numeric($salesVal) && isset($usersById[(int) $salesVal])) {
+            return (int) $salesVal;
+        }
+
+        return $usersByNameLower[mb_strtolower(trim((string) $salesVal))] ?? null;
     }
 
     public function import(Request $request)
@@ -911,6 +1034,8 @@ class LeadController extends Controller
             $headers = array_map(fn ($h) => strtolower(trim(str_replace([' ', "\t"], '_', $h))), $rows[0]);
             $results = ['success' => 0, 'failed' => 0, 'errors' => []];
 
+            // Pass 1: normalisasi + validasi per baris (tanpa query).
+            $parsed = [];
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
                 if (empty(array_filter($row)) || count($row) < count($headers)) continue;
@@ -919,61 +1044,60 @@ class LeadController extends Controller
                 $rowNum = $i + 1;
 
                 try {
-                    $companyName = $data['nama_perusahaan'] ?? $data['company'] ?? $data['perusahaan'] ?? null;
-                    if (empty($companyName)) {
-                        throw new \Exception('Nama perusahaan kosong');
-                    }
-
-                    $ptGroup = $data['pt'] ?? $data['pt_group'] ?? 'NTI';
-
-                    $customer = Customer::firstOrCreate(
-                        ['name' => trim($companyName)],
-                        [
-                            'company' => trim($companyName),
-                            'pt_group' => $ptGroup,
-                            'address' => $data['alamat'] ?? $data['address'] ?? null,
-                            'phone' => $data['telp'] ?? $data['phone'] ?? $data['telepon'] ?? null,
-                            'whatsapp' => $data['wa'] ?? $data['whatsapp'] ?? null,
-                            'email' => $data['email'] ?? null,
-                            'contact_person' => $data['pic'] ?? $data['contact_person'] ?? null,
-                        ]
-                    );
-
-                    if (empty($customer->pt_group)) {
-                        $customer->update(['pt_group' => $ptGroup]);
-                    }
-
-                    $incomingDate = $data['tanggal'] ?? $data['date'] ?? $data['incoming_date'] ?? now()->toDateString();
-                    if (!strtotime($incomingDate)) $incomingDate = now()->toDateString();
-
-                    $assignedTo = null;
-                    $salesVal = $data['sales'] ?? $data['assigned_to'] ?? null;
-                    if ($salesVal) {
-                        $salesUser = User::where('name', 'like', "%{$salesVal}%")->first()
-                            ?? User::find($salesVal);
-                        $assignedTo = $salesUser?->id;
-                    }
-
-                    Lead::create([
-                        'customer_id' => $customer->id,
-                        'pt_group' => $ptGroup,
-                        'segment' => $data['segment'] ?? 'other',
-                        'source' => $data['source'] ?? $data['masuk_by'] ?? null,
-                        'kebutuhan' => $data['kebutuhan'] ?? null,
-                        'solusi' => $data['solusi'] ?? null,
-                        'progress_notes' => $data['progress'] ?? $data['followup'] ?? null,
-                        'notes' => $data['catatan'] ?? $data['notes'] ?? null,
-                        'incoming_date' => $incomingDate,
-                        'assigned_to' => $assignedTo,
-                        'status' => 'new',
-                    ]);
-
-                    $results['success']++;
+                    $parsed[] = $this->normalizeImportRow($data) + ['row' => $rowNum];
                 } catch (\Exception $e) {
                     $results['failed']++;
                     $results['errors'][] = "Baris {$rowNum}: {$e->getMessage()}";
                 }
             }
+
+            // Preload sekali: user (id + nama eksak) dan customer yang sudah ada.
+            $usersById = User::pluck('id', 'id')->all();
+            $usersByName = User::pluck('id', 'name')->all();
+            $usersByNameLower = [];
+            foreach ($usersByName as $name => $id) {
+                $usersByNameLower[mb_strtolower($name)] = $id;
+            }
+            $wantedNames = collect($parsed)->pluck('company')->unique()->values()->all();
+            $customerIds = Customer::whereIn('name', $wantedNames)->pluck('id', 'name')->all();
+
+            $now = now();
+            $leadsBatch = [];
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($parsed, &$customerIds, &$leadsBatch, &$results, $usersById, $usersByNameLower, $now) {
+                // Customer baru: bulk insert sekaligus, bukan firstOrCreate per baris.
+                $newNames = collect($parsed)->pluck('company')->unique()->reject(fn ($n) => isset($customerIds[$n]))->values();
+                if ($newNames->isNotEmpty()) {
+                    $byName = collect($parsed)->keyBy('company');
+                    Customer::insert($newNames->map(fn ($name) => array_merge(
+                        $byName[$name]['customer_attrs'],
+                        ['created_at' => $now, 'updated_at' => $now]
+                    ))->all());
+                    $customerIds += Customer::whereIn('name', $newNames->all())->pluck('id', 'name')->all();
+                }
+
+                foreach ($parsed as $item) {
+                    $customerId = $customerIds[$item['company']] ?? null;
+                    if (! $customerId) {
+                        $results['failed']++;
+                        $results['errors'][] = "Baris {$item['row']}: customer gagal disimpan";
+                        continue;
+                    }
+
+                    $leadsBatch[] = array_merge($item['lead_attrs'], [
+                        'customer_id' => $customerId,
+                        'assigned_to' => $this->resolveImportAssignee($item['sales'], $usersById, $usersByNameLower),
+                        'status' => 'cool',
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                    $results['success']++;
+                }
+
+                foreach (array_chunk($leadsBatch, 500) as $chunk) {
+                    Lead::insert($chunk);
+                }
+            });
 
             return back()->with('import_results', $results);
         } catch (\Exception $e) {

@@ -41,6 +41,8 @@ class AdminPanelController extends Controller
             'roles.*' => 'exists:roles,name',
         ]);
 
+        $this->guardSuperAdminGrant($request);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -72,6 +74,9 @@ class AdminPanelController extends Controller
             'roles' => 'array',
             'roles.*' => 'exists:roles,name',
         ]);
+
+        $this->guardSuperAdminGrant($request);
+        $this->guardLastSuperAdminDemote($request, $user);
 
         $user->update([
             'name' => $request->name,
@@ -112,6 +117,45 @@ class AdminPanelController extends Controller
             ->with('success', __('User berhasil dihapus.'));
     }
 
+    /**
+     * Hanya super-admin yang boleh memberikan role super-admin.
+     * Form memang menyembunyikan opsi ini, tapi validasi tidak boleh
+     * mengandalkan UI (request bisa dibuat manual).
+     */
+    private function guardSuperAdminGrant(Request $request): void
+    {
+        if (in_array('super-admin', $request->input('roles', []), true)
+            && ! $request->user()->hasRole('super-admin')) {
+            abort(403, __('Hanya super-admin yang boleh memberikan role super-admin.'));
+        }
+    }
+
+    /**
+     * Cegah lockout: super-admin terakhir tidak boleh di-demote,
+     * dan niemand boleh mencabut super-admin dari dirinya sendiri.
+     */
+    private function guardLastSuperAdminDemote(Request $request, User $user): void
+    {
+        if (! $user->hasRole('super-admin')) {
+            return;
+        }
+
+        $removing = ! $request->has('roles')
+            || ! in_array('super-admin', $request->input('roles', []), true);
+
+        if (! $removing) {
+            return;
+        }
+
+        if ((int) $user->id === (int) $request->user()->id) {
+            abort(403, __('Tidak bisa mencabut role super-admin dari akun sendiri.'));
+        }
+
+        if (User::role('super-admin')->count() <= 1) {
+            abort(403, __('Tidak bisa demote super-admin terakhir (sistem akan terkunci).'));
+        }
+    }
+
     // ========== ROLE MANAGEMENT ==========
     
     public function createRole()
@@ -127,6 +171,7 @@ class AdminPanelController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|lowercase|unique:roles,name',
             'permissions' => 'array',
+            'permissions.*' => 'exists:permissions,name',
         ]);
 
         $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
@@ -157,6 +202,7 @@ class AdminPanelController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|lowercase|unique:roles,name,' . $role->id,
             'permissions' => 'array',
+            'permissions.*' => 'exists:permissions,name',
         ]);
 
         $role->update(['name' => $request->name]);

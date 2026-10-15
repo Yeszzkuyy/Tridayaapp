@@ -2,46 +2,57 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">Pipeline Lead</h1>
-            <p class="text-slate-500 mt-1">{{ __('Pipeline milik :name — geser kartu antar kolom untuk mengubah status lead', ['name' => auth()->user()->name]) }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Pipeline milik :name — lead baru masuk di kolom New, geser ke Cool/Warm/Hot untuk menindaklanjuti', ['name' => auth()->user()->name]) }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
-               class="px-4 py-2.5 rounded-xl bg-accent-50 hover:bg-accent-100 text-accent-700 text-sm font-medium transition">
-                {{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}
-            </a>
+            <x-icon-button as="a" icon="filter" href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
+                           label="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}"
+                           title="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}" />
             @if(auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing'))
-                <a href="{{ route('leads.index') }}"
-                   class="px-4 py-2.5 rounded-xl bg-accent-50 hover:bg-accent-100 text-accent-700 text-sm font-medium transition">
-                    {{ __('Tabel Lead') }}
-                </a>
+                <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}"
+                               label="{{ __('Tabel Lead') }}" title="{{ __('Tabel Lead') }}" />
             @else
-                <a href="{{ route('sales.my-leads') }}"
-                   class="px-4 py-2.5 rounded-xl bg-accent-50 hover:bg-accent-100 text-accent-700 text-sm font-medium transition">
-                    {{ __('My Leads') }}
-                </a>
+                <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}"
+                               label="{{ __('My Leads') }}" title="{{ __('My Leads') }}" />
             @endif
             @can('manage-marketing')
-                <a href="{{ route('leads.create') }}"
-                   class="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">
-                    {{ __('+ Tambah Lead') }}
-                </a>
+                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}"
+                               label="{{ __('+ Tambah Lead') }}" title="{{ __('+ Tambah Lead') }}" />
             @endcan
         </div>
     </div>
 
-    @if($leads->isNotEmpty())
+    @php
+        $newLeads = $newLeads ?? collect();
+        $hasLeads = $leads->isNotEmpty() || $newLeads->isNotEmpty();
+    @endphp
+    @if($hasLeads)
     <div class="kanban-board overflow-x-auto pb-4"
          @if(auth()->user()->can('manage-marketing') || auth()->user()->can('manage-sales')) data-editable="1" @endif
          @if(auth()->user()->can('manage-sales') && !auth()->user()->can('manage-marketing')) data-sales-only="1" @endif>
         <div class="flex gap-4 min-w-max items-start">
+            {{-- Kolom New (virtual): lead baru di-assign, belum ditangani.
+                 Hanya sumber geser — kartu tidak bisa dikembalikan ke sini. --}}
+            <div class="w-72 shrink-0 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-600">
+                    <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-700">
+                        {{ __('New') }}
+                    </span>
+                    <span class="text-sm font-semibold text-slate-500" data-count>{{ ($newLeads ?? collect())->count() }}</span>
+                </div>
+                <div class="kanban-list p-3 space-y-3 min-h-24" data-new-source="1">
+                    @foreach(($newLeads ?? collect()) as $lead)
+                        @include('leads._pipeline-card', ['lead' => $lead, 'cardDate' => $lead->assigned_at ?? $lead->incoming_date])
+                    @endforeach
+                </div>
+            </div>
             @foreach($statuses as $status)
                 @php
                     $columnLeads = $leads->where('status', $status);
                     $colors = [
-                        'new' => 'bg-blue-100 text-blue-800',
-                        'contacted' => 'bg-yellow-100 text-yellow-800',
-                        'qualified' => 'bg-purple-100 text-purple-800',
-                        'proposal' => 'bg-orange-100 text-orange-800',
+                        'cool' => 'bg-blue-100 text-blue-800',
+                        'warm' => 'bg-yellow-100 text-yellow-800',
+                        'hot' => 'bg-orange-100 text-orange-800',
                         'won' => 'bg-green-100 text-green-800',
                         'lost' => 'bg-red-100 text-red-800',
                     ];
@@ -58,32 +69,7 @@
                     </div>
                     <div class="kanban-list p-3 space-y-3 min-h-24" data-status="{{ $status }}">
                         @foreach($columnLeads as $lead)
-                            <div class="kanban-card bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 p-3 shadow-sm hover:shadow transition"
-                                 data-lead-id="{{ $lead->id }}" data-mine="{{ (int) $lead->assigned_to === (int) auth()->id() ? 1 : 0 }}">
-                                <div class="flex items-center justify-between mb-1">
-                                    @if($lead->pt_group)
-                                        <span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700' }} text-[11px] font-semibold">
-                                            {{ $lead->pt_group }}
-                                        </span>
-                                    @endif
-                                    <span class="text-[11px] text-slate-400">{{ $lead->incoming_date?->format('d M y') }}</span>
-                                </div>
-                                <a href="{{ route('leads.show', $lead) }}"
-                                   class="block font-semibold text-slate-800 hover:text-accent-600 leading-snug">
-                                    {{ $lead->customer->name ?? 'N/A' }}
-                                </a>
-                                <p class="text-xs text-slate-500 mt-1 line-clamp-2">
-                                    {{ $lead->kebutuhan ? Str::limit($lead->kebutuhan, 60) : '-' }}
-                                </p>
-                                <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-600">
-                                    <span class="text-[11px] text-slate-500">
-                                        {{ $lead->segment ? \App\Http\Controllers\LeadController::label($lead->segment) : '' }}
-                                    </span>
-                                    <span class="text-[11px] font-medium text-slate-600">
-                                        {{ $lead->assignee?->name }}
-                                    </span>
-                                </div>
-                            </div>
+                            @include('leads._pipeline-card', ['lead' => $lead, 'cardDate' => $lead->incoming_date])
                         @endforeach
                     </div>
                 </div>
@@ -99,10 +85,16 @@
 
     @if(auth()->user()->can('manage-marketing') || auth()->user()->can('manage-sales'))
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    function initPipelineDnD(retry) {
         var board = document.querySelector('.kanban-board[data-editable]');
         if (!board) return;
         if (typeof Sortable === 'undefined') {
+            // Modul pipeline-dnd.js bisa belum selesai dimuat saat tiba via
+            // wire:navigate (SPA): coba lagi sesaat, baru menyerah.
+            if ((retry || 0) < 10) {
+                setTimeout(function () { initPipelineDnD((retry || 0) + 1); }, 100);
+                return;
+            }
             console.warn('SortableJS not available, pipeline drag & drop disabled.');
             return;
         }
@@ -112,8 +104,14 @@
         var pendingChanges = new Map();
 
         board.querySelectorAll('.kanban-list').forEach(function (list) {
+            // Idempoten: lewati list yang sudah di-init (navigasi SPA bisa
+            // memanggil init ini berulang pada DOM yang sama).
+            if (list.dataset.dndInit) return;
+            list.dataset.dndInit = '1';
+            // Kolom New hanya sumber geser (tidak bisa jadi target drop).
+            var isNewSource = list.hasAttribute('data-new-source');
             new Sortable(list, {
-                group: 'leads',
+                group: isNewSource ? { name: 'leads', pull: true, put: false } : 'leads',
                 animation: 150,
                 ghostClass: 'opacity-40',
                 draggable: salesOnly ? '.kanban-card[data-mine="1"]' : '.kanban-card',
@@ -122,10 +120,10 @@
                     var newStatus = evt.to.dataset.status;
                     var oldStatus = evt.from.dataset.status;
 
-                    if (oldStatus !== newStatus) {
-                        pendingChanges.set(leadId, { newStatus: newStatus, oldStatus: oldStatus, element: evt.item });
-                    } else {
+                    if (!newStatus || oldStatus === newStatus) {
                         pendingChanges.delete(leadId);
+                    } else {
+                        pendingChanges.set(leadId, { newStatus: newStatus, oldStatus: oldStatus, element: evt.item });
                     }
 
                     [evt.from, evt.to].forEach(function (l) {
@@ -188,7 +186,9 @@
             }).then(function (data) {
                 pendingChanges.clear();
                 if (saveBtn) saveBtn.remove();
-                showToast('{{ __('Berhasil menyimpan') }} ' + data.updated + ' {{ __('perubahan') }}');
+                // Reload agar kartu pindah ke kolom yang benar
+                // (khususnya yang keluar dari kolom New).
+                window.location.reload();
             }).catch(function () {
                 alert('{{ __('Gagal menyimpan perubahan. Silakan coba lagi.') }}');
                 if (saveBtn) {
@@ -208,7 +208,12 @@
                 setTimeout(function () { toast.remove(); }, 300);
             }, 3000);
         }
-    });
+    }
+    // Full load: script di ujung body sehingga DOM sudah siap.
+    // Navigasi SPA (wire:navigate): DOMContentLoaded tidak fire lagi.
+    initPipelineDnD();
+    document.addEventListener('livewire:navigated', function () { initPipelineDnD(); });
     </script>
+    @vite(['resources/js/pipeline-dnd.js'])
     @endif
 </x-app-layout>

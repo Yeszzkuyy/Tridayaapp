@@ -39,7 +39,7 @@ class ProfileAvatarTest extends TestCase
         return new UploadedFile($path, 'avatar.jpg', 'image/jpeg', null, true);
     }
 
-    public function test_large_avatar_is_normalized_to_512px(): void
+    public function test_large_avatar_is_normalized_to_256px(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
         $user = User::factory()->create();
@@ -53,8 +53,8 @@ class ProfileAvatarTest extends TestCase
         Storage::disk('public')->assertExists($user->avatar);
 
         [$w, $h] = getimagesize(Storage::disk('public')->path($user->avatar));
-        $this->assertSame(512, $w);
-        $this->assertSame(512, $h);
+        $this->assertSame(256, $w);
+        $this->assertSame(256, $h);
     }
 
     public function test_user_can_upload_and_remove_avatar(): void

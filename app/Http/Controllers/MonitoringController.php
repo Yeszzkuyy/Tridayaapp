@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Lead;
-use App\Models\Meeting;
 use App\Models\FollowUp;
 use App\Models\Project;
 use App\Models\Invoice;
@@ -51,18 +50,6 @@ class MonitoringController extends Controller
         }
         $leadMasuk = $leadQuery->count();
 
-        // Meeting bulan ini (Sales)
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
-        $meetingQuery = Meeting::whereBetween('meeting_date', [$startOfMonth, $endOfMonth]);
-        if ($request->filled('date_from')) {
-            $meetingQuery->whereDate('meeting_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $meetingQuery->whereDate('meeting_date', '<=', $request->date_to);
-        }
-        $meetingBulanIni = $meetingQuery->count();
-
         // Invoice Outstanding (Admin) - unpaid invoices
         $invoiceQuery = Invoice::where('status', 'unpaid');
         if ($request->filled('date_from')) {
@@ -108,7 +95,6 @@ class MonitoringController extends Controller
 
         return [
             'lead_masuk' => $leadMasuk,
-            'meeting_bulan_ini' => $meetingBulanIni,
             'invoice_outstanding' => $invoiceOutstanding,
             'instalasi_proses' => $instalasiProses,
             'instalasi_selesai' => $instalasiSelesai,
@@ -118,14 +104,7 @@ class MonitoringController extends Controller
 
     private function getCustomerProgress(Request $request): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = Customer::with([
-            'leads' => fn($q) => $q->latest('created_at'),
-            'meetings' => fn($q) => $q->latest('meeting_date'),
-            'followUps' => fn($q) => $q->latest('follow_up_date'),
-            'projects' => fn($q) => $q->with(['documents', 'status'])->latest('start_date'),
-            'invoices' => fn($q) => $q->latest('issue_date'),
-            'purchaseOrders' => fn($q) => $q->latest('issue_date'),
-        ]);
+        $query = Customer::query();
 
         // Search customer
         if ($request->filled('search')) {
@@ -137,25 +116,51 @@ class MonitoringController extends Controller
             // We'll filter in the collection since it's complex
         }
 
-        $customers = $query->get();
-
-        // Add computed properties to each customer
-        $customers->transform(function ($customer) {
-            $customer->latest_activity = $this->getLatestActivity($customer);
-            $customer->overall_status = $this->getOverallStatus($customer);
-            $customer->latest_divisi = $this->getLatestDivisi($customer);
-            return $customer;
-        });
-
-        // ponytail: sort di PHP setelah full load; pindah ke subquery SQL kalau customer sudah ribuan
-        $customers = $customers
-            ->sortByDesc(fn ($c) => $c->latest_activity['date'] ?? null)
+        // Fase 1: tanggal aktivitas terakhir per customer via subquery MAX
+        // (tanpa memuat baris relasi sama sekali).
+        $ordered = $query->select('id')
+            ->withMax('leads as latest_lead_at', 'created_at')
+            ->withMax('followUps as latest_followup_at', 'follow_up_date')
+            ->withMax('projects as latest_project_at', 'start_date')
+            ->withMax('invoices as latest_invoice_at', 'issue_date')
+            ->withMax('purchaseOrders as latest_po_at', 'issue_date')
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'ts' => collect([
+                    $c->latest_lead_at, $c->latest_followup_at,
+                    $c->latest_project_at, $c->latest_invoice_at, $c->latest_po_at,
+                ])->filter()->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->getTimestamp() : (int) strtotime((string) $d))->max() ?? 0,
+            ])
+            ->sortByDesc('ts')
             ->values();
 
         $page = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $pageIds = $ordered->forPage($page, 15)->pluck('id')->all();
+
+        // Fase 2: relasi penuh hanya untuk 15 customer di halaman ini.
+        $customers = Customer::with([
+            'leads' => fn($q) => $q->latest('created_at'),
+            'followUps' => fn($q) => $q->latest('follow_up_date'),
+            'projects' => fn($q) => $q->with(['documents', 'status'])->latest('start_date'),
+            'invoices' => fn($q) => $q->latest('issue_date'),
+            'purchaseOrders' => fn($q) => $q->latest('issue_date'),
+        ])->whereIn('id', $pageIds)->get()
+            ->sortBy(fn ($c) => array_search($c->id, $pageIds))
+            ->values();
+
+        // Hitung aktivitas terbaru sekali per customer (bukan 3x).
+        $customers->transform(function ($customer) {
+            $latest = $this->getLatestActivity($customer);
+            $customer->latest_activity = $latest;
+            $customer->overall_status = $latest['overall'] ?? __('Baru');
+            $customer->latest_divisi = $latest['divisi'] ?? null;
+            return $customer;
+        });
+
         return new \Illuminate\Pagination\LengthAwarePaginator(
-            $customers->forPage($page, 15),
-            $customers->count(),
+            $customers,
+            $ordered->count(),
             15,
             $page,
             ['path' => $request->url(), 'query' => $request->query()],
@@ -177,20 +182,6 @@ class MonitoringController extends Controller
                 'icon' => 'briefcase',
                 'color' => 'blue',
                 'url' => route('leads.show', $lead),
-            ]);
-        }
-
-        // Meeting
-        foreach ($customer->meetings as $meeting) {
-            $activities->push([
-                'type' => 'meeting',
-                'label' => 'Meeting',
-                'overall' => 'Meeting',
-                'date' => $meeting->meeting_date,
-                'divisi' => 'sales',
-                'icon' => 'calendar',
-                'color' => 'green',
-                'url' => route('sales.meetings.show', $meeting),
             ]);
         }
 
@@ -255,25 +246,20 @@ class MonitoringController extends Controller
         return $latest;
     }
 
-    private function getOverallStatus(Customer $customer): string
-    {
-        // Status mengikuti aktivitas terbaru apa pun divisinya,
-        // supaya konsisten dengan kolom Divisi Terakhir Update & Waktu.
-        return $this->getLatestActivity($customer)['overall'] ?? __('Baru');
-    }
-
-    private function getLatestDivisi(Customer $customer): ?string
-    {
-        $latest = $this->getLatestActivity($customer);
-        return $latest['divisi'] ?? null;
-    }
-
     private function getAllStatuses(): array
     {
+        // Daftar status project berubah jarang: cache 1 jam
+        // (invalidasi di ProjectStatusController).
+        $teknisi = \Illuminate\Support\Facades\Cache::remember(
+            'master:project-statuses',
+            3600,
+            fn () => \App\Models\ProjectStatus::orderBy('sort_order')->pluck('name')->all()
+        );
+
         return [
-            'marketing' => ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'],
-            'sales' => ['meeting', 'followup'],
-            'teknisi' => \App\Models\ProjectStatus::orderBy('sort_order')->pluck('name')->all(),
+            'marketing' => ['cool', 'warm', 'hot', 'won', 'lost'],
+            'sales' => ['followup'],
+            'teknisi' => $teknisi,
             'admin' => ['unpaid', 'paid', 'cancelled', 'draft', 'diproses', 'selesai', 'dibatalkan'],
         ];
     }

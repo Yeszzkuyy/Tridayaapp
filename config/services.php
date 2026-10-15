@@ -39,6 +39,22 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
+        'api_key' => env('GOOGLE_API_KEY'),
+        'calendar_id' => env('GOOGLE_CALENDAR_ID'),
     ],
+
+    // Google Maps / Places (autocomplete lokasi jadwal sales). Dipakai di sisi
+    // browser — batasi key-nya di Google Cloud (HTTP referrer + Maps/Places API).
+    'google-maps' => [
+        'api_key' => env('GOOGLE_MAPS_API_KEY', env('GOOGLE_API_KEY')),
+        'region' => env('GOOGLE_MAPS_REGION', 'id'),
+    ],
+
+    /*
+    | URL template Google Docs untuk laporan survey. Diisi copy-link template
+    | Google Docs milik tim (configurable, bukan template id palsu).
+    | Bila kosong, tombol "Create Report" memakai halaman buat dokumen Google Docs.
+    */
+    'survey-report-template' => env('SURVEY_REPORT_TEMPLATE_URL', 'https://docs.google.com/document/create'),
 
 ];

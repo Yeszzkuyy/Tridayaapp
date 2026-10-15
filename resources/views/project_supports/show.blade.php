@@ -29,14 +29,9 @@
                         onsubmit="return confirm('Hapus support engineer ini dari project?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit"
-                            class="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700">
-                            Hapus
-                        </button>
+                        <x-icon-button icon="delete" type="submit" label="Hapus" title="Hapus" />
                     </form>
-                    <a href="{{ route('projects.show', $projectSupport->project) }}" class="text-sm text-red-600 hover:underline">
-                        ← Kembali ke project
-                    </a>
+                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectSupport->project) }}" title="← Kembali ke project" />
                 </div>
             </div>
 

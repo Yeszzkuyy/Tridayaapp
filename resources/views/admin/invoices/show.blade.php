@@ -7,9 +7,9 @@
             </div>
             <div class="flex gap-2">
                 @can('manage-admin')
-                    <a href="{{ route('admin.invoices.edit', $invoice) }}" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium transition">Edit</a>
+                    <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $invoice) }}" title="Edit" />
                 @endcan
-                <a href="{{ route('admin.invoices.index') }}" class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">{{ __('Kembali') }}</a>
+                <x-icon-button as="a" icon="back" href="{{ route('admin.invoices.index') }}" title="{{ __('Kembali') }}" />
             </div>
         </div>
 
@@ -36,10 +36,7 @@
                     <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Riwayat Pembayaran') }}</h3>
                     @can('manage-admin')
                         @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')
-                            <a href="{{ route('admin.payments.create', ['invoice_id' => $invoice->id]) }}"
-                               class="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition">
-                                {{ __('+ Catat Pembayaran') }}
-                            </a>
+                            <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $invoice->id]) }}" label="{{ __('+ Catat Pembayaran') }}" title="{{ __('+ Catat Pembayaran') }}" />
                         @endif
                     @endcan
                 </div>
@@ -53,9 +50,9 @@
                             </div>
                             <div class="flex gap-2">
                                 @if($payment->proof_file)
-                                    <a href="{{ route('admin.payments.proof', $payment) }}" target="_blank" class="text-accent-600 hover:text-accent-800 text-xs underline">{{ __('Bukti') }}</a>
+                                    <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" title="{{ __('Bukti') }}" />
                                 @endif
-                                <a href="{{ route('admin.payments.show', $payment) }}" class="text-accent-600 hover:text-accent-800 text-xs">Detail</a>
+                                <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $payment) }}" title="Detail" />
                             </div>
                         </div>
                         @if($payment->notes)<p class="text-xs text-slate-400 mt-1">{{ $payment->notes }}</p>@endif

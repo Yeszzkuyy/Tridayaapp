@@ -33,7 +33,7 @@ class MarketingMonitoringTest extends TestCase
 
         $customer = Customer::create(['name' => 'PT Rekap']);
         Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'won', 'assigned_to' => $junior->id]);
-        Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'new', 'assigned_to' => $junior->id]);
+        Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'cool', 'assigned_to' => $junior->id]);
 
         $this->actingAs($lead)->get(route('leads.monitoring'))
             ->assertOk()

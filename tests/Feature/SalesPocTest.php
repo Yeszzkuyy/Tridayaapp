@@ -59,7 +59,7 @@ class SalesPocTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'qualified',
+            'status' => 'hot',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $sales->id,
         ]);
@@ -84,7 +84,7 @@ class SalesPocTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $other->id,
         ]);

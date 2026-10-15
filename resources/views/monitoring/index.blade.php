@@ -33,15 +33,9 @@
                 <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
             </div>
 
-            <button type="submit"
-                    class="px-4 py-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 transition whitespace-nowrap">
-                Filter
-            </button>
+            <x-icon-button icon="filter" type="submit" title="Filter" />
 
-            <a href="{{ route('monitoring.index') }}"
-               class="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white transition whitespace-nowrap">
-                Reset
-            </a>
+            <x-icon-button as="a" icon="reset" href="{{ route('monitoring.index') }}" title="Reset" />
         </form>
 
         {{-- Divisi Filter (Checkbox) --}}
@@ -72,21 +66,6 @@
                 <div>
                     <p class="text-sm text-slate-500">{{ __('Lead Masuk') }}</p>
                     <p class="text-2xl font-bold text-slate-800">{{ $stats['lead_masuk'] ?? 0 }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Meeting Bulan Ini --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div class="flex items-center gap-3">
-                <div class="p-3 rounded-xl bg-green-50">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-sm text-slate-500">{{ __('Meeting Bulan Ini') }}</p>
-                    <p class="text-2xl font-bold text-slate-800">{{ $stats['meeting_bulan_ini'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
@@ -186,13 +165,11 @@
                                     @php
                                         $statusColors = [
                                             'Baru' => 'bg-slate-100 text-slate-800',
-                                            'Lead: new' => 'bg-blue-100 text-blue-800',
-                                            'Lead: contacted' => 'bg-blue-100 text-blue-800',
-                                            'Lead: qualified' => 'bg-purple-100 text-purple-800',
-                                            'Lead: proposal' => 'bg-orange-100 text-orange-800',
+                                            'Lead: cool' => 'bg-blue-100 text-blue-800',
+                                            'Lead: warm' => 'bg-yellow-100 text-yellow-800',
+                                            'Lead: hot' => 'bg-orange-100 text-orange-800',
                                             'Lead: won' => 'bg-green-100 text-green-800',
                                             'Lead: lost' => 'bg-red-100 text-red-800',
-                                            'Meeting' => 'bg-green-100 text-green-800',
                                             'Invoice: unpaid' => 'bg-red-100 text-red-800',
                                             'Invoice: paid' => 'bg-green-100 text-green-800',
                                             'Invoice: cancelled' => 'bg-slate-100 text-slate-800',
@@ -250,14 +227,8 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                <a href="{{ route('customers.show', $customer) }}"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 rounded-lg hover:bg-accent-100 transition">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                    {{ __('Lihat Detail') }}
-                                </a>
+                                <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}"
+                                   label="{{ __('Lihat Detail') }}" title="{{ __('Lihat Detail') }}" />
                             </td>
                         </tr>
                     @empty

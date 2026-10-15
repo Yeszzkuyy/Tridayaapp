@@ -110,7 +110,7 @@
                     <label class="flex cursor-pointer items-center justify-between gap-4 py-4 first:pt-0">
                         <span class="min-w-0">
                             <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Notifikasi Email') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, Anda tidak menerima notifikasi apa pun.') }}</span>
+                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, notifikasi email tidak dikirim (notifikasi sistem & push tetap aktif).') }}</span>
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_email" value="1" class="peer sr-only" @checked($notifyEmail)>
@@ -149,20 +149,20 @@
                      x-data="{ pushState: 'checking', pushMsg: '' }"
                      x-init="(async () => { pushState = await window.WebPush.status() })()">
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        <span x-show="pushState === 'checking'">{{ __('Memeriksa status push browser ini…') }}</span>
-                        <span x-show="pushState === 'subscribed'">{{ __('Push aktif di browser ini.') }}</span>
-                        <span x-show="pushState === 'default'">{{ __('Browser ini belum mengizinkan notifikasi.') }}</span>
-                        <span x-show="pushState === 'granted'">{{ __('Izin diberikan, tapi browser ini belum terdaftar — tekan Aktifkan.') }}</span>
-                        <span x-show="pushState === 'blocked'">{{ __('Notifikasi diblokir di browser — izinkan lewat ikon gembok di address bar.') }}</span>
-                        <span x-show="pushState === 'unsupported'">{{ __('Browser ini tidak mendukung Web Push.') }}</span>
-                        <span x-show="pushState === 'unsubscribed'">{{ __('Push nonaktif di browser ini.') }}</span>
-                        <span class="text-red-500" x-show="pushMsg" x-text="pushMsg"></span>
+                        <span x-cloak x-show="pushState === 'checking'">{{ __('Memeriksa status push browser ini…') }}</span>
+                        <span x-cloak x-show="pushState === 'subscribed'">{{ __('Push aktif di browser ini.') }}</span>
+                        <span x-cloak x-show="pushState === 'default'">{{ __('Browser ini belum mengizinkan notifikasi.') }}</span>
+                        <span x-cloak x-show="pushState === 'granted'">{{ __('Izin diberikan, tapi browser ini belum terdaftar — tekan Aktifkan.') }}</span>
+                        <span x-cloak x-show="pushState === 'blocked'">{{ __('Notifikasi diblokir di browser — izinkan lewat ikon gembok di address bar.') }}</span>
+                        <span x-cloak x-show="pushState === 'unsupported'">{{ __('Browser ini tidak mendukung Web Push.') }}</span>
+                        <span x-cloak x-show="pushState === 'unsubscribed'">{{ __('Push nonaktif di browser ini.') }}</span>
+                        <span class="text-red-500" x-cloak x-show="pushMsg" x-text="pushMsg"></span>
                     </p>
                     <div class="flex gap-2">
-                        <button type="button" x-show="pushState === 'default' || pushState === 'granted' || pushState === 'unsubscribed'"
+                        <button type="button" x-cloak x-show="pushState === 'default' || pushState === 'granted' || pushState === 'unsubscribed'"
                                 @click="pushMsg = ''; window.WebPush.enable().then(s => pushState = s).catch((e) => pushMsg = '{{ __('Gagal mengaktifkan push:') }} ' + (e && e.message ? e.message : e))"
                                 class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">{{ __('Aktifkan di browser ini') }}</button>
-                        <button type="button" x-show="pushState === 'subscribed'"
+                        <button type="button" x-cloak x-show="pushState === 'subscribed'"
                                 @click="window.WebPush.disable().then(s => pushState = s)"
                                 class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200">{{ __('Nonaktifkan') }}</button>
                     </div>

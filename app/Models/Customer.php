@@ -18,6 +18,8 @@ class Customer extends Model
         'phone',
         'whatsapp',
         'email',
+        'npwp',
+        'npwp_document_path',
         'notes',
         'status',
         'deleted_by',
@@ -38,14 +40,22 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    /**
+     * Owner bisnis untuk Trash: sales yang memegang lead customer ini.
+     * Tepat 1 sales -> owner. 0 / lebih dari 1 -> tak tentu (super-admin only).
+     * deleted_by TIDAK dipakai di sini (murni audit trail).
+     */
+    public function trashOwnerId(): ?int
+    {
+        $ids = $this->leads()->withTrashed()->whereNotNull('assigned_to')
+            ->distinct()->pluck('assigned_to');
+
+        return $ids->count() === 1 ? (int) $ids->first() : null;
+    }
+
     public function projects()
     {
         return $this->hasMany(Project::class);
-    }
-
-    public function meetings()
-    {
-        return $this->hasMany(Meeting::class);
     }
 
     public function followUps()

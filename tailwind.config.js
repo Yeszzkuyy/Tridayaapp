@@ -25,8 +25,8 @@ export default {
                 accent: cssColorScale('accent', ''),
             },
             fontFamily: {
-                sans: ['Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
-                display: ['Exo 2', 'Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
+                sans: ['Plus Jakarta Sans', 'PJSFallback', ...defaultTheme.fontFamily.sans],
+                display: ['Exo 2', 'Exo2Fallback', 'Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
             },
         },
     },

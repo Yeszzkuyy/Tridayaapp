@@ -27,18 +27,27 @@ class LeadPipelineTest extends TestCase
     {
         $customer = Customer::create(['name' => 'PT Pipeline']);
 
-        return Lead::create(array_merge([
+        $lead = Lead::create(array_merge([
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'vendor',
-            'status' => 'new',
+            'status' => 'cool',
         ], $attributes));
+        // acknowledged_at bukan fillable: set eksplisit. Default = sudah
+        // ditangani agar test lama tetap di kolom status (bukan New).
+        $lead->forceFill([
+            'acknowledged_at' => array_key_exists('acknowledged_at', $attributes)
+                ? $attributes['acknowledged_at']
+                : now(),
+        ])->save();
+
+        return $lead->fresh();
     }
 
     public function test_pipeline_page_shows_own_leads_grouped_by_status(): void
     {
         $user = $this->userWithRole('sales');
-        $this->makeLead(['status' => 'proposal', 'assigned_to' => $user->id]);
+        $this->makeLead(['status' => 'hot', 'assigned_to' => $user->id]);
         $this->makeLead(['status' => 'won', 'assigned_to' => $user->id]);
 
         $response = $this->actingAs($user)->get(route('leads.pipeline'))
@@ -46,7 +55,7 @@ class LeadPipelineTest extends TestCase
             ->assertSee('PT Pipeline');
 
         $leads = $response->viewData('leads');
-        $this->assertSame(1, $leads->where('status', 'proposal')->count());
+        $this->assertSame(1, $leads->where('status', 'hot')->count());
         $this->assertSame(1, $leads->where('status', 'won')->count());
     }
 
@@ -62,7 +71,7 @@ class LeadPipelineTest extends TestCase
             'customer_id' => $otherCustomer->id,
             'pt_group' => 'NTI',
             'segment' => 'vendor',
-            'status' => 'new',
+            'status' => 'cool',
             'assigned_to' => $other->id,
         ]);
         $this->makeLead(); // tanpa assignee
@@ -77,6 +86,83 @@ class LeadPipelineTest extends TestCase
     {
         $this->actingAs($this->userWithRole('marketing'))
             ->get(route('leads.pipeline'))->assertForbidden();
+    }
+
+    public function test_newly_assigned_lead_appears_in_new_column(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+
+        $response = $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+
+        $this->assertTrue($response->viewData('newLeads')->contains($lead));
+        $this->assertFalse($response->viewData('leads')->contains($lead));
+    }
+
+    public function test_moving_new_lead_out_acknowledges_it(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
+        ])->assertOk();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+
+        $response = $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+        $this->assertFalse($response->viewData('newLeads')->contains($lead));
+        $this->assertSame(1, $response->viewData('leads')->where('status', 'warm')->count());
+    }
+
+    public function test_moving_new_lead_to_same_status_still_acknowledges_it(): void
+    {
+        $user = $this->userWithRole('sales');
+        // Lead baru default cool + belum ditangani (kolom New virtual).
+        $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+        $this->assertSame('cool', $lead->status);
+
+        // Geser New -> Cool: status DB sama, tapi lead tetap harus diakui.
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'cool']],
+        ])->assertOk();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+
+        $response = $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+        $this->assertFalse($response->viewData('newLeads')->contains($lead));
+        $this->assertSame(1, $response->viewData('leads')->where('status', 'cool')->count());
+    }
+
+    public function test_single_status_update_with_same_status_still_acknowledges_it(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+
+        $this->actingAs($user)
+            ->patch(route('leads.update-status', $lead), ['status' => 'cool'])
+            ->assertNoContent();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+    }
+
+    public function test_reassign_returns_lead_to_new_column(): void
+    {
+        $management = $this->userWithRole('management');
+        $first = User::factory()->create();
+        $first->assignRole('sales');
+        $second = User::factory()->create();
+        $second->assignRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $first->id]);
+
+        $this->actingAs($management)
+            ->post(route('manage-sales.assign', $lead), ['assigned_to' => $second->id])
+            ->assertRedirect();
+
+        $this->assertNull($lead->fresh()->acknowledged_at);
+
+        $response = $this->actingAs($second)->get(route('leads.pipeline'))->assertOk();
+        $this->assertTrue($response->viewData('newLeads')->contains($lead));
     }
 
     public function test_management_sees_no_mixed_customers(): void
@@ -122,7 +208,7 @@ class LeadPipelineTest extends TestCase
 
         // Geser balik keluar won -> closed_at dibersihkan.
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
-            'changes' => [['lead_id' => $lead->id, 'status' => 'proposal']],
+            'changes' => [['lead_id' => $lead->id, 'status' => 'hot']],
         ])->assertOk();
         $this->assertNull($lead->fresh()->closed_at);
     }
@@ -133,10 +219,10 @@ class LeadPipelineTest extends TestCase
         $lead = $this->makeLead();
 
         $this->actingAs($user)
-            ->patch(route('leads.update-status', $lead), ['status' => 'contacted'])
+            ->patch(route('leads.update-status', $lead), ['status' => 'warm'])
             ->assertNoContent();
 
-        $this->assertSame('contacted', $lead->fresh()->status);
+        $this->assertSame('warm', $lead->fresh()->status);
         $this->assertSame(1, $lead->activities()->where('action', 'status_changed')->count());
     }
 
@@ -149,7 +235,7 @@ class LeadPipelineTest extends TestCase
             ->patch(route('leads.update-status', $lead), ['status' => 'ngawur'])
             ->assertSessionHasErrors('status');
 
-        $this->assertSame('new', $lead->fresh()->status);
+        $this->assertSame('cool', $lead->fresh()->status);
     }
 
     public function test_sales_cannot_update_unassigned_lead_status(): void
@@ -161,7 +247,7 @@ class LeadPipelineTest extends TestCase
             ->patch(route('leads.update-status', $lead), ['status' => 'won'])
             ->assertForbidden();
 
-        $this->assertSame('new', $lead->fresh()->status);
+        $this->assertSame('cool', $lead->fresh()->status);
     }
 
     public function test_sales_can_update_own_assigned_lead_status(): void
@@ -170,16 +256,16 @@ class LeadPipelineTest extends TestCase
         $lead = $this->makeLead(['assigned_to' => $user->id]);
 
         $this->actingAs($user)
-            ->patch(route('leads.update-status', $lead), ['status' => 'contacted'])
+            ->patch(route('leads.update-status', $lead), ['status' => 'warm'])
             ->assertNoContent();
 
-        $this->assertSame('contacted', $lead->fresh()->status);
+        $this->assertSame('warm', $lead->fresh()->status);
     }
 
     public function test_dashboard_shows_marketing_stats(): void
     {
         $user = $this->userWithRole('marketing');
-        $this->makeLead(['status' => 'new', 'source' => 'whatsapp', 'incoming_date' => now()]);
+        $this->makeLead(['status' => 'cool', 'source' => 'whatsapp', 'incoming_date' => now()]);
         $this->makeLead(['status' => 'won', 'source' => 'referral', 'incoming_date' => now()->subMonths(2)]);
         $this->makeLead(['status' => 'lost', 'incoming_date' => now()]);
 
@@ -188,7 +274,7 @@ class LeadPipelineTest extends TestCase
             ->assertViewHas('stats', fn ($stats) => $stats['total'] === 3
                 && $stats['won'] === 1 && $stats['conversion'] === 50)
             ->assertViewHas('funnel', fn ($funnel) => $funnel->sum('value') === 3
-                && $funnel->pluck('key')->all() === ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost']);
+                && $funnel->pluck('key')->all() === ['cool', 'warm', 'hot', 'won', 'lost']);
 
         $this->assertSame(3, Lead::count());
     }

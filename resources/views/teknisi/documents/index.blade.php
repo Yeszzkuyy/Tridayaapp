@@ -21,7 +21,7 @@
                 <option value="{{ $cat->id }}" {{ request('document_category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
             @endforeach
         </select>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium transition dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200">Filter</button>
+        <x-icon-button icon="filter" type="submit" title="Filter" />
     </form>
 
     {{-- Table --}}
@@ -57,6 +57,7 @@
                     @endforelse
                 </tbody>
             </table>
+        <div class="mt-4">{{ $documents->links() }}</div>
         </div>
     </div>
 </div>

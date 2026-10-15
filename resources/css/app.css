@@ -4,6 +4,30 @@
 @import './themes/accent/emerald.css';
 @import './sidebar-nav.css';
 
+/* Fallback metrik font web (anti-FOUT shift): Arial lokal diskala agar
+   kotak teks ≈ font asli selama font Bunny belum tiba. Angka dari metrik
+   hhea + lebar rata-rata aktual file woff2 (bukan tebakan). */
+@font-face {
+    font-family: 'PJSFallback';
+    src: local('Arial');
+    ascent-override: 103.8%;
+    descent-override: 22.2%;
+    line-gap-override: 0%;
+    size-adjust: 103.63%;
+    font-weight: 400 800;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Exo2Fallback';
+    src: local('Arial');
+    ascent-override: 99.9%;
+    descent-override: 20.1%;
+    line-gap-override: 0%;
+    size-adjust: 99.34%;
+    font-weight: 400 800;
+    font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -176,11 +200,12 @@ button, a, [type="submit"] { -webkit-tap-highlight-color: transparent; }
    ============================================================ */
 .bg-white.shadow-sm { box-shadow: var(--shadow-rest); }
 
+/* border-color sengaja TIDAK ditransisikan: kilatannya justru jadi "frame
+   putih" sepersekian detik saat wire:navigate mengganti atribut <html>. */
 main .bg-white {
     transition:
         transform 0.35s var(--ease-out),
-        box-shadow 0.35s var(--ease-out),
-        border-color 0.35s var(--ease-out);
+        box-shadow 0.35s var(--ease-out);
 }
 
 @media (hover: hover) {
@@ -655,19 +680,23 @@ tbody tr { transition: background-color 0.2s ease; }
 }
 
 /* ============================================================
-   Kartu status: center terhadap AREA KONTEN (bukan viewport),
-   kompensasi sidebar 280px (76px saat collapse) di desktop.
+   Backdrop kartu status + overlay submit: full selebar viewport
+   (redup tembus sampai area sidebar, sidebar tetap terang di atasnya
+   karena z-index-nya lebih tinggi).
+   Overlay submit (#gs-submit-overlay) mulai di bawah navbar
+   (h-16 mobile, sm:h-20).
    ============================================================ */
 .status-card-backdrop {
     left: 0;
 }
 
-@media (min-width: 1024px) {
-    .status-card-backdrop {
-        left: 280px;
-    }
+#gs-submit-overlay {
+    top: 64px;
+    left: 0;
+}
 
-    html.sidebar-collapsed .status-card-backdrop {
-        left: 76px;
+@media (min-width: 640px) {
+    #gs-submit-overlay {
+        top: 80px;
     }
 }

@@ -26,11 +26,13 @@ class WhatsappAccount extends Model
         'assigned_to',
         'is_active',
         'bot_enabled',
+        'bot_instructions',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'bot_enabled' => 'boolean',
+        'gateway_token' => 'encrypted',
     ];
 
     protected $hidden = ['gateway_token'];

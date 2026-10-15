@@ -63,7 +63,7 @@ class WebPushTest extends TestCase
 
         $lead = Lead::create([
             'customer_id' => Customer::create(['name' => 'PT Uji'])->id,
-            'status' => 'new',
+            'status' => 'cool',
         ]);
 
         $this->actingAs($manager)
@@ -105,7 +105,7 @@ class WebPushTest extends TestCase
         $user = User::factory()->create();
         $lead = Lead::create([
             'customer_id' => Customer::create(['name' => 'PT Dorong'])->id,
-            'status' => 'new',
+            'status' => 'cool',
         ]);
 
         $channels = (new NewLeadNotification($lead))->via($user);

@@ -272,6 +272,7 @@ export function initGalaxy(container, options = {}) {
 
     const update = (t) => {
         animateId = requestAnimationFrame(update);
+        if (document.hidden) return; // tab tak terlihat: hemat GPU/baterai
         if (lastT < 0) lastT = t;
         /* Delta-time smoothing: respons konsisten di FPS berapa pun
            (lerp fixed per-frame melambat saat FPS turun). */
