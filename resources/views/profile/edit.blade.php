@@ -134,12 +134,7 @@
                                 <h2 class="text-xl font-bold text-slate-800 dark:text-white">{{ __('Personal Information') }}</h2>
                                 <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Your account details') }}</p>
                             </div>
-                            <a href="{{ route('settings.advanced') }}"
-                               class="group relative inline-flex shrink-0 items-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:scale-105 hover:bg-accent-500 hover:shadow-lg hover:shadow-accent-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 active:scale-95">
-                                <span aria-hidden="true" class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
-                                <x-icon name="edit" class="h-4 w-4" />
-                                {{ __('Edit Profile') }}
-                            </a>
+                            <x-icon-button as="a" icon="edit" href="{{ route('settings.advanced') }}" label="{{ __('Edit Profile') }}" title="{{ __('Edit Profile') }}" />
                         </div>
 
                         <dl class="mt-6 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
