@@ -275,7 +275,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::post('/schedules', [TechnicianScheduleController::class, 'store'])->name('schedules.store');
         Route::put('/schedules/{schedule}', [TechnicianScheduleController::class, 'update'])->name('schedules.update');
-        Route::patch('/schedules/{schedule}/complete', [TechnicianScheduleController::class, 'complete'])->name('schedules.complete');
         Route::delete('/schedules/{schedule}', [TechnicianScheduleController::class, 'destroy'])->name('schedules.destroy');
         Route::post('/kalender/credentials', [TechnicianScheduleController::class, 'saveCredentials'])->name('kalender.credentials');
         Route::post('/kalender/sync', [TechnicianScheduleController::class, 'syncNow'])->name('kalender.sync');
