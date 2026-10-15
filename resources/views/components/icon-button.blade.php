@@ -52,8 +52,8 @@ if (!in_array($variant, ['default', 'delete'], true)) {
 }
 
 $colors = $variant === 'delete'
-    ? 'border-slate-200 bg-white text-slate-600 hover:border-red-500 hover:text-red-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-red-400 dark:hover:text-red-400'
-    : 'border-slate-200 bg-white text-slate-600 hover:border-accent-500 hover:text-accent-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:text-accent-300';
+    ? 'border-slate-200 bg-white text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white'
+    : 'border-slate-200 bg-white text-accent-600 hover:border-accent-600 hover:bg-accent-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white';
 
 $sizes = [
     'md' => 'h-10 w-10',
