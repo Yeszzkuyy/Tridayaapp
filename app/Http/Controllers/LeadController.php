@@ -72,26 +72,54 @@ class LeadController extends Controller
 
         // Pipeline selalu milik 1 sales: hanya lead yang di-assign ke viewer,
         // tanpa pengecualian role (customer tidak campur antar sales).
-        $leads = Lead::with(['customer', 'assignee', 'partner'])
-            ->where('assigned_to', $request->user()->id)
-            ->orderByDesc('incoming_date')
-            ->get();
-
-        // Kolom won/lost hanya tampilkan yang ditutup minggu berjalan agar
-        // tidak menumpuk, kecuali ?closed=all. Data lama tanpa closed_at
-        // pakai updated_at sebagai fallback.
-        $showAllClosed = $request->input('closed') === 'all';
-        $weekStart = now()->startOfWeek();
-        if (!$showAllClosed) {
-            $leads = $leads->filter(fn ($lead) => !in_array($lead->status, ['won', 'lost'], true)
-                || ($lead->closed_at ?? $lead->updated_at)?->gte($weekStart))->values();
-        }
+        // Tiap kolom kanban diambil langsung di level SQL (tanpa get() +
+        // filter Collection in-memory) agar tidak memuat seluruh lead sekaligus.
+        $base = Lead::with(['customer', 'assignee', 'partner'])
+            ->where('assigned_to', $request->user()->id);
 
         // Kolom New (virtual, bukan status DB): lead yang di-assign ke sales
         // tapi belum pernah digeser/diubah statusnya. won/lost tidak pernah New.
-        $newLeads = $leads->filter(fn ($lead) => $lead->acknowledged_at === null
-            && !in_array($lead->status, ['won', 'lost'], true))->values();
-        $leads = $leads->reject(fn ($lead) => $newLeads->contains($lead))->values();
+        $newLeads = (clone $base)->whereNull('acknowledged_at')
+            ->whereNotIn('status', ['won', 'lost'])
+            ->orderByDesc('incoming_date')
+            ->get();
+
+        $columns = [];
+        foreach (['cool', 'warm', 'hot'] as $status) {
+            $columns[] = (clone $base)->where('status', $status)
+                ->whereNotNull('acknowledged_at')
+                ->orderByDesc('incoming_date')
+                ->get();
+        }
+
+        // Kolom won/lost hanya tampilkan yang ditutup minggu berjalan agar
+        // tidak menumpuk, kecuali ?closed=all. Data lama tanpa closed_at
+        // pakai updated_at sebagai fallback (perilaku legacy dipertahankan).
+        $showAllClosed = $request->input('closed') === 'all';
+        $weekStart = now()->startOfWeek();
+        $weekEnd = now()->endOfWeek();
+        foreach (['won', 'lost'] as $status) {
+            $closedQuery = (clone $base)->where('status', $status);
+            if (! $showAllClosed) {
+                $closedQuery->where(function ($query) use ($weekStart, $weekEnd) {
+                    $query->whereBetween('closed_at', [$weekStart, $weekEnd])
+                        ->orWhere(function ($query) use ($weekStart) {
+                            $query->whereNull('closed_at')
+                                ->where('updated_at', '>=', $weekStart);
+                        });
+                });
+            }
+            $columns[] = $closedQuery->orderByDesc('incoming_date')->get();
+        }
+
+        // Bentuk viewData dipertahankan (koleksi Eloquent per status digabung
+        // via concat agar contains($model) tetap bandingkan by key) sehingga
+        // Blade dan drag-and-drop frontend tidak berubah.
+        $leads = $columns[0];
+        foreach (array_slice($columns, 1) as $column) {
+            $leads = $leads->concat($column);
+        }
+        $leads = $leads->values();
 
         $statuses = self::STATUSES;
 

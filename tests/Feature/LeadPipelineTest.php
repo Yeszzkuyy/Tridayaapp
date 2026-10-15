@@ -192,6 +192,46 @@ class LeadPipelineTest extends TestCase
         $this->assertSame(2, $response->viewData('leads')->where('status', 'won')->count());
     }
 
+    public function test_legacy_won_without_closed_at_uses_updated_at_fallback(): void
+    {
+        $user = $this->userWithRole('sales');
+        // Data lama: won tanpa closed_at tapi diupdate minggu ini → tampil.
+        $legacy = $this->makeLead(['status' => 'won', 'assigned_to' => $user->id]);
+        $legacy->forceFill(['closed_at' => null, 'updated_at' => now()])->save();
+        // Data lama yang truly basi → sembunyi.
+        $stale = $this->makeLead(['status' => 'won', 'assigned_to' => $user->id]);
+        $stale->forceFill(['closed_at' => null, 'updated_at' => now()->subMonth()])->save();
+
+        $response = $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+        $leads = $response->viewData('leads');
+        $this->assertTrue($leads->contains($legacy->fresh()));
+        $this->assertFalse($leads->contains($stale->fresh()));
+    }
+
+    public function test_projects_relation_links_by_customer_without_loading_customer(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+
+        // Membangun relasi tidak boleh menyentuh relasi customer (anti NPE).
+        $relation = $lead->projects();
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $relation);
+        $this->assertFalse($lead->relationLoaded('customer'));
+        $this->assertTrue($relation->get()->isEmpty());
+
+        // Observer Project butuh user login (Auth::id untuk activity).
+        $this->actingAs($user);
+        $project = \App\Models\Project::create([
+            'customer_id' => $lead->customer_id,
+            'work_type_id' => \App\Models\WorkType::create(['name' => 'Instalasi'])->id,
+            'pic_engineer_id' => $user->id,
+            'project_name' => 'Project Pipeline',
+        ]);
+
+        $this->assertTrue($lead->projects()->get()->contains($project));
+        $this->assertTrue($lead->fresh()->projects->contains($project));
+    }
+
     public function test_drag_to_won_stamps_closed_at(): void
     {
         $user = $this->userWithRole('sales');
