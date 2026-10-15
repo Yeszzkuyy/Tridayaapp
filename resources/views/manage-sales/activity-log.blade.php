@@ -10,10 +10,7 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('manage-sales.index') }}"
-           class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="{{ __('Kembali') }}" />
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 p-6">
@@ -36,8 +33,8 @@
                     <label for="date_to" class="sr-only">{{ __('Sampai Tanggal') }}</label>
                     <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
                 </div>
-                <button type="submit" class="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition">Filter</button>
-                <a href="{{ route('manage-sales.activity-log') }}" class="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition">Reset</a>
+                <x-icon-button icon="filter" type="submit" title="Filter" />
+                <x-icon-button as="a" icon="reset" href="{{ route('manage-sales.activity-log') }}" title="Reset" />
             </form>
         </div>
 
