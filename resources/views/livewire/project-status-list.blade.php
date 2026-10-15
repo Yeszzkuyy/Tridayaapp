@@ -69,12 +69,12 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-3">
-                                    <button wire:click="edit({{ $status->id }})" 
-                                            class="text-amber-600 hover:text-amber-800">Edit</button>
+                                <div class="flex items-center justify-end gap-3">
+                                    <x-icon-button icon="edit" label="Edit" title="Edit"
+                                           wire:click="edit({{ $status->id }})" />
                                     <button wire:click="delete({{ $status->id }})" 
                                             onclick="return confirm('Hapus status ini?')"
-                                            class="text-red-600 hover:text-red-800">Hapus</button>
+                                            class="group relative overflow-hidden rounded-lg bg-red-50 px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:bg-red-100 hover:shadow-md active:scale-95 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25">Hapus<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
                                 </div>
                             </td>
                         </tr>
@@ -108,7 +108,7 @@
                                                 Update
                                             </button>
                                             <button wire:click="cancelEdit" 
-                                                    class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition">
+                                                    class="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-xl transition">
                                                 Batal
                                             </button>
                                         </div>
