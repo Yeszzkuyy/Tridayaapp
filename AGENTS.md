@@ -76,20 +76,22 @@ dan halaman live berantakan.
 
 ## 7. Tombol (konvensi UI)
 
-Semua tombol aksi non-utama memakai gaya **putih saat idle, berwarna saat
-hover** (acuan: `projects/index.blade.php` kolom aksi, komponen
-`x-icon-button`). Peta aksi:
+Semua tombol aksi non-utama memakai gaya **putih + border tipis, berwarna
+saat hover** (acuan: komponen `x-icon-button`). Peta aksi:
 
 | Aksi | Pola standar |
 |---|---|
 | Simpan / Submit utama (Save) | `rounded-xl bg-accent-600 hover:bg-accent-500 text-white px-6 py-2.5` + shine + scale (lihat efek standar di bawah) |
 | Batal (Cancel, di form/modal) | `rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-4 py-2.5` + shine + scale |
-| Semua aksi lain (filter/reset/back/add/view/edit/...) | `<x-icon-button>` — `rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700` + scale + shine |
-| Hapus / destructive | `<x-icon-button icon="delete">` — bentuk sama, tint merah `bg-red-50 hover:bg-red-100 text-red-600` |
-| Konfirmasi hapus (tombol teks di modal) | gaya tint merah di atas + shine |
+| Semua aksi lain (filter/reset/back/add/view/edit/...) | `<x-icon-button>` — idle `rounded-lg border border-slate-200 bg-white text-slate-500`, hover `hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700` + scale + shine |
+| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih juga, hover merah `hover:border-red-500 hover:bg-red-50 hover:text-red-600` |
+| Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover `hover:border-red-500 hover:bg-red-50` + shine |
 
-Varian dark mode sudah otomatis di komponen (`dark:bg-accent-500/15`,
-`dark:text-accent-300`, dst) — jangan tulis ulang di view.
+Varian dark mode sudah otomatis di komponen (`dark:bg-slate-800`,
+`dark:border-slate-700`, hover berwarna) — jangan tulis ulang di view.
+Tooltip pill gelap hanya muncul bila prop `tooltip` diisi eksplisit
+(tanpa itu cukup `title` bawaan browser — jangan pasang tooltip di semua
+tombol baris tabel, nanti menyala bareng saat satu tombol di-hover).
 
 Efek standar tombol teks (Save/Cancel/konfirmasi): `group relative overflow-hidden` + span shine
 (`pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r
