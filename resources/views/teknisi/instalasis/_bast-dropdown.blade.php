@@ -2,7 +2,12 @@
      (MGK / NTI / TPS / WANI) dari link Google Drive "Make a copy" di env.
      Murni tautan statis yang dibuka di tab baru (tanpa Google Drive API):
      pengguna membuat salinan dokumen sendiri, template asli tidak berubah.
-     Pilihan tanpa link disembunyikan; bila semua kosong tombol tidak tampil. --}}
+     Pilihan tanpa link disembunyikan; bila semua kosong tombol tidak tampil.
+
+     Animasi hover ala switcher Month/Week/Day (RubberSegment di jadwal teknisi):
+     pill highlight meluncur halus efek spring mengikuti kursor antar item,
+     teks item berubah putih saat pill menimpanya, item mengecil sedikit saat
+     ditekan. Daftar tetap vertikal (dropdown), bukan segmen horizontal. --}}
 @php
     $bastTemplates = collect(config('services.bast-templates'))->filter();
 @endphp
@@ -10,23 +15,53 @@
 @if($bastTemplates->isNotEmpty())
     <x-dropdown align="right" width="w-56">
         <x-slot name="trigger">
-            <x-icon-button type="button" title="{{ __('Create BAST Document') }}" label="{{ __('Create BAST Document') }}">
+            <x-icon-button type="button" data-bast-trigger title="{{ __('Create BAST Document') }}" label="{{ __('Create BAST Document') }}">
                 <x-icon name="file-text" class="h-5 w-5" />
             </x-icon-button>
         </x-slot>
         <x-slot name="content">
-            <div class="py-1">
+            <div class="py-1" data-bast-menu
+                 x-data="{
+                    active: null,
+                    y: 0,
+                    h: 0,
+                    visible: false,
+                    get pillStyle() {
+                        return 'transform: translateY(' + this.y + 'px); height: ' + this.h + 'px; opacity: ' + (this.visible ? 1 : 0) + ';'
+                            + 'transition: transform 380ms cubic-bezier(0.34, 1.35, 0.64, 1), height 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 180ms ease;';
+                    },
+                    move(el, i) {
+                        this.y = el.offsetTop;
+                        this.h = el.offsetHeight;
+                        this.visible = true;
+                        this.active = i;
+                    },
+                    hide() {
+                        this.visible = false;
+                        this.active = null;
+                    },
+                    closePanel() {
+                        setTimeout(() => {
+                            const trigger = document.querySelector('[data-bast-trigger]');
+                            const root = trigger && trigger.closest('[x-data]');
+                            if (root) root.dispatchEvent(new CustomEvent('close'));
+                        }, 80);
+                    },
+                 }"
+                 @mouseleave="hide()">
                 <p class="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Choose company template') }}</p>
-                @foreach($bastTemplates as $company => $url)
-                    {{-- Item dengan hover halus: teks geser pelan + panah fade-in + warna accent --}}
-                    <a href="{{ $url }}" target="_blank" rel="noopener"
-                       class="group/bast-item flex w-full items-center justify-between gap-3 px-4 py-2 text-start text-sm leading-5 text-gray-700 transition-colors duration-300 ease-out hover:bg-accent-50 hover:text-accent-700 focus:outline-none focus:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-accent-300">
-                        <span class="transition-transform duration-300 ease-out group-hover/bast-item:translate-x-1">{{ $company }}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-                             class="h-4 w-4 -translate-x-1 opacity-0 transition-all duration-300 ease-out group-hover/bast-item:translate-x-0 group-hover/bast-item:opacity-100"
-                             aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
-                    </a>
-                @endforeach
+                <div class="relative px-1.5 pb-1.5">
+                    {{-- Pill highlight (efek spring) — mengambang di belakang teks item --}}
+                    <span class="pointer-events-none absolute left-1.5 right-1.5 top-0 rounded-lg bg-accent-600 dark:bg-accent-500"
+                          :style="pillStyle" aria-hidden="true"></span>
+                    @foreach($bastTemplates as $company => $url)
+                        <a href="{{ $url }}" target="_blank" rel="noopener"
+                           class="relative block px-4 py-2 text-start text-sm leading-5 transition-all duration-200 ease-out active:scale-[0.98]"
+                           :class="active === {{ $loop->index }} ? 'text-white' : 'text-gray-700 dark:text-slate-200'"
+                           @mouseenter="move($el, {{ $loop->index }})"
+                           @click="closePanel()">{{ $company }}</a>
+                    @endforeach
+                </div>
             </div>
         </x-slot>
     </x-dropdown>
