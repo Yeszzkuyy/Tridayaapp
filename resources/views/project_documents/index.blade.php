@@ -8,7 +8,7 @@
                 </p>
             </div>
             <div class="flex gap-2">
-                <x-icon-button as="a" icon="back" href="{{ route('customers.show', $project->customer_id) }}" title="← Kembali" />
+                <x-icon-button as="a" icon="back" href="{{ route('customers.show', $project->customer_id) }}" title="Kembali" />
             </div>
         </div>
         {{-- Upload Form --}}
