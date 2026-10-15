@@ -1,5 +1,7 @@
-{{-- Tombol ikon kotak putih + border tipis — berwarna saat hover
-     (gaya tombol aksi di menu Project). Tinggal panggil, tanpa utak-atik detail:
+{{-- Tombol ikon kotak putih + border tipis — hover mengisi background dengan
+     warna aksinya + ikon putih. Warna ikon mengikuti jenis aksi supaya tombol
+     berjajar tidak monoton: view=indigo, edit=amber, delete=merah,
+     add/sparkles=hijau, sisanya (filter/reset/back/search/...) = accent theme.
 
      <x-icon-button icon="filter" type="submit" title="Filter" />
      <x-icon-button as="a" icon="reset" href="{{ route('marketing.dashboard') }}" title="Reset" />
@@ -19,12 +21,9 @@
                                         (semua SVG inline, ikut warna teks;
                                         kosongkan + isi slot untuk ikon sendiri)
        variant : default | delete      (default: ngikut icon — delete otomatis
-                                        merah saat hover; nama lama filter/reset
-                                        tetap diterima, dipetakan ke default)
+                                        merah; nama lama filter/reset tetap
+                                        diterima, dipetakan ke default)
        size    : md (= h-10 w-10) | lg (= h-11 w-11)
-       look    : box (default, kotak rounded-lg + shine + scale) | soft
-                 (pill/circle bersih — tanpa shine, lift halus; trial di menu
-                  Project, pakai look="soft" per tombol)
        title   : title/aria-label (tooltip bawaan browser)
        tooltip : pill tooltip gelap saat hover — ISI EKSPLISIT untuk menampilkan;
                  tanpa prop ini tidak ada pill (mencegah semua tooltip di baris
@@ -39,7 +38,6 @@
     'icon' => null,
     'variant' => null,
     'size' => 'md',
-    'look' => 'box',
     'title' => '',
     'tooltip' => null,
     'label' => null,
@@ -55,9 +53,25 @@ if (!in_array($variant, ['default', 'delete'], true)) {
     $variant = 'default';
 }
 
-$colors = $variant === 'delete'
-    ? 'border-slate-200 bg-white text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white'
-    : 'border-slate-200 bg-white text-accent-600 hover:border-accent-600 hover:bg-accent-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white';
+// Warna per aksi — idle putih + ikon berwarna, hover fill warna aksi + ikon putih.
+$palettes = [
+    'accent' => 'border-slate-200 bg-white text-accent-600 hover:border-accent-600 hover:bg-accent-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white',
+    'indigo' => 'border-slate-200 bg-white text-indigo-600 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 dark:hover:border-indigo-500 dark:hover:bg-indigo-500 dark:hover:text-white',
+    'amber' => 'border-slate-200 bg-white text-amber-600 hover:border-amber-600 hover:bg-amber-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:border-amber-500 dark:hover:bg-amber-500 dark:hover:text-white',
+    'green' => 'border-slate-200 bg-white text-green-600 hover:border-green-600 hover:bg-green-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-green-400 dark:hover:border-green-500 dark:hover:bg-green-500 dark:hover:text-white',
+    'red' => 'border-slate-200 bg-white text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white',
+];
+
+$actionColor = match ($variant) {
+    'delete' => 'red',
+    default => match ($icon) {
+        'view' => 'indigo',
+        'edit' => 'amber',
+        'add', 'sparkles' => 'green',
+        default => 'accent',
+    },
+};
+$colors = $palettes[$actionColor];
 
 $sizes = [
     'md' => 'h-10 w-10',
@@ -67,22 +81,11 @@ $sizeClass = $sizes[$size] ?? $sizes['md'];
 
 $ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2';
 
-// look=soft: pill/circle bersih — transisi warna halus + lift, tanpa shine/scale.
-$soft = $look === 'soft';
-$shape = $soft ? 'rounded-full' : 'rounded-lg';
-$motion = $soft
-    ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95'
-    : 'transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95';
-
-$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden border {$shape} {$colors} {$motion} {$ring}";
+$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-lg border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
 
 // Label: tombol jadi lebih lebar (ikon + teks) dengan gap, bukan kotak icon-only.
 if ($label) {
-    $pad = $soft ? 'px-5' : 'px-4';
-    $labelMotion = $soft
-        ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95'
-        : 'transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95';
-    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden border {$shape} {$pad} text-sm font-medium {$colors} {$labelMotion} {$ring}";
+    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-lg border px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
 }
 
 $paths = [
@@ -105,7 +108,7 @@ $paths = [
     'more' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />',
 ];
 
-$shine = $soft ? '' : '<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>';
+$shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>';
 @endphp
 
 <div class="group/btn relative">
