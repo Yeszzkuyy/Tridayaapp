@@ -279,6 +279,66 @@ class TechnicianScheduleCalendarTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_lead_technician_can_edit_teammate_schedule(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $schedule = $this->makeSchedule($tech); // dibuat teknisi, bukan lead
+
+        // Lead teknisi boleh merevisi jadwal tim.
+        $this->actingAs($lead)
+            ->put(route('teknisi.schedules.update', $schedule), [
+                'title' => 'Instalasi server (revisi)',
+                'date' => '2026-10-20',
+                'start_time' => '10:00',
+                'status' => 'scheduled',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Instalasi server (revisi)', $schedule->fresh()->title);
+    }
+
+    public function test_technician_can_edit_teammate_schedule(): void
+    {
+        $owner = $this->userWithRole('technician');
+        $teammate = $this->userWithRole('technician');
+        $schedule = $this->makeSchedule($owner); // dibuat teknisi lain
+
+        // Sesama jajaran teknisi boleh merevisi jadwal tim (tombol Edit
+        // tampil untuk semua teknisi — backend harus konsisten).
+        $this->actingAs($teammate)
+            ->put(route('teknisi.schedules.update', $schedule), [
+                'title' => 'Instalasi server (revisi)',
+                'date' => '2026-10-20',
+                'start_time' => '10:00',
+                'status' => 'scheduled',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Instalasi server (revisi)', $schedule->fresh()->title);
+    }
+
+    public function test_user_without_technician_permission_gets_clear_message(): void
+    {
+        $owner = User::factory()->create();
+        $owner->assignRole('technician');
+        $outsider = User::factory()->create();
+        $outsider->assignRole('marketing'); // tanpa manage-technician
+        $schedule = $this->makeSchedule($owner);
+
+        // Non-teknisi ditolak dengan pesan yang jelas, bukan error generik.
+        $this->actingAs($outsider)
+            ->putJson(route('teknisi.schedules.update', $schedule), [
+                'title' => 'Dibajak',
+                'date' => '2026-10-20',
+                'start_time' => '10:00',
+                'status' => 'scheduled',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame('Instalasi server', $schedule->fresh()->title);
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\GoogleCalendarService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TechnicianScheduleController extends Controller
@@ -253,8 +254,18 @@ class TechnicianScheduleController extends Controller
 
     public function update(Request $request, TechnicianSchedule $schedule)
     {
-        if ($schedule->user_id !== auth()->id()) {
-            abort(403);
+        // Jajaran teknisi (manage-technician) boleh merevisi jadwal tim —
+        // konsisten dengan tombol Edit yang tampil untuk semua teknisi dan
+        // dengan store() yang tidak membatasi pembuat. Cek ini jaring
+        // pengaman bila suatu saat akses route diperlonggar.
+        if ($schedule->user_id !== auth()->id() && ! auth()->user()->can('manage-technician')) {
+            Log::warning('Edit jadwal teknisi ditolak (tanpa izin).', [
+                'schedule_id' => $schedule->id,
+                'owner_id' => $schedule->user_id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return $this->denyResponse($request, __('Kamu tidak punya izin mengubah jadwal ini.'));
         }
 
         $data = $this->validateSchedule($request);
@@ -405,6 +416,19 @@ class TechnicianScheduleController extends Controller
         unset($validated['date'], $validated['start_time'], $validated['end_time']);
 
         return $validated;
+    }
+
+    /**
+     * Respons penolakan yang jelas: JSON untuk AJAX (frontend menampilkan
+     * pesannya apa adanya), redirect + error untuk request biasa.
+     */
+    private function denyResponse(Request $request, string $message)
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => false, 'message' => $message], 403);
+        }
+
+        return back()->withErrors([$message]);
     }
 
     private function syncMessage(TechnicianSchedule $schedule): string
