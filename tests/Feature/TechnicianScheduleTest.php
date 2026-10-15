@@ -75,6 +75,32 @@ class TechnicianScheduleTest extends TestCase
         $this->assertSoftDeleted('technician_schedules', ['id' => $schedule->id]);
     }
 
+    public function test_update_via_method_spoofing_reads_form_fields(): void
+    {
+        $user = $this->teknisiUser();
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->validPayload())
+            ->assertSessionHasNoErrors();
+
+        $schedule = TechnicianSchedule::firstOrFail();
+
+        // Persis seperti browser: POST + _method=PUT di dalam form (method
+        // spoofing). Pernah gagal karena JS mengirim fetch ber-method PUT —
+        // PHP membaca isi form kosong → "field is required" untuk semua field.
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.update', $schedule), $this->validPayload([
+                '_method' => 'PUT',
+                'title' => 'Edit via spoofing',
+                'start_time' => '11:00',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $schedule->refresh();
+        $this->assertSame('Edit via spoofing', $schedule->title);
+        $this->assertSame('11:00', $schedule->start_at->setTimezone('Asia/Jakarta')->format('H:i'));
+    }
+
     public function test_validation_rejects_end_time_before_start_time(): void
     {
         $user = $this->teknisiUser();
