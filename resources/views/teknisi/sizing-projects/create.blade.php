@@ -14,10 +14,7 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Tambah Sizing Project') }}</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Catat kebutuhan customer dan usulan solusi teknis') }}</p>
         </div>
-        <a href="{{ route('teknisi.sizing-projects.index') }}"
-           class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 rounded-xl text-sm">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Kembali') }}" />
     </div>
 
     @if ($errors->any())

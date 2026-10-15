@@ -5,10 +5,7 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Tambah Instalasi') }}</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Jadwalkan instalasi baru') }}</p>
         </div>
-        <a href="{{ route('teknisi.instalasis.index') }}"
-           class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('teknisi.instalasis.index') }}" title="{{ __('Kembali') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 w-full">

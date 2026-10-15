@@ -18,10 +18,7 @@
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Edit Request Harga') }}</h1>
                 <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Perbarui daftar perangkat dan status') }}</p>
             </div>
-            <a href="{{ route('teknisi.request-hargas.show', $requestHarga) }}"
-               class="rounded-xl border border-slate-300 text-slate-700 hover:bg-white px-5 py-2.5 text-sm font-medium transition dark:border-slate-600 dark:text-slate-200">
-                {{ __('Kembali') }}
-            </a>
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.show', $requestHarga) }}" title="{{ __('Kembali') }}" />
         </div>
 
         <form action="{{ route('teknisi.request-hargas.update', $requestHarga) }}" method="POST"
@@ -60,10 +57,7 @@
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Items</label>
-                    <button type="button" @click="addItem()"
-                            class="rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 px-3 py-1.5 text-xs font-semibold transition">
-                        {{ __('+ Tambah Item') }}
-                    </button>
+                    <x-icon-button icon="add" label="{{ __('+ Tambah Item') }}" title="{{ __('+ Tambah Item') }}" @click="addItem()" />
                 </div>
 
                 <div class="space-y-3">
@@ -87,12 +81,12 @@
                                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             </div>
                             <div class="sm:col-span-1 flex items-end justify-end">
-                                <button type="button" @click="removeItem(index)" :disabled="items.length <= 1"
-                                        class="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                <x-icon-button type="button" variant="delete" @click="removeItem(index)" :disabled="items.length <= 1"
+                                               class="disabled:opacity-40 disabled:cursor-not-allowed" title="{{ __('Remove') }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                                     </svg>
-                                </button>
+                                </x-icon-button>
                             </div>
                         </div>
                     </template>

@@ -148,10 +148,7 @@
                                 class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </button>
-                        <button x-show="canManage" type="button" @click="openModal(activeDate)" title="{{ __('Add') }}" aria-label="{{ __('Add') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                        </button>
+                        <x-icon-button x-show="canManage" icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
                     </div>
                 </div>
                 <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-1">
@@ -173,10 +170,7 @@
                             <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" x-text="event.title"></button>
                             <div class="flex shrink-0 items-center gap-1">
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="statusClass(event.status)" x-text="statusLabel(event.status)"></span>
-                                <button type="button" @click="openDrawer(event)" title="{{ __('View detail') }}" aria-label="{{ __('View detail') }}"
-                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                </button>
+                                <x-icon-button icon="view" title="{{ __('View detail') }}" @click="openDrawer(event)" />
                             </div>
                         </div>
                         <p class="mt-1 text-sm font-semibold" :class="cardColor(event.id).time" x-text="fmtTime(event.start_time) + (event.end_time ? ' – ' + fmtTime(event.end_time) : '')"></p>
@@ -370,23 +364,16 @@
                             <form method="POST" :action="scheduleUrl(selected.id)" @submit.prevent="deleteSchedule($event)" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}"
-                                        class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700 transition hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                </button>
+                                <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
                             </form>
                             <div class="flex items-center gap-2">
-                                <button type="button" @click="openModal(selected.date, selected)" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}"
-                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
-                                </button>
+                                <x-icon-button icon="edit" title="{{ __('Edit') }}" @click="openModal(selected.date, selected)" />
                                 <form method="POST" :action="completeScheduleUrl(selected.id)" @submit.prevent="completeSchedule($event)" class="inline">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" title="{{ __('Mark as done') }}" aria-label="{{ __('Mark as done') }}"
-                                            class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/40 dark:hover:text-green-300">
+                                    <x-icon-button type="submit" title="{{ __('Mark as done') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                    </button>
+                                    </x-icon-button>
                                 </form>
                             </div>
                         </div>
@@ -573,15 +560,15 @@
                                 </p>
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
-                                <a x-show="!oauthConnected" href="{{ route('teknisi.kalender.connect') }}"
-                                   class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-accent-600 hover:bg-accent-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:brightness-110 active:scale-95">
+                                <x-icon-button as="a" href="{{ route('teknisi.kalender.connect') }}" x-show="!oauthConnected"
+                                               title="{{ __('Connect') }}" label="{{ __('Connect') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.02a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
-                                    {{ __('Connect') }}</a>
+                                </x-icon-button>
                                 <form x-show="oauthConnected" method="POST" action="{{ route('teknisi.kalender.disconnect') }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                            class="px-4 py-2 rounded-xl text-sm font-medium border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Disconnect') }}</button>
+                                            class="group relative overflow-hidden rounded-lg bg-red-50 px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:bg-red-100 hover:shadow-md active:scale-95 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25">{{ __('Disconnect') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
                                 </form>
                             </div>
                         </div>
