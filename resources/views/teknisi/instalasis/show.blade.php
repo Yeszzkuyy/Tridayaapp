@@ -6,6 +6,7 @@
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $instalasi->project?->project_name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
+            @include('teknisi.instalasis._bast-dropdown')
             @can('manage-technician')
             <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="Edit" />
             @endcan
