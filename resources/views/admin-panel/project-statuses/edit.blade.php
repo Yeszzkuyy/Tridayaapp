@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">Edit Project Status</h1>
                 <p class="text-slate-500 mt-1">Edit: <span class="font-semibold text-slate-700">{{ $projectStatus->name }}</span></p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('admin-panel.project-statuses.index') }}" title="{{ __('← Kembali') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('admin-panel.project-statuses.index') }}" title="{{ __('Kembali') }}" />
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full max-w-2xl">
