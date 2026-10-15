@@ -201,7 +201,7 @@
                                 <span class="truncate" x-text="event.customer"></span>
                             </span>
                             <button x-show="canWrite" type="button" @click="quickAdd(event.customer_id)" title="{{ __('Add for this customer') }}" aria-label="{{ __('Add for this customer') }}"
-                                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 transition hover:bg-slate-300 hover:text-slate-800 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
+                                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-50 hover:bg-accent-100 text-accent-700 transition dark:bg-accent-500/15 dark:text-accent-300 dark:hover:bg-accent-500/25">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke="currentColor" class="h-3 w-3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                             </button>
                         </div>
