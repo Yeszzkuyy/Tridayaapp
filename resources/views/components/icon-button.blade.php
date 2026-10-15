@@ -54,20 +54,33 @@ if (!in_array($variant, ['default', 'delete'], true)) {
 }
 
 // Warna per aksi — idle putih + ikon berwarna, hover fill warna aksi + ikon putih.
+// Setiap ikon punya identitas warna supaya tombol berjajar tidak menyatu.
 $palettes = [
     'accent' => 'border-slate-200 bg-white text-accent-600 hover:border-accent-600 hover:bg-accent-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white',
     'indigo' => 'border-slate-200 bg-white text-indigo-600 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 dark:hover:border-indigo-500 dark:hover:bg-indigo-500 dark:hover:text-white',
+    'sky' => 'border-slate-200 bg-white text-sky-600 hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-sky-400 dark:hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:text-white',
+    'violet' => 'border-slate-200 bg-white text-violet-600 hover:border-violet-600 hover:bg-violet-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-violet-400 dark:hover:border-violet-500 dark:hover:bg-violet-500 dark:hover:text-white',
     'amber' => 'border-slate-200 bg-white text-amber-600 hover:border-amber-600 hover:bg-amber-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:border-amber-500 dark:hover:bg-amber-500 dark:hover:text-white',
     'green' => 'border-slate-200 bg-white text-green-600 hover:border-green-600 hover:bg-green-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-green-400 dark:hover:border-green-500 dark:hover:bg-green-500 dark:hover:text-white',
+    'emerald' => 'border-slate-200 bg-white text-emerald-600 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400 dark:hover:border-emerald-500 dark:hover:bg-emerald-500 dark:hover:text-white',
+    'cyan' => 'border-slate-200 bg-white text-cyan-600 hover:border-cyan-600 hover:bg-cyan-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-cyan-400 dark:hover:border-cyan-500 dark:hover:bg-cyan-500 dark:hover:text-white',
+    'teal' => 'border-slate-200 bg-white text-teal-600 hover:border-teal-600 hover:bg-teal-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-teal-400 dark:hover:border-teal-500 dark:hover:bg-teal-500 dark:hover:text-white',
     'red' => 'border-slate-200 bg-white text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white',
+    'slate' => 'border-slate-200 bg-white text-slate-500 hover:border-slate-600 hover:bg-slate-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-500 dark:hover:text-white',
 ];
 
 $actionColor = match ($variant) {
     'delete' => 'red',
     default => match ($icon) {
-        'view', 'customer', 'project' => 'indigo',
+        'view' => 'indigo',
+        'customer' => 'sky',
+        'project' => 'violet',
         'edit' => 'amber',
         'add', 'sparkles' => 'green',
+        'whatsapp' => 'emerald',
+        'mail' => 'cyan',
+        'download', 'upload', 'import', 'print' => 'teal',
+        'reset', 'more' => 'slate',
         default => 'accent',
     },
 };
