@@ -63,38 +63,17 @@
 
                     <td class="px-5 py-4 sm:px-6">
                         <div class="flex justify-end gap-2">
-                            <a href="{{ route('customers.show', $customer) }}"
-                               title="{{ __('Lihat customer') }}"
-                               aria-label="{{ __('Lihat customer') }} {{ $customer->name }}"
-                               class="group/btn relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-accent-600 text-white shadow-sm transition-all duration-300 hover:scale-110 hover:bg-accent-500 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 active:scale-95">
-                                <img src="{{ asset('icons/cust-view.png') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                     class="block h-5 w-5" />
-                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                            </a>
+                            <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}" title="{{ __('Lihat customer') }}" />
 
                             @can('update', $customer)
-                                <a href="{{ route('customers.edit', $customer) }}"
-                                   title="{{ __('Edit customer') }}"
-                                   aria-label="{{ __('Edit customer') }} {{ $customer->name }}"
-                                   class="group/btn relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-accent-500 text-white shadow-sm transition-all duration-300 hover:scale-110 hover:bg-accent-400 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 active:scale-95">
-                                    <img src="{{ asset('icons/cust-edit.png') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                         class="block h-5 w-5" />
-                                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                </a>
+                                <x-icon-button as="a" icon="edit" href="{{ route('customers.edit', $customer) }}" title="{{ __('Edit customer') }}" />
                             @endcan
 
                             @can('delete', $customer)
                                 <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Hapus customer ini?') }}')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit"
-                                            title="{{ __('Hapus customer') }}"
-                                            aria-label="{{ __('Hapus customer') }} {{ $customer->name }}"
-                                            class="group/btn relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-red-600 text-white shadow-sm transition-all duration-300 hover:scale-110 hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/40 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 focus-visible:ring-offset-2 active:scale-95">
-                                        <img src="{{ asset('icons/cust-delete.png') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                             class="block h-5 w-5" />
-                                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                    </button>
+                                    <x-icon-button icon="delete" type="submit" title="{{ __('Hapus customer') }}" />
                                 </form>
                             @endcan
                         </div>

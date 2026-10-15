@@ -9,13 +9,9 @@
                     {{ __('Edit data customer:') }} <span class="font-semibold text-slate-700">{{ $customer->name }}</span>
                 </p>
             </div>
-            <a href="{{ route('customers.show', $customer) }}" 
-               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition sm:self-start">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                {{ __('Kembali ke Customer') }}
-            </a>
+            <div class="sm:self-start">
+                <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('Kembali ke Customer') }}" />
+            </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
