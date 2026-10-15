@@ -156,6 +156,8 @@
     "Isi data survey untuk project": "Fill in survey data for the project",
     "Cari project...": "Search project...",
     "Tidak ada hasil.": "No results.",
+    "Kamu tidak punya izin mengubah jadwal ini.": "You do not have permission to edit this schedule.",
+    "Sesi sudah berakhir. Muat ulang halaman lalu coba lagi.": "Session expired. Reload the page and try again.",
     "Data Survey": "Survey Data",
     "Laporan Survey": "Survey Report",
     "Simpan Survey": "Save Survey",

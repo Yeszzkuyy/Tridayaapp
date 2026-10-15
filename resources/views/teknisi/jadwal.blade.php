@@ -918,7 +918,17 @@
                             this.saveError = Object.values(data.errors || {}).flat().join(' ');
                             return;
                         }
-                        this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                        // Pesan spesifik dari server (mis. penolakan izin).
+                        const data = await r.json().catch(() => ({}));
+                        if (r.status === 403) {
+                            this.saveError = data.message || '{{ __('Kamu tidak punya izin mengubah jadwal ini.') }}';
+                            return;
+                        }
+                        if (r.status === 419) {
+                            this.saveError = '{{ __('Sesi sudah berakhir. Muat ulang halaman lalu coba lagi.') }}';
+                            return;
+                        }
+                        this.saveError = data.message || '{{ __('Terjadi kesalahan. Coba lagi.') }}';
                     }).catch(() => {
                         this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
                     });
