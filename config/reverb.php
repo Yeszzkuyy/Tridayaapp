@@ -82,8 +82,9 @@ return [
                     'scheme' => env('REVERB_SCHEME', 'https'),
                     'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
                 ],
-                // Origin browser yang boleh terhubung (koma terpisah).
-                // Produksi: kunci ke domain app; dev bisa pakai *.
+                // Origin browser yang boleh terhubung — HOST saja tanpa
+                // skema (Reverb membandingkan hasil parse_url()). Koma
+                // terpisah; * untuk dev.
                 'allowed_origins' => array_values(array_filter(array_map(
                     'trim',
                     explode(',', (string) env('REVERB_ALLOWED_ORIGINS', '*')),
