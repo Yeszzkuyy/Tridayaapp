@@ -58,6 +58,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
+            'kebutuhan' => 'IP Phone 10 unit.',
             'incoming_date' => now()->toDateString(),
         ])
             ->assertRedirect(route('leads.index'))
@@ -150,6 +151,7 @@ class LeadNotificationTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
+            'kebutuhan' => 'IP Phone 10 unit.',
             'assigned_to' => $salesB->id,
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
@@ -427,6 +429,53 @@ class LeadNotificationTest extends TestCase
             ->assertJson(['unread' => 0, 'items' => []]);
 
         $this->assertSame(0, $sales->fresh()->notifications()->count());
+    }
+
+    public function test_new_lead_notification_links_to_manage_sales(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Notif Kelola'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+        ]);
+        $management->notify(new NewLeadNotification($lead));
+
+        $expected = route('manage-sales.index');
+        $this->assertSame($expected, $management->notifications()->first()->data['url']);
+
+        $items = NotificationController::itemsFor($management);
+        $this->assertCount(1, $items);
+        $this->assertSame($expected, $items[0]['url']);
+    }
+
+    public function test_items_for_repairs_legacy_new_lead_url_to_manage_sales(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Notif Lama Kelola'])->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+        ]);
+        // Baris lama: tanpa URL, atau masih menyimpan URL halaman edit.
+        $management->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => NewLeadNotification::class,
+            'data' => [
+                'type' => 'lead',
+                'lead_id' => $lead->id,
+                'customer' => 'PT Notif Lama Kelola',
+                'url' => route('manage-sales.edit', $lead),
+            ],
+        ]);
+
+        $items = NotificationController::itemsFor($management);
+        $this->assertCount(1, $items);
+        $this->assertSame(route('manage-sales.index'), $items[0]['url']);
     }
 
     public function test_management_can_open_lead_page_from_notification_link(): void

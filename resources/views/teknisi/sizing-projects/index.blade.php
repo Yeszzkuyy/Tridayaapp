@@ -21,10 +21,7 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Sizing Projects</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Kelola hasil sizing / usulan solusi per project') }}</p>
         </div>
-        <a href="{{ route('teknisi.sizing-projects.create') }}"
-           class="inline-flex items-center px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-xl text-sm font-medium">
-            {{ __('+ Tambah Sizing') }}
-        </a>
+        <x-icon-button as="a" icon="add" href="{{ route('teknisi.sizing-projects.create') }}" label="{{ __('+ Tambah Sizing') }}" title="{{ __('+ Tambah Sizing') }}" />
     </div>
 
     @if (session('success'))
@@ -61,16 +58,10 @@
             </select>
         </div>
 
-        <button type="submit"
-                class="px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-xl text-sm font-medium">
-            Filter
-        </button>
+        <x-icon-button icon="filter" type="submit" title="Filter" />
 
         @if (request()->filled('status') || request()->filled('project_id'))
-            <a href="{{ route('teknisi.sizing-projects.index') }}"
-               class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 rounded-xl text-sm">
-                Reset
-            </a>
+            <x-icon-button as="a" icon="reset" href="{{ route('teknisi.sizing-projects.index') }}" title="Reset" />
         @endif
     </form>
 
@@ -110,22 +101,13 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    <a href="{{ route('teknisi.sizing-projects.show', $sizing) }}"
-                                       class="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-50 hover:bg-accent-100 text-accent-700">
-                                        {{ __('Lihat') }}
-                                    </a>
-                                    <a href="{{ route('teknisi.sizing-projects.edit', $sizing) }}"
-                                       class="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-100 hover:bg-accent-200 text-accent-700">
-                                        Edit
-                                    </a>
+                                    <x-icon-button as="a" icon="view" href="{{ route('teknisi.sizing-projects.show', $sizing) }}" title="{{ __('Lihat') }}" />
+                                    <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizing) }}" title="Edit" />
                                     <form action="{{ route('teknisi.sizing-projects.destroy', $sizing) }}" method="POST"
                                           onsubmit="return confirm('{{ __('Hapus sizing project ini?') }}');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                                class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-700 text-white">
-                                            {{ __('Hapus') }}
-                                        </button>
+                                        <x-icon-button icon="delete" type="submit" title="{{ __('Hapus') }}" />
                                     </form>
                                 </div>
                             </td>

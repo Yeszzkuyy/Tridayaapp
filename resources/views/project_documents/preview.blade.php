@@ -6,14 +6,9 @@
                 <p class="text-slate-500 mt-1">{{ $document->file_name }}</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('project-documents.download', $document) }}" 
-                   class="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">
-                    Download
-                </a>
-                <a href="{{ route('project-documents.index', $document->project) }}" 
-                   class="px-5 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 font-medium transition">
-                    ← Kembali
-                </a>
+                <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
+                               label="Download" title="Download" />
+                <x-icon-button as="a" icon="back" href="{{ route('project-documents.index', $document->project) }}" title="← Kembali" />
             </div>
         </div>
 
@@ -58,10 +53,8 @@
                     </svg>
                     <p class="text-slate-600 font-medium">File Office tidak bisa di-preview di browser</p>
                     <p class="text-slate-400 text-sm mt-2">Silakan download untuk membuka file</p>
-                    <a href="{{ route('project-documents.download', $document) }}" 
-                       class="mt-4 inline-block px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">
-                        Download File
-                    </a>
+                    <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
+                                   label="Download File" title="Download File" class="mt-4" />
                 </div>
 
             {{-- Lainnya --}}
@@ -72,10 +65,8 @@
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <p class="text-slate-600 font-medium">Preview tidak tersedia untuk file ini</p>
-                    <a href="{{ route('project-documents.download', $document) }}" 
-                       class="mt-4 inline-block px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">
-                        Download File
-                    </a>
+                    <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
+                                   label="Download File" title="Download File" class="mt-4" />
                 </div>
             @endif
         </div>

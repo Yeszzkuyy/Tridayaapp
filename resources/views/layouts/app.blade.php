@@ -3,8 +3,13 @@
     $accentPref = auth()->check() ? auth()->user()->preference('accent', 'ocean') : 'ocean';
     // Class dark dirender dari server agar morph wire:navigate tidak menghapusnya
     // (HTML server tanpa class = class 'dark' client terbuang -> balik light).
-    // Mode system tak bisa diputuskan di server (butuh matchMedia) — dikoreksi JS di bawah.
-    $initialDark = $themePref === 'dark';
+    // Mode system TETAP dirender 'dark' (optimistik): server tak tahu skema OS,
+    // dan bila dibiarkan kosong, replaceHtmlAttributes() Livewire menghapus class
+    // 'dark' tiap navigasi -> kilatan frame putih di mode system (OS gelap).
+    // Untuk OS terang, __applyAppearance() mengoreksi SEBELUM paint pertama
+    // (script head saat load, hook onSwap saat navigasi) jadi tak ada kilatan
+    // terbalik.
+    $initialDark = $themePref !== 'light';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
@@ -49,7 +54,42 @@
             window.__appearanceAccent = accent;
         };
         window.__applyAppearance();
-        document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); });
+        // Sinkron saat skema OS berubah (mode system) tanpa reload.
+        try {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { window.__applyAppearance(); });
+        } catch (e) {}
+        // Jaring pengaman terakhir: bila setelah paint halaman tidak sinkron
+        // dengan preferensi, pulihkan + beri tahu di console supaya celah apa
+        // pun yang tersisa ketahuan (bukan diam-diam salah tema).
+        function __appearanceSelfHeal() {
+            try {
+                var root = document.documentElement;
+                var shouldDark = window.__appearanceMode === 'dark'
+                    || (window.__appearanceMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (root.classList.contains('dark') !== shouldDark) {
+                    window.__applyAppearance();
+                    console.warn('[appearance] kelas dark tidak sinkron setelah paint — dipulihkan otomatis');
+                }
+            } catch (e) {}
+        }
+        document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); setTimeout(__appearanceSelfHeal, 120); });
+        setTimeout(__appearanceSelfHeal, 300);
+        // wire:navigate: Livewire menyalin atribut <html> dari hasil render server
+        // (replaceHtmlAttributes) — data-theme/class bisa beda dengan localStorage,
+        // sehingga halaman baru sempat ter-paint dengan tema salah (frame putih di
+        // border kartu + aksen ungu) sampai livewire:navigated memulihkannya.
+        // Hook onSwap dipanggil SETELAH body baru terpasang tapi SEBELUM paint
+        // pertama, jadi koreksi temanya tak pernah terlihat mata.
+        document.addEventListener('livewire:navigating', function (e) {
+            if (!e.detail || typeof e.detail.onSwap !== 'function') return;
+            e.detail.onSwap(function () {
+                window.__applyAppearance();
+                // Class yang dipasang JS ikut ter-reset oleh replaceHtmlAttributes.
+                var root = document.documentElement;
+                root.classList.add('js');
+                try { if (localStorage.getItem('sidebar-collapsed') === '1') root.classList.add('sidebar-collapsed'); } catch (err) {}
+            });
+        });
     </script>
 
     <script>
@@ -359,15 +399,16 @@
         // Hover pill meluncur ala template (SharedLayoutBg): satu pill
         // selebar nav mengikuti item yang di-hover. Tanpa :scope (rapuh di
         // sebagian browser) — keanggotaan dicek via nav.contains. Class
-        // html.sb-pill diset hanya setelah bind sukses, sehingga CSS yang
-        // mentransparankan hover bawaan tak pernah jalan tanpa pill.
+        // html.sb-pill/js dipasang ulang tiap panggilan (bukan sekali saja)
+        // karena morph wire:navigate menimpa atribut <html> — nav di-persist
+        // sehingga guard pillBound tetap '1' antar navigasi.
         function initHoverPill(){
             var nav=document.getElementById('sidebar-navigation');if(!nav)return;
+            document.documentElement.classList.add('js','sb-pill');
             if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
             var pill=nav.querySelector(':scope > .sb-hover-pill');
             if(!pill){pill=document.createElement('span');pill.className='sb-hover-pill';pill.setAttribute('aria-hidden','true');nav.append(pill);}
             if(nav.dataset.pillBound)return;nav.dataset.pillBound='1';
-            document.documentElement.classList.add('sb-pill');
             function place(el){
                 var x=0,y=0,node=el;
                 while(node&&node!==nav){x+=node.offsetLeft;y+=node.offsetTop;node=node.offsetParent;}
@@ -534,7 +575,12 @@
             links.forEach(function(a){
                 var p;try{p=new URL(a.href,window.location.origin).pathname.replace(/\/+$/,'')||'/';}catch(e){return;}
                 if(p!==here&&here.indexOf(p+'/')!==0)return;
-                if(p.length>bestLen){bestLen=p.length;best=a;}
+                // Header grup dan sub-item pertama URL-nya SAMA (landing grup = item pertama),
+                // header selalu muncul duluan di DOM. Saat panjang sama, menangkan sub-item
+                // agar highlight submenu pertama tidak hilang (header ikut nyala via grup di bawah).
+                var isSub=!!a.closest('.sb-sub-item');
+                var bestIsSub=!!(best&&best.closest('.sb-sub-item'));
+                if(p.length>bestLen||(p.length===bestLen&&isSub&&!bestIsSub)){bestLen=p.length;best=a;}
             });
             links.forEach(function(a){
                 var head=a.closest('.sb-head');

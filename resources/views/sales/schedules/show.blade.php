@@ -14,7 +14,10 @@
                 <p class="text-slate-500">{{ __('PIC') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->assignee?->name ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Mulai') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->start_at?->format('d M Y H:i') ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Selesai') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->end_at?->format('d M Y H:i') ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Lokasi') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->location ?? '-' }}</span></p>
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-slate-500 shrink-0">{{ __('Lokasi') }}:</span>
+                    <x-location-link :location="$schedule->location" preview class="font-medium min-w-0 flex-1" />
+                </div>
                 <p class="text-slate-500">{{ __('Dibuat oleh') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->creator?->name ?? '-' }}</span></p>
             </div>
             @if($schedule->description)
@@ -27,16 +30,17 @@
                 @endphp
                 @if($canManage)
                     <div class="flex flex-wrap gap-2 pt-2">
-                        <a href="{{ route('sales.schedules.edit', $schedule) }}"
-                           class="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium transition">{{ __('Edit') }}</a>
+                        <x-icon-button as="a" icon="edit" href="{{ route('sales.schedules.edit', $schedule) }}" title="{{ __('Edit') }}" />
                         <form action="{{ route('sales.schedules.complete', $schedule) }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Complete') }}</button>
+                            <x-icon-button type="submit" label="{{ __('Complete') }}" title="{{ __('Complete') }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </x-icon-button>
                         </form>
                         <form action="{{ route('sales.schedules.cancel', $schedule) }}" method="POST" class="inline"
                               onsubmit="return confirm('{{ __('Batalkan jadwal ini?') }}')">
                             @csrf
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Cancel') }}</button>
+                            <x-icon-button icon="delete" type="submit" title="{{ __('Cancel') }}" />
                         </form>
                     </div>
                 @endif

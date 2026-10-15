@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
-use App\Models\Meeting;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,7 +71,7 @@ class FollowUpFormTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_store_rejects_lead_and_meeting_from_other_customer(): void
+    public function test_store_rejects_lead_from_other_customer(): void
     {
         $sales = $this->salesMgk();
         $customers = $this->seedCustomers();
@@ -83,37 +82,24 @@ class FollowUpFormTest extends TestCase
             'status' => 'cool',
             'assigned_to' => $sales->id,
         ]);
-        $otherMeeting = Meeting::create([
-            'customer_id' => $customers['nti']->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Meeting NTI.',
-            'created_by' => $sales->id,
-        ]);
 
         $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
             'customer_id' => $customers['mgk']->id,
             'lead_id' => $otherLead->id,
             'description' => 'Lead silang.',
         ])->assertStatus(422);
-
-        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
-            'customer_id' => $customers['mgk']->id,
-            'meeting_id' => $otherMeeting->id,
-            'description' => 'Meeting silang.',
-        ])->assertStatus(422);
     }
 
-    public function test_type_options_offer_only_contact_methods(): void
+    public function test_type_options_offer_follow_up_activities(): void
     {
         $sales = $this->salesMgk();
 
         $html = $this->actingAs($sales)->get(route('sales.follow-ups.create'))
             ->assertOk()->getContent();
 
-        foreach (['value="call"', 'value="whatsapp"', 'value="email"', 'value="note"'] as $option) {
+        foreach (['value="whatsapp"', 'value="call"', 'value="email"', 'value="meeting"', 'value="proposal"'] as $option) {
             $this->assertStringContainsString($option, $html);
         }
-        $this->assertStringNotContainsString('value="meeting"', $html);
         $this->assertStringNotContainsString('value="follow_up"', $html);
     }
 
@@ -147,24 +133,16 @@ class FollowUpFormTest extends TestCase
             'status' => 'cool',
             'assigned_to' => $sales->id,
         ]);
-        $meeting = Meeting::create([
-            'customer_id' => $customers['mgk']->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Kickoff.',
-            'created_by' => $sales->id,
-        ]);
 
         $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
             'customer_id' => $customers['mgk']->id,
             'lead_id' => $lead->id,
-            'meeting_id' => $meeting->id,
             'type' => 'whatsapp',
             'description' => 'Kirim penawaran.',
         ])->assertRedirect(route('sales.follow-ups.index'));
 
         $fu = FollowUp::first();
         $this->assertSame($lead->id, $fu->lead_id);
-        $this->assertSame($meeting->id, $fu->meeting_id);
     }
 
     public function test_edit_page_renders_with_current_values(): void
@@ -185,76 +163,55 @@ class FollowUpFormTest extends TestCase
         $this->assertStringContainsString('Follow up lama.', $html);
     }
 
-    public function test_index_renders_meetings_and_daily_update_content(): void
+    public function test_index_renders_follow_ups_only(): void
     {
         $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
         $sales = User::factory()->create();
         $sales->assignRole('sales');
         $customer = Customer::create(['name' => 'PT Index Penuh', 'pt_group' => 'MGK']);
-        Meeting::create([
+        FollowUp::create([
             'customer_id' => $customer->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Bahas harga index.',
+            'description' => 'Follow up index penuh.',
+            'type' => 'whatsapp',
+            'follow_up_date' => now()->toDateString(),
             'created_by' => $sales->id,
         ]);
-        Lead::create([
-            'customer_id' => $customer->id,
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Follow up index penuh.', $html);
+        $this->assertStringContainsString('PT Index Penuh', $html);
+        // Halaman Follow Up murni: tanpa seksi Meeting / Daily Update.
+        $this->assertStringNotContainsString('Daily Update', $html);
+        $this->assertStringNotContainsString('id="meetings-table"', $html);
+    }
+
+    public function test_index_shows_real_lead_status_not_new_label(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
             'pt_group' => 'MGK',
             'segment' => 'vendor',
             'status' => 'cool',
             'assigned_to' => $sales->id,
         ]);
-
-        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
-            ->assertOk()->getContent();
-
-        // Tabel meetings terisi (bukan kosong seperti bug compact sebelumnya).
-        $this->assertStringContainsString('Bahas harga index.', $html);
-        // Opsi Daily Update terisi.
-        $this->assertStringContainsString('Daily Update', $html);
-        $this->assertStringContainsString('Generate Draft with AI', $html);
-        $this->assertStringContainsString('PT Index Penuh', $html);
-        // Label opsi lead Daily Update (em-dash ter-escape JSON di source).
-        $this->assertStringContainsString('PT Index Penuh \u2014 Cool', $html);
-        // Follow Ups di atas Meetings.
-        $followUpsPos = strpos($html, '>Follow Ups<');
-        $meetingsPos = strpos($html, '>Meetings<');
-        $this->assertNotFalse($followUpsPos);
-        $this->assertNotFalse($meetingsPos);
-        $this->assertLessThan($meetingsPos, $followUpsPos);
-    }
-
-    public function test_index_scopes_daily_update_customers_by_pt(): void
-    {
-        $sales = $this->salesMgk();
-        $this->seedCustomers();
-
-        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
-            ->assertOk()->getContent();
-
-        $this->assertStringContainsString('PT MGK Client (MGK)', $html);
-        $this->assertStringContainsString('PT General Client', $html);
-        $this->assertStringNotContainsString('PT NTI Client', $html);
-    }
-
-    public function test_meetings_text_search_still_filters_table(): void
-    {
-        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
-        $sales = User::factory()->create();
-        $sales->assignRole('sales');
-        $customer = Customer::create(['name' => 'PT Cari Meeting', 'pt_group' => null]);
-        Meeting::create([
-            'customer_id' => $customer->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Catatan unik xyz.',
+        FollowUp::create([
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'description' => 'Cek label status.',
+            'follow_up_date' => now()->toDateString(),
             'created_by' => $sales->id,
         ]);
 
-        $res = $this->actingAs($sales)
-            ->getJson(route('sales.follow-ups.index', ['form' => 'meetings', 'search' => 'Cari Meeting']))
-            ->assertOk();
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
+            ->assertOk()->getContent();
 
-        $this->assertStringContainsString('Catatan unik xyz.', $res->json('html'));
+        // Status asli (Cool) tampil, bukan label New khas pipeline virtual.
+        $this->assertStringContainsString('>Cool<', $html);
+        $this->assertStringNotContainsString('>New<', $html);
     }
 
     public function test_index_uses_glider_for_status_filter(): void
@@ -280,14 +237,9 @@ class FollowUpFormTest extends TestCase
             ->getJson(route('sales.follow-ups.index', ['search' => 'x']))
             ->assertOk();
         $this->assertStringNotContainsString('id="followups-table"', $res->json('html'));
-
-        $res = $this->actingAs($sales)
-            ->getJson(route('sales.follow-ups.index', ['form' => 'meetings']))
-            ->assertOk();
-        $this->assertStringNotContainsString('id="meetings-table"', $res->json('html'));
     }
 
-    public function test_full_page_has_single_table_wrapper_each(): void
+    public function test_full_page_has_single_table_wrapper(): void
     {
         $sales = $this->salesMgk();
 
@@ -295,7 +247,6 @@ class FollowUpFormTest extends TestCase
             ->assertOk()->getContent();
 
         $this->assertSame(1, substr_count($html, 'id="followups-table"'));
-        $this->assertSame(1, substr_count($html, 'id="meetings-table"'));
     }
 
     public function test_filter_form_skips_glider_submit_guard(): void

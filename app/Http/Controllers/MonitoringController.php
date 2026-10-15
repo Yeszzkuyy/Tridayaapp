@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Lead;
-use App\Models\Meeting;
 use App\Models\FollowUp;
 use App\Models\Project;
 use App\Models\Invoice;
@@ -51,18 +50,6 @@ class MonitoringController extends Controller
         }
         $leadMasuk = $leadQuery->count();
 
-        // Meeting bulan ini (Sales)
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
-        $meetingQuery = Meeting::whereBetween('meeting_date', [$startOfMonth, $endOfMonth]);
-        if ($request->filled('date_from')) {
-            $meetingQuery->whereDate('meeting_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $meetingQuery->whereDate('meeting_date', '<=', $request->date_to);
-        }
-        $meetingBulanIni = $meetingQuery->count();
-
         // Invoice Outstanding (Admin) - unpaid invoices
         $invoiceQuery = Invoice::where('status', 'unpaid');
         if ($request->filled('date_from')) {
@@ -108,7 +95,6 @@ class MonitoringController extends Controller
 
         return [
             'lead_masuk' => $leadMasuk,
-            'meeting_bulan_ini' => $meetingBulanIni,
             'invoice_outstanding' => $invoiceOutstanding,
             'instalasi_proses' => $instalasiProses,
             'instalasi_selesai' => $instalasiSelesai,
@@ -134,7 +120,6 @@ class MonitoringController extends Controller
         // (tanpa memuat baris relasi sama sekali).
         $ordered = $query->select('id')
             ->withMax('leads as latest_lead_at', 'created_at')
-            ->withMax('meetings as latest_meeting_at', 'meeting_date')
             ->withMax('followUps as latest_followup_at', 'follow_up_date')
             ->withMax('projects as latest_project_at', 'start_date')
             ->withMax('invoices as latest_invoice_at', 'issue_date')
@@ -143,7 +128,7 @@ class MonitoringController extends Controller
             ->map(fn ($c) => [
                 'id' => $c->id,
                 'ts' => collect([
-                    $c->latest_lead_at, $c->latest_meeting_at, $c->latest_followup_at,
+                    $c->latest_lead_at, $c->latest_followup_at,
                     $c->latest_project_at, $c->latest_invoice_at, $c->latest_po_at,
                 ])->filter()->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->getTimestamp() : (int) strtotime((string) $d))->max() ?? 0,
             ])
@@ -156,7 +141,6 @@ class MonitoringController extends Controller
         // Fase 2: relasi penuh hanya untuk 15 customer di halaman ini.
         $customers = Customer::with([
             'leads' => fn($q) => $q->latest('created_at'),
-            'meetings' => fn($q) => $q->latest('meeting_date'),
             'followUps' => fn($q) => $q->latest('follow_up_date'),
             'projects' => fn($q) => $q->with(['documents', 'status'])->latest('start_date'),
             'invoices' => fn($q) => $q->latest('issue_date'),
@@ -198,20 +182,6 @@ class MonitoringController extends Controller
                 'icon' => 'briefcase',
                 'color' => 'blue',
                 'url' => route('leads.show', $lead),
-            ]);
-        }
-
-        // Meeting
-        foreach ($customer->meetings as $meeting) {
-            $activities->push([
-                'type' => 'meeting',
-                'label' => 'Meeting',
-                'overall' => 'Meeting',
-                'date' => $meeting->meeting_date,
-                'divisi' => 'sales',
-                'icon' => 'calendar',
-                'color' => 'green',
-                'url' => route('sales.meetings.show', $meeting),
             ]);
         }
 
@@ -288,7 +258,7 @@ class MonitoringController extends Controller
 
         return [
             'marketing' => ['cool', 'warm', 'hot', 'won', 'lost'],
-            'sales' => ['meeting', 'followup'],
+            'sales' => ['followup'],
             'teknisi' => $teknisi,
             'admin' => ['unpaid', 'paid', 'cancelled', 'draft', 'diproses', 'selesai', 'dibatalkan'],
         ];

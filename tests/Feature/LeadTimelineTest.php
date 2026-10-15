@@ -67,29 +67,6 @@ class LeadTimelineTest extends TestCase
         $res->assertSee($lead->activities->first()->actionLabel());
     }
 
-    public function test_meeting_with_lead_logs_activity(): void
-    {
-        $sales = $this->salesUser();
-        $lead = $this->makeLead($sales);
-
-        $this->actingAs($sales)->postJson(route('sales.meetings.store'), [
-            'customer_mode' => 'existing',
-            'customer_id' => $lead->customer_id,
-            'lead_id' => $lead->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Catatan meeting test',
-        ])->assertOk();
-
-        $this->assertDatabaseHas('lead_activities', [
-            'lead_id' => $lead->id,
-            'action' => 'meeting_created',
-        ]);
-
-        $res = $this->actingAs($sales)->get(route('leads.show', $lead));
-        $res->assertOk();
-        $res->assertSee($lead->activities()->where('action', 'meeting_created')->first()->actionLabel());
-    }
-
     public function test_followup_with_lead_logs_activity(): void
     {
         $sales = $this->salesUser();
@@ -107,16 +84,14 @@ class LeadTimelineTest extends TestCase
         ]);
     }
 
-    public function test_meeting_without_lead_logs_nothing(): void
+    public function test_followup_without_lead_logs_nothing(): void
     {
         $sales = $this->salesUser();
         $customer = Customer::create(['name' => 'PT NoLead']);
 
-        $this->actingAs($sales)->postJson(route('sales.meetings.store'), [
-            'customer_mode' => 'existing',
+        $this->actingAs($sales)->postJson(route('sales.follow-ups.store'), [
             'customer_id' => $customer->id,
-            'meeting_date' => now()->toDateString(),
-            'notes' => 'Catatan meeting test',
+            'description' => 'Follow up tanpa lead',
         ])->assertOk();
 
         $this->assertDatabaseCount('lead_activities', 0);

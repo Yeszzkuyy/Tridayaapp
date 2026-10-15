@@ -6,6 +6,11 @@
         </div>
         <div class="flex gap-2">
             <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="Export CSV" />
+            <x-icon-button as="a" href="{{ route('sales.dar.export', request()->only(['date_from', 'date_to', 'user_id'])) }}" title="Export DAR">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75h6m-6-3h6m-7.5 10.5h9a2.25 2.25 0 0 0 2.25-2.25v-7.19a2.25 2.25 0 0 0-.66-1.59l-2.81-2.81a2.25 2.25 0 0 0-1.59-.66H6.75A2.25 2.25 0 0 0 4.5 7.5v11.25A2.25 2.25 0 0 0 6.75 21Z" />
+                </svg>
+            </x-icon-button>
             <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="Dashboard Sales" />
         </div>
     </div>
@@ -71,7 +76,7 @@
                                     {{ $lead->customer->contact_person ? 'PIC: '.$lead->customer->contact_person : '' }}
                                 </div>
                                 <div class="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
-                                    {{ $lead->meetings_count }} {{ __('meeting') }} • {{ $lead->follow_ups_count }} {{ __('follow up') }}
+                                    {{ $lead->follow_ups_count }} {{ __('follow up') }}
                                 </div>
                                 <div class="mt-1">
                                     @if($lead->has_done_fu)
@@ -92,7 +97,7 @@
                                         @default bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200
                                     @endswitch
                                 ">
-                                    {{ ucfirst($lead->status) }}
+                                    {{ \App\Models\Lead::salesStatusLabel($lead->status) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -119,11 +124,6 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
-                                @php
-                                    $leadWaLink = $lead->customer?->waLink(
-                                        __('Hi :name, may I follow up on our proposal.', ['name' => $lead->customer?->contact_person ?: ($lead->customer?->name ?? '')])
-                                    );
-                                @endphp
                                 <div class="flex justify-end gap-2">
                                     <a href="{{ route('leads.show', $lead) }}"
                                        title="{{ __('View details') }}"
@@ -131,16 +131,6 @@
                                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20">
                                         <x-icon name="eye" class="h-4 w-4" />
                                     </a>
-                                    @if($leadWaLink)
-                                        <a href="{{ $leadWaLink }}" target="_blank"
-                                           title="{{ __('Chat on WhatsApp') }}"
-                                           aria-label="{{ __('Chat on WhatsApp') }} {{ $lead->customer?->name }}"
-                                           class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition dark:bg-green-500/10 dark:text-green-300 dark:hover:bg-green-500/20">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true">
-                                                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m5.83 14.12c-.25.7-1.45 1.33-2.02 1.42-.52.08-1.17.12-1.89-.12-.44-.15-1-.39-1.71-.75-3.03-1.39-5-4.63-5.15-4.84-.15-.21-1.23-1.64-1.23-3.13 0-1.49.78-2.22 1.06-2.52.28-.3.61-.38.81-.38l.58.01c.19.01.44-.07.69.53.25.61.86 2.11.94 2.26.08.15.13.33.03.53-.1.2-.15.33-.3.51l-.45.53c-.15.15-.31.31-.13.61.18.3.8 1.32 1.71 2.14 1.18 1.06 2.17 1.39 2.48 1.55.3.15.48.13.66-.08l1.1-1.28c.2-.26.42-.22.71-.13.3.09 1.9.9 2.23 1.06.38.2.53.44.5.65-.27.69-.52.98-.73 1.23"/>
-                                            </svg>
-                                        </a>
-                                    @endif
                                     @if($lead->has_done_fu)
                                         <span title="{{ __('Done') }}" aria-label="{{ __('Done') }} {{ $lead->customer?->name }}"
                                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300">
@@ -154,12 +144,6 @@
                                             <x-icon name="chat" class="h-4 w-4" />
                                         </a>
                                     @endif
-                                    <a href="{{ route('sales.meetings.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}"
-                                       title="{{ __('Create Meeting') }}"
-                                       aria-label="{{ __('Create Meeting') }} {{ $lead->customer?->name }}"
-                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
-                                        <x-icon name="calendar" class="h-4 w-4" />
-                                    </a>
                                 </div>
                             </td>
                         </tr>

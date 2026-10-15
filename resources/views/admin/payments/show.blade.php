@@ -2,7 +2,7 @@
     <div>
         <div class="flex items-center justify-between mb-6">
             <div><h1 class="text-3xl font-bold text-slate-800">{{ __('Detail Pembayaran') }}</h1><p class="text-slate-500 mt-1">{{ $payment->invoice->invoice_number }}</p></div>
-            <a href="{{ route('admin.payments.index') }}" class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">{{ __('Kembali') }}</a>
+            <x-icon-button as="a" icon="back" href="{{ route('admin.payments.index') }}" title="{{ __('Kembali') }}" />
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -16,11 +16,7 @@
             @if($payment->proof_file)
             <div class="mt-6">
                 <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Bukti Transfer') }}</h3>
-                <a href="{{ route('admin.payments.proof', $payment) }}" target="_blank"
-                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    {{ __('Lihat Bukti Transfer') }}
-                </a>
+                <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" label="{{ __('Lihat Bukti Transfer') }}" title="{{ __('Lihat Bukti Transfer') }}" />
             </div>
             @endif
             @if($payment->notes)

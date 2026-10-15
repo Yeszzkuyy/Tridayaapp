@@ -38,7 +38,7 @@ class RoleMatrixTest extends TestCase
 
         $this->post(route('leads.store'), [])->assertForbidden();
         $this->post(route('admin.invoices.store'), [])->assertForbidden();
-        $this->post(route('sales.meetings.store'), [])->assertForbidden();
+        $this->get('/sales/meetings')->assertNotFound();
     }
 
     public function test_cross_division_read_only(): void
@@ -51,7 +51,7 @@ class RoleMatrixTest extends TestCase
         // Admin baca sales, tidak bisa tulis.
         $this->actingAs($this->loginAs('admin'));
         $this->get(route('sales.dashboard'))->assertOk();
-        $this->post(route('sales.meetings.store'), [])->assertForbidden();
+        $this->get('/sales/meetings')->assertNotFound();
 
         // Lead technician baca sales + admin.
         $this->actingAs($this->loginAs('lead-technician'));
@@ -89,7 +89,7 @@ class RoleMatrixTest extends TestCase
         foreach ([
             '/teknisi/dashboard', '/projects', '/teknisi/jadwal', '/teknisi/instalasis',
             '/marketing/dashboard', '/leads', '/partners',
-            '/sales/dashboard', '/sales/follow-ups',
+            '/sales/dashboard',
         ] as $link) {
             $this->assertStringContainsString($link, $html, "$link harus terlihat untuk management");
         }
@@ -123,7 +123,7 @@ class RoleMatrixTest extends TestCase
             ->getContent();
 
         // Sales: menu kerja penuh (own-lead).
-        foreach (['/sales/my-leads', '/sales/follow-ups'] as $link) {
+        foreach (['/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html);
         }
         // Teknisi & marketing: recap saja.

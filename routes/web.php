@@ -13,14 +13,13 @@ use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadTaskController;
 use App\Http\Controllers\ManageSalesController;
-use App\Http\Controllers\MeetingController;
-use App\Http\Controllers\MeetingDraftController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OfficeAssistantController;
 use App\Http\Controllers\ProductKnowledgeController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PocController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectDocumentController;
@@ -54,6 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
     Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])->name('profile.avatar.remove');
+    Route::post('/profile/cover', [ProfileController::class, 'updateCover'])->name('profile.cover.update');
+    Route::delete('/profile/cover', [ProfileController::class, 'removeCover'])->name('profile.cover.remove');
 
     // Settings (preferensi aplikasi)
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
@@ -132,15 +133,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-sales|manage-sales|view-customer')->group(function () {
         Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::get('/customers/{customer}/npwp', [CustomerController::class, 'downloadNpwp'])->name('customers.npwp');
     });
 
     // ============================================
-    // SALES — Meeting & Follow Up
+    // SALES — Follow Up
     // ============================================
     Route::middleware('permission:manage-sales')->prefix('sales')->name('sales.')->group(function () {
-        Route::resource('meetings', MeetingController::class)->except(['show']);
-        Route::get('meetings/{meeting}', [MeetingController::class, 'show'])->name('meetings.show');
-
         Route::resource('follow-ups', FollowUpController::class)->except(['show']);
         Route::get('follow-ups/{followUp}', [FollowUpController::class, 'show'])->name('follow-ups.show');
 
@@ -150,13 +149,8 @@ Route::middleware('auth')->group(function () {
         Route::post('follow-ups/{followUp}/reopen', [FollowUpController::class, 'reopen'])->name('follow-ups.reopen');
         Route::post('follow-ups/{followUp}/snooze', [FollowUpController::class, 'snooze'])->name('follow-ups.snooze');
 
-        // Follow Up create with optional pre-selected customer/meeting
+        // Follow Up create with optional pre-selected customer
         Route::get('follow-ups/create/{customer?}', [FollowUpController::class, 'create'])->name('follow-ups.create-with-customer');
-
-        // AI daily meeting drafts (generate → approve/discard)
-        Route::post('meeting-drafts', [MeetingDraftController::class, 'generate'])->name('meeting-drafts.generate');
-        Route::post('meeting-drafts/{meetingDraft}/approve', [MeetingDraftController::class, 'approve'])->name('meeting-drafts.approve');
-        Route::post('meeting-drafts/{meetingDraft}/discard', [MeetingDraftController::class, 'discard'])->name('meeting-drafts.discard');
     });
 
     // ============================================
@@ -185,16 +179,42 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/revise', [ProposalController::class, 'revise'])->name('proposals.revise');
         Route::post('proposals/{proposal}/respond', [ProposalController::class, 'respond'])->name('proposals.respond');
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
+        Route::post('proposals/{proposal}/submit-technical', [ProposalController::class, 'submitTechnical'])->name('proposals.submit-technical');
+        Route::post('proposals/{proposal}/po', [ProposalController::class, 'uploadPo'])->name('proposals.upload-po');
+        Route::post('proposals/{proposal}/convert', [ProposalController::class, 'convertToProject'])->name('proposals.convert');
+    });
+
+    Route::middleware('permission:manage-technician|manage-admin')->prefix('sales')->name('sales.')->group(function () {
+        Route::post('proposals/{proposal}/return-technical', [ProposalController::class, 'returnTechnical'])->name('proposals.return-technical');
+        Route::post('proposals/{proposal}/complete-technical', [ProposalController::class, 'completeTechnical'])->name('proposals.complete-technical');
+    });
+
+    // ============================================
+    // MASTER PRODUK (katalog BOQ proposal)
+    // ============================================
+    Route::middleware('permission:manage-sales|manage-admin')->group(function () {
+        Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::post('products', [ProductController::class, 'store'])->name('products.store');
+        Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+        Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    });
+
+    Route::middleware('permission:view-sales|manage-sales|view-admin|manage-admin')->group(function () {
+        Route::get('products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('products/picker', [ProductController::class, 'picker'])->name('products.picker');
     });
 
     Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
         Route::get('schedules', [SalesScheduleController::class, 'index'])->name('schedules.index');
+        Route::get('schedules/api', [SalesScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('schedules/{schedule}', [SalesScheduleController::class, 'show'])->name('schedules.show');
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
     });
 
     Route::middleware('permission:manage-technician')->prefix('sales')->name('sales.')->group(function () {
@@ -206,7 +226,6 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:view-sales|manage-sales')->prefix('sales')->name('sales.')->group(function () {
-        Route::get('meetings', [MeetingController::class, 'index'])->name('meetings.index');
         Route::get('follow-ups', [FollowUpController::class, 'index'])->name('follow-ups.index');
         Route::get('pocs', [PocController::class, 'index'])->name('pocs.index');
     });
@@ -247,6 +266,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-technician|manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::get('/dashboard', [TechnicianDashboardController::class, 'index'])->name('dashboard');
         Route::get('/kalender/events', [TechnicianScheduleController::class, 'events'])->name('kalender.events');
+        Route::get('/kalender/status', [TechnicianScheduleController::class, 'googleStatus'])->name('kalender.status');
+        Route::get('/schedules/api', [TechnicianScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('/jadwal/google-events', [CalendarController::class, 'googleEvents'])->name('google-events');
         Route::get('/jadwal', [TechnicianScheduleController::class, 'jadwal'])->name('jadwal');
     });
@@ -254,7 +275,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::post('/schedules', [TechnicianScheduleController::class, 'store'])->name('schedules.store');
         Route::put('/schedules/{schedule}', [TechnicianScheduleController::class, 'update'])->name('schedules.update');
+        Route::patch('/schedules/{schedule}/complete', [TechnicianScheduleController::class, 'complete'])->name('schedules.complete');
         Route::delete('/schedules/{schedule}', [TechnicianScheduleController::class, 'destroy'])->name('schedules.destroy');
+        Route::post('/kalender/credentials', [TechnicianScheduleController::class, 'saveCredentials'])->name('kalender.credentials');
+        Route::post('/kalender/sync', [TechnicianScheduleController::class, 'syncNow'])->name('kalender.sync');
         Route::get('/kalender/connect', [TechnicianScheduleController::class, 'connect'])->name('kalender.connect');
         Route::get('/kalender/callback', [TechnicianScheduleController::class, 'callback'])->name('kalender.callback');
         Route::delete('/kalender/disconnect', [TechnicianScheduleController::class, 'disconnect'])->name('kalender.disconnect');
@@ -264,9 +288,7 @@ Route::middleware('auth')->group(function () {
     // TEKNISI — Technical Workflow (Survey, Sizing, Request Harga, Instalasi, Document)
     // ============================================
     Route::middleware('permission:view-technician|manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
-        Route::get('/surveys', [\App\Http\Controllers\SurveyController::class, 'index'])->name('surveys.index');
         Route::get('/surveys/create', [\App\Http\Controllers\SurveyController::class, 'create'])->name('surveys.create');
-        Route::get('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'show'])->name('surveys.show');
         Route::get('/sizing-projects', [\App\Http\Controllers\SizingProjectController::class, 'index'])->name('sizing-projects.index');
         Route::get('/sizing-projects/create', [\App\Http\Controllers\SizingProjectController::class, 'create'])->name('sizing-projects.create');
         Route::get('/sizing-projects/{sizingProject}', [\App\Http\Controllers\SizingProjectController::class, 'show'])->name('sizing-projects.show');
@@ -279,8 +301,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/documents', [\App\Http\Controllers\DocumentRepositoryController::class, 'index'])->name('documents.index');
     });
 
+    // Baca Survey dibuka untuk Sales (dan sales-pt) yang memegang project tsb
+    // (read-only; kepemilikan dijaga di controller). Tulis tetap manage-technician.
+    Route::middleware('permission:view-technician|manage-technician|view-sales')->prefix('teknisi')->name('teknisi.')->group(function () {
+        Route::get('/surveys', [\App\Http\Controllers\SurveyController::class, 'index'])->name('surveys.index');
+        Route::get('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'show'])->name('surveys.show');
+        Route::get('/surveys/{survey}/report', [\App\Http\Controllers\SurveyController::class, 'viewReport'])->name('surveys.report.view');
+        Route::get('/surveys/{survey}/report/download', [\App\Http\Controllers\SurveyController::class, 'downloadReport'])->name('surveys.report.download');
+    });
+
     Route::middleware('permission:manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::post('/surveys', [\App\Http\Controllers\SurveyController::class, 'store'])->name('surveys.store');
+        Route::post('/surveys/{survey}/report', [\App\Http\Controllers\SurveyController::class, 'uploadReport'])->name('surveys.report.upload');
         Route::put('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'update'])->name('surveys.update');
         Route::delete('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'destroy'])->name('surveys.destroy');
         Route::get('/surveys/{survey}/edit', [\App\Http\Controllers\SurveyController::class, 'edit'])->name('surveys.edit');
@@ -462,6 +494,7 @@ Route::middleware('auth')->group(function () {
     // Lead milik sales (muncul di menu Sales)
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/dashboard', [ManageSalesController::class, 'dashboard'])->name('sales.dashboard');
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/my-leads/export', [ManageSalesController::class, 'exportMyLeads'])->name('sales.my-leads.export');
+    Route::middleware('permission:view-sales|manage-sales')->get('/sales/dar/export', [ManageSalesController::class, 'exportDar'])->name('sales.dar.export');
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/my-leads', [ManageSalesController::class, 'myLeads'])->name('sales.my-leads');
 
     // ============================================

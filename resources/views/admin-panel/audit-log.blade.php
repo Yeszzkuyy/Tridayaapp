@@ -26,8 +26,8 @@
                         <option value="deleted" {{ request('action') === 'deleted' ? 'selected' : '' }}>Deleted</option>
                     </select>
                 </div>
-                <button type="submit" class="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition">Filter</button>
-                <a href="{{ route('admin-panel.audit-log') }}" class="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition">Reset</a>
+                <x-icon-button icon="filter" type="submit" title="Filter" />
+                <x-icon-button as="a" icon="reset" href="{{ route('admin-panel.audit-log') }}" title="Reset" />
             </form>
         </div>
 

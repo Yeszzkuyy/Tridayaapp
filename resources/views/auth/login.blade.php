@@ -552,5 +552,17 @@
             }
         })();
     </script>
+    <script>
+        // Reset posisi chatbot ke kanan-bawah tiap tiba di halaman login
+        // (habis logout / sesi berakhir / ganti user di browser yang sama).
+        // Kunci per-user tak diketahui saat guest → sapu semua ber-prefix.
+        // Riwayat percakapan (3dy.ai.v2.conv.*) sengaja dipertahankan.
+        try {
+            Object.keys(localStorage)
+                .filter((k) => k.indexOf('3dy.ai.v2.pos.') === 0
+                             || k.indexOf('3dy.ai.v2.chatoff.') === 0)
+                .forEach((k) => localStorage.removeItem(k));
+        } catch (e) {}
+    </script>
 </body>
 </html>

@@ -5,10 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">{{ __('Tambah Work Type') }}</h1>
                 <p class="text-slate-500 mt-1">{{ __('Buat data jenis pekerjaan baru') }}</p>
             </div>
-            <a href="{{ route('admin-panel.work-types.index') }}" 
-               class="px-5 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 font-medium transition">
-                {{ __('← Kembali') }}
-            </a>
+            <x-icon-button as="a" icon="back" href="{{ route('admin-panel.work-types.index') }}" title="{{ __('← Kembali') }}" />
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full max-w-2xl">
@@ -30,7 +27,7 @@
                         {{ __('Simpan') }}
                     </button>
                     <a href="{{ route('admin-panel.work-types.index') }}" 
-                       class="px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition">
+                       class="px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-medium transition">
                         {{ __('Batal') }}
                     </a>
                 </div>

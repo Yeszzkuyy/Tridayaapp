@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Ai\Agents\OfficeAssistant;
 use App\Rules\SecureFile;
+use App\Services\ConversationTitle;
 use App\Support\KnowledgeBaseCitations;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -87,6 +88,10 @@ class OfficeAssistantController extends Controller
 
     public function send(Request $request): JsonResponse
     {
+        // Normalisasi dulu agar pesan berisi spasi tak terlihat / baris
+        // kosong di ujung tidak lolos validasi dan tidak tersimpan.
+        $request->merge(['message' => ConversationTitle::cleanMessage($request->input('message'))]);
+
         $validated = $request->validate([
             'message' => ['nullable', 'string', 'max:2000', 'required_without:attachments'],
             'conversation_id' => ['nullable', 'string'],
@@ -125,10 +130,9 @@ class OfficeAssistantController extends Controller
         try {
             $attachments = $this->storeAttachments($request, $storedPaths);
             $agent = new OfficeAssistant;
+            $serverBusy = false;
 
-            $response = $conversation
-                ? $agent->continue($conversation->id, as: $user)->prompt($prompt, $attachments)
-                : $agent->forUser($user)->prompt($prompt, $attachments);
+            [$response, $serverBusy] = $this->promptResilient($agent, $conversation, $user, $prompt, $attachments);
 
             $conversation = $user->conversations()->findOrFail($response->conversationId);
 
@@ -143,9 +147,77 @@ class OfficeAssistantController extends Controller
             Log::error('OfficeAssistant gagal merespons: '.$e->getMessage(), ['exception' => $e]);
 
             return response()->json([
-                'message' => __('Maaf, asisten tidak dapat merespons saat ini. Coba lagi beberapa saat.'),
+                'message' => ! empty($serverBusy)
+                    ? __('Server AI sedang sibuk. Coba lagi sebentar.')
+                    : __('Maaf, asisten tidak dapat merespons saat ini. Coba lagi beberapa saat.'),
             ], 500);
         }
+    }
+
+    /**
+     * Kirim prompt dengan daya tahan: coba lagi maks 3x untuk gagal
+     * sementara (server sibuk/timeout); kalau pencarian dokumen
+     * (FileSearch) ditolak penyedia, ulangi tanpa Knowledge Base.
+     * Baris DB baru ditulis setelah respons sukses, jadi aman diulang.
+     *
+     * @return array{0: mixed, 1: bool} respons + flag "server sibuk"
+     *
+     * @throws Throwable
+     */
+    private function promptResilient(
+        OfficeAssistant $agent,
+        ?Conversation $conversation,
+        \App\Models\User $user,
+        string $prompt,
+        array $attachments,
+    ): array {
+        $serverBusy = false;
+        $sendOnce = fn () => $conversation
+            ? $agent->continue($conversation->id, as: $user)->prompt($prompt, $attachments)
+            : $agent->forUser($user)->prompt($prompt, $attachments);
+
+        for ($try = 1; ; $try++) {
+            try {
+                return [$sendOnce(), $serverBusy];
+            } catch (Throwable $e) {
+                if ($this->isFileSearchUnsupported($e) && filled(config('ai.knowledge_base.store_id'))) {
+                    config(['ai.knowledge_base.store_id' => null]);
+                    Log::warning('OfficeAssistant: FileSearch tak didukung, ulangi tanpa Knowledge Base.');
+                    $serverBusy = true;
+
+                    continue;
+                }
+
+                if ($try >= 3 || ! self::isTransientAiError($e)) {
+                    throw $e;
+                }
+
+                $serverBusy = true;
+                Log::warning("OfficeAssistant: percobaan {$try} gagal sementara, coba lagi.", [
+                    'error' => mb_substr($e->getMessage(), 0, 200),
+                ]);
+                sleep($try);
+            }
+        }
+    }
+
+    public static function isFileSearchUnsupported(Throwable $e): bool
+    {
+        return str_contains($e->getMessage(), 'FileSearch')
+            && str_contains($e->getMessage(), 'does not support');
+    }
+
+    public static function isTransientAiError(Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+
+        foreach (['[429]', '[500]', '[502]', '[503]', '[504]', 'ResourceExhausted', 'overloaded', 'timed out', 'cURL error', 'Could not resolve', 'Connection refused', 'Connection reset'] as $needle) {
+            if (str_contains($msg, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -192,7 +264,7 @@ class OfficeAssistantController extends Controller
             ->map(fn ($message) => [
                 'id' => $message->id,
                 'role' => $message->role,
-                'content' => $message->content,
+                'content' => ConversationTitle::cleanContent($message->content),
                 'sources' => $message->role === 'assistant'
                     ? KnowledgeBaseCitations::resolve(($message->meta ?? [])['citations'] ?? [])
                     : [],
@@ -215,7 +287,7 @@ class OfficeAssistantController extends Controller
     {
         return [
             'id' => $conversation->id,
-            'title' => $conversation->title ?: __('Percakapan baru'),
+            'title' => ConversationTitle::smart($conversation->title),
             'updated_at' => $conversation->updated_at?->toISOString(),
         ];
     }

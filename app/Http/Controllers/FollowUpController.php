@@ -7,13 +7,10 @@ use App\Http\Controllers\Concerns\LocksLeadLink;
 use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
-use App\Models\Meeting;
-use App\Models\MeetingDraft;
 use App\Services\SalesService;
 use App\Support\PtAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class FollowUpController extends Controller
 {
@@ -24,39 +21,15 @@ class FollowUpController extends Controller
     public function index(Request $request)
     {
         $followUps = $this->salesService->getFollowUps($request->only(['search', 'customer_id', 'lead_id', 'overdue']));
-        $meetings = $this->salesService->getMeetings($request->only(['search', 'customer_id', 'lead_id', 'date_from', 'date_to']));
-
-        // Filter section Meetings via AJAX: refresh hanya tabel meetings.
-        if (($request->ajax() || $request->wantsJson()) && $request->get('form') === 'meetings') {
-            return response()->json(['ok' => true, 'html' => view('sales.meetings._table', compact('meetings'))->render()]);
-        }
-
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
-        $leads = $this->leadOptions();
-        $drafts = MeetingDraft::pending()->ownedBy(auth()->id())
-            ->with(['customer:id,name', 'lead:id,customer_id,status'])
-            ->latest()
-            ->limit(5)
-            ->get();
-
-        // Opsi siap-pakai untuk picker di blok Daily Update (scoped PT).
-        $duCustomers = $this->customerOptions(auth()->user());
-        $filterCustomers = $this->customerOptions(auth()->user(), false);
-        $duLeads = $leads->map(fn ($lead) => [
-            'id' => (string) $lead->id,
-            'customer_id' => (string) $lead->customer_id,
-            'label' => "Lead #{$lead->id} — ".($lead->customer->name ?? '?').' — '.ucfirst($lead->status),
-        ])->all();
 
         return $this->ajaxPartial($request, 'sales.follow-ups._table',
-            compact('followUps', 'meetings', 'customers', 'leads', 'drafts', 'duCustomers', 'duLeads', 'filterCustomers'),
+            compact('followUps'),
             'sales.follow-ups.index');
     }
 
     public function create(Request $request)
     {
         $customerId = $request->integer('customer_id') ?: null;
-        $meetingId = $request->integer('meeting_id') ?: null;
         $leadId = $request->integer('lead_id') ?: null;
         if ($leadId && ($lead = Lead::find($leadId))) {
             $customerId = $lead->customer_id;
@@ -65,9 +38,7 @@ class FollowUpController extends Controller
         return view('sales.follow-ups.create', [
             'customerOptions' => $this->customerOptions(auth()->user()),
             'leadItems' => $this->leadItems(auth()->user()),
-            'meetingItems' => $this->meetingItems(auth()->user()),
             'customerId' => $customerId,
-            'meetingId' => $meetingId,
             'leadId' => $leadId,
         ]);
     }
@@ -77,17 +48,30 @@ class FollowUpController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
-            'meeting_id' => 'nullable|exists:meetings,id',
             'description' => 'required|string',
-            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES)),
+            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
             'follow_up_date' => 'nullable|date',
+            'activity_time' => 'nullable|date_format:H:i',
+            'location' => 'nullable|string|max:150',
             'next_follow_up_date' => 'nullable|date',
         ]);
 
         $this->assertConsistentRelations($validated);
         $this->lockLeadLink($validated);
 
-        $this->salesService->createFollowUp($validated);
+        $followUp = $this->salesService->createFollowUp($validated);
+
+        // Form Log Follow Up di detail lead minta balik ke lead-nya.
+        if ($request->input('return') === 'lead' && $followUp->lead_id) {
+            return redirect()->route('leads.show', $followUp->lead_id)
+                ->with('success', __('Log follow up berhasil dicatat.'));
+        }
+
+        // Modal tambah jadwal di Weekly Strip minta balik ke kalendernya.
+        if ($request->input('return') === 'schedule') {
+            return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
+                ->with('success', __('Jadwal kunjungan berhasil ditambah.'));
+        }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
             __('Follow up berhasil dicatat.'), ['redirect' => route('sales.follow-ups.index')]);
@@ -95,7 +79,7 @@ class FollowUpController extends Controller
 
     public function show(FollowUp $followUp)
     {
-        $followUp->load(['customer', 'meeting', 'creator', 'lead.customer']);
+        $followUp->load(['customer', 'creator', 'lead.customer']);
         return view('sales.follow-ups.show', compact('followUp'));
     }
 
@@ -111,10 +95,8 @@ class FollowUpController extends Controller
             'followUp' => $followUp,
             'customerOptions' => $options,
             'leadItems' => $this->leadItems(auth()->user()),
-            'meetingItems' => $this->meetingItems(auth()->user()),
             'customerId' => $followUp->customer_id,
             'leadId' => $followUp->lead_id,
-            'meetingId' => $followUp->meeting_id,
         ]);
     }
 
@@ -123,10 +105,11 @@ class FollowUpController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
-            'meeting_id' => 'nullable|exists:meetings,id',
             'description' => 'required|string',
-            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES)),
+            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
             'follow_up_date' => 'nullable|date',
+            'activity_time' => 'nullable|date_format:H:i',
+            'location' => 'nullable|string|max:150',
             'next_follow_up_date' => 'nullable|date',
         ]);
 
@@ -149,6 +132,12 @@ class FollowUpController extends Controller
     public function complete(Request $request, FollowUp $followUp)
     {
         $this->salesService->completeFollowUp($followUp);
+
+        // Drawer detail di jadwal sales minta balik ke kalendernya.
+        if ($request->input('return') === 'schedule') {
+            return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
+                ->with('success', __('Jadwal kunjungan selesai.'));
+        }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
             __('Follow up selesai.'), ['redirect' => route('sales.follow-ups.index')]);
@@ -180,7 +169,7 @@ class FollowUpController extends Controller
     }
 
     /**
-     * Opsi lead untuk blok Daily Update (model, sama seperti halaman meeting lama).
+     * Opsi lead untuk form follow-up.
      */
     private function leadOptions()
     {
@@ -230,35 +219,13 @@ class FollowUpController extends Controller
             ->map(fn ($lead) => [
                 'id' => (string) $lead->id,
                 'customer_id' => (string) $lead->customer_id,
-                'label' => "Lead #{$lead->id} — ".ucfirst($lead->status)
+                'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
                     .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
             ])->all();
     }
 
     /**
-     * Meeting untuk dropdown: label unik "tgl — ringkasan".
-     */
-    private function meetingItems($user): array
-    {
-        $query = Meeting::latest('meeting_date')->limit(200);
-        if (PtAccess::isSalesLike($user) && !$user->can('manage-marketing')) {
-            $ownCustomerIds = Lead::where('assigned_to', $user->id)->pluck('customer_id');
-            $query->where(fn ($q) => $q
-                ->whereIn('customer_id', $ownCustomerIds)
-                ->orWhere('created_by', $user->id));
-        }
-
-        return $query->get(['id', 'customer_id', 'meeting_date', 'notes', 'user_needs'])
-            ->map(fn ($meeting) => [
-                'id' => (string) $meeting->id,
-                'customer_id' => (string) $meeting->customer_id,
-                'label' => $meeting->meeting_date->format('d M Y').' — '
-                    .Str::limit($meeting->notes ?: $meeting->user_needs ?: '-', 40),
-            ])->all();
-    }
-
-    /**
-     * Pastikan customer/lead/meeting saling terkait dan customer
+     * Pastikan customer/lead saling terkait dan customer
      * memang boleh ditulis user ini. Gagalkan, jangan diam-diam timpa.
      */
     private function assertConsistentRelations(array $validated): void
@@ -270,12 +237,6 @@ class FollowUpController extends Controller
             $lead = Lead::find($validated['lead_id']);
             abort_if(!$lead || (int) $lead->customer_id !== (int) $validated['customer_id'],
                 422, __('Lead yang dipilih bukan milik customer ini.'));
-        }
-
-        if (!empty($validated['meeting_id'])) {
-            $meeting = Meeting::find($validated['meeting_id']);
-            abort_if(!$meeting || (int) $meeting->customer_id !== (int) $validated['customer_id'],
-                422, __('Meeting yang dipilih bukan milik customer ini.'));
         }
     }
 }

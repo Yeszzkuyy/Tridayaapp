@@ -164,12 +164,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                 <div>
                     <label for="kebutuhan" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                        {{ __('Kebutuhan') }}
+                        {{ __('Kebutuhan') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('Ringkasan apa yang dibutuhkan user: produk, jumlah, dan apakah termasuk instalasi.') }}" />
                     </label>
-                    <textarea name="kebutuhan" id="kebutuhan" rows="2"
+                    <textarea name="kebutuhan" id="kebutuhan" rows="2" required
                               placeholder="{{ __('cth: Kebutuhan Cisco IP Phone 780 Series dengan instalasi') }}"
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('kebutuhan', $prefill['kebutuhan'] ?? '') }}</textarea>
+                    @error('kebutuhan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
             </div>
         </section>

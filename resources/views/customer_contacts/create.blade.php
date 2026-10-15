@@ -9,10 +9,7 @@
                     {{ __('Tambah PIC untuk customer:') }} <span class="font-semibold text-slate-700">{{ $customer->name }}</span>
                 </p>
             </div>
-            <a href="{{ route('customers.show', $customer) }}" 
-               class="px-5 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 font-medium transition">
-                {{ __('← Kembali ke Customer') }}
-            </a>
+            <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('← Kembali ke Customer') }}" />
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
@@ -93,7 +90,7 @@
                         {{ __('Simpan PIC') }}
                     </button>
                     <a href="{{ route('customers.show', $customer) }}" 
-                       class="px-6 py-3 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition text-base">
+                       class="px-6 py-3 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-medium transition text-base">
                         {{ __('Batal') }}
                     </a>
                 </div>

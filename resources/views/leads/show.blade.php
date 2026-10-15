@@ -22,35 +22,27 @@
                     || auth()->user()?->can('manage-admin');
             @endphp
             @if($canConvert && !in_array($lead->status, ['won', 'lost']))
-                <button type="button"
+                <x-icon-button type="button"
                         onclick="openConvertModal()"
-                        title="{{ __('Convert to Project') }}" aria-label="{{ __('Convert to Project') }}"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                        title="{{ __('Convert to Project') }}">
                     <x-icon name="briefcase" class="h-5 w-5" />
-                </button>
+                </x-icon-button>
             @endif
             @can('manage-marketing')
-                <a href="{{ route('leads.edit', $lead) }}"
-                   title="{{ __('Edit lead') }}" aria-label="{{ __('Edit lead') }}"
-                   class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                    <x-icon name="edit" class="h-5 w-5" />
-                </a>
+                <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}"
+                    title="{{ __('Edit lead') }}" />
                 <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline-flex">
                     @csrf @method('DELETE')
-                    <button type="submit"
+                    <x-icon-button icon="delete" type="submit"
                             onclick="return confirm('{{ __('Delete this lead?') }}')"
-                            title="{{ __('Delete lead') }}" aria-label="{{ __('Delete lead') }}"
-                            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                        <x-icon name="trash" class="h-5 w-5" />
-                    </button>
+                            title="{{ __('Delete lead') }}" />
                 </form>
             @endcan
             @if(auth()->user()->can('view-sales') || auth()->user()->can('manage-sales'))
-                <a href="{{ route('leads.pipeline') }}"
-                   title="{{ __('Back to Pipeline') }}" aria-label="{{ __('Back to Pipeline') }}"
-                   class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                <x-icon-button as="a" href="{{ route('leads.pipeline') }}"
+                   title="{{ __('Back to Pipeline') }}">
                     <x-icon name="view-columns" class="h-5 w-5" />
-                </a>
+                </x-icon-button>
             @endif
             <x-icon-button as="a" icon="back"
                 href="{{ (auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing')) ? route('leads.index') : route('sales.my-leads') }}"
@@ -70,30 +62,21 @@
     @if($canSalesWrite && ($activeTechRequest || $sentProposal))
         <div class="flex flex-wrap items-center gap-2 mb-4">
             @if($activeTechRequest)
-                <a href="{{ route('sales.technical-requests.show', $activeTechRequest) }}" title="{{ __('View technical request') }}" aria-label="{{ __('View technical request') }}"
-                   class="inline-flex min-w-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium bg-amber-100 hover:bg-amber-200 text-amber-800 transition-all duration-300 hover:scale-105 active:scale-95 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">
+                <x-icon-button as="a" href="{{ route('sales.technical-requests.show', $activeTechRequest) }}" title="{{ __('View technical request') }}"
+                   label="{{ \App\Models\TechnicalRequest::statusLabel($activeTechRequest->status) }} • {{ $activeTechRequest->title }}">
                     <x-icon name="tools" class="h-5 w-5 shrink-0" />
-                    <span class="truncate">{{ \App\Models\TechnicalRequest::statusLabel($activeTechRequest->status) }} • {{ $activeTechRequest->title }}</span>
-                </a>
+                </x-icon-button>
             @endif
             @if($sentProposal)
-                <a href="{{ route('sales.proposals.show', $sentProposal) }}" title="{{ __('View proposal') }}" aria-label="{{ __('View proposal') }}"
-                   class="inline-flex min-w-0 items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium bg-green-100 hover:bg-green-200 text-green-800 transition-all duration-300 hover:scale-105 active:scale-95 dark:bg-green-500/10 dark:text-green-300 dark:hover:bg-green-500/20">
+                <x-icon-button as="a" href="{{ route('sales.proposals.show', $sentProposal) }}" title="{{ __('View proposal') }}"
+                   label="{{ $sentProposal->proposal_number }} • {{ \App\Models\Proposal::statusLabel($sentProposal->status) }}">
                     <x-icon name="receipt" class="h-5 w-5 shrink-0" />
-                    <span class="truncate">{{ $sentProposal->proposal_number }} • {{ \App\Models\Proposal::statusLabel($sentProposal->status) }}</span>
-                </a>
+                </x-icon-button>
             @endif
         </div>
     @endif
 
     @php
-        $statusColors = [
-            'cool' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-            'warm' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-            'hot' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
-            'won' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-            'lost' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-        ];
         $nextSchedule = $upcomingSchedules->first();
         $lastTimeline = ($timeline ?? collect())->first();
     @endphp
@@ -101,7 +84,7 @@
     {{-- Hero ringkasan: status + info sekilas + langkah berikutnya --}}
     <section aria-label="{{ __('Ringkasan Lead') }}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
         <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusColors[$lead->status] ?? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200' }}">
+            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ \App\Models\Lead::statusBadgeClasses($lead->status) }}">
                 {{ ucfirst($lead->status) }}
             </span>
             @if($lead->segment)
@@ -143,20 +126,13 @@
                 @endif
             </div>
             @if($nextSchedule)
-                <a href="{{ route('sales.schedules.show', $nextSchedule) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                   class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                    <x-icon name="eye" class="h-5 w-5" />
-                </a>
+                <x-icon-button as="a" icon="view" href="{{ route('sales.schedules.show', $nextSchedule) }}" title="{{ __('View details') }}" class="shrink-0" />
             @elseif($lastTimeline && $lastTimeline['url'])
-                <a href="{{ $lastTimeline['url'] }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                   class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                    <x-icon name="eye" class="h-5 w-5" />
-                </a>
+                <x-icon-button as="a" icon="view" href="{{ $lastTimeline['url'] }}" title="{{ __('View details') }}" class="shrink-0" />
             @elseif($canSalesWrite)
-                <a href="{{ route('sales.schedules.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add schedule') }}" aria-label="{{ __('Add schedule') }}"
-                   class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                <x-icon-button as="a" href="{{ route('sales.schedules.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add schedule') }}" class="shrink-0">
                     <x-icon name="calendar" class="h-5 w-5" />
-                </a>
+                </x-icon-button>
             @endif
         </div>
     </section>
@@ -273,10 +249,9 @@
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ ($upcomingSchedules->concat($pastSchedules))->count() }}</span>
                     </h2>
                     @if($canSalesWrite)
-                        <a href="{{ route('sales.schedules.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add schedule') }}" aria-label="{{ __('Add schedule') }}"
-                           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                        <x-icon-button as="a" href="{{ route('sales.schedules.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add schedule') }}" class="shrink-0">
                             <x-icon name="calendar" class="h-5 w-5" />
-                        </a>
+                        </x-icon-button>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">
@@ -294,10 +269,7 @@
                                     • {{ \App\Models\SalesSchedule::statusLabel($schedule->status) }}
                                 </p>
                             </div>
-                            <a href="{{ route('sales.schedules.show', $schedule) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                               class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="eye" class="h-5 w-5" />
-                            </a>
+                            <x-icon-button as="a" icon="view" href="{{ route('sales.schedules.show', $schedule) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
                         <p class="text-slate-500">{{ __('Belum ada jadwal untuk lead ini.') }}</p>
@@ -316,10 +288,9 @@
                         @endif
                     </h2>
                     @if($canSalesWrite)
-                        <a href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add proposal') }}" aria-label="{{ __('Add proposal') }}"
-                           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                        <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add proposal') }}" class="shrink-0">
                             <x-icon name="receipt" class="h-5 w-5" />
-                        </a>
+                        </x-icon-button>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">
@@ -332,10 +303,7 @@
                                 <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $proposal->proposal_number }}</p>
                                 <p class="mt-1 text-xs text-slate-500">Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</p>
                             </div>
-                            <a href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                               class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="eye" class="h-5 w-5" />
-                            </a>
+                            <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
                         <p class="text-slate-500">{{ __('Belum ada penawaran untuk lead ini.') }}</p>
@@ -343,26 +311,72 @@
                 </div>
             </section>
 
-            <section aria-labelledby="card-riwayat" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
+            <section x-data="{ open: {{ $errors->any() ? 'true' : 'false' }}, activity: @js(old('type', 'whatsapp')) }" aria-labelledby="card-riwayat" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
                     <h2 id="card-riwayat" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="chat" class="h-5 w-5 text-slate-400" />
-                        {{ __('Riwayat Meeting & Follow Up') }}
+                        {{ __('Log Follow Up') }}
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ ($timeline ?? collect())->count() }}</span>
                     </h2>
                     @can('manage-sales')
-                        <div class="flex shrink-0 items-center gap-2">
-                            <a href="{{ route('sales.meetings.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Add meeting') }}" aria-label="{{ __('Add meeting') }}"
-                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="calendar" class="h-5 w-5" />
-                            </a>
-                            <a href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Add follow up') }}" aria-label="{{ __('Add follow up') }}"
-                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="chat" class="h-5 w-5" />
-                            </a>
-                        </div>
+                        <x-icon-button icon="add" :title="__('Log follow up')" x-on:click="open = !open" />
                     @endcan
                 </div>
+                @can('manage-sales')
+                    <form x-show="open" x-cloak method="POST" action="{{ route('sales.follow-ups.store') }}"
+                          class="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700/40">
+                        @csrf
+                        <input type="hidden" name="return" value="lead">
+                        <input type="hidden" name="customer_id" value="{{ $lead->customer_id }}">
+                        <input type="hidden" name="lead_id" value="{{ $lead->id }}">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <label for="log-activity-type" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Activity Type') }}</label>
+                                <select id="log-activity-type" name="type" x-model="activity" required
+                                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                                    @foreach(\App\Models\FollowUp::LOG_TYPES as $logType)
+                                        <option value="{{ $logType }}" @selected(old('type') === $logType)>{{ \App\Models\FollowUp::typeLabel($logType) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="log-activity-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Date') }}</label>
+                                <input type="date" id="log-activity-date" name="follow_up_date" required
+                                       value="{{ old('follow_up_date', date('Y-m-d')) }}"
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                            </div>
+                            <div x-show="activity === 'meeting'" x-cloak>
+                                <label for="log-activity-time" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Time (optional)') }}</label>
+                                <input type="time" id="log-activity-time" name="activity_time" value="{{ old('activity_time') }}"
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                            </div>
+                            <div x-show="activity === 'meeting'" x-cloak>
+                                <label for="log-activity-location" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Location (optional)') }}</label>
+                                <input type="text" id="log-activity-location" name="location" maxlength="150" value="{{ old('location') }}"
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="log-activity-detail" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Detail') }} <span class="text-red-500">*</span></label>
+                            <textarea id="log-activity-detail" name="description" rows="3" required
+                                      placeholder="{{ __('What did you do or learn? Keep it short...') }}"
+                                      class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">{{ old('description') }}</textarea>
+                            @error('description') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="submit"
+                                    class="group relative overflow-hidden rounded-xl bg-accent-600 px-5 py-2 font-medium text-white transition-all duration-300 hover:scale-105 hover:bg-accent-500 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
+                                {{ __('Save') }}
+                            </button>
+                            <button type="button" x-on:click="open = false"
+                                    class="group relative overflow-hidden rounded-xl border border-slate-300 px-5 py-2 font-medium text-slate-700 transition-all duration-300 hover:scale-105 hover:bg-white active:scale-95 dark:border-slate-600 dark:text-slate-200">
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
+                                {{ __('Cancel') }}
+                            </button>
+                        </div>
+                    </form>
+                @endcan
                 <div class="mt-3 space-y-2">
                     @forelse($timeline ?? [] as $item)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
@@ -373,18 +387,17 @@
                                 <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $item['summary'] ?: '-' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">
                                     {{ $item['date'] ? \Carbon\Carbon::parse($item['date'])->format('d M Y') : '-' }}
+                                    @if(!empty($item['time'])) • {{ substr((string) $item['time'], 0, 5) }} @endif
+                                    @if(!empty($item['location'])) • {{ $item['location'] }} @endif
                                     @if($item['by']) • {{ $item['by'] }} @endif
                                 </p>
                             </div>
                             @if($item['url'])
-                                <a href="{{ $item['url'] }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                                   class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                    <x-icon name="eye" class="h-5 w-5" />
-                                </a>
+                                <x-icon-button as="a" icon="view" href="{{ $item['url'] }}" title="{{ __('View details') }}" class="shrink-0" />
                             @endif
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada meeting atau follow up untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('Belum ada log follow up untuk lead ini.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -429,10 +442,9 @@
                             || ((int) $lead->assigned_to === (int) auth()->id() && auth()->user()?->can('manage-sales'));
                     @endphp
                     @if($canRequestTask)
-                        <a href="{{ route('lead-tasks.create', ['lead_id' => $lead->id]) }}" title="{{ __('Request inside sales') }}" aria-label="{{ __('Request inside sales') }}"
-                           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                        <x-icon-button as="a" href="{{ route('lead-tasks.create', ['lead_id' => $lead->id]) }}" title="{{ __('Request inside sales') }}" class="shrink-0">
                             <x-icon name="user" class="h-5 w-5" />
-                        </a>
+                        </x-icon-button>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">
@@ -464,10 +476,9 @@
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $techRequests->count() }}</span>
                     </h2>
                     @if($canSalesWrite && !$activeTechRequest)
-                        <a href="{{ route('sales.technical-requests.create', ['lead_id' => $lead->id]) }}" title="{{ __('Request technical team') }}" aria-label="{{ __('Request technical team') }}"
-                           class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                        <x-icon-button as="a" href="{{ route('sales.technical-requests.create', ['lead_id' => $lead->id]) }}" title="{{ __('Request technical team') }}" class="shrink-0">
                             <x-icon name="tools" class="h-5 w-5" />
-                        </a>
+                        </x-icon-button>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">
@@ -486,10 +497,7 @@
                                     <p class="mt-1 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{{ $tech->technical_result }}</p>
                                 @endif
                             </div>
-                            <a href="{{ route('sales.technical-requests.show', $tech) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                               class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="eye" class="h-5 w-5" />
-                            </a>
+                            <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $tech) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
                         <p class="text-slate-500">{{ __('Belum ada technical request untuk lead ini.') }}</p>
@@ -544,12 +552,11 @@
                         <dd class="mt-1 flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
                             @if($waLink)
                                 <a href="{{ $waLink }}" target="_blank" rel="noopener" class="hover:underline">{{ $lead->customer->whatsapp }}</a>
-                                <a href="{{ $waLink }}" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"
-                                   class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95 dark:bg-green-500/10 dark:text-green-300 dark:hover:bg-green-500/20">
+                                <x-icon-button as="a" href="{{ $waLink }}" target="_blank" rel="noopener" title="WhatsApp" class="shrink-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
                                         <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m5.83 14.12c-.25.7-1.45 1.33-2.02 1.42-.52.08-1.17.12-1.89-.12-.44-.15-1-.39-1.71-.75-3.03-1.39-5-4.63-5.15-4.84-.15-.21-1.23-1.64-1.23-3.13 0-1.49.78-2.22 1.06-2.52.28-.3.61-.38.81-.38l.58.01c.19.01.44-.07.69.53.25.61.86 2.11.94 2.26.08.15.13.33.03.53-.1.2-.15.33-.3.51l-.45.53c-.15.15-.31.31-.13.61.18.3.8 1.32 1.71 2.14 1.18 1.06 2.17 1.39 2.48 1.55.3.15.48.13.66-.08l1.1-1.28c.2-.26.42-.22.71-.13.3.09 1.9.9 2.23 1.06.38.2.53.44.5.65-.27.69-.52.98-.73 1.23"/>
                                     </svg>
-                                </a>
+                                </x-icon-button>
                             @else
                                 {{ $lead->customer?->whatsapp ?? '-' }}
                             @endif
@@ -583,34 +590,18 @@
                                     {{ \App\Models\LeadDocument::categoryLabel($doc->category) }}
                                 </span>
                                 <div class="flex items-center gap-2 shrink-0">
-                                    <button type="button" title="{{ __('View') }}" aria-label="{{ __('View') }}"
+                                    <x-icon-button icon="view" type="button" title="{{ __('View') }}"
                                             data-url="{{ route('leads.attachments.show', [$lead, $doc]) }}"
                                             data-filename="{{ $doc->file_name }}"
                                             data-mime="{{ $doc->mime_type }}"
-                                            onclick="openPreviewModal(this.dataset.url, this.dataset.filename, this.dataset.mime)"
-                                            class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-                                        </svg>
-                                    </button>
-                                    <a href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="Download" aria-label="Download"
-                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
-                                        </svg>
-                                    </a>
+                                            onclick="openPreviewModal(this.dataset.url, this.dataset.filename, this.dataset.mime)" />
+                                    <x-icon-button as="a" icon="download" href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="Download" />
                                     @can('manage-marketing')
                                         <form action="{{ route('leads.attachments.destroy', [$lead, $doc]) }}" method="POST"
                                               onsubmit="return confirm('{{ __('Delete this attachment?') }}')" class="inline-flex">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}"
-                                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
-                                                </svg>
-                                            </button>
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
                                         </form>
                                     @endcan
                                     @can('manage-marketing')
@@ -666,16 +657,13 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 flex gap-2">
-                                        <a href="{{ route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id]) }}"
-                                           class="px-3 py-1.5 text-xs rounded-lg bg-accent-100 text-accent-700 hover:bg-accent-200 font-medium transition">
-                                            Download
-                                        </a>
+                                        <x-icon-button as="a" icon="download" href="{{ route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id]) }}"
+                                           label="Download" title="Download" />
                                         @if($doc->is_image || $doc->is_pdf)
-                                            <a href="{{ route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id]) }}"
+                                            <x-icon-button as="a" icon="view"
+                                               href="{{ route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id]) }}"
                                                target="_blank"
-                                               class="px-3 py-1.5 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">
-                                                {{ __('Pratinjau') }}
-                                            </a>
+                                               label="{{ __('Pratinjau') }}" title="{{ __('Pratinjau') }}" />
                                         @endif
                                     </div>
                                 </div>

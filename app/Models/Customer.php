@@ -18,6 +18,8 @@ class Customer extends Model
         'phone',
         'whatsapp',
         'email',
+        'npwp',
+        'npwp_document_path',
         'notes',
         'status',
         'deleted_by',
@@ -54,11 +56,6 @@ class Customer extends Model
     public function projects()
     {
         return $this->hasMany(Project::class);
-    }
-
-    public function meetings()
-    {
-        return $this->hasMany(Meeting::class);
     }
 
     public function followUps()

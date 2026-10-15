@@ -9,61 +9,134 @@
             </svg>
         </button>
 
-        {{-- Breadcrumb dinamis dari nama route --}}
+        {{-- Breadcrumb dinamis: label mengikuti locale & menampilkan menu (grup + sub-menu) sesuai route --}}
         @php
             $currentRoute = request()->route()?->getName() ?? '';
-            $routeParts = explode('.', $currentRoute);
-            $sectionLabels = [
-                'dashboard' => __('Dashboard'),
-                'customers' => __('Customer'),
-                'customer-contacts' => __('Kontak Customer'),
-                'manage-sales' => __('Manage Sales'),
-                'sales' => __('Sales'),
-                'leads' => __('Lead'),
-                'teknisi' => __('Teknisi'),
-                'settings' => __('Pengaturan'),
-                'profile' => __('Profil'),
-                'partners' => __('Partner'),
+            $dashboardUrl = \Illuminate\Support\Facades\Route::has('dashboard') ? route('dashboard') : url('/');
+            $crumbs = [['label' => __('Dashboard'), 'url' => $dashboardUrl]];
+
+            // [prefix route, [label grup, label sub-menu, ...]]. Prefix terpanjang dicocokkan lebih dulu,
+            // supaya mis. 'leads.pipeline' tidak tertelan 'leads'.
+            $crumbMap = [
+                ['manage-sales.activity-log',       ['Management', 'Activity Log']],
+                ['manage-sales',                    ['Management', 'Manage Sales']],
+                ['manage.marketing',                ['Management', 'Manage Marketing']],
+                ['manage.technical',                ['Management', 'Manage Technical']],
+                ['manage.admin',                    ['Management', 'Manage Admin']],
+                ['teknisi.dashboard',               ['Teknisi', 'Dashboard Teknisi']],
+                ['teknisi.jadwal',                  ['Teknisi', 'Jadwal']],
+                ['teknisi.surveys',                 ['Teknisi', 'Survey']],
+                ['teknisi.sizing-projects',         ['Teknisi', 'Sizing Project']],
+                ['teknisi.request-hargas',          ['Teknisi', 'Request Harga']],
+                ['teknisi.instalasis',              ['Teknisi', 'Instalasi']],
+                ['teknisi.documents',               ['Teknisi', 'Document']],
+                ['projects',                        ['Teknisi', 'Project']],
+                ['marketing.dashboard',             ['Marketing', 'Marketing Dashboard']],
+                ['whatsapp-center',                 ['Marketing', 'WhatsApp Center']],
+                ['sales.dashboard',                 ['Sales', 'Sales Dashboard']],
+                ['sales.my-leads',                  ['Sales', 'My Leads']],
+                ['sales.follow-ups',                ['Sales', 'Follow Up']],
+                ['sales.schedules',                 ['Sales', 'Schedule']],
+                ['sales.proposals',                 ['Sales', 'Proposal']],
+                ['products',                        ['Sales', 'Products']],
+                ['sales.pocs',                      ['Sales', 'POC/Demo']],
+                ['sales.technical-requests',        ['Sales', 'Technical Request']],
+                ['sales',                           ['Sales']],
+                ['leads.pipeline',                  ['Sales', 'Pipeline']],
+                ['leads.activities',                ['Marketing', 'Log Aktivitas']],
+                ['leads.monitoring',                ['Marketing', 'Monitoring']],
+                ['leads',                           ['Marketing', 'Lead / Opportunity']],
+                ['partners',                        ['Marketing', 'Data Partner']],
+                ['marketing',                       ['Marketing']],
+                ['monitoring',                      ['Monitoring']],
+                ['lead-tasks',                      ['Sales', 'Inside Sales']],
+                ['admin-panel.index',               ['Admin Panel', 'User Management']],
+                ['admin-panel.account-managers',    ['Admin Panel', 'Account Manager']],
+                ['admin-panel.work-types',          ['Admin Panel', 'Work Type']],
+                ['admin-panel.document-categories', ['Admin Panel', 'Document Category']],
+                ['admin-panel.project-statuses',    ['Admin Panel', 'Project Status']],
+                ['admin-panel.audit-log',           ['Admin Panel', 'Audit Log']],
+                ['admin-panel.users',               ['Admin Panel', 'User Management']],
+                ['admin-panel.roles',               ['Admin Panel', 'User Management']],
+                ['admin-panel',                     ['Admin Panel']],
+                ['admin.invoices',                  ['Admin', 'Invoice']],
+                ['admin.pos',                       ['Admin', 'Purchase Order']],
+                ['admin.payments',                  ['Admin', 'Payment']],
+                ['admin',                           ['Admin']],
+                ['trash',                           ['Trash']],
+                ['knowledge-base',                  ['Knowledge Base']],
+                ['product-knowledge',               ['Product KB']],
+                ['customers',                       ['Customer']],
+                ['customer-contacts',               ['Customer', 'Contact']],
+                ['ai.assistant',                    ['AI Assistant']],
+                ['settings',                        ['Settings']],
+                ['profile',                         ['Profile']],
             ];
+            // Aksi yang tidak menambah crumb (halaman list/POST) atau bukan halaman detail
+            $plainActions = ['index', 'store', 'update', 'destroy', 'login', 'logout'];
             $actionLabels = [
-                'create' => __('Tambah'),
-                'edit' => __('Ubah'),
-                'show' => __('Detail'),
+                'create' => 'Add', 'edit' => 'Edit', 'show' => 'Detail',
+                'import' => 'Import', 'import.execute' => 'Import',
+                'preview' => 'Preview', 'convert' => 'Convert', 'export' => 'Export',
             ];
-            $crumbs = [['label' => __('Dashboard'), 'url' => \Illuminate\Support\Facades\Route::has('dashboard') ? route('dashboard') : url('/')]];
-            $section = $routeParts[0] ?? '';
-            if ($section !== '' && $section !== 'dashboard') {
-                $sectionIndex = $section.'.index';
-                $crumbs[] = [
-                    'label' => $sectionLabels[$section] ?? ucwords(str_replace(['-', '_'], ' ', $section)),
-                    'url' => \Illuminate\Support\Facades\Route::has($sectionIndex) ? route($sectionIndex) : null,
-                ];
-                $action = end($routeParts);
-                if ($action !== $section && $action !== 'index' && $action !== '') {
-                    $crumbs[] = [
-                        'label' => $actionLabels[$action] ?? ucwords(str_replace(['-', '_'], ' ', $action)),
-                        'url' => null,
-                    ];
+            $groupIconMap = [
+                'Management' => 'briefcase', 'Teknisi' => 'tools', 'Marketing' => 'chart-bar',
+                'Sales' => 'calendar', 'Admin' => 'folder', 'Admin Panel' => 'settings',
+                'Customer' => 'users', 'Monitoring' => 'chart-bar', 'Dashboard' => 'grid',
+                'Trash' => 'trash', 'Knowledge Base' => 'book', 'Product KB' => 'book',
+                'Settings' => 'settings', 'Profile' => 'user', 'AI Assistant' => 'message',
+            ];
+
+            $matched = null;
+            foreach ($crumbMap as $entry) {
+                if (str_starts_with($currentRoute, $entry[0])) { $matched = $entry; break; }
+            }
+
+            if ($matched !== null) {
+                [$prefix, $labels] = $matched;
+                foreach ($labels as $label) {
+                    $crumbs[] = ['label' => __($label), 'url' => null];
                 }
+                $rest = ltrim(substr($currentRoute, strlen($prefix)), '.');
+                $hasActionCrumb = false;
+                if ($rest !== '' && !in_array($rest, $plainActions, true)) {
+                    $action = $actionLabels[$rest] ?? \Illuminate\Support\Str::headline(str_replace(['-', '_'], ' ', $rest));
+                    $crumbs[] = ['label' => __($action), 'url' => null];
+                    $hasActionCrumb = true;
+                }
+                if ($hasActionCrumb) {
+                    $indexRoute = $prefix.'.index';
+                    $indexPos = count($crumbs) - 2;
+                    if ($indexPos >= 1 && \Illuminate\Support\Facades\Route::has($indexRoute)) {
+                        $crumbs[$indexPos]['url'] = route($indexRoute);
+                    }
+                }
+                $sectionLabel = __($labels[0]);
+                $sectionIcon = $groupIconMap[$labels[0]] ?? 'grid';
+            } else {
+                // Cadangan untuk route yang belum terpetakan di atas
+                $routeParts = explode('.', $currentRoute);
+                $section = $routeParts[0] ?? 'dashboard';
+                if ($section !== 'dashboard') {
+                    $sectionIndex = $section.'.index';
+                    $sectionLabel = ucwords(str_replace(['-', '_'], ' ', $section));
+                    $crumbs[] = [
+                        'label' => $sectionLabel,
+                        'url' => \Illuminate\Support\Facades\Route::has($sectionIndex) ? route($sectionIndex) : null,
+                    ];
+                    $action = end($routeParts);
+                    if ($action !== '' && $action !== 'index' && $action !== $section) {
+                        $crumbs[] = [
+                            'label' => $actionLabels[$action] ?? ucwords(str_replace(['-', '_'], ' ', $action)),
+                            'url' => null,
+                        ];
+                    }
+                } else {
+                    $sectionLabel = __('Dashboard');
+                }
+                $sectionIcon = 'grid';
             }
             $lastCrumb = count($crumbs) - 1;
-            $sectionIcons = [
-                'dashboard' => 'grid',
-                'customers' => 'users',
-                'customer-contacts' => 'book',
-                'manage-sales' => 'briefcase',
-                'sales' => 'user',
-                'leads' => 'bolt',
-                'teknisi' => 'tools',
-                'settings' => 'settings',
-                'profile' => 'user',
-                'partners' => 'handshake',
-            ];
-            $activeSection = $section !== '' ? $section : 'dashboard';
-            $sectionIcon = $sectionIcons[$activeSection] ?? 'grid';
-            $sectionLabel = $activeSection === 'dashboard'
-                ? __('Dashboard')
-                : ($sectionLabels[$activeSection] ?? ucwords(str_replace(['-', '_'], ' ', $activeSection)));
         @endphp
         <span class="app-header-badge hidden shrink-0 items-center gap-1.5 rounded-full bg-accent-500/10 px-3 py-1.5 text-xs font-semibold text-accent-700 sm:inline-flex dark:bg-accent-400/10 dark:text-accent-300">
             <x-icon :name="$sectionIcon" class="h-3.5 w-3.5" />

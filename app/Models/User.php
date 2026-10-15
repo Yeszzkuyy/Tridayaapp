@@ -20,6 +20,7 @@ class User extends Authenticatable
         'password',
         'password_changed_at',
         'avatar',
+        'cover',
         'preferences',
     ];
 

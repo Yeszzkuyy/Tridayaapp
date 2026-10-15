@@ -62,30 +62,10 @@
                             </td>
                             <td class="px-4 py-5 whitespace-nowrap">
                                 <div class="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <a href="{{ route('customers.show', $project->customer_id) }}"
-                                       title="{{ __('Lihat customer') }}"
-                                       aria-label="{{ __('Lihat customer') }}"
-                                       class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 transition-transform duration-300 group-hover/btn:scale-110" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M15 9.5h3a2 2 0 0 1 2 2V21M8 7h3M8 11h3M8 15h3M17 13h1M17 17h1M2.5 21h19" /></svg>
-                                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                    </a>
-                                    <a href="{{ route('projects.show', $project) }}"
-                                       title="{{ __('Detail project') }}"
-                                       aria-label="{{ __('Detail project') }}"
-                                       class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                        <img src="{{ asset('icons/lead-view.svg') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                             class="block h-5 w-5" />
-                                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                    </a>
+                                    <x-icon-button as="a" icon="view" href="{{ route('customers.show', $project->customer_id) }}" title="{{ __('Lihat customer') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('Detail project') }}" />
                                     @can('manage-technician')
-                                        <a href="{{ route('projects.edit', $project) }}"
-                                           title="{{ __('Edit project') }}"
-                                           aria-label="{{ __('Edit project') }}"
-                                           class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                            <img src="{{ asset('icons/lead-edit.svg') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                                 class="block h-5 w-5" />
-                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                        </a>
+                                        <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit project') }}" />
                                     @endcan
                                 </div>
                             </td>

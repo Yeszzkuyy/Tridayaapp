@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\LeadActivity;
 use App\Models\Proposal;
+use App\Notifications\ProposalStatusNotification;
 use Illuminate\Console\Command;
 
 class ExpireProposals extends Command
@@ -28,6 +29,11 @@ class ExpireProposals extends Command
                 'action' => 'proposal_expired',
                 'changes' => ['number' => $proposal->proposal_number],
             ]);
+
+            // pending_technical sengaja tidak ikut expire (masih digarap teknis).
+            if ($assignee = $proposal->lead->assignee) {
+                $assignee->notify(new ProposalStatusNotification($proposal, 'expired'));
+            }
         }
 
         $this->info("Expired {$expired->count()} proposal.");

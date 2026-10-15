@@ -13,6 +13,8 @@ class Project extends Model
 
     protected $fillable = [
         'customer_id',
+        'sales_user_id',
+        'teknisi_user_id',
         'account_manager_id',
         'work_type_id',
         'project_status_id',
@@ -21,6 +23,7 @@ class Project extends Model
         'project_name',
         'project_code',
         'quotation_number',
+        'proposal_id',
         'progress',
         'start_date',
         'end_date',
@@ -70,6 +73,12 @@ class Project extends Model
     public function status()
     {
         return $this->belongsTo(ProjectStatus::class, 'project_status_id');
+    }
+
+    // Proposal asal convert (WON flow sales).
+    public function proposal()
+    {
+        return $this->belongsTo(Proposal::class);
     }
 
     // Relasi ke Task

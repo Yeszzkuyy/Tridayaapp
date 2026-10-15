@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\SalesSchedule;
 use App\Models\User;
 use App\Notifications\SalesScheduleAssignedNotification;
+use App\Support\PtAccess;
 use Illuminate\Http\Request;
 
 class SalesScheduleController extends Controller
@@ -60,29 +63,91 @@ class SalesScheduleController extends Controller
 
     public function index(Request $request)
     {
-        $tab = $request->get('tab', 'upcoming');
+        $activeDate = $request->query('date', today()->toDateString());
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $activeDate)) {
+            $activeDate = today()->toDateString();
+        }
 
-        $query = $this->ownScope(
-            SalesSchedule::with(['lead.customer', 'assignee'])->orderBy('start_at')
-        );
+        return view('sales.schedules.index', [
+            'customers' => $this->customerOptions(auth()->user()),
+            'leadItems' => $this->leadItems(auth()->user()),
+            'activeDate' => $activeDate,
+        ]);
+    }
 
-        if ($tab === 'past') {
-            $query->where(function ($q) {
-                $q->where('start_at', '<', now()->startOfDay())
-                    ->orWhereIn('status', ['completed', 'cancelled']);
-            })->orderByDesc('start_at');
+    /**
+     * JSON feed untuk Weekly Strip + Month Grid: jadwal kunjungan
+     * dari tabel follow_ups (type = meeting). Sales biasa hanya
+     * melihat yang ia buat; management (manage-sales-leads)
+     * melihat semua jadwal.
+     *
+     * Mode ?date=YYYY-MM-DD → jadwal satu hari.
+     * Mode ?start=..&end=.. → jadwal rentang (untuk grid bulanan).
+     */
+    public function getSchedulesApi(Request $request)
+    {
+        $query = FollowUp::with(['customer', 'lead.customer', 'creator.roles', 'customer.contacts'])
+            ->where('type', 'meeting');
+
+        if ($request->filled('start') && $request->filled('end')) {
+            try {
+                $start = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
+                $end = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('follow_up_date', '>=', $start)
+                ->whereDate('follow_up_date', '<=', $end);
         } else {
-            $query->where('start_at', '>=', now()->startOfDay())
-                ->whereNotIn('status', ['completed', 'cancelled']);
+            $date = $request->query('date', today()->toDateString());
+            try {
+                $parsed = \Carbon\Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
+            } catch (\Throwable) {
+                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+            }
+            $query->whereDate('follow_up_date', $parsed);
         }
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->get('type'));
+        $user = auth()->user();
+        if (!$user->can('manage-sales-leads')) {
+            $query->where('created_by', $user->id);
         }
 
-        $schedules = $query->paginate(15)->withQueryString();
+        $schedules = $query->orderBy('follow_up_date')->orderBy('activity_time')->get()->map(function (FollowUp $fu) {
+            $customerName = $fu->customer?->name
+                ?? $fu->lead?->customer?->name
+                ?? ($fu->lead_id ? 'Lead #'.$fu->lead_id : __('Jadwal'));
 
-        return view('sales.schedules.index', compact('schedules', 'tab'));
+            // PIC utama customer (fallback kontak pertama) untuk aksi cepat.
+            $contact = $fu->customer?->contacts?->sortByDesc('is_primary')->first();
+            $wa = preg_replace('/\D/', '', (string) ($contact?->whatsapp ?: $contact?->phone));
+            $wa = $wa === '' ? null : (str_starts_with($wa, '0') ? '62'.substr($wa, 1) : $wa);
+            $phone = preg_replace('/[^0-9+]/', '', (string) ($contact?->phone ?: $contact?->whatsapp));
+
+            return [
+                'id' => $fu->id,
+                'date' => $fu->follow_up_date->toDateString(),
+                'description' => $fu->description,
+                'activity_time' => $fu->activity_time ? substr($fu->activity_time, 0, 5) : null,
+                'location' => $fu->location,
+                'customer' => $customerName,
+                'customer_id' => $fu->customer_id,
+                'lead_id' => $fu->lead_id,
+                'creator' => $fu->creator?->name,
+                'creator_avatar' => $fu->creator?->avatar ? asset('storage/'.$fu->creator->avatar) : null,
+                'creator_role' => $fu->creator?->roles->first() ? \Illuminate\Support\Str::headline($fu->creator->roles->first()->name) : null,
+                'pic_name' => $contact?->name,
+                'pic_position' => $contact?->position,
+                'pic_phone' => $phone === '' ? null : $phone,
+                'pic_whatsapp' => $wa,
+                'completed' => $fu->completed_at !== null,
+                'url' => $fu->lead_id
+                    ? route('leads.show', $fu->lead_id)
+                    : route('customers.show', $fu->customer_id),
+            ];
+        });
+
+        return response()->json($schedules);
     }
 
     public function create(Request $request)
@@ -196,5 +261,43 @@ class SalesScheduleController extends Controller
         $this->log($schedule->lead, 'schedule_cancelled', ['title' => $schedule->title]);
 
         return back()->with('success', __('Jadwal dibatalkan.'));
+    }
+
+    /**
+     * Dropdown customer untuk modal tambah jadwal (scope PT sama
+     * seperti form follow-up).
+     */
+    private function customerOptions($user): array
+    {
+        $pts = PtAccess::userPts($user);
+
+        return Customer::query()
+            ->when($pts !== [], fn ($q) => $q->where(
+                fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
+            ))
+            ->orderBy('name')
+            ->get(['id', 'name', 'pt_group'])
+            ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])
+            ->all();
+    }
+
+    /**
+     * Dropdown lead untuk modal tambah jadwal. Sales-like hanya
+     * melihat lead miliknya sendiri.
+     */
+    private function leadItems($user): array
+    {
+        $query = Lead::with('customer')->latest()->limit(200);
+        if (PtAccess::isSalesLike($user) && !$user->can('manage-marketing')) {
+            $query->where('assigned_to', $user->id);
+        }
+
+        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'assigned_to'])
+            ->map(fn ($lead) => [
+                'id' => (string) $lead->id,
+                'customer_id' => (string) $lead->customer_id,
+                'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
+                    .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
+            ])->all();
     }
 }

@@ -49,8 +49,15 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Lokasi') }}</label>
-            <input type="text" name="location" value="{{ old('location', $schedule->location ?? '') }}"
-                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+            <div class="flex items-center gap-2">
+                <input id="ss-location" type="text" name="location" value="{{ old('location', $schedule->location ?? '') }}"
+                       placeholder="{{ __('Address / meeting point or meeting link') }}"
+                       data-location-autocomplete
+                       class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                <x-maps-open-button input="ss-location" />
+                <x-location-autocomplete />
+            </div>
+            <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Pengingat') }}</label>

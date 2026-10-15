@@ -41,13 +41,9 @@
                 </dl>
 
                 <div class="mt-6 flex items-center gap-4">
-                    <a href="{{ route('project-documents.preview', $projectDocument) }}" target="_blank"
-                        class="px-4 py-2 bg-accent-600 text-white text-sm rounded-md hover:bg-accent-700">
-                        Lihat / Download File
-                    </a>
-                    <a href="{{ route('projects.show', $projectDocument->project) }}" class="text-sm text-red-600 hover:underline">
-                        ← Kembali ke project
-                    </a>
+                    <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $projectDocument) }}"
+                                   target="_blank" label="Lihat / Download File" title="Lihat / Download File" />
+                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectDocument->project) }}" title="← Kembali ke project" />
                 </div>
             </div>
 

@@ -81,6 +81,12 @@ class NotificationController extends Controller
                 continue;
             }
 
+            // Notif lead-baru (baru maupun lama yang masih menyimpan URL
+            // halaman edit): klik langsung ke Manage Sales.
+            if ($n->type === NewLeadNotification::class) {
+                $data['url'] = NewLeadNotification::indexUrl();
+            }
+
             $isWhatsapp = ($data['type'] ?? null) === 'whatsapp';
 
             $items[] = [

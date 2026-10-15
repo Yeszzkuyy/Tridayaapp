@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Lead;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
@@ -62,6 +65,8 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:50',
             'whatsapp' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
+            'npwp' => 'nullable|string|max:32',
+            'npwp_document' => ['nullable', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
             'notes' => 'nullable|string|max:5000',
             'status' => 'nullable|in:lead,deal,instalasi,selesai',
         ]);
@@ -69,7 +74,11 @@ class CustomerController extends Controller
         // Form customer hanya punya satu kolom nama; company = name supaya tampilan Lead/Monitoring konsisten
         $validated['company'] ??= $validated['name'];
 
-        Customer::create($validated);
+        $customer = Customer::create($validated);
+
+        if ($request->hasFile('npwp_document')) {
+            $customer->update(['npwp_document_path' => $this->storeNpwp($request->file('npwp_document'), $customer)]);
+        }
 
         return redirect()
             ->route('customers.index')
@@ -106,6 +115,27 @@ class CustomerController extends Controller
         return view('customers.edit', ['customer' => $customer, 'ptGroups' => Lead::PT_GROUPS]);
     }
 
+    private function storeNpwp(UploadedFile $file, Customer $customer): string
+    {
+        return $file->storeAs(
+            "customers/{$customer->id}/npwp",
+            Str::uuid() . '.' . strtolower($file->getClientOriginalExtension()),
+            'private'
+        );
+    }
+
+    public function downloadNpwp(Customer $customer)
+    {
+        $this->authorize('view', $customer);
+        abort_if(! $customer->npwp_document_path, 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $customer->npwp_document_path,
+            'NPWP-' . Str::slug($customer->name) . '.' . pathinfo($customer->npwp_document_path, PATHINFO_EXTENSION)
+        );
+    }
+
     /**
      * Update the specified resource in storage.
      */
@@ -122,11 +152,20 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:50',
             'whatsapp' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
+            'npwp' => 'nullable|string|max:32',
+            'npwp_document' => ['nullable', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
             'notes' => 'nullable|string|max:5000',
             'status' => 'nullable|in:lead,deal,instalasi,selesai',
         ]);
 
         $validated['company'] ??= $validated['name'];
+
+        if ($request->hasFile('npwp_document')) {
+            if ($customer->npwp_document_path) {
+                Storage::disk('private')->delete($customer->npwp_document_path);
+            }
+            $validated['npwp_document_path'] = $this->storeNpwp($request->file('npwp_document'), $customer);
+        }
 
         $customer->update($validated);
 

@@ -15,6 +15,11 @@ class NewLeadNotification extends Notification implements ShouldQueue
 
     public function __construct(public Lead $lead) {}
 
+    public static function indexUrl(): string
+    {
+        return route('manage-sales.index');
+    }
+
     /**
      * Channel mengikuti preferensi notifikasi pengguna
      * (Profil > Setting > Notifikasi).
@@ -41,6 +46,7 @@ class NewLeadNotification extends Notification implements ShouldQueue
         return [
             'lead_id' => $this->lead->id,
             'customer' => $this->lead->customer?->name ?? 'Lead baru',
+            'url' => self::indexUrl(),
         ];
     }
 
@@ -50,7 +56,7 @@ class NewLeadNotification extends Notification implements ShouldQueue
             ->subject('Lead Baru Diterima')
             ->line('Lead baru masuk dan membutuhkan penanganan:')
             ->line('Customer: ' . ($this->lead->customer?->name ?? 'Lead baru'))
-            ->action('Kelola Lead', url(route('manage-sales.edit', $this->lead->id)))
+            ->action('Kelola Lead', url(self::indexUrl()))
             ->line('Terima kasih.');
     }
 
@@ -59,7 +65,7 @@ class NewLeadNotification extends Notification implements ShouldQueue
         return [
             'title' => 'Lead baru diterima',
             'body' => 'Customer: ' . ($this->lead->customer?->name ?? 'Lead baru'),
-            'url' => route('manage-sales.edit', $this->lead->id),
+            'url' => self::indexUrl(),
         ];
     }
 }

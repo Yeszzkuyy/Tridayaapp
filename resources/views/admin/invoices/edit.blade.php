@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">Edit Invoice</h1>
                 <p class="text-slate-500 mt-1">{{ $invoice->invoice_number }}</p>
             </div>
-            <a href="{{ route('admin.invoices.index') }}" class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">{{ __('Kembali') }}</a>
+            <x-icon-button as="a" icon="back" href="{{ route('admin.invoices.index') }}" title="{{ __('Kembali') }}" />
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -60,7 +60,7 @@
                 </div>
                 <div class="flex gap-3">
                     <button type="submit" class="px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">Update</button>
-                    <a href="{{ route('admin.invoices.index') }}" class="px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition">{{ __('Batal') }}</a>
+                    <a href="{{ route('admin.invoices.index') }}" class="px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-medium transition">{{ __('Batal') }}</a>
                 </div>
             </form>
         </div>

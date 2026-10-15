@@ -1,9 +1,15 @@
 <x-app-layout>
     @php
+        $chatUser = auth()->user();
         $chatInit = [
             'conversationId' => $conversation?->id,
             'conversations' => $conversations ?? [],
             'messages' => $messages ?? [],
+            'user' => [
+                'name' => $chatUser?->name ?? '',
+                'initial' => strtoupper(mb_substr($chatUser?->name ?? '?', 0, 1)),
+                'photo' => $chatUser?->avatar ? asset('storage/' . $chatUser->avatar) : null,
+            ],
         ];
     @endphp
     <script>window.chatInit = @json($chatInit);</script>
@@ -120,7 +126,7 @@
                     <article class="ai-message" :class="msg.role === 'user' ? 'is-user' : 'is-assistant'">
                         <template x-if="msg.role === 'assistant'">
                             <div class="ai-assistant-row">
-                                <span class="ai-message-avatar"><x-icon name="message" class="h-4 w-4" /></span>
+                                <span class="ai-message-avatar"><x-icon name="message" class="h-5 w-5" /></span>
                                 <div class="ai-message-body">
                                     <div class="ai-message-author">Office Assistant</div>
                                     <div class="md" x-html="renderMarkdown(msg.content)"></div>
@@ -141,8 +147,8 @@
 
                         <template x-if="msg.role === 'user'">
                             <div class="ai-user-row">
-                                <div class="ai-user-bubble">
-                                    <div x-show="msg.content" x-text="msg.content"></div>
+                                <div class="ai-user-text">
+                                    <div class="ai-user-msg" x-show="msg.content" x-text="msg.content"></div>
                                     <div class="ai-message-files" x-show="msg.attachments && msg.attachments.length" x-cloak>
                                         <template x-for="file in msg.attachments" :key="file.name">
                                             <span class="ai-file-chip">
@@ -154,13 +160,17 @@
                                         </template>
                                     </div>
                                 </div>
+                                <span class="ai-user-avatar" aria-hidden="true">
+                                    <img x-show="userPhoto" :src="userPhoto" :alt="userName" loading="lazy" decoding="async">
+                                    <span x-show="!userPhoto" x-text="userInitial"></span>
+                                </span>
                             </div>
                         </template>
                     </article>
                 </template>
 
                 <div x-show="busy" class="ai-assistant-row ai-thinking" x-cloak role="status" aria-label="{{ __('AI sedang berpikir') }}">
-                    <span class="ai-message-avatar"><x-icon name="message" class="h-4 w-4" /></span>
+                    <span class="ai-message-avatar"><x-icon name="message" class="h-5 w-5" /></span>
                     <div class="ai-thinking-body"><span></span><span></span><span></span></div>
                 </div>
             </div>
@@ -245,7 +255,7 @@
                               @keydown.enter="onEnter($event)"></textarea>
 
                     <span class="ai-listening" x-show="listening" x-cloak>{{ __('Mendengarkan…') }}</span>
-                    <button type="submit" class="ai-send" :disabled="busy || (!draft.trim() && !attachments.length)" aria-label="{{ __('Kirim pesan') }}" :title="busy ? '{{ __('Mengirim…') }}' : '{{ __('Kirim pesan') }}'">
+                    <button type="submit" class="ai-send" :disabled="busy || (!cleanText() && !attachments.length)" aria-label="{{ __('Kirim pesan') }}" :title="busy ? '{{ __('Mengirim…') }}' : '{{ __('Kirim pesan') }}'">
                         <svg x-show="!busy" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M3.4 20.6 21.5 12 3.4 3.4 3.4 10l12.9 2L3.4 14z" />
                         </svg>
@@ -311,16 +321,22 @@
         .ai-header-new:hover{border-color:rgb(var(--accent-300) / 1);color:rgb(var(--accent-700) / 1);background:rgb(var(--accent-50) / 1)}
         .dark .ai-header-new:hover{color:rgb(var(--accent-200) / 1);background:rgb(var(--accent-600) / .15)}
         .ai-header-new svg{width:1rem;height:1rem}
-        .ai-conversation{display:flex;min-height:0;flex:1;flex-direction:column;gap:1.4rem;overflow-y:auto;overflow-x:hidden;padding:clamp(1rem,3vw,2.25rem) clamp(1rem,5vw,5rem) 1rem}
-        .ai-message{width:100%;max-width:58rem;margin:0 auto}
-        .ai-assistant-row{display:flex;align-items:flex-start;gap:.8rem}
-        .ai-message-avatar{width:1.8rem;height:1.8rem;margin-top:.05rem;border-radius:.55rem}
-        .ai-message-body{min-width:0;flex:1}
+        .ai-conversation{display:flex;min-height:0;flex:1;flex-direction:column;gap:.75rem;overflow-y:auto;overflow-x:hidden;padding:clamp(.75rem,2vw,1.25rem) clamp(1rem,3vw,2.5rem) 1rem}
+        .ai-message{width:100%;max-width:80rem;margin:0 auto}
+        .ai-assistant-row{display:flex;align-items:flex-start;gap:.9rem}
+        .ai-message-avatar{width:2.4rem;height:2.4rem;margin-top:0;border-radius:.7rem}
+        .ai-message-body{min-width:0;flex:0 1 auto;max-width:100%}
         .ai-message-author{margin-bottom:.35rem;color:var(--text-secondary);font-size:.73rem;font-weight:700}
-        .ai-message-body .md{color:var(--text-primary);font-size:.9rem;line-height:1.65}
-        .ai-user-row{display:flex;justify-content:flex-end}
-        .ai-user-bubble{max-width:min(60%,30rem);padding:.7rem .95rem;border:1px solid rgb(var(--accent-400) / .22);border-radius:1rem 1rem .25rem 1rem;color:var(--text-primary);background:rgb(var(--accent-50) / 1);font-size:.9rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
-        .dark .ai-user-bubble{border-color:rgb(var(--accent-400) / .22);color:rgb(var(--accent-100) / 1);background:rgb(var(--accent-600) / .18)}
+        .ai-message-body .md{color:var(--text-primary);font-size:.9rem;line-height:1.65;overflow-wrap:anywhere}
+        .ai-user-row{display:flex;justify-content:flex-end;align-items:flex-start;gap:.75rem;min-height:0}
+        .ai-user-text{align-self:flex-start;height:auto;min-height:0;max-width:min(80%,48rem);padding-top:.2rem;color:var(--text-primary);font-size:.9rem;line-height:1.55;text-align:right;white-space:normal;overflow-wrap:anywhere}
+        .ai-user-msg{display:inline-block;max-width:100%;white-space:pre-wrap;padding:.45rem .85rem;border-radius:1rem 1rem .25rem 1rem;background:rgb(var(--accent-100) / 1);border:1px solid rgb(var(--accent-300) / .5)}
+        .dark .ai-user-msg{background:rgb(var(--accent-500) / .3);border-color:rgb(var(--accent-400) / .35);color:rgb(var(--accent-100) / 1)}
+        .ai-message-body:has(.md){padding:.7rem .9rem;border-radius:.25rem 1rem 1rem 1rem;background:rgb(148 163 184 / .16);border:1px solid rgb(148 163 184 / .3)}
+        .dark .ai-message-body:has(.md){background:rgb(255 255 255 / .08);border-color:rgb(255 255 255 / .14)}
+        .ai-user-avatar{display:inline-flex;align-items:center;justify-content:center;width:2.4rem;height:2.4rem;flex:none;overflow:hidden;border-radius:.7rem;color:#fff;background:rgb(var(--accent-600) / 1);font-size:.95rem;font-weight:700}
+        .dark .ai-user-avatar{background:rgb(var(--accent-500) / .85)}
+        .ai-user-avatar img{width:100%;height:100%;object-fit:cover}
         .ai-sources,.ai-message-files{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.65rem}
         .ai-source-chip,.ai-file-chip{display:inline-flex;align-items:center;gap:.35rem;max-width:100%;padding:.25rem .5rem;border:1px solid var(--card-border);border-radius:.45rem;color:var(--text-secondary);background:var(--card-bg-hover);font-size:.7rem}
         .ai-source-chip svg,.ai-file-chip svg{width:.8rem;height:.8rem;flex:none}
@@ -334,7 +350,7 @@
         .ai-suggestions button{padding:.5rem .7rem;border:1px solid var(--card-border);border-radius:.6rem;color:var(--text-secondary);background:var(--card-bg);font-size:.72rem;cursor:pointer}
         .ai-suggestions button:hover{border-color:rgb(var(--accent-300) / 1);color:rgb(var(--accent-700) / 1);background:rgb(var(--accent-50) / 1)}
         .dark .ai-suggestions button:hover{color:rgb(var(--accent-200) / 1);background:rgb(var(--accent-600) / .15)}
-        .ai-thinking{max-width:58rem;margin:0 auto;width:100%}
+        .ai-thinking{max-width:80rem;margin:0 auto;width:100%}
         .ai-thinking-body{display:flex;align-items:center;gap:.28rem;height:1.8rem;padding:0 .75rem;border:1px solid var(--card-border);border-radius:.65rem;background:var(--card-bg-hover)}
         .ai-thinking-body span,.ai-loading-history span{width:.35rem;height:.35rem;border-radius:9999px;background:var(--text-muted);animation:ai-pulse 1.15s infinite ease-in-out}
         .ai-thinking-body span:nth-child(2),.ai-loading-history span:nth-child(2){animation-delay:.15s}
@@ -345,7 +361,7 @@
         .ai-jump{position:absolute;right:1.5rem;bottom:8rem;display:inline-flex;align-items:center;justify-content:center;width:2.5rem;height:2.5rem;border:1px solid var(--card-border);border-radius:9999px;color:var(--text-secondary);background:var(--card-bg);box-shadow:var(--shadow-lift);cursor:pointer}
         .ai-jump:hover{color:var(--text-primary);background:var(--card-bg-hover)}
         .ai-jump svg{width:1rem;height:1rem}
-        .ai-composer-area{width:100%;max-width:58rem;margin:0 auto;padding:.5rem clamp(1rem,5vw,5rem) max(.8rem, env(safe-area-inset-bottom))}
+        .ai-composer-area{width:100%;max-width:80rem;margin:0 auto;padding:.5rem clamp(1rem,3vw,2.5rem) max(.8rem, env(safe-area-inset-bottom))}
         .ai-error{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.55rem;padding:.55rem .75rem;border:1px solid rgba(248,113,113,.4);border-radius:.6rem;color:#b91c1c;background:rgba(254,226,226,.85);font-size:.78rem}
         .dark .ai-error{color:#fecaca;background:rgba(127,29,29,.45)}
         .ai-error button{border:0;color:inherit;background:transparent;font-size:1.1rem;line-height:1;cursor:pointer}
@@ -390,7 +406,7 @@
             .ai-history-close,.ai-mobile-history{display:inline-flex}
             .ai-history-backdrop{position:absolute;inset:0;z-index:30;background:rgba(15,23,42,.42)}
             .ai-header-new{padding:.5rem}.ai-header-new span{display:none}
-            .ai-conversation{padding:1rem .8rem}.ai-composer-area{padding-left:.8rem;padding-right:.8rem}.ai-user-bubble{max-width:88%}
+            .ai-conversation{padding:1rem .8rem}.ai-composer-area{padding-left:.8rem;padding-right:.8rem}.ai-user-text{max-width:88%}
             .ai-jump{right:.8rem;bottom:8rem}
         }
         @media(prefers-reduced-motion:reduce){.ai-thinking-body span,.ai-loading-history span{animation:none;opacity:.6}.ai-history,.ai-spin{transition:none;animation:none}}
@@ -402,6 +418,9 @@
                 conversationId: window.chatInit?.conversationId ?? null,
                 conversations: window.chatInit?.conversations ?? [],
                 messages: window.chatInit?.messages ?? [],
+                userName: window.chatInit?.user?.name ?? '',
+                userInitial: window.chatInit?.user?.initial ?? '?',
+                userPhoto: window.chatInit?.user?.photo ?? null,
                 draft: '',
                 attachments: [],
                 busy: false,
@@ -456,6 +475,15 @@
                     }
                     event.preventDefault();
                     this.send();
+                },
+                // Samakan dengan backend cleanMessage(): buang karakter
+                // tak terlihat (nol-lebar, kontrol) + pangkas spasi unicode
+                // di kedua ujung agar bubble optimistik tidak menggelembung.
+                cleanText() {
+                    return (this.draft || '')
+                        .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/gu, '')
+                        .replace(/^[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+|[\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]+$/gu, '')
+                        .trim();
                 },
                 renderMarkdown(content) {
                     try {
@@ -645,7 +673,7 @@
                     this.listening = false;
                 },
                 async send() {
-                    const text = this.draft.trim();
+                    const text = this.cleanText();
                     if ((!text && !this.attachments.length) || this.busy) return;
 
                     const pendingAttachments = this.attachments.map(attachment => ({ ...attachment }));
@@ -680,6 +708,10 @@
                         this.conversationId = data.conversation_id;
                         this.upsertConversation(data.conversation);
                         this.setUrl(this.conversationId);
+                        // Bubble optimistik tampil dari draft mentah; ganti ke
+                        // teks bersih yang benar-benar dikirim (antispasi aneh).
+                        const mine = this.messages.find(message => message.id === tempId);
+                        if (mine) mine.content = text;
                         this.messages.push({ id: `${data.conversation_id}-${Date.now()}`, role: 'assistant', content: data.message, sources: data.sources ?? [], attachments: [] });
                         this.scrollToBottom(true);
                     } catch (error) {

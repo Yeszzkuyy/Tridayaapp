@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadDocument;
@@ -151,6 +152,10 @@ class LeadController extends Controller
             $this->logActivity($lead, 'status_changed', [
                 'status' => ['old' => $old, 'new' => $validated['status']],
             ]);
+        } elseif ($lead->acknowledged_at === null) {
+            // Status sama (mis. geser New -> Cool padahal DB-nya sudah cool):
+            // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
+            $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
         }
 
         return response()->noContent();
@@ -187,6 +192,10 @@ class LeadController extends Controller
                 ]);
 
                 $results[] = ['lead_id' => $lead->id, 'old' => $old, 'new' => $change['status']];
+            } elseif ($lead->acknowledged_at === null) {
+                // Status sama (mis. geser New -> Cool padahal DB-nya sudah cool):
+                // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
+                $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
             }
         }
 
@@ -403,13 +412,16 @@ class LeadController extends Controller
             'whatsapp_account_id' => 'nullable|exists:whatsapp_accounts,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
-            'kebutuhan' => 'nullable|string|max:2000',
+            'kebutuhan' => 'required|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
             'incoming_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => ['file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'segment.required' => 'Kategori (Segment) wajib dipilih.',
+            'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
@@ -476,29 +488,24 @@ class LeadController extends Controller
     {
         $this->authorize('view', $lead);
 
-        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'meetings.creator', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
+        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
         $documents = $lead->customer ? $lead->customer->projects->flatMap->documents : collect();
         $projectStatuses = ProjectStatus::orderBy('sort_order')->get(['id', 'name']);
         $workTypes = WorkType::orderBy('name')->get(['id', 'name']);
 
-        // Riwayat gabungan meeting + follow-up milik lead ini, terbaru dulu.
+        // Riwayat follow-up milik lead ini, terbaru dulu.
         // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
         $canOpenDetail = auth()->user()?->can('manage-sales');
-        $timeline = $lead->meetings->map(fn ($m) => [
-            'type' => 'meeting',
-            'date' => $m->meeting_date,
-            'title' => __('Meeting'),
-            'summary' => $m->user_needs ?: $m->notes,
-            'by' => $m->creator?->name,
-            'url' => $canOpenDetail ? route('sales.meetings.show', $m) : null,
-        ])->concat($lead->followUps->map(fn ($f) => [
+        $timeline = $lead->followUps->map(fn ($f) => [
             'type' => 'follow-up',
             'date' => $f->follow_up_date ?? $f->created_at,
-            'title' => __('Follow Up'),
+            'time' => $f->activity_time,
+            'location' => $f->location,
+            'title' => FollowUp::typeLabel($f->type),
             'summary' => $f->description,
             'by' => $f->creator?->name,
             'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
-        ]))->sortByDesc('date')->values();
+        ])->sortByDesc('date')->values();
 
         // Sales flow: jadwal (upcoming/past), technical request, proposal milik lead ini.
         $upcomingSchedules = $lead->salesSchedules
@@ -546,13 +553,16 @@ class LeadController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
-            'kebutuhan' => 'nullable|string|max:2000',
+            'kebutuhan' => 'required|string|max:2000',
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
             'incoming_date' => 'required|date',
             'attachments' => 'nullable|array|max:5',
             'attachments.*' => ['file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'segment.required' => 'Kategori (Segment) wajib dipilih.',
+            'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
@@ -713,6 +723,7 @@ class LeadController extends Controller
             'customer_id' => $lead->customer_id,
             'project_status_id' => $validated['project_status_id'],
             'work_type_id' => $validated['work_type_id'] ?? null,
+            'sales_user_id' => $lead->assigned_to,
             'start_date' => now()->toDateString(),
         ]);
 

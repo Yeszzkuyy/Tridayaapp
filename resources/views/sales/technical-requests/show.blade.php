@@ -34,8 +34,20 @@
                 <div><p class="text-xs font-semibold text-slate-400 uppercase">{{ __('Catatan') }}</p><p class="text-sm whitespace-pre-wrap">{{ $technicalRequest->notes }}</p></div>
             @endif
             @if($technicalRequest->attachment_path)
-                <a href="{{ route('sales.technical-requests.attachment', $technicalRequest) }}"
-                   class="inline-block px-3 py-1.5 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">{{ __('Download Lampiran') }}</a>
+                <x-icon-button as="a" icon="download" href="{{ route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Lampiran') }}" title="{{ __('Download Lampiran') }}" />
+            @endif
+
+            {{-- Survey terkait request ini (otomatis dibuat saat assign) --}}
+            @if($technicalRequest->survey)
+                <div class="p-3 rounded-xl bg-accent-50/60 dark:bg-accent-500/10 border border-accent-200 dark:border-accent-500/30">
+                    <p class="text-xs font-semibold text-accent-700 dark:text-accent-300 uppercase">{{ __('Survey Terkait') }}</p>
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <x-icon-button as="a" icon="view" href="{{ route('teknisi.surveys.show', $technicalRequest->survey) }}" label="{{ $technicalRequest->survey->title }}" title="{{ $technicalRequest->survey->title }}" />
+                        <span class="text-xs text-slate-500 dark:text-slate-400">
+                            {{ $technicalRequest->survey->hasReport() ? __('Laporan sudah diunggah') : __('Laporan belum diunggah') }}
+                        </span>
+                    </div>
+                </div>
             @endif
             @if($technicalRequest->technical_result)
                 <div class="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
@@ -51,13 +63,13 @@
                         <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline">
                             @csrf
                             <input type="hidden" name="decision" value="accepted">
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Accept') }}</button>
+                            <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                         </form>
                         <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline"
                               onsubmit="return confirm('{{ __('Tolak request ini?') }}')">
                             @csrf
                             <input type="hidden" name="decision" value="rejected">
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Reject') }}</button>
+                            <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
                         </form>
                     </div>
                 @endif
@@ -87,7 +99,7 @@
                         <input type="text" name="notes" value="{{ old('notes', $technicalRequest->notes) }}"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     </div>
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium transition">{{ __('Update Progress') }}</button>
+                    <x-icon-button type="submit" icon="edit" label="{{ __('Update Progress') }}" title="{{ __('Update Progress') }}" />
                 </form>
                 <form action="{{ route('sales.technical-requests.result', $technicalRequest) }}" method="POST" class="pt-1">
                     @csrf
@@ -102,7 +114,7 @@
                 <form action="{{ route('sales.technical-requests.complete', $technicalRequest) }}" method="POST" class="inline pt-1"
                       onsubmit="return confirm('{{ __('Selesaikan pekerjaan ini?') }}')">
                     @csrf
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Complete') }}</button>
+                    <x-icon-button type="submit" icon="sparkles" label="{{ __('Complete') }}" title="{{ __('Complete') }}" />
                 </form>
             @endif
 
@@ -111,14 +123,13 @@
                 <form action="{{ route('sales.technical-requests.cancel', $technicalRequest) }}" method="POST" class="pt-2"
                       onsubmit="return confirm('{{ __('Batalkan request ini?') }}')">
                     @csrf
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Cancel') }}</button>
+                    <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />
                 </form>
             @endif
 
             {{-- Sales: lanjut ke penawaran setelah completed --}}
             @if($technicalRequest->status === 'completed' && auth()->user()?->can('manage-sales'))
-                <a href="{{ route('sales.proposals.create', ['lead_id' => $technicalRequest->lead_id]) }}"
-                   class="inline-block px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Buat Penawaran') }}</a>
+                <x-icon-button as="a" icon="add" href="{{ route('sales.proposals.create', ['lead_id' => $technicalRequest->lead_id]) }}" label="{{ __('Buat Penawaran') }}" title="{{ __('Buat Penawaran') }}" />
             @endif
         </div>
     </div>

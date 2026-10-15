@@ -1,13 +1,11 @@
-{{-- Form tambah/edit follow-up: customer searchable + lead/meeting ikut customer (tanpa reload). --}}
+{{-- Form tambah/edit follow-up: customer searchable + lead ikut customer (tanpa reload). --}}
 @php($followUp = $followUp ?? null)
 @php($initialCustomer = (string) old('customer_id', $customerId ?? null))
 @php($initialLeadOptions = collect($leadItems)->where('customer_id', $initialCustomer)->map(fn ($l) => ['value' => $l['id'], 'label' => $l['label']])->values()->all())
-@php($initialMeetingOptions = collect($meetingItems)->where('customer_id', $initialCustomer)->map(fn ($m) => ['value' => $m['id'], 'label' => $m['label']])->values()->all())
 <form action="{{ $action }}" method="POST" data-ajax data-submit-guarded="ajax" class="space-y-6"
       x-data="{
           customerId: {{ json_encode(old('customer_id', $customerId ?? null)) }},
           leads: {{ json_encode($leadItems) }},
-          meetings: {{ json_encode($meetingItems) }},
           str(v) { return (v === null || v === undefined || v === '') ? null : String(v); },
           init() { this.customerId = this.str(this.customerId); },
           toOpts(list) {
@@ -18,7 +16,6 @@
               if (typeof window.__glideRemount !== 'function') return;
               const mountOf = (id) => document.querySelector('#' + id + ' [data-glide-mount]');
               window.__glideRemount(mountOf('fu-lead-glider'), this.toOpts(this.leads));
-              window.__glideRemount(mountOf('fu-meet-glider'), this.toOpts(this.meetings));
           }
       }"
       @customer-picked.window="if ($event.detail.field === 'customer_id') { customerId = $event.detail.id; refreshGliders(); }">
@@ -33,7 +30,7 @@
             'selected' => old('customer_id', $customerId ?? null),
             'placeholder' => __('Search customer...'),
             'required' => true,
-            'hint' => __('Pick a customer first — changing it resets Lead and Meeting below.'),
+            'hint' => __('Pick a customer first — changing it resets Lead below.'),
         ])
         @error('customer_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
@@ -54,28 +51,13 @@
     </div>
 
     <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Related Meeting (optional)') }}</label>
-        <div x-show="customerId">
-            <div id="fu-meet-glider">
-                <x-glide-select name="meeting_id" label="Related meeting"
-                    :options="$initialMeetingOptions"
-                    :value="old('meeting_id', $meetingId ?? null)"
-                    :empty-label="__('No specific meeting')"
-                    :error="$errors->first('meeting_id')" />
-            </div>
-        </div>
-        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Select a customer first.') }}</p>
-        <p class="mt-1 text-xs text-slate-400">{{ __('The earlier meeting this follow-up continues, if any.') }}</p>
-    </div>
-
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Contact Method') }}</label>
-        <x-glide-select name="type" label="Contact method"
-            :options="collect(\App\Models\FollowUp::CONTACT_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\FollowUp::typeLabel($t)])->all()"
+        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Jenis Aktivitas') }}</label>
+        <x-glide-select name="type" label="Jenis aktivitas"
+            :options="collect(\App\Models\FollowUp::LOG_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\FollowUp::typeLabel($t)])->all()"
             :value="old('type', $followUp?->type)"
-            :empty-label="__('Select method')"
+            :empty-label="__('Select type')"
             :error="$errors->first('type')" />
-        <p class="mt-1 text-xs text-slate-400">{{ __('How you reached the customer.') }}</p>
+        <p class="mt-1 text-xs text-slate-400">{{ __('Cara follow up ke customer.') }}</p>
     </div>
 
     <div>
@@ -90,6 +72,28 @@
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Follow-up Date') }}</label>
         <x-datepicker name="follow_up_date" value="{{ old('follow_up_date', isset($followUp) ? $followUp->follow_up_date?->format('Y-m-d') : date('Y-m-d')) }}"></x-datepicker>
         @error('follow_up_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Waktu (WIB, opsional)') }}</label>
+            <input type="time" name="activity_time" lang="id-ID" value="{{ old('activity_time', $followUp?->activity_time ? substr((string) $followUp->activity_time, 0, 5) : '') }}"
+                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+            @error('activity_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Lokasi (opsional)') }}</label>
+            <div class="flex items-center gap-2">
+                <input id="fu-location" type="text" name="location" maxlength="150" value="{{ old('location', $followUp?->location) }}"
+                       placeholder="{{ __('Address / meeting point or meeting link') }}"
+                       data-location-autocomplete
+                       class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                <x-maps-open-button input="fu-location" />
+                <x-location-autocomplete />
+            </div>
+            <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
+            @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
     </div>
 
     <div>

@@ -230,6 +230,7 @@ class LeadFormTest extends TestCase
             'customer_name' => 'PT Salah Assign',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
+            'kebutuhan' => 'Butuh review assign.',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $technician->id,
         ])->assertStatus(422);
@@ -256,6 +257,7 @@ class LeadFormTest extends TestCase
             'customer_name' => 'PT Korban Diambil',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
+            'kebutuhan' => 'Butuh review akses.',
             'incoming_date' => now()->toDateString(),
         ])->assertForbidden();
 
@@ -307,5 +309,22 @@ class LeadFormTest extends TestCase
                 'segment' => 'bukan_segment',
             ])
             ->assertSessionHasErrors(['segment']);
+    }
+
+    public function test_segment_and_kebutuhan_have_custom_required_messages(): void
+    {
+        $customer = Customer::create(['name' => 'PT Wajib Isi']);
+
+        $this->actingAs($this->marketingUser())
+            ->post(route('leads.store'), [
+                'customer_mode' => 'existing',
+                'customer_id' => $customer->id,
+                'pt_group' => 'MGK',
+                'incoming_date' => now()->toDateString(),
+            ])
+            ->assertSessionHasErrors([
+                'segment' => 'Kategori (Segment) wajib dipilih.',
+                'kebutuhan' => 'Kebutuhan klien wajib diisi.',
+            ]);
     }
 }

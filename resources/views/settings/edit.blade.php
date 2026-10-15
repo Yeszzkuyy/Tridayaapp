@@ -110,7 +110,7 @@
                     <label class="flex cursor-pointer items-center justify-between gap-4 py-4 first:pt-0">
                         <span class="min-w-0">
                             <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Notifikasi Email') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, Anda tidak menerima notifikasi apa pun.') }}</span>
+                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, notifikasi email tidak dikirim (notifikasi sistem & push tetap aktif).') }}</span>
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_email" value="1" class="peer sr-only" @checked($notifyEmail)>

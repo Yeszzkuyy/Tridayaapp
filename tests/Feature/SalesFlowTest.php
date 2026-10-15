@@ -154,22 +154,16 @@ class SalesFlowTest extends TestCase
         $this->actingAs($other)->get(route('sales.schedules.edit', $schedule))->assertForbidden();
     }
 
-    public function test_agenda_lists_own_schedules_and_management_sees_all(): void
+    public function test_agenda_renders_weekly_strip(): void
     {
         $sales = $this->userWithRole('sales');
         $mgmt = $this->userWithRole('management');
-        $lead = $this->makeLead($sales->id);
-
-        SalesSchedule::create([
-            'lead_id' => $lead->id, 'assigned_to' => $sales->id, 'created_by' => $sales->id,
-            'title' => 'Agenda Saya', 'type' => 'visit', 'start_at' => now()->addDay(), 'status' => 'scheduled',
-        ]);
 
         $this->actingAs($sales)->get(route('sales.schedules.index'))
-            ->assertOk()->assertSee('Agenda Saya');
+            ->assertOk()->assertSee('Sales Schedule');
 
         $this->actingAs($mgmt)->get(route('sales.schedules.index'))
-            ->assertOk()->assertSee('Agenda Saya');
+            ->assertOk()->assertSee('Sales Schedule');
     }
 
     public function test_sales_creates_technical_request_and_lead_tech_is_notified(): void

@@ -41,7 +41,7 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
         $this->actingAs($u)->get('/leads')->assertForbidden();
         $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
-        $this->actingAs($u)->get('/sales/meetings')->assertForbidden();
+        $this->actingAs($u)->get('/sales/meetings')->assertNotFound();
         $this->actingAs($u)->get('/monitoring')->assertForbidden();
     }
 
@@ -89,7 +89,7 @@ class DivisionAccessTest extends TestCase
         $res = $this->actingAs($u)->get('/admin/invoices')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/admin/invoices', '/trash', '/customers', '/sales/follow-ups'] as $link) {
+        foreach (['/admin/invoices', '/trash', '/customers', '/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for admin");
         }
         foreach (['/leads"', '/monitoring'] as $link) {

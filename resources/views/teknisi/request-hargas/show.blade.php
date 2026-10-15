@@ -24,10 +24,7 @@
                     {{ ucfirst($requestHarga->status) }}
                 </x-status-badge>
             </div>
-            <a href="{{ route('teknisi.request-hargas.index') }}"
-               class="rounded-xl border border-slate-300 text-slate-700 hover:bg-white px-5 py-2.5 text-sm font-medium transition dark:border-slate-600 dark:text-slate-200">
-                {{ __('Kembali') }}
-            </a>
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Kembali') }}" />
         </div>
 
         <div class="space-y-6">
@@ -90,14 +87,8 @@
 
             {{-- Aksi --}}
             <div class="flex justify-end gap-3">
-                <a href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}"
-                   class="rounded-xl bg-accent-100 hover:bg-accent-200 text-accent-700 px-5 py-2.5 text-sm font-semibold transition">
-                    Edit
-                </a>
-                <a href="{{ route('teknisi.request-hargas.index') }}"
-                   class="rounded-xl border border-slate-300 text-slate-700 hover:bg-white px-5 py-2.5 text-sm font-medium transition dark:border-slate-600 dark:text-slate-200">
-                    {{ __('Kembali') }}
-                </a>
+                <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="Edit" />
+                <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Kembali') }}" />
             </div>
         </div>
     </div>

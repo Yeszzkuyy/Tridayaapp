@@ -165,12 +165,8 @@
                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">
                     <span x-text="selected.length"></span> {{ __('selected') }}
                 </span>
-                <button type="button" x-data="" title="Delete selected" aria-label="Delete selected"
-                        @click="$dispatch('open-modal', 'confirm-bulk-destroy')"
-                        class="inline-flex h-10 items-center gap-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 px-4 text-sm font-semibold transition-all duration-300 hover:scale-105 active:scale-95">
-                    <x-icon name="trash" class="h-5 w-5" />
-                    {{ __('Delete') }}
-                </button>
+                <x-icon-button icon="delete" label="{{ __('Delete') }}" title="Delete selected"
+                               x-data="" @click="$dispatch('open-modal', 'confirm-bulk-destroy')" />
                 <button type="button" @click="selected = []" title="Clear selection" aria-label="Clear selection"
                         class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-500 hover:bg-white dark:border-slate-600 dark:text-slate-300 transition-all duration-300 hover:scale-105 active:scale-95">
                     <span class="text-lg leading-none">&times;</span>
@@ -190,9 +186,10 @@
                         {{ __('Cancel') }}
                     </button>
                     <button type="submit" form="bulk-destroy-form"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium transition-colors duration-200">
+                            class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-500 hover:bg-red-50 hover:shadow-md active:scale-95 dark:border-red-500/30 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-400 dark:hover:bg-red-500/15">
                         <x-icon name="trash" class="w-4 h-4" />
                         {{ __('Yes, delete permanently') }}
+                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                 </div>
             </div>
