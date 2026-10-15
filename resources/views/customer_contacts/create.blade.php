@@ -9,7 +9,7 @@
                     {{ __('Tambah PIC untuk customer:') }} <span class="font-semibold text-slate-700">{{ $customer->name }}</span>
                 </p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('← Kembali ke Customer') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('Kembali ke Customer') }}" />
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
