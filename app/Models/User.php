@@ -45,6 +45,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Notifikasi database memakai model app (App\Models\DatabaseNotification)
+     * yang mem-broadcast realtime NotificationCreated saat baris dibuat.
+     */
+    public function notifications()
+    {
+        return $this->morphMany(DatabaseNotification::class, 'notifiable')->latest();
+    }
+
+    /**
      * true bila user sudah pernah mengganti password bawaannya sendiri
      * (via form password / reset). null = masih password awal → belum aman.
      */

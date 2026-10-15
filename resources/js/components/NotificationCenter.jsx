@@ -349,48 +349,74 @@ export default function NotificationCenter() {
     }, [reduceMotion]);
 
     // Realtime via Laravel Echo (Reverb) — channel privat per user.
+    // Echo di-bootstrap lazy oleh entry island (chunk async); kalau belum
+    // siap, tunggu event `echo:ready`. Tanpa Echo, fallback poll tetap jalan.
     useEffect(() => {
-        const Echo = window.Echo;
+        if (CONFIG.userId == null) return undefined;
 
-        if (!Echo || CONFIG.userId == null) return undefined;
+        let channel = null;
+        let handler = null;
+        let connection = null;
+        let onState = null;
 
-        let channel;
-
-        try {
-            channel = Echo.private(`notifications.${CONFIG.userId}`);
-        } catch (error) {
-            return undefined;
-        }
-
-        const handler = (payload) => {
-            const item = payload?.item;
-
-            if (!item || !item.id) return;
-
-            setItems((previous) => (previous.some((known) => known.id === item.id) ? previous : [{ ...item, _fresh: true }, ...previous]));
-            setUnread((previous) => (typeof payload.unread === 'number' ? payload.unread : previous + (item.read ? 0 : 1)));
-            setLive(`${item.app ? `${item.app}: ` : ''}${item.title}`);
-            ringBell();
-        };
-
-        channel.listen('.notification.created', handler);
-
-        const connection = Echo.connector?.pusher?.connection;
-        const onState = (state) => setConnected(state === 'connected');
-
-        if (connection) {
-            connection.bind('state_change', onState);
-            setConnected(connection.state === 'connected');
-        }
-
-        return () => {
-            try {
-                channel.stopListening('.notification.created', handler);
-            } catch (error) {
-                /* channel sudah mati — abaikan */
+        const detach = () => {
+            if (channel && handler) {
+                try {
+                    channel.stopListening('.notification.created', handler);
+                } catch (error) {
+                    /* channel sudah mati — abaikan */
+                }
             }
 
-            if (connection) connection.unbind('state_change', onState);
+            if (connection && onState) connection.unbind('state_change', onState);
+
+            channel = null;
+            handler = null;
+            connection = null;
+            onState = null;
+        };
+
+        const attach = () => {
+            const Echo = window.Echo;
+
+            if (!Echo || channel) return;
+
+            try {
+                channel = Echo.private(`notifications.${CONFIG.userId}`);
+            } catch (error) {
+                channel = null;
+
+                return;
+            }
+
+            handler = (payload) => {
+                const item = payload?.item;
+
+                if (!item || !item.id) return;
+
+                setItems((previous) => (previous.some((known) => known.id === item.id) ? previous : [{ ...item, _fresh: true }, ...previous]));
+                setUnread((previous) => (typeof payload.unread === 'number' ? payload.unread : previous + (item.read ? 0 : 1)));
+                setLive(`${item.app ? `${item.app}: ` : ''}${item.title}`);
+                ringBell();
+            };
+
+            channel.listen('.notification.created', handler);
+
+            connection = Echo.connector?.pusher?.connection ?? null;
+
+            if (connection) {
+                onState = (state) => setConnected(state === 'connected');
+                connection.bind('state_change', onState);
+                setConnected(connection.state === 'connected');
+            }
+        };
+
+        attach();
+        window.addEventListener('echo:ready', attach);
+
+        return () => {
+            window.removeEventListener('echo:ready', attach);
+            detach();
         };
     }, [ringBell]);
 
