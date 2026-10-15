@@ -24,14 +24,8 @@
             </x-status-badge>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('teknisi.sizing-projects.edit', $sizingProject) }}"
-               class="px-4 py-2 bg-accent-100 hover:bg-accent-200 text-accent-700 rounded-xl text-sm font-medium">
-                Edit
-            </a>
-            <a href="{{ route('teknisi.sizing-projects.index') }}"
-               class="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 rounded-xl text-sm">
-                {{ __('Kembali') }}
-            </a>
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizingProject) }}" title="Edit" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Kembali') }}" />
         </div>
     </div>
 

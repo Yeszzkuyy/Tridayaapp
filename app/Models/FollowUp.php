@@ -9,17 +9,29 @@ class FollowUp extends Model
 {
     use SoftDeletes;
 
-    public const TYPES = ['follow_up', 'call', 'whatsapp', 'email', 'meeting', 'note'];
+    /**
+     * Pilihan cara menghubungi yang ditawarkan di form (tanpa 'follow_up'
+     * dan 'meeting' yang tumpang tindih dengan nama menu/fitur).
+     * Nilai lama tetap valid dibaca, tapi tidak ditawarkan lagi.
+     */
+    public const CONTACT_TYPES = ['call', 'whatsapp', 'email', 'note'];
+
+    public const LEGACY_TYPES = ['follow_up', 'meeting'];
+
+    /** Opsi Log Follow Up di detail lead (urutan tampil di form). */
+    public const LOG_TYPES = ['whatsapp', 'call', 'email', 'meeting', 'proposal'];
 
     protected $fillable = [
         'customer_id',
         'lead_id',
-        'meeting_id',
         'description',
         'type',
         'follow_up_date',
+        'activity_time',
+        'location',
         'next_follow_up_date',
         'reminder_sent_at',
+        'completed_at',
         'created_by',
     ];
 
@@ -27,6 +39,7 @@ class FollowUp extends Model
         'follow_up_date' => 'date',
         'next_follow_up_date' => 'date',
         'reminder_sent_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public static function typeLabel(?string $type): string
@@ -35,7 +48,8 @@ class FollowUp extends Model
             'call' => __('Telepon'),
             'whatsapp' => 'WhatsApp',
             'email' => 'Email',
-            'meeting' => __('Meeting'),
+            'meeting' => __('Kunjungan/Meeting'),
+            'proposal' => __('Kirim Penawaran'),
             'note' => __('Catatan'),
             default => __('Follow Up'),
         };
@@ -49,11 +63,6 @@ class FollowUp extends Model
     public function lead()
     {
         return $this->belongsTo(Lead::class);
-    }
-
-    public function meeting()
-    {
-        return $this->belongsTo(Meeting::class);
     }
 
     public function creator()

@@ -1,14 +1,17 @@
 
 
-import Alpine from 'alpinejs';
-import Sortable from 'sortablejs';
-import ApexCharts from 'apexcharts';
+import AlpineBundle from 'alpinejs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { mountLoginGalaxy } from './galaxy.js';
 
+// Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
+// sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
+// dua copy = double-init seluruh x-data (store terbelah, listener ganda).
+// Jadi pakai copy Livewire bila ada; bundle sendiri hanya fallback bila
+// Livewire absen, dan start manual hanya dalam kasus fallback itu.
+const Alpine = window.Alpine ?? AlpineBundle;
 window.Alpine = Alpine;
-window.Sortable = Sortable;
-window.ApexCharts = ApexCharts;
 window.marked = marked;
 window.DOMPurify = DOMPurify;
 
@@ -29,13 +32,24 @@ function applyAppearance(mode, accent) {
     window.dispatchEvent(new CustomEvent('appearance:change'));
 }
 
-function persistAppearance(mode, accent) {
+function persistAppearance(mode, accent, attempt = 1) {
     const token = document.querySelector('meta[name="csrf-token"]')?.content;
     fetch('/settings/appearance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
         body: JSON.stringify({ theme: mode, accent }),
-    }).catch(() => {});
+    }).then((res) => {
+        // fetch() tidak melempar error untuk status 4xx/5xx — tanpa cek ini
+        // kegagalan simpan (mis. 419 token kedaluwarsa) berjalan diam-diam dan
+        // nilai DB vs localStorage nyimpang → kilatan tema salah saat navigasi.
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+    }).catch((err) => {
+        if (attempt < 2) {
+            setTimeout(() => persistAppearance(mode, accent, attempt + 1), 3000);
+            return;
+        }
+        console.warn('[appearance] gagal menyimpan preferensi tema ke server:', err);
+    });
 }
 
 window.getAppearanceColors = function () {
@@ -178,18 +192,41 @@ document.addEventListener('alpine:init', () => {
         toastTimer: null,
         init() {
             if (window.notifInit === undefined) return;
+            if (this.timer) clearInterval(this.timer);
+            this.sessionExpired = false;
             this.refresh();
-            this.timer = setInterval(() => this.refresh(), 5000);
+            this.timer = setInterval(() => this.refresh(), 15000);
             document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) this.refresh();
+                if (!document.hidden && !this.sessionExpired) this.refresh();
             });
-            window.addEventListener('focus', () => this.refresh());
+            window.addEventListener('focus', () => {
+                if (!this.sessionExpired) this.refresh();
+            });
         },
         async refresh() {
-            if (window.notifInit === undefined) return;
+            if (window.notifInit === undefined || this.sessionExpired || document.hidden) return;
             try {
-                const res = await fetch('/notifications/status');
+                const res = await fetch('/notifications/status', {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (res.status === 401) {
+                    this.sessionExpired = true;
+                    if (this.timer) {
+                        clearInterval(this.timer);
+                        this.timer = null;
+                    }
+                    if (!document.hidden) {
+                        window.toast('Sesi berakhir, silakan login ulang.', false, {
+                            label: 'Login ulang',
+                            href: '/login',
+                        });
+                    }
+                    return;
+                }
+                const contentType = res.headers.get('content-type') || '';
+                if (!res.ok || !contentType.includes('application/json')) return;
                 const data = await res.json();
+                if (typeof data?.unread !== 'number') return;
                 if (data.unread > this.unread) this.showToast();
                 this.unread = data.unread;
                 this.unassigned = data.unassigned;
@@ -249,7 +286,7 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-Alpine.start();
+if (!window.Livewire) Alpine.start();
 
 /* ============================================================
    Sidebar grup — buka/tutup mengikuti halaman AKTIF, bukan klik.
@@ -308,10 +345,25 @@ document.addEventListener('livewire:navigated', () => syncSidebarGroups());
    - 422: kotak error inline di atas form. Gagal total: submit biasa.
    - Diabaikan bila event sudah di-cancel (mis. confirm() batal).
    ============================================================ */
-window.toast = function (message, ok = true) {
+window.toast = function (message, ok = true, action = null) {
     const el = document.createElement('div');
     el.className = 'fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-white transition-opacity ' + (ok ? 'bg-green-600' : 'bg-red-600');
-    el.textContent = message;
+    const icon = document.createElement('span');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = ok
+        ? '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" stroke-linejoin="round" d="m8.5 12.3 2.4 2.4 4.8-5" /></svg>'
+        : '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M9 9l6 6M15 9l-6 6" /></svg>';
+    el.appendChild(icon);
+    const text = document.createElement('span');
+    text.textContent = message;
+    el.appendChild(text);
+    if (action && action.href && action.label) {
+        const a = document.createElement('a');
+        a.href = action.href;
+        a.textContent = action.label;
+        a.className = 'font-bold underline underline-offset-2 whitespace-nowrap';
+        el.appendChild(a);
+    }
     document.body.appendChild(el);
     setTimeout(() => {
         el.style.opacity = '0';
@@ -343,6 +395,22 @@ function ajaxToggleReset(form) {
     reset.classList.toggle('hidden', !filled);
 }
 
+// Skeleton baris tabel selama filter AJAX berjalan: jumlah kolom dibaca dari
+// thead target (fallback 4), baris pulse bawaan Tailwind. Diganti respons asli.
+function ajaxSkeleton(target, rows = 5) {
+    const table = target.querySelector('table');
+    const tbody = table?.querySelector('tbody');
+    if (!tbody) return;
+    const cols = table.querySelectorAll('thead th').length || 4;
+    let cells = '';
+    for (let c = 0; c < cols; c++) {
+        cells += '<td class="px-6 py-4"><div class="h-4 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>';
+    }
+    let html = '';
+    for (let r = 0; r < rows; r++) html += '<tr>' + cells + '</tr>';
+    tbody.innerHTML = html;
+}
+
 document.addEventListener('submit', async (e) => {
     const form = e.target?.closest?.('form[data-ajax]');
     if (!form || e.defaultPrevented) return;
@@ -361,6 +429,8 @@ document.addEventListener('submit', async (e) => {
         if ((form.method || 'get').toLowerCase() === 'get') {
             const params = new URLSearchParams(new FormData(form));
             const url = form.action + (form.action.includes('?') ? '&' : '?') + params.toString();
+            const target = form.dataset.ajaxTarget ? document.querySelector(form.dataset.ajaxTarget) : null;
+            if (target) ajaxSkeleton(target);
             const res = await fetch(url, { headers });
             const data = await res.json();
             if (data.html && form.dataset.ajaxTarget) {
@@ -402,4 +472,11 @@ document.addEventListener('submit', async (e) => {
 
 /* Sidebar grup buka/tutup mengikuti halaman aktif; transisi buka-tutup
    sepenuhnya CSS (sidebar-nav.css). Tidak ada lagi garis bercabang SVG. */
+
+/* Galaxy starfield — hanya di halaman yang menyediakan #galaxy (login). */
+if (document.getElementById('galaxy')) {
+    try {
+        mountLoginGalaxy();
+    } catch (e) {}
+}
 

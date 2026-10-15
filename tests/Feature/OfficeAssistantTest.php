@@ -78,8 +78,7 @@ class OfficeAssistantTest extends TestCase
         $this->assertSame(2, ConversationMessage::where('conversation_id', $conversationId)->count());
     }
 
-    public function test_send_continues_existing_conversation(): void
-    {
+    public function test_send_continues_existing_conversation(): void    {
         config()->set('ai.providers.openrouter.key', 'test-key');
         OfficeAssistant::fake(['Balasan pertama', 'Balasan kedua']);
 
@@ -218,5 +217,49 @@ class OfficeAssistantTest extends TestCase
             ->assertOk();
 
         Storage::disk('local')->assertMissing($attachment['path']);
+    }
+
+    public function test_send_trims_invisible_trailing_whitespace(): void
+    {
+        config()->set('ai.providers.openrouter.key', 'test-key');
+        OfficeAssistant::fake(['Balasan test']);
+
+        $this->actingUser();
+
+        $conversationId = $this->postJson(route('ai.assistant.send'), ['message' => "tes\n\n\n"])
+            ->assertOk()
+            ->json('conversation_id');
+
+        $this->assertSame(
+            'tes',
+            ConversationMessage::where('conversation_id', $conversationId)
+                ->where('role', 'user')
+                ->firstOrFail()->content
+        );
+    }
+
+    public function test_send_rejects_message_with_only_invisible_chars(): void
+    {
+        config()->set('ai.providers.openrouter.key', 'test-key');
+        OfficeAssistant::fake(['Balasan test']);
+
+        $this->actingUser();
+
+        $this->postJson(route('ai.assistant.send'), ['message' => "​\n  " . "\u{200B}"])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('message');
+    }
+
+    public function test_user_message_text_keeps_template_whitespace_out_of_layout(): void
+    {
+        $this->actingUser();
+
+        $html = $this->get(route('ai.assistant.index'))->assertOk()->getContent();
+
+        // Indentasi markup tidak boleh ikut tampil: wadah teks user normal,
+        // hanya isi pesan (ai-user-msg) yang pre-wrap.
+        $this->assertStringContainsString('class="ai-user-msg"', $html);
+        $this->assertMatchesRegularExpression('/\.ai-user-text\{[^}]*white-space:normal/', $html);
+        $this->assertMatchesRegularExpression('/\.ai-user-msg\{[^}]*white-space:pre-wrap/', $html);
     }
 }

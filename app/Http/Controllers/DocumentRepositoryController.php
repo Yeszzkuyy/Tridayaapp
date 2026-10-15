@@ -19,7 +19,7 @@ class DocumentRepositoryController extends Controller
             $query->where('document_category_id', $request->document_category_id);
         }
 
-        $documents = $query->get();
+        $documents = $query->paginate(15)->withQueryString();
         $categories = DocumentCategory::orderBy('name')->get();
 
         return view('teknisi.documents.index', compact('documents', 'categories'));

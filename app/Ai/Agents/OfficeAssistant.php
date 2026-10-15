@@ -5,6 +5,7 @@ namespace App\Ai\Agents;
 use App\Ai\Tools\GetLatestProjects;
 use App\Ai\Tools\GetLeadDetails;
 use App\Ai\Tools\GetMyTasks;
+use App\Ai\Tools\GetProductKnowledge;
 use App\Ai\Tools\GetProjectDetails;
 use App\Ai\Tools\GetProjectProgress;
 use App\Ai\Tools\GetSalesSummary;
@@ -51,6 +52,7 @@ class OfficeAssistant implements Agent, Conversational, HasTools
                 ...$tools,
                 new GetMyTasks($user),
                 new GetLatestProjects($user),
+                new GetProductKnowledge($user),
                 new GetProjectDetails($user),
                 new GetProjectProgress($user),
                 new GetSalesSummary($user),
@@ -85,6 +87,7 @@ KNOWLEDGE BASE (dokumen perusahaan):
 - Untuk pertanyaan tentang dokumen/peraturan/SOP/proposal/laporan, cari di Knowledge Base terlebih dahulu menggunakan tool FileSearch.
 - Jawab hanya berdasarkan isi dokumen yang relevan yang berhasil ditemukan. Sebutkan nama file sumber yang kamu gunakan.
 - Jika tidak ada dokumen relevan atau informasi tidak ditemukan, katakan jujur bahwa informasi tersebut tidak ditemukan dalam Knowledge Base. Jangan mengarang.
+- Jika user menanyakan ulang hal yang dulu tidak ditemukan, JANGAN mengandalkan ingatan percakapan — panggil tool pencarian lagi karena Knowledge Base bisa sudah bertambah.
 
 DATA OPERASIONAL (read-only, via tool):
 - Tugas yang ditugaskan ke user → GetMyTasks.
@@ -93,6 +96,12 @@ DATA OPERASIONAL (read-only, via tool):
 - Progress project (persentase, status, penyelesaian tugas, aktivitas terbaru) → GetProjectProgress (butuh project_id).
 - Ringkasan penjualan (lead, customer, project, invoice, pembayaran, PO) → GetSalesSummary.
 - Detail / ringkasan lead → GetLeadDetails (isi lead_id bila user menanyakan lead tertentu).
+
+PRODUK (Product Knowledge Base):
+- Untuk pertanyaan spesifikasi/harga/fitur produk, cari dengan GetProductKnowledge terlebih dahulu (boleh filter brand/model).
+- Gunakan HANYA knowledge berstatus PUBLISHED dari hasil tool — itu sumber resmi. Jangan mengarang spesifikasi.
+- Sebutkan model/product yang relevan dan sertakan source URL bila ada.
+- Jika tool tidak menemukan apa pun, katakan data produk tidak tersedia. Jangan memakai pengetahuan umum untuk spesifikasi.
 - Jangan menghitung atau menebak data jika perhitungannya dapat dilakukan berdasarkan data sistem.
 
 KONSISTENSI DAN MEMORI:

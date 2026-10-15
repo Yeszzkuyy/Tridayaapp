@@ -4,13 +4,10 @@
             <h1 class="text-3xl font-bold text-slate-800">Edit Role: {{ $role->name }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Perbarui nama role dan permission') }}</p>
         </div>
-        <a href="{{ route('admin-panel.index') }}"
-           class="px-4 py-2 bg-accent-400 text-white rounded-xl hover:bg-accent-500 transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="Back" />
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-3xl">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
         <form method="POST" action="{{ route('admin-panel.roles.update', $role) }}">
             @csrf @method('PUT')
             
@@ -24,8 +21,8 @@
                 <div class="flex items-center justify-between mb-3">
                     <label class="block text-sm font-medium text-slate-700">Permissions</label>
                     <div class="flex gap-2">
-                        <button type="button" id="select-all" class="px-3 py-1 text-xs bg-accent-500 hover:bg-accent-600 text-white">{{ __('Pilih Semua') }}</button>
-                        <button type="button" id="deselect-all" class="px-3 py-1 text-xs bg-accent-500 hover:bg-accent-600 text-white">{{ __('Batal Pilih') }}</button>
+                        <x-icon-button id="select-all" icon="leads" label="{{ __('Pilih Semua') }}" title="{{ __('Pilih Semua') }}" />
+                        <x-icon-button id="deselect-all" icon="reset" label="{{ __('Batal Pilih') }}" title="{{ __('Batal Pilih') }}" />
                     </div>
                 </div>
                 
@@ -35,7 +32,7 @@
                             <h4 class="font-medium text-slate-800 mb-3 capitalize">{{ $group }}</h4>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 @foreach($perms as $perm)
-                                    <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition">
+                                        <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
                                         <input type="checkbox" name="permissions[]" value="{{ $perm->name }}"
                                                {{ $role->hasPermissionTo($perm->name) ? 'checked' : '' }}
                                                class="w-4 h-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
@@ -50,11 +47,13 @@
 
             <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                 <a href="{{ route('admin-panel.index') }}"
-                   class="px-4 py-2 rounded-xl bg-accent-500 hover:bg-accent-600 text-white transition">
+                   class="group relative overflow-hidden px-4 py-2 rounded-xl bg-accent-500 hover:bg-accent-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95">
+                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     {{ __('Batal') }}
                 </a>
                 <button type="submit"
-                        class="px-4 py-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 transition">
+                        class="group relative overflow-hidden px-4 py-2 bg-accent-600 text-white rounded-xl hover:bg-accent-500 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
+                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     {{ __('Simpan Perubahan') }}
                 </button>
             </div>

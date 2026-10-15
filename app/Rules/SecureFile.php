@@ -5,6 +5,9 @@ namespace App\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Aturan upload file yang reusable.
@@ -124,6 +127,24 @@ class SecureFile implements ValidationRule
         );
     }
 
+    public static function knowledgeBase(): self
+    {
+        // Tanpa html/htm: konten RAG dikutip kembali AI, HTML = XSS persisten.
+        return new self(
+            ['pdf', 'txt', 'md', 'csv', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
+            [
+                'application/pdf',
+                'text/plain', 'text/markdown', 'text/csv',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            ],
+        );
+    }
+
     /**
      * Bersihkan nama file untuk keperluan display/link:
      * buang path & karakter kontrol, jaga nama asli agar tetap terbaca.
@@ -134,5 +155,65 @@ class SecureFile implements ValidationRule
         $name = preg_replace('/[\x00-\x1F\x7F<>":]/u', '', $name) ?? '';
 
         return trim($name) ?: 'file';
+    }
+
+    /**
+     * Ekstensi yang aman disajikan inline: tidak bisa mengeksekusi script.
+     * svg/html/txt/csv sengaja dikecualikan (bisa berisi JS atau formula).
+     */
+    public const INLINE_EXTENSIONS = [
+        'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp',
+        'mp4', 'webm', 'ogg', 'mp3', 'wav',
+    ];
+
+    /** MIME finfo yang diterima per ekstensi inline. */
+    public const EXTENSION_MIME_TYPES = [
+        'pdf' => ['application/pdf'],
+        'jpg' => ['image/jpeg'], 'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'], 'gif' => ['image/gif'], 'webp' => ['image/webp'],
+        'mp4' => ['video/mp4'], 'webm' => ['video/webm', 'audio/webm'],
+        'ogg' => ['audio/ogg', 'video/ogg'], 'mp3' => ['audio/mpeg', 'audio/mp3'],
+        'wav' => ['audio/wav', 'audio/x-wav', 'audio/vnd.wave'],
+    ];
+
+    /**
+     * Sajikan file dari disk non-publik dengan aman:
+     * MIME dari isi file (finfo), bukan klaim client/DB; hanya tipe aman
+     * yang inline + nosniff, sisanya dipaksa download.
+     */
+    public static function fileResponse(string $disk, string $path, string $fileName): BinaryFileResponse|StreamedResponse
+    {
+        abort_unless(Storage::disk($disk)->exists($path), 404);
+
+        $safeName = self::sanitizeName($fileName);
+        $extension = strtolower(pathinfo($safeName, PATHINFO_EXTENSION));
+        $absolute = Storage::disk($disk)->path($path);
+
+        if (! in_array($extension, self::INLINE_EXTENSIONS, true)) {
+            return Storage::disk($disk)->download($path, $safeName, ['X-Content-Type-Options' => 'nosniff']);
+        }
+
+        return response()->file($absolute, [
+            'Content-Type' => self::serverMime($absolute, $extension),
+            'Content-Disposition' => 'inline; filename="'.$safeName.'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    /**
+     * MIME server-side: percaya finfo hanya bila cocok dengan ekstensi.
+     * Mismatch (mis. PDF berisi HTML) → octet-stream + nosniff agar
+     * browser mengunduh, bukan mengeksekusi.
+     */
+    public static function serverMime(string $absolutePath, string $extension): string
+    {
+        $allowed = self::EXTENSION_MIME_TYPES[$extension] ?? [];
+        $actual = @mime_content_type($absolutePath);
+
+        if ($allowed !== [] && in_array($actual, $allowed, true)) {
+            return (string) $actual;
+        }
+
+        return 'application/octet-stream';
     }
 }

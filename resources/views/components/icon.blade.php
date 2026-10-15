@@ -29,11 +29,15 @@ $icons = [
     'restore' => '<path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" />',
 
     'chevron-right' => '<path d="M9 5l7 7-7 7" />',
+    'chevron-down' => '<path d="M6 9l6 6 6-6" />',
 
     'logout' => '<path d="M15 4H8a2 2 0 00-2 2v12a2 2 0 002 2h7" /><path d="M19 12H9" /><path d="M15 8l4 4-4 4" />',
 
     // ============ TAMBAHKAN INI ============
     'chart-bar' => '<path d="M4 20h16M6 16l4-8 4 4 4-6" />',
+
+    // Papan kolom (pipeline/kanban), Heroicons outline view-columns
+    'view-columns' => '<path d="M9 4.5v15m6-15v15m-10.5 0h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H4.5a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />',
 
     'settings' => '<path d="M12.5 3h-1a1.5 1.5 0 00-1.5 1.5v.5a1.5 1.5 0 01-2.2 1.3l-.4-.2a1.5 1.5 0 00-2.1.6l-.5.9a1.5 1.5 0 00.6 2.1l.4.2a1.5 1.5 0 010 2.6l-.4.2a1.5 1.5 0 00-.6 2.1l.5.9a1.5 1.5 0 002.1.6l.4-.2a1.5 1.5 0 012.2 1.3v.5a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-.5a1.5 1.5 0 012.2-1.3l.4.2a1.5 1.5 0 002.1-.6l.5-.9a1.5 1.5 0 00-.6-2.1l-.4-.2a1.5 1.5 0 010-2.6l.4-.2a1.5 1.5 0 00.6-2.1l-.5-.9a1.5 1.5 0 00-2.1-.6l-.4.2a1.5 1.5 0 01-2.2-1.3v-.5A1.5 1.5 0 0012.5 3z" /><circle cx="12" cy="12" r="2.5" />',
 
@@ -63,6 +67,7 @@ $icons = [
     'file-text' => '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" />',
 
     'credit-card' => '<rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />',
+    'dots' => '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none" />',
     // ========================================
 ];
 @endphp

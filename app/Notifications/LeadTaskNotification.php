@@ -36,7 +36,11 @@ class LeadTaskNotification extends Notification
     {
         return [
             'type' => 'task',
-            'title' => $this->event === 'created' ? 'Task baru' : 'Status task',
+            'title' => match ($this->event) {
+                'created' => 'Task baru',
+                'comment' => 'Komentar baru',
+                default => 'Status task',
+            },
             'lead_id' => $this->task->lead_id,
             'customer' => $this->task->lead?->customer?->name ?? 'Lead task',
             'preview' => $this->task->title,
@@ -47,7 +51,11 @@ class LeadTaskNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject($this->event === 'created' ? 'Inside Sales Task Baru' : 'Status Task Berubah')
+            ->subject(match ($this->event) {
+                'created' => 'Inside Sales Task Baru',
+                'comment' => 'Komentar Baru di Task',
+                default => 'Status Task Berubah',
+            })
             ->line('Task: ' . $this->task->title)
             ->line('Lead: ' . ($this->task->lead?->customer?->name ?? '-'))
             ->action('Lihat Task', url(route('lead-tasks.show', $this->task->id)))
@@ -57,7 +65,11 @@ class LeadTaskNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => $this->event === 'created' ? 'Inside sales task baru' : 'Status task berubah',
+            'title' => match ($this->event) {
+                'created' => 'Inside sales task baru',
+                'comment' => 'Komentar baru di task',
+                default => 'Status task berubah',
+            },
             'body' => $this->task->title,
             'url' => route('lead-tasks.show', $this->task->id),
         ];

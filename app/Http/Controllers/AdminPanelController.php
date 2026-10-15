@@ -27,7 +27,7 @@ class AdminPanelController extends Controller
     
     public function createUser()
     {
-        $roles = Role::where('name', '!=', 'super-admin')->get();
+        $roles = Role::where('name', '!=', 'super-admin')->orderBy('name')->get();
         return view('admin-panel.users.create', compact('roles'));
     }
 
@@ -38,7 +38,10 @@ class AdminPanelController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'roles' => 'array',
+            'roles.*' => 'exists:roles,name',
         ]);
+
+        $this->guardSuperAdminGrant($request);
 
         $user = User::create([
             'name' => $request->name,
@@ -48,6 +51,8 @@ class AdminPanelController extends Controller
 
         if ($request->filled('roles')) {
             $user->assignRole($request->roles);
+            // Selaraskan kolom role legacy (NOT NULL) dengan role pertama.
+            $user->forceFill(['role' => $request->roles[0]])->save();
         }
 
         return redirect()->route('admin-panel.index')
@@ -56,7 +61,7 @@ class AdminPanelController extends Controller
 
     public function editUser(User $user)
     {
-        $roles = Role::where('name', '!=', 'super-admin')->get();
+        $roles = Role::where('name', '!=', 'super-admin')->orderBy('name')->get();
         return view('admin-panel.users.edit', compact('user', 'roles'));
     }
 
@@ -67,7 +72,11 @@ class AdminPanelController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'roles' => 'array',
+            'roles.*' => 'exists:roles,name',
         ]);
+
+        $this->guardSuperAdminGrant($request);
+        $this->guardLastSuperAdminDemote($request, $user);
 
         $user->update([
             'name' => $request->name,
@@ -82,8 +91,11 @@ class AdminPanelController extends Controller
 
         if ($request->has('roles')) {
             $user->syncRoles($request->roles);
+            // Selaraskan kolom role legacy (NOT NULL) dengan role pertama.
+            $user->forceFill(['role' => $request->roles[0] ?? 'guest'])->save();
         } else {
             $user->syncRoles([]);
+            $user->forceFill(['role' => 'guest'])->save();
         }
 
         return redirect()->route('admin-panel.index')
@@ -105,18 +117,61 @@ class AdminPanelController extends Controller
             ->with('success', __('User berhasil dihapus.'));
     }
 
+    /**
+     * Hanya super-admin yang boleh memberikan role super-admin.
+     * Form memang menyembunyikan opsi ini, tapi validasi tidak boleh
+     * mengandalkan UI (request bisa dibuat manual).
+     */
+    private function guardSuperAdminGrant(Request $request): void
+    {
+        if (in_array('super-admin', $request->input('roles', []), true)
+            && ! $request->user()->hasRole('super-admin')) {
+            abort(403, __('Hanya super-admin yang boleh memberikan role super-admin.'));
+        }
+    }
+
+    /**
+     * Cegah lockout: super-admin terakhir tidak boleh di-demote,
+     * dan niemand boleh mencabut super-admin dari dirinya sendiri.
+     */
+    private function guardLastSuperAdminDemote(Request $request, User $user): void
+    {
+        if (! $user->hasRole('super-admin')) {
+            return;
+        }
+
+        $removing = ! $request->has('roles')
+            || ! in_array('super-admin', $request->input('roles', []), true);
+
+        if (! $removing) {
+            return;
+        }
+
+        if ((int) $user->id === (int) $request->user()->id) {
+            abort(403, __('Tidak bisa mencabut role super-admin dari akun sendiri.'));
+        }
+
+        if (User::role('super-admin')->count() <= 1) {
+            abort(403, __('Tidak bisa demote super-admin terakhir (sistem akan terkunci).'));
+        }
+    }
+
     // ========== ROLE MANAGEMENT ==========
     
     public function createRole()
     {
-        return view('admin-panel.roles.create', ['permissions' => $this->groupedPermissions()]);
+        return view('admin-panel.roles.create', [
+            'permissions' => $this->groupedPermissions(),
+            'rolePresets' => Role::with('permissions:id,name')->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function storeRole(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name',
+            'name' => 'required|string|max:255|lowercase|unique:roles,name',
             'permissions' => 'array',
+            'permissions.*' => 'exists:permissions,name',
         ]);
 
         $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
@@ -145,8 +200,9 @@ class AdminPanelController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'name' => 'required|string|max:255|lowercase|unique:roles,name,' . $role->id,
             'permissions' => 'array',
+            'permissions.*' => 'exists:permissions,name',
         ]);
 
         $role->update(['name' => $request->name]);

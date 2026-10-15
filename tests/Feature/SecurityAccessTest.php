@@ -142,6 +142,35 @@ class SecurityAccessTest extends TestCase
     }
 
     /**
+     * H5: Bukti transfer hanya manage-admin. Sales (view-admin) ditolak
+     * di proof, tapi tetap boleh lihat halaman show (read-only recap).
+     */
+    public function test_payment_proof_sales_forbidden_but_show_allowed(): void
+    {
+        $customer = Customer::create(['name' => 'PT Bukti Sales']);
+        $invoice = \App\Models\Invoice::create([
+            'invoice_number' => 'INV-003',
+            'customer_id' => $customer->id,
+            'amount' => 75000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+        Storage::fake('private');
+        Storage::disk('private')->put('payments/bukti3.jpg', "\xFF\xD8\xFF fake-jpeg");
+
+        $payment = Payment::create([
+            'invoice_id' => $invoice->id,
+            'amount' => 75000,
+            'payment_date' => now()->toDateString(),
+            'proof_file' => 'payments/bukti3.jpg',
+        ]);
+
+        $sales = $this->loginAs('sales');
+        $this->actingAs($sales)->get(route('admin.payments.proof', $payment))->assertForbidden();
+        $this->actingAs($sales)->get(route('admin.payments.show', $payment))->assertOk();
+    }
+
+    /**
      * Super admin tetap melewati semua policy (Gate::before).
      */
     public function test_super_admin_can_download_any_project_document(): void
@@ -221,5 +250,144 @@ class SecurityAccessTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(1, $project->fresh()->documents()->count());
+    }
+
+    /**
+     * H1: MIME di database yang dipalsukan (text/html) tidak dipercaya —
+     * preview menyajikan MIME hasil deteksi isi file + nosniff.
+     */
+    public function test_preview_ignores_spoofed_mime_in_database(): void
+    {
+        $u = $this->loginAs('technician');
+        $this->actingAs($u);
+        Storage::fake('private');
+        Storage::disk('private')->put('documents/1/asli.pdf', "%PDF-1.4 spoofed\n");
+
+        $customer = Customer::create(['name' => 'PT Spoof']);
+        $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
+        $project = Project::create([
+            'customer_id' => $customer->id,
+            'work_type_id' => $workType->id,
+            'project_name' => 'Project Spoof',
+        ]);
+        $doc = $project->documents()->create([
+            'file_name' => 'asli.pdf',
+            'file_path' => 'documents/1/asli.pdf',
+            'mime_type' => 'text/html',
+            'uploaded_by' => $u->id,
+        ]);
+
+        $response = $this->actingAs($u)->get(route('project-documents.preview', $doc));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    /**
+     * H1: SVG tidak boleh inline (bisa berisi script) — dipaksa download.
+     */
+    public function test_svg_preview_forces_download(): void
+    {
+        $u = $this->loginAs('technician');
+        $this->actingAs($u);
+        Storage::fake('private');
+        Storage::disk('private')->put('documents/1/gambar.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+
+        $customer = Customer::create(['name' => 'PT Svg']);
+        $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
+        $project = Project::create([
+            'customer_id' => $customer->id,
+            'work_type_id' => $workType->id,
+            'project_name' => 'Project Svg',
+        ]);
+        $doc = $project->documents()->create([
+            'file_name' => 'gambar.svg',
+            'file_path' => 'documents/1/gambar.svg',
+            'mime_type' => 'image/svg+xml',
+            'uploaded_by' => $u->id,
+        ]);
+
+        $response = $this->actingAs($u)->get(route('project-documents.preview', $doc));
+
+        $response->assertOk();
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringStartsWith('attachment', $response->headers->get('Content-Disposition'));
+    }
+
+    /**
+     * H1: Lampiran lead non-media (xlsx) tidak lagi inline — dipaksa download + nosniff.
+     */
+    public function test_lead_office_attachment_forces_download(): void
+    {
+        $u = $this->loginAs('super-admin');
+        Storage::fake('private');
+        Storage::disk('private')->put('leads/1/data.xlsx', 'bukan-zip-asli');
+
+        $customer = Customer::create(['name' => 'PT Lead']);
+        $lead = Lead::create(['customer_id' => $customer->id, 'status' => 'cool']);
+        $doc = $lead->documents()->create([
+            'file_name' => 'data.xlsx',
+            'file_path' => 'leads/1/data.xlsx',
+            'mime_type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+
+        $response = $this->actingAs($u)->get(route('leads.attachments.show', [$lead, $doc]));
+
+        $response->assertOk();
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringStartsWith('attachment', $response->headers->get('Content-Disposition'));
+    }
+
+    /**
+     * H1: Bukti pembayaran disajikan dengan nosniff.
+     */
+    public function test_payment_proof_serves_nosniff(): void
+    {
+        $customer = Customer::create(['name' => 'PT Bukti']);
+        $invoice = \App\Models\Invoice::create([
+            'invoice_number' => 'INV-002',
+            'customer_id' => $customer->id,
+            'amount' => 50000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+        Storage::fake('private');
+        Storage::disk('private')->put('payments/bukti2.jpg', "\xFF\xD8\xFF fake-jpeg");
+
+        $payment = Payment::create([
+            'invoice_id' => $invoice->id,
+            'amount' => 50000,
+            'payment_date' => now()->toDateString(),
+            'proof_file' => 'payments/bukti2.jpg',
+        ]);
+
+        $admin = $this->loginAs('admin');
+        $response = $this->actingAs($admin)->get(route('admin.payments.proof', $payment));
+
+        $response->assertOk();
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    /**
+     * H2: Route serve file framework (/storage/{path}) tidak terdaftar —
+     * tidak ada akses langsung ke storage/app/private tanpa auth.
+     */
+    public function test_storage_serve_route_disabled(): void
+    {
+        $this->get('/storage/leads/1/apapun.pdf')->assertNotFound();
+    }
+
+    /**
+     * Setiap respons web membawa header keamanan dasar.
+     */
+    public function test_security_headers_present(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertOk();
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     }
 }

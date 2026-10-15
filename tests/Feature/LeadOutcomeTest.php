@@ -34,7 +34,7 @@ class LeadOutcomeTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'vendor',
-            'status' => 'qualified',
+            'status' => 'hot',
             'incoming_date' => '2026-09-01',
         ], $overrides));
     }
@@ -83,7 +83,7 @@ class LeadOutcomeTest extends TestCase
         $res->assertSee('Kemahalan 20%.');
 
         // pindah keluar dari lost membersihkan alasan
-        $this->actingAs($user)->patch(route('leads.update-status', $lead), ['status' => 'qualified'])
+        $this->actingAs($user)->patch(route('leads.update-status', $lead), ['status' => 'hot'])
             ->assertNoContent();
         $lead->refresh();
         $this->assertNull($lead->lost_reason);
@@ -138,8 +138,10 @@ class LeadOutcomeTest extends TestCase
     public function test_pipeline_still_works(): void
     {
         $user = $this->marketingUser();
-        $this->makeLead();
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $this->makeLead(['assigned_to' => $sales->id]);
 
-        $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+        $this->actingAs($sales)->get(route('leads.pipeline'))->assertOk();
     }
 }

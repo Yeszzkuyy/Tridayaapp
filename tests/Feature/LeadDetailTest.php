@@ -36,7 +36,7 @@ class LeadDetailTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'vendor',
-            'status' => 'new',
+            'status' => 'cool',
             'source' => 'website',
             'kebutuhan' => 'Butuh fiber optik',
             'assigned_to' => $assignee?->id,
@@ -56,7 +56,7 @@ class LeadDetailTest extends TestCase
         $res->assertSee('Budi');
         $res->assertSee('Butuh fiber optik');
         $res->assertSee($user->name); // sales penanganan
-        $res->assertSee(route('leads.pipeline')); // tombol kembali ke pipeline
+        $res->assertDontSee(route('leads.pipeline')); // marketing tak lagi pegang pipeline
     }
 
     public function test_detail_renders_fallback_for_empty_fields(): void
@@ -100,8 +100,8 @@ class LeadDetailTest extends TestCase
 
     public function test_pipeline_still_works(): void
     {
-        $user = $this->userWithRole('marketing');
-        $this->makeLead();
+        $user = $this->userWithRole('sales');
+        $this->makeLead($user);
 
         $res = $this->actingAs($user)->get(route('leads.pipeline'));
 

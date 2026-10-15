@@ -35,7 +35,7 @@ class GetLeadDetailsTest extends TestCase
 
         return Lead::create([
             'customer_id' => $customer->id,
-            'status' => 'qualified',
+            'status' => 'hot',
             'assigned_to' => $assignee?->id,
             'kebutuhan' => 'Butuh CCTV 16 titik',
             'solusi' => 'Proposal kamera IP',
@@ -52,7 +52,7 @@ class GetLeadDetailsTest extends TestCase
         ])), true);
 
         $this->assertSame('PT Contoh', $result['customer']);
-        $this->assertSame('qualified', $result['status']);
+        $this->assertSame('hot', $result['status']);
         $this->assertSame('Butuh CCTV 16 titik', $result['kebutuhan']);
     }
 

@@ -4,6 +4,30 @@
 @import './themes/accent/emerald.css';
 @import './sidebar-nav.css';
 
+/* Fallback metrik font web (anti-FOUT shift): Arial lokal diskala agar
+   kotak teks ≈ font asli selama font Bunny belum tiba. Angka dari metrik
+   hhea + lebar rata-rata aktual file woff2 (bukan tebakan). */
+@font-face {
+    font-family: 'PJSFallback';
+    src: local('Arial');
+    ascent-override: 103.8%;
+    descent-override: 22.2%;
+    line-gap-override: 0%;
+    size-adjust: 103.63%;
+    font-weight: 400 800;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Exo2Fallback';
+    src: local('Arial');
+    ascent-override: 99.9%;
+    descent-override: 20.1%;
+    line-gap-override: 0%;
+    size-adjust: 99.34%;
+    font-weight: 400 800;
+    font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -176,11 +200,12 @@ button, a, [type="submit"] { -webkit-tap-highlight-color: transparent; }
    ============================================================ */
 .bg-white.shadow-sm { box-shadow: var(--shadow-rest); }
 
+/* border-color sengaja TIDAK ditransisikan: kilatannya justru jadi "frame
+   putih" sepersekian detik saat wire:navigate mengganti atribut <html>. */
 main .bg-white {
     transition:
         transform 0.35s var(--ease-out),
-        box-shadow 0.35s var(--ease-out),
-        border-color 0.35s var(--ease-out);
+        box-shadow 0.35s var(--ease-out);
 }
 
 @media (hover: hover) {
@@ -309,8 +334,10 @@ tbody tr { transition: background-color 0.2s ease; }
     [data-reveal][data-reveal-delay="2"] { transition-delay: 0.14s; }
     [data-reveal][data-reveal-delay="3"] { transition-delay: 0.21s; }
 
-    /* Bar chart tumbuh (tinggi/lebar 0 → target) saat ancestor .in-view.
-       State 0 hanya bila html.js.reveal-on — tanpa JS langsung tampil final. */
+    /* Bar chart tumbuh (tinggi/lebar 0 → target) tiap kunjungan saat ancestor
+       .in-view. State 0 hanya bila html.js (JS jalan) — tanpa JS langsung
+       tampil final. Sengaja TIDAK digate .reveal-on: reveal teks dibatasi
+       sekali per sesi, tapi grafik harus beranimasi tiap kunjungan. */
     [data-grow-h] {
         height: var(--h);
         transition: height 1.2s var(--ease-out);
@@ -321,8 +348,8 @@ tbody tr { transition: background-color 0.2s ease; }
         transition: width 1.2s var(--ease-out);
         transition-delay: var(--d, 0ms);
     }
-    html.js.reveal-on [data-reveal]:not(.in-view) [data-grow-h] { height: 0; }
-    html.js.reveal-on [data-reveal]:not(.in-view) [data-grow-w] { width: 0; }
+    html.js [data-reveal]:not(.in-view) [data-grow-h] { height: 0; }
+    html.js [data-reveal]:not(.in-view) [data-grow-w] { width: 0; }
 
     /* Parallax mouse (nilai diisi JS via --px/--py); hanya untuk dekorasi opt-in */
     [data-parallax-mouse] {
@@ -547,6 +574,24 @@ tbody tr { transition: background-color 0.2s ease; }
     }
 }
 
+/* ============================================================
+   Avatar founder: jilatan api warna-tema (lapis luar blur).
+   Irama tak beraturan = kesan lilin tertiup angin, bukan putaran
+   mesin. Lapis dalam (chase conic) tetap pakai animate-spin bawaan.
+   ============================================================ */
+@keyframes avatar-flicker {
+    0%, 100% { transform: rotate(-3deg) scale(1); opacity: 0.9; }
+    25% { transform: rotate(2deg) scale(1.04); opacity: 1; }
+    50% { transform: rotate(-1deg) scale(0.98); opacity: 0.85; }
+    75% { transform: rotate(3deg) scale(1.02); opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .avatar-flame {
+        animation: avatar-flicker 2.2s ease-in-out infinite;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .beam-notif.beam-on::before {
         animation: none;
@@ -635,19 +680,23 @@ tbody tr { transition: background-color 0.2s ease; }
 }
 
 /* ============================================================
-   Kartu status: center terhadap AREA KONTEN (bukan viewport),
-   kompensasi sidebar 280px (76px saat collapse) di desktop.
+   Backdrop kartu status + overlay submit: full selebar viewport
+   (redup tembus sampai area sidebar, sidebar tetap terang di atasnya
+   karena z-index-nya lebih tinggi).
+   Overlay submit (#gs-submit-overlay) mulai di bawah navbar
+   (h-16 mobile, sm:h-20).
    ============================================================ */
 .status-card-backdrop {
     left: 0;
 }
 
-@media (min-width: 1024px) {
-    .status-card-backdrop {
-        left: 280px;
-    }
+#gs-submit-overlay {
+    top: 64px;
+    left: 0;
+}
 
-    html.sidebar-collapsed .status-card-backdrop {
-        left: 76px;
+@media (min-width: 640px) {
+    #gs-submit-overlay {
+        top: 80px;
     }
 }

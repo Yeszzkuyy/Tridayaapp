@@ -74,11 +74,27 @@ class SettingsController extends Controller
 
     /**
      * Password-gated area: change password and delete account.
+     *
+     * Selalu terkunci tiap kunjungan (GET): hanya request tepat setelah
+     * konfirmasi sukses (flash sekali pakai) yang melihat isi halaman.
      */
     public function advanced(Request $request): View
     {
         return view('settings.advanced', [
             'user' => $request->user(),
+            'unlocked' => (bool) $request->session()->get('advanced_unlocked', false),
         ]);
+    }
+
+    /**
+     * Konfirmasi password inline untuk membuka halaman advanced.
+     */
+    public function confirmAdvanced(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        return Redirect::route('settings.advanced')->with('advanced_unlocked', true);
     }
 }

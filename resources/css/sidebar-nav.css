@@ -1,22 +1,40 @@
 /* ============================================================
    Sidebar nav — sub-menu ala template "animated sidebar":
-   indent + border-left, buka/tutup dengan stagger blur per item.
+   indent + border-left, buka/tutup lewat transisi lipat grid
+   (tanpa stagger item agar tak me-replay tiap pindah menu).
 
    Menggantikan branched-tree SVG (garis trunk + reach): sub-menu
    kini daftar polos ber-indent; animasinya dipindah ke CSS.
 
    Token (app.blade.php): --sb-dur, --sb-ease, --sb-ease-soft
    ============================================================ */
-.sidebar .sb-group {
-    --sb-stagger: 45ms;
-    --sb-stagger-first: 35ms;
+
+/* ---------- Wrapper x-persist (Livewire @persist) ----------
+   @persist di-compile jadi <div x-persist> polos di dalam aside flex.
+   Tanpa rule ini rantai flex putus (nav flex-1/min-h-0 tak berpengaruh)
+   sehingga sidebar tak bisa scroll. */
+.sidebar aside > [x-persist] {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
 }
 
-/* ---------- Sub-menu: tinggi 0 -> 1fr ---------- */
-.sidebar .sb-sub {
+/* ---------- Sub-menu: tinggi 0 -> 1fr ----------
+   Easing = EASE_DRAWER template [0.32,0.72,0,1]: start landai (tanpa
+   hentakan awal), 0.36s. ease-out curam sebelumnya terasa "jebret".
+   translateZ(0): unfold jalan di layer GPU sendiri, tak memicu repaint
+   blob blur di belakang nav (sumber patah-patah).
+   PENTING: selector (0,3,0) sengaja lebih kuat dari
+   `.sidebar .sidebar-hide` (0,2,0) di <style> layout — .sb-sub ikut
+   menyandang sidebar-hide, dan tanpa ini transisinya tertimpa total
+   sehingga buka/tutup snap instan (= jebret). */
+.sidebar .sb-group > .sb-sub {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows var(--sb-dur) var(--sb-ease-soft);
+    transform: translateZ(0);
+    transition: grid-template-rows .36s cubic-bezier(.32,.72,0,1);
 }
 
 .sidebar .sb-group[data-open] > .sb-sub {
@@ -39,40 +57,49 @@
     border-left: 1px solid var(--sidebar-border);
 }
 
-/* ---------- Item sub-menu: blur + naik, stagger per anak ----------
-   Hanya pada kunjungan pertama per sesi (html:not(.sidebar-settled)).
-   Navigasi di app ini full page reload, jadi tanpa penanda ini tiap
-   pindah menu memutar ulang efek "turun-turun" sub-menu aktif. */
-@media (prefers-reduced-motion: no-preference) {
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item {
-        animation: sb-sub-in 180ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
-    }
+/* Jarak header grup ke sub-item pertama ("menu" vs "sub menu" tidak
+   gabung). Margin di sini aman untuk collapse 0fr: ia berada di dalam
+   area overflow:hidden .sb-sub-list sehingga ikut terpotong penuh
+   saat sub-menu tertutup. */
+.sidebar .sb-sub-list > .sb-sub-item:first-child { margin-top: 6px; }
+
+/* ---------- Item sub-menu: tanpa animasi muncul ----------
+   Stagger blur+naik sengaja dimatikan: me-replay tiap grup dibuka
+   (termasuk saat pindah menu) sehingga terasa looping. Sub-menu
+   dibuka/ditutup lewat transisi lipat grid di atas saja. */
+
+/* ---------- Hover pill meluncur ala template (SharedLayoutBg) ----------
+   Satu pill selebar nav; JS menggeser + mengukurnya mengikuti item
+   yang di-hover. Item dibuat transparan saat hover HANYA bila pill
+   terbukti ter-bind (html.sb-pill) — gagal bind = hover bawaan tetap
+   ada, hover tak pernah hilang total. */
+.sb-hover-pill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    margin: 0 !important;
+    border-radius: 0.75rem;
+    background: var(--nav-hover-bg);
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+    transition:
+        transform 280ms cubic-bezier(.32, 1.28, .42, 1),
+        width 280ms cubic-bezier(.32, 1.28, .42, 1),
+        height 280ms cubic-bezier(.32, 1.28, .42, 1),
+        opacity 150ms ease;
 }
 
-@keyframes sb-sub-in {
-    from {
-        opacity: 0;
-        transform: translateY(-6px);
-        filter: blur(3px);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-        filter: blur(0);
-    }
+html.sb-pill #sidebar-navigation a:hover,
+html.sb-pill #sidebar-navigation .sb-head:hover {
+    background: transparent;
 }
 
-/* Stagger per anak. Sub-item terbanyak = 8 (grup Teknisi), jadi 8 slot
-   cukup; sisanya memakai delay slot terakhir. */
-@media (prefers-reduced-motion: no-preference) {
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(1) { animation-delay: var(--sb-stagger-first); }
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(2) { animation-delay: calc(var(--sb-stagger-first) + var(--sb-stagger)); }
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(3) { animation-delay: calc(var(--sb-stagger-first) + var(--sb-stagger) * 2); }
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(4) { animation-delay: calc(var(--sb-stagger-first) + var(--sb-stagger) * 3); }
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(5) { animation-delay: calc(var(--sb-stagger-first) + var(--sb-stagger) * 4); }
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(6) { animation-delay: calc(var(--sb-stagger-first) + var(--sb-stagger) * 5); }
-    html:not(.sidebar-settled) .sidebar .sb-group[data-open] > .sb-sub > .sb-sub-list > .sb-sub-item:nth-child(n + 7) { animation-delay: calc(var(--sb-stagger-first) + var(--sb-stagger) * 6); }
+html.sidebar-collapsed .sb-hover-pill,
+html:not(.js) .sb-hover-pill {
+    display: none;
 }
 
 /* ---------- Tombol buka/tutup grup ---------- */
@@ -122,18 +149,24 @@
     color: var(--nav-active-text);
 }
 
-/* ---------- Press feedback (whileTap scale 0.98) ---------- */
+/* ---------- Press feedback (whileTap scale 0.98) ----------
+   Template: semua MenuButton/SubButton. Di sini: semua link + button
+   sidebar (menu Main, header grup, sub-item, user, collapse). */
 @media (hover: hover) and (pointer: fine) {
-    .sidebar .sb-group > div > a,
-    .sidebar .sb-sub-item {
+    .sidebar nav a,
+    .sidebar nav button,
+    .sidebar-user,
+    .sidebar-collapse {
         transition:
             transform 120ms var(--sb-ease-soft),
             background-color 150ms ease,
             color 150ms ease;
     }
 
-    .sidebar .sb-group > div > a:active,
-    .sidebar .sb-sub-item:active {
+    .sidebar nav a:active,
+    .sidebar nav button:active,
+    .sidebar-user:active,
+    .sidebar-collapse:active {
         transform: scale(0.98);
     }
 }
@@ -149,16 +182,21 @@ html.sidebar-collapsed .sidebar .sb-sub {
     display: none;
 }
 
+/* ---------- Ruang scrollbar dicadangkan ----------
+   Tanpa ini, tiap sub-menu dibuka nav memanjang → scrollbar vertikal
+   muncul mendadak → isi bergeser horizontal (efek "jebret"). */
+#sidebar-navigation {
+    scrollbar-gutter: stable;
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
-    .sidebar .sb-sub {
+    /* Sama kuatnya dengan rule lipat (0,3,0) agar tetap menang. */
+    .sidebar .sb-group > .sb-sub {
         transition: none;
     }
 
-    .sidebar .sb-sub-item {
-        opacity: 1;
-        transform: none;
-        filter: none;
-        animation: none !important;
+    .sb-hover-pill {
+        display: none;
     }
 }

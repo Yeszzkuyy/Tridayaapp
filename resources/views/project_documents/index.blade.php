@@ -8,10 +8,7 @@
                 </p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('customers.show', $project->customer_id) }}" 
-                   class="px-5 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 font-medium transition">
-                    ← Kembali
-                </a>
+                <x-icon-button as="a" icon="back" href="{{ route('customers.show', $project->customer_id) }}" title="← Kembali" />
             </div>
         </div>
         {{-- Upload Form --}}
@@ -107,15 +104,10 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                <a href="{{ route('project-documents.preview', $document) }}" 
-                                   target="_blank"
-                                   class="text-accent-600 hover:text-accent-800 text-sm">
-                                    Preview
-                                </a>
-                                <a href="{{ route('project-documents.download', $document) }}" 
-                                   class="text-accent-600 hover:text-accent-800 text-sm">
-                                    Download
-                                </a>
+                                <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $document) }}"
+                                               target="_blank" label="Preview" title="Preview" />
+                                <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
+                                               label="Download" title="Download" />
                                 @can('manage-technician')
                                     <form action="{{ route('project-documents.destroy', $document) }}" 
                                           method="POST" 
@@ -123,7 +115,7 @@
                                           class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800 text-sm">Hapus</button>
+                                        <x-icon-button icon="delete" type="submit" label="Hapus" title="Hapus" />
                                     </form>
                                 @endcan
                             </div>

@@ -6,7 +6,7 @@ export default defineConfig({
     plugins: [
         react(),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/teknisi-calendar.js', 'resources/js/kinetic-grid.js', 'resources/js/rubber-segment.jsx', 'resources/js/glide-select.jsx'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/teknisi-calendar.js', 'resources/js/pipeline-dnd.js', 'resources/js/rubber-segment.jsx', 'resources/js/glide-select.jsx'],
             refresh: true,
         }),
     ],

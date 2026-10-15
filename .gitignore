@@ -30,3 +30,11 @@ backups/
 graphify-out/
 __pycache__/
 *.pyc
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

@@ -8,7 +8,7 @@
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('images/logo/logo.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -22,10 +22,10 @@
             <div>
                 <a href="/">
                     <picture>
-                        <source srcset="{{ asset('images/logo/logo-lightmode-256.webp') }}" type="image/webp">
-                        <img src="{{ asset('images/logo/logo-lightmode.png') }}" alt="{{ config('app.name') }}" width="256" height="179"
+                        <source srcset="{{ asset('images/logo/Logo3dylight-256.webp') }}" type="image/webp">
+                        <img src="{{ asset('images/logo/Logo3dylight.png') }}" alt="{{ config('app.name') }}" width="256" height="256"
                              fetchpriority="high" decoding="async"
-                             class="h-16 w-auto aspect-[256/179] object-contain">
+                             class="h-16 w-auto aspect-square object-contain">
                     </picture>
                 </a>
             </div>

@@ -25,7 +25,7 @@ class MarketingMonitoringTest extends TestCase
 
     public function test_lead_can_view_monitoring_summary(): void
     {
-        $lead = $this->userWithRole('manage-marketing');
+        $lead = $this->userWithRole('lead-marketing');
         $junior = User::factory()->create();
         $junior->assignRole('marketing');
         $sales = User::factory()->create(['name' => 'Adi Sales']);
@@ -33,7 +33,7 @@ class MarketingMonitoringTest extends TestCase
 
         $customer = Customer::create(['name' => 'PT Rekap']);
         Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'won', 'assigned_to' => $junior->id]);
-        Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'new', 'assigned_to' => $junior->id]);
+        Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'cool', 'assigned_to' => $junior->id]);
 
         $this->actingAs($lead)->get(route('leads.monitoring'))
             ->assertOk()

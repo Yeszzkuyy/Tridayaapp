@@ -44,7 +44,8 @@ class ManageMenuTest extends TestCase
 
     public function test_hub_roles_can_open_manage_placeholders(): void
     {
-        foreach (['management', 'manage-marketing', 'manage-technical', 'manage-admin'] as $role) {
+        // Hub management kini satu role tunggal.
+        foreach (['management'] as $role) {
             $this->actingAs($this->loginAs($role));
 
             foreach (['manage.marketing.index', 'manage.technical.index', 'manage.admin.index'] as $route) {

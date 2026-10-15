@@ -4,15 +4,13 @@
             <h1 class="text-3xl font-bold text-slate-800">Admin Panel</h1>
             <p class="text-slate-500 mt-1">{{ __('Manajemen User, Role & Permission (Super Admin)') }}</p>
         </div>
-        <div class="flex gap-3">
-            <a href="{{ route('admin-panel.roles.create') }}"
-               class="px-4 py-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 transition">
-                {{ __('+ Tambah Role') }}
-            </a>
-            <a href="{{ route('admin-panel.users.create') }}"
-               class="px-4 py-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 transition">
-                {{ __('+ Tambah User') }}
-            </a>
+        <div class="flex gap-2">
+            <x-icon-button as="a" href="{{ route('admin-panel.roles.create') }}" title="Add Role">
+                <x-icon name="users" class="h-5 w-5" />
+            </x-icon-button>
+            <x-icon-button as="a" href="{{ route('admin-panel.users.create') }}" title="Add User">
+                <x-icon name="user" class="h-5 w-5" />
+            </x-icon-button>
         </div>
     </div>
 
@@ -70,13 +68,22 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
-                            <td class="px-4 py-3 text-right">
+                            <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <a href="{{ route('admin-panel.users.edit', $user) }}"
-                                   class="text-accent-600 hover:text-accent-800 text-sm font-medium mr-3">Edit</a>
+                                   title="{{ __('Edit user') }}"
+                                   aria-label="{{ __('Edit user') }} {{ $user->name }}"
+                                   class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+                                    <x-icon name="edit" class="h-4 w-4" />
+                                </a>
                                 @if($user->id !== auth()->id())
                                     <form action="{{ route('admin-panel.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Hapus user ini?') }}')">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium">{{ __('Hapus') }}</button>
+                                        <button type="submit"
+                                                title="{{ __('Delete user') }}"
+                                                aria-label="{{ __('Delete user') }} {{ $user->name }}"
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20">
+                                            <x-icon name="trash" class="h-4 w-4" />
+                                        </button>
                                     </form>
                                 @endif
                             </td>

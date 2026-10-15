@@ -33,7 +33,7 @@ class InsideSalesTaskTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'vendor',
-            'status' => 'new',
+            'status' => 'cool',
             'assigned_to' => $assignee?->id,
             'incoming_date' => '2026-09-01',
         ]);

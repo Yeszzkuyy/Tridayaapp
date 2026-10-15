@@ -7,7 +7,7 @@
     <title>Verify Email - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/logo/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
@@ -153,7 +153,7 @@
                         <img
                             x-show="!logoFailed"
                             x-on:error="logoFailed = true"
-                            src="{{ asset('images/logo/logo.png') }}"
+                            src="{{ asset('images/logo/Logo3dydark-256.webp') }}"
                             alt="Logo"
                             class="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                         >

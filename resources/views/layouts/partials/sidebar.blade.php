@@ -6,12 +6,13 @@
 
     $dashboardActive = request()->routeIs('dashboard*');
     $customerActive = request()->routeIs('customers*');
+    $monitoringActive = request()->routeIs('monitoring.index');
     $managementActive = request()->routeIs('manage-sales*') || request()->routeIs('manage.*');
     $technicianActive = request()->routeIs('projects*') || request()->routeIs('teknisi.*');
     $marketingActive = (request()->routeIs(['leads*', 'partners*', 'marketing.dashboard', 'whatsapp-center*']) && !request()->routeIs('leads.pipeline'));
     // Grup Sales tampil juga untuk role inside-sales; sub-menu dirakit per-item di bawah
     // (user only melihat item yang boleh ia akses).
-    $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*');
+    $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
     $adminActive = request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*');
     $adminPanelActive = request()->routeIs('admin-panel*');
 
@@ -25,17 +26,33 @@
     $salesItems = array_values(array_filter([
         $canViewSales ? ['route' => route('sales.dashboard'), 'match' => 'sales.dashboard', 'label' => 'Dashboard', 'dot' => 'bg-violet-400'] : null,
         $canViewSales ? ['route' => route('sales.my-leads'), 'match' => 'sales.my-leads', 'label' => 'My Leads', 'dot' => 'bg-amber-400'] : null,
-        $canViewSales ? ['route' => route('sales.meetings.index'), 'match' => 'sales.meetings.*', 'label' => 'Tracker Meeting', 'dot' => 'bg-blue-400'] : null,
         $canViewSales ? ['route' => route('sales.follow-ups.index'), 'match' => 'sales.follow-ups.*', 'label' => 'Follow Up', 'dot' => 'bg-green-400'] : null,
+        (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.schedules.index'), 'match' => 'sales.schedules.*', 'label' => 'Schedule', 'dot' => 'bg-teal-400'] : null,
+        (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.proposals.index'), 'match' => 'sales.proposals.*', 'label' => 'Proposal', 'dot' => 'bg-lime-400'] : null,
+        ($canViewSales || auth()->user()->can('view-admin')) ? ['route' => route('products.index'), 'match' => 'products.*', 'label' => 'Products', 'dot' => 'bg-cyan-400'] : null,
+        $canViewSales ? ['route' => route('sales.pocs.index'), 'match' => 'sales.pocs.*', 'label' => 'POC/Demo', 'dot' => 'bg-orange-400'] : null,
         $canViewSales ? ['route' => route('leads.pipeline'), 'match' => 'leads.pipeline', 'label' => 'Pipeline', 'dot' => 'bg-sky-400'] : null,
         $hasSalesProject ? ['route' => route('projects.index'), 'match' => 'projects*', 'label' => 'Project', 'dot' => 'bg-cyan-400'] : null,
-        auth()->user()->can('manage-inside-sales') ? ['route' => route('lead-tasks.index'), 'match' => 'lead-tasks*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
+        (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('lead-tasks.index'), 'match' => 'lead-tasks*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
     ]));
     // Header grup harus menuju halaman pertama yang boleh dibuka user ini (mis. inside-sales).
     $salesLanding = $salesItems[0]['route'] ?? route('dashboard');
+    // Hub management (punya manage-sales-leads): tiap grup divisi hanya
+    // tampilkan item recap bila tidak pegang manage-* divisi itu.
+    // Multi-role didukung: sales+management tetap kerja penuh di sales.
+    $isMgmtHub = auth()->user()->can('manage-sales-leads');
+    $tekRecap = $isMgmtHub && !auth()->user()->can('manage-technician');
+    $mktRecap = $isMgmtHub && !auth()->user()->can('manage-marketing');
+    $salesRecap = $isMgmtHub && !auth()->user()->can('manage-sales');
+    if ($salesRecap) {
+        $salesItems = array_values(array_filter($salesItems,
+            fn ($i) => in_array($i['label'], ['Dashboard'], true)));
+        $salesLanding = $salesItems[0]['route'] ?? route('dashboard');
+    }
 @endphp
 
 <aside class="relative flex h-full w-full flex-col overflow-hidden">
+@persist('sidebar')
     {{-- Aurora mesh background (dekoratif, di belakang konten) --}}
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
         <div class="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent-500/15 blur-3xl"></div>
@@ -47,16 +64,16 @@
     <div class="sidebar-logo relative z-10 flex h-16 sm:h-20 flex-shrink-0 items-center border-b border-white/10 px-4">
         <a wire:navigate.hover href="{{ route('dashboard') }}" class="group flex items-center gap-3">
             <picture class="shrink-0 dark:hidden">
-                <source srcset="{{ asset('images/logo/logo-lightmode-256.webp') }}" type="image/webp">
-                <img src="{{ asset('images/logo/logo-lightmode.png') }}" alt="Tridaya App" width="256" height="179"
+                <source srcset="{{ asset('images/logo/Logo3dylight-256.webp') }}" type="image/webp">
+                <img src="{{ asset('images/logo/Logo3dylight.png') }}" alt="Tridaya App" width="256" height="256"
                      fetchpriority="high" decoding="async"
-                     class="h-9 sm:h-11 w-auto aspect-[256/179] object-contain transition-transform duration-300 group-hover:scale-[1.03]">
+                     class="h-9 sm:h-11 w-auto aspect-square object-contain transition-transform duration-300 group-hover:scale-[1.03]">
             </picture>
             <picture class="hidden shrink-0 dark:block">
-                <source srcset="{{ asset('images/logo/logo-256.webp') }}" type="image/webp">
-                <img src="{{ asset('images/logo/logo.png') }}" alt="Tridaya App" width="256" height="181"
+                <source srcset="{{ asset('images/logo/Logo3dydark-256.webp') }}" type="image/webp">
+                <img src="{{ asset('images/logo/Logo3dydark.png') }}" alt="Tridaya App" width="256" height="256"
                      fetchpriority="high" decoding="async"
-                     class="h-9 sm:h-11 w-auto aspect-[256/181] object-contain transition-transform duration-300 group-hover:scale-[1.03]">
+                     class="h-9 sm:h-11 w-auto aspect-square object-contain transition-transform duration-300 group-hover:scale-[1.03]">
             </picture>
             <div class="sidebar-hide min-w-0">
                 <h1 class="truncate font-display text-4xl font-bold leading-none text-accent-300">3DY App</h1>
@@ -65,7 +82,8 @@
     </div>
 
     {{-- Menu --}}
-    <nav id="sidebar-navigation" aria-label="{{ __('Navigasi utama') }}" class="sidebar-nav relative z-10 flex-1 overflow-y-auto px-3 py-4">
+    <nav id="sidebar-navigation" aria-label="{{ __('Navigasi utama') }}" class="sidebar-nav relative z-10 flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
+         data-nav-active="{{ $navActive }} sb-active" data-nav-inactive="{{ $navInactive }}">
         <div class="space-y-6">
             <section aria-labelledby="sidebar-main-label">
                 <p id="sidebar-main-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Main</p>
@@ -82,6 +100,15 @@
                         <x-icon name="users" class="h-5 w-5 shrink-0" />
                         <span>Customer</span>
                     </a>
+                    {{-- Monitoring lintas divisi: management, ceo, super-admin (via Gate::before) --}}
+                    @can('view-monitoring')
+                        <a wire:navigate.hover href="{{ route('monitoring.index') }}"
+                           aria-current="{{ $monitoringActive ? 'page' : 'false' }}"
+                           class="{{ $navLink }} {{ $monitoringActive ? $navActive : $navInactive }}">
+                            <x-icon name="chart-bar" class="h-5 w-5 shrink-0" />
+                            <span>Monitoring</span>
+                        </a>
+                    @endcan
                     {{-- AI Assistant SENGAJA full reload (tanpa wire:navigate):
                          halaman chat stateful; morph berisiko merusak riwayat/ketikan. --}}
                     <a href="{{ route('ai.assistant.index') }}"
@@ -178,26 +205,26 @@
                                 </div>
                                 <div id="sidebar-technician-menu" class="sb-sub sidebar-hide">
                                     <div class="sb-sub-list">
-                                    <a wire:navigate.hover href="{{ route('teknisi.dashboard') }}"
-                                       aria-current="{{ request()->routeIs('teknisi.dashboard*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.dashboard*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
-                                        <span>{{ __('Dashboard Teknisi') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('projects.index') }}"
-                                       aria-current="{{ request()->routeIs('projects*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('projects*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" aria-hidden="true"></span>
-                                        <span>Project</span>
-                                    </a>
-                                    {{-- Jadwal: kalender re-init tiap livewire:navigated (teknisi-calendar.js) --}}
-                                    <a wire:navigate.hover href="{{ route('teknisi.jadwal') }}"
-                                       aria-current="{{ request()->routeIs('teknisi.jadwal*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.jadwal*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
-                                        <span>{{ __('Jadwal') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('teknisi.surveys.index') }}"
+                                     <a wire:navigate.hover href="{{ route('teknisi.dashboard') }}"
+                                        aria-current="{{ request()->routeIs('teknisi.dashboard*') ? 'page' : 'false' }}"
+                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.dashboard*') ? $navActive : $navInactive }}">
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
+                                         <span>{{ __('Dashboard Teknisi') }}</span>
+                                     </a>
+                                     <a wire:navigate.hover href="{{ route('projects.index') }}"
+                                        aria-current="{{ request()->routeIs('projects*') ? 'page' : 'false' }}"
+                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('projects*') ? $navActive : $navInactive }}">
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" aria-hidden="true"></span>
+                                         <span>Project</span>
+                                     </a>
+                                     <a wire:navigate.hover href="{{ route('teknisi.jadwal') }}"
+                                        aria-current="{{ request()->routeIs('teknisi.jadwal*') ? 'page' : 'false' }}"
+                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.jadwal*') ? $navActive : $navInactive }}">
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
+                                         <span>{{ __('Jadwal') }}</span>
+                                     </a>
+                                     @unless($tekRecap)
+                                     <a wire:navigate.hover href="{{ route('teknisi.surveys.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.surveys*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.surveys*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" aria-hidden="true"></span>
@@ -212,22 +239,25 @@
                                     <a wire:navigate.hover href="{{ route('teknisi.request-hargas.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.request-hargas*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.request-hargas*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" aria-hidden="true"></span>
-                                        <span>{{ __('Request Harga') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('teknisi.instalasis.index') }}"
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" aria-hidden="true"></span>
+                                         <span>{{ __('Request Harga') }}</span>
+                                     </a>
+                                     @endunless
+                                     <a wire:navigate.hover href="{{ route('teknisi.instalasis.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.instalasis*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.instalasis*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                                        <span>{{ __('Instalasi') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('teknisi.documents.index') }}"
+                                         <span>{{ __('Instalasi') }}</span>
+                                     </a>
+                                     @unless($tekRecap)
+                                     <a wire:navigate.hover href="{{ route('teknisi.documents.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.documents*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.documents*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" aria-hidden="true"></span>
-                                        <span>Document</span>
-                                    </a>
-                                    </div>
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" aria-hidden="true"></span>
+                                         <span>Document</span>
+                                     </a>
+                                     @endunless
+                                     </div>
 </div>
 </div>
                         @endcan
@@ -255,9 +285,10 @@
                                        aria-current="{{ request()->routeIs('marketing.dashboard') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('marketing.dashboard') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                                        <span>Dashboard</span>
-                                    </a>
-                                    {{-- WhatsApp Center SENGAJA full reload (tanpa wire:navigate):
+                                         <span>Dashboard</span>
+                                     </a>
+                                     @unless($mktRecap)
+                                     {{-- WhatsApp Center SENGAJA full reload (tanpa wire:navigate):
                                          aplikasi Alpine raksasa + chat state; morph berisiko merusak. --}}
                                     <a href="{{ route('whatsapp-center.index') }}"
                                        aria-current="{{ request()->routeIs('whatsapp-center*') ? 'page' : 'false' }}"
@@ -265,6 +296,7 @@
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
                                         <span>WhatsApp Center</span>
                                     </a>
+                                    @endunless
                                     <a wire:navigate.hover href="{{ route('leads.index') }}"
                                        aria-current="{{ request()->routeIs(['leads.index', 'leads.show', 'leads.edit']) ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs(['leads.index', 'leads.show', 'leads.edit']) ? $navActive : $navInactive }}">
@@ -275,21 +307,25 @@
                                        aria-current="{{ request()->routeIs('partners*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('partners*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
-                                        <span>{{ __('Data Partner') }}</span>
+                                         <span>{{ __('Data Partner') }}</span>
                                     </a>
+                                    @unless($mktRecap)
                                     <a wire:navigate.hover href="{{ route('leads.activities') }}"
                                        aria-current="{{ request()->routeIs('leads.activities') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('leads.activities') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
-                                        <span>{{ __('Log Aktivitas') }}</span>
-                                    </a>
-                                    @can('monitor-marketing')
-                                        <a wire:navigate.hover href="{{ route('leads.monitoring') }}"
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
+                                         <span>{{ __('Log Aktivitas') }}</span>
+                                     </a>
+                                     @endunless
+                                     @can('monitor-marketing')
+                                     @unless($mktRecap)
+                                         <a wire:navigate.hover href="{{ route('leads.monitoring') }}"
                                            aria-current="{{ request()->routeIs('leads.monitoring') ? 'page' : 'false' }}"
                                            class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('leads.monitoring') ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
                                             <span>Monitoring</span>
                                         </a>
+                                     @endunless
                                     @endcan
                                     </div>
 </div>
@@ -396,6 +432,12 @@
                                 <x-icon name="book" class="h-5 w-5 shrink-0" />
                                 <span>Knowledge Base</span>
                             </a>
+                            <a wire:navigate.hover href="{{ route('product-knowledge.index') }}"
+                               aria-current="{{ request()->routeIs('product-knowledge*') ? 'page' : 'false' }}"
+                               class="{{ $navLink }} {{ request()->routeIs('product-knowledge*') ? $navActive : $navInactive }}">
+                                <x-icon name="book" class="h-5 w-5 shrink-0" />
+                                <span>Product KB</span>
+                            </a>
                         @endcan
 
                         {{-- Admin Panel (Super Admin only) --}}
@@ -490,4 +532,5 @@
             <span class="sidebar-hide">{{ __('Perkecil') }}</span>
         </button>
     </div>
+@endpersist
 </aside>

@@ -137,25 +137,52 @@ class SettingsTest extends TestCase
             ->assertJsonValidationErrors(['theme', 'accent']);
     }
 
-    public function test_advanced_settings_requires_password_confirmation(): void
+    public function test_advanced_settings_shows_inline_lock_without_redirect(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get(route('settings.advanced'))
-            ->assertRedirect(route('password.confirm'));
+            ->assertOk()
+            ->assertSee(__('Konfirmasi Password'), false)
+            ->assertDontSee(__('Informasi Akun'), false);
     }
 
-    public function test_advanced_settings_is_accessible_after_password_confirmation(): void
+    public function test_advanced_settings_rejects_wrong_password_inline(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['auth.password_confirmed_at' => now()->getTimestamp()])
+            ->post(route('settings.advanced.confirm'), ['password' => 'salah'])
+            ->assertSessionHasErrors('password');
+
+        $this->actingAs($user)
+            ->get(route('settings.advanced'))
+            ->assertOk()
+            ->assertDontSee(__('Informasi Akun'), false);
+    }
+
+    public function test_advanced_settings_unlocks_with_correct_password_for_single_visit(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('settings.advanced.confirm'), ['password' => 'password'])
+            ->assertRedirect(route('settings.advanced'))
+            ->assertSessionHasNoErrors();
+
+        // Tepat setelah konfirmasi: isi terbuka.
+        $this->actingAs($user)
             ->get(route('settings.advanced'))
             ->assertOk()
             ->assertSee(__('Pengaturan Lanjutan'))
             ->assertSee(__('Informasi Akun'));
+
+        // Kunjungan berikutnya: terkunci lagi.
+        $this->actingAs($user)
+            ->get(route('settings.advanced'))
+            ->assertOk()
+            ->assertDontSee(__('Informasi Akun'), false);
     }
 
     public function test_account_info_can_be_updated_from_advanced(): void
@@ -175,6 +202,39 @@ class SettingsTest extends TestCase
 
         $this->assertSame('Nama Baru', $user->name);
         $this->assertSame('baru@example.com', $user->email);
+    }
+
+    public function test_layout_renders_dark_class_from_server_when_theme_is_dark(): void
+    {
+        // Regresi: morph wire:navigate menghapus class 'dark' client bila HTML
+        // server tidak memuatnya — semua menu SPA balik light. Server wajib
+        // me-render class dark agar morph mempertahankannya.
+        $user = User::factory()->create();
+        $user->preferences = array_merge($user->preferences ?? [], ['theme' => 'dark']);
+        $user->save();
+
+        $html = $this->actingAs($user)
+            ->get(route('settings.edit'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/<html[^>]*data-mode="dark"/', $html);
+        $this->assertMatchesRegularExpression('/<html[^>]*class="dark"/', $html);
+    }
+
+    public function test_layout_omits_dark_class_when_theme_is_light(): void
+    {
+        $user = User::factory()->create();
+        $user->preferences = array_merge($user->preferences ?? [], ['theme' => 'light']);
+        $user->save();
+
+        $html = $this->actingAs($user)
+            ->get(route('settings.edit'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/<html[^>]*data-mode="light"/', $html);
+        $this->assertDoesNotMatchRegularExpression('/<html[^>]*class="dark"/', $html);
     }
 
     public function test_locale_preference_switches_app_language(): void

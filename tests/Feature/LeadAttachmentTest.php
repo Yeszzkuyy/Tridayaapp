@@ -32,6 +32,7 @@ class LeadAttachmentTest extends TestCase
             'pt_group' => 'NTI',
             'assigned_to' => User::first()->id,
             'segment' => 'vendor',
+            'kebutuhan' => 'BOQ awal lampiran.',
             'incoming_date' => '2026-08-26',
         ], $overrides);
     }
@@ -93,6 +94,7 @@ class LeadAttachmentTest extends TestCase
             'pt_group' => 'NTI',
             'assigned_to' => $user->id,
             'segment' => 'vendor',
+            'kebutuhan' => 'BOQ jaringan kantor.',
             'incoming_date' => '2026-08-26',
             'attachments' => [UploadedFile::fake()->create('requirement.xlsx')],
         ])->assertRedirect(route('leads.index'));

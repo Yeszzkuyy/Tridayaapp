@@ -54,6 +54,10 @@ class LeadTaskController extends Controller
         if ($user && $user->can('manage-inside-sales') && !$user->can('manage-sales-leads')) {
             $query->where('assigned_to', $user->id);
         }
+        // Sales biasa hanya melihat task dari lead miliknya (anakan sales).
+        if ($user && $user->hasRole('sales') && !$user->can('manage-marketing') && !$user->can('manage-sales-leads')) {
+            $query->whereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
+        }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }

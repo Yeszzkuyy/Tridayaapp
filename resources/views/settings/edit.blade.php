@@ -29,7 +29,6 @@
                 <p class="mt-1 text-slate-500">{{ __('Preferensi aplikasi Anda') }}</p>
             </div>
             <div class="flex items-center gap-3">
-                <span id="settings-saved" class="hidden text-xs font-medium text-green-600 dark:text-green-400"></span>
                 <x-icon-button as="a" icon="back" href="{{ route('dashboard') }}" title="{{ __('Kembali') }}" />
             </div>
         </div>
@@ -111,11 +110,11 @@
                     <label class="flex cursor-pointer items-center justify-between gap-4 py-4 first:pt-0">
                         <span class="min-w-0">
                             <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Notifikasi Email') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, Anda tidak menerima notifikasi apa pun.') }}</span>
+                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, notifikasi email tidak dikirim (notifikasi sistem & push tetap aktif).') }}</span>
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_email" value="1" class="peer sr-only" @checked($notifyEmail)>
-                            <span class="toggle-track h-6 w-11 rounded-full transition"></span>
+                            <span class="toggle-track h-6 w-11 rounded-full transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent-500 peer-focus-visible:ring-offset-2"></span>
                             <span class="toggle-knob pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition peer-checked:translate-x-5"></span>
                         </span>
                     </label>
@@ -127,7 +126,7 @@
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_system" value="1" class="peer sr-only" @checked($notifySystem)>
-                            <span class="toggle-track h-6 w-11 rounded-full transition"></span>
+                            <span class="toggle-track h-6 w-11 rounded-full transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent-500 peer-focus-visible:ring-offset-2"></span>
                             <span class="toggle-knob pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition peer-checked:translate-x-5"></span>
                         </span>
                     </label>
@@ -139,7 +138,7 @@
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_push" value="1" class="peer sr-only" @checked($notifyPush)>
-                            <span class="toggle-track h-6 w-11 rounded-full transition"></span>
+                            <span class="toggle-track h-6 w-11 rounded-full transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent-500 peer-focus-visible:ring-offset-2"></span>
                             <span class="toggle-knob pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition peer-checked:translate-x-5"></span>
                         </span>
                     </label>
@@ -150,20 +149,20 @@
                      x-data="{ pushState: 'checking', pushMsg: '' }"
                      x-init="(async () => { pushState = await window.WebPush.status() })()">
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        <span x-show="pushState === 'checking'">{{ __('Memeriksa status push browser ini…') }}</span>
-                        <span x-show="pushState === 'subscribed'">{{ __('Push aktif di browser ini.') }}</span>
-                        <span x-show="pushState === 'default'">{{ __('Browser ini belum mengizinkan notifikasi.') }}</span>
-                        <span x-show="pushState === 'granted'">{{ __('Izin diberikan, tapi browser ini belum terdaftar — tekan Aktifkan.') }}</span>
-                        <span x-show="pushState === 'blocked'">{{ __('Notifikasi diblokir di browser — izinkan lewat ikon gembok di address bar.') }}</span>
-                        <span x-show="pushState === 'unsupported'">{{ __('Browser ini tidak mendukung Web Push.') }}</span>
-                        <span x-show="pushState === 'unsubscribed'">{{ __('Push nonaktif di browser ini.') }}</span>
-                        <span class="text-red-500" x-show="pushMsg" x-text="pushMsg"></span>
+                        <span x-cloak x-show="pushState === 'checking'">{{ __('Memeriksa status push browser ini…') }}</span>
+                        <span x-cloak x-show="pushState === 'subscribed'">{{ __('Push aktif di browser ini.') }}</span>
+                        <span x-cloak x-show="pushState === 'default'">{{ __('Browser ini belum mengizinkan notifikasi.') }}</span>
+                        <span x-cloak x-show="pushState === 'granted'">{{ __('Izin diberikan, tapi browser ini belum terdaftar — tekan Aktifkan.') }}</span>
+                        <span x-cloak x-show="pushState === 'blocked'">{{ __('Notifikasi diblokir di browser — izinkan lewat ikon gembok di address bar.') }}</span>
+                        <span x-cloak x-show="pushState === 'unsupported'">{{ __('Browser ini tidak mendukung Web Push.') }}</span>
+                        <span x-cloak x-show="pushState === 'unsubscribed'">{{ __('Push nonaktif di browser ini.') }}</span>
+                        <span class="text-red-500" x-cloak x-show="pushMsg" x-text="pushMsg"></span>
                     </p>
                     <div class="flex gap-2">
-                        <button type="button" x-show="pushState === 'default' || pushState === 'granted' || pushState === 'unsubscribed'"
+                        <button type="button" x-cloak x-show="pushState === 'default' || pushState === 'granted' || pushState === 'unsubscribed'"
                                 @click="pushMsg = ''; window.WebPush.enable().then(s => pushState = s).catch((e) => pushMsg = '{{ __('Gagal mengaktifkan push:') }} ' + (e && e.message ? e.message : e))"
                                 class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">{{ __('Aktifkan di browser ini') }}</button>
-                        <button type="button" x-show="pushState === 'subscribed'"
+                        <button type="button" x-cloak x-show="pushState === 'subscribed'"
                                 @click="window.WebPush.disable().then(s => pushState = s)"
                                 class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200">{{ __('Nonaktifkan') }}</button>
                     </div>
@@ -214,7 +213,6 @@
             (function () {
                 var form = document.getElementById('settings-form');
                 if (!form) return;
-                var status = document.getElementById('settings-saved');
                 var timer = null;
                 var localeInput = form.querySelector('[name="locale"]');
                 var lastLocale = localeInput ? localeInput.value : null;
@@ -231,13 +229,6 @@
                             if (!res.ok) throw new Error();
                             return res.json();
                         }).then(function () {
-                            if (status) {
-                                var t = new Date();
-                                var hh = String(t.getHours()).padStart(2, '0');
-                                var mm = String(t.getMinutes()).padStart(2, '0');
-                                status.textContent = '{{ __('Tersimpan otomatis') }} ✓ ' + hh + ':' + mm;
-                                status.classList.remove('hidden');
-                            }
                             var locale = localeInput ? localeInput.value : null;
                             if (locale && locale !== lastLocale) {
                                 lastLocale = locale;
@@ -251,18 +242,17 @@
             })();
         </script>
 
-        {{-- Area lanjutan (digerbang password) --}}
-        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-            <header>
-                <h2 class="text-lg font-bold text-slate-800">{{ __('Lanjutan') }}</h2>
-                <p class="mt-1 text-sm text-slate-500">{{ __('Ganti password dan hapus akun. Area ini dilindungi konfirmasi password.') }}</p>
-            </header>
-
-            <a href="{{ route('settings.advanced') }}"
-               class="mt-5 inline-flex items-center gap-2 rounded-xl bg-accent-50 px-5 py-2.5 text-sm font-semibold text-accent-700 transition hover:bg-accent-100">
-                <x-icon name="settings" class="h-4 w-4" />
-                {{ __('Buka Pengaturan Lanjutan') }}
-            </a>
-        </section>
+        {{-- Area lanjutan (digerbang password) — kartu link full-width --}}
+        <a href="{{ route('settings.advanced') }}"
+           class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-accent-400 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400">
+                <x-icon name="settings" class="h-5 w-5" />
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block text-sm font-bold text-slate-800 dark:text-white">{{ __('Pengaturan Lanjutan') }}</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{{ __('Ganti password dan hapus akun. Area ini dilindungi konfirmasi password.') }}</span>
+            </span>
+            <x-icon name="chevron-right" class="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-accent-600 dark:group-hover:text-accent-400" />
+        </a>
     </div>
 </x-app-layout>

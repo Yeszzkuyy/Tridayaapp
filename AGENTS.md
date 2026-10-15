@@ -17,6 +17,8 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/var/www/3dyapp-dash` | `feature/general-dashboard` | Dashboard umum |
 | `/var/www/3dyapp-management` | `feature/management` | Management (Activity Log, assign lead) |
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
+| `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
+| `/var/www/3dyapp-ai` | `feature/ai-assistant` | AI Assistant (floating chatbot) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
@@ -60,6 +62,12 @@ Commit dulu atau `git stash push -m "pesan jelas"`.
 Folder utama (`/var/www/3dyapp`) harus selalu berada di branch `main`.
 Setelah merge ke main: `git pull`, lalu `npm run build` jika ada perubahan CSS/JS.
 
+**Selalu `npm run build` dari `/var/www/3dyapp` (main), JANGAN dari worktree
+divisi.** `public/build` tiap worktree di-symlink ke `public/build` main,
+sehingga build dari worktree basi menimpa CSS/JS website dengan hasil sisiran
+Tailwind atas view lama — kelas yang cuma dipakai view baru ikut terbuang
+dan halaman live berantakan.
+
 ## 6. Jangan commit
 
 - Folder `backups/` (sudah di-gitignore)
@@ -68,25 +76,56 @@ Setelah merge ke main: `git pull`, lalu `npm run build` jika ada perubahan CSS/J
 
 ## 7. Tombol (konvensi UI)
 
-Setiap aksi punya warna bawaan — pakai pola ini konsisten di semua view
-(acuan: `leads/create.blade.php`, komponen `x-icon-button`):
+Semua tombol aksi non-utama memakai gaya **putih + border tipis, berwarna
+saat hover** (acuan: komponen `x-icon-button`). Peta aksi:
 
 | Aksi | Pola standar |
 |---|---|
-| Simpan / Tambah / Submit utama | `bg-accent-600 hover:bg-accent-500 text-white` + shine + scale (lihat efek standar di bawah) |
-| Batal (teks, di form) | `bg-accent-500 hover:bg-accent-600 text-white` + shine + scale |
-| Kembali / Batal (ghost) | `border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200` |
-| Tombol ikon (filter/reset/back/add/import/...) | `<x-icon-button>` — jangan tulis ulang, cukup `as`/`icon`/`title` |
-| Lihat / detail | `bg-indigo-50 hover:bg-indigo-100 text-indigo-700` |
-| Edit | `bg-blue-100 hover:bg-blue-200 text-blue-700` |
-| Hapus | `bg-red-100 hover:bg-red-200 text-red-700` |
-| Aksi positif (convert/approve/assign) | `bg-green-100 hover:bg-green-200 text-green-700` |
+| Simpan / Submit utama (Save) | `rounded-xl bg-accent-600 hover:bg-accent-500 text-white px-6 py-2.5` + shine + scale (lihat efek standar di bawah) |
+| Batal (Cancel, di form/modal) | `rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-4 py-2.5` + shine + scale |
+| Semua aksi lain (filter/reset/back/add/view/edit/...) | `<x-icon-button>` — idle `rounded-lg border border-slate-200 bg-white text-slate-600`, hover **background tetap putih solid** + ikon/border berubah ke theme `hover:border-accent-500 hover:text-accent-600` + scale + shine |
+| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih, hover ikon & border merah `hover:border-red-500 hover:text-red-600` (background tetap putih) |
+| Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover `hover:border-red-500 hover:bg-red-50` + shine |
 
-Efek standar tombol teks: `group relative overflow-hidden` + span shine
+Varian dark mode sudah otomatis di komponen (`dark:bg-slate-800`,
+`dark:border-slate-700`, hover berwarna) — jangan tulis ulang di view.
+Tooltip pill gelap hanya muncul bila prop `tooltip` diisi eksplisit
+(tanpa itu cukup `title` bawaan browser — jangan pasang tooltip di semua
+tombol baris tabel, nanti menyala bareng saat satu tombol di-hover).
+
+Efek standar tombol teks (Save/Cancel/konfirmasi): `group relative overflow-hidden` + span shine
 (`pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r
 from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out
 group-hover:translate-x-full`) + `transition-all duration-300 hover:scale-105
-hover:shadow-lg active:scale-95` (tombol utama tambah `hover:shadow-accent-500/40 hover:brightness-110`).
+hover:shadow-lg active:scale-95` (Save tambah `hover:shadow-accent-500/40 hover:brightness-110`).
+
+**Bentuk tombol (wajib):** hanya **Save** (submit utama) dan **Cancel**
+(batal di form) yang boleh berupa tombol teks. Semua aksi lain **wajib
+icon-only** via `<x-icon-button>` (pakai `label` bila teksnya perlu tetap
+terlihat) — jangan tulis ulang, cukup `as`/`icon`/`title` (`href` bila link,
+`type="submit"` bila submit):
+
+```blade
+<x-icon-button icon="filter" type="submit" title="Filter" />
+<x-icon-button as="a" icon="reset" href="..." title="Reset" />
+<x-icon-button as="a" icon="view" href="..." title="View" />
+<x-icon-button as="a" icon="edit" href="..." title="Edit" />
+<x-icon-button icon="delete" type="submit" title="Delete" />
+<x-icon-button as="a" icon="add" href="..." label="Add Schedule" title="Add Schedule" />
+```
+
+Ikon bawaan komponen: `filter reset leads add import back sparkles view edit
+delete search download upload print mail more` — ikon lain pakai slot SVG sendiri.
+
+Aksi baris tabel (view/edit/delete/WA) juga icon-only: `<x-icon-button>` +
+`title` (contoh: `title="View details"`). Dilarang tombol teks
+macam "Cari", "Lihat", "+ Catat ..." — ganti icon-only.
+
+**Bahasa tombol (wajib):** default **Inggris** via `__('...')`
+(`title="Filter"` bukan "Saring", `title="Reset"` bukan "Atur Ulang",
+`title="Back"` bukan "Kembali"). Teks Indonesia hanya lewat file
+terjemahan, jangan hardcode di view. View lama yang masih Indonesia
+dirapikan bertahap setiap menyentuh file itu.
 
 **Larangan:** jangan pakai `bg-slate-*`, `bg-gray-*`, atau `bg-white` sebagai
 background tombol — CSS dark-mode global mengoverride kelas tersebut sehingga
@@ -190,3 +229,25 @@ ls -lh storage/logs/laravel.log
    (`git log main..<branch> --oneline`), merge yang relevan,
    discard sisanya — baru hapus worktree-nya.
 5. Dilarang bikin worktree baru tanpa entry di tabel §1.
+
+## 12. Matriks role (acuan: `RoleAndPermissionSeeder.php`)
+
+| Role | Permission inti | Catatan |
+|---|---|---|
+| `super-admin` | semua | Bypass semua gate |
+| `management` | `manage-sales-leads` + semua `view-*` + `monitor-marketing` | Satu-satunya hub management; sidebar hanya recap divisi |
+| `lead-marketing` | `manage-marketing`, `view-marketing`, `monitor-marketing`, `view-technician` | + read-only teknisi (dok. instalasi) |
+| `marketing` / `sales` / `admin` / `technician` | `manage/view-*` divisinya | `sales` += `view-admin`, `admin` += `view-sales` (saling read-only) |
+| `lead-technician` | teknisi + `monitor-technical`, `view-sales`, `view-admin` | Koordinasi + cek progres divisi lain |
+| `inside-sales` | `manage-inside-sales` | Hanya task sendiri; anakan sales |
+| `prakerin-technician` / `prakerin-admin` | `view-technician` / `view-admin` | Read-only divisinya |
+| `ceo` | semua `view-*` | Read-only, tanpa manage |
+
+Aturan: mutasi selalu di belakang `manage-*`, baca di belakang `view-*`
+— menambah `view-*` ke role tidak pernah membuka aksi tulis.
+**Multi-role didukung**: user boleh pegang 2+ role (mis. management+sales).
+Sidebar tampilkan menu kerja penuh di divisi yang ada `manage-*`-nya,
+recap saja di divisi lain (lihat `$tekRecap/$mktRecap/$salesRecap` di
+`sidebar.blade.php`). Pre-sales = pakai role `sales`, tanpa role baru.
+Purchasing (nanti): route `admin.purchasing.*`, baca `view-admin`,
+tulis `manage-admin` — sales/prakerin-admin otomatis read-only.

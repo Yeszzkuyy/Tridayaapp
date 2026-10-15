@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('leads', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $table->enum('status', ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'])->default('new');
+            $table->string('status', 20)->default('cool');
             $table->enum('source', ['website', 'referral', 'cold_call', 'email', 'social_media', 'event', 'other'])->nullable();
             $table->text('notes')->nullable();
             $table->decimal('opportunity_value', 15, 2)->nullable();

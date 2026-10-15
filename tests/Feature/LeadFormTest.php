@@ -88,10 +88,11 @@ class LeadFormTest extends TestCase
 
     public function test_store_creates_lead_with_customer_details(): void
     {
-        $this->seed(RoleAndPermissionSeeder::class);
+        // marketingUser() sudah seed; seed ganda akan me-wipe assignment role.
+        $marketing = $this->marketingUser();
         $sales = User::factory()->create();
         $sales->assignRole('sales');
-        $this->actingAs($this->marketingUser())
+        $this->actingAs($marketing)
             ->post(route('leads.store'), [
                 'customer_mode' => 'new',
                 'customer_name' => 'PT Uji Coba',
@@ -113,7 +114,7 @@ class LeadFormTest extends TestCase
         $this->assertNotNull($lead);
         $this->assertSame('system_integrator', $lead->segment);
         $this->assertSame('canvasing', $lead->source);
-        $this->assertSame('new', $lead->status);
+        $this->assertSame('cool', $lead->status);
         $this->assertSame('2026-08-24', $lead->incoming_date->toDateString());
         $this->assertSame('NTI', $lead->pt_group);
         $this->assertSame('info@ujicoba.id', $lead->customer->email);
@@ -130,7 +131,7 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'incoming_date' => now()->toDateString(),
-            'status' => 'new',
+            'status' => 'cool',
         ]);
         $customer->delete();
 
@@ -205,7 +206,7 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'incoming_date' => now()->toDateString(),
-            'status' => 'new',
+            'status' => 'cool',
         ]);
 
         $this->actingAs($this->marketingUser())
@@ -216,6 +217,84 @@ class LeadFormTest extends TestCase
             ->assertDontSee('@can(', false)
             ->assertDontSee('@csrf', false)
             ->assertDontSee('<?php(', false);
+    }
+
+    public function test_assign_to_cross_division_user_rejected(): void
+    {
+        $marketing = $this->marketingUser();
+        $technician = User::factory()->create();
+        $technician->assignRole('technician');
+
+        $this->actingAs($marketing)->post(route('leads.store'), [
+            'customer_mode' => 'new',
+            'customer_name' => 'PT Salah Assign',
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'kebutuhan' => 'Butuh review assign.',
+            'incoming_date' => now()->toDateString(),
+            'assigned_to' => $technician->id,
+        ])->assertStatus(422);
+
+        $this->assertNull(Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Salah Assign'))->first());
+    }
+
+    public function test_move_lead_to_other_customer_requires_customer_permission(): void
+    {
+        $user = $this->marketingUser();
+        $mine = Customer::create(['name' => 'PT Milikku', 'contact_person' => 'Saya']);
+        $victim = Customer::create(['name' => 'PT Korban', 'contact_person' => 'Korban']);
+        $lead = Lead::create([
+            'customer_id' => $mine->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'incoming_date' => now()->toDateString(),
+            'status' => 'cool',
+        ]);
+
+        $this->actingAs($user)->put(route('leads.update', $lead), [
+            'customer_mode' => 'existing',
+            'customer_id' => $victim->id,
+            'customer_name' => 'PT Korban Diambil',
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'kebutuhan' => 'Butuh review akses.',
+            'incoming_date' => now()->toDateString(),
+        ])->assertForbidden();
+
+        $this->assertSame($mine->id, $lead->fresh()->customer_id);
+        $this->assertSame('Korban', Customer::find($victim->id)->contact_person);
+    }
+
+    public function test_import_batches_rows_and_reports_per_row_errors(): void
+    {
+        $marketing = $this->marketingUser();
+        $sales = \App\Models\User::factory()->create();
+        $sales->assignRole('sales');
+
+        $path = tempnam(sys_get_temp_dir(), 'imp').'.csv';
+        $handle = fopen($path, 'w');
+        fputcsv($handle, ['nama_perusahaan', 'pt', 'segment', 'sales']);
+        fputcsv($handle, ['PT Impor Satu', 'NTI', 'vendor', $sales->name]);
+        fputcsv($handle, ['PT Impor Dua', 'XXX', 'vendor', '']);
+        fputcsv($handle, ['', 'NTI', 'vendor', '']);
+        fputcsv($handle, ['PT Impor Satu', 'NTI', 'vendor', 'Tidak Ada']);
+        fclose($handle);
+
+        $file = new \Illuminate\Http\UploadedFile($path, 'leads.csv', 'text/csv', null, true);
+
+        $this->actingAs($marketing)->post(route('leads.import.execute'), ['file' => $file])
+            ->assertRedirect();
+
+        // 2 sukses (duplikat company dipakai ulang), 2 gagal (pt invalid + nama kosong).
+        $this->assertSame(1, \App\Models\Customer::where('name', 'PT Impor Satu')->count());
+        $this->assertSame(2, \App\Models\Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Impor Satu'))->count());
+        $this->assertNull(\App\Models\Customer::where('name', 'PT Impor Dua')->first());
+
+        $assigned = \App\Models\Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Impor Satu'))->orderBy('id')->first();
+        $this->assertSame($sales->id, (int) $assigned->assigned_to);
+
+        $unassigned = \App\Models\Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Impor Satu'))->orderByDesc('id')->first();
+        $this->assertNull($unassigned->assigned_to);
     }
 
     public function test_segment_is_required_and_validated(): void
@@ -230,5 +309,22 @@ class LeadFormTest extends TestCase
                 'segment' => 'bukan_segment',
             ])
             ->assertSessionHasErrors(['segment']);
+    }
+
+    public function test_segment_and_kebutuhan_have_custom_required_messages(): void
+    {
+        $customer = Customer::create(['name' => 'PT Wajib Isi']);
+
+        $this->actingAs($this->marketingUser())
+            ->post(route('leads.store'), [
+                'customer_mode' => 'existing',
+                'customer_id' => $customer->id,
+                'pt_group' => 'MGK',
+                'incoming_date' => now()->toDateString(),
+            ])
+            ->assertSessionHasErrors([
+                'segment' => 'Kategori (Segment) wajib dipilih.',
+                'kebutuhan' => 'Kebutuhan klien wajib diisi.',
+            ]);
     }
 }

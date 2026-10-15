@@ -41,7 +41,7 @@ class AdminController extends Controller
             'status' => 'required|in:unpaid,paid,cancelled',
             'issue_date' => 'required|date',
             'due_date' => 'nullable|date',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $this->adminService->createInvoice($validated);
@@ -73,7 +73,7 @@ class AdminController extends Controller
             'status' => 'required|in:unpaid,paid,cancelled',
             'issue_date' => 'required|date',
             'due_date' => 'nullable|date',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $this->adminService->updateInvoice($invoice, $validated);
@@ -114,7 +114,7 @@ class AdminController extends Controller
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:draft,diproses,selesai,dibatalkan',
             'issue_date' => 'required|date',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $this->adminService->createPurchaseOrder($validated);
@@ -146,7 +146,7 @@ class AdminController extends Controller
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:draft,diproses,selesai,dibatalkan',
             'issue_date' => 'required|date',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $this->adminService->updatePurchaseOrder($purchaseOrder, $validated);
@@ -188,7 +188,7 @@ class AdminController extends Controller
             'amount' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
             'payment_method' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
+            'notes' => 'nullable|string|max:2000',
             'proof_file' => ['nullable', 'file', 'max:5120', \App\Rules\SecureFile::paymentProof()],
         ]);
 
@@ -211,11 +211,12 @@ class AdminController extends Controller
 
     public function paymentsProof(Payment $payment)
     {
-        if (!$payment->proof_file || !Storage::disk('private')->exists($payment->proof_file)) {
+        if (!$payment->proof_file) {
             abort(404, __('File bukti tidak ditemukan.'));
         }
 
-        return Storage::disk('private')->response($payment->proof_file);
+        // MIME dari isi file + nosniff (bukti hanya jpg/png/pdf).
+        return \App\Rules\SecureFile::fileResponse('private', $payment->proof_file, basename($payment->proof_file));
     }
 
     public function paymentsDestroy(Payment $payment)

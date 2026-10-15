@@ -47,7 +47,7 @@ class ProjectDocumentController extends Controller
             'file_name' => $originalName,
             'file_path' => $path,
             'file_size' => $file->getSize(),
-            'mime_type' => $file->getClientMimeType(),
+            'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
             'notes' => $request->notes,
             'document_category_id' => $request->document_category_id,
             'uploaded_by' => auth()->id(),
@@ -62,33 +62,8 @@ class ProjectDocumentController extends Controller
     {
         $this->authorize('view', $document->project);
 
-        $filePath = Storage::disk('private')->path($document->file_path);
-
-        if (!Storage::disk('private')->exists($document->file_path)) {
-            abort(404, 'File tidak ditemukan.');
-        }
-
-        $mimeType = $document->mime_type ?? mime_content_type($filePath);
-        $extension = strtolower(pathinfo($document->file_name, PATHINFO_EXTENSION));
-
-        // Untuk gambar, PDF, video, audio → tampilkan langsung di browser
-        $inlineTypes = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'mp4', 'webm', 'ogg', 'mp3', 'wav'];
-
-        if (in_array($extension, $inlineTypes)) {
-            return response()->file($filePath, [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'inline; filename="' . $document->file_name . '"'
-            ]);
-        }
-
-        // Untuk Office (Word, Excel, PPT) → DOWNLOAD (karena Google Docs Viewer ga support IP lokal)
-        $officeTypes = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-        if (in_array($extension, $officeTypes)) {
-            return Storage::disk('private')->download($document->file_path, $document->file_name);
-        }
-
-        // Default: download
-        return Storage::disk('private')->download($document->file_path, $document->file_name);
+        // MIME dari isi file + hanya tipe aman yang inline (svg ikut download).
+        return \App\Rules\SecureFile::fileResponse('private', $document->file_path, $document->file_name);
     }
 
     public function download(ProjectDocument $document)

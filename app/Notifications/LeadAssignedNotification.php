@@ -32,13 +32,28 @@ class LeadAssignedNotification extends Notification
         return $this->withWebPush($notifiable, $channels);
     }
 
+    /**
+     * Deep link ke My Leads milik sales (terfilter nama customer),
+     * dipakai bell notifikasi + web push. Email tetap ke detail lead.
+     */
+    public static function myLeadsUrl(?string $customer): ?string
+    {
+        $customer = trim((string) $customer);
+
+        return $customer === ''
+            ? route('sales.my-leads')
+            : route('sales.my-leads', ['search' => $customer]);
+    }
+
     public function toDatabase(object $notifiable): array
     {
+        $customer = $this->lead->customer?->name;
+
         return [
             'type' => 'assigned',
             'lead_id' => $this->lead->id,
-            'customer' => $this->lead->customer?->name ?? 'Lead baru',
-            'url' => route('leads.show', $this->lead->id),
+            'customer' => $customer ?? __('New lead'),
+            'url' => self::myLeadsUrl($customer),
         ];
     }
 
@@ -56,8 +71,8 @@ class LeadAssignedNotification extends Notification
     {
         return [
             'title' => 'Lead di-assign ke Anda',
-            'body' => 'Customer: ' . ($this->lead->customer?->name ?? 'Lead baru'),
-            'url' => route('leads.show', $this->lead->id),
+            'body' => 'Customer: ' . ($this->lead->customer?->name ?? __('New lead')),
+            'url' => self::myLeadsUrl($this->lead->customer?->name),
         ];
     }
 }

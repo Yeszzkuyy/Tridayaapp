@@ -1,9 +1,18 @@
 @php
     $themePref = auth()->check() ? auth()->user()->preference('theme', 'system') : 'system';
     $accentPref = auth()->check() ? auth()->user()->preference('accent', 'ocean') : 'ocean';
+    // Class dark dirender dari server agar morph wire:navigate tidak menghapusnya
+    // (HTML server tanpa class = class 'dark' client terbuang -> balik light).
+    // Mode system TETAP dirender 'dark' (optimistik): server tak tahu skema OS,
+    // dan bila dibiarkan kosong, replaceHtmlAttributes() Livewire menghapus class
+    // 'dark' tiap navigasi -> kilatan frame putih di mode system (OS gelap).
+    // Untuk OS terang, __applyAppearance() mengoreksi SEBELUM paint pertama
+    // (script head saat load, hook onSwap saat navigasi) jadi tak ada kilatan
+    // terbalik.
+    $initialDark = $themePref !== 'light';
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,33 +21,75 @@
     <title>{{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/logo/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|exo-2:500,600,700,800&display=swap" rel="stylesheet" />
 
     <script>
-        (function () {
-            var pref = @json($themePref);
-            var stored = localStorage.getItem('appearance-mode');
-            var mode = stored || pref;
-            if (!mode) mode = pref;
+        // Sumber kebenaran: localStorage (ditulis tiap ganti tema) fallback ke
+        // data-mode server. Dijalankan saat full load DAN tiap livewire:navigated
+        // (navigasi SPA tidak me-reload <head>, morph justru bisa menghapus
+        // class 'dark' client karena respons server tak memuatnya untuk mode system).
+        window.__applyAppearance = function () {
+            var root = document.documentElement;
+            var pref = root.getAttribute('data-mode') || @json($themePref);
+            var stored = null;
+            try { stored = localStorage.getItem('appearance-mode'); } catch (e) {}
+            var mode = stored || pref || 'system';
             // Migrasi dari key lama 'dark-mode' bila belum pakai appearance-mode
             if (!stored) {
-                var legacy = localStorage.getItem('dark-mode');
+                var legacy = null;
+                try { legacy = localStorage.getItem('dark-mode'); } catch (e) {}
                 if (legacy === 'true') mode = 'dark';
                 else if (legacy === 'false') mode = 'light';
             }
-            var accentStored = localStorage.getItem('appearance-accent');
-            var accent = accentStored || @json($accentPref);
+            var accent = @json($accentPref);
+            try { accent = localStorage.getItem('appearance-accent') || accent; } catch (e) {}
             var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme:dark)').matches);
-            var root = document.documentElement;
             root.classList.toggle('dark', dark);
             root.setAttribute('data-mode', mode);
             root.setAttribute('data-theme', accent);
             window.__appearanceMode = mode;
             window.__appearanceAccent = accent;
-        })();
+        };
+        window.__applyAppearance();
+        // Sinkron saat skema OS berubah (mode system) tanpa reload.
+        try {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { window.__applyAppearance(); });
+        } catch (e) {}
+        // Jaring pengaman terakhir: bila setelah paint halaman tidak sinkron
+        // dengan preferensi, pulihkan + beri tahu di console supaya celah apa
+        // pun yang tersisa ketahuan (bukan diam-diam salah tema).
+        function __appearanceSelfHeal() {
+            try {
+                var root = document.documentElement;
+                var shouldDark = window.__appearanceMode === 'dark'
+                    || (window.__appearanceMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (root.classList.contains('dark') !== shouldDark) {
+                    window.__applyAppearance();
+                    console.warn('[appearance] kelas dark tidak sinkron setelah paint — dipulihkan otomatis');
+                }
+            } catch (e) {}
+        }
+        document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); setTimeout(__appearanceSelfHeal, 120); });
+        setTimeout(__appearanceSelfHeal, 300);
+        // wire:navigate: Livewire menyalin atribut <html> dari hasil render server
+        // (replaceHtmlAttributes) — data-theme/class bisa beda dengan localStorage,
+        // sehingga halaman baru sempat ter-paint dengan tema salah (frame putih di
+        // border kartu + aksen ungu) sampai livewire:navigated memulihkannya.
+        // Hook onSwap dipanggil SETELAH body baru terpasang tapi SEBELUM paint
+        // pertama, jadi koreksi temanya tak pernah terlihat mata.
+        document.addEventListener('livewire:navigating', function (e) {
+            if (!e.detail || typeof e.detail.onSwap !== 'function') return;
+            e.detail.onSwap(function () {
+                window.__applyAppearance();
+                // Class yang dipasang JS ikut ter-reset oleh replaceHtmlAttributes.
+                var root = document.documentElement;
+                root.classList.add('js');
+                try { if (localStorage.getItem('sidebar-collapsed') === '1') root.classList.add('sidebar-collapsed'); } catch (err) {}
+            });
+        });
     </script>
 
     <script>
@@ -107,11 +158,11 @@
            rail pakai lebar sama supaya konten ikut propulsion.
            ============================================================ */
         :root{
-            --sb-w:280px;
-            --sb-w-rail:76px;
+            --sb-w:16rem;
+            --sb-w-rail:4.25rem;
             --sb-dur:.32s;
             --sb-ease:linear(0.000, 0.100, 0.289, 0.475, 0.629, 0.745, 0.829, 0.887, 0.926, 0.952, 0.969, 0.981, 0.988, 0.992, 0.995);
-            --sb-ease-soft:cubic-bezier(.23,1,.32,1);
+            --sb-ease-soft:cubic-bezier(.16,1,.3,1);
             /* Label: enter lebih lambat (200ms + delay 80ms), exit cepat (120ms) */
             --sb-label-in:200ms;
             --sb-label-in-delay:80ms;
@@ -140,10 +191,10 @@
 
         /* Rail hover: strip tipis di tepi sidebar, muncul garis saat hover.
            Memakai --sb-w-rail (bukan 76px) supaya rail ikut.spring. */
-        .sb-rail{position:absolute;top:0;bottom:0;left:100%;width:12px;z-index:21;cursor:pointer;background:transparent;transition:background-color 200ms ease}
+        .sb-rail{position:absolute;top:0;bottom:0;left:100%;width:1rem;z-index:21;cursor:pointer;background:transparent;transition:background-color 200ms ease}
         .sb-rail:hover,.sb-rail:focus-visible{background:rgb(var(--accent-500)/.07)}
-        .sb-rail::after{content:"";position:absolute;top:50%;left:5px;width:2px;height:34px;margin-top:-17px;border-radius:2px;background:rgb(var(--accent-500)/.5);opacity:0;transition:opacity 200ms ease}
-        .sb-rail:hover::after,.sb-rail:focus-visible::after{opacity:1}
+        .sb-rail::after{content:"";position:absolute;top:50%;left:50%;width:1px;height:34px;margin-top:-17px;margin-left:-.5px;border-radius:2px;background:var(--sidebar-border);opacity:0;transition:opacity 200ms ease,background-color 200ms ease}
+        .sb-rail:hover::after,.sb-rail:focus-visible::after{opacity:1;background:rgb(var(--accent-500)/.5)}
 
         @media(min-width:1024px){
             .sidebar{position:fixed;left:0;top:0;transform:translateX(0)!important;width:var(--sb-w);height:100vh;overflow:hidden}
@@ -202,8 +253,24 @@
         }
         @media(max-width:1023px){
             .app-wrapper{display:flex;min-height:100vh}
-            .sidebar{width:280px}
+            .sidebar{width:18rem}
             .main-content{flex:1}
+        }
+
+        /* Reduced motion: matikan morph lebar + label + stagger (template:
+           morph duration 0). Sub-menu sudah ditangani sidebar-nav.css. */
+        @media(prefers-reduced-motion:reduce){
+            .sidebar,.main-content{transition:none}
+            .sidebar .sidebar-hide,
+            .sidebar nav a > span,
+            .sidebar nav button > span{transition:none}
+        }
+
+        /* Penanda halaman aktif di navbar: fade+geser halus tiap navigasi.
+           Dipicu ulang via JS (livewire:navigated); hanya elemen aktif. */
+        @media(prefers-reduced-motion:no-preference){
+            @keyframes nav-active-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+            .nav-active-swap{animation:nav-active-in 250ms ease-out}
         }
 
         .dark .bg-white{background-color:var(--card-bg)!important}
@@ -228,6 +295,9 @@
         .dark .text-slate-600,.dark .text-gray-600{color:var(--text-secondary)!important}
         .dark .text-slate-500,.dark .text-gray-500{color:var(--text-muted)!important}
         /* Teks tanpa class warna ikut var tema — jangan biarkan hitam bawaan browser di mode gelap */
+        /* Warna dasar halaman sepagi mungkin (sebelum CSS Vite tiba):
+           tanpa ini var(--bg) belum ada saat cat pertama -> putih sekilas di mode gelap. */
+        :root{--bg:#f1f5f9}html.dark{--bg:#1c2235}
         body{background-color:var(--bg)}
         html.dark body{background-color:var(--bg)!important;color:var(--text-primary)}
         .dark th.text-slate-500,.dark th.text-slate-600{color:var(--text-secondary)!important}
@@ -262,20 +332,20 @@
 
             <div class="px-4 sm:px-6 lg:px-8 pt-5">
                 @if(session('success') && !session('success_card'))
-                    <div class="rounded-xl bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 px-5 py-3 mb-4">{{ session('success') }}</div>
+                    <x-toast type="success">{{ session('success') }}</x-toast>
                 @endif
                 @if(session('error'))
-                    <div class="rounded-xl bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 px-5 py-3 mb-4">{{ session('error') }}</div>
+                    <x-toast type="error">{{ session('error') }}</x-toast>
                 @endif
                 @if($errors->any())
-                    <div class="rounded-xl bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 px-5 py-3 mb-4">
+                    <x-toast type="error">
                         <p class="font-semibold mb-1">{{ __('Terdapat kesalahan pada form:') }}</p>
                         <ul class="list-disc list-inside text-sm">
                             @foreach($errors->all() as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                    </div>
+                    </x-toast>
                 @endif
             </div>
 
@@ -285,7 +355,7 @@
             </main>
 
             <footer class="px-4 sm:px-6 lg:px-8 pb-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
-                {{ __('Animated icons by') }} <a href="https://lordicon.com/" target="_blank" rel="noopener" class="hover:underline">Lordicon.com</a>
+                Tridayaapp.com
             </footer>
         </div>
     </div>
@@ -326,14 +396,56 @@
             if(window.__revealFallback)clearTimeout(window.__revealFallback);
             window.__revealFallback=setTimeout(forceReveal,1500);
         }
+        // Hover pill meluncur ala template (SharedLayoutBg): satu pill
+        // selebar nav mengikuti item yang di-hover. Tanpa :scope (rapuh di
+        // sebagian browser) — keanggotaan dicek via nav.contains. Class
+        // html.sb-pill/js dipasang ulang tiap panggilan (bukan sekali saja)
+        // karena morph wire:navigate menimpa atribut <html> — nav di-persist
+        // sehingga guard pillBound tetap '1' antar navigasi.
+        function initHoverPill(){
+            var nav=document.getElementById('sidebar-navigation');if(!nav)return;
+            document.documentElement.classList.add('js','sb-pill');
+            if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+            var pill=nav.querySelector(':scope > .sb-hover-pill');
+            if(!pill){pill=document.createElement('span');pill.className='sb-hover-pill';pill.setAttribute('aria-hidden','true');nav.append(pill);}
+            if(nav.dataset.pillBound)return;nav.dataset.pillBound='1';
+            function place(el){
+                var x=0,y=0,node=el;
+                while(node&&node!==nav){x+=node.offsetLeft;y+=node.offsetTop;node=node.offsetParent;}
+                pill.style.width=el.offsetWidth+'px';
+                pill.style.height=el.offsetHeight+'px';
+                pill.style.transform='translate('+x+'px,'+y+'px)';
+                pill.style.opacity='1';
+            }
+            nav.addEventListener('mousemove',function(e){
+                if(document.documentElement.classList.contains('sidebar-collapsed')&&window.innerWidth>=1024){pill.style.opacity='0';return;}
+                var t=e.target&&e.target.closest?e.target.closest('a, .sb-head'):null;
+                if(!t||!nav.contains(t)) {pill.style.opacity='0';return;}
+                if(t.tagName==='A'){var hd=t.closest('.sb-head');if(hd&&nav.contains(hd))t=hd;}
+                if(t.closest('.sb-group:not([data-open]) .sb-sub')){pill.style.opacity='0';return;}
+                place(t);
+            });
+            nav.addEventListener('mouseleave',function(){pill.style.opacity='0';});
+        }
         function initChrome(){
             var s=document.getElementById('sidebar'),o=document.getElementById('sidebarOverlay'),h=document.getElementById('hamburgerBtn');
             if(!s||!o)return;
-            function open(){s.classList.add('open');o.classList.add('active')}
-            function close(){s.classList.remove('open');o.classList.remove('active')}
-            close();
+            function isMobileBar(){return window.innerWidth<1024}
+            var lastFocus=null;
+            var FOCUSABLE='a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+            // Scroll-lock ala template: body position:fixed (posisi scroll
+            // terjaga) — overflow:hidden saja bikin halaman lompat di mobile.
+            var sbScrollY=0,sbBodyPrev=null;
+            function lockBar(){sbScrollY=window.scrollY||0;sbBodyPrev={l:document.body.style.left,o:document.body.style.overflow,p:document.body.style.position,r:document.body.style.right,t:document.body.style.top};document.body.style.position='fixed';document.body.style.top=(-sbScrollY)+'px';document.body.style.left='0';document.body.style.right='0';document.body.style.overflow='hidden';}
+            function unlockBar(){if(!sbBodyPrev)return;document.body.style.position=sbBodyPrev.p;document.body.style.top=sbBodyPrev.t;document.body.style.left=sbBodyPrev.l;document.body.style.right=sbBodyPrev.r;document.body.style.overflow=sbBodyPrev.o;sbBodyPrev=null;window.scrollTo(0,sbScrollY);}
+            // Sheet mobile ala template: scroll-lock + inert + fokus masuk,
+            // tutup kembalikan fokus. Desktop (sidebar terlihat) tak disentuh.
+            function open(){s.classList.add('open');o.classList.add('active');if(!isMobileBar())return;lastFocus=document.activeElement;s.setAttribute('role','dialog');s.setAttribute('aria-modal','true');s.removeAttribute('inert');lockBar();var f=s.querySelector(FOCUSABLE);if(f)f.focus({preventScroll:true});}
+            function close(restore){s.classList.remove('open');o.classList.remove('active');if(!isMobileBar())return;s.removeAttribute('role');s.removeAttribute('aria-modal');s.setAttribute('inert','');unlockBar();if(restore!==false&&lastFocus&&document.contains(lastFocus))lastFocus.focus({preventScroll:true});}
+            close(false);
+            if(isMobileBar()){s.setAttribute('inert','');}
             if(h&&!h.dataset.bound){h.dataset.bound='1';h.addEventListener('click',function(){s.classList.contains('open')?close():open()});}
-            if(!o.dataset.bound){o.dataset.bound='1';o.addEventListener('click',close);}
+            if(!o.dataset.bound){o.dataset.bound='1';o.addEventListener('click',function(){close();});}
 
             var root=document.documentElement;
             var cb=document.getElementById('sidebarCollapseBtn');
@@ -349,7 +461,7 @@
                 try{localStorage.setItem('sidebar-collapsed',v?'1':'0')}catch(e){}
                 var btn=document.getElementById('sidebarCollapseBtn');
                 if(btn){btn.setAttribute('aria-expanded',String(!v));btn.setAttribute('aria-label',v?@json(__('Perluas sidebar')):@json(__('Perkecil sidebar')))}
-                syncTitles();
+            syncTitles();
             }
             syncTitles();
             if(cb&&!cb.dataset.bound){cb.dataset.bound='1';cb.addEventListener('click',function(){
@@ -375,34 +487,39 @@
                 });
             });
 
-            s.querySelectorAll('a,button[type="submit"]').forEach(function(e){if(e.dataset.bound)return;e.dataset.bound='1';e.addEventListener('click',function(){window.innerWidth<1024&&close()})});
+            s.querySelectorAll('a,button[type="submit"]').forEach(function(e){if(e.dataset.bound)return;e.dataset.bound='1';e.addEventListener('click',function(){if(window.innerWidth<1024)close(false)})});
+            initHoverPill();
             if(!window.__chromeGlobals){
                 window.__chromeGlobals=true;
                 // ⌘B / Ctrl+B = toggle rail (ala template animated sidebar).
                 document.addEventListener('keydown',function(e){
                     if(e.key.toLowerCase()!=='b'||!(e.metaKey||e.ctrlKey))return;
                     e.preventDefault();
-                    if(window.innerWidth<1024){var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay');
+                    if(window.innerWidth<1024){var sb=document.getElementById('sidebar');
                         if(!sb)return;
-                        if(sb.classList.contains('open')){sb.classList.remove('open');ov&&ov.classList.remove('active')}
-                        else{sb.classList.add('open');ov&&ov.classList.add('active')}
+                        sb.classList.contains('open')?close():open();
                         return;}
                     root.classList.toggle('sidebar-collapsed');
                     setCollapsed(root.classList.contains('sidebar-collapsed'));
                 });
-                window.addEventListener('resize',function(){var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay');if(window.innerWidth>=1024&&sb){sb.classList.remove('open');ov&&ov.classList.remove('active')}});
-                document.addEventListener('keydown',function(e){if(e.key!=='Escape')return;var sb=document.getElementById('sidebar');if(sb&&sb.classList.contains('open')){sb.classList.remove('open');var ov=document.getElementById('sidebarOverlay');ov&&ov.classList.remove('active')}});
+                window.addEventListener('resize',function(){if(window.innerWidth>=1024){var sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay');if(sb){sb.classList.remove('open');sb.removeAttribute('role');sb.removeAttribute('aria-modal');sb.removeAttribute('inert');}if(ov)ov.classList.remove('active');unlockBar();}});
+                document.addEventListener('keydown',function(e){if(e.key!=='Escape')return;var sb=document.getElementById('sidebar');if(sb&&sb.classList.contains('open'))close();});
+                // Focus trap sheet mobile ala template (Tab muter di dalam sidebar).
+                document.addEventListener('keydown',function(e){
+                    if(e.key!=='Tab')return;
+                    var sb=document.getElementById('sidebar');
+                    if(!sb||!sb.classList.contains('open')||window.innerWidth>=1024)return;
+                    var f=Array.prototype.slice.call(sb.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(function(el){return el.offsetParent!==null&&!el.closest('.sb-group:not([data-open]) .sb-sub')});
+                    if(!f.length){e.preventDefault();return;}
+                    var first=f[0],last=f[f.length-1];
+                    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+                    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+                });
             }
-            var t=document.getElementById('darkToggle');
-            if(t&&!t.dataset.bound){t.dataset.bound='1';t.addEventListener('click',function(){
-                var root=document.documentElement;
-                var dark=!root.classList.contains('dark');
-                root.classList.toggle('dark',dark);
-                var mode=dark?'dark':'light';
-                root.setAttribute('data-mode',mode);
-                try{localStorage.setItem('appearance-mode',mode);localStorage.setItem('dark-mode',dark)}catch(e){}
-                window.dispatchEvent(new CustomEvent('appearance:change'));
-            });}
+            // Toggle tema header sudah dihapus dari UI: satu-satunya sumber
+            // perubahan tema adalah Settings ($store.appearance, persist server).
+            // Blok #darkToggle lama dihapus agar tak ada penulis localStorage-only
+            // yang divergen dari preferensi server bila tombol ditambah lagi.
             var nav=document.getElementById('sidebar-navigation');
             if(nav){
                 nav.scrollTop=+(sessionStorage.getItem('sidebar-scroll')||0);
@@ -437,6 +554,65 @@
         }
         function initChromeSafe(){try{initChrome()}catch(e){try{forceReveal()}catch(_){}}}
         function initRevealSafe(){try{initReveal()}catch(e){try{forceReveal()}catch(_){}}}
+        // Sidebar di-persist (Livewire persist): DOM-nya tidak ikut morph, jadi status aktif
+        // (highlight + grup terbuka) harus disinkron manual tiap navigasi.
+        // Hanya class/aria yang disentuh — node tidak diganti, animasi tak replay.
+        // (AI Assistant sengaja full reload; server me-render statusnya segar.)
+        function syncSidebarActive(){
+            var nav=document.getElementById('sidebar-navigation');if(!nav)return;
+            var active=(nav.dataset.navActive||'').split(' ').filter(Boolean);
+            var inactive=(nav.dataset.navInactive||'').split(' ').filter(Boolean);
+            if(!active.length&&!inactive.length)return;
+            var here=window.location.pathname.replace(/\/+$/,'')||'/';
+            function swap(el,on,extra){
+                active.forEach(function(c){el.classList.toggle(c,on);});
+                inactive.forEach(function(c){el.classList.toggle(c,!on);});
+                (extra||'').split(' ').filter(Boolean).forEach(function(c){el.classList.toggle(c,on);});
+                if(el.tagName==='A')el.setAttribute('aria-current',on?'page':'false');
+            }
+            var links=Array.prototype.slice.call(nav.querySelectorAll('a[href]'));
+            var best=null,bestLen=-1;
+            links.forEach(function(a){
+                var p;try{p=new URL(a.href,window.location.origin).pathname.replace(/\/+$/,'')||'/';}catch(e){return;}
+                if(p!==here&&here.indexOf(p+'/')!==0)return;
+                // Header grup dan sub-item pertama URL-nya SAMA (landing grup = item pertama),
+                // header selalu muncul duluan di DOM. Saat panjang sama, menangkan sub-item
+                // agar highlight submenu pertama tidak hilang (header ikut nyala via grup di bawah).
+                var isSub=!!a.closest('.sb-sub-item');
+                var bestIsSub=!!(best&&best.closest('.sb-sub-item'));
+                if(p.length>bestLen||(p.length===bestLen&&isSub&&!bestIsSub)){bestLen=p.length;best=a;}
+            });
+            links.forEach(function(a){
+                var head=a.closest('.sb-head');
+                if(head)swap(head,false,'sb-active');else swap(a,false);
+            });
+            if(!best)return;
+            var head=best.closest('.sb-head');
+            var item=best.closest('.sb-sub-item');
+            if(item){
+                swap(best,true);
+                var group=item.closest('.sb-group');
+                if(group){
+                    group.setAttribute('data-open','');
+                    try{var scope=window.Alpine?Alpine.$data(group):null;if(scope)scope.open=true;}catch(e){}
+                    var h=group.querySelector('.sb-head');
+                    if(h)swap(h,true,'sb-active');
+                }
+            }else if(head){swap(head,true,'sb-active');}
+            else{swap(best,true);}
+        }
+        document.addEventListener('livewire:navigated',function(){try{syncSidebarActive();}catch(e){}});
+        // Penanda aktif navbar (breadcrumb + badge halaman): mainkan ulang
+        // animasi fade tiap navigasi. Hanya elemen penanda — sisa navbar diam.
+        document.addEventListener('livewire:navigated',function(){
+            try{
+                document.querySelectorAll('.app-header nav[aria-label="Breadcrumb"],.app-header .app-header-badge').forEach(function(el){
+                    el.classList.remove('nav-active-swap');
+                    void el.offsetWidth;
+                    el.classList.add('nav-active-swap');
+                });
+            }catch(e){}
+        });
         document.addEventListener('DOMContentLoaded',initChromeSafe);
         document.addEventListener('livewire:navigated',initChromeSafe);
         document.addEventListener('DOMContentLoaded',initRevealSafe);
@@ -473,6 +649,28 @@
             window.addEventListener('pageshow',stop);
             stop();
         })();
+        // Pertahankan posisi scroll halaman saat reload dari halaman yang sama
+        // (mis. preset This Month/3/6 Month + submit filter dashboard marketing):
+        // reload full page me-reset scroll ke atas. Pulihkan hanya bila datang
+        // dari path yang sama; navigasi dari menu lain tetap mulai dari atas.
+        // Restore instan (bukan smooth) — tujuannya tidak pindah, bukan animasi.
+        (function(){
+            if(window.__pageScrollBound)return;window.__pageScrollBound=true;
+            try{
+                if('scrollRestoration' in history)history.scrollRestoration='manual';
+                var key='page-scroll:'+window.location.pathname;
+                var ref=null;
+                try{ref=document.referrer?new URL(document.referrer).pathname:null;}catch(e){}
+                var y=+(sessionStorage.getItem(key)||0);
+                if(y>0&&ref===window.location.pathname){window.scrollTo(0,y);}
+                window.addEventListener('beforeunload',function(){
+                    try{sessionStorage.setItem(key,String(window.scrollY||0));}catch(e){}
+                });
+            }catch(e){}
+        })();
     </script>
+    {{-- 3DY AI Chat V2 (pengganti floating lama; file lama dipertahankan tapi tidak di-mount) --}}
+    @include('components.ai-chat-v2')
+    @livewireScripts
 </body>
 </html>

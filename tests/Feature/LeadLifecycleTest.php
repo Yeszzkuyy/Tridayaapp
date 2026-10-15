@@ -27,6 +27,27 @@ class LeadLifecycleTest extends TestCase
         return $user;
     }
 
+    public function test_multirole_management_can_assign_lead_to_sales(): void
+    {
+        // Regresi: akun multi-role (management+sales) assign via Manage Sales
+        // harus redirect + sukses, sama seperti single-role management.
+        $this->seed(RoleAndPermissionSeeder::class);
+        $mgmt = User::factory()->create();
+        $mgmt->assignRole(['management', 'sales']);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $lead = Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Multi Role', 'contact_person' => 'QA'])->id,
+        ]);
+
+        $this->actingAs($mgmt)->post(route('manage-sales.assign', $lead), ['assigned_to' => $sales->id])
+            ->assertRedirect(route('manage-sales.index'))
+            ->assertSessionHas('success');
+
+        $this->assertSame($sales->id, $lead->fresh()->assigned_to);
+        $this->assertTrue($sales->notifications()->where('type', 'App\Notifications\LeadAssignedNotification')->exists());
+    }
+
     public function test_full_lifecycle_marketing_to_won(): void
     {
         $marketing = $this->userWithRole('marketing');
@@ -43,11 +64,12 @@ class LeadLifecycleTest extends TestCase
             'customer_name' => 'PT Lifecycle',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
+            'kebutuhan' => 'CCTV 8 channel + instalasi.',
             'incoming_date' => '2026-09-29',
         ])->assertRedirect(route('leads.index'));
         $lead = Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Lifecycle'))->first();
         $this->assertNotNull($lead);
-        $this->assertSame('new', $lead->status);
+        $this->assertSame('cool', $lead->status);
         // management diberi tahu (belum di-assign)
         $this->assertTrue($mgmt->notifications()->where('type', 'App\Notifications\NewLeadNotification')->exists());
 
@@ -66,16 +88,7 @@ class LeadLifecycleTest extends TestCase
             'next_follow_up_date' => '2026-10-02',
         ])->assertOk();
 
-        // 4. Sales meeting
-        $this->actingAs($sales)->postJson(route('sales.meetings.store'), [
-            'customer_mode' => 'existing',
-            'customer_id' => $lead->customer_id,
-            'lead_id' => $lead->id,
-            'meeting_date' => '2026-09-30',
-            'notes' => 'Bahass kebutuhan teknis.',
-        ])->assertOk();
-
-        // 5. Sales request inside sales
+        // 4. Sales request inside sales
         $this->actingAs($sales)->post(route('lead-tasks.store'), [
             'lead_id' => $lead->id,
             'title' => 'Buatkan proposal teknis',
@@ -85,7 +98,7 @@ class LeadLifecycleTest extends TestCase
         $this->assertNotNull($task);
         $this->assertTrue($inside->notifications()->where('type', 'App\Notifications\LeadTaskNotification')->exists());
 
-        // 6. Inside sales complete + komentar
+        // 5. Inside sales complete + komentar
         $this->actingAs($inside)->put(route('lead-tasks.update', $task), [
             'title' => $task->title,
             'status' => 'done',
@@ -95,8 +108,8 @@ class LeadLifecycleTest extends TestCase
         // sales (creator) diberi tahu soal status
         $this->assertTrue($sales->notifications()->where('type', 'App\Notifications\LeadTaskNotification')->exists());
 
-        // 7. Proposal stage + dokumen kategori proposal
-        $this->actingAs($sales)->patch(route('leads.update-status', $lead), ['status' => 'proposal'])
+        // 6. Proposal stage + dokumen kategori proposal
+        $this->actingAs($sales)->patch(route('leads.update-status', $lead), ['status' => 'hot'])
             ->assertNoContent();
         \Illuminate\Support\Facades\Storage::fake('private');
         \Illuminate\Support\Facades\Storage::disk('private')->put('leads/1/q.pdf', 'isi');
@@ -104,7 +117,7 @@ class LeadLifecycleTest extends TestCase
         $this->actingAs($marketing)->patch(route('leads.attachments.category', [$lead, $doc]), ['category' => 'proposal'])
             ->assertRedirect();
 
-        // 8. Won + closing
+        // 7. Won + closing
         $status = ProjectStatus::create(['name' => 'Open', 'sort_order' => 1]);
         $wt = WorkType::create(['name' => 'Instalasi']);
         $this->actingAs($marketing)->patch(route('leads.convert', $lead), [
@@ -117,7 +130,7 @@ class LeadLifecycleTest extends TestCase
 
         // Timeline mencatat semua event penting
         $actions = LeadActivity::where('lead_id', $lead->id)->pluck('action')->all();
-        foreach (['created', 'assigned', 'followup_created', 'meeting_created', 'task_created', 'task_status_changed', 'status_changed', 'converted'] as $expected) {
+        foreach (['created', 'assigned', 'followup_created', 'task_created', 'task_status_changed', 'status_changed', 'converted'] as $expected) {
             $this->assertContains($expected, $actions, "timeline kehilangan {$expected}");
         }
 
@@ -129,7 +142,7 @@ class LeadLifecycleTest extends TestCase
     {
         $marketing = $this->userWithRole('marketing');
         $customer = Customer::create(['name' => 'PT Gagal']);
-        $lead = Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'proposal']);
+        $lead = Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'hot']);
 
         $this->actingAs($marketing)->patch(route('leads.update-status', $lead), ['status' => 'lost'])
             ->assertNoContent();

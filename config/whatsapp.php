@@ -38,5 +38,9 @@ return [
         'api_version' => 'v19.0',
         'graph_base_url' => 'https://graph.facebook.com',
         'verify_token' => env('META_WA_VERIFY_TOKEN', ''),
+        // App Secret Meta (Dashboard Meta → Pengaturan Aplikasi) untuk
+        // verifikasi HMAC X-Hub-Signature-256 pada POST webhook.
+        // Kosong = verifikasi dilewati (dev/test); isi di prod.
+        'app_secret' => env('META_WA_APP_SECRET', ''),
     ],
 ];

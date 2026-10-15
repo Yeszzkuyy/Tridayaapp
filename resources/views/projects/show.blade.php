@@ -7,12 +7,9 @@
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-                <a href="{{ route('projects.edit', $project) }}" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium transition">Edit Project</a>
+                <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="Edit Project" />
             @endcan
-            <a href="{{ route('projects.index') }}"
-               class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition">
-                ← Back
-            </a>
+            <x-icon-button as="a" icon="back" href="{{ route('projects.index') }}" title="← Back" />
         </div>
     </div>
 
@@ -50,7 +47,16 @@
         {{-- Tab: Workflow --}}
         <div x-show="tab === 'workflow'" x-transition>
             @php
-                $surveys = $project->surveys()->latest()->get();
+                // Survey bisa dua arah: yang sudah menempel ke project ini,
+                // atau milik customer sama yang belum punya project (survey
+                // biasanya dibuat SEBELUM project-nya lahir).
+                $surveys = \App\Models\Survey::where(function ($q) use ($project) {
+                    $q->where('project_id', $project->id)
+                        ->orWhere(function ($q2) use ($project) {
+                            $q2->where('customer_id', $project->customer_id)
+                                ->whereNull('project_id');
+                        });
+                })->latest()->get();
                 $sizings = $project->sizingProjects()->latest()->get();
                 $requestHargas = $project->requestHargas()->latest()->get();
                 $instalasis = $project->instalasis()->latest()->get();
@@ -58,7 +64,7 @@
 
                 $steps = [
                     ['label' => 'Request', 'done' => true, 'link' => null, 'detail' => 'Project dibuat'],
-                    ['label' => 'Survey', 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id]), 'detail' => $surveys->first() ? $surveys->first()->status : 'Belum ada'],
+                    ['label' => 'Survey', 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id, 'customer_id' => $project->customer_id]), 'detail' => $surveys->first() ? $surveys->first()->status : 'Belum ada'],
                     ['label' => 'Sizing', 'done' => $sizings->isNotEmpty() && $sizings->first()->status === 'completed', 'link' => $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', ['project_id' => $project->id]), 'detail' => $sizings->first() ? $sizings->first()->status : 'Belum ada'],
                     ['label' => 'Request Harga', 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : 'Belum ada'],
                     ['label' => 'Instalasi', 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : 'Belum ada'],

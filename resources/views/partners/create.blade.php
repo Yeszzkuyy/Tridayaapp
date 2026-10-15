@@ -4,10 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Tambah Partner') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Simpan data supplier, vendor, kontraktor, partner, atau distributor.') }}</p>
         </div>
-        <a href="{{ route('partners.index') }}"
-           class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('partners.index') }}" title="{{ __('Kembali') }}" />
     </div>
 
     <form action="{{ route('partners.store') }}" method="POST"

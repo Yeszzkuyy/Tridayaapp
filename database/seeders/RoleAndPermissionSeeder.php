@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\Lead;
 use App\Models\User;
 
 class RoleAndPermissionSeeder extends Seeder
@@ -64,21 +65,32 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Divisi
         $mk('marketing', ['manage-marketing', 'view-marketing', ...$common]);
-        $mk('sales', ['manage-sales', 'view-sales', ...$common]);
-        $mk('admin', ['manage-admin', 'view-admin', ...$common]);
+        $mk('sales', ['manage-sales', 'view-sales', 'view-admin', ...$common]);
+
+        // Sales per PT: izin sama dengan sales, tulis dibatasi PT-nya (PtAccess).
+        // Satu user boleh pegang banyak PT. Tanpa role PT = tanpa batas.
+        $salesPerms = ['manage-sales', 'view-sales', 'view-admin', ...$common];
+        foreach (Lead::PT_GROUPS as $pt) {
+            $mk('sales-'.strtolower($pt), $salesPerms);
+        }
+        $mk('admin', ['manage-admin', 'view-admin', 'view-sales', ...$common]);
         $mk('technician', ['manage-technician', 'view-technician', ...$common]);
 
-        // Lead teknisi: 1 tingkat di atas technician biasa
-        $mk('lead-technician', ['manage-technician', 'view-technician', 'monitor-technical', ...$common]);
+        // Lead teknisi: koordinasi teknisi + read-only sales & admin
+        $mk('lead-technician', ['manage-technician', 'view-technician', 'monitor-technical', 'view-sales', 'view-admin', ...$common]);
 
-        // Hub Management (satu permission bersama manage-sales-leads)
-        $mk('management', ['manage-sales-leads', ...$common]);
-        $mk('manage-marketing', ['manage-sales-leads', 'view-marketing', 'monitor-marketing', ...$common]);
-        $mk('manage-technical', ['manage-sales-leads', 'view-technician', 'monitor-technical', ...$common]);
-        $mk('manage-admin', ['manage-sales-leads', 'view-admin', ...$common]);
+        // Management tunggal: kelola menu management + view-only recap semua divisi
+        $mk('management', ['manage-sales-leads', 'view-marketing', 'view-sales', 'view-technician', 'view-admin', 'view-monitoring', 'monitor-marketing', ...$common]);
+
+        // Lead marketing: kerja marketing + read-only teknisi (dok. instalasi)
+        $mk('lead-marketing', ['manage-marketing', 'view-marketing', 'monitor-marketing', 'view-technician', ...$common]);
 
         // Inside Sales: hanya task yang di-assign kepadanya (lead terlihat bila ada task)
         $mk('inside-sales', ['manage-inside-sales', ...$common]);
+
+        // Prakerin: read-only di divisinya masing-masing
+        $mk('prakerin-technician', ['view-technician', ...$common]);
+        $mk('prakerin-admin', ['view-admin', ...$common]);
 
         // CEO: semua view, tanpa manage (read-only; enforcement menyusul)
         $mk('ceo', ['view-marketing', 'view-sales', 'view-admin', 'view-technician', 'view-monitoring', ...$common]);
@@ -89,8 +101,18 @@ class RoleAndPermissionSeeder extends Seeder
         $map = [
             'teknisi' => 'technician',
             'engineer' => 'technician',
-            'marketing-lead' => 'manage-marketing',
+            'marketing-lead' => 'lead-marketing',
             'manager' => 'ceo',
+            // Role manage-*/lama dilebur ke management tunggal
+            'manage-marketing' => 'management',
+            'manage-technical' => 'management',
+            'manage-admin' => 'management',
+        ];
+
+        // Override per orang (disepakati): Syifa Lead Marketing, Hanifah Admin.
+        $personMap = [
+            'syifa@tridayaapp.com' => 'lead-marketing',
+            'hanifah@tridayaapp.com' => 'admin',
         ];
 
         foreach (User::withTrashed()->get() as $user) {
@@ -103,7 +125,7 @@ class RoleAndPermissionSeeder extends Seeder
             }
 
             $oldRole = $user->getOriginal('role') ?? $user->role;
-            $target = $map[$oldRole] ?? $oldRole;
+            $target = $personMap[$user->email] ?? $map[$oldRole] ?? $oldRole;
 
             if ($target && Role::where('name', $target)->exists()) {
                 $user->assignRole($target);
@@ -114,22 +136,17 @@ class RoleAndPermissionSeeder extends Seeder
             }
         }
 
-        // === 4. Buat 1 akun Super Admin baru (placeholder) ===
-        $superAdminUser = User::firstOrCreate(
-            ['email' => 'superadmin@dbteknisi.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => bcrypt('gantiPassword123'),
-            ]
-        );
-        $superAdminUser->assignRole('super-admin');
-
-        // === 5. Kembalikan super-admin ke user yang punya kolom role=super-admin ===
+        // === 4. Kembalikan super-admin ke user yang punya kolom role=super-admin ===
         User::where('role', 'super-admin')->get()
             ->each(fn (User $u) => $u->assignRole('super-admin'));
 
-        // === 6. Kembalikan super-admin yang hilang akibat wipe (kolom role=guest tapi tadinya super-admin) ===
+        // === 5. Kembalikan super-admin yang hilang akibat wipe (kolom role=guest tapi tadinya super-admin) ===
         User::whereIn('id', $prevSuperAdmins)->get()
             ->each(fn (User $u) => $u->hasRole('super-admin') ?: $u->assignRole('super-admin'));
+
+        // Forget di AWAL saja tidak cukup: seeder tidak transaksional — request web
+        // yang datang di tengah (saat roles/permissions ke-reset) bisa meng-cache
+        // kondisi setengah jadi selama 24 jam → user kehilangan menu/403 padahal DB benar.
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

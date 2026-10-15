@@ -104,6 +104,21 @@ class KnowledgeBaseTest extends TestCase
         $this->assertDatabaseCount('knowledge_base_documents', 0);
     }
 
+    public function test_upload_rejects_html_documents(): void
+    {
+        Stores::fake();
+        $this->setStoreId();
+
+        $this->actingAs($this->userWithRole('admin'))
+            ->post(route('knowledge-base.store'), [
+                'document' => UploadedFile::fake()->create('page.html', 100, 'text/html'),
+                'category' => 'sop',
+            ])
+            ->assertSessionHasErrors('document');
+
+        $this->assertDatabaseCount('knowledge_base_documents', 0);
+    }
+
     public function test_upload_rejects_invalid_category(): void
     {
         Stores::fake();

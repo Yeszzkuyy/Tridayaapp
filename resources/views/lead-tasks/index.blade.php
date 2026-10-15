@@ -21,10 +21,7 @@
                 </select>
             </div>
             @if(request()->filled('status'))
-                <a href="{{ route('lead-tasks.index') }}"
-                   class="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium transition">
-                    Reset
-                </a>
+                <x-icon-button as="a" icon="reset" href="{{ route('lead-tasks.index') }}" title="Reset" />
             @endif
         </form>
     </div>
@@ -58,10 +55,7 @@
                                 {{ $task->due_date ? $task->due_date->format('d M Y') : '-' }}
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{{ route('lead-tasks.show', $task) }}"
-                                   class="px-3 py-1.5 text-xs rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium transition">
-                                    {{ __('Lihat') }}
-                                </a>
+                                <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $task) }}" title="{{ __('Lihat') }}" />
                             </td>
                         </tr>
                     @empty

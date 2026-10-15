@@ -163,11 +163,11 @@ return [
         'store_id' => env('KNOWLEDGE_BASE_STORE_ID'),
         'store_name' => env('KNOWLEDGE_BASE_STORE_NAME', '3DY Knowledge Base'),
         'max_file_size' => 20 * 1024 * 1024,
+        // Tanpa text/html: ditolak di validasi (SecureFile::knowledgeBase).
         'allowed_mime_types' => [
             'application/pdf',
             'text/plain',
             'text/markdown',
-            'text/html',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

@@ -31,7 +31,7 @@ class ManageSalesTest extends TestCase
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
             'segment' => 'end_user',
-            'status' => 'new',
+            'status' => 'cool',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $assignee?->id,
         ]);
@@ -201,6 +201,18 @@ class ManageSalesTest extends TestCase
         $this->assertStringContainsString('My Leads', $content);
         $this->assertStringContainsString('Search customer', $content);
         $this->assertStringNotContainsString('My Lead Status', $content);
+    }
+
+    public function test_export_neutralizes_formula_cells(): void
+    {
+        $sales = $this->loginAs('sales');
+        $lead = $this->makeLead($sales, '=HYPERLINK("http://evil", "Klik")');
+        $lead->update(['kebutuhan' => '+cmd|calc']);
+
+        $content = $this->actingAs($sales)->get(route('sales.my-leads.export'))->assertOk()->streamedContent();
+
+        $this->assertStringContainsString("'=HYPERLINK", $content);
+        $this->assertStringContainsString("'+cmd|calc", $content);
     }
 
     public function test_marketing_can_store_lead_without_assignment(): void

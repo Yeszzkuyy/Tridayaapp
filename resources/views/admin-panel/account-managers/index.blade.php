@@ -5,10 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">Account Manager</h1>
                 <p class="text-slate-500 mt-1">{{ __('Kelola data Account Manager') }}</p>
             </div>
-            <a href="{{ route('admin-panel.account-managers.create') }}" 
-               class="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">
-                {{ __('+ Tambah Account Manager') }}
-            </a>
+            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.account-managers.create') }}" label="{{ __('+ Tambah Account Manager') }}" title="{{ __('+ Tambah Account Manager') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -28,15 +25,14 @@
                                 <td class="px-6 py-4 text-slate-600">{{ $am->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">
-                                        <a href="{{ route('admin-panel.account-managers.edit', $am) }}" 
-                                           class="text-amber-600 hover:text-amber-800">Edit</a>
+                                        <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.account-managers.edit', $am) }}" title="Edit" />
                                         <form action="{{ route('admin-panel.account-managers.destroy', $am) }}" 
                                               method="POST" 
                                               onsubmit="return confirm('{{ __('Hapus Account Manager ini?') }}')"
                                               class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="text-red-600 hover:text-red-800">{{ __('Hapus') }}</button>
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus') }}" />
                                         </form>
                                     </div>
                                 </td>

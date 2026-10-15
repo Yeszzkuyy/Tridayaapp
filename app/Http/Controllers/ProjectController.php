@@ -25,21 +25,20 @@ class ProjectController extends Controller
     {
         $this->authorize('viewAny', Project::class);
 
-        // Semua project ditampilkan supaya perubahan status tidak membuat project "menghilang" dari daftar
+        // Paginasi di SQL supaya perubahan status tidak membuat project "menghilang" dari daftar
         $projects = Project::with(['customer', 'workType', 'status'])
             ->latest()
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         // Total semua project
-        $totalProjects = $projects->count();
+        $totalProjects = Project::count();
 
-        // Total project aktif
-        $activeProjects = $projects
-            ->filter(fn ($p) => in_array($p->status?->name, [
-                ProjectStatusEnum::Open->value,
-                ProjectStatusEnum::OnProgress->value,
-            ], true))
-            ->count();
+        // Total project aktif (hitung di SQL, bukan di koleksi)
+        $activeProjects = Project::whereHas('status', fn ($q) => $q->whereIn('name', [
+            ProjectStatusEnum::Open->value,
+            ProjectStatusEnum::OnProgress->value,
+        ]))->count();
 
         $statusBadgeColors = ProjectStatus::BADGE_COLORS;
 

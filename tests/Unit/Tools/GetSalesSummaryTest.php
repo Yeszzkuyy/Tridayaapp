@@ -31,7 +31,7 @@ class GetSalesSummaryTest extends TestCase
     {
         $customer = Customer::create(['name' => 'PT Contoh']);
 
-        Lead::create(['customer_id' => $customer->id, 'status' => 'new']);
+        Lead::create(['customer_id' => $customer->id, 'status' => 'cool']);
         Lead::create(['customer_id' => $customer->id, 'status' => 'won']);
 
         $invoice = Invoice::create([

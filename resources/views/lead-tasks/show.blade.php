@@ -5,14 +5,10 @@
             <p class="text-slate-500 mt-1">{{ $task->lead?->customer?->name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
-            <a href="{{ route('lead-tasks.edit', $task) }}"
-               class="px-4 py-2.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium transition">
-                Edit
-            </a>
-            <a href="{{ route('lead-tasks.index') }}"
-               class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 text-sm font-medium transition">
-                {{ __('Kembali') }}
-            </a>
+            <x-icon-button as="a" href="{{ route('lead-tasks.edit', $task) }}" title="Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path d="M4 20h4.2L18.5 9.7a2.1 2.1 0 0 0 0-3l-1.2-1.2a2.1 2.1 0 0 0-3 0L4 15.8V20z" /><path d="M13.5 6.5l4 4" /></svg>
+            </x-icon-button>
+            <x-icon-button as="a" icon="back" href="{{ route('lead-tasks.index') }}" title="Back" />
         </div>
     </div>
 
@@ -76,30 +72,5 @@
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Komentar') }} ({{ $task->comments->count() }})</h3>
-        <div class="space-y-2 mb-4">
-            @forelse($task->comments->sortBy('created_at') as $comment)
-                <div class="p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                    <p class="text-sm text-slate-800 dark:text-slate-100 whitespace-pre-wrap">{{ $comment->body }}</p>
-                    <p class="mt-1 text-xs text-slate-500">
-                        {{ $comment->user?->name ?? 'System' }} •
-                        {{ $comment->created_at?->setTimezone('Asia/Jakarta')->format('d M Y H:i') ?? '-' }}
-                    </p>
-                </div>
-            @empty
-                <p class="text-slate-500">{{ __('Belum ada komentar.') }}</p>
-            @endforelse
-        </div>
-        <form action="{{ route('lead-tasks.comments.store', $task) }}" method="POST" class="flex gap-3">
-            @csrf
-            <input type="text" name="body" required maxlength="2000"
-                   placeholder="{{ __('Tulis komentar...') }}"
-                   class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-            <button type="submit"
-                    class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition">
-                {{ __('Kirim') }}
-            </button>
-        </form>
-    </div>
+    <livewire:lead-task-chat :task="$task" />
 </x-app-layout>

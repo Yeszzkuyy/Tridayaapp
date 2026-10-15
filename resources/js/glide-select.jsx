@@ -23,42 +23,71 @@ function themeProps() {
         : { surfaceColor: '#f1f5f9', highlightColor: '#e2e8f0', textColor: '#334155', accentColor: accent };
 }
 
+const gliderRoots = new WeakMap();
+
+function mountGlider(node) {
+    node.dataset.mounted = 'true';
+    const scope = node.closest('.glide-select-root');
+    const hidden = scope?.querySelector('input[type="hidden"]');
+    let options = [];
+    try {
+        options = JSON.parse(node.dataset.options ?? '[]');
+    } catch {}
+    if (!options.length) return;
+    const root = createRoot(node);
+    gliderRoots.set(node, root);
+    root.render(
+        <GlideSelect
+            options={options}
+            defaultValue={node.dataset.value ?? ''}
+            placeholder={node.dataset.placeholder || 'Pilih…'}
+            showTags={node.dataset.tags === '1'}
+            size={node.dataset.size || 'md'}
+            radius={10}
+            ariaLabel={node.dataset.label || 'Pilih'}
+            className={node.dataset.full === '1' ? 'glide-select--full' : ''}
+            onChange={(value) => {
+                if (hidden) {
+                    hidden.value = value;
+                    hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                // Pilihan berubah = error required basi; sembunyikan.
+                scope?.querySelector('.glide-select-error')?.setAttribute('hidden', '');
+                if (node.dataset.autosubmit === '1') scope?.closest('form')?.submit();
+            }}
+            {...themeProps()}
+        />
+    );
+}
+
 function mountAll() {
-    document.querySelectorAll('[data-glide-mount]:not([data-mounted])').forEach((node) => {
-        node.dataset.mounted = 'true';
-        const scope = node.closest('.glide-select-root');
-        const hidden = scope?.querySelector('input[type="hidden"]');
-        let options = [];
-        try {
-            options = JSON.parse(node.dataset.options ?? '[]');
-        } catch {}
-        if (!options.length) return;
-        createRoot(node).render(
-            <GlideSelect
-                options={options}
-                defaultValue={node.dataset.value ?? ''}
-                placeholder={node.dataset.placeholder || 'Pilih…'}
-                showTags={node.dataset.tags === '1'}
-                size={node.dataset.size || 'md'}
-                radius={10}
-                ariaLabel={node.dataset.label || 'Pilih'}
-                className={node.dataset.full === '1' ? 'glide-select--full' : ''}
-                onChange={(value) => {
-                    if (hidden) {
-                        hidden.value = value;
-                        hidden.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    // Pilihan berubah = error required basi; sembunyikan.
-                    scope?.querySelector('.glide-select-error')?.setAttribute('hidden', '');
-                    if (node.dataset.autosubmit === '1') scope?.closest('form')?.submit();
-                }}
-                {...themeProps()}
-            />
-        );
-    });
+    document.querySelectorAll('[data-glide-mount]:not([data-mounted])').forEach(mountGlider);
     wireSubmitGuard();
     wireRequiredValidation();
 }
+
+/**
+ * Mount ulang island glider dengan opsi baru (mis. dropdown dependen
+ * yang ikut pilihan lain). Nilai dikosongkan kecuali diisi eksplisit.
+ * Mengembalikan false bila helper/node tidak siap (validasi server tetap jadi jaring pengaman).
+ */
+window.__glideRemount = function (mountNode, options, value = '') {
+    if (!mountNode) return false;
+    try {
+        gliderRoots.get(mountNode)?.unmount();
+    } catch {}
+    mountNode.removeAttribute('data-mounted');
+    try {
+        mountNode.dataset.options = JSON.stringify(options ?? []);
+    } catch {
+        return false;
+    }
+    mountNode.dataset.value = value ?? '';
+    const hidden = mountNode.closest('.glide-select-root')?.querySelector('input[type="hidden"]');
+    if (hidden) hidden.value = value ?? '';
+    mountGlider(mountNode);
+    return true;
+};
 
 const SUBMIT_BTN = 'button[type="submit"], input[type="submit"]';
 
@@ -97,10 +126,10 @@ function showSubmitOverlay(form) {
         return;
     }
     const dark = document.documentElement.classList.contains('dark');
-    // ponytail: left TIDAK di-set inline agar offset sidebar dari CSS (.status-card-backdrop) berlaku
+    // ponytail: left + top TIDAK di-set inline agar offset sidebar (CSS
+    // .status-card-backdrop) dan tinggi navbar (CSS #gs-submit-overlay) berlaku
     Object.assign(el.style, {
         position: 'fixed',
-        top: '0',
         right: '0',
         bottom: '0',
         display: 'flex',
@@ -183,3 +212,6 @@ function wireRequiredValidation() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountAll);
 else mountAll();
+// Navigasi Livewire (morph) tidak me-reload modul: mount ulang node baru.
+// Guard data-mounted mencegah mount ganda pada node lama.
+document.addEventListener('livewire:navigated', mountAll);

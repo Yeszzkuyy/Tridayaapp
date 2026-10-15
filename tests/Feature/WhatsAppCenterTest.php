@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Ai\Agents\WhatsappSalesBot;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\User;
@@ -12,6 +13,7 @@ use App\Services\WhatsappBot;
 use App\Services\WhatsappGateway;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -225,13 +227,19 @@ class WhatsAppCenterTest extends TestCase
     {
         $mine = $this->makeAccount('wa_nti');
         $other = $this->makeAccount('wa_mgk');
+        $shared = $this->makeAccount('wa_tps');
         $user = $this->marketingUser($mine->id);
+        $stranger = User::factory()->create();
+        $stranger->assignRole('marketing');
+        $other->update(['assigned_to' => $stranger->id]);
 
         $response = $this->actingAs($user)->get(route('whatsapp-center.index'))->assertOk();
 
         $accounts = collect($response->viewData('accounts'));
         $this->assertTrue($accounts->contains('id', $mine->id));
+        $this->assertTrue($accounts->contains('id', $shared->id));
         $this->assertFalse($accounts->contains('id', $other->id));
+        $response->assertSee('Pengaturan Bot');
     }
 
     public function test_user_cannot_access_account_belonging_to_others(): void
@@ -239,6 +247,9 @@ class WhatsAppCenterTest extends TestCase
         $mine = $this->makeAccount('wa_nti');
         $other = $this->makeAccount('wa_mgk');
         $user = $this->marketingUser($mine->id);
+        $stranger = User::factory()->create();
+        $stranger->assignRole('marketing');
+        $other->update(['assigned_to' => $stranger->id]);
 
         $this->actingAs($user)->get(route('whatsapp-center.conversations', $other))->assertForbidden();
     }
@@ -497,6 +508,103 @@ class WhatsAppCenterTest extends TestCase
         $this->actingAs($user)
             ->put(route('whatsapp-center.credentials', $account), ['gateway_instance' => '999'])
             ->assertForbidden();
+    }
+
+    public function test_marketing_user_can_update_bot_settings(): void
+    {
+        $account = $this->makeAccount('wa_wani');
+        $user = $this->marketingUser($account->id);
+
+        $this->actingAs($user)
+            ->put(route('whatsapp-center.bot-settings', $account), [
+                'bot_instructions' => 'Sapa dengan ramah, gali kebutuhan + jumlah + lokasi.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('whatsapp_accounts', [
+            'id' => $account->id,
+            'bot_instructions' => 'Sapa dengan ramah, gali kebutuhan + jumlah + lokasi.',
+        ]);
+    }
+
+    public function test_sales_user_cannot_update_bot_settings(): void
+    {
+        $account = $this->makeAccount('wa_wani');
+        $user = User::factory()->create();
+        $user->assignRole('sales');
+        $account->update(['assigned_to' => $user->id]);
+
+        $this->actingAs($user)
+            ->put(route('whatsapp-center.bot-settings', $account), ['bot_instructions' => 'Halo'])
+            ->assertForbidden();
+    }
+
+    public function test_agent_instructions_include_extra_when_given(): void
+    {
+        $plain = (string) (new WhatsappSalesBot)->instructions();
+        $this->assertStringNotContainsString('INSTRUKSI TAMBAHAN', $plain);
+
+        $custom = (string) (new WhatsappSalesBot('Sapa dengan nama.'))->instructions();
+        $this->assertStringContainsString('INSTRUKSI TAMBAHAN PEMILIK AKUN', $custom);
+        $this->assertStringContainsString('Sapa dengan nama.', $custom);
+        $this->assertStringContainsString('Tujuan utamamu MENGUMPULKAN KEBUTUHAN', $custom);
+    }
+
+    public function test_blank_token_keeps_existing_gateway_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101', 'gateway_token' => 'tok-lama']);
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        Http::fake(['api.green-api.com/*' => Http::response(['stateInstance' => 'authorized'])]);
+
+        $this->actingAs($admin)
+            ->put(route('whatsapp-center.credentials', $account), [
+                'gateway_instance' => '1101',
+                'gateway_token' => '',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('tok-lama', $account->fresh()->gateway_token);
+    }
+
+    public function test_verify_webhook_with_empty_config_returns_403_not_500(): void
+    {
+        config(['whatsapp.meta.verify_token' => '']);
+
+        $this->get('/api/whatsapp/webhook?hub_mode=subscribe&hub_verify_token=x&hub_challenge=12345')
+            ->assertForbidden();
+    }
+
+    public function test_meta_webhook_stores_placeholder_for_non_text_message(): void
+    {
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'PHONE_ID_1']);
+
+        $this->postJson('/api/whatsapp/webhook', [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'messages' => [[
+                            'id' => 'META-IMG-1',
+                            'from' => '6281234567890',
+                            'type' => 'image',
+                            'image' => ['id' => 'media-1'],
+                            'timestamp' => now()->timestamp,
+                        ]],
+                    ],
+                ]],
+            ]],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'whatsapp_account_id' => $account->id,
+            'sender_number' => '6281234567890',
+            'direction' => 'inbound',
+        ]);
     }
 
     public function test_green_api_webhook_stores_extended_text_message(): void
@@ -809,6 +917,57 @@ class WhatsAppCenterTest extends TestCase
         ]);
     }
 
+    public function test_check_status_meta_reports_connection_result(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => '123', 'gateway_token' => 'tok', 'gateway_status' => null]);
+
+        Http::fake([
+            'graph.facebook.com/v19.0/123*' => Http::response(['id' => '123', 'display_phone_number' => '6281111111101']),
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('whatsapp-center.check-status', $account))
+            ->assertOk()
+            ->assertJson(['gateway_status' => 'authorized', 'connected' => true, 'detail' => null]);
+    }
+
+    public function test_check_status_meta_reports_failure_detail(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'WRONG_ID', 'gateway_token' => 'tok', 'gateway_status' => null]);
+
+        Http::fake([
+            'graph.facebook.com/v19.0/WRONG_ID*' => Http::response([
+                'error' => ['message' => '(#100) Tried accessing nonexisting field', 'code' => 100],
+            ], 400),
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson(route('whatsapp-center.check-status', $account))
+            ->assertOk()
+            ->assertJson(['gateway_status' => null, 'connected' => false])
+            ->assertJsonPath('detail', '(#100) Tried accessing nonexisting field');
+    }
+
+    public function test_status_endpoint_reports_credential_presence(): void
+    {
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'PHONE_ID_1', 'gateway_token' => 'tok-meta']);
+        $user = $this->marketingUser($account->id);
+
+        $this->actingAs($user)
+            ->getJson(route('whatsapp-center.status'))
+            ->assertOk()
+            ->assertJsonPath('0.has_credentials', true);
+    }
+
     public function test_chat_endpoints_paginate_mark_read_save_contact_and_store_preferences(): void
     {
         $account = $this->makeAccount();
@@ -1009,6 +1168,39 @@ class WhatsAppCenterTest extends TestCase
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/messages')
             && $request['to'] === '6281234567890');
+    }
+
+    public function test_bot_replies_even_when_lock_fails(): void
+    {
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'PHONE_ID_1', 'gateway_token' => 'tok-meta', 'bot_enabled' => true]);
+
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id,
+            'sender_number' => '6281234567890',
+            'sender_name' => 'Rina',
+            'message_body' => 'Halo mau tanya CCTV',
+            'direction' => 'inbound',
+        ]);
+
+        Http::fake([
+            'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.1']]]),
+        ]);
+
+        $lock = \Mockery::mock();
+        $lock->shouldReceive('acquire')->andThrow(new \RuntimeException('lock dir gone'));
+        $lock->shouldReceive('release')->never();
+        Cache::shouldReceive('lock')->andReturn($lock);
+
+        $bot = $this->fakeBot(reply: 'Halo, ada yang bisa dibantu?');
+
+        $this->assertSame(1, $bot->replyPending());
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'whatsapp_account_id' => $account->id,
+            'direction' => 'outbound',
+            'is_bot' => true,
+        ]);
     }
 
     private function fakeBot(string $reply = 'Halo, butuh berapa unit dan brandnya?', ?string $summary = null): WhatsappBot
@@ -1394,6 +1586,35 @@ class WhatsAppCenterTest extends TestCase
         $this->assertTrue($waniSenders->contains('6281234567890'));
     }
 
+    public function test_conversations_unread_counts_inbound_after_last_outbound(): void
+    {
+        $account = $this->makeAccount();
+        $user = $this->marketingUser($account->id);
+
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id, 'sender_number' => '6281111111111',
+            'sender_name' => 'A', 'message_body' => 'satu', 'direction' => 'inbound',
+        ]);
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id, 'sender_number' => '6281111111111',
+            'sender_name' => 'Tim', 'message_body' => 'balasan', 'direction' => 'outbound',
+        ]);
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id, 'sender_number' => '6281111111111',
+            'sender_name' => 'A', 'message_body' => 'dua', 'direction' => 'inbound',
+        ]);
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id, 'sender_number' => '6282222222222',
+            'sender_name' => 'B', 'message_body' => 'halo', 'direction' => 'inbound', 'read_at' => now(),
+        ]);
+
+        $rows = collect($this->actingAs($user)->getJson(route('whatsapp-center.conversations', $account))->assertOk()->json())
+            ->keyBy('sender_number');
+
+        $this->assertSame(1, $rows['6281111111111']['unread']);
+        $this->assertSame(0, $rows['6282222222222']['unread']);
+    }
+
     public function test_contacts_hides_foreign_owned_even_with_local_history(): void
     {
         $wani = $this->makeAccount('wa_wani');
@@ -1431,5 +1652,83 @@ class WhatsAppCenterTest extends TestCase
             'sender_number' => '6281234567890',
             'direction' => 'outbound',
         ]);
+    }
+
+    public function test_gateway_token_encrypted_at_rest_but_readable_via_model(): void
+    {
+        $account = $this->makeAccount('wa_nti');
+        $account->update(['gateway_token' => 'token-rahasia-123']);
+
+        $raw = \Illuminate\Support\Facades\DB::table('whatsapp_accounts')
+            ->where('id', $account->id)->value('gateway_token');
+
+        // Di DB tersimpan envelope terenkripsi (tanpa serialisasi,
+        // sesuai cast 'encrypted'), bukan plaintext.
+        $this->assertNotSame('token-rahasia-123', $raw);
+        $this->assertStringStartsWith('eyJ', $raw);
+        $this->assertSame('token-rahasia-123', $account->fresh()->gateway_token);
+    }
+
+    public function test_meta_webhook_rejects_missing_signature_when_secret_set(): void
+    {
+        config(['whatsapp.meta.app_secret' => 'test-app-secret']);
+
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'PHONE_ID_1']);
+
+        $this->postJson('/api/whatsapp/webhook', [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'messages' => [[
+                            'id' => 'META-SPOOF',
+                            'from' => '6281234567890',
+                            'type' => 'text',
+                            'text' => ['body' => 'Palsu'],
+                            'timestamp' => now()->timestamp,
+                        ]],
+                    ],
+                ]],
+            ]],
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('whatsapp_messages', ['wa_message_id' => 'META-SPOOF']);
+    }
+
+    public function test_meta_webhook_accepts_valid_signature_when_secret_set(): void
+    {
+        config(['whatsapp.meta.app_secret' => 'test-app-secret']);
+
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'PHONE_ID_1']);
+
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'messages' => [[
+                            'id' => 'META-SIG-OK',
+                            'from' => '6281234567890',
+                            'type' => 'text',
+                            'text' => ['body' => 'Asli'],
+                            'timestamp' => now()->timestamp,
+                        ]],
+                    ],
+                ]],
+            ]],
+        ];
+        $content = json_encode($payload);
+        $signature = 'sha256='.hash_hmac('sha256', $content, 'test-app-secret');
+
+        $this->call('POST', '/api/whatsapp/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X-Hub-Signature-256' => $signature,
+        ], $content)->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', ['wa_message_id' => 'META-SIG-OK']);
     }
 }

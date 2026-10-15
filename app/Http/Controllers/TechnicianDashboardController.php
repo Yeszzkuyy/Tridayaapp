@@ -37,14 +37,21 @@ class TechnicianDashboardController extends Controller
 
         [$activeTechnicians, $idleTechnicians, $projectsByTechnician] = $this->splitTechniciansByActivity($technicians, $runningProjects);
 
-        $statusCounts = ProjectStatus::withCount('projects')
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn ($status) => [
-                'name' => $status->name,
-                'count' => $status->projects_count,
-                'color' => ProjectStatus::BADGE_COLORS[$status->name] ?? 'slate',
-            ]);
+        // Hitungan per status berubah pelan: cache 5 menit.
+        // Simpan angka/teks biasa (aturan keamanan cache melarang simpan bentuk lain).
+        $statusCounts = collect(\Illuminate\Support\Facades\Cache::remember(
+            'tek:status-counts',
+            300,
+            fn () => ProjectStatus::withCount('projects')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn ($status) => [
+                    'name' => $status->name,
+                    'count' => $status->projects_count,
+                    'color' => ProjectStatus::BADGE_COLORS[$status->name] ?? 'slate',
+                ])
+                ->all()
+        ));
 
         $totalProjects = $statusCounts->sum('count');
         $statusBadgeColors = ProjectStatus::BADGE_COLORS;

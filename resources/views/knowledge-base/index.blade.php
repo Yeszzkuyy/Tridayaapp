@@ -15,9 +15,7 @@
             </div>
             <form action="{{ route('knowledge-base.sync') }}" method="POST" class="shrink-0">
                 @csrf
-                <button type="submit" class="rounded-xl bg-green-100 px-5 py-2.5 text-sm font-semibold text-green-700 transition hover:bg-green-200">
-                    Periksa Status Indexing
-                </button>
+                <x-icon-button icon="search" type="submit" label="Periksa Status Indexing" title="Periksa Status Indexing" />
             </form>
         </div>
 
@@ -129,8 +127,9 @@
                                           onsubmit="return confirm('Hapus dokumen ini dari Knowledge Base?')" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-200">
+                                        <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-500 hover:bg-red-50 hover:shadow-md active:scale-95 dark:border-red-500/30 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-400 dark:hover:bg-red-500/15">
                                             Hapus
+                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                         </button>
                                     </form>
                                 </td>
@@ -142,6 +141,7 @@
                         @endforelse
                     </tbody>
                 </table>
+        <div class="mt-4">{{ $documents->links() }}</div>
             </div>
         </div>
     </div>

@@ -7,20 +7,23 @@ use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * Channel database/push/email mengikuti preferensi pengguna
- * (Profil > Setting > Notifikasi).
+ * (Profil > Setting > Notifikasi). Setiap channel independen:
+ * notify_system → database, notify_email → mail, notify_push → push.
  *
- * notify_email adalah master switch: bila dimatikan, tidak ada
- * notifikasi sama sekali (lihat muted()). Kelas memakai trait ini
- * cukup mengimplementasikan pushContent() ['title', 'body', 'url'].
- * Channel aktif bila preferensi notify_push / notify_email user
- * menyala (default: true).
+ * notify_email BUKAN master switch — mematikan email tidak boleh
+ * mematikan notifikasi dalam aplikasi/push (masing-masing punya
+ * toggle sendiri). Kelas memakai trait ini cukup mengimplementasikan
+ * pushContent() ['title', 'body', 'url'].
  */
 trait SendsWebPush
 {
-    /** Email mati = tidak ada notifikasi sama sekali. */
+    /**
+     * Tidak ada master-mute: bila semua channel dimatikan via(),
+     * sudah menghasilkan [] tanpa perlu pintasan ini.
+     */
     protected function muted(object $notifiable): bool
     {
-        return $notifiable->preference('notify_email', true) === false;
+        return false;
     }
 
     protected function withWebPush(object $notifiable, array $channels): array

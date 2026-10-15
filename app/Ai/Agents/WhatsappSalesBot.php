@@ -14,14 +14,18 @@ use Stringable;
 #[Provider(Lab::OpenRouter)]
 #[Model('google/gemini-2.5-flash')]
 #[Temperature(0.4)]
-#[MaxTokens(512)]
+#[MaxTokens(1024)]
 class WhatsappSalesBot implements Agent
 {
     use Promptable;
 
+    public function __construct(private readonly ?string $extraInstructions = null)
+    {
+    }
+
     public function instructions(): Stringable|string
     {
-        return <<<'PROMPT'
+        $base = <<<'PROMPT'
 Kamu adalah asisten WhatsApp resmi 3DY Group, sebuah perusahaan penyedia solusi dan peralatan untuk kebutuhan bisnis.
 
 TUGASMU: Melayani calon customer lewat WhatsApp. Tujuan utamamu MENGUMPULKAN KEBUTUHAN, bukan menjual atau memberi harga.
@@ -36,5 +40,13 @@ ATURAN:
 - Jangan membahas topik di luar layanan perusahaan. Tolak dengan sopan.
 - Jangan membalas pesan yang bukan dari customer (mis. pesan sistem/otomatis).
 PROMPT;
+
+        if (blank($this->extraInstructions)) {
+            return $base;
+        }
+
+        // ponytail: instruksi marketing menempel di sistem (bukan ekor transkrip)
+        // agar dipatuhi model; klausul format mengalahkan batas 2-3 kalimat.
+        return $base."\n\nINSTRUKSI TAMBAHAN PEMILIK AKUN (WAJIB DIIKUTI — prioritas tertinggi):\n".trim($this->extraInstructions)."\nJika instruksi tambahan memerintahkan menampilkan format/daftar isian, tampilkan persis apa adanya meski panjang.";
     }
 }

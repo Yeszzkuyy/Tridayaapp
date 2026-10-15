@@ -51,3 +51,5 @@ function mount() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
 else mount();
+// Navigasi Livewire (morph) tidak me-reload modul: mount ulang bila node baru.
+document.addEventListener('livewire:navigated', mount);

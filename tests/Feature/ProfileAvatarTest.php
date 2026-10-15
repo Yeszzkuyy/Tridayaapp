@@ -28,6 +28,35 @@ class ProfileAvatarTest extends TestCase
         return new UploadedFile($path, $name, 'image/gif', null, true);
     }
 
+    private function largeUpload(int $w = 1200, int $h = 800): UploadedFile
+    {
+        $img = imagecreatetruecolor($w, $h);
+        imagefilledrectangle($img, 0, 0, $w, $h, imagecolorallocate($img, 30, 120, 200));
+        $path = tempnam(sys_get_temp_dir(), 'av').'.jpg';
+        imagejpeg($img, $path, 90);
+        imagedestroy($img);
+
+        return new UploadedFile($path, 'avatar.jpg', 'image/jpeg', null, true);
+    }
+
+    public function test_large_avatar_is_normalized_to_256px(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('profile.avatar.update'), ['avatar' => $this->largeUpload()])
+            ->assertRedirect(route('profile.edit'))
+            ->assertSessionHasNoErrors();
+
+        $user->refresh();
+        Storage::disk('public')->assertExists($user->avatar);
+
+        [$w, $h] = getimagesize(Storage::disk('public')->path($user->avatar));
+        $this->assertSame(256, $w);
+        $this->assertSame(256, $h);
+    }
+
     public function test_user_can_upload_and_remove_avatar(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);

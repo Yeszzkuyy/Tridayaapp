@@ -21,7 +21,7 @@
                 </div>
 
                 <div class="flex shrink-0 gap-2">
-                    @can('manage-sales')
+                    @can('update', $customer)
                         <a href="{{ route('customers.edit', $customer) }}"
                            class="flex-1 sm:flex-none text-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-accent-100 hover:bg-accent-200 text-accent-700 text-sm font-medium transition-all duration-200 hover:scale-[1.03]">
                             Edit Customer
@@ -76,32 +76,10 @@
                         <x-icon name="book" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Documents
                     </button>
                     @can('view-sales')
-                    <button @click="tab = 'meetings'; moveIndicator($el)"
-                            :class="tab === 'meetings' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="handshake" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Meetings
-                    </button>
                     <button @click="tab = 'followups'; moveIndicator($el)"
                             :class="tab === 'followups' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="phone" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Follow Up
-                    </button>
-                    @endcan
-                    @can('view-admin')
-                    <button @click="tab = 'invoices'; moveIndicator($el)"
-                            :class="tab === 'invoices' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="receipt" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Invoice
-                    </button>
-                    <button @click="tab = 'pos'; moveIndicator($el)"
-                            :class="tab === 'pos' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="file-text" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> PO
-                    </button>
-                    <button @click="tab = 'payments'; moveIndicator($el)"
-                            :class="tab === 'payments' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="credit-card" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Payment
                     </button>
                     @endcan
                     <button @click="tab = 'activity'; moveIndicator($el)"
@@ -136,6 +114,7 @@
                             ['icon' => 'chat', 'label' => __('WA Perusahaan'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Perusahaan'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('WA PIC'), 'value' => \App\Support\PhoneFormatter::format($customer->contacts->first()?->whatsapp), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
                             ['icon' => 'mail', 'label' => 'Email', 'value' => $customer->email],
+                            ['icon' => 'file-text', 'label' => 'NPWP', 'value' => $customer->npwp],
                         ];
                         $stats = [
                             ['icon' => 'folder', 'label' => __('Total Project'), 'value' => $totalProjects, 'chip' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'],
@@ -160,6 +139,11 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @if($customer->npwp_document_path)
+                                <a href="{{ route('customers.npwp', $customer) }}" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
+                                    <x-icon name="file-text" class="w-4 h-4" />{{ __('Unduh Dokumen NPWP') }}
+                                </a>
+                            @endif
                         </div>
 
                         {{-- Statistik --}}
@@ -425,220 +409,175 @@
                     @endif
                 </div>
 
-                {{-- TAB 5: MEETINGS --}}
-                @can('view-sales')
-                <div x-show="tab === 'meetings'" x-transition>
-                    <x-section-header title="{{ __('Daftar Meeting') }}">
-                        @can('manage-sales')
-                            <x-add-button href="{{ route('sales.meetings.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('+ Catat Meeting') }}
-                            </x-add-button>
-                        @endcan
-                    </x-section-header>
-
-                    @php
-                        $meetings = $customer->meetings()->with('creator')->latest('meeting_date')->get();
-                    @endphp
-                    @if($meetings->isNotEmpty())
-                        @foreach($meetings as $meeting)
-                            <div class="border-b border-slate-100 py-4 last:border-0">
-                                <div class="flex items-start justify-between">
-                                    <div>
-                                        <p class="font-semibold text-slate-800 dark:text-slate-100">{{ $meeting->meeting_date->format('d M Y') }}</p>
-                                        <p class="text-sm text-slate-500 mt-1">{{ __('Peserta:') }} {{ $meeting->participants ?? '-' }}</p>
-                                    </div>
-                                    <a href="{{ route('sales.meetings.show', $meeting) }}"
-                                       class="text-accent-600 hover:text-accent-800 text-sm">Detail</a>
-                                </div>
-                                @if($meeting->user_needs)
-                                    <p class="text-sm text-slate-600 dark:text-slate-300 mt-2">
-                                        <span class="font-medium">{{ __('Kebutuhan:') }}</span> {{ Str::limit($meeting->user_needs, 150) }}
-                                    </p>
-                                @endif
-                                @if($meeting->user_complaints)
-                                    <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                                        <span class="font-medium">{{ __('Keluhan:') }}</span> {{ Str::limit($meeting->user_complaints, 150) }}
-                                    </p>
-                                @endif
-                                <p class="text-xs text-slate-400 mt-2">{{ __('oleh') }} {{ $meeting->creator?->name ?? '-' }}</p>
-                            </div>
-                        @endforeach
-                    @else
-                        <x-empty-state label="{{ __('meeting') }}" />
-                    @endif
-                </div>
-
-                {{-- TAB 6: FOLLOW UPS --}}
-                <div x-show="tab === 'followups'" x-transition>
-                    <x-section-header title="Follow Up">
-                        @can('manage-sales')
-                            <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('+ Tambah Follow Up') }}
-                            </x-add-button>
-                        @endcan
-                    </x-section-header>
-
-                    @php
-                        $followups = $customer->followUps()->with(['meeting', 'creator'])->latest('follow_up_date')->get();
-                    @endphp
-                    @if($followups->isNotEmpty())
-                        <div class="space-y-3">
-                            @foreach($followups as $fu)
-                                <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex-1">
-                                            <p class="text-sm text-slate-700">{{ $fu->description }}</p>
-                                            <div class="flex gap-3 mt-2 text-xs text-slate-400">
-                                                <span>{{ $fu->creator?->name ?? '-' }}</span>
-                                                @if($fu->follow_up_date)
-                                                    <span>· {{ $fu->follow_up_date->format('d M Y') }}</span>
-                                                @endif
-                                                @if($fu->meeting)
-                                                    <span>· {{ __('Terkait Meeting') }} {{ $fu->meeting->meeting_date->format('d M Y') }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
+                {{-- TAB 5: ADMIN DOCUMENTS --}}
+                @can('view-admin')
+                <div x-show="tab === 'documents'" x-transition>
+                    <div class="mt-8 space-y-6">
+                        <div>
+                            <x-section-header title="Invoice">
+                                @can('manage-admin')
+                                    <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
+                                        {{ __('+ Create Invoice') }}
+                                    </x-add-button>
+                                @endcan
+                            </x-section-header>
+                            @php $custInvoices = $customer->invoices()->with('payments')->latest('issue_date')->get(); @endphp
+                            @if($custInvoices->isNotEmpty())
+                                <x-data-table>
+                                    <thead class="bg-slate-50 dark:bg-slate-700">
+                                        <tr>
+                                            <x-th>{{ __('No Invoice') }}</x-th>
+                                            <x-th class="text-right">{{ __('Nominal') }}</x-th>
+                                            <x-th class="text-center">Status</x-th>
+                                            <x-th class="text-right">{{ __('Aksi') }}</x-th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
+                                        @foreach($custInvoices as $inv)
+                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                <td class="px-6 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $inv->invoice_number }}</td>
+                                                <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($inv->amount, 0, ',', '.') }}</td>
+                                                <td class="px-6 py-3 text-center">
+                                                    @php
+                                                        $invBadgeColor = match($inv->status) {
+                                                            'paid' => 'green',
+                                                            'cancelled' => 'red',
+                                                            default => 'yellow',
+                                                        };
+                                                    @endphp
+                                                    <x-status-badge :color="$invBadgeColor">{{ $inv->status === 'paid' ? __('Lunas') : ($inv->status === 'cancelled' ? __('Dibatalkan') : __('Belum Bayar')) }}</x-status-badge>
+                                                </td>
+                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.invoices.show', $inv) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </x-data-table>
+                            @else
+                                <x-empty-state label="{{ __('invoice') }}" />
+                            @endif
                         </div>
-                    @else
-                        <x-empty-state label="{{ __('follow up') }}" />
-                    @endif
+
+                        <div>
+                            <x-section-header title="Purchase Order">
+                                @can('manage-admin')
+                                    <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
+                                        {{ __('+ Create PO') }}
+                                    </x-add-button>
+                                @endcan
+                            </x-section-header>
+                            @php $custPos = $customer->purchaseOrders()->latest('issue_date')->get(); @endphp
+                            @if($custPos->isNotEmpty())
+                                <x-data-table>
+                                    <thead class="bg-slate-50 dark:bg-slate-700">
+                                        <tr>
+                                            <x-th>{{ __('No PO') }}</x-th>
+                                            <x-th>Item</x-th>
+                                            <x-th class="text-center">Status</x-th>
+                                            <x-th class="text-right">{{ __('Aksi') }}</x-th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
+                                        @foreach($custPos as $po)
+                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                <td class="px-6 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $po->po_number }}</td>
+                                                <td class="px-6 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate">{{ Str::limit($po->items, 60) }}</td>
+                                                <td class="px-6 py-3 text-center">
+                                                    @php
+                                                        $poBadgeColor = match($po->status) {
+                                                            'selesai' => 'green',
+                                                            'dibatalkan' => 'red',
+                                                            'diproses' => 'yellow',
+                                                            default => 'slate',
+                                                        };
+                                                    @endphp
+                                                    <x-status-badge :color="$poBadgeColor">{{ $po->statusLabel() }}</x-status-badge>
+                                                </td>
+                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.pos.show', $po) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </x-data-table>
+                            @else
+                                <x-empty-state label="PO" />
+                            @endif
+                        </div>
+
+                        <div>
+                            <x-section-header title="{{ __('Payment') }}">
+                                @can('manage-admin')
+                                    <x-add-button href="{{ route('admin.payments.create') }}">
+                                        {{ __('+ Record Payment') }}
+                                    </x-add-button>
+                                @endcan
+                            </x-section-header>
+                            @php $custPayments = \App\Models\Payment::whereHas('invoice', fn($q) => $q->where('customer_id', $customer->id))->with('invoice')->latest('payment_date')->get(); @endphp
+                            @if($custPayments->isNotEmpty())
+                                <x-data-table>
+                                    <thead class="bg-slate-50 dark:bg-slate-700">
+                                        <tr>
+                                            <x-th>Invoice</x-th>
+                                            <x-th>{{ __('Tgl Bayar') }}</x-th>
+                                            <x-th class="text-right">{{ __('Nominal') }}</x-th>
+                                            <x-th class="text-center">{{ __('Bukti') }}</x-th>
+                                            <x-th class="text-right">{{ __('Aksi') }}</x-th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
+                                        @foreach($custPayments as $pm)
+                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
+                                                <td class="px-6 py-3 font-mono text-sm text-slate-800 dark:text-slate-100">{{ $pm->invoice->invoice_number }}</td>
+                                                <td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ $pm->payment_date->format('d M Y') }}</td>
+                                                <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($pm->amount, 0, ',', '.') }}</td>
+                                                <td class="px-6 py-3 text-center">@if($pm->proof_file)<a href="{{ route('admin.payments.proof', $pm) }}" target="_blank" class="text-accent-600 hover:text-accent-800 text-xs underline">{{ __('Lihat') }}</a>@else - @endif</td>
+                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.payments.show', $pm) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </x-data-table>
+                            @else
+                                <x-empty-state label="{{ __('pembayaran') }}" />
+                            @endif
+                        </div>
+                    </div>
                 </div>
                 @endcan
 
-                {{-- TAB 7: INVOICES --}}
-                @can('view-admin')
-                <div x-show="tab === 'invoices'" x-transition>
-                    <x-section-header title="Invoice">
-                        @can('manage-admin')
-                            <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('+ Buat Invoice') }}
-                            </x-add-button>
-                        @endcan
-                    </x-section-header>
-
-                    @php $custInvoices = $customer->invoices()->with('payments')->latest('issue_date')->get(); @endphp
-                    @if($custInvoices->isNotEmpty())
-                        <x-data-table>
-                            <thead class="bg-slate-50 dark:bg-slate-700">
-                                <tr>
-                                    <x-th>{{ __('No Invoice') }}</x-th>
-                                    <x-th class="text-right">{{ __('Nominal') }}</x-th>
-                                    <x-th class="text-center">Status</x-th>
-                                    <x-th class="text-right">{{ __('Aksi') }}</x-th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                @foreach($custInvoices as $inv)
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                        <td class="px-6 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $inv->invoice_number }}</td>
-                                        <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($inv->amount, 0, ',', '.') }}</td>
-                                        <td class="px-6 py-3 text-center">
-                                            @php
-                                                $invBadgeColor = match($inv->status) {
-                                                    'paid' => 'green',
-                                                    'cancelled' => 'red',
-                                                    default => 'yellow',
-                                                };
-                                            @endphp
-                                            <x-status-badge :color="$invBadgeColor">{{ $inv->status === 'paid' ? __('Lunas') : ($inv->status === 'cancelled' ? __('Dibatalkan') : __('Belum Bayar')) }}</x-status-badge>
-                                        </td>
-                                        <td class="px-6 py-3 text-right"><a href="{{ route('admin.invoices.show', $inv) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </x-data-table>
-                    @else
-                        <x-empty-state label="{{ __('invoice') }}" />
-                    @endif
-                </div>
-
-                {{-- TAB 8: PO --}}
-                <div x-show="tab === 'pos'" x-transition>
-                    <x-section-header title="Purchase Order">
-                        @can('manage-admin')
-                            <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('+ Buat PO') }}
-                            </x-add-button>
-                        @endcan
-                    </x-section-header>
-
-                    @php $custPos = $customer->purchaseOrders()->latest('issue_date')->get(); @endphp
-                    @if($custPos->isNotEmpty())
-                        <x-data-table>
-                            <thead class="bg-slate-50 dark:bg-slate-700">
-                                <tr>
-                                    <x-th>{{ __('No PO') }}</x-th>
-                                    <x-th>Item</x-th>
-                                    <x-th class="text-center">Status</x-th>
-                                    <x-th class="text-right">{{ __('Aksi') }}</x-th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                @foreach($custPos as $po)
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                        <td class="px-6 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $po->po_number }}</td>
-                                        <td class="px-6 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate">{{ Str::limit($po->items, 60) }}</td>
-                                        <td class="px-6 py-3 text-center">
-                                            @php
-                                                $poBadgeColor = match($po->status) {
-                                                    'selesai' => 'green',
-                                                    'dibatalkan' => 'red',
-                                                    'diproses' => 'yellow',
-                                                    default => 'slate',
-                                                };
-                                            @endphp
-                                            <x-status-badge :color="$poBadgeColor">{{ $po->statusLabel() }}</x-status-badge>
-                                        </td>
-                                        <td class="px-6 py-3 text-right"><a href="{{ route('admin.pos.show', $po) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </x-data-table>
-                    @else
-                        <x-empty-state label="PO" />
-                    @endif
-                </div>
-
-                {{-- TAB 9: PAYMENTS --}}
-                <div x-show="tab === 'payments'" x-transition>
-                    <x-section-header title="{{ __('Pembayaran') }}">
-                        @can('manage-admin')
-                            <x-add-button href="{{ route('admin.payments.create') }}">
-                                {{ __('+ Catat Pembayaran') }}
-                            </x-add-button>
-                        @endcan
-                    </x-section-header>
-
-                    @php $custPayments = \App\Models\Payment::whereHas('invoice', fn($q) => $q->where('customer_id', $customer->id))->with('invoice')->latest('payment_date')->get(); @endphp
-                    @if($custPayments->isNotEmpty())
-                        <x-data-table>
-                            <thead class="bg-slate-50 dark:bg-slate-700">
-                                <tr>
-                                    <x-th>Invoice</x-th>
-                                    <x-th>{{ __('Tgl Bayar') }}</x-th>
-                                    <x-th class="text-right">{{ __('Nominal') }}</x-th>
-                                    <x-th class="text-center">{{ __('Bukti') }}</x-th>
-                                    <x-th class="text-right">{{ __('Aksi') }}</x-th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                @foreach($custPayments as $pm)
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                        <td class="px-6 py-3 font-mono text-sm text-slate-800 dark:text-slate-100">{{ $pm->invoice->invoice_number }}</td>
-                                        <td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ $pm->payment_date->format('d M Y') }}</td>
-                                        <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($pm->amount, 0, ',', '.') }}</td>
-                                        <td class="px-6 py-3 text-center">@if($pm->proof_file)<a href="{{ route('admin.payments.proof', $pm) }}" target="_blank" class="text-accent-600 hover:text-accent-800 text-xs underline">{{ __('Lihat') }}</a>@else - @endif</td>
-                                        <td class="px-6 py-3 text-right"><a href="{{ route('admin.payments.show', $pm) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </x-data-table>
-                    @else
-                        <x-empty-state label="{{ __('pembayaran') }}" />
-                    @endif
+                {{-- TAB 6: FOLLOW UPS --}}
+                @can('view-sales')
+                <div x-show="tab === 'followups'" x-transition>
+                    <div class="space-y-8">
+                        <div>
+                            <x-section-header title="Follow Up">
+                                @can('manage-sales')
+                                    <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
+                                        {{ __('+ Add Follow Up') }}
+                                    </x-add-button>
+                                @endcan
+                            </x-section-header>
+                            @php $followups = $customer->followUps()->with(['creator'])->latest('follow_up_date')->get(); @endphp
+                            @if($followups->isNotEmpty())
+                                <div class="space-y-3">
+                                    @foreach($followups as $fu)
+                                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <p class="text-sm text-slate-700 dark:text-slate-200">{{ $fu->description }}</p>
+                                                    <div class="flex gap-3 mt-2 text-xs text-slate-400">
+                                                        <span>{{ $fu->creator?->name ?? '-' }}</span>
+                                                        @if($fu->follow_up_date)
+                                                            <span>· {{ $fu->follow_up_date->format('d M Y') }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <x-empty-state label="{{ __('follow up') }}" />
+                            @endif
+                        </div>
+                    </div>
                 </div>
                 @endcan
 

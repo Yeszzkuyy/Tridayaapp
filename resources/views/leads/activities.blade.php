@@ -10,10 +10,7 @@
                 @endif
             </p>
         </div>
-        <a href="{{ route('leads.index') }}"
-           class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="{{ __('Kembali') }}" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">

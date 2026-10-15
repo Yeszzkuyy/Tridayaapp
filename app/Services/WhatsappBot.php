@@ -66,7 +66,17 @@ class WhatsappBot
                 // Kunci per percakapan: cron jalan tiap 30 detik, respons AI bisa
                 // lebih lama — tanpa ini dua proses paralel membalas pesan yang sama.
                 $lock = Cache::lock("wa-bot-reply:{$account->id}:{$sender}", 120);
-                if (! $lock->acquire()) {
+                try {
+                    $locked = $lock->acquire();
+                } catch (Throwable $e) {
+                    // ponytail: cache dir tak bisa ditulis (izin campur CLI/FPM,
+                    // mis. setelah cache:clear) — lanjut tanpa lock, scheduler
+                    // sudah withoutOverlapping. Lock gagal tak boleh mematikan bot.
+                    Log::warning('WA bot lock gagal, lanjut tanpa lock: '.$e->getMessage());
+                    $locked = true;
+                    $lock = null;
+                }
+                if (! $locked) {
                     continue;
                 }
                 try {
@@ -79,7 +89,7 @@ class WhatsappBot
                         'sender' => $sender,
                     ]);
                 } finally {
-                    $lock->release();
+                    $lock?->release();
                 }
             }
         }
@@ -258,7 +268,7 @@ class WhatsappBot
         }
 
         try {
-            $text = trim((string) (new WhatsappSalesBot)->prompt($transcript));
+            $text = trim((string) (new WhatsappSalesBot(filled($account->bot_instructions) ? trim((string) $account->bot_instructions) : null))->prompt($transcript));
         } catch (Throwable $e) {
             Log::error('WhatsappBot generateReply gagal: '.$e->getMessage());
 
