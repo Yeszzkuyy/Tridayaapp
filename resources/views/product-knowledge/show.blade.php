@@ -11,21 +11,17 @@
                         <form action="{{ route('product-knowledge.publish', $product) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <button type="submit" title="Publish" aria-label="Publish"
-                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                            <x-icon-button type="submit" title="Publish">
                                 <x-icon name="check-circle" class="h-5 w-5" />
-                            </button>
+                            </x-icon-button>
                         </form>
                     @endif
                     @if($product->status !== 'rejected')
                         <form action="{{ route('product-knowledge.reject', $product) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <button type="submit" title="Reject" aria-label="Reject"
-                                    onclick="return confirm('{{ __('Tolak produk ini? Tidak masuk pencarian AI.') }}')"
-                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="trash" class="h-5 w-5" />
-                            </button>
+                            <x-icon-button icon="delete" type="submit" title="Reject"
+                                           onclick="return confirm('{{ __('Tolak produk ini? Tidak masuk pencarian AI.') }}')" />
                         </form>
                     @endif
                 @endif
@@ -99,17 +95,13 @@
                         <form action="{{ route('product-knowledge.sources.destroy', $source) }}" method="POST" onsubmit="return confirm('{{ __('Hapus source ini permanen? Dokumennya ikut terhapus.') }}')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" title="Delete source" aria-label="Delete source"
-                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                <x-icon name="trash" class="h-5 w-5" />
-                            </button>
+                            <x-icon-button icon="delete" type="submit" title="Delete source" />
                         </form>
                         <form action="{{ route('product-knowledge.refetch', $source) }}" method="POST">
                             @csrf
-                            <button type="submit" title="Refetch" aria-label="Refetch"
-                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-all duration-300 hover:scale-105 active:scale-95">
+                            <x-icon-button type="submit" title="Refetch">
                                 <x-icon name="restore" class="h-5 w-5" />
-                            </button>
+                            </x-icon-button>
                         </form>
                     </div>
                 @empty
