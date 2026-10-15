@@ -6,7 +6,7 @@
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Kelola jadwal dan progress instalasi') }}</p>
         </div>
         @can('manage-technician')
-        <x-icon-button as="a" icon="add" href="{{ route('teknisi.instalasis.create') }}" label="{{ __('+ Tambah Instalasi') }}" title="{{ __('+ Tambah Instalasi') }}" />
+        <x-icon-button as="a" icon="add" href="{{ route('teknisi.instalasis.create') }}" label="{{ __('Tambah Instalasi') }}" title="{{ __('Tambah Instalasi') }}" />
         @endcan
     </div>
 
