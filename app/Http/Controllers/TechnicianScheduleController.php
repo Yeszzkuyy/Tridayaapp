@@ -33,13 +33,15 @@ class TechnicianScheduleController extends Controller
             'location' => $s->location,
             'project_id' => $s->project_id,
             'technician_user_id' => $s->technician_user_id,
+            'technician_ids' => $s->technicianList()->pluck('id'),
+            'technicians' => $s->technicianList()->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
             'reminder_minutes' => $s->reminder_minutes,
             'start' => $s->start_at->setTimezone(GoogleCalendarService::TIMEZONE)->format('Y-m-d\TH:i:s'),
             'end' => $s->end_at->setTimezone(GoogleCalendarService::TIMEZONE)->format('Y-m-d\TH:i:s'),
             'status' => $s->status,
             'sync_status' => $s->google_sync_status,
             'google_event_id' => $s->google_event_id,
-            'technician' => $s->technician?->name,
+            'technician' => $s->technicianList()->pluck('name')->implode(', '),
             'project' => $s->project?->project_name,
             'customer' => $s->project?->customer?->name,
         ]));
@@ -64,7 +66,7 @@ class TechnicianScheduleController extends Controller
     public function getSchedulesApi(Request $request)
     {
         $this->autoSyncSoon();
-        $query = TechnicianSchedule::with(['project.customer', 'technician', 'owner']);
+        $query = TechnicianSchedule::with(['project.customer', 'technician', 'technicians', 'owner']);
 
         if ($request->filled('start') && $request->filled('end')) {
             try {
@@ -92,7 +94,8 @@ class TechnicianScheduleController extends Controller
                 $q->whereLike('title', $s)
                     ->orWhereLike('location', $s)
                     ->orWhereHas('project', fn ($p) => $p->whereLike('project_name', $s))
-                    ->orWhereHas('technician', fn ($t) => $t->whereLike('name', $s));
+                    ->orWhereHas('technician', fn ($t) => $t->whereLike('name', $s))
+                    ->orWhereHas('technicians', fn ($t) => $t->whereLike('name', $s));
             });
         }
 
@@ -106,8 +109,10 @@ class TechnicianScheduleController extends Controller
             'end_time' => ($s->end_at && !$s->end_at->eq($s->start_at)) ? $s->end_at->format('H:i') : null,
             'status' => $s->status,
             'sync_status' => $s->google_sync_status,
-            'technician' => $s->technician?->name,
+            'technician' => $s->technicianList()->pluck('name')->implode(', '),
             'technician_user_id' => $s->technician_user_id,
+            'technician_ids' => $s->technicianList()->pluck('id'),
+            'technicians' => $s->technicianList()->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
             'project' => $s->project?->project_name,
             'customer' => $s->project?->customer?->name,
             'creator' => $s->owner?->name,
@@ -338,7 +343,7 @@ class TechnicianScheduleController extends Controller
 
     private function schedulesForRange(?string $start, ?string $end, $search = null)
     {
-        return TechnicianSchedule::with(['project.customer', 'technician'])
+        return TechnicianSchedule::with(['project.customer', 'technician', 'technicians'])
             ->when($start && $end, function ($q) use ($start, $end) {
                 $q->where('start_at', '<', $end)->where('end_at', '>', $start);
             })
@@ -346,7 +351,8 @@ class TechnicianScheduleController extends Controller
                 $q->whereLike('title', $s)
                     ->orWhereLike('location', $s)
                     ->orWhereHas('project', fn ($q) => $q->whereLike('project_name', $s))
-                    ->orWhereHas('technician', fn ($q) => $q->whereLike('name', $s));
+                    ->orWhereHas('technician', fn ($q) => $q->whereLike('name', $s))
+                    ->orWhereHas('technicians', fn ($q) => $q->whereLike('name', $s));
             }))
             ->orderBy('start_at')
             ->get();
@@ -357,6 +363,10 @@ class TechnicianScheduleController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'project_id' => 'nullable|exists:projects,id',
+            'technician_ids' => 'nullable|array',
+            'technician_ids.*' => 'exists:users,id',
+            // Kolom lama tetap diterima sebagai fallback (kompatibilitas
+            // mundur — data/pemanggil lama tidak boleh rusak).
             'technician_user_id' => 'nullable|exists:users,id',
             'date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
@@ -368,6 +378,16 @@ class TechnicianScheduleController extends Controller
         ], [
             'end_time.after' => 'Jam selesai harus setelah jam mulai.',
         ]);
+
+        // Teknisi bisa lebih dari satu (survey/instalasi berangkat tim).
+        // Teknisi pertama juga disalin ke kolom lama technician_user_id
+        // sebagai jaring pengaman kompatibilitas (data lama tetap terbaca).
+        $technicianIds = array_values(array_unique(array_map('intval', $validated['technician_ids'] ?? [])));
+        if ($technicianIds === [] && filled($validated['technician_user_id'] ?? null)) {
+            $technicianIds = [(int) $validated['technician_user_id']];
+        }
+        $validated['technician_ids'] = $technicianIds;
+        $validated['technician_user_id'] = $technicianIds[0] ?? null;
 
         $tz = GoogleCalendarService::TIMEZONE;
         $validated['start_at'] = Carbon::parse(

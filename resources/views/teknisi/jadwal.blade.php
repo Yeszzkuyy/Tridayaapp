@@ -425,13 +425,42 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Technician') }}</label>
-                                <select name="technician_user_id" x-model="form.technician_user_id"
-                                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                                    <option value="">{{ __('Choose a technician (optional)') }}</option>
-                                    @foreach($technicians as $t)
-                                        <option value="{{ $t->id }}">{{ $t->name }}</option>
-                                    @endforeach
-                                </select>
+
+                                {{-- Multi-select: dropdown + centang + cari (bisa lebih dari satu teknisi) --}}
+                                <div class="relative" x-data @click.outside="techOpen = false">
+                                    <button type="button" @click="techOpen = !techOpen"
+                                            class="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-left dark:bg-slate-700 dark:border-slate-600 focus:border-accent-500 focus:ring-accent-500">
+                                        <span class="truncate" :class="form.technician_ids.length ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'"
+                                              x-text="technicianSummary()"></span>
+                                        <svg class="h-4 w-4 shrink-0 text-slate-400" :class="techOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                    </button>
+
+                                    <div x-show="techOpen" x-cloak x-transition
+                                         class="absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600">
+                                        <div class="p-2">
+                                            <input type="text" x-model="techQuery"
+                                                   placeholder="{{ __('Search technician...') }}"
+                                                   class="w-full rounded-lg border-slate-300 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                                        </div>
+                                        <div class="max-h-52 overflow-y-auto pb-1">
+                                            <template x-for="t in filteredTechnicians()" :key="t.id">
+                                                <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition hover:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                    <input type="checkbox" :value="t.id"
+                                                           :checked="form.technician_ids.includes(t.id)"
+                                                           @change="toggleTechnician(t.id)"
+                                                           class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                    <span class="truncate" x-text="t.name"></span>
+                                                </label>
+                                            </template>
+                                            <p x-show="filteredTechnicians().length === 0" class="px-3 py-2 text-sm text-slate-400">{{ __('No results.') }}</p>
+                                        </div>
+                                    </div>
+
+                                    {{-- Nilai yang dikirim ke server --}}
+                                    <template x-for="id in form.technician_ids" :key="id">
+                                        <input type="hidden" name="technician_ids[]" :value="id">
+                                    </template>
+                                </div>
                             </div>
                         </div>
 
@@ -581,6 +610,7 @@
 
     <script>
         window.__teknisiProjects = @json($projects->map(fn ($p) => ['id' => $p->id, 'name' => $p->project_name]));
+        window.__teknisiTechnicians = @json($technicians->map(fn ($t) => ['id' => $t->id, 'name' => $t->name]));
 
         function teknisiScheduleManager() {
             return {
@@ -614,7 +644,11 @@
                 saveError: null,
                 apiOpen: false,
                 editingId: null,
-                form: { title: '', project_id: '', technician_user_id: '', date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
+                form: { title: '', project_id: '', technician_ids: [], date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
+                // Dropdown centang teknisi (multi, dengan pencarian).
+                techOpen: false,
+                techQuery: '',
+                allTechnicians: window.__teknisiTechnicians || [],
 
                 init() {
                     const active = new Date(this.activeDate + 'T12:00:00');
@@ -802,12 +836,14 @@
                 openModal(date, event = null) {
                     if (!this.canManage) return;
                     this.isModalOpen = true;
+                    this.techOpen = false;
+                    this.techQuery = '';
                     if (event) {
                         this.editingId = event.id;
                         this.form = {
                             title: event.title || '',
                             project_id: event.project_id || '',
-                            technician_user_id: event.technician_user_id || '',
+                            technician_ids: Array.isArray(event.technician_ids) ? [...event.technician_ids] : (event.technician_user_id ? [event.technician_user_id] : []),
                             date: event.date || date,
                             start_time: event.start_time || '',
                             end_time: event.end_time || '',
@@ -818,8 +854,26 @@
                         };
                     } else {
                         this.editingId = null;
-                        this.form = { title: '', project_id: '', technician_user_id: '', date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
+                        this.form = { title: '', project_id: '', technician_ids: [], date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
                     }
+                },
+
+                // --- Dropdown centang teknisi (multi + cari) ---
+                toggleTechnician(id) {
+                    const i = this.form.technician_ids.indexOf(id);
+                    if (i === -1) this.form.technician_ids.push(id);
+                    else this.form.technician_ids.splice(i, 1);
+                },
+                filteredTechnicians() {
+                    const q = this.techQuery.toLowerCase().trim();
+                    return this.allTechnicians.filter(t => !q || t.name.toLowerCase().includes(q));
+                },
+                technicianSummary() {
+                    const names = this.allTechnicians
+                        .filter(t => this.form.technician_ids.includes(t.id))
+                        .map(t => t.name);
+                    if (names.length === 0) return '{{ __('Choose technicians (optional)') }}';
+                    return names.join(', ');
                 },
 
                 // Simpan jadwal via AJAX — tanpa reload halaman.
