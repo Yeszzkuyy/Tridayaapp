@@ -13,6 +13,7 @@ class Instalasi extends Model
         'project_id', 'location', 'technician_pic', 'schedule_date',
         'job_status', 'checklist', 'documentation', 'installation_report',
         'notes', 'attachments', 'status',
+        'report_file', 'report_file_name',
     ];
 
     protected $casts = [
@@ -21,6 +22,11 @@ class Instalasi extends Model
         'documentation' => 'array',
         'attachments' => 'array',
     ];
+
+    public function hasReport(): bool
+    {
+        return filled($this->report_file);
+    }
 
     public function project()
     {
