@@ -19,6 +19,7 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
 | `/var/www/3dyapp-ai` | `feature/ai-assistant` | AI Assistant (floating chatbot) |
+| `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
