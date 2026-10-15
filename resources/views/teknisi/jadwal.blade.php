@@ -881,11 +881,15 @@
                     const form = e.target;
                     const fd = new FormData(form);
                     const action = form.getAttribute('action');
-                    const method = (fd.get('_method') || form.getAttribute('method') || 'POST').toUpperCase();
+                    // Selalu POST: PHP hanya membaca isi form (title, date, dst.)
+                    // untuk request POST. Tanda edit tetap lewat _method=PUT di
+                    // dalam FormData — Laravel membacanya sebagai PUT (method
+                    // spoofing). Mengirim fetch ber-method PUT membuat isi form
+                    // terbaca kosong oleh server ("field is required").
                     this.saveError = null;
 
                     fetch(action, {
-                        method: method,
+                        method: 'POST',
                         body: fd,
                         headers: {
                             'Accept': 'application/json',
