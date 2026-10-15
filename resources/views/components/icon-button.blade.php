@@ -1,5 +1,5 @@
-{{-- Tombol ikon kotak pastel — putih saat idle, berwarna saat hover (gaya tombol
-     aksi di menu Project). Tinggal panggil, tanpa utak-atik detail:
+{{-- Tombol ikon kotak putih + border tipis — berwarna saat hover
+     (gaya tombol aksi di menu Project). Tinggal panggil, tanpa utak-atik detail:
 
      <x-icon-button icon="filter" type="submit" title="Filter" />
      <x-icon-button as="a" icon="reset" href="{{ route('marketing.dashboard') }}" title="Reset" />
@@ -14,15 +14,18 @@
        href    : url, wajib bila as=a
        type    : submit | button ...    (default: button)
        icon    : filter | reset | leads | add | import | back | sparkles
-                 | view | edit | delete | search | download | print | mail
-                 | more                 (semua SVG inline, ikut warna teks;
+                 | view | edit | delete | search | download | upload | print
+                 | mail | whatsapp | more
+                                        (semua SVG inline, ikut warna teks;
                                         kosongkan + isi slot untuk ikon sendiri)
        variant : default | delete      (default: ngikut icon — delete otomatis
-                                        merah; nama lama filter/reset tetap
-                                        diterima, dipetakan ke default)
+                                        merah saat hover; nama lama filter/reset
+                                        tetap diterima, dipetakan ke default)
        size    : md (= h-10 w-10) | lg (= h-11 w-11)
-       title   : tooltip + title/aria-label
-       tooltip : teks tooltip (default: = title; kosong = tanpa tooltip)
+       title   : title/aria-label (tooltip bawaan browser)
+       tooltip : pill tooltip gelap saat hover — ISI EKSPLISIT untuk menampilkan;
+                 tanpa prop ini tidak ada pill (mencegah semua tooltip di baris
+                 tabel menyala bareng saat satu tombol di-hover)
        label   : teks nama di samping ikon (bila diisi tombol jadi lebih lebar,
                  bukan kotak icon-only)
 --}}
@@ -47,11 +50,10 @@ $variant ??= match ($icon) {
 if (!in_array($variant, ['default', 'delete'], true)) {
     $variant = 'default';
 }
-$tooltip ??= $title;
 
 $colors = $variant === 'delete'
-    ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25'
-    : 'bg-accent-50 text-accent-700 hover:bg-accent-100 dark:bg-accent-500/15 dark:text-accent-300 dark:hover:bg-accent-500/25';
+    ? 'border-slate-200 bg-white text-slate-500 hover:border-red-500 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-red-400 dark:hover:bg-red-500/15 dark:hover:text-red-400'
+    : 'border-slate-200 bg-white text-slate-500 hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:bg-accent-500/15 dark:hover:text-accent-300';
 
 $sizes = [
     'md' => 'h-10 w-10',
@@ -61,11 +63,11 @@ $sizeClass = $sizes[$size] ?? $sizes['md'];
 
 $ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2';
 
-$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-lg {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
+$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-lg border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
 
 // Label: tombol jadi lebih lebar (ikon + teks) dengan gap, bukan kotak icon-only.
 if ($label) {
-    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-lg px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
+    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-lg border px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
 }
 
 $paths = [
@@ -91,7 +93,7 @@ $paths = [
 $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>';
 @endphp
 
-<div class="group relative">
+<div class="group/btn relative">
     @if($as === 'a')
         <a href="{{ $href }}" title="{{ $title }}" aria-label="{{ $title }}"
            {{ $attributes->merge(['class' => $btnClass]) }}>
@@ -120,6 +122,6 @@ $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -s
         </button>
     @endif
     @if($tooltip)
-        <span class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 -translate-y-1 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100 dark:bg-slate-700" role="tooltip">{{ $tooltip }}</span>
+        <span class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 -translate-y-1 whitespace-nowrap rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-all duration-200 group-hover/btn:translate-y-0 group-hover/btn:opacity-100 dark:bg-slate-700" role="tooltip">{{ $tooltip }}</span>
     @endif
 </div>
