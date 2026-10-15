@@ -99,16 +99,61 @@
     </script>
 
     @php
-        $notifInit = ['unread' => 0, 'unassigned' => 0, 'items' => []];
-        if (auth()->check() && auth()->user()->canany(['manage-sales-leads', 'manage-sales'])) {
-            $notifInit = [
-                'unread' => auth()->user()->unreadNotifications()->count(),
-                'unassigned' => \App\Models\Lead::whereNull('assigned_to')->count(),
-                'items' => \App\Http\Controllers\NotificationController::itemsFor(auth()->user()),
+        // Muatan awal Notification Center (bell + feed di header).
+        // Item sudah dipresentasikan seragam oleh NotificationPresenter,
+        // jadi island tidak perlu fetch ulang saat first paint.
+        $notifCenter = [
+            'userId' => auth()->id(),
+            'csrf' => csrf_token(),
+            'locale' => str_replace('_', '-', app()->getLocale()),
+            'initial' => ['unread' => 0, 'unassigned' => 0, 'items' => [], 'next_cursor' => null, 'has_more' => false],
+            'routes' => [
+                'status' => route('notifications.status'),
+                'feed' => route('notifications.feed'),
+                'readAll' => route('notifications.read-all'),
+                'clear' => route('notifications.destroy-all'),
+                'read' => url('/notifications/__ID__/read'),
+                'destroy' => url('/notifications/__ID__'),
+            ],
+            'i18n' => [
+                'title' => __('Notifikasi'),
+                'markAllRead' => __('Tandai semua dibaca'),
+                'clear' => __('Hapus semua'),
+                'clearConfirm' => __('Hapus semua notifikasi?'),
+                'confirm' => __('Ya, hapus'),
+                'cancel' => __('Batal'),
+                'empty' => __('Tidak ada notifikasi'),
+                'emptyHint' => __('Notifikasi baru akan muncul di sini'),
+                'loadMore' => __('Muat lebih banyak'),
+                'loading' => __('Memuat…'),
+                'dismiss' => __('Hapus notifikasi'),
+                'justNow' => __('Baru saja'),
+                'minute' => __('mnt'),
+                'hour' => __('jam'),
+                'day' => __('hari'),
+                'unread' => __('belum dibaca'),
+                'sessionExpired' => __('Sesi berakhir, silakan login ulang.'),
+                'loginAgain' => __('Login ulang'),
+            ],
+        ];
+
+        if (auth()->check()) {
+            $notifUser = auth()->user();
+            $notifPage = \App\Http\Controllers\NotificationController::pageFor($notifUser);
+            $notifCenter['initial'] = [
+                'unread' => $notifUser->unreadNotifications()->count(),
+                'unassigned' => \Illuminate\Support\Facades\Cache::remember(
+                    'leads:unassigned-count',
+                    60,
+                    fn () => \App\Models\Lead::whereNull('assigned_to')->count(),
+                ),
+                'items' => $notifPage['items'],
+                'next_cursor' => $notifPage['next_cursor'],
+                'has_more' => $notifPage['has_more'],
             ];
         }
     @endphp
-    <script>window.notifInit = @json($notifInit);</script>
+    <script>window.notifCenter = @json($notifCenter);</script>
     @auth
     <script>window.vapidPublicKey = @json(config('webpush.vapid.public_key'));</script>
     @endauth
@@ -144,7 +189,7 @@
 
     @livewireStyles
 
-    @vite(['resources/css/app.css','resources/js/app.js'])
+    @vite(['resources/css/app.css','resources/js/app.js','resources/js/notification-center.jsx'])
 
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
