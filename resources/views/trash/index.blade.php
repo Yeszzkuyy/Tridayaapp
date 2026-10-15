@@ -24,10 +24,7 @@
                       onsubmit="return confirm('{{ __('Permanently delete these items? This action cannot be undone.') }}')">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" title="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}" aria-label="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}"
-                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                        <x-icon name="trash" class="h-5 w-5" />
-                    </button>
+                    <x-icon-button icon="delete" type="submit" title="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}" />
                 </form>
                 <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="Back" />
             </div>
@@ -64,19 +61,13 @@
                                         <form action="{{ route('trash.restore-customer', $customer->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" title="Restore" aria-label="Restore"
-                                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                                <x-icon name="restore" class="h-5 w-5" />
-                                            </button>
+                                            <x-icon-button icon="reset" type="submit" title="Restore" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $customer)
-                                        <button type="button" x-data=""
-                                                title="Delete permanently" aria-label="Delete permanently"
-                                                @click="$dispatch('open-modal', 'confirm-destroy-customer-{{ $customer->id }}')"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                            <x-icon name="trash" class="h-5 w-5" />
-                                        </button>
+                                        <x-icon-button icon="delete" type="button" x-data=""
+                                                       title="Delete permanently"
+                                                       @click="$dispatch('open-modal', 'confirm-destroy-customer-{{ $customer->id }}')" />
                                         @endcan
                                     </div>
                                 </td>
@@ -116,9 +107,10 @@
                         <form action="{{ route('trash.destroy-customer', $customer->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium transition-colors duration-200">
+                            <button class="group relative overflow-hidden inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:bg-red-100 hover:shadow-md active:scale-95 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25">
                                 <x-icon name="trash" class="w-4 h-4" />
                                 {{ __('Yes, delete permanently') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                             </button>
                         </form>
                     </div>
@@ -157,19 +149,13 @@
                                         <form action="{{ route('trash.restore-project', $project->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" title="Restore" aria-label="Restore"
-                                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                                <x-icon name="restore" class="h-5 w-5" />
-                                            </button>
+                                            <x-icon-button icon="reset" type="submit" title="Restore" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $project)
-                                        <button type="button" x-data=""
-                                                title="Delete permanently" aria-label="Delete permanently"
-                                                @click="$dispatch('open-modal', 'confirm-destroy-project-{{ $project->id }}')"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-105 active:scale-95">
-                                            <x-icon name="trash" class="h-5 w-5" />
-                                        </button>
+                                        <x-icon-button icon="delete" type="button" x-data=""
+                                                       title="Delete permanently"
+                                                       @click="$dispatch('open-modal', 'confirm-destroy-project-{{ $project->id }}')" />
                                         @endcan
                                     </div>
                                 </td>
@@ -209,9 +195,10 @@
                         <form action="{{ route('trash.destroy-project', $project->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button class="inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium transition-colors duration-200">
+                            <button class="group relative overflow-hidden inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:bg-red-100 hover:shadow-md active:scale-95 dark:bg-red-500/15 dark:text-red-400 dark:hover:bg-red-500/25">
                                 <x-icon name="trash" class="w-4 h-4" />
                                 {{ __('Yes, delete permanently') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                             </button>
                         </form>
                     </div>
