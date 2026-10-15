@@ -112,9 +112,13 @@ class Lead extends Model
         return $this->belongsTo(Partner::class);
     }
 
+    /**
+     * Project milik customer dari lead ini, tanpa memuat relasi customer
+     * (null-safe: customer_id kosong langsung menghasilkan koleksi kosong).
+     */
     public function projects()
     {
-        return $this->customer->projects();
+        return $this->hasMany(Project::class, 'customer_id', 'customer_id');
     }
 
     public function whatsappAccount()
