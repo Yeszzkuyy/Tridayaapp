@@ -125,24 +125,14 @@
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
                                 <div class="flex justify-end gap-2">
-                                    <a href="{{ route('leads.show', $lead) }}"
-                                       title="{{ __('View details') }}"
-                                       aria-label="{{ __('View details') }} {{ $lead->customer?->name }}"
-                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20">
-                                        <x-icon name="eye" class="h-4 w-4" />
-                                    </a>
+                                    <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View details') }}" />
                                     @if($lead->has_done_fu)
                                         <span title="{{ __('Done') }}" aria-label="{{ __('Done') }} {{ $lead->customer?->name }}"
                                               class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300">
                                             <x-icon name="check-circle" class="h-4 w-4" />
                                         </span>
                                     @else
-                                        <a href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}"
-                                           title="{{ __('Create Follow Up') }}"
-                                           aria-label="{{ __('Create Follow Up') }} {{ $lead->customer?->name }}"
-                                           class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 transition dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">
-                                            <x-icon name="chat" class="h-4 w-4" />
-                                        </a>
+                                        <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Create Follow Up') }}" />
                                     @endif
                                 </div>
                             </td>
