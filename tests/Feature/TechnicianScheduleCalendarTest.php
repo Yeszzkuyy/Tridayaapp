@@ -286,7 +286,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res = $this->actingAs($tech)->get(route('teknisi.jadwal'));
         $res->assertOk();
         $res->assertSee('id="teknisi-month-grid"', false);
-        $res->assertSee('id="teknisi-view-switcher"', false);
+        $res->assertSee('id="teknisi-view-segment"', false);
         $res->assertSee('id="teknisi-week-list"', false);
         $res->assertSee('openMore(cell.date', false);
         $res->assertSee('Weekly Schedule');

@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
+    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" @teknisi:view.window="setView($event.detail.value)" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
         {{-- Top bar --}}
         <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3 min-w-0">
@@ -46,18 +46,24 @@
             </button>
         </div>
 
-        {{-- View switcher --}}
-        <div class="flex justify-center mb-4" id="teknisi-view-switcher">
-            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800" role="tablist" aria-label="{{ __('Calendar view') }}">
-                <template x-for="v in [{id:'month',label:'{{ __('Month') }}'},{id:'week',label:'{{ __('Week') }}'},{id:'day',label:'{{ __('Day') }}'}]" :key="v.id">
-                    <button type="button" role="tab" :aria-selected="view === v.id" @click="setView(v.id)"
-                            :class="view === v.id
-                                ? 'bg-slate-800 text-white shadow dark:bg-accent-600'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'"
-                            class="rounded-lg px-4 sm:px-6 py-1.5 text-sm font-semibold transition" x-text="v.label"></button>
-                </template>
-            </div>
+        {{-- View switcher (RubberSegment — island React, animasi spring) --}}
+        @php
+            $viewSegments = [
+                ['value' => 'month', 'label' => __('Month')],
+                ['value' => 'week', 'label' => __('Week')],
+                ['value' => 'day', 'label' => __('Day')],
+            ];
+        @endphp
+        <div class="flex justify-center mb-4">
+            <div id="teknisi-view-segment"
+                 data-rubber-segment
+                 data-mode="event"
+                 data-event-name="teknisi:view"
+                 data-label="{{ __('Calendar view') }}"
+                 data-active="month"
+                 data-items='@json($viewSegments)'></div>
         </div>
+        @vite('resources/js/rubber-segment.jsx')
 
         {{-- Month view --}}
         <div x-show="view === 'month'" x-transition.opacity>
@@ -729,6 +735,8 @@
 
                 setView(v) {
                     this.view = v;
+                    // Sinkronkan thumb RubberSegment bila view diganti dari jalur lain
+                    window.dispatchEvent(new CustomEvent('rubber-segment:set', { detail: { id: 'teknisi-view-segment', value: v } }));
                     if (v === 'week') this.fetchRange(this.weekDays[0].date, this.weekDays[6].date);
                     else if (v === 'day') this.fetchEvents();
                     else { this.fetchMonth(); this.fetchEvents(); }
