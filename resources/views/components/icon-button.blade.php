@@ -22,6 +22,9 @@
                                         merah saat hover; nama lama filter/reset
                                         tetap diterima, dipetakan ke default)
        size    : md (= h-10 w-10) | lg (= h-11 w-11)
+       look    : box (default, kotak rounded-lg + shine + scale) | soft
+                 (pill/circle bersih — tanpa shine, lift halus; trial di menu
+                  Project, pakai look="soft" per tombol)
        title   : title/aria-label (tooltip bawaan browser)
        tooltip : pill tooltip gelap saat hover — ISI EKSPLISIT untuk menampilkan;
                  tanpa prop ini tidak ada pill (mencegah semua tooltip di baris
@@ -36,6 +39,7 @@
     'icon' => null,
     'variant' => null,
     'size' => 'md',
+    'look' => 'box',
     'title' => '',
     'tooltip' => null,
     'label' => null,
@@ -63,11 +67,22 @@ $sizeClass = $sizes[$size] ?? $sizes['md'];
 
 $ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2';
 
-$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-lg border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
+// look=soft: pill/circle bersih — transisi warna halus + lift, tanpa shine/scale.
+$soft = $look === 'soft';
+$shape = $soft ? 'rounded-full' : 'rounded-lg';
+$motion = $soft
+    ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95'
+    : 'transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95';
+
+$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden border {$shape} {$colors} {$motion} {$ring}";
 
 // Label: tombol jadi lebih lebar (ikon + teks) dengan gap, bukan kotak icon-only.
 if ($label) {
-    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-lg border px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
+    $pad = $soft ? 'px-5' : 'px-4';
+    $labelMotion = $soft
+        ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95'
+        : 'transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95';
+    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden border {$shape} {$pad} text-sm font-medium {$colors} {$labelMotion} {$ring}";
 }
 
 $paths = [
@@ -90,7 +105,7 @@ $paths = [
     'more' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />',
 ];
 
-$shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>';
+$shine = $soft ? '' : '<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>';
 @endphp
 
 <div class="group/btn relative">
