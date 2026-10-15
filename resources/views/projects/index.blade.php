@@ -8,7 +8,7 @@
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-                <x-icon-button as="a" icon="add" href="{{ route('projects.create') }}" title="{{ __('Tambah Project') }}" />
+                <x-icon-button look="soft" as="a" icon="add" href="{{ route('projects.create') }}" title="{{ __('Tambah Project') }}" />
             @endcan
         </div>
     </div>
@@ -62,10 +62,10 @@
                             </td>
                             <td class="px-4 py-5 whitespace-nowrap">
                                 <div class="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <x-icon-button as="a" icon="view" href="{{ route('customers.show', $project->customer_id) }}" title="{{ __('Lihat customer') }}" />
-                                    <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('Detail project') }}" />
+                                    <x-icon-button look="soft" as="a" icon="view" href="{{ route('customers.show', $project->customer_id) }}" title="{{ __('Lihat customer') }}" />
+                                    <x-icon-button look="soft" as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('Detail project') }}" />
                                     @can('manage-technician')
-                                        <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit project') }}" />
+                                        <x-icon-button look="soft" as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit project') }}" />
                                     @endcan
                                 </div>
                             </td>

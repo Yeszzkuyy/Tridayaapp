@@ -5,7 +5,7 @@
             <h1 class="text-3xl font-bold text-slate-800">Tambah Project</h1>
             <p class="text-slate-500 mt-1">Buat project baru untuk: <span class="font-semibold text-slate-700">{{ $customer->name }}</span></p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="Kembali" />
+        <x-icon-button look="soft" as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="Kembali" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
@@ -84,8 +84,8 @@
             </div>
 
             <div class="mt-6 flex gap-3">
-                <button type="submit" class="px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">Simpan Project</button>
-                <a href="{{ route('customers.show', $customer) }}" class="px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-medium transition">Batal</a>
+                <button type="submit" class="inline-flex items-center rounded-full bg-accent-600 px-7 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-700 hover:shadow-md active:scale-95">Simpan Project</button>
+                <a href="{{ route('customers.show', $customer) }}" class="inline-flex items-center rounded-full bg-accent-500 px-6 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-600 hover:shadow-md active:scale-95">Batal</a>
             </div>
         </form>
     </div>

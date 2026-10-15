@@ -7,9 +7,9 @@
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-                <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="Edit Project" />
+                <x-icon-button look="soft" as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="Edit Project" />
             @endcan
-            <x-icon-button as="a" icon="back" href="{{ route('projects.index') }}" title="← Back" />
+            <x-icon-button look="soft" as="a" icon="back" href="{{ route('projects.index') }}" title="← Back" />
         </div>
     </div>
 
