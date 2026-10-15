@@ -131,28 +131,13 @@
                             <td class="px-6 py-4 text-right">
                                 <div class="flex min-w-max items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     @can('view-marketing')
-                                        <a href="{{ route('leads.show', $lead) }}" title="{{ __('Lihat detail lead') }}"
-                                           class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-50 hover:bg-accent-100 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                            <img src="{{ asset('icons/lead-view.svg') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                                 class="block h-5 w-5" />
-                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                        </a>
+                                        <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('Lihat detail lead') }}" />
                                     @endcan
                                     @can('manage-marketing')
-                                        <a href="{{ route('leads.edit', $lead) }}" title="Edit lead"
-                                           class="group/btn relative overflow-hidden p-2 rounded-lg bg-accent-100 hover:bg-accent-200 text-accent-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                            <img src="{{ asset('icons/lead-edit.svg') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                                 class="block h-5 w-5" />
-                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                        </a>
+                                        <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="Edit lead" />
                                         <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Hapus lead ini?') }}')" class="inline">
                                             @csrf @method('DELETE')
-                                            <button type="submit" title="{{ __('Hapus lead') }}"
-                                                    class="group/btn relative overflow-hidden p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95">
-                                                <img src="{{ asset('icons/lead-delete.svg') }}" alt="" loading="lazy" decoding="async" width="20" height="20"
-                                                     class="block h-5 w-5" />
-                                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>
-                                            </button>
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus lead') }}" />
                                         </form>
                                     @endcan
                                 </div>

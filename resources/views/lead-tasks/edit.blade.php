@@ -4,10 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit Task') }}</h1>
             <p class="text-slate-500 mt-1">{{ $task->lead?->customer?->name ?? '-' }}</p>
         </div>
-        <a href="{{ route('lead-tasks.show', $task) }}"
-           class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 text-sm font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('lead-tasks.show', $task) }}" title="{{ __('Kembali') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
