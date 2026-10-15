@@ -294,24 +294,6 @@ class TechnicianScheduleController extends Controller
         return back()->with('success', 'Jadwal berhasil dihapus.');
     }
 
-    /**
-     * Tandai jadwal selesai (status = completed). Hanya owner / manage-admin.
-     */
-    public function complete(Request $request, TechnicianSchedule $schedule)
-    {
-        if ($schedule->user_id !== auth()->id() && ! auth()->user()->can('manage-admin')) {
-            abort(403);
-        }
-
-        $schedule->update(['status' => 'completed']);
-
-        if ($request->expectsJson()) {
-            return response()->json(['ok' => true, 'message' => 'Jadwal ditandai selesai.']);
-        }
-
-        return back()->with('success', 'Jadwal ditandai selesai.');
-    }
-
     public function connect()
     {
         $state = Str::random(40);

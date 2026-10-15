@@ -374,13 +374,6 @@
                             </form>
                             <div class="flex items-center gap-2">
                                 <x-icon-button icon="edit" title="{{ __('Edit') }}" @click="openModal(selected.date, selected)" />
-                                <form method="POST" :action="completeScheduleUrl(selected.id)" @submit.prevent="completeSchedule($event)" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <x-icon-button type="submit" title="{{ __('Mark as done') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                    </x-icon-button>
-                                </form>
                             </div>
                         </div>
                     </div>
@@ -821,30 +814,6 @@
 
                 scheduleUrl(id) {
                     return String(this.scheduleBase).replace(/\/schedules\/?$/, '/schedules/' + id);
-                },
-
-                completeScheduleUrl(id) {
-                    return this.scheduleUrl(id) + '/complete';
-                },
-
-                // Tandai selesai via AJAX — tanpa reload halaman.
-                completeSchedule(e) {
-                    const form = e.target;
-                    const fd = new FormData(form);
-                    fetch(form.getAttribute('action'), {
-                        method: 'POST',
-                        body: fd,
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-                        },
-                    }).then((r) => {
-                        if (r.ok) {
-                            this.drawerOpen = false;
-                            this.refreshAll();
-                        }
-                    }).catch(() => {});
                 },
 
                 openModal(date, event = null) {

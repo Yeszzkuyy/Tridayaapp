@@ -262,21 +262,25 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->assertDatabaseHas('technician_schedules', ['title' => 'Tanpa jam selesai']);
     }
 
-    public function test_complete_marks_done_and_gates_ownership(): void
+    public function test_mark_as_done_is_removed(): void
     {
         $lead = $this->userWithRole('lead-technician');
-        $other = $this->userWithRole('technician');
         $schedule = $this->makeSchedule($lead);
 
-        // Owner boleh menandai selesai.
-        $this->actingAs($lead)->patchJson(route('teknisi.schedules.complete', $schedule))
-            ->assertOk()->assertJson(['ok' => true]);
-        $this->assertSame('completed', $schedule->fresh()->status);
+        // Tombol "Mark as done" sudah dihapus dari jadwal teknisi (tidak
+        // dipakai) — route-nya juga tidak ada lagi.
+        $html = $this->actingAs($lead)->get(route('teknisi.jadwal'))->assertOk()->getContent();
+        $this->assertStringNotContainsString('Mark as done', $html);
+        $this->assertStringNotContainsString('completeSchedule', $html);
 
-        // User lain (bukan owner/admin) ditolak.
-        $schedule2 = $this->makeSchedule($lead);
-        $this->actingAs($other)->patchJson(route('teknisi.schedules.complete', $schedule2))
-            ->assertForbidden();
+        $this->assertFalse(
+            \Illuminate\Support\Facades\Route::has('teknisi.schedules.complete'),
+            'Route tandai selesai tidak boleh terdaftar lagi.'
+        );
+
+        // Status completed tetap ada (data lama aman) dan bisa diubah
+        // lewat form edit — yang dihapus cuma tombol pintasannya.
+        $this->assertArrayHasKey('completed', TechnicianSchedule::STATUSES);
     }
 
     public function test_lead_technician_can_edit_teammate_schedule(): void
