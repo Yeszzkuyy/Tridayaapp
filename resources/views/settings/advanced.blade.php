@@ -28,8 +28,9 @@
                         <x-input-error :messages="$errors->get('password')" class="mt-2" />
                     </div>
                     <button type="submit"
-                            class="inline-flex w-full items-center justify-center rounded-xl bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-500">
+                            class="group relative overflow-hidden w-full px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
                         {{ __('Buka') }}
+                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                 </form>
             </div>
