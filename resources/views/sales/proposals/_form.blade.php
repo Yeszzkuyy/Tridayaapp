@@ -18,8 +18,7 @@
     <div>
         <div class="flex items-center justify-between mb-2">
             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} <span class="text-red-500">*</span></label>
-            <button type="button" onclick="proposalAddRow()"
-                    class="px-3 py-1.5 text-xs rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium transition">{{ __('+ Item') }}</button>
+            <x-icon-button icon="add" label="{{ __('+ Item') }}" title="{{ __('+ Item') }}" type="button" onclick="proposalAddRow()" />
         </div>
         <div class="relative mb-2">
             <input type="text" id="proposal-catalog-search" autocomplete="off" placeholder="{{ __('Cari di katalog...') }}"
@@ -42,8 +41,9 @@
                     <input type="number" name="items[{{ $i }}][discount]" min="0" step="0.01" value="{{ $row['discount'] }}" placeholder="{{ __('Diskon') }}"
                             class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>
-                    <button type="button" onclick="this.closest('.proposal-row').remove(); proposalRecalc()"
-                            class="col-span-2 md:col-span-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">×</button>
+                    <div class="col-span-2 md:col-span-1">
+                        <x-icon-button icon="delete" type="button" title="{{ __('Hapus') }}" onclick="this.closest('.proposal-row').remove(); proposalRecalc()" />
+                    </div>
                 </div>
             @endforeach
         </div>
@@ -77,6 +77,13 @@
     </div>
 </div>
 
+{{-- Tombol hapus baris item — dipakai ulang oleh skrip untuk baris dinamis --}}
+<template id="proposal-row-delete-btn">
+    <div class="col-span-2 md:col-span-1">
+        <x-icon-button icon="delete" type="button" title="{{ __('Hapus') }}" onclick="this.closest('.proposal-row').remove(); proposalRecalc()" />
+    </div>
+</template>
+
 <script>
 let proposalRowIdx = {{ count($rows) }};
 const proposalFmt = new Intl.NumberFormat('id-ID');
@@ -90,8 +97,7 @@ function proposalRowHtml(i, prefill) {
         '<input type="text" name="items[' + i + '][unit]" value="' + esc(prefill.unit || 'pcs') + '" class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="number" name="items[' + i + '][unit_price]" required min="0" step="0.01" value="' + (prefill.unit_price || 0) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="number" name="items[' + i + '][discount]" min="0" step="0.01" value="0" class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
-        '<span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>' +
-        '<button type="button" onclick="this.closest(\'.proposal-row\').remove(); proposalRecalc()" class="col-span-2 md:col-span-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">×</button>';
+        '<span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>';
 }
 
 function proposalAddRow(prefill) {
@@ -99,6 +105,7 @@ function proposalAddRow(prefill) {
     const div = document.createElement('div');
     div.className = 'proposal-row grid grid-cols-12 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50';
     div.innerHTML = proposalRowHtml(proposalRowIdx++, prefill);
+    div.appendChild(document.getElementById('proposal-row-delete-btn').content.cloneNode(true));
     wrap.appendChild(div);
     proposalRecalc();
 }

@@ -4,10 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">Edit Lead: {{ $lead->customer->name }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Perbarui informasi lead / opportunity') }}</p>
         </div>
-        <a href="{{ route('leads.show', $lead) }}"
-           class="px-4 py-2.5 rounded-xl bg-accent-500 text-white hover:bg-accent-600 dark:bg-accent-600 dark:hover:bg-accent-700 text-sm font-medium transition">
-            {{ __('Kembali') }}
-        </a>
+        <x-icon-button as="a" icon="back" href="{{ route('leads.show', $lead) }}" title="{{ __('Kembali') }}" />
     </div>
 
     <form action="{{ route('leads.update', $lead) }}" method="POST" enctype="multipart/form-data"
@@ -168,9 +165,10 @@
                                 <a href="{{ route('leads.attachments.show', [$lead, $doc]) }}" target="_blank"
                                    class="text-sm text-accent-600 hover:underline">{{ $doc->file_name }}</a>
                                 <button type="button"
-                                        class="text-xs font-medium text-red-500 hover:underline"
+                                        class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-500 hover:bg-red-50 hover:shadow-md active:scale-95 dark:border-red-500/30 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-400 dark:hover:bg-red-500/15"
                                         onclick="if(confirm('{{ __('Yakin hapus lampiran ini?') }}')){fetch('{{ route('leads.attachments.destroy', [$lead, $doc]) }}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({_method:'DELETE'})}).then(r=>r.ok&&location.reload())}">
                                     {{ __('Hapus') }}
+                                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                 </button>
                             </li>
                         @endforeach

@@ -41,28 +41,13 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex justify-end gap-2">
-                                <a href="{{ route('sales.pocs.show', $poc) }}"
-                                   title="{{ __('View details') }}"
-                                   aria-label="{{ __('View details') }} {{ $poc->customer?->name }}"
-                                   class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 transition hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20">
-                                    <x-icon name="eye" class="h-4 w-4" />
-                                </a>
+                                <x-icon-button as="a" icon="view" href="{{ route('sales.pocs.show', $poc) }}" title="{{ __('View details') }}" />
                                 @can('manage-sales')
-                                    <a href="{{ route('sales.pocs.edit', $poc) }}"
-                                       title="{{ __('Edit POC/Demo') }}"
-                                       aria-label="{{ __('Edit POC/Demo') }} {{ $poc->customer?->name }}"
-                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition hover:bg-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
-                                        <x-icon name="edit" class="h-4 w-4" />
-                                    </a>
+                                    <x-icon-button as="a" icon="edit" href="{{ route('sales.pocs.edit', $poc) }}" title="{{ __('Edit POC/Demo') }}" />
                                     <form action="{{ route('sales.pocs.destroy', $poc) }}"
                                           method="POST" class="inline-flex" data-ajax data-ajax-remove="tr" onsubmit="return confirm('{{ __('Hapus POC/Demo ini?') }}')">
                                         @csrf @method('DELETE')
-                                        <button type="submit"
-                                                title="{{ __('Delete POC/Demo') }}"
-                                                aria-label="{{ __('Delete POC/Demo') }} {{ $poc->customer?->name }}"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 text-red-700 transition hover:bg-red-200 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20">
-                                            <x-icon name="trash" class="h-4 w-4" />
-                                        </button>
+                                        <x-icon-button icon="delete" type="submit" title="{{ __('Delete POC/Demo') }}" />
                                     </form>
                                 @endcan
                             </div>

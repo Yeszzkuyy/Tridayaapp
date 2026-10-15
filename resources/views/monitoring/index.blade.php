@@ -33,15 +33,9 @@
                 <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
             </div>
 
-            <button type="submit"
-                    class="px-4 py-2 bg-accent-600 text-white rounded-xl hover:bg-accent-700 transition whitespace-nowrap">
-                Filter
-            </button>
+            <x-icon-button icon="filter" type="submit" title="Filter" />
 
-            <a href="{{ route('monitoring.index') }}"
-               class="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white transition whitespace-nowrap">
-                Reset
-            </a>
+            <x-icon-button as="a" icon="reset" href="{{ route('monitoring.index') }}" title="Reset" />
         </form>
 
         {{-- Divisi Filter (Checkbox) --}}
@@ -233,14 +227,8 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                <a href="{{ route('customers.show', $customer) }}"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-accent-700 bg-accent-50 rounded-lg hover:bg-accent-100 transition">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                    </svg>
-                                    {{ __('Lihat Detail') }}
-                                </a>
+                                <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}"
+                                   label="{{ __('Lihat Detail') }}" title="{{ __('Lihat Detail') }}" />
                             </td>
                         </tr>
                     @empty

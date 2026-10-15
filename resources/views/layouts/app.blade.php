@@ -3,8 +3,13 @@
     $accentPref = auth()->check() ? auth()->user()->preference('accent', 'ocean') : 'ocean';
     // Class dark dirender dari server agar morph wire:navigate tidak menghapusnya
     // (HTML server tanpa class = class 'dark' client terbuang -> balik light).
-    // Mode system tak bisa diputuskan di server (butuh matchMedia) — dikoreksi JS di bawah.
-    $initialDark = $themePref === 'dark';
+    // Mode system TETAP dirender 'dark' (optimistik): server tak tahu skema OS,
+    // dan bila dibiarkan kosong, replaceHtmlAttributes() Livewire menghapus class
+    // 'dark' tiap navigasi -> kilatan frame putih di mode system (OS gelap).
+    // Untuk OS terang, __applyAppearance() mengoreksi SEBELUM paint pertama
+    // (script head saat load, hook onSwap saat navigasi) jadi tak ada kilatan
+    // terbalik.
+    $initialDark = $themePref !== 'light';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
@@ -49,7 +54,26 @@
             window.__appearanceAccent = accent;
         };
         window.__applyAppearance();
-        document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); });
+        // Sinkron saat skema OS berubah (mode system) tanpa reload.
+        try {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { window.__applyAppearance(); });
+        } catch (e) {}
+        // Jaring pengaman terakhir: bila setelah paint halaman tidak sinkron
+        // dengan preferensi, pulihkan + beri tahu di console supaya celah apa
+        // pun yang tersisa ketahuan (bukan diam-diam salah tema).
+        function __appearanceSelfHeal() {
+            try {
+                var root = document.documentElement;
+                var shouldDark = window.__appearanceMode === 'dark'
+                    || (window.__appearanceMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (root.classList.contains('dark') !== shouldDark) {
+                    window.__applyAppearance();
+                    console.warn('[appearance] kelas dark tidak sinkron setelah paint — dipulihkan otomatis');
+                }
+            } catch (e) {}
+        }
+        document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); setTimeout(__appearanceSelfHeal, 120); });
+        setTimeout(__appearanceSelfHeal, 300);
         // wire:navigate: Livewire menyalin atribut <html> dari hasil render server
         // (replaceHtmlAttributes) — data-theme/class bisa beda dengan localStorage,
         // sehingga halaman baru sempat ter-paint dengan tema salah (frame putih di

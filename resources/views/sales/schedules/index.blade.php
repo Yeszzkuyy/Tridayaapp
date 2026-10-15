@@ -56,8 +56,8 @@
                         <div @click="createOn(cell.date)" @keydown.enter="createOn(cell.date)" tabindex="0" role="button"
                                 :aria-label="dayEvents(cell.date).length + ' {{ __('visits') }}'"
                                 :class="cell.date === activeDate
-                                    ? 'bg-accent-500/10 text-slate-800 ring-2 ring-inset ring-accent-500 shadow-sm dark:bg-accent-500/20 dark:text-slate-100'"
-                                            : (cell.inMonth
+                                    ? 'bg-accent-500/10 text-slate-800 ring-2 ring-inset ring-accent-500 shadow-sm dark:bg-accent-500/20 dark:text-slate-100'
+                                    : (cell.inMonth
                                         ? 'text-slate-700 hover:bg-slate-100 hover:shadow-sm dark:text-slate-200 dark:hover:bg-slate-700/50'
                                         : 'text-slate-300 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-slate-700/30')"
                                 class="group flex min-h-20 sm:min-h-28 cursor-pointer flex-col items-center justify-start rounded-xl py-1.5 px-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
@@ -201,7 +201,7 @@
                                 <span class="truncate" x-text="event.customer"></span>
                             </span>
                             <button x-show="canWrite" type="button" @click="quickAdd(event.customer_id)" title="{{ __('Add for this customer') }}" aria-label="{{ __('Add for this customer') }}"
-                                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600 transition hover:bg-slate-300 hover:text-slate-800 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500">
+                                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-accent-500 hover:text-accent-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:text-accent-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.4" stroke="currentColor" class="h-3 w-3" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                             </button>
                         </div>
@@ -391,12 +391,14 @@
                                 </button>
                                 <div x-show="snoozeOpen" @click.outside="snoozeOpen = false" x-cloak
                                      class="absolute bottom-11 left-0 z-20 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-600 dark:bg-slate-800">
-                                    <form x-for="d in [1, 3, 7]" :key="d" method="POST" :action="followUpUrl('snooze')">
-                                        @csrf
-                                        <input type="hidden" name="days" :value="d">
-                                        <button type="submit" class="w-full px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/60"
-                                                x-text="d + ' {{ __('day(s)') }}'"></button>
-                                    </form>
+                                    <template x-for="d in [1, 3, 7]" :key="d">
+                                        <form method="POST" :action="followUpUrl('snooze')">
+                                            @csrf
+                                            <input type="hidden" name="days" :value="d">
+                                            <button type="submit" class="w-full px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700/60"
+                                                    x-text="d + ' {{ __('day(s)') }}'"></button>
+                                        </form>
+                                    </template>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -452,14 +454,19 @@
                         <label for="su-customer_search" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }}</label>
                         <input type="hidden" name="customer_id" :value="customerId">
                         <input id="su-customer_search" type="text" x-model="customerQuery"
-                               @focus="customerOpen = true" @input="customerOpen = true" autocomplete="off"
+                               @focus="customerOpen = true; customerActive = 0" @input="customerOpen = true; customerActive = 0" autocomplete="off"
+                               @keydown.down.prevent="customerNavigate(1)" @keydown.up.prevent="customerNavigate(-1)"
+                               @keydown.enter="customerChoose($event)" @keydown.escape="customerOpen = false"
                                placeholder="{{ __('Type to search customer...') }}"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         <div x-show="customerOpen && filteredCustomers().length" x-cloak
                              class="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-700">
-                            <template x-for="c in filteredCustomers()" :key="c.id">
-                                <button type="button" @click="selectCustomer(c)"
-                                        class="block w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600"
+                            <template x-for="(c, idx) in filteredCustomers()" :key="c.id">
+                                <button type="button" @click="selectCustomer(c)" @mouseenter="customerActive = idx"
+                                        :class="idx === customerActive
+                                            ? 'bg-accent-500/10 text-accent-700 dark:bg-accent-500/20 dark:text-accent-200'
+                                            : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-600'"
+                                        class="block w-full px-3 py-2 text-left text-sm transition"
                                         x-text="c.label"></button>
                             </template>
                         </div>
@@ -484,15 +491,8 @@
                         </div>
                         <div>
                             <label for="su-activity_time" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Time') }} <span class="text-xs font-normal text-slate-400">(WIB)</span></label>
-                            <input id="su-activity_time" type="time" name="activity_time" x-model="modalTime"
+                            <input id="su-activity_time" type="time" name="activity_time" x-model="modalTime" lang="id-ID"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                            <div class="mt-2 grid max-h-40 grid-cols-3 gap-1.5 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-600">
-                                <template x-for="t in timeSlots" :key="t">
-                                    <button type="button" @click="modalTime = t"
-                                            :class="modalTime === t ? 'bg-slate-800 text-white dark:bg-accent-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'"
-                                            class="rounded-lg px-2 py-1.5 text-xs font-semibold tabular-nums transition" x-text="t"></button>
-                                </template>
-                            </div>
                         </div>
                     </div>
 
@@ -560,6 +560,7 @@
                 fetchSeq: 0,
                 customerQuery: @json((string) collect($customers)->get((int) old('customer_id'), '')),
                 customerOpen: false,
+                customerActive: -1,
                 customerList: @json(collect($customers)->map(fn ($label, $id) => ['id' => (string) $id, 'label' => $label])->values()),
                 drawerOpen: false,
                 selectedEvent: null,
@@ -572,13 +573,6 @@
                 customerId: @json((string) old('customer_id', '')),
                 leadId: @json((string) old('lead_id', '')),
                 leads: window.__scheduleLeads || [],
-                timeSlots: (() => {
-                    const slots = [];
-                    for (let m = 8 * 60; m <= 18 * 60; m += 30) {
-                        slots.push(String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'));
-                    }
-                    return slots;
-                })(),
                 cardPalette: {
                     blue:   { wrap: 'border-l-[3px] border-blue-500 bg-blue-50 dark:bg-blue-500/20 rounded-r shadow-sm',
                               time: 'text-blue-600 dark:text-blue-300 text-xs leading-tight font-semibold' },
@@ -758,7 +752,25 @@
                     this.customerId = String(c.id);
                     this.customerQuery = c.label;
                     this.customerOpen = false;
+                    this.customerActive = -1;
                     this.filterLeads();
+                },
+
+                customerNavigate(dir) {
+                    const list = this.filteredCustomers();
+                    if (!list.length) return;
+                    this.customerOpen = true;
+                    const cur = this.customerActive < 0 ? (dir > 0 ? -1 : 0) : this.customerActive;
+                    this.customerActive = Math.min(Math.max(cur + dir, 0), list.length - 1);
+                },
+
+                customerChoose(e) {
+                    const list = this.filteredCustomers();
+                    const idx = this.customerActive >= 0 ? this.customerActive : 0;
+                    if (this.customerOpen && list.length && list[idx]) {
+                        if (e) e.preventDefault();
+                        this.selectCustomer(list[idx]);
+                    }
                 },
 
                 selectDay(date) {

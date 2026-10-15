@@ -6,14 +6,8 @@
             <p class="text-slate-500 mt-1 max-w-[560px] truncate" title="{{ $survey->title ?? '' }}">{{ $survey->title ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
-            <a href="{{ route('teknisi.surveys.edit', $survey) }}"
-               class="px-5 py-2.5 rounded-xl bg-accent-100 hover:bg-accent-200 text-accent-700 font-medium transition">
-                Edit
-            </a>
-            <a href="{{ route('teknisi.surveys.index') }}"
-               class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 font-medium transition">
-                {{ __('Kembali') }}
-            </a>
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.surveys.edit', $survey) }}" title="Edit" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.surveys.index') }}" title="{{ __('Kembali') }}" />
         </div>
     </div>
 
@@ -126,40 +120,22 @@
 
                     <div class="flex shrink-0 flex-wrap items-center gap-2 self-end sm:self-center">
                         @if($survey->hasReport())
-                            <a href="{{ route('teknisi.surveys.report.view', $survey) }}" target="_blank" rel="noopener"
-                               title="{{ __('View') }}" aria-label="{{ __('View') }}"
-                               class="inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 transition-all duration-300 hover:scale-105 hover:bg-indigo-100 active:scale-95">
-                                <x-icon name="eye" class="h-4 w-4" />
-                                {{ __('View') }}
-                            </a>
-                            <a href="{{ route('teknisi.surveys.report.download', $survey) }}"
-                               title="{{ __('Download') }}" aria-label="{{ __('Download') }}"
-                               class="inline-flex items-center gap-2 rounded-xl bg-green-100 px-4 py-2.5 text-sm font-medium text-green-700 transition-all duration-300 hover:scale-105 hover:bg-green-200 active:scale-95">
-                                <x-icon name="file-text" class="h-4 w-4" />
-                                {{ __('Download') }}
-                            </a>
+                            <x-icon-button as="a" icon="view" href="{{ route('teknisi.surveys.report.view', $survey) }}" target="_blank" rel="noopener"
+                                           title="{{ __('View') }}" label="{{ __('View') }}" />
+                            <x-icon-button as="a" icon="download" href="{{ route('teknisi.surveys.report.download', $survey) }}"
+                                           title="{{ __('Download') }}" label="{{ __('Download') }}" />
                             @can('manage-technician')
-                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
-                                        title="{{ __('Replace') }}" aria-label="{{ __('Replace') }}"
-                                        class="inline-flex items-center gap-2 rounded-xl bg-blue-100 px-4 py-2.5 text-sm font-medium text-blue-700 transition-all duration-300 hover:scale-105 hover:bg-blue-200 active:scale-95">
-                                    <x-icon name="edit" class="h-4 w-4" />
-                                    {{ __('Replace') }}
-                                </button>
+                                <x-icon-button icon="edit" title="{{ __('Replace') }}" label="{{ __('Replace') }}"
+                                               onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()" />
                             @endcan
                         @else
-                            <a href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
-                               title="{{ __('Create') }}" aria-label="{{ __('Create') }}"
-                               class="inline-flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 transition-all duration-300 hover:scale-105 hover:bg-indigo-100 active:scale-95">
+                            <x-icon-button as="a" href="{{ config('services.survey-report-template') }}" target="_blank" rel="noopener"
+                                           title="{{ __('Create') }}" label="{{ __('Create') }}">
                                 <x-icon name="file-text" class="h-4 w-4" />
-                                {{ __('Create') }}
-                            </a>
+                            </x-icon-button>
                             @can('manage-technician')
-                                <button type="button" onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()"
-                                        title="{{ __('Upload') }}" aria-label="{{ __('Upload') }}"
-                                        class="inline-flex items-center gap-2 rounded-xl bg-accent-600 px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:scale-105 hover:bg-accent-500 active:scale-95">
-                                    <x-icon name="folder" class="h-4 w-4" />
-                                    {{ __('Upload') }}
-                                </button>
+                                <x-icon-button icon="upload" title="{{ __('Upload') }}" label="{{ __('Upload') }}"
+                                               onclick="(function(){var c=document.querySelector('[data-survey-report-modal]'),r=c&&c.querySelector('.fixed.inset-0.z-50'),h=c&&c.querySelector('[data-report-survey-id]'),f=c&&c.querySelector('[data-report-upload-form]'),id='{{ $survey->id }}';if(!c||!r)return;if(h)h.value=id;if(f)f.action=c.dataset.uploadUrl.replace('__SURVEY__',id);r.style.display='block';r.querySelectorAll('[x-show]').forEach(function(e){e.style.display='block'});window.dispatchEvent(new CustomEvent('report-upload',{detail:{id:id}}))})()" />
                             @endcan
                         @endif
                     </div>

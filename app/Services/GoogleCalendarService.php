@@ -27,16 +27,33 @@ class GoogleCalendarService
      */
     public function isApiReachable(): bool
     {
-        // Hasil live call di-cache 5 menit: dipanggil tiap render jadwal.
-        return Cache::remember('gcal:reachable', 300, function () {
-            try {
-                $this->upcomingEvents(1);
+        // Cache hasil: sukses 2 menit, gagal hanya 15 detik (recovery cepat).
+        // Kegagalan transient (timeout) tidak boleh membuat badge "Disconnected"
+        // selama 5 menit penuh.
+        $cached = Cache::get('gcal:reachable');
+        if (is_bool($cached)) {
+            return $cached;
+        }
 
-                return true;
-            } catch (\Throwable) {
-                return false;
-            }
-        });
+        try {
+            $this->upcomingEvents(1);
+            Cache::put('gcal:reachable', true, 120);
+
+            return true;
+        } catch (\Throwable) {
+            Cache::put('gcal:reachable', false, 15);
+
+            return false;
+        }
+    }
+
+    /**
+     * Buang cache status koneksi — dipanggil setelah kredensial berubah
+     * atau sync, supaya badge langsung akurat tanpa tunggu TTL.
+     */
+    public function forgetReachableCache(): void
+    {
+        Cache::forget('gcal:reachable');
     }
 
     /**
@@ -105,6 +122,7 @@ class GoogleCalendarService
                     'end' => $this->parseEventTime($item['end'] ?? []),
                     'location' => $item['location'] ?? '',
                     'description' => $item['description'] ?? '',
+                    'updated' => isset($item['updated']) ? Carbon::parse($item['updated']) : null,
                 ])
                 ->sortBy('start')
                 ->values()
@@ -132,7 +150,7 @@ class GoogleCalendarService
             now()->addMonths(2),
         );
 
-        $stats = ['created' => 0, 'updated' => 0, 'restored' => 0, 'skipped' => 0];
+        $stats = ['created' => 0, 'updated' => 0, 'restored' => 0, 'skipped' => 0, 'deleted' => 0];
         $owner = User::query()
             ->whereHas('permissions', fn ($q) => $q->whereIn('name', ['manage-technician', 'manage-admin']))
             ->orderBy('id')
@@ -144,6 +162,8 @@ class GoogleCalendarService
             return $stats;
         }
 
+        $seenIds = [];
+
         foreach ($events as $event) {
             $id = $event['id'];
             if (! $id) {
@@ -152,7 +172,7 @@ class GoogleCalendarService
                 continue;
             }
 
-            $schedule = TechnicianSchedule::withTrashed()->where('google_event_id', $id)->first();
+            $seenIds[] = $id;
 
             if (! $event['start'] && ! $event['end']) {
                 $stats['skipped']++;
@@ -160,22 +180,32 @@ class GoogleCalendarService
                 continue;
             }
 
-            $data = [
-                'user_id' => $owner->id,
+            $schedule = TechnicianSchedule::withTrashed()->where('google_event_id', $id)->first();
+
+            // Field milik aplikasi (project, teknisi, status, reminder) TIDAK pernah
+            // ditimpa Google — hanya judul/deskripsi/lokasi/jam yang diperebutkan.
+            $shared = [
                 'title' => $event['title'],
                 'description' => $event['description'] ?: null,
                 'location' => $event['location'] ?: null,
                 'start_at' => $event['start'],
                 'end_at' => $event['end'] ?? $event['start'],
-                'status' => 'scheduled',
-                'google_event_id' => $id,
-                'google_calendar_id' => $this->appCredentials()['calendar_id'],
-                'google_sync_status' => 'synced',
-                'google_sync_error' => null,
             ];
 
             if ($schedule) {
-                $schedule->update($data);
+                // "Terbaru menang": bila Google tidak lebih baru dari lokal, biarkan lokal.
+                if ($event['updated'] && $schedule->updated_at && $event['updated']->lte($schedule->updated_at)) {
+                    $stats['skipped']++;
+
+                    continue;
+                }
+
+                $schedule->update($shared + [
+                    'google_calendar_id' => $this->appCredentials()['calendar_id'],
+                    'google_sync_status' => 'synced',
+                    'google_sync_error' => null,
+                ]);
+
                 if ($schedule->trashed()) {
                     $schedule->restore();
                     $stats['restored']++;
@@ -184,13 +214,88 @@ class GoogleCalendarService
                 $stats['updated']++;
                 Log::debug('Google sync: UPDATE jadwal', ['id' => $schedule->id, 'google_event_id' => $id]);
             } else {
-                TechnicianSchedule::create($data);
+                TechnicianSchedule::create($shared + [
+                    'user_id' => $owner->id,
+                    'status' => 'scheduled',
+                    'google_event_id' => $id,
+                    'google_calendar_id' => $this->appCredentials()['calendar_id'],
+                    'google_sync_status' => 'synced',
+                    'google_sync_error' => null,
+                ]);
                 $stats['created']++;
                 Log::debug('Google sync: INSERT jadwal baru', ['google_event_id' => $id]);
             }
         }
 
+        // Deteksi hapus: event yang dihapus di Google → soft-delete lokal.
+        // Hanya yang BER-google_event_id & dalam rentang sync; jadwal lokal
+        // murni (tanpa google_event_id) tidak pernah disentuh. Lewati bila
+        // hasil fetch mentok di maxResults (truncation) — jangan sampai
+        // salah-hapus event yang belum terambil.
+        if (count($events) < $maxResults) {
+            TechnicianSchedule::query()
+                ->whereNotNull('google_event_id')
+                ->whereBetween('start_at', [now()->subDays(30), now()->addMonths(2)])
+                ->whereNotIn('google_event_id', $seenIds)
+                ->get()
+                ->each(function (TechnicianSchedule $schedule) use (&$stats) {
+                    $schedule->delete();
+                    $stats['deleted']++;
+                    Log::debug('Google sync: jadwal dihapus di Google → soft-delete', ['id' => $schedule->id]);
+                });
+        }
+
         Log::info('Google sync: selesai', $stats);
+
+        return $stats;
+    }
+
+    /**
+     * Dorong perubahan lokal ke Google (2-arah). Target: jadwal yang belum
+     * tersinkron (syncing/error) — hasil create/edit di aplikasi. Lewati bila
+     * OAuth belum terhubung.
+     */
+    public function pushLocalChanges(): array
+    {
+        $out = ['pushed' => 0, 'errors' => 0, 'skipped_no_oauth' => false];
+
+        if (! $this->hasOAuthConnection()) {
+            $out['skipped_no_oauth'] = true;
+
+            return $out;
+        }
+
+        $pending = TechnicianSchedule::with(['project.customer', 'technician', 'owner'])
+            ->whereIn('google_sync_status', ['syncing', 'error'])
+            ->limit(100)
+            ->get();
+
+        foreach ($pending as $schedule) {
+            $this->pushEvent($schedule);
+            $schedule->refresh();
+
+            if ($schedule->google_sync_status === 'synced') {
+                $out['pushed']++;
+            } else {
+                $out['errors']++;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Sinkron dua arah: tarik dari Google (terbaru menang + deteksi hapus),
+     * lalu dorong perubahan lokal ke Google.
+     */
+    public function syncTwoWay(): array
+    {
+        $stats = $this->syncFromGoogle();
+
+        $push = $this->pushLocalChanges();
+        $stats['pushed'] = $push['pushed'];
+        $stats['push_errors'] = $push['errors'];
+        $stats['push_no_oauth'] = $push['skipped_no_oauth'];
 
         return $stats;
     }
@@ -239,8 +344,8 @@ class GoogleCalendarService
     }
 
     /**
-     * Apakah ada koneksi OAuth (tulis/sync 2-arah) yang aktif untuk user ini
-     * atau untuk user lain (token tersimpan global). Badge memakai ini.
+     * Apakah ada koneksi OAuth (tulis/sync 2-arah) — token tersimpan untuk
+     * user ini, atau user lain mana pun (token global dipakai sync).
      */
     public function hasOAuthConnection(?User $user = null): bool
     {
@@ -520,7 +625,10 @@ class GoogleCalendarService
 
     private function restoreTokens(Client $client, User $user): void
     {
-        $credential = GoogleCredential::where('user_id', $user->id)->first();
+        // Fallback: bila user ini belum Connect, pakai token global yang ada
+        // (untuk team dengan satu akun Google bersama).
+        $credential = GoogleCredential::where('user_id', $user->id)->first()
+            ?? GoogleCredential::query()->latest('id')->first();
 
         if (! $credential) {
             return;

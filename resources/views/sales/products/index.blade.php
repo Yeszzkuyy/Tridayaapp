@@ -41,18 +41,12 @@
                         </p>
                     </div>
                     @canany(['manage-sales', 'manage-admin'])
-                        <a href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}"
-                           class="h-10 w-10 inline-flex items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.862 4.487z"/></svg>
-                        </a>
+                        <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" />
                         @if($product->is_active)
                             <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
                                   onsubmit="return confirm('{{ __('Nonaktifkan produk ini?') }}')">
                                 @csrf @method('DELETE')
-                                <button type="submit" title="{{ __('Deactivate') }}" aria-label="{{ __('Deactivate') }}"
-                                        class="h-10 w-10 inline-flex items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 12h-15"/></svg>
-                                </button>
+                                <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
                             </form>
                         @endif
                     @endcanany

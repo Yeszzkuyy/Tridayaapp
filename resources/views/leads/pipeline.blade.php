@@ -5,26 +5,19 @@
             <p class="text-slate-500 mt-1">{{ __('Pipeline milik :name — lead baru masuk di kolom New, geser ke Cool/Warm/Hot untuk menindaklanjuti', ['name' => auth()->user()->name]) }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
-               class="px-4 py-2.5 rounded-xl bg-accent-50 hover:bg-accent-100 text-accent-700 text-sm font-medium transition">
-                {{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}
-            </a>
+            <x-icon-button as="a" icon="filter" href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
+                           label="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}"
+                           title="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}" />
             @if(auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing'))
-                <a href="{{ route('leads.index') }}"
-                   class="px-4 py-2.5 rounded-xl bg-accent-50 hover:bg-accent-100 text-accent-700 text-sm font-medium transition">
-                    {{ __('Tabel Lead') }}
-                </a>
+                <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}"
+                               label="{{ __('Tabel Lead') }}" title="{{ __('Tabel Lead') }}" />
             @else
-                <a href="{{ route('sales.my-leads') }}"
-                   class="px-4 py-2.5 rounded-xl bg-accent-50 hover:bg-accent-100 text-accent-700 text-sm font-medium transition">
-                    {{ __('My Leads') }}
-                </a>
+                <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}"
+                               label="{{ __('My Leads') }}" title="{{ __('My Leads') }}" />
             @endif
             @can('manage-marketing')
-                <a href="{{ route('leads.create') }}"
-                   class="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition">
-                    {{ __('+ Tambah Lead') }}
-                </a>
+                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}"
+                               label="{{ __('+ Tambah Lead') }}" title="{{ __('+ Tambah Lead') }}" />
             @endcan
         </div>
     </div>

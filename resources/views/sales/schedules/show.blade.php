@@ -30,16 +30,17 @@
                 @endphp
                 @if($canManage)
                     <div class="flex flex-wrap gap-2 pt-2">
-                        <a href="{{ route('sales.schedules.edit', $schedule) }}"
-                           class="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium transition">{{ __('Edit') }}</a>
+                        <x-icon-button as="a" icon="edit" href="{{ route('sales.schedules.edit', $schedule) }}" title="{{ __('Edit') }}" />
                         <form action="{{ route('sales.schedules.complete', $schedule) }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Complete') }}</button>
+                            <x-icon-button type="submit" label="{{ __('Complete') }}" title="{{ __('Complete') }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </x-icon-button>
                         </form>
                         <form action="{{ route('sales.schedules.cancel', $schedule) }}" method="POST" class="inline"
                               onsubmit="return confirm('{{ __('Batalkan jadwal ini?') }}')">
                             @csrf
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Cancel') }}</button>
+                            <x-icon-button icon="delete" type="submit" title="{{ __('Cancel') }}" />
                         </form>
                     </div>
                 @endif

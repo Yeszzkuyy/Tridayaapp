@@ -95,12 +95,9 @@
                             <p class="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Overview Divisi Teknis') }}</p>
                         </div>
                     </div>
-                    <a href="{{ route('teknisi.jadwal') }}"
-                       class="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-accent-600/20 transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                    <x-icon-button as="a" href="{{ route('teknisi.jadwal') }}" label="{{ __('Buka Jadwal') }}" title="{{ __('Buka Jadwal') }}">
                         <x-icon name="calendar" class="h-4 w-4" />
-                        {{ __('Buka Jadwal') }}
-                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                    </a>
+                    </x-icon-button>
                 </div>
             </div>
         </section>

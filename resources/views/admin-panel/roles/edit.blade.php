@@ -21,8 +21,8 @@
                 <div class="flex items-center justify-between mb-3">
                     <label class="block text-sm font-medium text-slate-700">Permissions</label>
                     <div class="flex gap-2">
-                        <button type="button" id="select-all" class="px-3 py-1 text-xs bg-accent-500 hover:bg-accent-600 text-white">{{ __('Pilih Semua') }}</button>
-                        <button type="button" id="deselect-all" class="px-3 py-1 text-xs bg-accent-500 hover:bg-accent-600 text-white">{{ __('Batal Pilih') }}</button>
+                        <x-icon-button id="select-all" icon="leads" label="{{ __('Pilih Semua') }}" title="{{ __('Pilih Semua') }}" />
+                        <x-icon-button id="deselect-all" icon="reset" label="{{ __('Batal Pilih') }}" title="{{ __('Batal Pilih') }}" />
                     </div>
                 </div>
                 

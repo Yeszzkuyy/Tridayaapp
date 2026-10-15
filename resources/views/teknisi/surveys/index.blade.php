@@ -101,10 +101,7 @@
                                 <div class="flex justify-end">
                                     <x-dropdown align="right" width="56">
                                         <x-slot name="trigger">
-                                            <button type="button" title="{{ __('Actions') }}" aria-label="{{ __('Actions') }}"
-                                                    class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700 transition-all duration-300 hover:scale-105 hover:bg-slate-200 active:scale-95 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
-                                                <x-icon name="dots" class="h-5 w-5" />
-                                            </button>
+                                            <x-icon-button icon="more" title="{{ __('Actions') }}" />
                                         </x-slot>
                                         <x-slot name="content">
                                             <div class="py-1">

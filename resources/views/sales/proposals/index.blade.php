@@ -63,10 +63,7 @@
                     <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 {{ \App\Models\Proposal::statusBadgeClasses($proposal->status) }}">
                         {{ \App\Models\Proposal::statusLabel($proposal->status) }}
                     </span>
-                    <a href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                       class="h-10 w-10 inline-flex items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
-                    </a>
+                    <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" />
                 </div>
             @empty
                 <p class="text-slate-500 text-center py-8">{{ __('Belum ada proposal.') }}</p>

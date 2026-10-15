@@ -5,13 +5,7 @@
             <p class="text-slate-500 mt-1">{{ $partners->total() }} partner terdaftar &mdash; supplier, vendor, kontraktor, partner, dan distributor</p>
         </div>
         @can('manage-marketing')
-            <a href="{{ route('partners.create') }}"
-               class="px-5 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white font-medium transition inline-flex items-center gap-2 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-                </svg>
-                {{ __('Tambah Partner') }}
-            </a>
+            <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" title="{{ __('Tambah Partner') }}" />
         @endcan
     </div>
 
@@ -66,14 +60,8 @@
                 @endforeach
             </select>
             <div class="flex items-center gap-2">
-                <button type="submit"
-                        class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition">
-                    Filter
-                </button>
-                <a href="{{ route('partners.index') }}"
-                   class="px-4 py-2 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition">
-                    Reset
-                </a>
+                <x-icon-button icon="filter" type="submit" title="Filter" />
+                <x-icon-button as="a" icon="reset" href="{{ route('partners.index') }}" title="Reset" />
             </div>
         </form>
 

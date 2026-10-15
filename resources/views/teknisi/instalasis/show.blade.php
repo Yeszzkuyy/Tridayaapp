@@ -7,15 +7,9 @@
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-            <a href="{{ route('teknisi.instalasis.edit', $instalasi) }}"
-               class="px-5 py-2.5 rounded-xl bg-accent-100 hover:bg-accent-200 text-accent-700 font-medium transition">
-                Edit
-            </a>
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="Edit" />
             @endcan
-            <a href="{{ route('teknisi.instalasis.index') }}"
-               class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 font-medium transition">
-                {{ __('Kembali') }}
-            </a>
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.instalasis.index') }}" title="{{ __('Kembali') }}" />
         </div>
     </div>
 
