@@ -152,7 +152,7 @@
                         @error('po_file') <p class="text-red-500 text-xs w-full">{{ $message }}</p> @enderror
                     @endif
                     @if($proposal->project)
-                        <x-icon-button as="a" icon="view" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}" title="{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}" />
+                        <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}" title="{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}" />
                     @else
                         <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
                                        onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
