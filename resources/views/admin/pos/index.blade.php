@@ -5,7 +5,7 @@
             <p class="text-slate-500 mt-1">{{ __('Kelola purchase order untuk customer.') }}</p>
         </div>
         @can('manage-admin')
-            <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" label="{{ __('+ Buat PO') }}" title="{{ __('+ Buat PO') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" label="{{ __('Buat PO') }}" title="{{ __('Buat PO') }}" />
         @endcan
     </div>
 

@@ -36,7 +36,7 @@
                     <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Riwayat Pembayaran') }}</h3>
                     @can('manage-admin')
                         @if($invoice->status !== 'paid' && $invoice->status !== 'cancelled')
-                            <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $invoice->id]) }}" label="{{ __('+ Catat Pembayaran') }}" title="{{ __('+ Catat Pembayaran') }}" />
+                            <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $invoice->id]) }}" label="{{ __('Catat Pembayaran') }}" title="{{ __('Catat Pembayaran') }}" />
                         @endif
                     @endcan
                 </div>
