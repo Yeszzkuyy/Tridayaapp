@@ -127,7 +127,7 @@
                                                                    class="h-8 w-16 rounded-lg border-slate-300 bg-white text-center text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
                                                             <span class="text-xs text-slate-500 dark:text-slate-400">days</span>
                                                             <button type="submit"
-                                                                    class="group/btn relative inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500 transition-all duration-300 hover:scale-105 hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:bg-accent-500/15 dark:hover:text-accent-300">OK</button>
+                                                                    class="group/btn relative inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-all duration-300 hover:scale-105 hover:border-accent-500 hover:text-accent-600 hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:text-accent-300">OK</button>
                                                         </form>
                                                         <form action="{{ route('sales.follow-ups.snooze', $fu) }}" method="POST" class="flex items-center gap-2">
                                                             @csrf
@@ -135,7 +135,7 @@
                                                                    aria-label="{{ __('Reschedule') }}"
                                                                    class="h-8 min-w-0 flex-1 rounded-lg border-slate-300 bg-white text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
                                                             <button type="submit"
-                                                                    class="group/btn relative inline-flex h-8 shrink-0 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500 transition-all duration-300 hover:scale-105 hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:bg-accent-500/15 dark:hover:text-accent-300">OK</button>
+                                                                    class="group/btn relative inline-flex h-8 shrink-0 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-all duration-300 hover:scale-105 hover:border-accent-500 hover:text-accent-600 hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:text-accent-300">OK</button>
                                                         </form>
                                                     </div>
                                                 </div>
