@@ -58,26 +58,24 @@
             @endif
 
             <div class="flex flex-wrap gap-2 pt-2">
-                <a href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank"
-                   class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition">{{ __('Preview') }}</a>
+                <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
                 @if(in_array($proposal->status, ['draft', 'revision']))
-                    <a href="{{ route('sales.proposals.edit', $proposal) }}"
-                       class="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium transition">{{ __('Edit') }}</a>
+                    <x-icon-button as="a" icon="edit" href="{{ route('sales.proposals.edit', $proposal) }}" label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
                 @endif
                 @if($proposal->status === 'draft')
                     <form action="{{ route('sales.proposals.ready', $proposal) }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition">{{ __('Ready') }}</button>
+                        <x-icon-button type="submit" icon="sparkles" label="{{ __('Ready') }}" title="{{ __('Ready') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.submit-technical', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Serahkan draft ini ke tim teknis?') }}')">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-700 text-sm font-medium transition">{{ __('Ke Teknis') }}</button>
+                        <x-icon-button type="submit" icon="mail" label="{{ __('Ke Teknis') }}" title="{{ __('Ke Teknis') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.cancel', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Batalkan proposal ini?') }}')">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Cancel') }}</button>
+                        <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />
                     </form>
                 @endif
                 @if($proposal->status === 'pending_technical')
@@ -85,11 +83,11 @@
                     @canany(['manage-technician', 'manage-admin'])
                         <form action="{{ route('sales.proposals.complete-technical', $proposal) }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Selesai & Siapkan') }}</button>
+                            <x-icon-button type="submit" icon="sparkles" label="{{ __('Selesai & Siapkan') }}" title="{{ __('Selesai & Siapkan') }}" />
                         </form>
                         <form action="{{ route('sales.proposals.return-technical', $proposal) }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-sm font-medium transition">{{ __('Kembalikan') }}</button>
+                            <x-icon-button type="submit" icon="back" label="{{ __('Kembalikan') }}" title="{{ __('Kembalikan') }}" />
                         </form>
                     @endcanany
                 @endif
@@ -97,7 +95,7 @@
                     <form action="{{ route('sales.proposals.send', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Tandai proposal ini terkirim?') }}')">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Send') }}</button>
+                        <x-icon-button type="submit" icon="mail" label="{{ __('Send') }}" title="{{ __('Send') }}" />
                     </form>
                 @endif
                 @if(in_array($proposal->status, ['ready', 'sent', 'viewed']) && ($wa = $proposal->lead->customer?->whatsapp))
@@ -110,52 +108,54 @@
                             'until' => $proposal->valid_until?->format('d M Y') ?? '-',
                         ]);
                     @endphp
-                    <a href="https://wa.me/{{ $waNumber }}?text={{ urlencode($waText) }}" target="_blank" rel="noopener"
-                       class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Kirim via WhatsApp') }}</a>
+                    <x-icon-button as="a" href="https://wa.me/{{ $waNumber }}?text={{ urlencode($waText) }}" target="_blank" rel="noopener"
+                                   label="{{ __('Kirim via WhatsApp') }}" title="{{ __('Kirim via WhatsApp') }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
+                            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m5.83 14.12c-.25.7-1.45 1.33-2.02 1.42-.52.08-1.17.12-1.89-.12-.44-.15-1-.39-1.71-.75-3.03-1.39-5-4.63-5.15-4.84-.15-.21-1.23-1.64-1.23-3.13 0-1.49.78-2.22 1.06-2.52.28-.3.61-.38.81-.38l.58.01c.19.01.44-.07.69.53.25.61.86 2.11.94 2.26.08.15.13.33.03.53-.1.2-.15.33-.3.51l-.45.53c-.15.15-.31.31-.13.61.18.3.8 1.32 1.71 2.14 1.18 1.06 2.17 1.39 2.48 1.55.3.15.48.13.66-.08l1.1-1.28c.2-.26.42-.22.71-.13.3.09 1.9.9 2.23 1.06.38.2.53.44.5.65-.27.69-.52.98-.73 1.23"/>
+                        </svg>
+                    </x-icon-button>
                 @endif
                 @if($proposal->status === 'sent')
                     <form action="{{ route('sales.proposals.viewed', $proposal) }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition">{{ __('Viewed') }}</button>
+                        <x-icon-button type="submit" icon="view" label="{{ __('Viewed') }}" title="{{ __('Viewed') }}" />
                     </form>
                 @endif
                 @if(in_array($proposal->status, ['sent', 'viewed']))
                     <form action="{{ route('sales.proposals.revise', $proposal) }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium transition">{{ __('Revision') }}</button>
+                        <x-icon-button type="submit" icon="edit" label="{{ __('Revision') }}" title="{{ __('Revision') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Tandai proposal ini diterima customer?') }}')">
                         @csrf
                         <input type="hidden" name="decision" value="accepted">
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Accept') }}</button>
+                        <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Tandai proposal ini ditolak customer?') }}')">
                         @csrf
                         <input type="hidden" name="decision" value="rejected">
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium transition">{{ __('Reject') }}</button>
+                        <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
                     </form>
                 @endif
                 @if($proposal->status === 'accepted')
                     @if($proposal->po_document_path)
-                        <a href="{{ route('sales.proposals.download-po', $proposal) }}"
-                           class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition">{{ __('Unduh PO') }}</a>
+                        <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Unduh PO') }}" title="{{ __('Unduh PO') }}" />
                     @else
                         <form action="{{ route('sales.proposals.upload-po', $proposal) }}" method="POST" enctype="multipart/form-data" class="inline-flex items-center gap-2">
                             @csrf
                             <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                                    class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition">{{ __('Upload PO') }}</button>
+                            <x-icon-button type="submit" icon="upload" label="{{ __('Upload PO') }}" title="{{ __('Upload PO') }}" />
                         </form>
                         @error('po_file') <p class="text-red-500 text-xs w-full">{{ $message }}</p> @enderror
                     @endif
                     @if($proposal->project)
-                        <a href="{{ route('projects.show', $proposal->project) }}"
-                           class="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium transition">{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}</a>
+                        <x-icon-button as="a" icon="view" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}" title="{{ __('Lihat Project') }}: {{ $proposal->project->project_name }}" />
                     @else
-                        <button type="button" onclick="document.getElementById('convert-modal').classList.remove('hidden')"
-                                class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition">{{ __('Convert to Project') }}</button>
+                        <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
+                                       onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
                     @endif
                 @endif
             </div>
@@ -184,8 +184,7 @@
                             <div class="flex justify-end gap-2 pt-2">
                                 <button type="button" onclick="document.getElementById('convert-modal').classList.add('hidden')"
                                         class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200 text-sm font-medium transition">{{ __('Cancel') }}</button>
-                                <button type="submit"
-                                        class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-sm font-medium transition">{{ __('Convert to Project') }}</button>
+                                <x-icon-button type="submit" icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}" />
                             </div>
                         </form>
                     </div>
