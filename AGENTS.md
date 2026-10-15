@@ -128,7 +128,8 @@ terlihat) — jangan tulis ulang, cukup `as`/`icon`/`title` (`href` bila link,
 ```
 
 Ikon bawaan komponen: `filter reset leads add import back sparkles view edit
-delete search download upload print mail more` — ikon lain pakai slot SVG sendiri.
+customer project delete search download upload print mail whatsapp more` —
+ikon lain pakai slot SVG sendiri.
 
 Aksi baris tabel (view/edit/delete/WA) juga icon-only: `<x-icon-button>` +
 `title` (contoh: `title="View details"`). Dilarang tombol teks
