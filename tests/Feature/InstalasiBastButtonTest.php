@@ -74,11 +74,13 @@ class InstalasiBastButtonTest extends TestCase
         $this->assertStringContainsString('Create BAST Document', $html);
         foreach (self::TEMPLATES as $company => $url) {
             $this->assertStringContainsString($url, $html);
-            $this->assertStringContainsString('>'.$company.'</a>', $html);
+            $this->assertStringContainsString('>'.$company.'</span>', $html);
         }
         // Selalu dibuka di tab baru supaya halaman website tetap terbuka.
         $this->assertStringContainsString('target="_blank"', $html);
         $this->assertStringContainsString('rel="noopener"', $html);
+        // Item pilihan punya animasi hover halus (slide + panah fade-in).
+        $this->assertStringContainsString('group-hover/bast-item', $html);
     }
 
     public function test_show_page_shows_bast_dropdown_with_four_company_templates(): void
@@ -92,7 +94,7 @@ class InstalasiBastButtonTest extends TestCase
         $this->assertStringContainsString('Create BAST Document', $html);
         foreach (self::TEMPLATES as $company => $url) {
             $this->assertStringContainsString($url, $html);
-            $this->assertStringContainsString('>'.$company.'</a>', $html);
+            $this->assertStringContainsString('>'.$company.'</span>', $html);
         }
     }
 
@@ -103,10 +105,10 @@ class InstalasiBastButtonTest extends TestCase
 
         $html = $this->actingAs($technician)->get(route('teknisi.instalasis.index'))->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('>TPS</a>', $html);
-        $this->assertStringContainsString('>MGK</a>', $html);
-        $this->assertStringContainsString('>NTI</a>', $html);
-        $this->assertStringContainsString('>WANI</a>', $html);
+        $this->assertStringNotContainsString('>TPS</span>', $html);
+        $this->assertStringContainsString('>MGK</span>', $html);
+        $this->assertStringContainsString('>NTI</span>', $html);
+        $this->assertStringContainsString('>WANI</span>', $html);
     }
 
     public function test_button_hidden_when_all_templates_empty(): void
