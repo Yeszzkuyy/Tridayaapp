@@ -83,8 +83,8 @@ saat hover** (acuan: komponen `x-icon-button`). Peta aksi:
 |---|---|
 | Simpan / Submit utama (Save) | `rounded-xl bg-accent-600 hover:bg-accent-500 text-white px-6 py-2.5` + shine + scale (lihat efek standar di bawah) |
 | Batal (Cancel, di form/modal) | `rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-4 py-2.5` + shine + scale |
-| Semua aksi lain (filter/reset/back/add/view/edit/...) | `<x-icon-button>` — idle `rounded-lg border border-slate-200 bg-white text-slate-500`, hover `hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700` + scale + shine |
-| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih juga, hover merah `hover:border-red-500 hover:bg-red-50 hover:text-red-600` |
+| Semua aksi lain (filter/reset/back/add/view/edit/...) | `<x-icon-button>` — idle `rounded-lg border border-slate-200 bg-white text-slate-600`, hover **background tetap putih solid** + ikon/border berubah ke theme `hover:border-accent-500 hover:text-accent-600` + scale + shine |
+| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih, hover ikon & border merah `hover:border-red-500 hover:text-red-600` (background tetap putih) |
 | Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover `hover:border-red-500 hover:bg-red-50` + shine |
 
 Varian dark mode sudah otomatis di komponen (`dark:bg-slate-800`,
