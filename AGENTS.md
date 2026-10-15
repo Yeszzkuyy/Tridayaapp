@@ -87,16 +87,22 @@ saat hover** (acuan: komponen `x-icon-button`). Peta aksi:
 | Hapus / destructive | `<x-icon-button icon="delete">` — idle putih + ikon merah, hover background merah solid + ikon putih |
 | Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover background merah solid + teks putih + shine |
 
-**Warna per aksi** (biar tombol berjajar tidak monoton) — otomatis dari `icon=`
-di `x-icon-button`:
+**Warna per ikon** (tiap ikon punya identitas warna sendiri — biar tombol
+berjajar tidak menyatu/monoton) — otomatis dari `icon=` di `x-icon-button`:
 
 | Ikon | Idle | Hover |
 |---|---|---|
 | `view` | ikon indigo-600 | bg indigo-600 + ikon putih |
+| `customer` | ikon sky-600 | bg sky-600 + ikon putih |
+| `project` | ikon violet-600 | bg violet-600 + ikon putih |
 | `edit` | ikon amber-600 | bg amber-600 + ikon putih |
 | `delete` | ikon red-600 | bg red-600 + ikon putih |
 | `add`, `sparkles` (positif) | ikon green-600 | bg green-600 + ikon putih |
-| lainnya (filter/reset/back/search/download/mail/...) | ikon accent theme | bg accent + ikon putih |
+| `whatsapp` | ikon emerald-600 | bg emerald-600 + ikon putih |
+| `mail` | ikon cyan-600 | bg cyan-600 + ikon putih |
+| `download`, `upload`, `import`, `print` | ikon teal-600 | bg teal-600 + ikon putih |
+| `reset`, `more` | ikon slate-500 | bg slate-600 + ikon putih |
+| lainnya (filter/back/search/...) | ikon accent theme | bg accent + ikon putih |
 
 Varian dark mode sudah otomatis di komponen (`dark:bg-slate-800`,
 `dark:border-slate-700`, hover warna solid) — jangan tulis ulang di
