@@ -36,6 +36,33 @@ class Lead extends Model
     }
 
     /**
+     * Ringkas kolom `kebutuhan` untuk label dropdown: rata jadi satu baris,
+     * dipotong di batas $limit karakter. Kosong → string kosong.
+     */
+    public static function kebutuhanLabel(?string $kebutuhan, int $limit = 50): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', (string) $kebutuhan));
+        if ($text === '') {
+            return '';
+        }
+
+        return mb_strlen($text) > $limit ? mb_substr($text, 0, $limit).'…' : $text;
+    }
+
+    /**
+     * Label dropdown lead (form follow-up & modal jadwal):
+     * "Lead #id — status — kebutuhan — tgl masuk" (bagian kosong dilewati).
+     */
+    public static function salesDropdownLabel(Lead $lead): string
+    {
+        $need = self::kebutuhanLabel($lead->kebutuhan);
+
+        return "Lead #{$lead->id} — ".self::salesStatusLabel($lead->status)
+            .($need !== '' ? ' — '.$need : '')
+            .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : '');
+    }
+
+    /**
      * Kelas warna badge status (sama dengan hero detail lead):
      * cool/New biru, warm kuning, hot oranye, won hijau, lost merah.
      */
