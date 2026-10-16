@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">Account Manager</h1>
                 <p class="text-slate-500 mt-1">{{ __('Kelola data Account Manager') }}</p>
             </div>
-            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.account-managers.create') }}" label="{{ __('+ Tambah Account Manager') }}" title="{{ __('+ Tambah Account Manager') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.account-managers.create') }}" label="{{ __('Tambah Account Manager') }}" title="{{ __('Tambah Account Manager') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">

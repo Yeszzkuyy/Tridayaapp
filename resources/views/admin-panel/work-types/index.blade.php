@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">Work Type</h1>
                 <p class="text-slate-500 mt-1">{{ __('Kelola data jenis pekerjaan') }}</p>
             </div>
-            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.work-types.create') }}" label="{{ __('+ Tambah Work Type') }}" title="{{ __('+ Tambah Work Type') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.work-types.create') }}" label="{{ __('Tambah Work Type') }}" title="{{ __('Tambah Work Type') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">

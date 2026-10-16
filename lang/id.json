@@ -197,6 +197,10 @@
     "Replace": "Ganti",
     "Upload": "Unggah",
     "Create": "Buat",
+    "Create BAST Document": "Buat Dokumen BAST",
+    "Choose company template": "Pilih template perusahaan",
+    "Upload Installation Report File": "Upload File Laporan Instalasi",
+    "PDF or DOC, max 5 MB.": "PDF atau DOC, maks 5 MB.",
     "Pending Technical": "Pending Teknis",
     "Won": "Won",
     "Product": "Produk",
@@ -209,5 +213,10 @@
     "Won This Month": "Won Bulan Ini",
     "Upload PO": "Unggah PO",
     "Deactivate": "Nonaktifkan",
-    "Expiring": "Kedaluwarsa"
+    "Expiring": "Kedaluwarsa",
+    "Choose technicians (optional)": "Pilih teknisi (boleh lebih dari satu)",
+    "Search technician...": "Cari teknisi...",
+    "No results.": "Tidak ada hasil.",
+    "You do not have permission to edit this schedule.": "Kamu tidak punya izin mengubah jadwal ini.",
+    "Session expired. Reload the page and try again.": "Sesi sudah berakhir. Muat ulang halaman lalu coba lagi."
 }

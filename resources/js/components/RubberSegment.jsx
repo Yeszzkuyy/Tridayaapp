@@ -80,6 +80,7 @@ export default function RubberSegment({
   const handoff = useRef(0);
   const drag = useRef(null);
   const gen = useRef(0);
+  const flying = useRef(null);
 
   const edgeL = useMotionValue(0);
   const edgeR = useMotionValue(0);
@@ -95,6 +96,7 @@ export default function RubberSegment({
     const s = slots.current[i];
     if (!s) return;
     clearTimeout(handoff.current);
+    flying.current = null;
     gen.current += 1;
     edgeL.jump(s.l);
     edgeR.jump(s.r);
@@ -151,6 +153,7 @@ export default function RubberSegment({
   const land = (to, v, flick, withSquash) => {
     const b = slots.current[to];
     if (!b) return;
+    flying.current = null;
     const g = ++gen.current;
     const dir = Math.sign((b.l + b.r) / 2 - (edgeL.get() + edgeR.get()) / 2) || 1;
     const [lead, leadTo, trail, trailTo] = dir > 0 ? [edgeR, b.r, edgeL, b.l] : [edgeL, b.l, edgeR, b.r];
@@ -174,7 +177,12 @@ export default function RubberSegment({
     const a = slots.current[from];
     const b = slots.current[to];
     if (!a || !b) return;
+    // Sudah dalam perjalanan ke tujuan yang sama: biarkan handoff yang ada
+    // meneruskan — jangan mulai fase melar + timer baru (saling potong saat
+    // diklik cepat, thumb bisa tertinggal membeku membentang 2 segmen).
+    if (flying.current === to && handoff.current) return;
     clearTimeout(handoff.current);
+    flying.current = to;
     gen.current += 1;
     if (reduce) {
       edgeL.jump(b.l);
@@ -260,6 +268,11 @@ export default function RubberSegment({
         const from = committed.current;
         commit(d.slot);
         travel(from, d.slot);
+      } else {
+        // Tap tidak menghasilkan perpindahan (mis. klik cepat mendarat di
+        // thumb yang sedang melar / slot yang sama): pastikan thumb mendarat
+        // ke slot aktif — jangan dibiarkan membeku di tengah jalan.
+        land(committed.current, null, false, false);
       }
       return;
     }
@@ -276,7 +289,11 @@ export default function RubberSegment({
     const d = drag.current;
     if (!d || e.pointerId !== d.id) return;
     release();
-    if (!d.live) return;
+    if (!d.live) {
+      // Tap yang dibatalkan saat thumb masih melar: settle ke slot aktif.
+      land(committed.current, null, false, false);
+      return;
+    }
     if (reduce) jumpTo(committed.current);
     else land(committed.current, null, false, false);
   };

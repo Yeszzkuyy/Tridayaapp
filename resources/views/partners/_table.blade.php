@@ -94,7 +94,7 @@
                                 </p>
                                 @can('manage-marketing')
                                     <div class="mt-4 flex justify-center">
-                                        <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" label="{{ __('+ Tambah Partner Pertama') }}" title="{{ __('+ Tambah Partner Pertama') }}" />
+                                        <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" label="{{ __('Tambah Partner Pertama') }}" title="{{ __('Tambah Partner Pertama') }}" />
                                     </div>
                                 @endcan
                             </td>

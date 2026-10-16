@@ -5,9 +5,12 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Daftar Instalasi') }}</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Kelola jadwal dan progress instalasi') }}</p>
         </div>
-        @can('manage-technician')
-        <x-icon-button as="a" icon="add" href="{{ route('teknisi.instalasis.create') }}" label="{{ __('+ Tambah Instalasi') }}" title="{{ __('+ Tambah Instalasi') }}" />
-        @endcan
+        <div class="flex items-center gap-2">
+            @include('teknisi.instalasis._bast-dropdown')
+            @can('manage-technician')
+            <x-icon-button as="a" icon="add" href="{{ route('teknisi.instalasis.create') }}" label="{{ __('Tambah Instalasi') }}" title="{{ __('Tambah Instalasi') }}" />
+            @endcan
+        </div>
     </div>
 
     {{-- Filter --}}

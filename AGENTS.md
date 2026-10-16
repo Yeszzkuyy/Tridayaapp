@@ -19,6 +19,7 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
 | `/var/www/3dyapp-ai` | `feature/ai-assistant` | AI Assistant (floating chatbot) |
+| `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
@@ -81,23 +82,42 @@ saat hover** (acuan: komponen `x-icon-button`). Peta aksi:
 
 | Aksi | Pola standar |
 |---|---|
-| Simpan / Submit utama (Save) | `rounded-xl bg-accent-600 hover:bg-accent-500 text-white px-6 py-2.5` + shine + scale (lihat efek standar di bawah) |
-| Batal (Cancel, di form/modal) | `rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-4 py-2.5` + shine + scale |
-| Semua aksi lain (filter/reset/back/add/view/edit/...) | `<x-icon-button>` — idle `rounded-lg border border-slate-200 bg-white text-slate-600`, hover **background tetap putih solid** + ikon/border berubah ke theme `hover:border-accent-500 hover:text-accent-600` + scale + shine |
-| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih, hover ikon & border merah `hover:border-red-500 hover:text-red-600` (background tetap putih) |
-| Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover `hover:border-red-500 hover:bg-red-50` + shine |
+| Simpan / Submit utama (Save) | `group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 text-sm font-medium` + shine + `hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110` (acuan persis: `customers/create.blade.php`) |
+| Batal (Cancel, di form/modal) | pola sama, `bg-accent-500 hover:bg-accent-600` + `text-center` |
+| Aksi (view/edit/delete/add/filter/back/...) | `<x-icon-button>` — idle putih + border + **ikon berwarna per aksi**, hover fill warna aksi + ikon putih + shine + scale |
+| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih + ikon merah, hover background merah solid + ikon putih |
+| Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover background merah solid + teks putih + shine |
+
+**Warna per ikon** (tiap ikon punya identitas warna sendiri — biar tombol
+berjajar tidak menyatu/monoton) — otomatis dari `icon=` di `x-icon-button`:
+
+| Ikon | Idle | Hover |
+|---|---|---|
+| `view` | ikon indigo-600 | bg indigo-600 + ikon putih |
+| `customer` | ikon sky-600 | bg sky-600 + ikon putih |
+| `project` | ikon violet-600 | bg violet-600 + ikon putih |
+| `edit` | ikon amber-600 | bg amber-600 + ikon putih |
+| `delete` | ikon red-600 | bg red-600 + ikon putih |
+| `add`, `sparkles` (positif) | ikon green-600 | bg green-600 + ikon putih |
+| `whatsapp` | ikon emerald-600 | bg emerald-600 + ikon putih |
+| `mail` | ikon cyan-600 | bg cyan-600 + ikon putih |
+| `download`, `upload`, `import`, `print` | ikon teal-600 | bg teal-600 + ikon putih |
+| `reset`, `more` | ikon slate-500 | bg slate-600 + ikon putih |
+| lainnya (filter/back/search/...) | ikon accent theme | bg accent + ikon putih |
 
 Varian dark mode sudah otomatis di komponen (`dark:bg-slate-800`,
-`dark:border-slate-700`, hover berwarna) — jangan tulis ulang di view.
+`dark:border-slate-700`, hover warna solid) — jangan tulis ulang di
+view. **Semua warna tombol wajib solid** — dilarang warna transparan
+(`/15`, `/25`, `bg-white/50`) di light maupun dark mode.
 Tooltip pill gelap hanya muncul bila prop `tooltip` diisi eksplisit
 (tanpa itu cukup `title` bawaan browser — jangan pasang tooltip di semua
 tombol baris tabel, nanti menyala bareng saat satu tombol di-hover).
 
 Efek standar tombol teks (Save/Cancel/konfirmasi): `group relative overflow-hidden` + span shine
 (`pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r
-from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out
-group-hover:translate-x-full`) + `transition-all duration-300 hover:scale-105
-hover:shadow-lg active:scale-95` (Save tambah `hover:shadow-accent-500/40 hover:brightness-110`).
+from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out
+group-hover:translate-x-full`) + `transition-all duration-300 hover:shadow-xl
+hover:shadow-accent-500/50 hover:brightness-110 active:scale-95`.
 
 **Bentuk tombol (wajib):** hanya **Save** (submit utama) dan **Cancel**
 (batal di form) yang boleh berupa tombol teks. Semua aksi lain **wajib
@@ -115,7 +135,8 @@ terlihat) — jangan tulis ulang, cukup `as`/`icon`/`title` (`href` bila link,
 ```
 
 Ikon bawaan komponen: `filter reset leads add import back sparkles view edit
-delete search download upload print mail more` — ikon lain pakai slot SVG sendiri.
+customer project delete search download upload print mail whatsapp more` —
+ikon lain pakai slot SVG sendiri.
 
 Aksi baris tabel (view/edit/delete/WA) juga icon-only: `<x-icon-button>` +
 `title` (contoh: `title="View details"`). Dilarang tombol teks

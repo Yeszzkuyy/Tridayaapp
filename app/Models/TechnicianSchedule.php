@@ -63,6 +63,29 @@ class TechnicianSchedule extends Model
         return $this->belongsTo(User::class, 'technician_user_id');
     }
 
+    /**
+     * Semua teknisi yang menangani jadwal ini (bisa lebih dari satu).
+     */
+    public function technicians()
+    {
+        return $this->belongsToMany(User::class, 'technician_schedule_user', 'technician_schedule_id', 'user_id');
+    }
+
+    /**
+     * Daftar teknisi yang bertugas — pivot utama, fallback kolom lama
+     * (jadwal lama yang belum tersentuh pivot tetap tampil).
+     *
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    public function technicianList()
+    {
+        if ($this->technicians->isNotEmpty()) {
+            return $this->technicians;
+        }
+
+        return $this->technician ? collect([$this->technician]) : collect();
+    }
+
     public function scopeBetween($query, $start, $end)
     {
         return $query->where('start_at', '<', $end)->where('end_at', '>', $start);

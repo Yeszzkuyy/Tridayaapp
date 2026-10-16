@@ -16,7 +16,7 @@
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Request Harga') }}</h1>
                 <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Permintaan harga perangkat untuk project') }}</p>
             </div>
-            <x-icon-button as="a" icon="add" href="{{ route('teknisi.request-hargas.create') }}" label="{{ __('+ Buat Request Harga') }}" title="{{ __('+ Buat Request Harga') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('teknisi.request-hargas.create') }}" label="{{ __('Buat Request Harga') }}" title="{{ __('Buat Request Harga') }}" />
         </div>
 
         {{-- Filter --}}
