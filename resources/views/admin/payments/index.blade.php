@@ -5,7 +5,7 @@
             <p class="text-slate-500 mt-1">{{ __('Kelola pembayaran dari invoice.') }}</p>
         </div>
         @can('manage-admin')
-            <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('+ Catat Pembayaran') }}" title="{{ __('+ Catat Pembayaran') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Catat Pembayaran') }}" title="{{ __('Catat Pembayaran') }}" />
         @endcan
     </div>
 

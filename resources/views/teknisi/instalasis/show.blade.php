@@ -6,6 +6,7 @@
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $instalasi->project?->project_name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
+            @include('teknisi.instalasis._bast-dropdown')
             @can('manage-technician')
             <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="Edit" />
             @endcan
@@ -57,17 +58,19 @@
             </div>
         </div>
 
-        @if($instalasi->installation_report)
+        @if($instalasi->hasReport())
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <p class="text-xs text-slate-400 mb-2">{{ __('Laporan Instalasi') }}</p>
+                <div class="flex items-center gap-2">
+                    <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View') }}" label="{{ __('View') }}" />
+                    <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" label="{{ __('Download') }}" />
+                    <span class="text-sm text-slate-600 dark:text-slate-300 truncate">{{ $instalasi->report_file_name }}</span>
+                </div>
+            </div>
+        @elseif($instalasi->installation_report)
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <p class="text-xs text-slate-400 mb-1">{{ __('Laporan Instalasi') }}</p>
                 <p class="text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $instalasi->installation_report }}</p>
-            </div>
-        @endif
-
-        @if($instalasi->notes)
-            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p class="text-xs text-slate-400 mb-1">{{ __('Catatan') }}</p>
-                <p class="text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $instalasi->notes }}</p>
             </div>
         @endif
 

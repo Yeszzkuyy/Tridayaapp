@@ -24,9 +24,11 @@
         "@fullcalendar/interaction": "^6.1.21",
         "@fullcalendar/timegrid": "^6.1.21",
         "dompurify": "^3.4.15",
+        "laravel-echo": "^2.3.0",
         "marked": "^18.0.11",
         "motion": "^13.4.2",
         "ogl": "^1.0.11",
+        "pusher-js": "^8.5.0",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
         "sortablejs": "^1.15.7"

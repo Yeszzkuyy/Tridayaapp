@@ -8,7 +8,7 @@
             <div class="flex gap-2">
                 <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
                                label="Download" title="Download" />
-                <x-icon-button as="a" icon="back" href="{{ route('project-documents.index', $document->project) }}" title="← Kembali" />
+                <x-icon-button as="a" icon="back" href="{{ route('project-documents.index', $document->project) }}" title="Kembali" />
             </div>
         </div>
 

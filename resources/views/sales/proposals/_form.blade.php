@@ -18,7 +18,7 @@
     <div>
         <div class="flex items-center justify-between mb-2">
             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} <span class="text-red-500">*</span></label>
-            <x-icon-button icon="add" label="{{ __('+ Item') }}" title="{{ __('+ Item') }}" type="button" onclick="proposalAddRow()" />
+            <x-icon-button icon="add" label="{{ __('Item') }}" title="{{ __('Item') }}" type="button" onclick="proposalAddRow()" />
         </div>
         <div class="relative mb-2">
             <input type="text" id="proposal-catalog-search" autocomplete="off" placeholder="{{ __('Cari di katalog...') }}"

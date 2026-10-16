@@ -184,90 +184,13 @@ document.addEventListener('alpine:init', () => {
         },
     });
     Alpine.store('appearance').init();
+    // Notification Center (bell + feed) dirender React island:
+    // resources/js/components/NotificationCenter.jsx. Store Alpine ini
+    // tinggal jembatan angka untuk dot sidebar — island yang meng-update.
     Alpine.store('notif', {
-        unread: window.notifInit?.unread ?? 0,
-        unassigned: window.notifInit?.unassigned ?? 0,
-        items: window.notifInit?.items ?? [],
-        toast: false,
-        toastTimer: null,
-        init() {
-            if (window.notifInit === undefined) return;
-            if (this.timer) clearInterval(this.timer);
-            this.sessionExpired = false;
-            this.refresh();
-            this.timer = setInterval(() => this.refresh(), 15000);
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && !this.sessionExpired) this.refresh();
-            });
-            window.addEventListener('focus', () => {
-                if (!this.sessionExpired) this.refresh();
-            });
-        },
-        async refresh() {
-            if (window.notifInit === undefined || this.sessionExpired || document.hidden) return;
-            try {
-                const res = await fetch('/notifications/status', {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                });
-                if (res.status === 401) {
-                    this.sessionExpired = true;
-                    if (this.timer) {
-                        clearInterval(this.timer);
-                        this.timer = null;
-                    }
-                    if (!document.hidden) {
-                        window.toast('Sesi berakhir, silakan login ulang.', false, {
-                            label: 'Login ulang',
-                            href: '/login',
-                        });
-                    }
-                    return;
-                }
-                const contentType = res.headers.get('content-type') || '';
-                if (!res.ok || !contentType.includes('application/json')) return;
-                const data = await res.json();
-                if (typeof data?.unread !== 'number') return;
-                if (data.unread > this.unread) this.showToast();
-                this.unread = data.unread;
-                this.unassigned = data.unassigned;
-                this.items = data.items ?? [];
-            } catch (e) {}
-        },
-        async markRead(id) {
-            const token = document.querySelector('meta[name="csrf-token"]')?.content;
-            const item = this.items.find((n) => n.id === id);
-            if (item) item.read = true;
-            try {
-                const res = await fetch(`/notifications/${id}/read`, {
-                    method: 'POST',
-                    keepalive: true,
-                    headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                });
-                const data = await res.json();
-                if (typeof data.unread === 'number') this.unread = data.unread;
-            } catch (e) {}
-        },
-        async remove(id) {
-            const token = document.querySelector('meta[name="csrf-token"]')?.content;
-            const item = this.items.find((n) => n.id === id);
-            this.items = this.items.filter((n) => n.id !== id);
-            if (item && !item.read) this.unread = Math.max(0, this.unread - 1);
-            try {
-                const res = await fetch(`/notifications/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                });
-                const data = await res.json();
-                if (typeof data.unread === 'number') this.unread = data.unread;
-            } catch (e) {}
-        },
-        showToast() {
-            this.toast = true;
-            clearTimeout(this.toastTimer);
-            this.toastTimer = setTimeout(() => (this.toast = false), 8000);
-        },
+        unread: window.notifCenter?.initial?.unread ?? 0,
+        unassigned: window.notifCenter?.initial?.unassigned ?? 0,
     });
-    Alpine.store('notif').init();
 
     Alpine.data('counter', (target, duration = 900) => ({
         display: 0,
