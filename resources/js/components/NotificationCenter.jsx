@@ -294,11 +294,22 @@ export default function NotificationCenter() {
         const top = rect.bottom + PANEL_GAP;
         const spaceBelow = vh - top - VIEWPORT_PAD;
 
-        setPanelPos({
-            left: Math.min(Math.max(VIEWPORT_PAD, rect.left + rect.width / 2 - width / 2), vw - width - VIEWPORT_PAD),
-            top,
-            width,
-            maxHeight: Math.max(240, Math.min(spaceBelow, Math.round(vh * 0.7), 512)),
+        setPanelPos((previous) => {
+            const next = {
+                left: Math.min(Math.max(VIEWPORT_PAD, rect.left + rect.width / 2 - width / 2), vw - width - VIEWPORT_PAD),
+                top,
+                width,
+                maxHeight: Math.max(240, Math.min(spaceBelow, Math.round(vh * 0.7), 512)),
+            };
+
+            const unchanged =
+                previous &&
+                previous.left === next.left &&
+                previous.top === next.top &&
+                previous.width === next.width &&
+                previous.maxHeight === next.maxHeight;
+
+            return unchanged ? previous : next;
         });
     }, []);
 
