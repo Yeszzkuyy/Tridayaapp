@@ -14,7 +14,7 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Project <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Project') }} <span class="text-red-500">*</span></label>
                     <select name="project_id" required class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
                         <option value="">{{ __('Pilih Project') }}</option>
                         @foreach($projects as $project)
@@ -46,17 +46,17 @@
                         @error('schedule_date') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Job Status</label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Job Status') }}</label>
                         <input type="text" name="job_status" value="{{ old('job_status') }}" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
                         @error('job_status') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Status') }} <span class="text-red-500">*</span></label>
                     <select name="status" required class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
                         <option value="">{{ __('Pilih Status') }}</option>
-                        @foreach(['scheduled' => 'Scheduled', 'on_progress' => 'On Progress', 'waiting' => 'Waiting', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $val => $lbl)
+                        @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Completed'), 'cancelled' => __('Cancelled')] as $val => $lbl)
                             <option value="{{ $val }}" {{ old('status') === $val ? 'selected' : '' }}>{{ $lbl }}</option>
                         @endforeach
                     </select>

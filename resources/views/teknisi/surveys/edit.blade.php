@@ -68,7 +68,7 @@
 
                 {{-- Sales Request --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Sales Request</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Sales Request') }}</label>
                     <textarea name="sales_request" rows="3"
                               class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">{{ old('sales_request', $survey->sales_request) }}</textarea>
                     @error('sales_request') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -85,13 +85,13 @@
 
                     {{-- Status --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Status <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Status') }} <span class="text-red-500">*</span></label>
                         <select name="status" required
                                 class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                            <option value="draft" {{ old('status', $survey->status) === 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="scheduled" {{ old('status', $survey->status) === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
-                            <option value="on_survey" {{ old('status', $survey->status) === 'on_survey' ? 'selected' : '' }}>On Survey</option>
-                            <option value="completed" {{ old('status', $survey->status) === 'completed' ? 'selected' : '' }}>Completed</option>
+                            <option value="draft" {{ old('status', $survey->status) === 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
+                            <option value="scheduled" {{ old('status', $survey->status) === 'scheduled' ? 'selected' : '' }}>{{ __('Scheduled') }}</option>
+                            <option value="on_survey" {{ old('status', $survey->status) === 'on_survey' ? 'selected' : '' }}>{{ __('On Survey') }}</option>
+                            <option value="completed" {{ old('status', $survey->status) === 'completed' ? 'selected' : '' }}>{{ __('Completed') }}</option>
                         </select>
                         @error('status') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>

@@ -1,10 +1,10 @@
 <x-app-layout>
 @php
     $statuses = [
-        'draft' => 'Draft',
-        'in_progress' => 'In Progress',
-        'waiting_approval' => 'Waiting Approval',
-        'completed' => 'Completed',
+        'draft' => __('Draft'),
+        'in_progress' => __('In Progress'),
+        'waiting_approval' => __('Waiting Approval'),
+        'completed' => __('Completed'),
     ];
 @endphp
 
@@ -33,7 +33,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <label for="project_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Project <span class="text-red-500">*</span></label>
+                    <label for="project_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Project') }} <span class="text-red-500">*</span></label>
                     <select name="project_id" id="project_id" required
                             class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
                         <option value="">{{ __('— Pilih Project —') }}</option>
@@ -48,14 +48,14 @@
                 </div>
 
                 <div>
-                    <label for="sales_pic" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sales PIC</label>
+                    <label for="sales_pic" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Sales PIC') }}</label>
                     <input type="text" name="sales_pic" id="sales_pic" value="{{ old('sales_pic') }}" maxlength="255"
                            class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
                 </div>
             </div>
 
             <div>
-                <label for="customer_needs" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Customer Needs</label>
+                <label for="customer_needs" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Customer Needs') }}</label>
                 <textarea name="customer_needs" id="customer_needs" rows="3"
                           class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">{{ old('customer_needs') }}</textarea>
             </div>
@@ -74,13 +74,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <label for="quantity" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity</label>
+                    <label for="quantity" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quantity') }}</label>
                     <input type="number" name="quantity" id="quantity" value="{{ old('quantity') }}" min="0"
                            class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
                 </div>
 
                 <div>
-                    <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
+                    <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Status') }}</label>
                     <select name="status" id="status" required
                             class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
                         @foreach ($statuses as $value => $label)
@@ -103,7 +103,7 @@
             </div>
 
             <div>
-                <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
+                <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes') }}</label>
                 <textarea name="notes" id="notes" rows="2"
                           class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">{{ old('notes') }}</textarea>
             </div>

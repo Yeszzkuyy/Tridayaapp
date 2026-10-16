@@ -8,7 +8,7 @@
         <div class="flex gap-2">
             @include('teknisi.instalasis._bast-dropdown')
             @can('manage-technician')
-            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="Edit" />
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="{{ __('Edit') }}" />
             @endcan
             <x-icon-button as="a" icon="back" href="{{ route('teknisi.instalasis.index') }}" title="{{ __('Kembali') }}" />
         </div>
@@ -27,15 +27,15 @@
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-                <p class="text-xs text-slate-400">Project</p>
+                <p class="text-xs text-slate-400">{{ __('Project') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->project?->project_name ?? '-' }}</p>
             </div>
             <div>
-                <p class="text-xs text-slate-400">Customer</p>
+                <p class="text-xs text-slate-400">{{ __('Customer') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->project?->customer?->name ?? '-' }}</p>
             </div>
             <div>
-                <p class="text-xs text-slate-400">Status</p>
+                <p class="text-xs text-slate-400">{{ __('Status') }}</p>
                 <x-status-badge :color="$statusColors[$instalasi->status] ?? 'slate'">
                     {{ str($instalasi->status ?? '-')->replace('_', ' ')->title() }}
                 </x-status-badge>
@@ -53,7 +53,7 @@
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->schedule_date?->format('d M Y') ?? '-' }}</p>
             </div>
             <div>
-                <p class="text-xs text-slate-400">Job Status</p>
+                <p class="text-xs text-slate-400">{{ __('Job Status') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->job_status ?? '-' }}</p>
             </div>
         </div>
@@ -76,7 +76,7 @@
 
         @if($instalasi->checklist && count($instalasi->checklist))
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p class="text-xs text-slate-400 mb-2">Checklist</p>
+                <p class="text-xs text-slate-400 mb-2">{{ __('Checklist') }}</p>
                 <ul class="space-y-1">
                     @foreach($instalasi->checklist as $item)
                         <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">

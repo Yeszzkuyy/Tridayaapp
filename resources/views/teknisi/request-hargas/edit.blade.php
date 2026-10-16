@@ -37,7 +37,7 @@
 
             {{-- Project --}}
             <div>
-                <label for="project_id" class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Project</label>
+                <label for="project_id" class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">{{ __('Project') }}</label>
                 <select id="project_id" name="project_id" required
                         class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                     <option value="">{{ __('Pilih Project') }}</option>
@@ -56,7 +56,7 @@
             {{-- Items --}}
             <div>
                 <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Items</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Items') }}</label>
                     <x-icon-button icon="add" label="{{ __('Tambah Item') }}" title="{{ __('Tambah Item') }}" @click="addItem()" />
                 </div>
 
@@ -64,13 +64,13 @@
                     <template x-for="(item, index) in items" :key="index">
                         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
                             <div class="sm:col-span-5">
-                                <label class="block text-xs font-medium text-slate-500 mb-1" x-text="'Device #' + (index + 1)"></label>
+                                <label class="block text-xs font-medium text-slate-500 mb-1" x-text="'{{ __('Device #') }}' + (index + 1)"></label>
                                 <input type="text" x-model="item.device" name="items[][device]"
                                        placeholder="{{ __('Nama perangkat') }}"
                                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             </div>
                             <div class="sm:col-span-2">
-                                <label class="block text-xs font-medium text-slate-500 mb-1">Qty</label>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Qty') }}</label>
                                 <input type="number" min="1" x-model.number="item.quantity" name="items[][quantity]"
                                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             </div>
@@ -109,12 +109,12 @@
 
             {{-- Status --}}
             <div>
-                <label for="status" class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Status</label>
+                <label for="status" class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">{{ __('Status') }}</label>
                 <select id="status" name="status" required
                         class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                     @foreach(['draft', 'submitted', 'approved', 'rejected', 'completed'] as $status)
                         <option value="{{ $status }}" {{ old('status', $requestHarga->status) === $status ? 'selected' : '' }}>
-                            {{ ucfirst($status) }}
+                            {{ __(ucfirst($status)) }}
                         </option>
                     @endforeach
                 </select>

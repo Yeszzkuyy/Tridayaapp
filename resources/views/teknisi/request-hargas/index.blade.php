@@ -23,20 +23,20 @@
         <form method="GET" action="{{ route('teknisi.request-hargas.index') }}"
               class="flex flex-wrap items-end gap-3 mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="w-full sm:w-56">
-                <label class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Status</label>
+                <label class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">{{ __('Status') }}</label>
                 <select name="status"
                         class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                     <option value="">{{ __('Semua Status') }}</option>
                     @foreach($statusColors as $status => $color)
                         <option value="{{ $status }}" {{ request('status') === $status ? 'selected' : '' }}>
-                            {{ ucfirst($status) }}
+                            {{ __(ucfirst($status)) }}
                         </option>
                     @endforeach
                 </select>
             </div>
 
             <div class="w-full sm:w-64">
-                <label class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">Project</label>
+                <label class="block text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">{{ __('Project') }}</label>
                 <select name="project_id"
                         class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                     <option value="">{{ __('Semua Project') }}</option>
@@ -49,8 +49,8 @@
             </div>
 
             <div class="flex gap-2">
-                <x-icon-button icon="filter" type="submit" title="Filter" />
-                <x-icon-button as="a" icon="reset" href="{{ route('teknisi.request-hargas.index') }}" title="Reset" />
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                <x-icon-button as="a" icon="reset" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Reset') }}" />
             </div>
         </form>
 
@@ -60,10 +60,10 @@
                 <table class="min-w-full">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Project</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Customer</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Project') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Jumlah Item') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Status</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Status') }}</th>
                             <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
                         </tr>
                     </thead>
@@ -87,7 +87,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                         <x-icon-button as="a" icon="view" href="{{ route('teknisi.request-hargas.show', $requestHarga) }}" title="{{ __('Lihat detail') }}" />
-                                        <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="Edit" />
+                                        <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('teknisi.request-hargas.destroy', $requestHarga) }}" method="POST"
                                               onsubmit="return confirm('{{ __('Hapus request harga ini?') }}')">
                                             @csrf

@@ -2,7 +2,7 @@
 <div class="max-w-[1400px] mx-auto space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Document Repository</h1>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Document Repository') }}</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Semua dokumen technical project') }}</p>
         </div>
     </div>
@@ -21,7 +21,7 @@
                 <option value="{{ $cat->id }}" {{ request('document_category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
             @endforeach
         </select>
-        <x-icon-button icon="filter" type="submit" title="Filter" />
+        <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
     </form>
 
     {{-- Table --}}
@@ -30,11 +30,11 @@
             <table class="min-w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Project</th>
-                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Customer</th>
+                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Project') }}</th>
+                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                         <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Kategori') }}</th>
-                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">File</th>
-                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Uploaded By</th>
+                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('File') }}</th>
+                        <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Uploaded By') }}</th>
                         <th class="px-6 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Tanggal') }}</th>
                     </tr>
                 </thead>

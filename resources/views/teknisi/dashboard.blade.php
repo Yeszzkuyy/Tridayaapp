@@ -234,7 +234,7 @@
                         </div>
                     </article>
                 @empty
-                    <x-empty-state label="project" />
+                    <x-empty-state label="{{ __('project') }}" />
                 @endforelse
             </section>
 
@@ -281,7 +281,7 @@
                                 <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $technician->name }}</p>
                                 <p class="mt-0.5 text-xs text-slate-500">{{ __('Tidak ada project berjalan') }}</p>
                             </div>
-                            <x-status-badge color="slate">Idle</x-status-badge>
+                            <x-status-badge color="slate">{{ __('Idle') }}</x-status-badge>
                         </article>
                     @empty
                     @endforelse
@@ -301,7 +301,7 @@
                             <x-user-avatar :user="$activity->user" size="w-10 h-10" text="text-sm" />
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm leading-snug text-slate-700 dark:text-slate-200">
-                                    <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $activity->user?->name ?? 'System' }}</span>
+                                    <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $activity->user?->name ?? __('System') }}</span>
                                     {{ $activity->title ?? __('Aktivitas') }}
                                 </p>
                                 <p class="mt-0.5 text-xs text-slate-500">

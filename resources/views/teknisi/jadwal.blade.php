@@ -69,7 +69,7 @@
         <div x-show="view === 'month'" x-transition.opacity>
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-3 sm:p-4 mb-4">
                 <div class="grid grid-cols-7 gap-1 text-center mb-1" id="teknisi-month-grid">
-                    <template x-for="name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="name">
+                    <template x-for="name in @json([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')])" :key="name">
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 py-1" x-text="name"></span>
                     </template>
                     <template x-for="cell in monthCells" :key="cell.date">
@@ -123,7 +123,7 @@
                             </div>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'at ' + fmtTime(event.start_time)"></span>
+                                <span x-text="'{{ __('at') }} ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -231,7 +231,7 @@
                             </div>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'at ' + fmtTime(event.start_time)"></span>
+                                <span x-text="'{{ __('at') }} ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -712,7 +712,7 @@
                 },
 
                 buildWeek() {
-                    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    const names = @json([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')]);
                     const monday = this.mondayOf(new Date(this.activeDate + 'T12:00:00'));
                     this.weekDays = names.map((name, i) => {
                         const d = new Date(monday);

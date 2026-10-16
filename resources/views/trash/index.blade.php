@@ -2,7 +2,7 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isSuperAdmin ? 'All Trash' : __('My Trash') }}</h1>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isSuperAdmin ? __('All Trash') : __('My Trash') }}</h1>
                 <p class="text-slate-500 mt-1">{{ $isSuperAdmin ? __('Seluruh data terhapus dari semua user') : __('Data milikmu yang telah dihapus') }}</p>
             </div>
 
@@ -26,7 +26,7 @@
                     @method('DELETE')
                     <x-icon-button icon="delete" type="submit" title="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}" />
                 </form>
-                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="Back" />
+                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
@@ -40,7 +40,7 @@
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Nama Customer') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Email</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Email') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Owner') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Oleh') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Pada') }}</th>
@@ -61,12 +61,12 @@
                                         <form action="{{ route('trash.restore-customer', $customer->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <x-icon-button icon="reset" type="submit" title="Restore" />
+                                            <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $customer)
                                         <x-icon-button icon="delete" type="button" x-data=""
-                                                       title="Delete permanently"
+                                                       title="{{ __('Delete permanently') }}"
                                                        @click="$dispatch('open-modal', 'confirm-destroy-customer-{{ $customer->id }}')" />
                                         @endcan
                                     </div>
@@ -129,7 +129,7 @@
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Nama Project') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Customer</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Owner') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Oleh') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Pada') }}</th>
@@ -150,12 +150,12 @@
                                         <form action="{{ route('trash.restore-project', $project->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <x-icon-button icon="reset" type="submit" title="Restore" />
+                                            <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $project)
                                         <x-icon-button icon="delete" type="button" x-data=""
-                                                       title="Delete permanently"
+                                                       title="{{ __('Delete permanently') }}"
                                                        @click="$dispatch('open-modal', 'confirm-destroy-project-{{ $project->id }}')" />
                                         @endcan
                                     </div>

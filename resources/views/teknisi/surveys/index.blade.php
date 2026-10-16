@@ -35,13 +35,13 @@
                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
             </div>
             <div class="flex items-center gap-2 min-w-48 flex-1">
-                <label class="text-sm text-slate-500 whitespace-nowrap">Status:</label>
+                <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Status') }}:</label>
                 <select name="status" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
                     <option value="">{{ __('Semua Status') }}</option>
-                    <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Draft</option>
-                    <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
-                    <option value="on_survey" {{ request('status') === 'on_survey' ? 'selected' : '' }}>On Survey</option>
-                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
+                    <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>{{ __('Scheduled') }}</option>
+                    <option value="on_survey" {{ request('status') === 'on_survey' ? 'selected' : '' }}>{{ __('On Survey') }}</option>
+                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>{{ __('Completed') }}</option>
                 </select>
             </div>
             <div class="flex gap-2">
@@ -63,7 +63,7 @@
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Tanggal Survey') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Lokasi') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('PIC') }}</th>
-                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Status</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Status') }}</th>
                         <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
                     </tr>
                 </thead>
@@ -87,7 +87,7 @@
                             <td class="px-6 py-4">
                                 @php
                                     $statusColors = ['draft' => 'slate', 'scheduled' => 'blue', 'on_survey' => 'yellow', 'completed' => 'green'];
-                                    $statusLabels = ['draft' => 'Draft', 'scheduled' => 'Scheduled', 'on_survey' => 'On Survey', 'completed' => 'Completed'];
+                                    $statusLabels = ['draft' => __('Draft'), 'scheduled' => __('Scheduled'), 'on_survey' => __('On Survey'), 'completed' => __('Completed')];
                                 @endphp
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                     @if($survey->status === 'completed') bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300

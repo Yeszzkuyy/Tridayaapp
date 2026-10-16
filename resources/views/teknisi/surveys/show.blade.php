@@ -6,7 +6,7 @@
             <p class="text-slate-500 mt-1 max-w-[560px] truncate" title="{{ $survey->title ?? '' }}">{{ $survey->title ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.surveys.edit', $survey) }}" title="Edit" />
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.surveys.edit', $survey) }}" title="{{ __('Edit') }}" />
             <x-icon-button as="a" icon="back" href="{{ route('teknisi.surveys.index') }}" title="{{ __('Kembali') }}" />
         </div>
     </div>
@@ -15,9 +15,9 @@
         <div class="space-y-6">
             {{-- Status Badge --}}
             <div class="flex items-center gap-3">
-                <span class="text-sm font-medium text-slate-500">Status:</span>
+                <span class="text-sm font-medium text-slate-500">{{ __('Status') }}:</span>
                 @php
-                    $statusLabels = ['draft' => 'Draft', 'scheduled' => 'Scheduled', 'on_survey' => 'On Survey', 'completed' => 'Completed'];
+                    $statusLabels = ['draft' => __('Draft'), 'scheduled' => __('Scheduled'), 'on_survey' => __('On Survey'), 'completed' => __('Completed')];
                 @endphp
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                     @if($survey->status === 'completed') bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
@@ -70,7 +70,7 @@
 
             {{-- Sales Request --}}
             <div>
-                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">Sales Request</p>
+                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Sales Request') }}</p>
                 <p class="text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words">{{ $survey->sales_request ?: '-' }}</p>
             </div>
 

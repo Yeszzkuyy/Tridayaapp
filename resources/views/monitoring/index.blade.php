@@ -33,9 +33,9 @@
                 <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
             </div>
 
-            <x-icon-button icon="filter" type="submit" title="Filter" />
+            <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
 
-            <x-icon-button as="a" icon="reset" href="{{ route('monitoring.index') }}" title="Reset" />
+            <x-icon-button as="a" icon="reset" href="{{ route('monitoring.index') }}" title="{{ __('Reset') }}" />
         </form>
 
         {{-- Divisi Filter (Checkbox) --}}
@@ -79,7 +79,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">Invoice Outstanding</p>
+                    <p class="text-sm text-slate-500">{{ __('Invoice Outstanding') }}</p>
                     <p class="text-2xl font-bold text-slate-800">Rp {{ number_format($stats['invoice_outstanding'] ?? 0, 0, ',', '.') }}</p>
                 </div>
             </div>
@@ -142,8 +142,8 @@
             <table class="w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">Customer</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Customer') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Divisi Terakhir Update') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Waktu') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>

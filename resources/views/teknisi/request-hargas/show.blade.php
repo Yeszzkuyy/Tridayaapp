@@ -31,13 +31,13 @@
             {{-- Info project & customer --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Project</p>
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Project') }}</p>
                     <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">
                         {{ $requestHarga->project?->project_name ?? '-' }}
                     </p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Customer</p>
+                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ __('Customer') }}</p>
                     <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">
                         {{ $requestHarga->project?->customer?->name ?? '-' }}
                     </p>
@@ -55,8 +55,8 @@
                             <thead class="bg-slate-50 dark:bg-slate-700">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">#</th>
-                                    <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Device</th>
-                                    <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Qty</th>
+                                    <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Device') }}</th>
+                                    <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Qty') }}</th>
                                     <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Spesifikasi') }}</th>
                                 </tr>
                             </thead>
@@ -87,7 +87,7 @@
 
             {{-- Aksi --}}
             <div class="flex justify-end gap-3">
-                <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="Edit" />
+                <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="{{ __('Edit') }}" />
                 <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Kembali') }}" />
             </div>
         </div>
