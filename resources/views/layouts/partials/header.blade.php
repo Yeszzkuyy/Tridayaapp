@@ -40,6 +40,7 @@
                 ['sales.proposals',                 ['Sales', 'Proposal']],
                 ['products',                        ['Sales', 'Products']],
                 ['sales.pocs',                      ['Sales', 'POC/Demo']],
+                ['sales.requests',                  ['Sales', 'Request']],
                 ['sales.technical-requests',        ['Sales', 'Technical Request']],
                 ['sales',                           ['Sales']],
                 ['leads.pipeline',                  ['Sales', 'Pipeline']],
