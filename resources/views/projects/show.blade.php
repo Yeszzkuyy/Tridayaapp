@@ -2,14 +2,17 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ $project->project_name }}</h1>
-            <p class="text-slate-500 mt-1">Detail Project</p>
+            <div class="flex items-center gap-3">
+                <h1 class="text-3xl font-bold text-slate-800">{{ $project->project_name }}</h1>
+                <x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status ? __($project->status->name) : __('Not Started') }}</x-status-badge>
+            </div>
+            <p class="text-slate-500 mt-1">{{ __('Project Detail') }}</p>
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-                <x-icon-button look="soft" as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="Edit Project" />
+                <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit Project') }}" />
             @endcan
-            <x-icon-button look="soft" as="a" icon="back" href="{{ route('projects.index') }}" title="← Back" />
+            <x-icon-button as="a" icon="back" href="{{ route('projects.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -18,76 +21,69 @@
         <div class="border-b border-slate-200 dark:border-slate-700">
             <nav class="flex gap-6">
                 <button @click="tab = 'info'" :class="tab === 'info' ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-300' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'" class="inline-flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition">
-                    <span>Informasi</span>
+                    <span>{{ __('Information') }}</span>
                 </button>
                 <button @click="tab = 'workflow'" :class="tab === 'workflow' ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-300' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'" class="inline-flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition">
-                    <span>Workflow</span>
+                    <span>{{ __('Workflow') }}</span>
                 </button>
             </nav>
         </div>
 
-        {{-- Tab: Informasi --}}
+        {{-- Tab: Information --}}
         <div x-show="tab === 'info'" x-transition>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><p class="text-xs text-slate-400">Nama Project</p><p class="font-medium text-slate-800">{{ $project->project_name }}</p></div>
-                    <div><p class="text-xs text-slate-400">Customer</p><p class="font-medium text-slate-800">{{ $project->customer?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">Jenis Pekerjaan</p><p class="font-medium text-slate-800">{{ $project->workType?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">Status</p><x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status?->name ?? 'Belum Memulai' }}</x-status-badge></div>
-                    <div><p class="text-xs text-slate-400">Account Manager</p><p class="font-medium text-slate-800">{{ $project->accountManager?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">PIC Engineer</p><p class="font-medium text-slate-800">{{ $project->pic_engineer ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">Support Technicians</p><p class="font-medium text-slate-800">{{ $project->support_technicians ?? '-' }}</p></div>
+                <div class="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2">
+                    <div>
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">{{ __('Project') }}</h2>
+                        <dl class="space-y-3">
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="text-sm text-slate-500">{{ __('Customer') }}</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right">{{ $project->customer?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="text-sm text-slate-500">{{ __('Work Type') }}</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right">{{ $project->workType?->name ?? '—' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div>
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">{{ __('Team') }}</h2>
+                        <dl class="space-y-3">
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="text-sm text-slate-500">{{ __('Account Manager') }}</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right">{{ $project->accountManager?->name ?? '—' }}</dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="text-sm text-slate-500">{{ __('PIC Engineer') }}</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right">{{ $project->pic_engineer ?? '—' }}</dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="text-sm text-slate-500">{{ __('Support Technicians') }}</dt>
+                                <dd class="text-sm font-medium text-slate-800 text-right">{{ $project->support_technicians ?? '—' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
                 </div>
                 @if($project->description)
-                    <div class="mt-4 pt-4 border-t"><p class="text-xs text-slate-400">Deskripsi</p><p class="text-slate-700">{{ $project->description }}</p></div>
+                    <div class="mt-8 pt-6 border-t border-slate-100">
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">{{ __('Description') }}</h2>
+                        <p class="text-sm text-slate-700">{{ $project->description }}</p>
+                    </div>
                 @endif
             </div>
         </div>
 
         {{-- Tab: Workflow --}}
         <div x-show="tab === 'workflow'" x-transition>
-            @php
-                // Survey bisa dua arah: yang sudah menempel ke project ini,
-                // atau milik customer sama yang belum punya project (survey
-                // biasanya dibuat SEBELUM project-nya lahir).
-                $surveys = \App\Models\Survey::where(function ($q) use ($project) {
-                    $q->where('project_id', $project->id)
-                        ->orWhere(function ($q2) use ($project) {
-                            $q2->where('customer_id', $project->customer_id)
-                                ->whereNull('project_id');
-                        });
-                })->latest()->get();
-                $sizings = $project->sizingProjects()->latest()->get();
-                $requestHargas = $project->requestHargas()->latest()->get();
-                $instalasis = $project->instalasis()->latest()->get();
-                $bastDocs = $project->documents()->where('document_category_id', 1)->latest()->get();
-
-                $steps = [
-                    ['label' => 'Request', 'done' => true, 'link' => null, 'detail' => 'Project dibuat'],
-                    ['label' => 'Survey', 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id, 'customer_id' => $project->customer_id]), 'detail' => $surveys->first() ? $surveys->first()->status : 'Belum ada'],
-                    ['label' => 'Sizing', 'done' => $sizings->isNotEmpty() && $sizings->first()->status === 'completed', 'link' => $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', ['project_id' => $project->id]), 'detail' => $sizings->first() ? $sizings->first()->status : 'Belum ada'],
-                    ['label' => 'Request Harga', 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : 'Belum ada'],
-                    ['label' => 'Instalasi', 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : 'Belum ada'],
-                    ['label' => 'BAST', 'done' => $bastDocs->isNotEmpty(), 'link' => route('teknisi.documents.index', ['project_id' => $project->id]), 'detail' => $bastDocs->isNotEmpty() ? $bastDocs->count() . ' dokumen' : 'Belum ada'],
-                ];
-            @endphp
-
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-bold text-slate-800 mb-6">Workflow Progress</h3>
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-lg font-bold text-slate-800">{{ __('Workflow') }}</h3>
+                    <span class="text-sm font-bold text-slate-800">{{ $progress }}%</span>
+                </div>
 
                 {{-- Progress bar --}}
-                @php
-                    $completedCount = collect($steps)->where('done', true)->count();
-                    $progress = round(($completedCount / count($steps)) * 100);
-                @endphp
-                <div class="mb-8">
-                    <div class="flex justify-between text-sm text-slate-500 mb-2">
-                        <span>Progress</span>
-                        <span class="font-bold text-slate-800">{{ $progress }}%</span>
-                    </div>
-                    <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div class="h-full bg-accent-600 rounded-full transition-all duration-500" style="width: {{ $progress }}%"></div>
-                    </div>
+                <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-8">
+                    <div class="h-full bg-accent-600 rounded-full transition-all duration-500" style="width: {{ $progress }}%"></div>
                 </div>
 
                 {{-- Timeline --}}
@@ -108,14 +104,19 @@
                             {{-- Content --}}
                             <div class="flex-1 min-w-0 pt-1">
                                 <div class="flex items-center justify-between gap-2">
-                                    <h4 class="text-sm font-bold text-slate-800">{{ $step['label'] }}</h4>
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <h4 class="text-sm font-bold text-slate-800">{{ $step['label'] }}</h4>
+                                        <x-status-badge :color="$step['status_color']">{{ $step['status_label'] }}</x-status-badge>
+                                    </div>
                                     @if($step['link'])
                                         <a href="{{ $step['link'] }}" class="text-xs text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 font-medium shrink-0">
-                                            {{ $step['done'] ? 'Lihat' : 'Mulai' }} →
+                                            {{ $step['done'] ? __('View') : __('Start') }} →
                                         </a>
                                     @endif
                                 </div>
-                                <p class="text-xs text-slate-500 mt-0.5">{{ $step['detail'] }}</p>
+                                @if($step['date'])
+                                    <p class="text-xs text-slate-500 mt-1">{{ $step['date']->format('d M Y') }}</p>
+                                @endif
                             </div>
                         </div>
                     @endforeach

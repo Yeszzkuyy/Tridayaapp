@@ -94,17 +94,12 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $project->load([
-            'customer', 
-            'workType', 
-            'accountManager', 
-            'tasks', 
-            'documents', 
-            'supports', 
-            'activities'
-        ]);
+        $project->load(['customer', 'workType', 'accountManager', 'status']);
 
-        return view('projects.show', compact('project'));
+        // Data workflow disiapkan di service supaya view tidak query sendiri.
+        ['steps' => $steps, 'progress' => $progress] = $this->projectService->workflowSteps($project);
+
+        return view('projects.show', compact('project', 'steps', 'progress'));
     }
 
     public function edit(Project $project)
