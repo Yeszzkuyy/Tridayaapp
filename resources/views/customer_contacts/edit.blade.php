@@ -61,7 +61,7 @@
                     {{-- Email --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
-                            Email
+                            {{ __('Email') }}
                         </label>
                         <input type="email" 
                                name="email" 

@@ -2,10 +2,10 @@
     <table class="min-w-[760px] w-full">
         <thead class="bg-slate-50/80 dark:bg-slate-700/40">
             <tr>
-                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">Customer</th>
-                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">Company</th>
-                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">PIC</th>
-                <th scope="col" class="px-5 py-4 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">Project</th>
+                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Customer') }}</th>
+                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Company') }}</th>
+                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('PIC') }}</th>
+                <th scope="col" class="px-5 py-4 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Project') }}</th>
                 <th scope="col" class="px-5 py-4 text-right text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Aksi') }}</th>
             </tr>
         </thead>

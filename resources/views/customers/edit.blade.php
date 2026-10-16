@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div class="min-w-0">
                 <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">
-                    Edit Customer
+                    {{ __('Edit Customer') }}
                 </h1>
                 <p class="text-slate-500 mt-1">
                     {{ __('Edit data customer:') }} <span class="font-semibold text-slate-700">{{ $customer->name }}</span>
@@ -47,7 +47,7 @@
                     {{-- Address --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
-                            Address
+                            {{ __('Address') }}
                         </label>
                         <textarea name="address" 
                                   rows="3"
@@ -83,7 +83,7 @@
                     {{-- Email --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
-                            Email
+                            {{ __('Email') }}
                         </label>
                         <input type="email" 
                                name="email" 
@@ -96,12 +96,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">
-                                NPWP
+                                {{ __('NPWP') }}
                             </label>
                             <input type="text"
                                    name="npwp"
                                    value="{{ old('npwp', $customer->npwp) }}"
-                                   placeholder="cth: 01.234.567.8-901.234"
+                                   placeholder="{{ __('cth: 01.234.567.8-901.234') }}"
                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                             @error('npwp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
@@ -122,7 +122,7 @@
                     {{-- Notes --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
-                            Notes
+                            {{ __('Notes') }}
                         </label>
                         <textarea name="notes" 
                                   rows="3"

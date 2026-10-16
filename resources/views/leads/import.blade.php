@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Import Lead / Opportunity</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Import Lead / Opportunity') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Import data dari file Excel (.xlsx) atau CSV') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="Kembali" />
+        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="{{ __('Back') }}" />
     </div>
 
     {{-- Hasil Import --}}
@@ -24,7 +24,7 @@
             </div>
             @if(!empty($results['errors']))
                 <div class="mt-4">
-                    <p class="text-sm font-medium text-slate-700 mb-2">Detail Error:</p>
+                    <p class="text-sm font-medium text-slate-700 mb-2">{{ __('Detail Error:') }}</p>
                     <div class="max-h-48 overflow-y-auto space-y-1">
                         @foreach($results['errors'] as $error)
                             <p class="text-sm text-red-600 bg-red-50 px-3 py-1.5 rounded-lg">{{ $error }}</p>

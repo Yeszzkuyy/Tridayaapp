@@ -21,7 +21,7 @@
                 </select>
             </div>
             @if(request()->filled('status'))
-                <x-icon-button as="a" icon="reset" href="{{ route('lead-tasks.index') }}" title="Reset" />
+                <x-icon-button as="a" icon="reset" href="{{ route('lead-tasks.index') }}" title="{{ __('Reset') }}" />
             @endif
         </form>
     </div>

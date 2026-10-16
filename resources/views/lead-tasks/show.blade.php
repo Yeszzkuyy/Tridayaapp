@@ -5,10 +5,10 @@
             <p class="text-slate-500 mt-1">{{ $task->lead?->customer?->name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" href="{{ route('lead-tasks.edit', $task) }}" title="Edit">
+            <x-icon-button as="a" href="{{ route('lead-tasks.edit', $task) }}" title="{{ __('Edit') }}">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path d="M4 20h4.2L18.5 9.7a2.1 2.1 0 0 0 0-3l-1.2-1.2a2.1 2.1 0 0 0-3 0L4 15.8V20z" /><path d="M13.5 6.5l4 4" /></svg>
             </x-icon-button>
-            <x-icon-button as="a" icon="back" href="{{ route('lead-tasks.index') }}" title="Back" />
+            <x-icon-button as="a" icon="back" href="{{ route('lead-tasks.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 

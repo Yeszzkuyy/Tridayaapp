@@ -39,7 +39,7 @@
 
         <div>
             <label for="address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                Address
+                {{ __('Address') }}
             </label>
             <textarea id="address" name="address" rows="3"
                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('address') }}</textarea>
@@ -69,7 +69,7 @@
 
         <div>
             <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                Email
+                {{ __('Email') }}
             </label>
             <input type="email" id="email" name="email" value="{{ old('email') }}"
                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
@@ -79,9 +79,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label for="npwp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                    NPWP
+                    {{ __('NPWP') }}
                 </label>
-                <input type="text" id="npwp" name="npwp" value="{{ old('npwp') }}" placeholder="cth: 01.234.567.8-901.234"
+                <input type="text" id="npwp" name="npwp" value="{{ old('npwp') }}" placeholder="{{ __('cth: 01.234.567.8-901.234') }}"
                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 @error('npwp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
@@ -97,7 +97,7 @@
 
         <div>
             <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                Notes
+                {{ __('Notes') }}
             </label>
             <textarea id="notes" name="notes" rows="3"
                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('notes') }}</textarea>

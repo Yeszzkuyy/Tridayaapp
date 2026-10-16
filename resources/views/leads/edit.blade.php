@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Edit Lead: {{ $lead->customer->name }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit Lead:') }} {{ $lead->customer->name }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Perbarui informasi lead / opportunity') }}</p>
         </div>
         <x-icon-button as="a" icon="back" href="{{ route('leads.show', $lead) }}" title="{{ __('Kembali') }}" />
@@ -88,7 +88,7 @@
                     </div>
                     <div>
                         <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                            PIC
+                            {{ __('PIC') }}
                             <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di perusahaan tersebut.') }}" />
                         </label>
                         <input type="text" name="customer_contact_person" id="customer_contact_person" value="{{ old('customer_contact_person', $lead->customer->contact_person) }}"
@@ -108,7 +108,7 @@
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div class="md:col-span-2">
-                        <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                         <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email', $lead->customer->email) }}"
                                placeholder="{{ __('cth: vita@ptkoin.com') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">

@@ -9,8 +9,8 @@
         </div>
         @can('manage-marketing')
             <div class="flex items-center gap-2">
-                <x-icon-button as="a" icon="import" href="{{ route('leads.import') }}" title="Import" />
-                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" title="Tambah Lead" />
+                <x-icon-button as="a" icon="import" href="{{ route('leads.import') }}" title="{{ __('Import') }}" />
+                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" title="{{ __('Add Lead') }}" />
             </div>
         @endcan
     </div>
@@ -25,8 +25,8 @@
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">Status</label>
-                    <x-glide-select name="status" class="mt-1" label="Status"
+                    <label class="text-sm font-medium text-slate-500">{{ __('Status') }}</label>
+                    <x-glide-select name="status" class="mt-1" label="{{ __('Status') }}"
                         :options="collect($statuses)->map(fn ($s) => ['value' => $s, 'label' => ucfirst($s)])->all()"
                         :value="request('status', '')" :empty-label="__('Semua Status')" autosubmit />
                 </div>
@@ -37,8 +37,8 @@
                         :value="request('source', '')" :empty-label="__('Semua Sumber')" autosubmit />
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">PT</label>
-                    <x-glide-select name="pt_group" class="mt-1" label="PT"
+                    <label class="text-sm font-medium text-slate-500">{{ __('PT') }}</label>
+                    <x-glide-select name="pt_group" class="mt-1" label="{{ __('PT') }}"
                         :options="collect($ptGroups)->map(fn ($g) => ['value' => $g, 'label' => $g])->all()"
                         :value="request('pt_group', '')" :empty-label="__('Semua PT')" autosubmit />
                 </div>
@@ -51,8 +51,8 @@
                     <x-datepicker name="date_to" value="{{ request('date_to') }}" class="mt-1"></x-datepicker>
                 </div>
                 <div class="sm:col-span-2 lg:col-span-6 flex items-end gap-2">
-                    <x-icon-button icon="filter" type="submit" title="Filter" />
-                    <x-icon-button as="a" icon="reset" href="{{ route('leads.index') }}" title="Reset" />
+                    <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                    <x-icon-button as="a" icon="reset" href="{{ route('leads.index') }}" title="{{ __('Reset') }}" />
                 </div>
             </form>
         </div>
@@ -61,10 +61,10 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Lead / Customer</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Sumber') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Partner</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
                         <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Kebutuhan') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Tanggal Masuk') }}</th>
                         <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
@@ -134,7 +134,7 @@
                                         <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('Lihat detail lead') }}" />
                                     @endcan
                                     @can('manage-marketing')
-                                        <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="Edit lead" />
+                                        <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="{{ __('Edit Lead') }}" />
                                         <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Hapus lead ini?') }}')" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Hapus lead') }}" />

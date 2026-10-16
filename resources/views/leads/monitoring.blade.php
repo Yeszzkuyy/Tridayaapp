@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Monitoring</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Monitoring') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Rekap lead dan aktivitas terakhir tim Marketing & Sales') }}</p>
         </div>
         <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="{{ __('Kembali') }}" />
@@ -18,7 +18,7 @@
                         @foreach($statuses as $status)
                             <th class="py-3 px-3 font-medium text-center">{{ ucfirst($status) }}</th>
                         @endforeach
-                        <th class="py-3 px-3 font-medium text-center">Total</th>
+                        <th class="py-3 px-3 font-medium text-center">{{ __('Total') }}</th>
                         <th class="py-3 px-3 font-medium">{{ __('Aktivitas Terakhir') }}</th>
                         <th class="py-3 px-3"></th>
                     </tr>

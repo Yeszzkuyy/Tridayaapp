@@ -3,7 +3,7 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700/50">
                     <tr>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">Partner</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Tipe') }}</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Kontak') }}</th>
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Jumlah Lead') }}</th>
@@ -62,7 +62,7 @@
                             <td class="px-6 py-4 text-center">
                                 @if($partner->leads_count > 0)
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                                        {{ $partner->leads_count }} lead
+                                        {{ $partner->leads_count }} {{ __('lead') }}
                                     </span>
                                 @else
                                     <span class="text-slate-400 text-sm">0</span>
@@ -71,7 +71,7 @@
                             <td class="px-6 py-4 text-right whitespace-nowrap">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     @can('manage-marketing')
-                                        <x-icon-button as="a" icon="edit" href="{{ route('partners.edit', $partner) }}" title="Edit partner" />
+                                        <x-icon-button as="a" icon="edit" href="{{ route('partners.edit', $partner) }}" title="{{ __('Edit Partner') }}" />
                                         <form action="{{ route('partners.destroy', $partner) }}" method="POST"
                                               onsubmit="return confirm('{{ __('Hapus partner') }} {{ $partner->name }}?')" class="inline">
                                             @csrf @method('DELETE')

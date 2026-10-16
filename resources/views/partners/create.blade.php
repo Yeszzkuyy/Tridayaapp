@@ -46,7 +46,7 @@
         <section class="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-6 pt-6 border-t border-slate-200">
             <div>
                 <label for="contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                    Contact Person
+                    {{ __('Contact Person') }}
                     <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di partner ini.') }}" />
                 </label>
                 <input type="text" name="contact_person" id="contact_person" value="{{ old('contact_person') }}" placeholder="{{ __('cth: Pak Budi Santoso') }}"
@@ -69,7 +69,7 @@
             </div>
 
             <div>
-                <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label for="email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                 <input type="email" name="email" id="email" value="{{ old('email') }}" placeholder="{{ __('cth: budi@ptsumberjaya.com') }}"
                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 @error('email')

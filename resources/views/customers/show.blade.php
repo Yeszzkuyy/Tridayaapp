@@ -24,7 +24,7 @@
                     @can('update', $customer)
                         <a href="{{ route('customers.edit', $customer) }}"
                            class="flex-1 sm:flex-none text-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-accent-100 hover:bg-accent-200 text-accent-700 text-sm font-medium transition-all duration-200 hover:scale-[1.03]">
-                            Edit Customer
+                            {{ __('Edit Customer') }}
                         </a>
                     @endcan
                     <a href="{{ route('customers.index') }}"
@@ -58,34 +58,34 @@
                     <button @click="tab = 'overview'; moveIndicator($el)"
                             :class="tab === 'overview' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="grid" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Overview
+                        <x-icon name="grid" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Overview') }}
                     </button>
                     <button @click="tab = 'projects'; moveIndicator($el)"
                             :class="tab === 'projects' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="folder" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Projects
+                        <x-icon name="folder" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Projects') }}
                     </button>
                     <button @click="tab = 'contacts'; moveIndicator($el)"
                             :class="tab === 'contacts' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="users" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Contacts
+                        <x-icon name="users" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Contacts') }}
                     </button>
                     <button @click="tab = 'documents'; moveIndicator($el)"
                             :class="tab === 'documents' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="book" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Documents
+                        <x-icon name="book" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Documents') }}
                     </button>
                     @can('view-sales')
                     <button @click="tab = 'followups'; moveIndicator($el)"
                             :class="tab === 'followups' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="phone" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Follow Up
+                        <x-icon name="phone" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Follow Up') }}
                     </button>
                     @endcan
                     <button @click="tab = 'activity'; moveIndicator($el)"
                             :class="tab === 'activity' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
-                        <x-icon name="activity" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> Activity
+                        <x-icon name="activity" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Activity') }}
                     </button>
                 </nav>
             </div>
@@ -108,13 +108,13 @@
                         $infoFields = [
                             ['icon' => 'building', 'label' => __('Nama'), 'value' => $customer->name],
                             ['icon' => 'building', 'label' => __('Customer dari Company'), 'value' => $customer->pt_group ?? '-'],
-                            ['icon' => 'user', 'label' => 'PIC', 'value' => $customer->contacts->first()?->name ?: $customer->contact_person],
+                            ['icon' => 'user', 'label' => __('PIC'), 'value' => $customer->contacts->first()?->name ?: $customer->contact_person],
                             ['icon' => 'map-pin', 'label' => __('Alamat'), 'value' => $customer->address],
                             ['icon' => 'phone', 'label' => __('Telepon'), 'value' => \App\Support\PhoneFormatter::format($customer->phone)],
                             ['icon' => 'chat', 'label' => __('WA Perusahaan'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Perusahaan'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('WA PIC'), 'value' => \App\Support\PhoneFormatter::format($customer->contacts->first()?->whatsapp), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
-                            ['icon' => 'mail', 'label' => 'Email', 'value' => $customer->email],
-                            ['icon' => 'file-text', 'label' => 'NPWP', 'value' => $customer->npwp],
+                            ['icon' => 'mail', 'label' => __('Email'), 'value' => $customer->email],
+                            ['icon' => 'file-text', 'label' => __('NPWP'), 'value' => $customer->npwp],
                         ];
                         $stats = [
                             ['icon' => 'folder', 'label' => __('Total Project'), 'value' => $totalProjects, 'chip' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'],
@@ -179,11 +179,11 @@
                                         </div>
                                         <div class="bg-white dark:bg-slate-800 rounded-xl p-3.5 shadow-sm">
                                             <p class="text-sm text-slate-800 dark:text-slate-100">
-                                                <span class="font-semibold">{{ $activity->user?->name ?? 'System' }}</span>
-                                                {{ $activity->title ?? 'Activity' }}
+                                                <span class="font-semibold">{{ $activity->user?->name ?? __('System') }}</span>
+                                                {{ $activity->title ?? __('Activity') }}
                                                 <span class="text-xs text-slate-400">· {{ $activity->created_at->diffForHumans() }}</span>
                                             </p>
-                                            <p class="text-xs text-slate-500 mt-0.5">{{ $activity->project?->name ?? 'Project' }}</p>
+                                            <p class="text-xs text-slate-500 mt-0.5">{{ $activity->project?->name ?? __('Project') }}</p>
                                         </div>
                                     </div>
                                 @endforeach
@@ -209,8 +209,8 @@
                             <thead class="bg-slate-50 dark:bg-slate-700">
                                 <tr>
                                     <x-th>{{ __('Nama Project') }}</x-th>
-                                    <x-th>Status</x-th>
-                                    <x-th>Progress</x-th>
+                                    <x-th>{{ __('Status') }}</x-th>
+                                    <x-th>{{ __('Progress') }}</x-th>
                                     <x-th>{{ __('Tanggal Dibuat') }}</x-th>
                                     <x-th class="text-right">{{ __('Aksi') }}</x-th>
                                 </tr>
@@ -244,10 +244,10 @@
                                         <td class="px-6 py-3 text-right">
                                             <div class="flex flex-wrap justify-end items-center gap-x-3 gap-y-1">
                                                 <a href="{{ route('projects.show', $project) }}"
-                                                   class="text-accent-600 hover:text-accent-800 text-sm whitespace-nowrap">Detail</a>
+                                                   class="text-accent-600 hover:text-accent-800 text-sm whitespace-nowrap">{{ __('Detail') }}</a>
                                                 @can('manage-technician')
                                                     <a href="{{ route('projects.edit', $project) }}"
-                                                       class="text-amber-600 hover:text-amber-800 text-sm whitespace-nowrap">Edit</a>
+                                                       class="text-amber-600 hover:text-amber-800 text-sm whitespace-nowrap">{{ __('Edit') }}</a>
                                                 @endcan
                                                 @can('manage-technician')
                                                     <form action="{{ route('projects.destroy', $project) }}" method="POST"
@@ -283,8 +283,8 @@
                                 <tr>
                                     <x-th>{{ __('Nama') }}</x-th>
                                     <x-th>{{ __('Jabatan') }}</x-th>
-                                    <x-th>WA & Email</x-th>
-                                    <x-th>Status</x-th>
+                                    <x-th>{{ __('WA & Email') }}</x-th>
+                                    <x-th>{{ __('Status') }}</x-th>
                                     <x-th class="text-right">{{ __('Aksi') }}</x-th>
                                 </tr>
                             </thead>
@@ -311,7 +311,7 @@
                                         <td class="px-6 py-3 text-right align-middle">
                                             @can('manage-sales')
                                                 <a href="{{ route('customer-contacts.edit', $contact) }}"
-                                                   class="text-amber-600 hover:text-amber-800 text-sm inline-block align-middle">Edit</a>
+                                                   class="text-amber-600 hover:text-amber-800 text-sm inline-block align-middle">{{ __('Edit') }}</a>
                                             @endcan
                                             @can('manage-sales')
                                                 <form action="{{ route('customer-contacts.destroy', $contact) }}"
@@ -332,7 +332,7 @@
                             </tbody>
                         </x-data-table>
                     @else
-                        <x-empty-state label="PIC" />
+                        <x-empty-state label="{{ __('PIC') }}" />
                     @endif
                 </div>
                 
@@ -381,17 +381,17 @@
                                                 </svg>
                                                 <p class="font-medium text-slate-800 dark:text-slate-100 text-sm truncate">{{ $doc->file_name }}</p>
                                             </div>
-                                            <p class="text-xs text-slate-500">{{ $doc->project?->project_name ?? 'Project' }}</p>
-                                            <p class="text-xs text-slate-400">{{ $doc->category?->name ?? 'Uncategorized' }}</p>
+                                            <p class="text-xs text-slate-500">{{ $doc->project?->project_name ?? __('Project') }}</p>
+                                            <p class="text-xs text-slate-400">{{ $doc->category?->name ?? __('Uncategorized') }}</p>
                                             <p class="text-xs text-slate-400 mt-1">{{ number_format($doc->file_size / 1024, 1) }} KB</p>
                                             <p class="text-xs text-slate-400">{{ __('Upload:') }} {{ $doc->uploader?->name ?? '-' }}</p>
                                         </div>
                                         <div class="flex gap-2 flex-shrink-0 ml-2">
                                             <a href="{{ route('project-documents.preview', $doc) }}"
                                                target="_blank"
-                                               class="text-accent-600 hover:text-accent-800 text-xs whitespace-nowrap">Preview</a>
+                                               class="text-accent-600 hover:text-accent-800 text-xs whitespace-nowrap">{{ __('Preview') }}</a>
                                             <a href="{{ route('project-documents.download', $doc) }}"
-                                               class="text-accent-600 hover:text-accent-800 text-xs">Download</a>
+                                               class="text-accent-600 hover:text-accent-800 text-xs">{{ __('Download') }}</a>
                                         </div>
                                     </div>
                                 </div>
@@ -414,7 +414,7 @@
                 <div x-show="tab === 'documents'" x-transition>
                     <div class="mt-8 space-y-6">
                         <div>
-                            <x-section-header title="Invoice">
+                            <x-section-header title="{{ __('Invoice') }}">
                                 @can('manage-admin')
                                     <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
                                         {{ __('Create Invoice') }}
@@ -428,7 +428,7 @@
                                         <tr>
                                             <x-th>{{ __('No Invoice') }}</x-th>
                                             <x-th class="text-right">{{ __('Nominal') }}</x-th>
-                                            <x-th class="text-center">Status</x-th>
+                                            <x-th class="text-center">{{ __('Status') }}</x-th>
                                             <x-th class="text-right">{{ __('Aksi') }}</x-th>
                                         </tr>
                                     </thead>
@@ -447,7 +447,7 @@
                                                     @endphp
                                                     <x-status-badge :color="$invBadgeColor">{{ $inv->status === 'paid' ? __('Lunas') : ($inv->status === 'cancelled' ? __('Dibatalkan') : __('Belum Bayar')) }}</x-status-badge>
                                                 </td>
-                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.invoices.show', $inv) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
+                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.invoices.show', $inv) }}" class="text-accent-600 hover:text-accent-800 text-sm">{{ __('Detail') }}</a></td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -458,7 +458,7 @@
                         </div>
 
                         <div>
-                            <x-section-header title="Purchase Order">
+                            <x-section-header title="{{ __('Purchase Order') }}">
                                 @can('manage-admin')
                                     <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
                                         {{ __('Create PO') }}
@@ -471,8 +471,8 @@
                                     <thead class="bg-slate-50 dark:bg-slate-700">
                                         <tr>
                                             <x-th>{{ __('No PO') }}</x-th>
-                                            <x-th>Item</x-th>
-                                            <x-th class="text-center">Status</x-th>
+                                            <x-th>{{ __('Item') }}</x-th>
+                                            <x-th class="text-center">{{ __('Status') }}</x-th>
                                             <x-th class="text-right">{{ __('Aksi') }}</x-th>
                                         </tr>
                                     </thead>
@@ -492,13 +492,13 @@
                                                     @endphp
                                                     <x-status-badge :color="$poBadgeColor">{{ $po->statusLabel() }}</x-status-badge>
                                                 </td>
-                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.pos.show', $po) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
+                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.pos.show', $po) }}" class="text-accent-600 hover:text-accent-800 text-sm">{{ __('Detail') }}</a></td>
                                             </tr>
                                         @endforeach
                                     </tbody>
                                 </x-data-table>
                             @else
-                                <x-empty-state label="PO" />
+                                <x-empty-state label="{{ __('PO') }}" />
                             @endif
                         </div>
 
@@ -515,7 +515,7 @@
                                 <x-data-table>
                                     <thead class="bg-slate-50 dark:bg-slate-700">
                                         <tr>
-                                            <x-th>Invoice</x-th>
+                                            <x-th>{{ __('Invoice') }}</x-th>
                                             <x-th>{{ __('Tgl Bayar') }}</x-th>
                                             <x-th class="text-right">{{ __('Nominal') }}</x-th>
                                             <x-th class="text-center">{{ __('Bukti') }}</x-th>
@@ -529,7 +529,7 @@
                                                 <td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ $pm->payment_date->format('d M Y') }}</td>
                                                 <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($pm->amount, 0, ',', '.') }}</td>
                                                 <td class="px-6 py-3 text-center">@if($pm->proof_file)<a href="{{ route('admin.payments.proof', $pm) }}" target="_blank" class="text-accent-600 hover:text-accent-800 text-xs underline">{{ __('Lihat') }}</a>@else - @endif</td>
-                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.payments.show', $pm) }}" class="text-accent-600 hover:text-accent-800 text-sm">Detail</a></td>
+                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.payments.show', $pm) }}" class="text-accent-600 hover:text-accent-800 text-sm">{{ __('Detail') }}</a></td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -547,7 +547,7 @@
                 <div x-show="tab === 'followups'" x-transition>
                     <div class="space-y-8">
                         <div>
-                            <x-section-header title="Follow Up">
+                            <x-section-header title="{{ __('Follow Up') }}">
                                 @can('manage-sales')
                                     <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
                                         {{ __('Add Follow Up') }}
@@ -600,11 +600,11 @@
                                     <div class="absolute left-2 top-1 w-5 h-5 rounded-full bg-accent-500 border-4 border-white shadow-sm"></div>
                                     <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4">
                                         <div class="flex items-center gap-3">
-                                            <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">{{ $activity->user?->name ?? 'System' }}</span>
+                                            <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">{{ $activity->user?->name ?? __('System') }}</span>
                                             <span class="text-xs text-slate-400">{{ $activity->created_at->format('d M Y H:i') }}</span>
                                         </div>
-                                        <p class="text-sm text-slate-700 mt-1">{{ $activity->title ?? 'Activity' }}</p>
-                                        <p class="text-xs text-slate-500">{{ $activity->project?->name ?? 'Project' }}</p>
+                                        <p class="text-sm text-slate-700 mt-1">{{ $activity->title ?? __('Activity') }}</p>
+                                        <p class="text-xs text-slate-500">{{ $activity->project?->name ?? __('Project') }}</p>
                                         @if($activity->description)
                                             <p class="text-xs text-slate-400 mt-1">{{ $activity->description }}</p>
                                         @endif

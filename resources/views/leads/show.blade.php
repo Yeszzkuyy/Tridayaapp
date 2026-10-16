@@ -417,7 +417,7 @@
                             </span>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm text-slate-800 dark:text-slate-100">
-                                    {{ $activity->user?->name ?? 'System' }}
+                                    {{ $activity->user?->name ?? __('System') }}
                                 </p>
                                 <p class="mt-1 text-xs text-slate-500">
                                     {{ $activity->created_at?->setTimezone('Asia/Jakarta')->format('d M Y H:i') ?? '-' }}
@@ -596,7 +596,7 @@
                                             data-filename="{{ $doc->file_name }}"
                                             data-mime="{{ $doc->mime_type }}"
                                             onclick="openPreviewModal(this.dataset.url, this.dataset.filename, this.dataset.mime)" />
-                                    <x-icon-button as="a" icon="download" href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="Download" />
+                                    <x-icon-button as="a" icon="download" href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="{{ __('Download') }}" />
                                     @can('manage-marketing')
                                         <form action="{{ route('leads.attachments.destroy', [$lead, $doc]) }}" method="POST"
                                               onsubmit="return confirm('{{ __('Delete this attachment?') }}')" class="inline-flex">
@@ -652,14 +652,14 @@
                                             <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{{ $doc->file_name }}</p>
                                             <p class="text-xs text-slate-500">
                                                 {{ $doc->category->name ?? __('Tanpa Kategori') }} •
-                                                {{ $doc->uploader->name ?? 'Unknown' }} •
+                                                {{ $doc->uploader->name ?? __('Unknown') }} •
                                                 {{ $doc->created_at->format('d M Y') }}
                                             </p>
                                         </div>
                                     </div>
                                     <div class="mt-3 flex gap-2">
                                         <x-icon-button as="a" icon="download" href="{{ route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id]) }}"
-                                           label="Download" title="Download" />
+                                           label="{{ __('Download') }}" title="{{ __('Download') }}" />
                                         @if($doc->is_image || $doc->is_pdf)
                                             <x-icon-button as="a" icon="view"
                                                href="{{ route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id]) }}"
@@ -776,11 +776,11 @@
         } else {
             content.innerHTML = '<div class="text-center py-10">' +
                 '<svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>' +
-                '<p class="text-slate-600 font-medium mb-2">File ini perlu didownload</p>' +
+                '<p class="text-slate-600 font-medium mb-2">{{ __('File ini perlu didownload') }}</p>' +
                 '<a href="' + url.replace('/show', '/download') + '" ' +
                 'class="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-sm font-medium transition">' +
                 '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path></svg>' +
-                'Download</a>' +
+                '{{ __('Download') }}</a>' +
                 '</div>';
         }
 

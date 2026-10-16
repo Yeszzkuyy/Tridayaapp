@@ -5,7 +5,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Tambah Lead / Opportunity Baru') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Kelola lead marketing dan opportunity sales') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="Kembali" />
+        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="{{ __('Back') }}" />
     </div>
 
     <form action="{{ route('leads.store') }}" method="POST" enctype="multipart/form-data"
@@ -99,7 +99,7 @@
                     </div>
                     <div>
                         <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                            PIC
+                            {{ __('PIC') }}
                             <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di perusahaan tersebut.') }}" />
                         </label>
                         <input type="text" name="customer_contact_person" id="customer_contact_person" value="{{ old('customer_contact_person', $prefill['customer_contact_person'] ?? '') }}"
@@ -119,7 +119,7 @@
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div class="md:col-span-2">
-                        <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                        <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                         <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email') }}"
                                placeholder="{{ __('cth: vita@ptkoin.com') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">

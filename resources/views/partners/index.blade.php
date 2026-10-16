@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Data Partner') }}</h1>
-            <p class="text-slate-500 mt-1">{{ $partners->total() }} partner terdaftar &mdash; supplier, vendor, kontraktor, partner, dan distributor</p>
+            <p class="text-slate-500 mt-1">{{ $partners->total() }} {{ __('partner terdaftar — supplier, vendor, kontraktor, partner, dan distributor') }}</p>
         </div>
         @can('manage-marketing')
             <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" title="{{ __('Tambah Partner') }}" />
@@ -60,8 +60,8 @@
                 @endforeach
             </select>
             <div class="flex items-center gap-2">
-                <x-icon-button icon="filter" type="submit" title="Filter" />
-                <x-icon-button as="a" icon="reset" href="{{ route('partners.index') }}" title="Reset" />
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                <x-icon-button as="a" icon="reset" href="{{ route('partners.index') }}" title="{{ __('Reset') }}" />
             </div>
         </form>
 
