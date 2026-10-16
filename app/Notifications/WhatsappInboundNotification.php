@@ -59,7 +59,7 @@ class WhatsappInboundNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Pesan WhatsApp baru'),
+            'title' => __('New WhatsApp message'),
             'body' => trim($this->accountName . ' • ' . $this->sender, ' •') . ': ' . $this->preview,
             'url' => route('whatsapp-center.index'),
         ];

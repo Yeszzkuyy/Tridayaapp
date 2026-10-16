@@ -40,9 +40,9 @@ class Poc extends Model
     public static function statusLabel(?string $status): string
     {
         return match ($status) {
-            'scheduled' => __('Terjadwal'),
-            'done' => __('Selesai'),
-            'cancelled' => __('Batal'),
+            'scheduled' => __('Scheduled'),
+            'done' => __('Completed'),
+            'cancelled' => __('Cancel'),
             default => '-',
         };
     }

@@ -1,11 +1,11 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Data Partner') }}</h1>
-            <p class="text-slate-500 mt-1">{{ $partners->total() }} {{ __('partner terdaftar — supplier, vendor, kontraktor, partner, dan distributor') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Partners') }}</h1>
+            <p class="text-slate-500 mt-1">{{ $partners->total() }} {{ __('registered partners — supplier, vendor, contractor, partner, and distributor') }}</p>
         </div>
         @can('manage-marketing')
-            <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" title="{{ __('Tambah Partner') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" title="{{ __('Add Partner') }}" />
         @endcan
     </div>
 
@@ -21,7 +21,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
                 </svg>
                 <input type="search" name="search" value="{{ request('search') }}"
-                       placeholder="{{ __('Cari nama, kontak, atau telepon...') }}"
+                       placeholder="{{ __('Search name, contact, or phone...') }}"
                        autocomplete="off"
                        class="w-full pl-10 rounded-xl border border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600"
                        x-on:input.debounce.400ms="
@@ -48,13 +48,13 @@
                        "
                 >
                 <div class="min-h-5 pt-1.5 text-xs" aria-live="polite">
-                    <span x-cloak x-show="loading" class="text-slate-400">{{ __('Mencari partner...') }}</span>
-                    <span x-cloak x-show="error" class="text-red-500">{{ __('Pencarian gagal. Coba lagi.') }}</span>
+                    <span x-cloak x-show="loading" class="text-slate-400">{{ __('Searching partners...') }}</span>
+                    <span x-cloak x-show="error" class="text-red-500">{{ __('Search failed. Try again.') }}</span>
                 </div>
             </div>
             <select name="type"
                     class="sm:w-44 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                <option value="">{{ __('Semua Tipe') }}</option>
+                <option value="">{{ __('All Types') }}</option>
                 @foreach(\App\Models\Partner::TYPES as $val => $label)
                     <option value="{{ $val }}" {{ request('type') == $val ? 'selected' : '' }}>{{ __($label) }}</option>
                 @endforeach

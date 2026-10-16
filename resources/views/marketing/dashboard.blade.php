@@ -2,20 +2,20 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Dashboard Marketing') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Ringkasan performa lead dan pipeline') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Lead and pipeline performance summary') }}</p>
         </div>
-        <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}" title="{{ __('Lihat Lead') }}" />
+        <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}" title="{{ __('View Leads') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 mb-6">
         <form method="GET" action="{{ route('marketing.dashboard') }}" class="flex flex-wrap items-end gap-x-6 gap-y-4">
             <div class="flex flex-wrap sm:flex-nowrap items-end gap-4">
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Dari Tanggal') }}</label>
+                    <label class="text-sm font-medium text-slate-500">{{ __('From Date') }}</label>
                     <x-datepicker name="date_from" value="{{ $dateFrom }}" class="mt-1"></x-datepicker>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Sampai Tanggal') }}</label>
+                    <label class="text-sm font-medium text-slate-500">{{ __('To Date') }}</label>
                     <x-datepicker name="date_to" value="{{ $dateTo }}" class="mt-1"></x-datepicker>
                 </div>
             </div>
@@ -28,9 +28,9 @@
             <div class="flex items-end">
                 @php
                     $presets = [
-                        __('Bulan Ini') => [now()->startOfMonth()->toDateString(), now()->toDateString()],
-                        __('3 Bulan') => [now()->subMonths(2)->startOfMonth()->toDateString(), now()->toDateString()],
-                        __('6 Bulan') => [now()->subMonths(5)->startOfMonth()->toDateString(), now()->toDateString()],
+                        __('This Month') => [now()->startOfMonth()->toDateString(), now()->toDateString()],
+                        __('3 Months') => [now()->subMonths(2)->startOfMonth()->toDateString(), now()->toDateString()],
+                        __('6 Months') => [now()->subMonths(5)->startOfMonth()->toDateString(), now()->toDateString()],
                     ];
                     $activeRange = $dateFrom . '|' . $dateTo;
                     $presetItems = [];
@@ -76,10 +76,10 @@
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-blue-500/5"></div>
             <div class="relative flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Lead Bulan Ini') }}</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Leads This Month') }}</p>
                     <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $stats['this_month'] }}</p>
                     <p class="text-xs mt-1 {{ $stats['this_month'] >= $stats['last_month'] ? 'text-green-600' : 'text-red-500' }}">
-                        {{ $stats['this_month'] >= $stats['last_month'] ? '▲' : '▼' }} {{ __('bulan lalu:') }} {{ $stats['last_month'] }}
+                        {{ $stats['this_month'] >= $stats['last_month'] ? '▲' : '▼' }} {{ __('last month:') }} {{ $stats['last_month'] }}
                     </p>
                 </div>
                 <div class="shrink-0 p-2.5 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
@@ -92,7 +92,7 @@
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-indigo-500/5"></div>
             <div class="relative flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Total Lead') }}</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Total Leads') }}</p>
                     <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $stats['total'] }}</p>
                 </div>
                 <div class="shrink-0 p-2.5 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
@@ -105,7 +105,7 @@
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-amber-500/5"></div>
             <div class="relative flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Lead Aktif') }}</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Active Leads') }}</p>
                     <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $stats['active'] }}</p>
                 </div>
                 <div class="shrink-0 p-2.5 rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
@@ -146,7 +146,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {{-- Tren lead masuk --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6" data-reveal>
-            <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Lead Masuk') }} — {{ $dateFrom }} {{ __('s/d') }} {{ $dateTo }}</h2>
+            <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Incoming Leads') }} — {{ $dateFrom }} {{ __('s/d') }} {{ $dateTo }}</h2>
             @php($maxTrend = max($trend->max('total'), 1))
             <div class="flex items-end justify-between gap-3 h-44">
                 @foreach($trend as $month)
@@ -162,9 +162,9 @@
 
         {{-- Lead per sumber --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6" data-reveal>
-            <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Lead per Sumber') }}</h2>
+            <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Leads by Source') }}</h2>
             @if($perSource->isEmpty())
-                <p class="text-sm text-slate-500 py-8 text-center">{{ __('Belum ada data lead.') }}</p>
+                <p class="text-sm text-slate-500 py-8 text-center">{{ __('No lead data yet.') }}</p>
             @else
                 @php($maxSource = max($perSource->max('total'), 1))
                 <div class="space-y-3">
@@ -211,14 +211,14 @@
     }"
     x-on:donut-select.window="select($event.detail.key)"
     >
-        <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Pipeline Lead per Status') }}</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 -mt-2 mb-4">{{ __('Klik segmen untuk melihat detail lead pada status tersebut.') }}</p>
+        <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Lead Pipeline by Status') }}</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 -mt-2 mb-4">{{ __('Click a segment to view lead details for that status.') }}</p>
         <div class="relative w-full max-w-[320px] mx-auto">
             <div id="status-donut-chart" class="w-full">
                 <x-donut-chart :data="$donutMarketing" :size="280" :strokeWidth="34" :scroll="true" />
             </div>
             <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-10">
-                <span class="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-full" x-text="activeSeg() ? activeSeg().label : '{{ __('Total Lead') }}'">{{ __('Total Lead') }}</span>
+                <span class="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-full" x-text="activeSeg() ? activeSeg().label : '{{ __('Total Leads') }}'">{{ __('Total Leads') }}</span>
                 <span class="mt-0.5 text-3xl font-bold text-slate-800 tabular-nums dark:text-slate-100" x-text="activeSeg() ? activeSeg().value : total">{{ $stats['total'] }}</span>
                 <span x-show="activeSeg() && total > 0" class="text-sm font-medium text-slate-400" x-text="activeSeg() ? '[' + Math.round(activeSeg().value / total * 100) + '%]' : ''"></span>
             </div>
@@ -245,13 +245,13 @@
         <div class="mt-6 border-t border-slate-100 dark:border-slate-700 pt-5">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="font-semibold text-slate-700 dark:text-slate-200">
-                    <span x-show="!selectedStatus">{{ __('Semua Lead') }}</span>
-                    <span x-show="selectedStatus">{{ __('Detail Lead') }} <span class="text-accent-600 dark:text-accent-400 uppercase" x-text="selectedStatus"></span></span>
+                    <span x-show="!selectedStatus">{{ __('All Leads') }}</span>
+                    <span x-show="selectedStatus">{{ __('Lead Detail') }} <span class="text-accent-600 dark:text-accent-400 uppercase" x-text="selectedStatus"></span></span>
                     <span class="text-sm font-medium text-slate-400">(<span x-text="filteredLeads().length"></span> {{ __('lead') }})</span>
                 </h3>
                 <button type="button" x-show="selectedStatus" @click="select(selectedStatus)"
                         class="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition">
-                    {{ __('Tampilkan semua') }}
+                    {{ __('Show all') }}
                 </button>
             </div>
 
@@ -262,9 +262,9 @@
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
                                 <th x-show="!selectedStatus" class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Sumber') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Source') }}</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Partner') }}</th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Tanggal Masuk') }}</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Entry Date') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800">
@@ -288,8 +288,8 @@
             <template x-if="filteredLeads().length === 0">
                 <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 px-5 py-8 text-center">
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
-                        <span x-show="!selectedStatus">{{ __('Belum ada lead pada rentang tanggal ini.') }}</span>
-                        <span x-show="selectedStatus">{{ __('Tidak ada lead berstatus') }} <span class="uppercase" x-text="selectedStatus"></span> {{ __('pada rentang tanggal ini.') }}</span>
+                        <span x-show="!selectedStatus">{{ __('No leads in this date range.') }}</span>
+                        <span x-show="selectedStatus">{{ __('No leads with status') }} <span class="uppercase" x-text="selectedStatus"></span> {{ __('in this date range.') }}</span>
                     </p>
                 </div>
             </template>

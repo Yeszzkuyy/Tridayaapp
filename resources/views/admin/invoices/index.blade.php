@@ -1,11 +1,11 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Manajemen Invoice') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Kelola invoice untuk customer.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Invoice Management') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Manage invoices for customers.') }}</p>
         </div>
         @can('manage-admin')
-            <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Buat Invoice') }}" title="{{ __('Buat Invoice') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
         @endcan
     </div>
 
@@ -14,11 +14,11 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('No Invoice') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Invoice No.') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Nominal') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Amount') }}</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Aksi') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -32,24 +32,24 @@
                                     @if($inv->status === 'paid') bg-green-100 text-green-700
                                     @elseif($inv->status === 'cancelled') bg-red-100 text-red-700
                                     @else bg-yellow-100 text-yellow-700 @endif">
-                                    {{ $inv->status === 'paid' ? __('Lunas') : ($inv->status === 'cancelled' ? __('Dibatalkan') : __('Belum Bayar')) }}
+                                    {{ $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid')) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <x-icon-button as="a" icon="view" href="{{ route('admin.invoices.show', $inv) }}" title="{{ __('Detail invoice') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('admin.invoices.show', $inv) }}" title="{{ __('Invoice detail') }}" />
                                     @can('manage-admin')
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $inv) }}" title="{{ __('Edit invoice') }}" />
-                                        <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" onsubmit="return confirm('{{ __('Hapus invoice ini?') }}')" class="inline">
+                                        <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" onsubmit="return confirm('{{ __('Delete this invoice?') }}')" class="inline">
                                             @csrf @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus invoice') }}" />
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete invoice') }}" />
                                         </form>
                                     @endcan
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-8 text-center text-slate-400">{{ __('Belum ada invoice.') }}</td></tr>
+                        <tr><td colspan="5" class="py-8 text-center text-slate-400">{{ __('No invoices yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

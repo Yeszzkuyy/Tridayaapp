@@ -6,7 +6,7 @@
         </div>
         <div class="flex gap-2">
             <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
-            <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Dashboard Sales') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Sales Dashboard') }}" />
         </div>
     </div>
 

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Detail Support Engineer') }}
+            {{ __('Support Engineer Detail') }}
         </h2>
     </x-slot>
 
@@ -19,19 +19,19 @@
                         <dd class="text-gray-900">{{ $projectSupport->engineer->name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">{{ __('Ditambahkan Pada') }}</dt>
+                        <dt class="text-sm font-medium text-gray-500">{{ __('Added On') }}</dt>
                         <dd class="text-gray-900">{{ $projectSupport->created_at->format('d M Y, H:i') }}</dd>
                     </div>
                 </dl>
 
                 <div class="mt-6 flex items-center gap-4">
                     <form method="POST" action="{{ route('project-supports.destroy', $projectSupport) }}"
-                        onsubmit="return confirm('{{ __('Hapus support engineer ini dari project?') }}')">
+                        onsubmit="return confirm('{{ __('Remove this support engineer from the project?') }}')">
                         @csrf
                         @method('DELETE')
                         <x-icon-button icon="delete" type="submit" label="{{ __('Delete') }}" title="{{ __('Delete') }}" />
                     </form>
-                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectSupport->project) }}" title="{{ __('Kembali ke project') }}" />
+                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectSupport->project) }}" title="{{ __('Back to project') }}" />
                 </div>
             </div>
 

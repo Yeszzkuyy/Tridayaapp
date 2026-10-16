@@ -4,8 +4,8 @@
     @endif
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Daftar Lead / Opportunity') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Kelola lead marketing dan opportunity sales') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead / Opportunity List') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
         </div>
         @can('manage-marketing')
             <div class="flex items-center gap-2">
@@ -19,22 +19,22 @@
         <div class="p-5 border-b dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-t-2xl">
             <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Cari Customer') }}</label>
+                    <label class="text-sm font-medium text-slate-500">{{ __('Search Customer') }}</label>
                     <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="{{ __('Nama customer...') }}"
+                           placeholder="{{ __('Customer name...') }}"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
                 <div>
                     <label class="text-sm font-medium text-slate-500">{{ __('Status') }}</label>
                     <x-glide-select name="status" class="mt-1" label="{{ __('Status') }}"
                         :options="collect($statuses)->map(fn ($s) => ['value' => $s, 'label' => ucfirst($s)])->all()"
-                        :value="request('status', '')" :empty-label="__('Semua Status')" autosubmit />
+                        :value="request('status', '')" :empty-label="__('All Statuses')" autosubmit />
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Sumber') }}</label>
-                    <x-glide-select name="source" class="mt-1" :label="__('Sumber')"
+                    <label class="text-sm font-medium text-slate-500">{{ __('Source') }}</label>
+                    <x-glide-select name="source" class="mt-1" :label="__('Source')"
                         :options="collect($sources)->map(fn ($s) => ['value' => $s, 'label' => ucfirst(str_replace('_', ' ', $s))])->all()"
-                        :value="request('source', '')" :empty-label="__('Semua Sumber')" autosubmit />
+                        :value="request('source', '')" :empty-label="__('All Sources')" autosubmit />
                 </div>
                 <div>
                     <label class="text-sm font-medium text-slate-500">{{ __('PT') }}</label>
@@ -43,11 +43,11 @@
                         :value="request('pt_group', '')" :empty-label="__('Semua PT')" autosubmit />
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Tanggal Mulai') }}</label>
+                    <label class="text-sm font-medium text-slate-500">{{ __('Start Date') }}</label>
                     <x-datepicker name="date_from" value="{{ request('date_from') }}" class="mt-1"></x-datepicker>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Tanggal Akhir') }}</label>
+                    <label class="text-sm font-medium text-slate-500">{{ __('End Date') }}</label>
                     <x-datepicker name="date_to" value="{{ request('date_to') }}" class="mt-1"></x-datepicker>
                 </div>
                 <div class="sm:col-span-2 lg:col-span-6 flex items-end gap-2">
@@ -63,11 +63,11 @@
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Sumber') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Source') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Kebutuhan') }}</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Tanggal Masuk') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Requirement') }}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Entry Date') }}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
@@ -131,13 +131,13 @@
                             <td class="px-6 py-4 text-right">
                                 <div class="flex min-w-max items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     @can('view-marketing')
-                                        <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('Lihat detail lead') }}" />
+                                        <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View lead detail') }}" />
                                     @endcan
                                     @can('manage-marketing')
                                         <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="{{ __('Edit Lead') }}" />
-                                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Hapus lead ini?') }}')" class="inline">
+                                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Delete this lead?') }}')" class="inline">
                                             @csrf @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus lead') }}" />
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete lead') }}" />
                                         </form>
                                     @endcan
                                 </div>
@@ -146,7 +146,7 @@
                     @empty
                         <tr>
                             <td colspan="7" class="px-6 py-12 text-center text-slate-500">
-                                {{ __('Belum ada lead.') }} @can('manage-marketing')<a href="{{ route('leads.create') }}" class="text-accent-600 hover:underline">{{ __('Tambah lead pertama') }}</a>@endcan
+                                {{ __('No leads yet.') }} @can('manage-marketing')<a href="{{ route('leads.create') }}" class="text-accent-600 hover:underline">{{ __('Add the first lead') }}</a>@endcan
                             </td>
                         </tr>
                     @endforelse

@@ -103,7 +103,7 @@ class KnowledgeBaseController extends Controller
                 throw $dbException;
             }
 
-            return back()->with('success', __('Dokumen berhasil diunggah dan sedang di-index.'));
+            return back()->with('success', __('Document uploaded successfully and is being indexed.'));
         } catch (Throwable $e) {
             Log::error('Knowledge base upload gagal: '.$e->getMessage(), ['exception' => $e]);
 
@@ -180,7 +180,7 @@ class KnowledgeBaseController extends Controller
 
             $document->delete();
 
-            return back()->with('success', __('Dokumen dihapus dari Knowledge Base.'));
+            return back()->with('success', __('Document removed from the Knowledge Base.'));
         } catch (Throwable $e) {
             Log::error('Knowledge base hapus dokumen gagal: '.$e->getMessage(), ['exception' => $e]);
 

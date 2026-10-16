@@ -1,9 +1,9 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Dashboard Monitoring - Semua Divisi') }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Monitoring Dashboard - All Divisions') }}</h1>
             <p class="text-slate-500 mt-1">
-                {{ __('Overview lengkap aktivitas lintas divisi') }}
+                {{ __('Complete overview of cross-division activity') }}
             </p>
         </div>
     </div>
@@ -13,12 +13,12 @@
         <form method="GET" action="{{ route('monitoring.index') }}" class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             {{-- Search Customer --}}
             <div class="relative flex-1 max-w-md">
-                <label for="search" class="sr-only">{{ __('Cari customer') }}</label>
+                <label for="search" class="sr-only">{{ __('Search customer') }}</label>
                 <input type="text"
                        id="search"
                        name="search"
                        value="{{ request('search') }}"
-                       placeholder="{{ __('Cari customer...') }}"
+                       placeholder="{{ __('Search customer...') }}"
                        class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
                 <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -27,7 +27,7 @@
 
             {{-- Date Range --}}
             <div class="flex gap-2">
-                <label for="date_from" class="sr-only">{{ __('Dari tanggal') }}</label>
+                <label for="date_from" class="sr-only">{{ __('From date') }}</label>
                 <x-datepicker id="date_from" name="date_from" value="{{ request('date_from') }}"></x-datepicker>
                 <span class="flex items-center text-slate-400">{{ __('s/d') }}</span>
                 <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
@@ -64,7 +64,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">{{ __('Lead Masuk') }}</p>
+                    <p class="text-sm text-slate-500">{{ __('Incoming Leads') }}</p>
                     <p class="text-2xl font-bold text-slate-800">{{ $stats['lead_masuk'] ?? 0 }}</p>
                 </div>
             </div>
@@ -95,7 +95,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">{{ __('Instalasi Proses') }}</p>
+                    <p class="text-sm text-slate-500">{{ __('Installations In Progress') }}</p>
                     <p class="text-2xl font-bold text-slate-800">{{ $stats['instalasi_proses'] ?? 0 }}</p>
                 </div>
             </div>
@@ -110,7 +110,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">{{ __('Instalasi Selesai') }}</p>
+                    <p class="text-sm text-slate-500">{{ __('Installations Completed') }}</p>
                     <p class="text-2xl font-bold text-slate-800">{{ $stats['instalasi_selesai'] ?? 0 }}</p>
                 </div>
             </div>
@@ -125,7 +125,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-slate-500">{{ __('PO Menunggu Proses') }}</p>
+                    <p class="text-sm text-slate-500">{{ __('POs Awaiting Processing') }}</p>
                     <p class="text-2xl font-bold text-slate-800">{{ $stats['po_menunggu'] ?? 0 }}</p>
                 </div>
             </div>
@@ -135,7 +135,7 @@
     {{-- Customer Progress List --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
         <div class="p-4 border-b border-slate-200 dark:border-slate-600">
-            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Progress Tiap Customer') }}</h3>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Progress per Customer') }}</h3>
         </div>
 
         <div class="overflow-x-auto">
@@ -144,9 +144,9 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Customer') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Divisi Terakhir Update') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Last Updated Division') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Waktu') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
@@ -228,12 +228,12 @@
                             </td>
                             <td class="px-4 py-3">
                                 <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}"
-                                   label="{{ __('Lihat Detail') }}" title="{{ __('Lihat Detail') }}" />
+                                   label="{{ __('View Detail') }}" title="{{ __('View Detail') }}" />
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-4 py-12 text-center text-slate-400">{{ __('Tidak ada data customer.') }}</td>
+                            <td colspan="5" class="px-4 py-12 text-center text-slate-400">{{ __('No customer data.') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -15,16 +15,16 @@
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
                 <div>
-                    <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Detail Request Harga') }}</h1>
+                    <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Price Request Detail') }}</h1>
                     <p class="text-slate-500 dark:text-slate-400 mt-1">
-                        {{ $requestHarga->project?->project_name ?? __('Tanpa project') }}
+                        {{ $requestHarga->project?->project_name ?? __('No project') }}
                     </p>
                 </div>
                 <x-status-badge :color="$statusColors[$requestHarga->status] ?? 'slate'">
                     {{ ucfirst($requestHarga->status) }}
                 </x-status-badge>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Kembali') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Back') }}" />
         </div>
 
         <div class="space-y-6">
@@ -47,7 +47,7 @@
             {{-- Items --}}
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">
-                    {{ __('Daftar Item') }} ({{ count($items) }})
+                    {{ __('Item List') }} ({{ count($items) }})
                 </h2>
                 @if(count($items) > 0)
                     <div class="overflow-x-auto">
@@ -57,7 +57,7 @@
                                     <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">#</th>
                                     <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Device') }}</th>
                                     <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Qty') }}</th>
-                                    <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Spesifikasi') }}</th>
+                                    <th class="px-4 py-3 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Specification') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -73,22 +73,22 @@
                         </table>
                     </div>
                 @else
-                    <p class="text-sm text-slate-400">{{ __('Belum ada item.') }}</p>
+                    <p class="text-sm text-slate-400">{{ __('No items yet.') }}</p>
                 @endif
             </div>
 
             {{-- Notes --}}
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">{{ __('Catatan') }}</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">{{ __('Notes') }}</h2>
                 <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                    {{ $requestHarga->notes ?: __('Tidak ada catatan.') }}
+                    {{ $requestHarga->notes ?: __('No notes.') }}
                 </p>
             </div>
 
             {{-- Aksi --}}
             <div class="flex justify-end gap-3">
                 <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="{{ __('Edit') }}" />
-                <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Kembali') }}" />
+                <x-icon-button as="a" icon="back" href="{{ route('teknisi.request-hargas.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
     </div>

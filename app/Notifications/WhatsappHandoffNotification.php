@@ -68,7 +68,7 @@ class WhatsappHandoffNotification extends Notification
         $reason = $this->reason === 'limit' ? 'Bot mencapai batas balasan' : 'Bot menunggu ambil alih';
 
         return [
-            'title' => __('Butuh handoff WhatsApp'),
+            'title' => __('WhatsApp handoff needed'),
             'body' => $reason . ' — ' . trim($this->accountName . ' • ' . $this->sender, ' •'),
             'url' => route('whatsapp-center.index'),
         ];

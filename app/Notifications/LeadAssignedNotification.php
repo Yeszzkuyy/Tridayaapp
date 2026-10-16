@@ -70,7 +70,7 @@ class LeadAssignedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Lead di-assign ke Anda'),
+            'title' => __('Lead assigned to you'),
             'body' => 'Customer: ' . ($this->lead->customer?->name ?? __('New lead')),
             'url' => self::myLeadsUrl($this->lead->customer?->name),
         ];

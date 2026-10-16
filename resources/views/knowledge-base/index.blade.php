@@ -3,7 +3,7 @@
         $statusMeta = [
             'indexing' => ['label' => __('Indexing'), 'class' => 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'],
             'ready' => ['label' => __('Ready'), 'class' => 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300'],
-            'failed' => ['label' => __('Gagal'), 'class' => 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'],
+            'failed' => ['label' => __('Failed'), 'class' => 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'],
         ];
     @endphp
 
@@ -11,11 +11,11 @@
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Knowledge Base') }}</h1>
-                <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Unggah dokumen internal perusahaan untuk menjawab pertanyaan AI (SOP, proposal, dokumentasi, laporan).') }}</p>
+                <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Upload internal company documents to answer AI questions (SOP, proposal, documentation, reports).') }}</p>
             </div>
             <form action="{{ route('knowledge-base.sync') }}" method="POST" class="shrink-0">
                 @csrf
-                <x-icon-button icon="search" type="submit" label="{{ __('Periksa Status Indexing') }}" title="{{ __('Periksa Status Indexing') }}" />
+                <x-icon-button icon="search" type="submit" label="{{ __('Check Indexing Status') }}" title="{{ __('Check Indexing Status') }}" />
             </form>
         </div>
 
@@ -32,19 +32,19 @@
                 @csrf
 
                 <div>
-                    <x-input-label for="document" :value="__('File Dokumen')" />
+                    <x-input-label for="document" :value="__('Document File')" />
                     <input type="file" name="document" id="document"
                            class="mt-1 block w-full rounded-xl border-slate-300 text-sm dark:border-slate-600"
                            accept=".pdf,.txt,.md,.html,.doc,.docx,.xls,.xlsx,.ppt,.pptx" required />
                     <x-input-error :messages="$errors->get('document')" class="mt-1" />
-                    <p class="mt-1 text-xs text-slate-400">{{ __('PDF, teks, markdown, HTML, atau dokumen Office (maks 20 MB).') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('PDF, text, markdown, HTML, or Office documents (max 20 MB).') }}</p>
                 </div>
 
                 <div>
                     <x-input-label for="category" :value="__('Category')" />
                     <select name="category" id="category" required
                             class="mt-1 block w-full rounded-xl border-slate-300 text-sm dark:border-slate-600">
-                        <option value="">{{ __('Pilih kategori…') }}</option>
+                        <option value="">{{ __('Select category…') }}</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->value }}" @selected(old('category') === $category->value)>{{ $category->label() }}</option>
                         @endforeach
@@ -53,10 +53,10 @@
                 </div>
 
                 <div>
-                    <x-input-label for="project_id" :value="__('Project Terkait (opsional)')" />
+                    <x-input-label for="project_id" :value="__('Related Project (optional)')" />
                     <select name="project_id" id="project_id"
                             class="mt-1 block w-full rounded-xl border-slate-300 text-sm dark:border-slate-600">
-                        <option value="">{{ __('Tidak ada') }}</option>
+                        <option value="">{{ __('None') }}</option>
                         @foreach($projects as $project)
                             <option value="{{ $project->id }}" @selected(old('project_id') == $project->id)>{{ $project->project_name }}</option>
                         @endforeach
@@ -78,7 +78,7 @@
         <div class="mb-4 flex flex-wrap gap-2">
             <a href="{{ route('knowledge-base.index') }}"
                class="rounded-full px-4 py-1.5 text-xs font-semibold transition {{ blank($filters['category'] ?? null) ? 'bg-accent-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
-                {{ __('Semua Kategori') }}
+                {{ __('All Categories') }}
             </a>
             @foreach($categories as $category)
                 <a href="{{ route('knowledge-base.index', ['category' => $category->value, 'status' => $filters['status'] ?? null]) }}"
@@ -125,7 +125,7 @@
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <form action="{{ route('knowledge-base.destroy', $document) }}" method="POST"
-                                          onsubmit="return confirm('{{ __('Hapus dokumen ini dari Knowledge Base?') }}')" class="inline">
+                                          onsubmit="return confirm('{{ __('Delete this document from the Knowledge Base?') }}')" class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">
@@ -137,7 +137,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-400">{{ __('Belum ada dokumen di Knowledge Base.') }}</td>
+                                <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-400">{{ __('There are no documents in the Knowledge Base.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

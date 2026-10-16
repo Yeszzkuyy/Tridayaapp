@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Product Knowledge Base') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Import URL produk resmi, review, lalu publish untuk AI.') }}</p>
+                <p class="text-slate-500 mt-1">{{ __('Import official product URLs, review, then publish for the AI.') }}</p>
             </div>
             <x-icon-button as="a" icon="back" href="{{ route('knowledge-base.index') }}" title="{{ __('Back') }}" />
         </div>
@@ -148,7 +148,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-16 text-center text-slate-400">{{ __('Belum ada produk. Paste URL resmi di atas.') }}</td>
+                                <td colspan="6" class="py-16 text-center text-slate-400">{{ __('No products yet. Paste the official URL above.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -178,7 +178,7 @@
             <div class="p-6">
                 <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Delete selected products?') }}</h3>
                 <p class="text-sm text-slate-500 mt-1">
-                    <span x-text="selected.length"></span> {{ __('produk beserta source, dokumen, dan knowledgenya akan dihapus selamanya.') }}
+                    <span x-text="selected.length"></span> {{ __('the product along with its source, documents, and knowledge will be deleted forever.') }}
                 </p>
                 <div class="mt-6 flex justify-end gap-2">
                     <button type="button" @click="$dispatch('close')"

@@ -10,9 +10,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <x-status-badge color="yellow">{{ __('Dalam Pengembangan') }}</x-status-badge>
+            <x-status-badge color="yellow">{{ __('In Development') }}</x-status-badge>
             <h2 class="mt-4 text-lg font-semibold text-slate-800 dark:text-slate-100">{{ $title }}</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-md">{{ __('Fitur ini sedang dalam pengembangan.') }}</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-md">{{ __('This feature is under development.') }}</p>
         </div>
     </div>
 </x-app-layout>

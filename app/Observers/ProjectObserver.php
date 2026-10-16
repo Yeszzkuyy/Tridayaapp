@@ -15,8 +15,8 @@ class ProjectObserver
             'project_id'    => $project->id,
             'user_id'       => Auth::id(),
             'activity_date' => now(),
-            'title'         => __('Project Dibuat'),
-            'description'   => __('Project baru berhasil dibuat'),
+            'title'         => __('Projects Created'),
+            'description'   => __('New project created successfully'),
         ]);
 
         // Sinkronisasi status customer: punya project = sudah deal/berjalan.
@@ -37,7 +37,7 @@ class ProjectObserver
             'project_id'    => $project->id,
             'user_id'       => Auth::id(),
             'activity_date' => now(),
-            'title'         => __('Status Diubah'),
+            'title'         => __('Status Changed'),
             'description'   => __('Status project diubah dari :old menjadi :new', ['old' => $oldStatus, 'new' => $project->status?->name]),
         ]);
     }

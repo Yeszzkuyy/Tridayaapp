@@ -2,7 +2,7 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Dokumen Project') }}</h1>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Project Documents') }}</h1>
                 <p class="text-slate-500 mt-1">
                     {{ $project->project_name }} · {{ $project->customer?->name ?? '' }}
                 </p>
@@ -32,7 +32,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Notes') }}</label>
-                        <input type="text" name="notes" placeholder="{{ __('Catatan dokumen') }}" 
+                        <input type="text" name="notes" placeholder="{{ __('Document notes') }}" 
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                 </div>
@@ -53,10 +53,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
-                        <p class="text-slate-600 font-medium text-sm">{{ __('Drag & drop file di sini') }}</p>
-                        <p class="text-slate-400 text-xs">{{ __('atau klik untuk browse') }}</p>
-                        <p class="text-xs text-slate-400 mt-1">{{ __('Maksimal 20MB') }}</p>
-                        <p class="text-sm text-slate-500 mt-2" x-text="fileName || '{{ __('Belum ada file dipilih') }}'"></p>
+                        <p class="text-slate-600 font-medium text-sm">{{ __('Drag & drop files here') }}</p>
+                        <p class="text-slate-400 text-xs">{{ __('or click to browse') }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ __('Maximum 20MB') }}</p>
+                        <p class="text-sm text-slate-500 mt-2" x-text="fileName || '{{ __('No file selected') }}'"></p>
                         @error('file')
                             <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
                         @enderror
@@ -76,7 +76,7 @@
         {{-- Daftar Dokumen --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <h3 class="text-lg font-bold text-slate-800">{{ __('Daftar Dokumen') }}</h3>
+                <h3 class="text-lg font-bold text-slate-800">{{ __('Document List') }}</h3>
             </div>
             
             @if($documents->isNotEmpty())
@@ -95,7 +95,7 @@
                                     <div class="flex items-center gap-3 text-xs text-slate-500">
                                         <span>{{ $document->category?->name ?? __('Tanpa Kategori') }}</span>
                                         <span>•</span>
-                                        <span>{{ __('Upload oleh:') }} {{ $document->uploader?->name ?? '-' }}</span>
+                                        <span>{{ __('Uploaded by:') }} {{ $document->uploader?->name ?? '-' }}</span>
                                         <span>•</span>
                                         <span>{{ $document->created_at->format('d M Y H:i') }}</span>
                                     </div>
@@ -112,7 +112,7 @@
                                 @can('manage-technician')
                                     <form action="{{ route('project-documents.destroy', $document) }}" 
                                           method="POST" 
-                                          onsubmit="return confirm('{{ __('Hapus dokumen ini?') }}')"
+                                          onsubmit="return confirm('{{ __('Delete this document?') }}')"
                                           class="inline">
                                         @csrf
                                         @method('DELETE')
@@ -125,7 +125,7 @@
                 </div>
             @else
                 <div class="py-16 text-center text-slate-400">
-                    {{ __('Belum ada dokumen. Upload dokumen pertama Anda!') }}
+                    {{ __('No documents yet. Upload your first document!') }}
                 </div>
             @endif
         </div>

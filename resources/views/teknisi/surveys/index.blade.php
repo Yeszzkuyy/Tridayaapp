@@ -2,8 +2,8 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Daftar Survey') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Semua data survey lapangan') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Survey List') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('All field survey data') }}</p>
         </div>
         <div class="flex items-center gap-2">
             {{-- Template laporan survey (Google Docs) — selalu kelihatan di daftar --}}
@@ -11,7 +11,7 @@
                            title="{{ __('Template') }}" aria-label="{{ __('Template') }}" label="{{ __('Template') }}">
                 <x-icon name="file-text" class="h-5 w-5" />
             </x-icon-button>
-            <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Tambah Survey') }}" aria-label="{{ __('Tambah Survey') }}" label="{{ __('Tambah Survey') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('teknisi.surveys.create') }}" title="{{ __('Add Survey') }}" aria-label="{{ __('Add Survey') }}" label="{{ __('Add Survey') }}" />
         </div>
     </div>
 
@@ -21,7 +21,7 @@
             <div class="flex items-center gap-2 min-w-48 flex-1">
                 <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Sales') }}:</label>
                 <select name="sales_user_id" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
-                    <option value="">{{ __('Semua Sales') }}</option>
+                    <option value="">{{ __('All Sales') }}</option>
                     @foreach($salesUsers as $sales)
                         <option value="{{ $sales->id }}" {{ request('sales_user_id') == $sales->id ? 'selected' : '' }}>
                             {{ $sales->name }}
@@ -30,14 +30,14 @@
                 </select>
             </div>
             <div class="flex items-center gap-2 min-w-48 flex-1">
-                <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Cari') }}:</label>
-                <input type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('Cari judul...') }}"
+                <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Search') }}:</label>
+                <input type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('Search title...') }}"
                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
             </div>
             <div class="flex items-center gap-2 min-w-48 flex-1">
                 <label class="text-sm text-slate-500 whitespace-nowrap">{{ __('Status') }}:</label>
                 <select name="status" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 text-sm">
-                    <option value="">{{ __('Semua Status') }}</option>
+                    <option value="">{{ __('All Statuses') }}</option>
                     <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
                     <option value="scheduled" {{ request('status') === 'scheduled' ? 'selected' : '' }}>{{ __('Scheduled') }}</option>
                     <option value="on_survey" {{ request('status') === 'on_survey' ? 'selected' : '' }}>{{ __('On Survey') }}</option>
@@ -57,14 +57,14 @@
             <table class="min-w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Judul') }}</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Title') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Sales') }}</th>
-                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Tanggal Survey') }}</th>
-                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Lokasi') }}</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Survey Date') }}</th>
+                        <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Location') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('PIC') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
+                        <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -109,12 +109,12 @@
                                                 <x-dropdown-link :href="route('teknisi.surveys.edit', $survey)">{{ __('Edit') }}</x-dropdown-link>
                                                 <hr class="my-1 border-slate-200 dark:border-slate-600">
                                                 <form action="{{ route('teknisi.surveys.destroy', $survey) }}" method="POST" x-data
-                                                      @submit.prevent="if(confirm('{{ __('Yakin ingin menghapus survey ini?') }}')) $el.submit()">
+                                                      @submit.prevent="if(confirm('{{ __('Delete this survey?') }}')) $el.submit()">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
                                                             class="block w-full px-4 py-2 text-start text-sm leading-5 text-red-600 transition duration-150 ease-in-out hover:bg-red-50 focus:bg-red-50 focus:outline-none dark:text-red-400 dark:hover:bg-red-500/10 dark:focus:bg-red-500/10">
-                                                        {{ __('Hapus') }}
+                                                        {{ __('Delete') }}
                                                     </button>
                                                 </form>
                                             </div>
@@ -126,8 +126,8 @@
                     @empty
                         <tr>
                             <td colspan="8" class="py-16 text-center text-slate-400">
-                                <p>{{ __('Belum ada data survey.') }}</p>
-                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ __('Buat survey dulu, lalu unggah laporan PDF dari barisnya.') }}</p>
+                                <p>{{ __('No survey data yet.') }}</p>
+                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ __('Create a survey first, then upload the PDF report from its row.') }}</p>
                             </td>
                         </tr>
                     @endforelse

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Detail Dokumen') }}
+            {{ __('Document Detail') }}
         </h2>
     </x-slot>
 
@@ -15,7 +15,7 @@
                         <dd class="text-gray-900">{{ $projectDocument->project->project_name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">{{ __('Kategori Dokumen') }}</dt>
+                        <dt class="text-sm font-medium text-gray-500">{{ __('Document Category') }}</dt>
                         <dd>
                             <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">
                                 {{ $projectDocument->category->name ?? '-' }}
@@ -23,15 +23,15 @@
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">{{ __('Nama File') }}</dt>
+                        <dt class="text-sm font-medium text-gray-500">{{ __('File Name') }}</dt>
                         <dd class="text-gray-900">{{ $projectDocument->file_name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">{{ __('Diupload oleh') }}</dt>
+                        <dt class="text-sm font-medium text-gray-500">{{ __('Uploaded by') }}</dt>
                         <dd class="text-gray-900">{{ $projectDocument->uploader->name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">{{ __('Tanggal Upload') }}</dt>
+                        <dt class="text-sm font-medium text-gray-500">{{ __('Upload Date') }}</dt>
                         <dd class="text-gray-900">{{ $projectDocument->created_at->format('d M Y, H:i') }}</dd>
                     </div>
                     <div class="sm:col-span-2">
@@ -42,8 +42,8 @@
 
                 <div class="mt-6 flex items-center gap-4">
                     <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $projectDocument) }}"
-                                   target="_blank" label="{{ __('Lihat / Download File') }}" title="{{ __('Lihat / Download File') }}" />
-                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectDocument->project) }}" title="{{ __('Kembali ke project') }}" />
+                                   target="_blank" label="{{ __('View / Download File') }}" title="{{ __('View / Download File') }}" />
+                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectDocument->project) }}" title="{{ __('Back to project') }}" />
                 </div>
             </div>
 

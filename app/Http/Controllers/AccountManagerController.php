@@ -29,7 +29,7 @@ class AccountManagerController extends Controller
 
         return redirect()
             ->route('admin-panel.account-managers.index')
-            ->with('success', __('Account Manager berhasil ditambahkan.'));
+            ->with('success', __('Account Manager added successfully.'));
     }
 
     public function edit(AccountManager $accountManager)
@@ -47,7 +47,7 @@ class AccountManagerController extends Controller
 
         return redirect()
             ->route('admin-panel.account-managers.index')
-            ->with('success', __('Account Manager berhasil diupdate.'));
+            ->with('success', __('Account Manager updated successfully.'));
     }
 
     public function destroy(AccountManager $accountManager)
@@ -55,6 +55,6 @@ class AccountManagerController extends Controller
         $accountManager->delete();
         return redirect()
             ->route('admin-panel.account-managers.index')
-            ->with('success', __('Account Manager berhasil dihapus.'));
+            ->with('success', __('Account Manager deleted successfully.'));
     }
 }

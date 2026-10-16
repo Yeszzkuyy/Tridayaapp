@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Product Catalog') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Master barang & jasa untuk BOQ proposal.') }}</p>
+                <p class="text-slate-500 mt-1">{{ __('Master goods & services for proposal BOQ.') }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
@@ -14,10 +14,10 @@
         </div>
 
         <form method="GET" action="{{ route('products.index') }}" class="flex flex-wrap items-center gap-2 mb-4">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Cari nama / SKU...') }}"
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search name / SKU...') }}"
                    class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
             <select name="category" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                <option value="">{{ __('Semua kategori') }}</option>
+                <option value="">{{ __('All categories') }}</option>
                 @foreach(\App\Models\Product::SALE_CATEGORIES as $cat)
                     <option value="{{ $cat }}" @selected(request('category') === $cat)>{{ \App\Models\Product::saleCategoryLabel($cat) }}</option>
                 @endforeach
@@ -44,7 +44,7 @@
                         <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" />
                         @if($product->is_active)
                             <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
-                                  onsubmit="return confirm('{{ __('Nonaktifkan produk ini?') }}')">
+                                  onsubmit="return confirm('{{ __('Deactivate this product?') }}')">
                                 @csrf @method('DELETE')
                                 <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
                             </form>
@@ -52,7 +52,7 @@
                     @endcanany
                 </div>
             @empty
-                <p class="text-slate-500 text-center py-8">{{ __('Belum ada produk.') }}</p>
+                <p class="text-slate-500 text-center py-8">{{ __('No products yet.') }}</p>
             @endforelse
             <div class="mt-4">{{ $products->links() }}</div>
         </div>

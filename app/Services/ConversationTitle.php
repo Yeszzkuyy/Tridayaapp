@@ -23,7 +23,7 @@ class ConversationTitle
         $title = rtrim($title, " \t\n\r\0\x0B.,!?:;");
 
         if ($title === '') {
-            return __('Percakapan baru');
+            return __('New conversation');
         }
 
         if (mb_strlen($title) <= $max) {

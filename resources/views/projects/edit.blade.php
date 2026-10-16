@@ -16,7 +16,7 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Nama Project') }}</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Project Name') }}</label>
                     <input type="text" name="project_name" value="{{ old('project_name', $project->project_name) }}" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
 
@@ -64,12 +64,12 @@
                     </label>
                     <select name="pic_engineer" required
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">{{ __('- Pilih Teknisi -') }}</option>
+                        <option value="">{{ __('- Select Technician -') }}</option>
                         @foreach($technicians as $tech)
                             <option value="{{ $tech->name }}" {{ $selectedPic === $tech->name ? 'selected' : '' }}>{{ $tech->name }}</option>
                         @endforeach
                         @if($selectedPic && !$technicians->pluck('name')->contains($selectedPic))
-                            <option value="{{ $selectedPic }}" selected>{{ $selectedPic }} {{ __('(data lama)') }}</option>
+                            <option value="{{ $selectedPic }}" selected>{{ $selectedPic }} {{ __('(old data)') }}</option>
                         @endif
                     </select>
                     @error('pic_engineer') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -78,7 +78,7 @@
                 {{-- Support Technicians --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        {{ __('Support Technicians') }} <span class="text-slate-400 text-xs">{{ __('(Opsional)') }}</span>
+                        {{ __('Support Technicians') }} <span class="text-slate-400 text-xs">{{ __('(Optional)') }}</span>
                     </label>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         @foreach($technicians as $tech)
@@ -90,7 +90,7 @@
                             </label>
                         @endforeach
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">{{ __('Centang teknisi pendukung (boleh lebih dari satu).') }}</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('Check the supporting technicians (more than one allowed).') }}</p>
                     @error('support_technicians') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -139,7 +139,7 @@
                 </button>
                 <a href="{{ route('projects.show', $project) }}"
                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
-                    {{ __('Batal') }}
+                    {{ __('Cancel') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </a>
             </div>

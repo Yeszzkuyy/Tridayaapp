@@ -106,7 +106,7 @@ class LeadTaskController extends Controller
         if (!empty($validated['assigned_to'])) {
             $assignee = User::find($validated['assigned_to']);
             if (!$assignee?->hasRole('inside-sales')) {
-                abort(422, __('Target task harus user dengan role Inside Sales.'));
+                abort(422, __('The task target must be a user with the Inside Sales role.'));
             }
         }
 
@@ -127,7 +127,7 @@ class LeadTaskController extends Controller
 
         return redirect()
             ->route('lead-tasks.show', $task)
-            ->with('success', __('Inside sales task berhasil dibuat.'));
+            ->with('success', __('Inside sales task created successfully.'));
     }
 
     public function show(LeadTask $leadTask)
@@ -163,7 +163,7 @@ class LeadTaskController extends Controller
         if (!empty($validated['assigned_to'])) {
             $assignee = User::find($validated['assigned_to']);
             if (!$assignee?->hasRole('inside-sales')) {
-                abort(422, __('Target task harus user dengan role Inside Sales.'));
+                abort(422, __('The task target must be a user with the Inside Sales role.'));
             }
         }
 
@@ -188,7 +188,7 @@ class LeadTaskController extends Controller
 
         return redirect()
             ->route('lead-tasks.show', $leadTask)
-            ->with('success', __('Task berhasil diperbarui.'));
+            ->with('success', __('Task updated successfully.'));
     }
 
     public function destroy(LeadTask $leadTask)
@@ -200,7 +200,7 @@ class LeadTaskController extends Controller
 
         return redirect()
             ->route('lead-tasks.index')
-            ->with('success', __('Task berhasil dihapus.'));
+            ->with('success', __('Task deleted successfully.'));
     }
 
     public function storeComment(Request $request, LeadTask $leadTask)
@@ -218,6 +218,6 @@ class LeadTaskController extends Controller
 
         return redirect()
             ->route('lead-tasks.show', $leadTask)
-            ->with('success', __('Komentar terkirim.'));
+            ->with('success', __('Comment sent.'));
     }
 }

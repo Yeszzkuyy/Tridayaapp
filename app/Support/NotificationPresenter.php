@@ -97,70 +97,70 @@ final class NotificationPresenter
         return match ($kind) {
             'lead' => [
                 'app' => __('Lead'),
-                'title' => __('Lead baru'),
+                'title' => __('New lead'),
                 'body' => (string) ($data['customer'] ?? __('New lead')),
                 'chips' => [],
             ],
             'assigned' => [
                 'app' => __('Lead'),
-                'title' => __('Lead di-assign ke Anda'),
+                'title' => __('Lead assigned to you'),
                 'body' => (string) ($data['customer'] ?? __('New lead')),
                 'chips' => [],
             ],
             'followup' => [
                 'app' => __('Follow Up'),
-                'title' => (string) ($data['title'] ?? __('Follow up jatuh tempo')),
+                'title' => (string) ($data['title'] ?? __('Follow up overdue')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
-                'chips' => [self::chip(__('Jatuh tempo'), 'danger')],
+                'chips' => [self::chip(__('Due'), 'danger')],
             ],
             'task' => [
                 'app' => __('Inside Sales'),
-                'title' => (string) ($data['title'] ?? __('Task baru')),
+                'title' => (string) ($data['title'] ?? __('New task')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
                 'chips' => [],
             ],
             'schedule_assigned' => [
                 'app' => __('Jadwal'),
-                'title' => __('Jadwal teknisi baru'),
+                'title' => __('New technician schedule'),
                 'body' => (string) ($data['customer'] ?? ''),
                 'chips' => self::textChip($data['preview'] ?? null, 'info'),
             ],
             'schedule_changed' => [
                 'app' => __('Jadwal'),
-                'title' => __('Jadwal teknisi berubah'),
+                'title' => __('Technician schedule changed'),
                 'body' => (string) ($data['customer'] ?? ''),
                 'chips' => self::textChip($data['preview'] ?? null, 'info'),
             ],
             'schedule_reminder' => [
                 'app' => __('Jadwal'),
-                'title' => __('Pengingat jadwal teknisi'),
+                'title' => __('Technician schedule reminder'),
                 'body' => (string) ($data['customer'] ?? ''),
                 'chips' => self::textChip($data['preview'] ?? null, 'info'),
             ],
             'sales_schedule_assigned' => [
-                'app' => __('Jadwal Sales'),
-                'title' => __('Jadwal sales baru'),
+                'app' => __('Sales Schedule'),
+                'title' => __('New sales schedule'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => array_filter([self::instantChip($data['start_at'] ?? null)]),
             ],
             'whatsapp' => [
                 'app' => __('WhatsApp'),
                 'title' => $class === WhatsappHandoffNotification::class
-                    ? __('Butuh handoff WhatsApp')
-                    : __('Pesan WhatsApp baru'),
+                    ? __('WhatsApp handoff needed')
+                    : __('New WhatsApp message'),
                 'body' => self::whatsappBody($data),
                 'chips' => $class === WhatsappHandoffNotification::class
                     ? [self::chip(
                         ($data['reason'] ?? null) === 'limit'
-                            ? __('Bot mencapai batas balasan')
-                            : __('Bot menunggu ambil alih'),
+                            ? __('Bot reached its reply limit')
+                            : __('Bot is waiting to be taken over'),
                         'warning',
                     )]
                     : [],
             ],
             'proposal' => [
                 'app' => __('Proposal'),
-                'title' => __('Update proposal'),
+                'title' => __('Proposal update'),
                 'body' => (string) ($data['proposal_number'] ?? ''),
                 'chips' => [self::chip(
                     self::proposalLabel($data['event'] ?? null),
@@ -169,16 +169,16 @@ final class NotificationPresenter
             ],
             'technical_request_created' => [
                 'app' => __('Technical Request'),
-                'title' => __('Technical request baru'),
+                'title' => __('New technical request'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [self::chip(
-                    ($data['priority'] ?? null) === 'urgent' ? __('Mendesak') : __('Normal'),
+                    ($data['priority'] ?? null) === 'urgent' ? __('Urgent') : __('Normal'),
                     ($data['priority'] ?? null) === 'urgent' ? 'danger' : 'default',
                 )],
             ],
             'technical_request_reviewed' => [
                 'app' => __('Technical Request'),
-                'title' => __('Review technical request'),
+                'title' => __('Technical request review'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [self::chip(
                     self::decisionLabel($data['decision'] ?? null),
@@ -187,25 +187,25 @@ final class NotificationPresenter
             ],
             'technical_work_completed' => [
                 'app' => __('Technical Request'),
-                'title' => __('Hasil teknis sudah tersedia'),
+                'title' => __('Technical result is available'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],
             'survey_created' => [
                 'app' => __('Survey'),
-                'title' => __('Survey dibuat'),
+                'title' => __('Survey created'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],
             'survey_report_uploaded' => [
                 'app' => __('Survey'),
-                'title' => __('Laporan survey diunggah'),
+                'title' => __('Survey report uploaded'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],
             default => [
-                'app' => __('Notifikasi'),
-                'title' => (string) ($data['title'] ?? __('Notifikasi baru')),
+                'app' => __('Notifications'),
+                'title' => (string) ($data['title'] ?? __('New notification')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
                 'chips' => [],
             ],
@@ -267,20 +267,20 @@ final class NotificationPresenter
             return $preview;
         }
 
-        return $customer !== '' ? $customer : __('Pesan baru');
+        return $customer !== '' ? $customer : __('New message');
     }
 
     private static function proposalLabel(?string $event): string
     {
         return match ($event) {
-            'pending_technical' => __('Menunggu review teknis'),
-            'returned_to_draft' => __('Dikembalikan ke draft'),
-            'ready' => __('Siap dikirim'),
+            'pending_technical' => __('Waiting for technical review'),
+            'returned_to_draft' => __('Returned to draft'),
+            'ready' => __('Ready to send'),
             'sent' => __('Sudah dikirim'),
             'expired' => __('Kedaluwarsa'),
-            'accepted' => __('Diterima'),
-            'rejected' => __('Ditolak'),
-            default => $event !== null && $event !== '' ? Str::headline($event) : __('Update proposal'),
+            'accepted' => __('Accepted'),
+            'rejected' => __('Rejected'),
+            default => $event !== null && $event !== '' ? Str::headline($event) : __('Proposal update'),
         };
     }
 
@@ -298,10 +298,10 @@ final class NotificationPresenter
     private static function decisionLabel(?string $decision): string
     {
         return match ($decision) {
-            'accepted' => __('Diterima'),
-            'rejected' => __('Ditolak'),
-            'assigned' => __('Diteruskan ke teknisi'),
-            default => $decision !== null && $decision !== '' ? Str::headline($decision) : __('Direview'),
+            'accepted' => __('Accepted'),
+            'rejected' => __('Rejected'),
+            'assigned' => __('Forwarded to technician'),
+            default => $decision !== null && $decision !== '' ? Str::headline($decision) : __('Reviewed'),
         };
     }
 

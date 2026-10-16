@@ -53,7 +53,7 @@ class ProjectController extends Controller
         
         if (!$customerId) {
             return redirect()->route('customers.index')
-                ->with('error', __('Silakan pilih customer terlebih dahulu.'));
+                ->with('error', __('Please select a customer first.'));
         }
         
         $customer = Customer::findOrFail($customerId);
@@ -87,7 +87,7 @@ class ProjectController extends Controller
 
         return redirect()
             ->route('customers.show', $project->customer_id)
-            ->with('success', __('Project berhasil ditambahkan.'));
+            ->with('success', __('Project added successfully.'));
     }
 
     public function show(Project $project)
@@ -142,7 +142,7 @@ class ProjectController extends Controller
     
         return redirect()
             ->route('projects.show', $project)
-            ->with('success', __('Project berhasil diupdate.'));
+            ->with('success', __('Project updated successfully.'));
     }
 
     public function destroy(Project $project)
@@ -153,6 +153,6 @@ class ProjectController extends Controller
 
         return redirect()
             ->route('projects.index')
-            ->with('success', __('Project berhasil dihapus.'));
+            ->with('success', __('Project deleted successfully.'));
     }
 }

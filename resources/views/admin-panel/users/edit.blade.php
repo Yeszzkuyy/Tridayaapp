@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit User:') }} {{ $user->name }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Perbarui informasi user dan role') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Update user information and role') }}</p>
         </div>
         <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="{{ __('Back') }}" />
     </div>
@@ -12,7 +12,7 @@
             @csrf @method('PUT')
             
             <div class="mb-4">
-                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Nama') }}</label>
+                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Name') }}</label>
                 <input type="text" id="name" name="name" required value="{{ $user->name }}"
                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
             </div>
@@ -24,7 +24,7 @@
             </div>
 
             <div class="mb-4">
-                <label for="password" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Password Baru (kosongkan jika tidak diubah)') }}</label>
+                <label for="password" class="block text-sm font-medium text-slate-700 mb-1">{{ __('New Password (leave blank if unchanged)') }}</label>
                 <div class="relative">
                     <input type="password" id="password" name="password" minlength="8"
                            class="w-full px-4 py-2 pr-11 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
@@ -37,7 +37,7 @@
             </div>
 
             <div class="mb-4">
-                <label for="password_confirmation" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Konfirmasi Password Baru') }}</label>
+                <label for="password_confirmation" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Confirm New Password') }}</label>
                 <div class="relative">
                     <input type="password" id="password_confirmation" name="password_confirmation"
                            class="w-full px-4 py-2 pr-11 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
@@ -69,12 +69,12 @@
             <div class="flex justify-end gap-3">
                 <a href="{{ route('admin-panel.index') }}"
                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
-                    {{ __('Batal') }}
+                    {{ __('Cancel') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </a>
                 <button type="submit"
                         class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                    {{ __('Simpan Perubahan') }}
+                    {{ __('Save Changes') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </button>
             </div>

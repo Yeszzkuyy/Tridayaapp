@@ -110,7 +110,7 @@
                             </div>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'{{ __('at') }} ' + fmtTime(event.activity_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.activity_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -267,7 +267,7 @@
                             </div>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'{{ __('at') }} ' + fmtTime(event.activity_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.activity_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -293,11 +293,11 @@
             </div>
         </div>
         <div x-show="loadError && !loading" x-cloak class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-500/10 dark:text-red-300">
-            <span>{{ __('Gagal memuat jadwal.') }}</span>
+            <span>{{ __('Failed to load the schedule.') }}</span>
             <x-icon-button icon="reset" title="{{ __('Retry') }}" @click="loadError = false; fetchEvents(); if (view === 'week') fetchWeek(); else fetchMonth();" />
         </div>
         <div x-show="!loading && !loadError && view !== 'week' && events.length === 0" x-cloak class="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 px-4 py-8 text-center">
-            <p class="text-sm text-slate-500 mb-3">{{ __('Belum ada jadwal kunjungan.') }}</p>
+            <p class="text-sm text-slate-500 mb-3">{{ __('No visit schedules yet.') }}</p>
             @can('manage-sales')
                 <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
             @endcan

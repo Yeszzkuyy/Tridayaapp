@@ -13,7 +13,7 @@
                     @csrf
 
                     <div>
-                        <label for="title" class="block text-sm font-medium text-gray-700">{{ __('Judul Task') }}</label>
+                        <label for="title" class="block text-sm font-medium text-gray-700">{{ __('Task Title') }}</label>
                         <input type="text" name="title" id="title" value="{{ old('title') }}"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-500 focus:ring-accent-500">
                         @error('title')
@@ -34,7 +34,7 @@
                         <label for="assigned_to" class="block text-sm font-medium text-gray-700">{{ __('Assigned To') }}</label>
                         <select name="assigned_to" id="assigned_to"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-500 focus:ring-accent-500">
-                            <option value="">{{ __('-- Belum Ditentukan --') }}</option>
+                            <option value="">{{ __('-- Undetermined --') }}</option>
                             @foreach($engineers as $engineer)
                                 <option value="{{ $engineer->id }}" @selected(old('assigned_to') == $engineer->id)>
                                     {{ $engineer->name }}
@@ -45,7 +45,7 @@
                             <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                         @enderror
                         @if($engineers->isEmpty())
-                            <p class="text-xs text-amber-600 mt-1">{{ __('Belum ada user dengan role engineer/teknisi.') }}</p>
+                            <p class="text-xs text-amber-600 mt-1">{{ __('There are no users with the engineer/technician role.') }}</p>
                         @endif
                     </div>
 
@@ -53,7 +53,7 @@
                         <label for="status" class="block text-sm font-medium text-gray-700">{{ __('Status') }}</label>
                         <select name="status" id="status"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-accent-500 focus:ring-accent-500">
-                            <option value="">{{ __('-- Pilih Status --') }}</option>
+                            <option value="">{{ __('-- Select Status --') }}</option>
                             <option value="Pending" @selected(old('status') === 'Pending')>{{ __('Pending') }}</option>
                             <option value="In Progress" @selected(old('status') === 'In Progress')>{{ __('In Progress') }}</option>
                             <option value="Done" @selected(old('status') === 'Done')>{{ __('Done') }}</option>
@@ -66,14 +66,14 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label for="start_date" class="block text-sm font-medium text-gray-700">{{ __('Tanggal Mulai') }}</label>
+                            <label for="start_date" class="block text-sm font-medium text-gray-700">{{ __('Start Date') }}</label>
                             <x-datepicker name="start_date" id="start_date" value="{{ old('start_date') }}"></x-datepicker>
                             @error('start_date')
                                 <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                         <div>
-                            <label for="due_date" class="block text-sm font-medium text-gray-700">{{ __('Tanggal Selesai (Target)') }}</label>
+                            <label for="due_date" class="block text-sm font-medium text-gray-700">{{ __('End Date (Target)') }}</label>
                             <x-datepicker name="due_date" id="due_date" value="{{ old('due_date') }}"></x-datepicker>
                             @error('due_date')
                                 <p class="text-sm text-red-600 mt-1">{{ $message }}</p>

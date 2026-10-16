@@ -1,11 +1,11 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Manajemen Purchase Order') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Kelola purchase order untuk customer.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Purchase Order Management') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Manage purchase orders for customers.') }}</p>
         </div>
         @can('manage-admin')
-            <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" label="{{ __('Buat PO') }}" title="{{ __('Buat PO') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" label="{{ __('Create PO') }}" title="{{ __('Create PO') }}" />
         @endcan
     </div>
 
@@ -14,11 +14,11 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('No PO') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('PO No.') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Item') }}</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Aksi') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -38,19 +38,19 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="{{ __('Detail PO') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="{{ __('PO Detail') }}" />
                                     @can('manage-admin')
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.pos.edit', $po) }}" title="{{ __('Edit PO') }}" />
-                                        <form action="{{ route('admin.pos.destroy', $po) }}" method="POST" onsubmit="return confirm('{{ __('Hapus PO ini?') }}')" class="inline">
+                                        <form action="{{ route('admin.pos.destroy', $po) }}" method="POST" onsubmit="return confirm('{{ __('Delete this PO?') }}')" class="inline">
                                             @csrf @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus PO') }}" />
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete PO') }}" />
                                         </form>
                                     @endcan
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-8 text-center text-slate-400">{{ __('Belum ada PO.') }}</td></tr>
+                        <tr><td colspan="5" class="py-8 text-center text-slate-400">{{ __('No POs yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

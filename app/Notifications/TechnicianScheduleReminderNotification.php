@@ -47,7 +47,7 @@ class TechnicianScheduleReminderNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Pengingat jadwal teknisi'),
+            'title' => __('Technician schedule reminder'),
             'body' => $this->schedule->title . ' dimulai ' . $this->schedule->start_at->format('d M Y H:i'),
             'url' => route('teknisi.jadwal'),
         ];

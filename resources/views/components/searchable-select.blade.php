@@ -2,7 +2,7 @@
     'name' => 'id',
     'options' => [],
     'selected' => null,
-    'placeholder' => __('Cari & pilih...'),
+    'placeholder' => __('Search & select...'),
 ])
 
 @php
@@ -51,6 +51,6 @@
                     :class="String(id) === String(selectedId) ? 'bg-accent-50 dark:bg-accent-500/10' : ''"
                     x-text="label"></button>
         </template>
-        <p x-show="filtered.length === 0" class="px-4 py-3 text-sm text-slate-400">{{ __('Tidak ada hasil.') }}</p>
+        <p x-show="filtered.length === 0" class="px-4 py-3 text-sm text-slate-400">{{ __('No results.') }}</p>
     </div>
 </div>

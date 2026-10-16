@@ -85,7 +85,7 @@ class PocController extends Controller
         }
 
         return $this->ajaxOrRedirect($request, 'sales.pocs.index',
-            __('POC/Demo berhasil dijadwalkan.'), ['redirect' => route('sales.pocs.index')]);
+            __('POC/Demo scheduled successfully.'), ['redirect' => route('sales.pocs.index')]);
     }
 
     public function show(Poc $poc)
@@ -124,14 +124,14 @@ class PocController extends Controller
         $poc->update($validated);
 
         return $this->ajaxOrRedirect($request, 'sales.pocs.index',
-            __('POC/Demo berhasil diupdate.'), ['redirect' => route('sales.pocs.index')]);
+            __('POC/Demo updated successfully.'), ['redirect' => route('sales.pocs.index')]);
     }
 
     public function destroy(Request $request, Poc $poc)
     {
         $poc->delete();
 
-        return $this->ajaxOrRedirect($request, 'sales.pocs.index', __('POC/Demo berhasil dihapus.'));
+        return $this->ajaxOrRedirect($request, 'sales.pocs.index', __('POC/Demo deleted successfully.'));
     }
 
     private function leadOptions(?int $customerId = null)

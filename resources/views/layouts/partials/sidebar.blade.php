@@ -85,7 +85,7 @@
     </div>
 
     {{-- Menu --}}
-    <nav id="sidebar-navigation" aria-label="{{ __('Navigasi utama') }}" class="sidebar-nav relative z-10 flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
+    <nav id="sidebar-navigation" aria-label="{{ __('Main navigation') }}" class="sidebar-nav relative z-10 flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
          data-nav-active="{{ $navActive }} sb-active" data-nav-inactive="{{ $navInactive }}">
         <div class="space-y-6">
             <section aria-labelledby="sidebar-main-label">
@@ -137,13 +137,13 @@
                                         <span>{{ __('Management') }}</span>
                                         <span class="ml-auto flex shrink-0 items-center gap-1.5 sidebar-hide">
                                             <template x-if="$store.notif.unassigned > 0">
-                                                <span class="h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Ada lead belum di-assign') }}"></span>
+                                                <span class="h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Unassigned leads') }}"></span>
                                             </template>
                                         </span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-management-menu"
-                                            aria-label="{{ __('Buka/tutup submenu') }}">
+                                            aria-label="{{ __('Open/close submenu') }}">
                                         <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
@@ -157,7 +157,7 @@
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
                                         <span>{{ __('Manage Sales') }}</span>
                                         <template x-if="$store.notif.unassigned > 0">
-                                            <span class="ml-auto h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Ada lead belum di-assign') }}"></span>
+                                            <span class="ml-auto h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Unassigned leads') }}"></span>
                                         </template>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('manage.marketing.index') }}"
@@ -196,11 +196,11 @@
                                     <a wire:navigate.hover href="{{ route('teknisi.dashboard') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="tools" class="h-5 w-5 shrink-0" />
-                                        <span>{{ __('Teknisi') }}</span>
+                                        <span>{{ __('Technician') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-technician-menu"
-                                            aria-label="{{ __('Buka/tutup submenu') }}">
+                                            aria-label="{{ __('Open/close submenu') }}">
                                         <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
@@ -212,7 +212,7 @@
                                         aria-current="{{ request()->routeIs('teknisi.dashboard*') ? 'page' : 'false' }}"
                                         class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.dashboard*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
-                                         <span>{{ __('Dashboard Teknisi') }}</span>
+                                         <span>{{ __('Technician Dashboard') }}</span>
                                      </a>
                                      <a wire:navigate.hover href="{{ route('projects.index') }}"
                                         aria-current="{{ request()->routeIs('projects*') ? 'page' : 'false' }}"
@@ -243,14 +243,14 @@
                                        aria-current="{{ request()->routeIs('teknisi.request-hargas*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.request-hargas*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" aria-hidden="true"></span>
-                                         <span>{{ __('Request Harga') }}</span>
+                                         <span>{{ __('Price Request') }}</span>
                                      </a>
                                      @endunless
                                      <a wire:navigate.hover href="{{ route('teknisi.instalasis.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.instalasis*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.instalasis*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                                         <span>{{ __('Instalasi') }}</span>
+                                         <span>{{ __('Installation') }}</span>
                                      </a>
                                      @unless($tekRecap)
                                      <a wire:navigate.hover href="{{ route('teknisi.documents.index') }}"
@@ -276,7 +276,7 @@
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-marketing-menu"
-                                            aria-label="{{ __('Buka/tutup submenu') }}">
+                                            aria-label="{{ __('Open/close submenu') }}">
                                         <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
@@ -310,14 +310,14 @@
                                        aria-current="{{ request()->routeIs('partners*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('partners*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
-                                         <span>{{ __('Data Partner') }}</span>
+                                         <span>{{ __('Partners') }}</span>
                                     </a>
                                     @unless($mktRecap)
                                     <a wire:navigate.hover href="{{ route('leads.activities') }}"
                                        aria-current="{{ request()->routeIs('leads.activities') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('leads.activities') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
-                                         <span>{{ __('Log Aktivitas') }}</span>
+                                         <span>{{ __('Activity Log') }}</span>
                                      </a>
                                      @endunless
                                      @can('monitor-marketing')
@@ -346,7 +346,7 @@
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-sales-menu"
-                                            aria-label="{{ __('Buka/tutup submenu') }}">
+                                            aria-label="{{ __('Open/close submenu') }}">
                                         <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
@@ -378,7 +378,7 @@
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-admin-menu"
-                                            aria-label="{{ __('Buka/tutup submenu') }}">
+                                            aria-label="{{ __('Open/close submenu') }}">
                                         <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
@@ -454,7 +454,7 @@
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-admin-panel-menu"
-                                            aria-label="{{ __('Buka/tutup submenu') }}">
+                                            aria-label="{{ __('Open/close submenu') }}">
                                         <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                         </svg>
@@ -525,14 +525,14 @@
     <div class="relative z-10 flex-shrink-0 px-3 pb-3">
         <button id="sidebarCollapseBtn" type="button"
                 class="sidebar-collapse group flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50"
-                aria-label="{{ __('Perkecil sidebar') }}" aria-controls="sidebar" aria-expanded="true">
+                aria-label="{{ __('Collapse sidebar') }}" aria-controls="sidebar" aria-expanded="true">
             <svg class="icon-collapse h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
             </svg>
             <svg class="icon-expand h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h10M4 12h10M4 17h10M13 12h7M17 9l3 3-3 3"/>
             </svg>
-            <span class="sidebar-hide">{{ __('Perkecil') }}</span>
+            <span class="sidebar-hide">{{ __('Collapse') }}</span>
         </button>
     </div>
 @endpersist

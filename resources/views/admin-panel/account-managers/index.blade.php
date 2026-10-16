@@ -3,9 +3,9 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">{{ __('Account Manager') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Kelola data Account Manager') }}</p>
+                <p class="text-slate-500 mt-1">{{ __('Manage Account Manager data') }}</p>
             </div>
-            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.account-managers.create') }}" label="{{ __('Tambah Account Manager') }}" title="{{ __('Tambah Account Manager') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.account-managers.create') }}" label="{{ __('Add Account Manager') }}" title="{{ __('Add Account Manager') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -13,9 +13,9 @@
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Nama') }}</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Dibuat Pada') }}</th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Created At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -28,11 +28,11 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.account-managers.edit', $am) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.account-managers.destroy', $am) }}" 
                                               method="POST" 
-                                              onsubmit="return confirm('{{ __('Hapus Account Manager ini?') }}')"
+                                              onsubmit="return confirm('{{ __('Delete this Account Manager?') }}')"
                                               class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus') }}" />
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
                                         </form>
                                     </div>
                                 </td>
@@ -40,7 +40,7 @@
                         @empty
                             <tr>
                                 <td colspan="3" class="py-16 text-center text-slate-400">
-                                    {{ __('Belum ada Account Manager.') }}
+                                    {{ __('No Account Manager yet.') }}
                                 </td>
                             </tr>
                         @endforelse

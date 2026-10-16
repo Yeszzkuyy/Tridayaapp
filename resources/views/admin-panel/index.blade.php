@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Admin Panel') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manajemen User, Role & Permission (Super Admin)') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('User, Role & Permission Management (Super Admin)') }}</p>
         </div>
         <div class="flex gap-2">
             <x-icon-button as="a" href="{{ route('admin-panel.roles.create') }}" title="{{ __('Add Role') }}">
@@ -32,13 +32,13 @@
             <table class="w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider w-16">{{ __('Foto') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Nama') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider w-16">{{ __('Photo') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Name') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Email') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Role') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Dibuat') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Created') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
@@ -50,7 +50,7 @@
                             <td class="px-4 py-3">
                                 <p class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</p>
                                 @if($user->id === auth()->id())
-                                    <span class="text-xs text-accent-600">{{ __('(Anda)') }}</span>
+                                    <span class="text-xs text-accent-600">{{ __('(You)') }}</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $user->email }}</td>
@@ -64,14 +64,14 @@
                             <td class="px-4 py-3">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium
                                     {{ $user->trashed() ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
-                                    {{ $user->trashed() ? __('Nonaktif') : __('Aktif') }}
+                                    {{ $user->trashed() ? __('Nonaktif') : __('Active') }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.users.edit', $user) }}" title="{{ __('Edit user') }}" />
                                 @if($user->id !== auth()->id())
-                                    <form action="{{ route('admin-panel.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Hapus user ini?') }}')">
+                                    <form action="{{ route('admin-panel.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Delete this user?') }}')">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete user') }}" />
                                     </form>
@@ -80,7 +80,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-slate-400">{{ __('Tidak ada data user.') }}</td>
+                            <td colspan="7" class="px-4 py-12 text-center text-slate-400">{{ __('No user data.') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

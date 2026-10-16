@@ -57,7 +57,7 @@ class SalesScheduleAssignedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Jadwal sales baru'),
+            'title' => __('New sales schedule'),
             'body' => $this->schedule->title,
             'url' => route('sales.schedules.show', $this->schedule->id),
         ];

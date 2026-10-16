@@ -2,7 +2,7 @@
     <div>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Edit Jadwal') }}</h1>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Edit Schedule') }}</h1>
                 <p class="text-slate-500 mt-1">{{ $schedule->title }}</p>
             </div>
             <x-icon-button as="a" icon="back" href="{{ route('sales.schedules.show', $schedule) }}" title="{{ __('Back') }}" />

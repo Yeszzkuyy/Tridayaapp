@@ -21,7 +21,7 @@
                             @csrf
                             @method('PATCH')
                             <x-icon-button icon="delete" type="submit" title="{{ __('Reject') }}"
-                                           onclick="return confirm('{{ __('Tolak produk ini? Tidak masuk pencarian AI.') }}')" />
+                                           onclick="return confirm('{{ __('Reject this product? It will not appear in AI search.') }}')" />
                         </form>
                     @endif
                 @endif
@@ -92,7 +92,7 @@
                             @if($source->error)<p class="text-xs text-red-600 mt-1">{{ $source->error }}</p>@endif
                         </div>
                         <x-status-badge :color="match($source->status) { 'published' => 'green', 'success' => 'green', 'failed' => 'red', 'needs_review' => 'orange', 'duplicate' => 'slate', default => 'blue' }">{{ ucfirst(str_replace('_', ' ', $source->status)) }}</x-status-badge>
-                        <form action="{{ route('product-knowledge.sources.destroy', $source) }}" method="POST" onsubmit="return confirm('{{ __('Hapus source ini permanen? Dokumennya ikut terhapus.') }}')">
+                        <form action="{{ route('product-knowledge.sources.destroy', $source) }}" method="POST" onsubmit="return confirm('{{ __('Delete this source permanently? Its documents will be deleted as well.') }}')">
                             @csrf
                             @method('DELETE')
                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete source') }}" />

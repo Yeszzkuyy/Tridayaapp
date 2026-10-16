@@ -57,7 +57,7 @@ class TechnicalRequestCreatedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Technical Request baru'),
+            'title' => __('New Technical Request'),
             'body' => $this->request->title,
             'url' => route('sales.technical-requests.show', $this->request->id),
         ];

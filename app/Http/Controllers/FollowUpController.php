@@ -70,17 +70,17 @@ class FollowUpController extends Controller
         // Form Log Follow Up di detail lead minta balik ke lead-nya.
         if ($request->input('return') === 'lead' && $followUp->lead_id) {
             return redirect()->route('leads.show', $followUp->lead_id)
-                ->with('success', __('Log follow up berhasil dicatat.'));
+                ->with('success', __('Follow up logged successfully.'));
         }
 
         // Modal tambah jadwal di Weekly Strip minta balik ke kalendernya.
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Jadwal kunjungan berhasil ditambah.'));
+                ->with('success', __('Visit schedule added successfully.'));
         }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up berhasil dicatat.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up recorded successfully.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function show(FollowUp $followUp)
@@ -125,14 +125,14 @@ class FollowUpController extends Controller
         $this->salesService->updateFollowUp($followUp, $validated);
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up berhasil diupdate.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up updated successfully.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function destroy(Request $request, FollowUp $followUp)
     {
         $this->salesService->deleteFollowUp($followUp);
 
-        return $this->ajaxOrRedirect($request, 'sales.follow-ups.index', __('Follow up berhasil dihapus.'));
+        return $this->ajaxOrRedirect($request, 'sales.follow-ups.index', __('Follow up deleted successfully.'));
     }
 
     public function complete(Request $request, FollowUp $followUp)
@@ -142,11 +142,11 @@ class FollowUpController extends Controller
         // Drawer detail di jadwal sales minta balik ke kalendernya.
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Jadwal kunjungan selesai.'));
+                ->with('success', __('Visit schedule completed.'));
         }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up selesai.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up completed.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function reopen(Request $request, FollowUp $followUp)
@@ -154,7 +154,7 @@ class FollowUpController extends Controller
         $this->salesService->reopenFollowUp($followUp);
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up dibuka lagi.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up reopened.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function snooze(Request $request, FollowUp $followUp)
@@ -171,7 +171,7 @@ class FollowUpController extends Controller
         }
 
         return redirect()->route('sales.follow-ups.index')
-            ->with('success', __('Follow up ditunda.'));
+            ->with('success', __('Follow up postponed.'));
     }
 
     /**
@@ -241,7 +241,7 @@ class FollowUpController extends Controller
         if (!empty($validated['lead_id'])) {
             $lead = Lead::find($validated['lead_id']);
             abort_if(!$lead || (int) $lead->customer_id !== (int) $validated['customer_id'],
-                422, __('Lead yang dipilih bukan milik customer ini.'));
+                422, __('The selected lead does not belong to this customer.'));
         }
     }
 }

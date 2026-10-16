@@ -1,10 +1,10 @@
 <section>
     <header>
         <h2 class="text-lg font-bold text-slate-800">
-            {{ __('Informasi Akun') }}
+            {{ __('Account Information') }}
         </h2>
         <p class="mt-1 text-sm text-slate-500">
-            {{ __('Perbarui nama dan alamat email Anda.') }}
+            {{ __('Update your name and email address.') }}
         </p>
     </header>
 
@@ -20,7 +20,7 @@
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" maxlength="16" required autofocus autocomplete="name" x-model="name" />
             <p x-show="name.length >= 16" x-cloak class="mt-1 text-sm text-red-600">
-                {{ __('Maksimal 16 karakter tercapai.') }}
+                {{ __('Maximum of 16 characters reached.') }}
             </p>
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>

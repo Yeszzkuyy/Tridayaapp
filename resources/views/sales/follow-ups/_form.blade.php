@@ -54,7 +54,7 @@
                     :error="$errors->first('lead_id')" />
             </div>
         </div>
-        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Select a customer first.') }}</p>
+        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Pilih customer terlebih dahulu.') }}</p>
         <p class="mt-1 text-xs text-slate-400">{{ __('Links this follow-up to an opportunity. Auto-linked when the customer has exactly one of your active leads.') }}</p>
     </div>
     @endif
@@ -66,7 +66,7 @@
             :value="old('type', $followUp?->type)"
             :empty-label="__('Select type')"
             :error="$errors->first('type')" />
-        <p class="mt-1 text-xs text-slate-400">{{ __('Cara follow up ke customer.') }}</p>
+        <p class="mt-1 text-xs text-slate-400">{{ __('How to follow up with the customer.') }}</p>
     </div>
 
     <div>

@@ -18,7 +18,7 @@
             @click.capture.stop="guardClick($event)"
             :style="triggerStyle()"
             :aria-expanded="open"
-            aria-label="{{ __('Buka 3DY Assistant') }}"
+            aria-label="{{ __('Open 3DY Assistant') }}"
             class="ai-mascot-btn fixed z-[1000] flex h-14 w-14 touch-none items-center justify-center rounded-full bg-gradient-to-br from-accent-400 via-accent-600 to-accent-700 text-white shadow-xl shadow-accent-600/40 ring-4 ring-accent-500/20 transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 active:scale-95 motion-reduce:transform-none">
         <svg viewBox="0 0 48 48" class="ai-mascot h-9 w-9" aria-hidden="true">
             <line x1="24" y1="3" x2="24" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
@@ -59,15 +59,15 @@
                     <path d="M20 33.5c1.2 1.4 2.5 2 4 2s2.8-.6 4-2" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
                 </svg>
             </span>
-            <p class="flex-1">{{ __('Hai! Butuh bantuan?') }}</p>
-            <button type="button" @click="dismissGreeting()" aria-label="{{ __('Tutup sapaan') }}"
+            <p class="flex-1">{{ __('Hi! Need help?') }}</p>
+            <button type="button" @click="dismissGreeting()" aria-label="{{ __('Dismiss greeting') }}"
                     class="shrink-0 rounded-md p-0.5 text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 dark:hover:text-slate-200">
                 <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
         </div>
         <button type="button" @click.stop="openChat()"
                 class="mt-2.5 w-full rounded-xl bg-accent-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400">
-            {{ __('Mulai chat') }}
+            {{ __('Start chat') }}
         </button>
     </div>
 
@@ -105,7 +105,7 @@
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
                 <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14" /></svg>
             </button>
-            <button type="button" @click="closeChat()" aria-label="{{ __('Tutup chat') }}"
+            <button type="button" @click="closeChat()" aria-label="{{ __('Close chat') }}"
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
                 <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
@@ -114,7 +114,7 @@
         {{-- Messages --}}
         <div x-ref="messages" @scroll="onScroll()"
              class="ai-chat-scroll min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4 dark:bg-slate-900/60"
-             aria-live="polite" aria-label="{{ __('Riwayat percakapan') }}">
+             aria-live="polite" aria-label="{{ __('Conversation history') }}">
             <template x-if="!messages.length && !busy">
                 <div class="py-6 text-center">
                     <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-accent-400 to-accent-700 text-white shadow-lg shadow-accent-600/30" aria-hidden="true">
@@ -128,7 +128,7 @@
                         </svg>
                     </span>
                     <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Halo! Saya 3DY Assistant.') }}</p>
-                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Ada yang bisa saya bantu?') }}</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('How can I help you?') }}</p>
                     <div class="mt-4 flex flex-wrap justify-center gap-2">
                         <template x-for="qa in quickActions" :key="qa">
                             <button type="button" @click="sendQuick(qa)" :disabled="busy"
@@ -176,10 +176,10 @@
                         </svg>
                     </span>
                     <div>
-                        <div class="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800" aria-label="{{ __('AI sedang mengetik') }}">
+                        <div class="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800" aria-label="{{ __('AI is typing') }}">
                             <span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>
                         </div>
-                        <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">{{ __('3DY sedang mengetik…') }}</p>
+                        <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">{{ __('3DY is typing…') }}</p>
                     </div>
                 </div>
             </template>
@@ -195,11 +195,11 @@
             <div class="flex items-end gap-2">
                 <textarea x-ref="input" x-model="draft" rows="1" maxlength="2000"
                           @input="resize()" @keydown.enter="onEnter($event)"
-                          :placeholder="busy ? '{{ __('Menunggu jawaban...') }}' : '{{ __('Tulis pesan... (Enter kirim, Shift+Enter baris baru)') }}'"
-                          aria-label="{{ __('Tulis pesan untuk 3DY Assistant') }}"
+                          :placeholder="busy ? '{{ __('Waiting for a response...') }}' : '{{ __('Type a message... (Enter to send, Shift+Enter for a new line)') }}'"
+                          aria-label="{{ __('Type a message to 3DY Assistant') }}"
                           class="max-h-[120px] min-h-[40px] flex-1 resize-none rounded-xl border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"></textarea>
                 <button type="button" @click="send()" :disabled="!canSend()"
-                        aria-label="{{ __('Kirim pesan') }}"
+                        aria-label="{{ __('Send message') }}"
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-600 text-white shadow-sm transition hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
                     <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>
                 </button>
@@ -244,7 +244,7 @@ function aiAssistant(uid, sendUrl) {
         uid, sendUrl, open: false, busy: false, error: '',
         messages: [], draft: '', greeting: false,
         pos: null, dragging: false, moved: false, suppressUntil: 0, sx: 0, sy: 0, ox: 0, oy: 0,
-        quickActions: @js([__('Ringkasan pekerjaan saya'), __('Cari customer'), __('Cek tugas saya')]),
+        quickActions: @js([__('My work summary'), __('Search customer'), __('Check my tasks')]),
         convKey() { return '3dy.ai.conv.' + this.uid; },
         posKey() { return '3dy.ai.pos.' + this.uid; },
         greetKey() { return '3dy.ai.greetAt.' + this.uid; },
@@ -422,7 +422,7 @@ function aiAssistant(uid, sendUrl) {
                 }
                 this.messages.push({ id: Date.now() + 1, role: 'assistant', content: data.message ?? '', time: this.nowTime() });
             } catch (e) {
-                this.error = e?.message || @js(__('Gagal menghubungi AI. Coba lagi.'));
+                this.error = e?.message || @js(__('Failed to reach the AI. Please try again.'));
             } finally {
                 this.busy = false;
                 this.scrollBottom();

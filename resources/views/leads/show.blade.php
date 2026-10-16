@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Detail Lead') }}:
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead Detail') }}:
                 @canany(['view-customer', 'view-sales', 'manage-sales'])
                     @if($lead->customer)
                         <a href="{{ route('customers.show', $lead->customer) }}" class="text-accent-600 hover:text-accent-500 hover:underline">{{ $lead->customer->name }}</a>
@@ -12,7 +12,7 @@
                     {{ $lead->customer?->name ?? '-' }}
                 @endcanany
             </h1>
-            <p class="text-slate-500 mt-1">{{ __('Informasi lengkap lead / opportunity') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Complete lead / opportunity information') }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @php
@@ -82,7 +82,7 @@
     @endphp
 
     {{-- Hero ringkasan: status + info sekilas + langkah berikutnya --}}
-    <section aria-label="{{ __('Ringkasan Lead') }}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
+    <section aria-label="{{ __('Lead Summary') }}" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
         <div class="flex flex-wrap items-center gap-2">
             <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ \App\Models\Lead::statusBadgeClasses($lead->status) }}">
                 {{ ucfirst($lead->status) }}
@@ -122,7 +122,7 @@
                     <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $lastTimeline['title'] }} — {{ $lastTimeline['summary'] ?: '-' }}</p>
                     <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $lastTimeline['date'] ? \Carbon\Carbon::parse($lastTimeline['date'])->format('d M Y') : '-' }}@if($lastTimeline['by']) • {{ $lastTimeline['by'] }} @endif</p>
                 @else
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Belum ada jadwal. Buat langkah berikutnya.') }}</p>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('No schedules yet. Create the next step.') }}</p>
                 @endif
             </div>
             @if($nextSchedule)
@@ -143,7 +143,7 @@
                 <section aria-labelledby="card-hasil" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                     <h2 id="card-hasil" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="check-circle" class="h-5 w-5 text-slate-400" />
-                        {{ __('Hasil Akhir') }}
+                        {{ __('Final Result') }}
                     </h2>
                     <div class="mt-3">
                         @if($lead->status === 'won')
@@ -178,10 +178,10 @@
                                 <form action="{{ route('leads.outcome', $lead) }}" method="POST" class="mt-3 flex flex-wrap items-end gap-3">
                                     @csrf @method('PATCH')
                                     <div>
-                                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Alasan Lost') }}</label>
+                                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Lost Reason') }}</label>
                                         <select name="lost_reason"
                                                 class="rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
-                                            <option value="">{{ __('-- Pilih alasan --') }}</option>
+                                            <option value="">{{ __('-- Select a reason --') }}</option>
                                             @foreach(\App\Models\Lead::LOST_REASONS as $reason)
                                                 <option value="{{ $reason }}" @selected(old('lost_reason', $lead->lost_reason) === $reason)>
                                                     {{ \App\Models\Lead::lostReasonLabel($reason) }}
@@ -190,14 +190,14 @@
                                         </select>
                                     </div>
                                     <div class="flex-1 min-w-52">
-                                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Catatan') }}</label>
+                                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Notes') }}</label>
                                         <input type="text" name="lost_note" value="{{ old('lost_note', $lead->lost_note) }}"
-                                               placeholder="{{ __('Catatan tambahan (opsional)') }}"
+                                               placeholder="{{ __('Additional notes (optional)') }}"
                                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
                                     </div>
                                     <button type="submit"
                                             class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                                        {{ __('Simpan') }}
+                                        {{ __('Save') }}
                                         <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                     </button>
                                 </form>
@@ -211,30 +211,30 @@
                 <section aria-labelledby="card-kebutuhan" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                     <h2 id="card-kebutuhan" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="file-text" class="h-5 w-5 text-slate-400" />
-                        {{ __('Kebutuhan & Catatan') }}
+                        {{ __('Requirements & Notes') }}
                     </h2>
                     <div class="mt-3 space-y-3">
                         @if($lead->kebutuhan)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Kebutuhan') }}</p>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Requirement') }}</p>
                                 <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->kebutuhan }}</div>
                             </div>
                         @endif
                         @if($lead->solusi)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Solusi') }}</p>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Solution') }}</p>
                                 <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->solusi }}</div>
                             </div>
                         @endif
                         @if($lead->progress_notes)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Progress FollowUp / Keterangan') }}</p>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Follow-Up Progress / Notes') }}</p>
                                 <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->progress_notes }}</div>
                             </div>
                         @endif
                         @if($lead->notes)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Catatan') }}</p>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Notes') }}</p>
                                 <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->notes }}</div>
                             </div>
                         @endif
@@ -246,7 +246,7 @@
                 <div class="flex items-center justify-between gap-2">
                     <h2 id="card-jadwal" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="calendar" class="h-5 w-5 text-slate-400" />
-                        {{ __('Jadwal Sales') }}
+                        {{ __('Sales Schedule') }}
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ ($upcomingSchedules->concat($pastSchedules))->count() }}</span>
                     </h2>
                     @if($canSalesWrite)
@@ -273,7 +273,7 @@
                             <x-icon-button as="a" icon="view" href="{{ route('sales.schedules.show', $schedule) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada jadwal untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('No schedules for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -282,7 +282,7 @@
                 <div class="flex items-center justify-between gap-2">
                     <h2 id="card-penawaran" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="receipt" class="h-5 w-5 text-slate-400" />
-                        {{ __('Penawaran') }}
+                        {{ __('Offer') }}
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $proposalsList->count() }}</span>
                         @if($proposalsList->isNotEmpty())
                             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rp {{ number_format($proposalsList->sum('grand_total'), 0, ',', '.') }}</span>
@@ -307,7 +307,7 @@
                             <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada penawaran untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('No quotations for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -398,7 +398,7 @@
                             @endif
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada log follow up untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('No follow up logs for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -406,7 +406,7 @@
             <section aria-labelledby="card-aktivitas" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <h2 id="card-aktivitas" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     <x-icon name="activity" class="h-5 w-5 text-slate-400" />
-                    {{ __('Riwayat Lead') }}
+                    {{ __('Lead History') }}
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $lead->activities->count() }}</span>
                 </h2>
                 <div class="mt-3 space-y-2">
@@ -425,7 +425,7 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada riwayat untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('No history for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -458,13 +458,13 @@
                                 <a href="{{ route('lead-tasks.show', $task) }}"
                                    class="text-sm font-medium text-slate-800 dark:text-slate-100 hover:underline line-clamp-2">{{ $task->title }}</a>
                                 <p class="mt-1 text-xs text-slate-500">
-                                    {{ $task->assignee?->name ?? __('Belum di-assign') }}
+                                    {{ $task->assignee?->name ?? __('Not assigned yet') }}
                                     @if($task->due_date) • {{ $task->due_date->format('d M Y') }} @endif
                                 </p>
                             </div>
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada inside sales task untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('No inside sales tasks for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -501,7 +501,7 @@
                             <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $tech) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('Belum ada technical request untuk lead ini.') }}</p>
+                        <p class="text-slate-500">{{ __('No technical requests for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -511,7 +511,7 @@
             <section aria-labelledby="card-info" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <h2 id="card-info" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     <x-icon name="bolt" class="h-5 w-5 text-slate-400" />
-                    {{ __('Informasi Lead') }}
+                    {{ __('Lead Information') }}
                 </h2>
                 <dl class="mt-3 space-y-3">
                     <div>
@@ -519,15 +519,15 @@
                         <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $lead->pt_group ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Perusahaan') }}</dt>
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Company') }}</dt>
                         <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $lead->customer?->company ?? $lead->customer?->name ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Dibuat pada') }}</dt>
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Created on') }}</dt>
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->created_at?->format('d M Y H:i') ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Terakhir Diperbarui') }}</dt>
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Last Updated') }}</dt>
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->updated_at?->format('d M Y H:i') ?? '-' }}</dd>
                     </div>
                 </dl>
@@ -536,7 +536,7 @@
             <section aria-labelledby="card-kontak" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <h2 id="card-kontak" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     <x-icon name="phone" class="h-5 w-5 text-slate-400" />
-                    {{ __('Kontak Customer') }}
+                    {{ __('Customer Contact') }}
                 </h2>
                 <dl class="mt-3 space-y-3">
                     <div>
@@ -544,11 +544,11 @@
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->contact_person ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Telpon Kantor') }}</dt>
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Office Phone') }}</dt>
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->phone ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('No WA') }}</dt>
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('WhatsApp No.') }}</dt>
                         @php($waLink = $lead->customer?->waLink() ?? null)
                         <dd class="mt-1 flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
                             @if($waLink)
@@ -568,7 +568,7 @@
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100 break-all">{{ $lead->customer?->email ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Alamat') }}</dt>
+                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Address') }}</dt>
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->address ?? '-' }}</dd>
                     </div>
                 </dl>
@@ -577,12 +577,12 @@
             <section aria-labelledby="card-lampiran" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <h2 id="card-lampiran" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     <x-icon name="folder" class="h-5 w-5 text-slate-400" />
-                    {{ __('Lampiran (BOQ / Kebutuhan User)') }}
+                    {{ __('Attachments (BOQ / User Requirements)') }}
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $lead->documents->count() }}</span>
                 </h2>
                 <div class="mt-3 space-y-2">
                     @if($lead->documents->isEmpty())
-                        <p class="text-slate-500">{{ __('Belum ada lampiran.') }}</p>
+                        <p class="text-slate-500">{{ __('No attachments yet.') }}</p>
                     @else
                         @foreach($lead->documents as $doc)
                             <div class="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
@@ -630,7 +630,7 @@
             <section aria-labelledby="card-instalasi" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <h2 id="card-instalasi" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     <x-icon name="building" class="h-5 w-5 text-slate-400" />
-                    {{ __('Dokumentasi Instalasi (Read-Only)') }}
+                    {{ __('Installation Documentation (Read-Only)') }}
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $documents->count() }}</span>
                 </h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen dari project terkait customer ini (diunggah Tim Teknisi)') }}</p>
@@ -664,7 +664,7 @@
                                             <x-icon-button as="a" icon="view"
                                                href="{{ route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id]) }}"
                                                target="_blank"
-                                               label="{{ __('Pratinjau') }}" title="{{ __('Pratinjau') }}" />
+                                               label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
                                         @endif
                                     </div>
                                 </div>
@@ -684,7 +684,7 @@
         <div class="fixed inset-0 bg-slate-900/50" onclick="closeConvertModal()"></div>
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600">
             <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-600">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ __('Konversi Lead ke Project') }}</h3>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ __('Convert Lead to Project') }}</h3>
                 <button type="button" onclick="closeConvertModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -693,10 +693,10 @@
                 @csrf @method('PATCH')
                 <div class="p-4 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Nama Project') }}</label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Project Name') }}</label>
                         <input type="text" name="project_name" required
                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
-                               placeholder="{{ __('Nama project baru') }}">
+                               placeholder="{{ __('New project name') }}">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Status Project') }}</label>
@@ -708,31 +708,31 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Tipe Pekerjaan') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Job Type') }} <span class="text-red-500">*</span></label>
                         <select name="work_type_id" required
                                  class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
-                            <option value="">{{ __('-- Pilih Tipe Pekerjaan --') }}</option>
+                            <option value="">{{ __('-- Select Work Type --') }}</option>
                             @foreach($workTypes ?? [] as $type)
                                 <option value="{{ $type->id }}">{{ $type->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Closing Note (Opsional)') }}</label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Closing Note (Optional)') }}</label>
                         <textarea name="closing_note" rows="3"
-                                  placeholder="{{ __('Catatan penutupan: kesepakatan, nilai deal, tindak lanjut...') }}"
+                                  placeholder="{{ __('Closing notes: agreement, deal value, follow up...') }}"
                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"></textarea>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-600">
                     <button type="button" onclick="closeConvertModal()"
                             class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
-                        {{ __('Batal') }}
+                        {{ __('Cancel') }}
                         <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                     <button type="submit"
                             class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                        {{ __('Konversi') }}
+                        {{ __('Convert') }}
                         <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                 </div>
@@ -776,7 +776,7 @@
         } else {
             content.innerHTML = '<div class="text-center py-10">' +
                 '<svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>' +
-                '<p class="text-slate-600 font-medium mb-2">{{ __('File ini perlu didownload') }}</p>' +
+                '<p class="text-slate-600 font-medium mb-2">{{ __('This file needs to be downloaded') }}</p>' +
                 '<a href="' + url.replace('/show', '/download') + '" ' +
                 'class="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-sm font-medium transition">' +
                 '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path></svg>' +

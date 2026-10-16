@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="30">
-    <title>{{ __('Kalender') }}</title>
+    <title>{{ __('Calendar') }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -39,7 +39,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>{{ __('Kalender Mendatang') }}</h1>
+        <h1>{{ __('Upcoming Calendar') }}</h1>
         <div class="status" id="status">{{ __('Diperbarui: :time — refresh otomatis tiap 30 detik', ['time' => now()->format('H:i:s')]) }}</div>
 
         @forelse ($events as $event)
@@ -53,10 +53,10 @@
         @empty
             <div class="empty">
                 @if ($error)
-                    {{ __('Gagal memuat data:') }} <strong>{{ $error }}</strong><br>
-                    {{ __('Periksa') }} <code>GOOGLE_CALENDAR_ID</code> / <code>GOOGLE_API_KEY</code> {{ __('di .env, pastikan kalender berstatus publik, lalu jalankan') }} <code>php artisan config:clear</code>.
+                    {{ __('Failed to load data:') }} <strong>{{ $error }}</strong><br>
+                    {{ __('Check') }} <code>GOOGLE_CALENDAR_ID</code> / <code>GOOGLE_API_KEY</code> {{ __('in .env, make sure the calendar is public, then run') }} <code>php artisan config:clear</code>.
                 @else
-                    {{ __('Tidak ada event mendatang. Cek API key, pastikan kalender publik, dan jalankan') }} <code>php artisan config:clear</code> {{ __('jika baru mengubah .env.') }}
+                    {{ __('No upcoming events. Check the API key, make sure the calendar is public, and run') }} <code>php artisan config:clear</code> {{ __('if you just changed .env.') }}
                 @endif
             </div>
         @endforelse

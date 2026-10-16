@@ -25,7 +25,7 @@
         </div>
         <div class="flex items-center gap-2">
             <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizingProject) }}" title="{{ __('Edit') }}" />
-            <x-icon-button as="a" icon="back" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Kembali') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -62,10 +62,10 @@
             @php
                 $sections = [
                     __('Customer Needs') => $sizingProject->customer_needs,
-                    __('Rekomendasi') => $sizingProject->recommendation,
-                    __('Spesifikasi') => $sizingProject->specifications,
-                    __('Topologi') => $sizingProject->topology,
-                    __('Catatan Teknis') => $sizingProject->technical_notes,
+                    __('Recommendation') => $sizingProject->recommendation,
+                    __('Specification') => $sizingProject->specifications,
+                    __('Topology') => $sizingProject->topology,
+                    __('Technical Notes') => $sizingProject->technical_notes,
                     __('Notes') => $sizingProject->notes,
                 ];
             @endphp

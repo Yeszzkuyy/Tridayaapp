@@ -123,7 +123,7 @@
                             </div>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'{{ __('at') }} ' + fmtTime(event.start_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -231,7 +231,7 @@
                             </div>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'{{ __('at') }} ' + fmtTime(event.start_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
                         <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
@@ -894,16 +894,16 @@
                         // Pesan spesifik dari server (mis. penolakan izin).
                         const data = await r.json().catch(() => ({}));
                         if (r.status === 403) {
-                            this.saveError = data.message || '{{ __('Kamu tidak punya izin mengubah jadwal ini.') }}';
+                            this.saveError = data.message || '{{ __('You do not have permission to edit this schedule.') }}';
                             return;
                         }
                         if (r.status === 419) {
-                            this.saveError = '{{ __('Sesi sudah berakhir. Muat ulang halaman lalu coba lagi.') }}';
+                            this.saveError = '{{ __('Session expired. Reload the page and try again.') }}';
                             return;
                         }
-                        this.saveError = data.message || '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                        this.saveError = data.message || '{{ __('Something went wrong. Please try again.') }}';
                     }).catch(() => {
-                        this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                        this.saveError = '{{ __('Something went wrong. Please try again.') }}';
                     });
                 },
 

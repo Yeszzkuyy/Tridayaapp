@@ -22,10 +22,10 @@ class LeadDocument extends Model
             'proposal' => __('Proposal'),
             'quotation' => __('Quotation'),
             'company_profile' => __('Company Profile'),
-            'technical' => __('Dokumen Teknis'),
-            'requirement' => __('Kebutuhan Customer'),
-            'supporting' => __('Dokumen Pendukung'),
-            'other' => __('Lainnya'),
+            'technical' => __('Technical Documents'),
+            'requirement' => __('Customer Requirements'),
+            'supporting' => __('Supporting Documents'),
+            'other' => __('Others'),
             default => '-',
         };
     }

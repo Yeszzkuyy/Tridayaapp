@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ $project->project_name }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Detail Project') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Project Detail') }}</p>
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
@@ -18,7 +18,7 @@
         <div class="border-b border-slate-200 dark:border-slate-700">
             <nav class="flex gap-6">
                 <button @click="tab = 'info'" :class="tab === 'info' ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-300' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'" class="inline-flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition">
-                    <span>{{ __('Informasi') }}</span>
+                    <span>{{ __('Information') }}</span>
                 </button>
                 <button @click="tab = 'workflow'" :class="tab === 'workflow' ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-300' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'" class="inline-flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition">
                     <span>{{ __('Workflow') }}</span>
@@ -30,10 +30,10 @@
         <div x-show="tab === 'info'" x-transition>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><p class="text-xs text-slate-400">{{ __('Nama Project') }}</p><p class="font-medium text-slate-800">{{ $project->project_name }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Project Name') }}</p><p class="font-medium text-slate-800">{{ $project->project_name }}</p></div>
                     <div><p class="text-xs text-slate-400">{{ __('Customer') }}</p><p class="font-medium text-slate-800">{{ $project->customer?->name ?? '-' }}</p></div>
                     <div><p class="text-xs text-slate-400">{{ __('Jenis Pekerjaan') }}</p><p class="font-medium text-slate-800">{{ $project->workType?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">{{ __('Status') }}</p><x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status?->name ?? __('Belum Memulai') }}</x-status-badge></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Status') }}</p><x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status?->name ?? __('Not Started') }}</x-status-badge></div>
                     <div><p class="text-xs text-slate-400">{{ __('Account Manager') }}</p><p class="font-medium text-slate-800">{{ $project->accountManager?->name ?? '-' }}</p></div>
                     <div><p class="text-xs text-slate-400">{{ __('PIC Engineer') }}</p><p class="font-medium text-slate-800">{{ $project->pic_engineer ?? '-' }}</p></div>
                     <div><p class="text-xs text-slate-400">{{ __('Support Technicians') }}</p><p class="font-medium text-slate-800">{{ $project->support_technicians ?? '-' }}</p></div>
@@ -63,12 +63,12 @@
                 $bastDocs = $project->documents()->where('document_category_id', 1)->latest()->get();
 
                 $steps = [
-                    ['label' => __('Request'), 'done' => true, 'link' => null, 'detail' => __('Project dibuat')],
+                    ['label' => __('Request'), 'done' => true, 'link' => null, 'detail' => __('Project created')],
                     ['label' => __('Survey'), 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id, 'customer_id' => $project->customer_id]), 'detail' => $surveys->first() ? $surveys->first()->status : __('Belum ada')],
                     ['label' => __('Sizing'), 'done' => $sizings->isNotEmpty() && $sizings->first()->status === 'completed', 'link' => $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', ['project_id' => $project->id]), 'detail' => $sizings->first() ? $sizings->first()->status : __('Belum ada')],
-                    ['label' => __('Request Harga'), 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : __('Belum ada')],
-                    ['label' => __('Instalasi'), 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : __('Belum ada')],
-                    ['label' => __('BAST'), 'done' => $bastDocs->isNotEmpty(), 'link' => route('teknisi.documents.index', ['project_id' => $project->id]), 'detail' => $bastDocs->isNotEmpty() ? $bastDocs->count() . ' ' . __('dokumen') : __('Belum ada')],
+                    ['label' => __('Price Request'), 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : __('Belum ada')],
+                    ['label' => __('Installation'), 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : __('Belum ada')],
+                    ['label' => __('BAST'), 'done' => $bastDocs->isNotEmpty(), 'link' => route('teknisi.documents.index', ['project_id' => $project->id]), 'detail' => $bastDocs->isNotEmpty() ? $bastDocs->count() . ' ' . __('documents') : __('Belum ada')],
                 ];
             @endphp
 

@@ -5,9 +5,9 @@
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Tipe') }}</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Kontak') }}</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Jumlah Lead') }}</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Contact') }}</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead Count') }}</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600/70">
@@ -73,9 +73,9 @@
                                     @can('manage-marketing')
                                         <x-icon-button as="a" icon="edit" href="{{ route('partners.edit', $partner) }}" title="{{ __('Edit Partner') }}" />
                                         <form action="{{ route('partners.destroy', $partner) }}" method="POST"
-                                              onsubmit="return confirm('{{ __('Hapus partner') }} {{ $partner->name }}?')" class="inline">
+                                              onsubmit="return confirm('{{ __('Delete partner') }} {{ $partner->name }}?')" class="inline">
                                             @csrf @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Hapus partner') }}" />
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete partner') }}" />
                                         </form>
                                     @endcan
                                 </div>
@@ -90,11 +90,11 @@
                                     </svg>
                                 </div>
                                 <p class="text-slate-500 font-medium">
-                                    {{ request()->filled('search') || request()->filled('type') ? __('Tidak ada partner yang cocok dengan filter.') : __('Belum ada data partner.') }}
+                                    {{ request()->filled('search') || request()->filled('type') ? __('No partners match the filter.') : __('No partner data yet.') }}
                                 </p>
                                 @can('manage-marketing')
                                     <div class="mt-4 flex justify-center">
-                                        <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" label="{{ __('Tambah Partner Pertama') }}" title="{{ __('Tambah Partner Pertama') }}" />
+                                        <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" label="{{ __('Add First Partner') }}" title="{{ __('Add First Partner') }}" />
                                     </div>
                                 @endcan
                             </td>

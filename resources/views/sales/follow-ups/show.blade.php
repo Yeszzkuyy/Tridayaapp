@@ -2,14 +2,14 @@
     <div >
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Detail Follow Up') }}</h1>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Follow Up Detail') }}</h1>
                 <p class="text-slate-500 mt-1">{{ $followUp->customer?->name ?? '-' }}</p>
             </div>
             <div class="flex gap-2">
                 @can('manage-sales')
                     <x-icon-button as="a" icon="edit" href="{{ route('sales.follow-ups.edit', $followUp) }}" title="{{ __('Edit') }}" />
                 @endcan
-                <x-icon-button as="a" icon="back" href="{{ route('sales.follow-ups.index') }}" title="{{ __('Kembali') }}" />
+                <x-icon-button as="a" icon="back" href="{{ route('sales.follow-ups.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
@@ -24,7 +24,7 @@
                     <dd class="font-medium text-slate-800">{{ $followUp->type ? \App\Models\FollowUp::typeLabel($followUp->type) : '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Tanggal Follow Up') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Follow Up Date') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $followUp->follow_up_date ? $followUp->follow_up_date->format('d M Y') : '-' }}</dd>
                 </div>
                 <div>
@@ -32,7 +32,7 @@
                     <dd class="font-medium text-slate-800">{{ $followUp->activity_time ? substr((string) $followUp->activity_time, 0, 5) : '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Lokasi') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Location') }}</dt>
                     <dd class="font-medium text-slate-800"><x-location-link :location="$followUp->location" preview /></dd>
                 </div>
                 <div>
@@ -40,17 +40,17 @@
                     <dd class="font-medium text-slate-800">{{ $followUp->next_follow_up_date ? $followUp->next_follow_up_date->format('d M Y') : '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Terkait Lead') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Related Lead') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $followUp->lead ? '#'.$followUp->lead->id.' — '.\App\Models\Lead::salesStatusLabel($followUp->lead->status) : '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Dicatat oleh') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Recorded by') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $followUp->creator?->name ?? '-' }}</dd>
                 </div>
             </dl>
 
             <div>
-                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Deskripsi') }}</h3>
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Description') }}</h3>
                 <p class="text-slate-700 whitespace-pre-wrap">{{ $followUp->description }}</p>
             </div>
         </div>

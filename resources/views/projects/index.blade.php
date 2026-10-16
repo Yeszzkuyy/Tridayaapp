@@ -3,12 +3,12 @@
     {{-- Header --}}
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Daftar Project') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Semua project, termasuk yang selesai atau di-hold') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Project List') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('All projects, including completed or on-hold ones.') }}</p>
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-                <x-icon-button as="a" icon="add" href="{{ route('projects.create') }}" title="{{ __('Tambah Project') }}" />
+                <x-icon-button as="a" icon="add" href="{{ route('projects.create') }}" title="{{ __('Add Project') }}" />
             @endcan
         </div>
     </div>
@@ -16,11 +16,11 @@
     {{-- Statistik --}}
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 sm:p-6">
-            <p class="text-sm text-slate-500">{{ __('Total Project') }}</p>
+            <p class="text-sm text-slate-500">{{ __('Total Projects') }}</p>
             <p class="mt-2 text-3xl font-bold text-slate-800 tabular-nums">{{ $totalProjects ?? 0 }}</p>
         </div>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 sm:p-6">
-            <p class="text-sm text-slate-500">{{ __('Project Aktif (Open + Progress)') }}</p>
+            <p class="text-sm text-slate-500">{{ __('Active Projects (Open + Progress)') }}</p>
             <p class="mt-2 text-3xl font-bold text-green-600 tabular-nums">{{ $activeProjects ?? 0 }}</p>
         </div>
     </div>
@@ -49,7 +49,7 @@
                             {{-- <td class="px-4 py-4 text-slate-600">{{ $project->pic_engineer ?? '-' }}</td> --}}
                             <td class="px-4 py-5 whitespace-nowrap">
                                 <x-status-badge :color="$statusBadgeColors[$project->status?->name] ?? 'slate'">
-                                    {{ $project->status?->name ?? __('Belum Memulai') }}
+                                    {{ $project->status?->name ?? __('Not Started') }}
                                 </x-status-badge>
                             </td>
                             <td class="px-4 py-5 whitespace-nowrap">
@@ -62,8 +62,8 @@
                             </td>
                             <td class="px-4 py-5 whitespace-nowrap">
                                 <div class="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <x-icon-button as="a" icon="customer" href="{{ route('customers.show', $project->customer_id) }}" title="{{ __('Lihat customer') }}" />
-                                    <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('Detail project') }}" />
+                                    <x-icon-button as="a" icon="customer" href="{{ route('customers.show', $project->customer_id) }}" title="{{ __('View customer') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('Project detail') }}" />
                                     @can('manage-technician')
                                         <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit project') }}" />
                                     @endcan
@@ -73,7 +73,7 @@
                     @empty
                         <tr>
                             <td colspan="6" class="py-16 text-center text-slate-400">
-                                {{ __('Belum ada project yang aktif (Open / Progress).') }}
+                                {{ __('There are no active projects (Open / Progress).') }}
                             </td>
                         </tr>
                     @endforelse

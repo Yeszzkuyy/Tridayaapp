@@ -2,7 +2,7 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Detail Instalasi') }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Installation Detail') }}</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $instalasi->project?->project_name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
@@ -10,7 +10,7 @@
             @can('manage-technician')
             <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="{{ __('Edit') }}" />
             @endcan
-            <x-icon-button as="a" icon="back" href="{{ route('teknisi.instalasis.index') }}" title="{{ __('Kembali') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.instalasis.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -41,11 +41,11 @@
                 </x-status-badge>
             </div>
             <div>
-                <p class="text-xs text-slate-400">{{ __('Lokasi') }}</p>
+                <p class="text-xs text-slate-400">{{ __('Location') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->location ?? '-' }}</p>
             </div>
             <div>
-                <p class="text-xs text-slate-400">{{ __('PIC Teknisi') }}</p>
+                <p class="text-xs text-slate-400">{{ __('Technician PIC') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->technician_pic ?? '-' }}</p>
             </div>
             <div>
@@ -60,7 +60,7 @@
 
         @if($instalasi->hasReport())
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p class="text-xs text-slate-400 mb-2">{{ __('Laporan Instalasi') }}</p>
+                <p class="text-xs text-slate-400 mb-2">{{ __('Installation Report') }}</p>
                 <div class="flex items-center gap-2">
                     <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View') }}" label="{{ __('View') }}" />
                     <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" label="{{ __('Download') }}" />
@@ -69,7 +69,7 @@
             </div>
         @elseif($instalasi->installation_report)
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p class="text-xs text-slate-400 mb-1">{{ __('Laporan Instalasi') }}</p>
+                <p class="text-xs text-slate-400 mb-1">{{ __('Installation Report') }}</p>
                 <p class="text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $instalasi->installation_report }}</p>
             </div>
         @endif
@@ -92,7 +92,7 @@
 
         @if($instalasi->documentation && count($instalasi->documentation))
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                <p class="text-xs text-slate-400 mb-2">{{ __('Dokumentasi') }}</p>
+                <p class="text-xs text-slate-400 mb-2">{{ __('Documentation') }}</p>
                 <div class="flex flex-wrap gap-2">
                     @foreach($instalasi->documentation as $doc)
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">

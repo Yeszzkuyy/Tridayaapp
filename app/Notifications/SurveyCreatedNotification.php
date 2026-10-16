@@ -56,7 +56,7 @@ class SurveyCreatedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Survey dibuat'),
+            'title' => __('Survey created'),
             'body' => $this->survey->title,
             'url' => route('teknisi.surveys.show', $this->survey->id),
         ];
