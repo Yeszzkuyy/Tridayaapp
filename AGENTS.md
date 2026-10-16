@@ -20,9 +20,13 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
 | `/var/www/3dyapp-ai` | `feature/ai-assistant` | AI Assistant (floating chatbot) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
+| `/home/raafi/3dyapp-i18n` | `feature/i18n-english` | i18n (konsistensi bahasa semua menu) + tampilan settings |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
+Catatan: `/var/www` sekarang hanya bisa ditulis root — worktree baru boleh
+ditaruh di `/home/<user>/3dyapp-<nama>` bila tidak bisa membuat folder di
+`/var/www` (lihat entry i18n di atas).
 
 Rencana pembagian berikutnya (buat worktree-nya saat mulai dikerjakan):
 `feature/div-trash` (Trash), `feature/div-panel` (Admin Panel).
