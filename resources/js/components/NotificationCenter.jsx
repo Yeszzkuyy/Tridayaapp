@@ -18,6 +18,11 @@ const I18N = CONFIG.i18n || {};
 const ROUTES = CONFIG.routes || {};
 const LOCALE = CONFIG.locale || undefined;
 
+/** Panel: dipasang di tengah bawah bell, digeser/clamp bila mepet tepi layar. */
+const PANEL_WIDTH = 400;
+const PANEL_GAP = 8;
+const VIEWPORT_PAD = 12;
+
 /** Aksen & ikon per tipe notifikasi (identitas warna, senada konvensi repo). */
 const TYPE_META = {
     lead: { color: '#16a34a', icon: 'userPlus' },
@@ -257,6 +262,7 @@ export default function NotificationCenter() {
     const [sessionExpired, setSessionExpired] = useState(false);
     const [connected, setConnected] = useState(false);
     const [live, setLive] = useState('');
+    const [panelPos, setPanelPos] = useState(null);
 
     const rootRef = useRef(null);
     const bellRef = useRef(null);
@@ -270,6 +276,36 @@ export default function NotificationCenter() {
     useEffect(() => {
         expiredRef.current = sessionExpired;
     }, [sessionExpired]);
+
+    /**
+     * Posisi panel: pas di tengah bawah ikon bell. Kalau tidak cukup ruang di
+     * kanan, panel digeser ke kiri (clamp) supaya selalu utuh di layar —
+     * tidak menempel tepi kanan dan tidak terpotong.
+     */
+    const placePanel = useCallback(() => {
+        const bell = bellRef.current;
+
+        if (!bell) return;
+
+        const rect = bell.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const width = Math.min(PANEL_WIDTH, vw - VIEWPORT_PAD * 2);
+        const top = rect.bottom + PANEL_GAP;
+        const spaceBelow = vh - top - VIEWPORT_PAD;
+
+        setPanelPos({
+            left: Math.min(Math.max(VIEWPORT_PAD, rect.left + rect.width / 2 - width / 2), vw - width - VIEWPORT_PAD),
+            top,
+            width,
+            maxHeight: Math.max(240, Math.min(spaceBelow, Math.round(vh * 0.7), 512)),
+        });
+    }, []);
+
+    const togglePanel = useCallback(() => {
+        if (!open) placePanel();
+        setOpen((value) => !value);
+    }, [open, placePanel]);
 
     /** Fetch JSON dengan CSRF & deteksi sesi kedaluwarsa. */
     const fetchJson = useCallback(async (url, options = {}) => {
@@ -454,6 +490,21 @@ export default function NotificationCenter() {
         refreshStatus({ merge: false });
     }, [open, refreshStatus]);
 
+    // Panel tetap menempel di bawah bell saat layar di-resize / di-scroll.
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const onMove = () => placePanel();
+
+        window.addEventListener('resize', onMove);
+        window.addEventListener('scroll', onMove, { passive: true });
+
+        return () => {
+            window.removeEventListener('resize', onMove);
+            window.removeEventListener('scroll', onMove);
+        };
+    }, [open, placePanel]);
+
     // Klik di luar & Esc menutup panel.
     useEffect(() => {
         if (!open) return undefined;
@@ -589,7 +640,7 @@ export default function NotificationCenter() {
             <button
                 ref={bellRef}
                 type="button"
-                onClick={() => setOpen((value) => !value)}
+                onClick={togglePanel}
                 className={`beam-notif relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-all duration-300 hover:scale-105 hover:bg-accent-500/10 hover:text-accent-600 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-400/10 dark:hover:text-accent-400 ${
                     unread > 0 ? 'beam-on' : ''
                 }`}
@@ -628,9 +679,16 @@ export default function NotificationCenter() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.98 }}
                         transition={{ duration: 0.18, ease: 'easeOut' }}
-                        className="fixed inset-x-3 top-[4.5rem] z-50 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[400px] dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40"
+                        style={{
+                            left: panelPos?.left ?? VIEWPORT_PAD,
+                            top: panelPos?.top ?? 0,
+                            width: panelPos?.width ?? PANEL_WIDTH,
+                            maxHeight: panelPos?.maxHeight,
+                            visibility: panelPos ? 'visible' : 'hidden',
+                        }}
+                        className="fixed z-50 flex origin-top flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40"
                     >
-                        <div className="flex items-center gap-2 border-b border-slate-100 px-3.5 py-2.5 dark:border-zinc-800">
+                        <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 px-3.5 py-2.5 dark:border-zinc-800">
                             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-600 dark:bg-accent-500/15 dark:text-accent-400">
                                 <TypeIcon name="bell" className="h-4 w-4" />
                             </span>
@@ -684,7 +742,7 @@ export default function NotificationCenter() {
                             </span>
                         </div>
 
-                        <div className="max-h-[min(70vh,32rem)] overflow-y-auto overscroll-contain px-1.5 py-1.5" style={maskStyle}>
+                        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-1.5" style={maskStyle}>
                             {hasItems ? (
                                 <AnimatePresence initial={false}>
                                     {items.map((item) => (
@@ -709,7 +767,7 @@ export default function NotificationCenter() {
                         </div>
 
                         {hasMore && (
-                            <div className="border-t border-slate-100 px-3.5 py-2 dark:border-zinc-800">
+                            <div className="shrink-0 border-t border-slate-100 px-3.5 py-2 dark:border-zinc-800">
                                 <button
                                     type="button"
                                     onClick={loadMore}
