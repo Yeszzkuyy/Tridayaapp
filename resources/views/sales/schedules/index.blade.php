@@ -32,18 +32,24 @@
             </button>
         </div>
 
-        {{-- View switcher --}}
+        {{-- View switcher (rubber segment: pil bergeser animasi, sama seperti filter bulan di Marketing Dashboard) --}}
+        @php
+            $salesViewSegments = [
+                ['value' => 'month', 'label' => __('Month')],
+                ['value' => 'week', 'label' => __('Week')],
+                ['value' => 'day', 'label' => __('Day')],
+            ];
+        @endphp
         <div class="flex justify-center mb-4" id="sales-view-switcher">
-            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800" role="tablist" aria-label="{{ __('Calendar view') }}">
-                <template x-for="v in [{id:'month',label:'{{ __('Month') }}'},{id:'week',label:'{{ __('Week') }}'},{id:'day',label:'{{ __('Day') }}'}]" :key="v.id">
-                    <button type="button" role="tab" :aria-selected="view === v.id" @click="setView(v.id)"
-                            :class="view === v.id
-                                ? 'bg-accent-600 text-white shadow'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'"
-                            class="rounded-lg px-4 sm:px-6 py-1.5 text-sm font-semibold transition" x-text="v.label"></button>
-                </template>
-            </div>
+            <div id="sales-view-segment"
+                 data-rubber-segment
+                 data-mode="event"
+                 data-event-name="sales:view"
+                 data-label="{{ __('Calendar view') }}"
+                 data-active="month"
+                 data-items='@json($salesViewSegments)'></div>
         </div>
+        @vite('resources/js/rubber-segment.jsx')
 
         {{-- Month view --}}
         <div x-show="view === 'month'" x-transition.opacity>
@@ -606,6 +612,9 @@
                     this.buildWeek();
                     this.fetchMonth();
                     this.fetchEvents();
+                    window.addEventListener('sales:view', (e) => {
+                        if (e?.detail?.value) this.setView(e.detail.value);
+                    });
                 },
 
                 fmt(date) {
@@ -668,6 +677,9 @@
 
                 setView(v) {
                     this.view = v;
+                    window.dispatchEvent(new CustomEvent('rubber-segment:set', {
+                        detail: { id: 'sales-view-segment', value: v },
+                    }));
                     if (v === 'week') this.fetchWeek();
                     else if (v === 'day') this.fetchEvents();
                     else { this.fetchMonth(); this.fetchEvents(); }
