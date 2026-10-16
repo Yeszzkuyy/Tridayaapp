@@ -38,7 +38,7 @@
                 <template x-for="v in [{id:'month',label:'{{ __('Month') }}'},{id:'week',label:'{{ __('Week') }}'},{id:'day',label:'{{ __('Day') }}'}]" :key="v.id">
                     <button type="button" role="tab" :aria-selected="view === v.id" @click="setView(v.id)"
                             :class="view === v.id
-                                ? 'bg-slate-800 text-white shadow dark:bg-accent-600'
+                                ? 'bg-accent-600 text-white shadow'
                                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'"
                             class="rounded-lg px-4 sm:px-6 py-1.5 text-sm font-semibold transition" x-text="v.label"></button>
                 </template>
@@ -89,7 +89,7 @@
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -97,17 +97,17 @@
                             <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-white" x-text="initials(event.customer)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.customer"></p>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.customer"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
                             </div>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <span x-text="'at ' + fmtTime(event.activity_time)"></span>
                             </div>
                         </div>
-                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
                             <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop
                                title="{{ __('Open in Google Maps') }}" class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
@@ -246,7 +246,7 @@
                     </button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -254,17 +254,17 @@
                             <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-white" x-text="initials(event.customer)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.customer"></p>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.customer"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
                             </div>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 <span x-text="'at ' + fmtTime(event.activity_time)"></span>
                             </div>
                         </div>
-                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
                             <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop
                                title="{{ __('Open in Google Maps') }}" class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
