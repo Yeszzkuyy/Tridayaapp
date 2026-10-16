@@ -3,13 +3,13 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ $project->project_name }}</h1>
-            <p class="text-slate-500 mt-1">Detail Project</p>
+            <p class="text-slate-500 mt-1">{{ __('Detail Project') }}</p>
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
-                <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="Edit Project" />
+                <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit Project') }}" />
             @endcan
-            <x-icon-button as="a" icon="back" href="{{ route('projects.index') }}" title="Back" />
+            <x-icon-button as="a" icon="back" href="{{ route('projects.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -18,10 +18,10 @@
         <div class="border-b border-slate-200 dark:border-slate-700">
             <nav class="flex gap-6">
                 <button @click="tab = 'info'" :class="tab === 'info' ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-300' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'" class="inline-flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition">
-                    <span>Informasi</span>
+                    <span>{{ __('Informasi') }}</span>
                 </button>
                 <button @click="tab = 'workflow'" :class="tab === 'workflow' ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-300' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'" class="inline-flex items-center gap-2 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition">
-                    <span>Workflow</span>
+                    <span>{{ __('Workflow') }}</span>
                 </button>
             </nav>
         </div>
@@ -30,16 +30,16 @@
         <div x-show="tab === 'info'" x-transition>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div><p class="text-xs text-slate-400">Nama Project</p><p class="font-medium text-slate-800">{{ $project->project_name }}</p></div>
-                    <div><p class="text-xs text-slate-400">Customer</p><p class="font-medium text-slate-800">{{ $project->customer?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">Jenis Pekerjaan</p><p class="font-medium text-slate-800">{{ $project->workType?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">Status</p><x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status?->name ?? 'Belum Memulai' }}</x-status-badge></div>
-                    <div><p class="text-xs text-slate-400">Account Manager</p><p class="font-medium text-slate-800">{{ $project->accountManager?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">PIC Engineer</p><p class="font-medium text-slate-800">{{ $project->pic_engineer ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">Support Technicians</p><p class="font-medium text-slate-800">{{ $project->support_technicians ?? '-' }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Nama Project') }}</p><p class="font-medium text-slate-800">{{ $project->project_name }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Customer') }}</p><p class="font-medium text-slate-800">{{ $project->customer?->name ?? '-' }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Jenis Pekerjaan') }}</p><p class="font-medium text-slate-800">{{ $project->workType?->name ?? '-' }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Status') }}</p><x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status?->name ?? __('Belum Memulai') }}</x-status-badge></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Account Manager') }}</p><p class="font-medium text-slate-800">{{ $project->accountManager?->name ?? '-' }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('PIC Engineer') }}</p><p class="font-medium text-slate-800">{{ $project->pic_engineer ?? '-' }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Support Technicians') }}</p><p class="font-medium text-slate-800">{{ $project->support_technicians ?? '-' }}</p></div>
                 </div>
                 @if($project->description)
-                    <div class="mt-4 pt-4 border-t"><p class="text-xs text-slate-400">Deskripsi</p><p class="text-slate-700">{{ $project->description }}</p></div>
+                    <div class="mt-4 pt-4 border-t"><p class="text-xs text-slate-400">{{ __('Description') }}</p><p class="text-slate-700">{{ $project->description }}</p></div>
                 @endif
             </div>
         </div>
@@ -63,17 +63,17 @@
                 $bastDocs = $project->documents()->where('document_category_id', 1)->latest()->get();
 
                 $steps = [
-                    ['label' => 'Request', 'done' => true, 'link' => null, 'detail' => 'Project dibuat'],
-                    ['label' => 'Survey', 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id, 'customer_id' => $project->customer_id]), 'detail' => $surveys->first() ? $surveys->first()->status : 'Belum ada'],
-                    ['label' => 'Sizing', 'done' => $sizings->isNotEmpty() && $sizings->first()->status === 'completed', 'link' => $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', ['project_id' => $project->id]), 'detail' => $sizings->first() ? $sizings->first()->status : 'Belum ada'],
-                    ['label' => 'Request Harga', 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : 'Belum ada'],
-                    ['label' => 'Instalasi', 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : 'Belum ada'],
-                    ['label' => 'BAST', 'done' => $bastDocs->isNotEmpty(), 'link' => route('teknisi.documents.index', ['project_id' => $project->id]), 'detail' => $bastDocs->isNotEmpty() ? $bastDocs->count() . ' dokumen' : 'Belum ada'],
+                    ['label' => __('Request'), 'done' => true, 'link' => null, 'detail' => __('Project dibuat')],
+                    ['label' => __('Survey'), 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id, 'customer_id' => $project->customer_id]), 'detail' => $surveys->first() ? $surveys->first()->status : __('Belum ada')],
+                    ['label' => __('Sizing'), 'done' => $sizings->isNotEmpty() && $sizings->first()->status === 'completed', 'link' => $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', ['project_id' => $project->id]), 'detail' => $sizings->first() ? $sizings->first()->status : __('Belum ada')],
+                    ['label' => __('Request Harga'), 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : __('Belum ada')],
+                    ['label' => __('Instalasi'), 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : __('Belum ada')],
+                    ['label' => __('BAST'), 'done' => $bastDocs->isNotEmpty(), 'link' => route('teknisi.documents.index', ['project_id' => $project->id]), 'detail' => $bastDocs->isNotEmpty() ? $bastDocs->count() . ' ' . __('dokumen') : __('Belum ada')],
                 ];
             @endphp
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-bold text-slate-800 mb-6">Workflow Progress</h3>
+                <h3 class="text-lg font-bold text-slate-800 mb-6">{{ __('Workflow Progress') }}</h3>
 
                 {{-- Progress bar --}}
                 @php
@@ -82,7 +82,7 @@
                 @endphp
                 <div class="mb-8">
                     <div class="flex justify-between text-sm text-slate-500 mb-2">
-                        <span>Progress</span>
+                        <span>{{ __('Progress') }}</span>
                         <span class="font-bold text-slate-800">{{ $progress }}%</span>
                     </div>
                     <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -111,7 +111,7 @@
                                     <h4 class="text-sm font-bold text-slate-800">{{ $step['label'] }}</h4>
                                     @if($step['link'])
                                         <a href="{{ $step['link'] }}" class="text-xs text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 font-medium shrink-0">
-                                            {{ $step['done'] ? 'Lihat' : 'Mulai' }} →
+                                            {{ $step['done'] ? __('View') : __('Start') }} →
                                         </a>
                                     @endif
                                 </div>

@@ -3,8 +3,8 @@
     {{-- Header --}}
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Daftar Project</h1>
-            <p class="text-slate-500 mt-1">Semua project, termasuk yang selesai atau di-hold</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Daftar Project') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Semua project, termasuk yang selesai atau di-hold') }}</p>
         </div>
         <div class="flex gap-2">
             @can('manage-technician')
@@ -16,11 +16,11 @@
     {{-- Statistik --}}
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 sm:p-6">
-            <p class="text-sm text-slate-500">Total Project</p>
+            <p class="text-sm text-slate-500">{{ __('Total Project') }}</p>
             <p class="mt-2 text-3xl font-bold text-slate-800 tabular-nums">{{ $totalProjects ?? 0 }}</p>
         </div>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 sm:p-6">
-            <p class="text-sm text-slate-500">Project Aktif (Open + Progress)</p>
+            <p class="text-sm text-slate-500">{{ __('Project Aktif (Open + Progress)') }}</p>
             <p class="mt-2 text-3xl font-bold text-green-600 tabular-nums">{{ $activeProjects ?? 0 }}</p>
         </div>
     </div>
@@ -31,13 +31,13 @@
             <table class="min-w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">Project</th>
-                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">Customer</th>
-                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">Jenis Pekerjaan</th>
+                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Project') }}</th>
+                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Customer') }}</th>
+                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Jenis Pekerjaan') }}</th>
                         {{-- <th class="px-4 py-4 text-left text-xs uppercase tracking-wider text-slate-500">PIC Engineer</th> --}}
-                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">Status</th>
-                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">Progress</th>
-                        <th class="px-4 py-3.5 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">Aksi</th>
+                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Status') }}</th>
+                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Progress') }}</th>
+                        <th class="px-4 py-3.5 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -49,7 +49,7 @@
                             {{-- <td class="px-4 py-4 text-slate-600">{{ $project->pic_engineer ?? '-' }}</td> --}}
                             <td class="px-4 py-5 whitespace-nowrap">
                                 <x-status-badge :color="$statusBadgeColors[$project->status?->name] ?? 'slate'">
-                                    {{ $project->status?->name ?? 'Belum Memulai' }}
+                                    {{ $project->status?->name ?? __('Belum Memulai') }}
                                 </x-status-badge>
                             </td>
                             <td class="px-4 py-5 whitespace-nowrap">
@@ -73,7 +73,7 @@
                     @empty
                         <tr>
                             <td colspan="6" class="py-16 text-center text-slate-400">
-                                Belum ada project yang aktif (Open / Progress).
+                                {{ __('Belum ada project yang aktif (Open / Progress).') }}
                             </td>
                         </tr>
                     @endforelse

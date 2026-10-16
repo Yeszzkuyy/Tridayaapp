@@ -3,10 +3,10 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Edit Project</h1>
-            <p class="text-slate-500 mt-1">Edit: {{ $project->project_name }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit Project') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Edit:') }} {{ $project->project_name }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('projects.show', $project) }}" title="Kembali" />
+        <x-icon-button as="a" icon="back" href="{{ route('projects.show', $project) }}" title="{{ __('Back') }}" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
@@ -16,12 +16,12 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Project</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Nama Project') }}</label>
                     <input type="text" name="project_name" value="{{ old('project_name', $project->project_name) }}" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Customer</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }}</label>
                     <select name="customer_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @foreach($customers as $customer)
                             <option value="{{ $customer->id }}" {{ $project->customer_id == $customer->id ? 'selected' : '' }}>{{ $customer->name }}</option>
@@ -30,7 +30,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Jenis Pekerjaan</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Jenis Pekerjaan') }}</label>
                     <select name="work_type_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @foreach($workTypes as $workType)
                             <option value="{{ $workType->id }}" {{ $project->work_type_id == $workType->id ? 'selected' : '' }}>{{ $workType->name }}</option>
@@ -39,9 +39,9 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Account Manager</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Account Manager') }}</label>
                     <select name="account_manager_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">Pilih</option>
+                        <option value="">{{ __('Select') }}</option>
                         @foreach($accountManagers as $am)
                             <option value="{{ $am->id }}" {{ $project->account_manager_id == $am->id ? 'selected' : '' }}>{{ $am->name }}</option>
                         @endforeach
@@ -60,16 +60,16 @@
                 @endphp
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        PIC Engineer <span class="text-red-500">*</span>
+                        {{ __('PIC Engineer') }} <span class="text-red-500">*</span>
                     </label>
                     <select name="pic_engineer" required
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">- Pilih Teknisi -</option>
+                        <option value="">{{ __('- Pilih Teknisi -') }}</option>
                         @foreach($technicians as $tech)
                             <option value="{{ $tech->name }}" {{ $selectedPic === $tech->name ? 'selected' : '' }}>{{ $tech->name }}</option>
                         @endforeach
                         @if($selectedPic && !$technicians->pluck('name')->contains($selectedPic))
-                            <option value="{{ $selectedPic }}" selected>{{ $selectedPic }} (data lama)</option>
+                            <option value="{{ $selectedPic }}" selected>{{ $selectedPic }} {{ __('(data lama)') }}</option>
                         @endif
                     </select>
                     @error('pic_engineer') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -78,7 +78,7 @@
                 {{-- Support Technicians --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Support Technicians <span class="text-slate-400 text-xs">(Opsional)</span>
+                        {{ __('Support Technicians') }} <span class="text-slate-400 text-xs">{{ __('(Opsional)') }}</span>
                     </label>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         @foreach($technicians as $tech)
@@ -90,12 +90,12 @@
                             </label>
                         @endforeach
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Centang teknisi pendukung (boleh lebih dari satu).</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('Centang teknisi pendukung (boleh lebih dari satu).') }}</p>
                     @error('support_technicians') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status') }}</label>
                     <select name="project_status_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @foreach ($statuses as $status)
                             <option value="{{ $status->id }}" {{ (old('project_status_id', $project->project_status_id) == $status->id) ? 'selected' : '' }}>
@@ -108,7 +108,7 @@
                 {{-- Progress --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        Progress (0-100%)
+                        {{ __('Progress (0-100%)') }}
                     </label>
                     <div class="flex items-center gap-3">
                         <input type="range" 
@@ -126,7 +126,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Deskripsi</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Description') }}</label>
                     <textarea name="description" rows="3" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ $project->description }}</textarea>
                 </div>
             </div>

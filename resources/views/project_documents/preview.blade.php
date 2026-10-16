@@ -2,13 +2,13 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">Preview Dokumen</h1>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Preview Dokumen') }}</h1>
                 <p class="text-slate-500 mt-1">{{ $document->file_name }}</p>
             </div>
             <div class="flex gap-2">
                 <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
-                               label="Download" title="Download" />
-                <x-icon-button as="a" icon="back" href="{{ route('project-documents.index', $document->project) }}" title="Kembali" />
+                               label="{{ __('Download') }}" title="{{ __('Download') }}" />
+                <x-icon-button as="a" icon="back" href="{{ route('project-documents.index', $document->project) }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
@@ -32,7 +32,7 @@
             @elseif(in_array($extension, ['mp4', 'webm', 'ogg', 'mov', 'avi']))
                 <video controls class="w-full max-h-[700px]">
                     <source src="{{ $fileUrl }}" type="video/mp4">
-                    Browser Anda tidak mendukung video.
+                    {{ __('Browser Anda tidak mendukung video.') }}
                 </video>
 
             {{-- Audio --}}
@@ -40,7 +40,7 @@
                 <div class="flex justify-center py-20">
                     <audio controls class="w-full max-w-2xl">
                         <source src="{{ $fileUrl }}" type="audio/mpeg">
-                        Browser Anda tidak mendukung audio.
+                        {{ __('Browser Anda tidak mendukung audio.') }}
                     </audio>
                 </div>
 
@@ -51,10 +51,10 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <p class="text-slate-600 font-medium">File Office tidak bisa di-preview di browser</p>
-                    <p class="text-slate-400 text-sm mt-2">Silakan download untuk membuka file</p>
+                    <p class="text-slate-600 font-medium">{{ __('File Office tidak bisa di-preview di browser') }}</p>
+                    <p class="text-slate-400 text-sm mt-2">{{ __('Silakan download untuk membuka file') }}</p>
                     <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
-                                   label="Download File" title="Download File" class="mt-4" />
+                                   label="{{ __('Download File') }}" title="{{ __('Download File') }}" class="mt-4" />
                 </div>
 
             {{-- Lainnya --}}
@@ -64,9 +64,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <p class="text-slate-600 font-medium">Preview tidak tersedia untuk file ini</p>
+                    <p class="text-slate-600 font-medium">{{ __('Preview tidak tersedia untuk file ini') }}</p>
                     <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
-                                   label="Download File" title="Download File" class="mt-4" />
+                                   label="{{ __('Download File') }}" title="{{ __('Download File') }}" class="mt-4" />
                 </div>
             @endif
         </div>
