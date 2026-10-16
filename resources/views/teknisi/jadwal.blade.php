@@ -69,7 +69,7 @@
         <div x-show="view === 'month'" x-transition.opacity>
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-3 sm:p-4 mb-4">
                 <div class="grid grid-cols-7 gap-1 text-center mb-1" id="teknisi-month-grid">
-                    <template x-for="name in @json([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')])" :key="name">
+                    <template x-for="name in @js([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')])" :key="name">
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 py-1" x-text="name"></span>
                     </template>
                     <template x-for="cell in monthCells" :key="cell.date">
@@ -712,7 +712,7 @@
                 },
 
                 buildWeek() {
-                    const names = @json([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')]);
+                    const names = @js([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')]);
                     const monday = this.mondayOf(new Date(this.activeDate + 'T12:00:00'));
                     this.weekDays = names.map((name, i) => {
                         const d = new Date(monday);
