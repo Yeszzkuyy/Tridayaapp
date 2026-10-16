@@ -23,7 +23,7 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                         @forelse($statuses as $status)
                             <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-800">{{ $status->name }}</td>
+                                <td class="px-6 py-4 font-medium text-slate-800">{{ __($status->name) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="px-3 py-1 text-xs font-semibold rounded-full" style="background-color: {{ $status->color ?? '#gray' }}20; color: {{ $status->color ?? '#gray' }}">
                                         {{ $status->color ?? __('Default') }}

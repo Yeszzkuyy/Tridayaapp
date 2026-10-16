@@ -505,7 +505,7 @@
                                 <select name="status" x-model="form.status"
                                         class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                                     @foreach(\App\Models\TechnicianSchedule::STATUSES as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
+                                        <option value="{{ $value }}">{{ __($label) }}</option>
                                     @endforeach
                                 </select>
                             </div>

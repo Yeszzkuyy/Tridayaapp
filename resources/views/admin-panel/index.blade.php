@@ -56,7 +56,7 @@
                             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $user->email }}</td>
                             <td class="px-4 py-3">
                                 @forelse($user->roles as $role)
-                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1 mb-1">{{ $role->name }}</span>
+                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1 mb-1">{{ __(\Illuminate\Support\Str::headline($role->name)) }}</span>
                                 @empty
                                     <span class="text-slate-400 text-sm">-</span>
                                 @endforelse

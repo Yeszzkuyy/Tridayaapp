@@ -74,14 +74,14 @@
                 ],
             ];
 
-            $roleLabels = ['super-admin' => 'Super Admin', 'marketing-lead' => 'Marketing Lead'];
+            $roleLabels = ['super-admin' => __('Super Admin'), 'marketing-lead' => __('Marketing Lead')];
             $roleLabel = function ($user) use ($roleLabels): string {
                 $name = $user?->roles?->first()?->name;
                 if (! $name) {
                     return __('Sistem');
                 }
 
-                return $roleLabels[$name] ?? ucfirst(str_replace('-', ' ', $name));
+                return $roleLabels[$name] ?? __(\Illuminate\Support\Str::headline($name));
             };
 
             $dateLabel = function (string $date): string {

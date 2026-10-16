@@ -703,7 +703,7 @@
                         <select name="project_status_id" required
                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
                             @foreach($projectStatuses ?? [] as $status)
-                                <option value="{{ $status->id }}">{{ $status->name }}</option>
+                                <option value="{{ $status->id }}">{{ __($status->name) }}</option>
                             @endforeach
                         </select>
                     </div>

@@ -21,7 +21,7 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                         @forelse($categories as $category)
                             <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-800">{{ $category->name }}</td>
+                                <td class="px-6 py-4 font-medium text-slate-800">{{ __($category->name) }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $category->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">

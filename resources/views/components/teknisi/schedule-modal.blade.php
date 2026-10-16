@@ -336,7 +336,7 @@ document.addEventListener('alpine:init', () => {
                     <select id="schedule-status" name="status" x-model="form.status"
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
                         @foreach(\App\Models\TechnicianSchedule::STATUSES as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
+                            <option value="{{ $value }}">{{ __($label) }}</option>
                         @endforeach
                     </select>
                 </div>

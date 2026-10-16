@@ -21,7 +21,7 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                         @forelse($workTypes as $workType)
                             <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-800">{{ $workType->name }}</td>
+                                <td class="px-6 py-4 font-medium text-slate-800">{{ __($workType->name) }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $workType->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">

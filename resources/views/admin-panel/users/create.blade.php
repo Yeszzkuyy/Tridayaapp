@@ -73,7 +73,7 @@
                                    @checked(in_array($role->name, old('roles', [])))
                                    class="w-4 h-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
                             <span class="min-w-0 flex-1">
-                                <span class="block text-sm font-medium text-slate-800 capitalize">{{ $role->name }}</span>
+                                <span class="block text-sm font-medium text-slate-800 capitalize">{{ __(\Illuminate\Support\Str::headline($role->name)) }}</span>
                                 <span class="block text-xs text-slate-500">{{ $role->permissions->count() }} {{ __('permission') }}</span>
                             </span>
                         </label>
