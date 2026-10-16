@@ -249,6 +249,104 @@ class FollowUpFormTest extends TestCase
         $this->assertSame(1, substr_count($html, 'id="followups-table"'));
     }
 
+    public function test_first_time_form_is_simple_and_carries_hidden_lead(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create', [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+        ]))->assertOk()->getContent();
+
+        // Form simpel: Related Lead / Lokasi / Next Follow Up disembunyikan.
+        $this->assertStringNotContainsString('Related Lead (optional)', $html);
+        $this->assertStringNotContainsString('Location (optional)', $html);
+        $this->assertStringNotContainsString('Next Follow-up (optional)', $html);
+        // Time tetap tampil.
+        $this->assertStringContainsString('Time (WIB, optional)', $html);
+        // Lead asal tombol dibawa diam-diam supaya follow-up pertama tetap tertaut.
+        $this->assertStringContainsString('name="lead_id" value="'.$lead->id.'" x-ref="firstTimeLead"', $html);
+    }
+
+    public function test_repeat_form_shows_full_fields_after_first_follow_up(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+        ]);
+        FollowUp::create([
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up pertama.',
+            'created_by' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create', ['lead_id' => $lead->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Related Lead (optional)', $html);
+        $this->assertStringContainsString('Location (optional)', $html);
+        $this->assertStringContainsString('Next Follow-up (optional)', $html);
+        $this->assertStringNotContainsString('x-ref="firstTimeLead"', $html);
+    }
+
+    public function test_generic_add_form_always_shows_full_fields(): void
+    {
+        $sales = $this->salesMgk();
+
+        // Tombol + di halaman Follow Up tidak membawa lead: selalu form lengkap.
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create'))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Related Lead (optional)', $html);
+        $this->assertStringNotContainsString('x-ref="firstTimeLead"', $html);
+    }
+
+    public function test_first_time_submit_from_lead_row_links_lead_for_admin(): void
+    {
+        // Super-admin tidak pernah di-auto-link lockLeadLink, jadi tautan harus
+        // datang dari hidden lead_id yang dikirim form first-time.
+        $this->seed(RoleAndPermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('super-admin');
+        $customer = Customer::create(['name' => 'PT Admin Taut']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+            'assigned_to' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)->post(route('sales.follow-ups.store'), [
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'type' => 'whatsapp',
+            'description' => 'Follow up pertama dari baris lead.',
+        ])->assertRedirect(route('sales.follow-ups.index'));
+
+        $this->assertSame($lead->id, FollowUp::first()->lead_id);
+
+        // Kunjungan berikutnya ke lead yang sama sudah form lengkap.
+        $html = $this->actingAs($admin)
+            ->get(route('sales.follow-ups.create', ['lead_id' => $lead->id]))
+            ->assertOk()->getContent();
+        $this->assertStringContainsString('Related Lead (optional)', $html);
+    }
+
     public function test_filter_form_skips_glider_submit_guard(): void
     {
         // Guard glider mengunci tombol + overlay selamanya pada submit AJAX.

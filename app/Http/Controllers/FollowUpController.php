@@ -35,12 +35,10 @@ class FollowUpController extends Controller
             $customerId = $lead->customer_id;
         }
 
-        // Mode form: pertama kali lead di-follow-up = form simpel
-        // (tanpa Related Lead / Lokasi / Next Follow Up). Repeat = form lengkap.
-        $isFirstTime = true;
-        if ($leadId) {
-            $isFirstTime = ! FollowUp::where('lead_id', $leadId)->exists();
-        }
+        // Mode form: form simpel hanya saat datang dari lead yang belum pernah
+        // di-follow-up. Tanpa konteks lead (tombol + halaman Follow Up) atau
+        // lead yang sudah punya follow-up = form lengkap.
+        $isFirstTime = $leadId !== null && ! FollowUp::where('lead_id', $leadId)->exists();
 
         return view('sales.follow-ups.create', [
             'customerOptions' => $this->customerOptions(auth()->user()),

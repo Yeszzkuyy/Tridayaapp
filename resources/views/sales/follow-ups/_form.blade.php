@@ -5,6 +5,7 @@
 <form action="{{ $action }}" method="POST" data-ajax data-submit-guarded="ajax" class="space-y-6"
       x-data="{
           customerId: {{ json_encode(old('customer_id', $customerId ?? null)) }},
+          initialCustomerId: {{ json_encode((string) ($customerId ?? '')) }},
           leads: {{ json_encode($leadItems) }},
           str(v) { return (v === null || v === undefined || v === '') ? null : String(v); },
           init() { this.customerId = this.str(this.customerId); },
@@ -18,7 +19,10 @@
               window.__glideRemount(mountOf('fu-lead-glider'), this.toOpts(this.leads));
           }
       }"
-      @customer-picked.window="if ($event.detail.field === 'customer_id') { customerId = $event.detail.id; refreshGliders(); }">
+      @customer-picked.window="if ($event.detail.field === 'customer_id') {
+          if (String($event.detail.id ?? '') !== String(initialCustomerId ?? '') && $refs.firstTimeLead) $refs.firstTimeLead.value = '';
+          customerId = $event.detail.id; refreshGliders();
+      }">
     @csrf
     @if(!empty($method)) @method($method) @endif
 
@@ -30,13 +34,15 @@
             'selected' => old('customer_id', $customerId ?? null),
             'placeholder' => __('Search customer...'),
             'required' => true,
-            'hint' => __('Pick a customer first — changing it resets Lead below.'),
+            'hint' => ($isFirstTime ?? false) ? null : __('Pick a customer first — changing it resets Lead below.'),
         ])
         @error('customer_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
 
-    {{-- Related Lead: disembunyikan saat first-time (lead sudah jelas dari asal tombol). --}}
-    @if(!($isFirstTime ?? false))
+    @if($isFirstTime ?? false)
+    {{-- First-time: lead asal tombol dibawa diam-diam, biar follow-up pertama tetap tertaut. --}}
+    <input type="hidden" name="lead_id" value="{{ old('lead_id', $leadId ?? '') }}" x-ref="firstTimeLead">
+    @else
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Related Lead (optional)') }}</label>
         <div x-show="customerId">
