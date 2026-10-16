@@ -8,7 +8,7 @@
         </div>
         <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('SKU') }}</label>
-            <input type="text" name="sku" value="{{ old('sku', $product->sku ?? '') }}" placeholder="cth: CCTV-8CH"
+            <input type="text" name="sku" value="{{ old('sku', $product->sku ?? '') }}" placeholder="{{ __('cth: CCTV-8CH') }}"
                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
             @error('sku') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>

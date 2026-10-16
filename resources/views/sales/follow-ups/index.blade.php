@@ -5,7 +5,7 @@
             <p class="text-slate-500 mt-1">{{ __('Catat dan pantau semua follow up customer.') }}</p>
         </div>
         @can('manage-sales')
-            <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create') }}" title="Add Follow Up" />
+            <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create') }}" title="{{ __('Add Follow Up') }}" />
         @endcan
     </div>
 
@@ -23,7 +23,7 @@
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Status') }}</label>
-                <x-glide-select name="overdue" label="Status"
+                <x-glide-select name="overdue" label="{{ __('Status') }}"
                     :options="[
                         ['value' => 'today', 'label' => __('Hari ini')],
                         ['value' => 'upcoming', 'label' => __('Mendatang')],
@@ -36,9 +36,9 @@
                 </script>
             </div>
             <div class="flex items-end gap-2">
-                <x-icon-button icon="filter" type="submit" title="Filter" />
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
                 @if(request()->anyFilled(['search', 'overdue']))
-                    <x-icon-button as="a" icon="reset" href="{{ route('sales.follow-ups.index') }}" title="Reset" data-ajax-reset />
+                    <x-icon-button as="a" icon="reset" href="{{ route('sales.follow-ups.index') }}" title="{{ __('Reset') }}" data-ajax-reset />
                 @endif
             </div>
         </form>

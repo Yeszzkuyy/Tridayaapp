@@ -6,7 +6,7 @@
             <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
                 <div class="max-w-[80%] rounded-2xl px-4 py-2.5 {{ $mine ? 'bg-accent-600 text-white rounded-br-md' : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-md' }}">
                     @unless($mine)
-                        <p class="text-xs font-semibold text-accent-600 dark:text-accent-300">{{ $comment->user?->name ?? 'System' }}</p>
+                        <p class="text-xs font-semibold text-accent-600 dark:text-accent-300">{{ $comment->user?->name ?? __('System') }}</p>
                     @endunless
                     <p class="text-sm whitespace-pre-wrap">{{ $comment->body }}</p>
                     <p class="mt-1 text-[11px] {{ $mine ? 'text-white/70' : 'text-slate-400' }}">
@@ -22,7 +22,7 @@
         <input type="text" wire:model="body" maxlength="2000"
                placeholder="{{ __('Tulis pesan...') }}"
                class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-        <x-icon-button type="submit" title="Send">
+        <x-icon-button type="submit" title="{{ __('Send') }}">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.3 2.7a.6.6 0 0 1 .8-.7L21.4 11a.6.6 0 0 1 0 1L4.1 21a.6.6 0 0 1-.8-.7L6 12Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 12h9" /></svg>
         </x-icon-button>
     </form>

@@ -7,7 +7,7 @@
             </div>
             <div class="flex gap-2">
                 @can('manage-sales')
-                    <x-icon-button as="a" icon="edit" href="{{ route('sales.pocs.edit', $poc) }}" title="Edit" />
+                    <x-icon-button as="a" icon="edit" href="{{ route('sales.pocs.edit', $poc) }}" title="{{ __('Edit') }}" />
                 @endcan
                 <x-icon-button as="a" icon="back" href="{{ route('sales.pocs.index') }}" title="{{ __('Kembali') }}" />
             </div>
@@ -16,7 +16,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <dt class="text-xs text-slate-400">Customer</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Customer') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $poc->customer?->name ?? '-' }}</dd>
                 </div>
                 <div>

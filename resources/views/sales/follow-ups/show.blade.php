@@ -2,12 +2,12 @@
     <div >
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">Detail Follow Up</h1>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Detail Follow Up') }}</h1>
                 <p class="text-slate-500 mt-1">{{ $followUp->customer?->name ?? '-' }}</p>
             </div>
             <div class="flex gap-2">
                 @can('manage-sales')
-                    <x-icon-button as="a" icon="edit" href="{{ route('sales.follow-ups.edit', $followUp) }}" title="Edit" />
+                    <x-icon-button as="a" icon="edit" href="{{ route('sales.follow-ups.edit', $followUp) }}" title="{{ __('Edit') }}" />
                 @endcan
                 <x-icon-button as="a" icon="back" href="{{ route('sales.follow-ups.index') }}" title="{{ __('Kembali') }}" />
             </div>
@@ -16,7 +16,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <dt class="text-xs text-slate-400">Customer</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Customer') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $followUp->customer?->name ?? '-' }}</dd>
                 </div>
                 <div>

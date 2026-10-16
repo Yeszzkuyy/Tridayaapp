@@ -7,7 +7,7 @@
             <h1 class="mt-2 text-3xl font-bold text-slate-800">{{ __('Dashboard Sales') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Halo, :name. Ringkasan performa lead Anda.', ['name' => auth()->user()->name]) }}</p>
         </div>
-        <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}" title="My Leads" />
+        <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}" title="{{ __('My Leads') }}" />
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">

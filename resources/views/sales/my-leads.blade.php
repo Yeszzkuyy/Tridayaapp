@@ -1,12 +1,12 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">My Leads</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('My Leads') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Leads assigned to you by Management') }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="Export CSV" />
-            <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="Dashboard Sales" />
+            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Dashboard Sales') }}" />
         </div>
     </div>
 
@@ -43,9 +43,9 @@
                         :value="request('sort', '')" :empty-label="__('Newest')" autosubmit />
                 </div>
                 <div class="sm:col-span-2 lg:col-span-1 flex items-end gap-2">
-                    <x-icon-button icon="filter" type="submit" title="Filter" />
+                    <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
                     @if(request('search') || request('status') || request('touched') || request('active') || request('won_month') || request('sort'))
-                        <x-icon-button as="a" icon="reset" href="{{ route('sales.my-leads') }}" title="Reset" />
+                        <x-icon-button as="a" icon="reset" href="{{ route('sales.my-leads') }}" title="{{ __('Reset') }}" />
                     @endif
                 </div>
             </form>
@@ -54,7 +54,7 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Lead / Customer</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider whitespace-nowrap">{{ __('Follow Up') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Needs / Progress') }}</th>

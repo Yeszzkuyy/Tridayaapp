@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">POC/Demo</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('POC/Demo') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Jadwal proof of concept dan demo produk.') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('sales.pocs.create') }}" title="Add POC/Demo" />
+        <x-icon-button as="a" icon="add" href="{{ route('sales.pocs.create') }}" title="{{ __('Add POC/Demo') }}" />
     </div>
 
     <form method="GET" action="{{ route('sales.pocs.index') }}" class="flex flex-wrap items-end gap-3 mb-4">
@@ -34,9 +34,9 @@
             </select>
         </div>
         <div class="flex gap-2">
-            <x-icon-button icon="filter" type="submit" title="Filter" />
+            <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
             @if(request('search') || request('type') || request('status'))
-                <x-icon-button as="a" icon="reset" href="{{ route('sales.pocs.index') }}" title="Reset" />
+                <x-icon-button as="a" icon="reset" href="{{ route('sales.pocs.index') }}" title="{{ __('Reset') }}" />
             @endif
         </div>
     </form>

@@ -27,7 +27,7 @@
     @if(!empty($method)) @method($method) @endif
 
     <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Customer <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
         @include('sales._customer-picker', [
             'name' => 'customer_id',
             'options' => $customerOptions,
@@ -47,7 +47,7 @@
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Related Lead (optional)') }}</label>
         <div x-show="customerId">
             <div id="fu-lead-glider">
-                <x-glide-select name="lead_id" label="Related lead"
+                <x-glide-select name="lead_id" label="{{ __('Related lead') }}"
                     :options="$initialLeadOptions"
                     :value="old('lead_id', $leadId ?? null)"
                     :empty-label="__('No specific opportunity')"
@@ -61,7 +61,7 @@
 
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Type Follow Up') }}</label>
-        <x-glide-select name="type" label="Type Follow Up"
+        <x-glide-select name="type" label="{{ __('Type Follow Up') }}"
             :options="collect(\App\Models\FollowUp::LOG_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\FollowUp::typeLabel($t)])->all()"
             :value="old('type', $followUp?->type)"
             :empty-label="__('Select type')"

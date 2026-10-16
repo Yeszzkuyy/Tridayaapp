@@ -4,7 +4,7 @@
         <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
             <thead class="bg-slate-50 dark:bg-slate-700">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">Customer</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
                     <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Tipe') }}</th>
                     <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Jadwal') }}</th>
                     <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>

@@ -13,7 +13,7 @@
                 @csrf
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Customer <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
                         name="customer_id"
                         :options="$customers->mapWithKeys(fn ($c) => [$c->id => $c->name])->all()"
