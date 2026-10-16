@@ -96,10 +96,30 @@ class ProjectController extends Controller
 
         $project->load(['customer', 'workType', 'accountManager', 'status']);
 
-        // Data workflow disiapkan di service supaya view tidak query sendiri.
+        // Data disiapkan di sini supaya view cukup menampilkan, tidak query sendiri.
         ['steps' => $steps, 'progress' => $progress] = $this->projectService->workflowSteps($project);
 
-        return view('projects.show', compact('project', 'steps', 'progress'));
+        $activities = $project->activities()->with('user')->latest('activity_date')->take(5)->get();
+
+        $supportTechnicians = collect(explode(',', (string) $project->support_technicians))
+            ->map(fn ($name) => trim($name))
+            ->filter()
+            ->values();
+
+        $documentCount = $project->documents()->count();
+        $teamCount = (int) ($project->accountManager !== null)
+            + (int) filled($project->pic_engineer)
+            + $supportTechnicians->count();
+
+        return view('projects.show', compact(
+            'project',
+            'steps',
+            'progress',
+            'activities',
+            'supportTechnicians',
+            'documentCount',
+            'teamCount',
+        ));
     }
 
     public function edit(Project $project)
