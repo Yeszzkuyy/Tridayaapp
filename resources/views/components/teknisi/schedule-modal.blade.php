@@ -176,10 +176,10 @@ document.addEventListener('alpine:init', () => {
         },
         syncLabel() {
             return {
-                synced: '✓ Synced',
-                syncing: '⟳ Syncing',
-                error: '⚠ Sync Error',
-                not_connected: '— Not Connected',
+                synced: '✓ {{ __('Synced') }}',
+                syncing: '⟳ {{ __('Syncing') }}',
+                error: '⚠ {{ __('Sync Error') }}',
+                not_connected: '— {{ __('Not Connected') }}',
             }[this.syncStatus] || '';
         },
     }));
@@ -201,12 +201,12 @@ document.addEventListener('alpine:init', () => {
         <div x-show="mode === 'view'" class="px-6 py-5">
             <dl class="space-y-4 text-sm">
                 <div>
-                    <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Project</dt>
+                    <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ __('Project') }}</dt>
                     <dd class="mt-0.5 font-semibold text-slate-800" x-text="detail.title || '-'"></dd>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Customer</dt>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ __('Customer') }}</dt>
                         <dd class="mt-0.5 text-slate-700" x-text="detail.customer || '-'"></dd>
                     </div>
                     <div>
@@ -235,7 +235,7 @@ document.addEventListener('alpine:init', () => {
             </dl>
 
             <div class="flex flex-wrap items-center gap-3 pt-5 mt-5 border-t border-slate-100">
-                <x-icon-button type="button" icon="edit" label="Edit" title="Edit" @click="toEdit()" x-show="canManage" />
+                <x-icon-button type="button" icon="edit" label="{{ __('Edit') }}" title="{{ __('Edit') }}" @click="toEdit()" x-show="canManage" />
                 <form x-show="canManage" :action="deleteAction()" method="POST" class="inline"
                       onsubmit="return confirm('{{ __('Apakah Anda yakin ingin menghapus jadwal ini?') }}')">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
@@ -268,7 +268,7 @@ document.addEventListener('alpine:init', () => {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <x-input-label for="schedule-project" value="Project" />
+                    <x-input-label for="schedule-project" value="{{ __('Project') }}" />
                     <select id="schedule-project" name="project_id" x-model="form.project_id"
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
                         <option value="">{{ __('— Pilih Project —') }}</option>
@@ -313,7 +313,7 @@ document.addEventListener('alpine:init', () => {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="schedule-location" value="{{ __('Lokasi') }}" />
-                    <x-text-input id="schedule-location" name="location" class="mt-1 w-full" x-model="form.location" placeholder="Klaten" />
+                    <x-text-input id="schedule-location" name="location" class="mt-1 w-full" x-model="form.location" placeholder="{{ __('Klaten') }}" />
                     <x-input-error :messages="$errors->get('location')" class="mt-1" />
                 </div>
                 <div>
@@ -332,7 +332,7 @@ document.addEventListener('alpine:init', () => {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <x-input-label for="schedule-status" value="Status" />
+                    <x-input-label for="schedule-status" value="{{ __('Status') }}" />
                     <select id="schedule-status" name="status" x-model="form.status"
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
                         @foreach(\App\Models\TechnicianSchedule::STATUSES as $value => $label)
@@ -341,7 +341,7 @@ document.addEventListener('alpine:init', () => {
                     </select>
                 </div>
                 <div>
-                    <x-input-label for="schedule-reminder" value="Reminder" />
+                    <x-input-label for="schedule-reminder" value="{{ __('Reminder') }}" />
                     <select id="schedule-reminder" name="reminder_minutes" x-model="form.reminder_minutes"
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
                         <option value="">{{ __('Tanpa reminder popup') }}</option>

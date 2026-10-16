@@ -32,7 +32,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14" />
                 </svg>
-                <span>New Chat</span>
+                <span>{{ __('New Chat') }}</span>
             </button>
 
             <div class="ai-history-label">{{ __('Riwayat chat') }}</div>
@@ -57,7 +57,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.121 2.121 0 013 3L7.5 18.849 3 20l1.151-4.5L16.862 3.487z" />
                                 </svg>
-                                Rename
+                                {{ __('Rename') }}
                             </button>
                             <button type="button" class="is-danger" @click="deleteConversation(chat)">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -101,7 +101,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14" />
                     </svg>
-                    <span>New Chat</span>
+                    <span>{{ __('New Chat') }}</span>
                 </button>
             </header>
 

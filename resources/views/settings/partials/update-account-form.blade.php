@@ -20,7 +20,7 @@
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" maxlength="16" required autofocus autocomplete="name" x-model="name" />
             <p x-show="name.length >= 16" x-cloak class="mt-1 text-sm text-red-600">
-                Maksimal 16 karakter tercapai.
+                {{ __('Maksimal 16 karakter tercapai.') }}
             </p>
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>

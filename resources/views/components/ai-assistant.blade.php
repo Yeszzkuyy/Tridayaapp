@@ -99,7 +99,7 @@
             </span>
             <span class="min-w-0 flex-1 leading-tight">
                 <span class="block truncate text-sm font-bold">3DY Assistant</span>
-                <span class="block text-xs text-white/80">Online • AI Assistant</span>
+                <span class="block text-xs text-white/80">{{ __('Online • AI Assistant') }}</span>
             </span>
             <button type="button" @click="minimize()" aria-label="{{ __('Minimize chat') }}"
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">

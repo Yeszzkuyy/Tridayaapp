@@ -34,7 +34,7 @@
     <img src="{{ $photoUrl }}" alt="{{ $user->name }}" width="40" height="40" loading="lazy" decoding="async"
          x-on:click="$dispatch('view-avatar', { src: @js($photoUrl), name: @js($user->name ?? '') })"
          class="{{ $size }} rounded-full aspect-square object-cover shrink-0 cursor-zoom-in transition ring-2 {{ $ring }} hover:shadow-lg {{ $glow }} {{ $class }} relative"
-         title="Lihat foto profil" role="button" tabindex="0"
+         title="{{ __('Lihat foto profil') }}" role="button" tabindex="0"
          x-on:keydown.enter="$dispatch('view-avatar', { src: @js($photoUrl), name: @js($user->name ?? '') })">
 @elseif($photoUrl)
     <img src="{{ $photoUrl }}" alt="{{ $user->name }}" width="40" height="40" loading="lazy" decoding="async"

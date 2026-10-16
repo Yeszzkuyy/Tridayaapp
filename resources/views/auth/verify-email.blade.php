@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Verify Email - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Verify Email') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -154,7 +154,7 @@
                             x-show="!logoFailed"
                             x-on:error="logoFailed = true"
                             src="{{ asset('images/logo/Logo3dydark-256.webp') }}"
-                            alt="Logo"
+                            alt="{{ __('Logo') }}"
                             class="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                         >
                         <div
@@ -164,21 +164,21 @@
                         >W</div>
                     </div>
                     <h1 class="text-xl sm:text-2xl font-bold">{{ config('app.name', 'Tridaya App') }}</h1>
-                    <p class="text-xs sm:text-sm text-white/60 mt-1">Internal Engineer Management System</p>
+                    <p class="text-xs sm:text-sm text-white/60 mt-1">{{ __('Internal Engineer Management System') }}</p>
                 </div>
 
                 <div class="text-center mb-6">
-                    <h2 class="text-base sm:text-lg font-semibold">Verify Email</h2>
-                    <p class="text-xs sm:text-sm text-white/50 mt-1">Thanks for signing up!</p>
+                    <h2 class="text-base sm:text-lg font-semibold">{{ __('Verify Email') }}</h2>
+                    <p class="text-xs sm:text-sm text-white/50 mt-1">{{ __('Thanks for signing up!') }}</p>
                 </div>
 
                 <div class="text-xs sm:text-sm text-white/70 text-center leading-relaxed mb-6">
-                    Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn't receive the email, we will gladly send you another.
+                    {{ __('Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
                 </div>
 
                 @if (session('status') == 'verification-link-sent')
                     <div class="mb-4 text-xs sm:text-sm text-green-400 text-center font-medium">
-                        A new verification link has been sent to the email address you provided during registration.
+                        {{ __('A new verification link has been sent to the email address you provided during registration.') }}
                     </div>
                 @endif
 
@@ -189,7 +189,7 @@
                             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                            Resend Verification
+                            {{ __('Resend Verification') }}
                         </button>
                     </form>
 
@@ -199,14 +199,14 @@
                             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
-                            Log Out
+                            {{ __('Log Out') }}
                         </button>
                     </form>
                 </div>
             </div>
 
             <p class="text-center text-xs text-white/35 mt-6">
-                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. {{ __('All rights reserved.') }}
             </p>
         </div>
     </div>

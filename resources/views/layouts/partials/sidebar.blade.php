@@ -89,19 +89,19 @@
          data-nav-active="{{ $navActive }} sb-active" data-nav-inactive="{{ $navInactive }}">
         <div class="space-y-6">
             <section aria-labelledby="sidebar-main-label">
-                <p id="sidebar-main-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Main</p>
+                <p id="sidebar-main-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Main') }}</p>
                 <div class="space-y-1">
                     <a wire:navigate.hover href="{{ route('dashboard') }}"
                        aria-current="{{ $dashboardActive ? 'page' : 'false' }}"
                        class="{{ $navLink }} {{ $dashboardActive ? $navActive : $navInactive }}">
                         <x-icon name="grid" class="h-5 w-5 shrink-0" />
-                        <span>Dashboard</span>
+                        <span>{{ __('Dashboard') }}</span>
                     </a>
                     <a wire:navigate.hover href="{{ route('customers.index') }}"
                        aria-current="{{ $customerActive ? 'page' : 'false' }}"
                        class="{{ $navLink }} {{ $customerActive ? $navActive : $navInactive }}">
                         <x-icon name="users" class="h-5 w-5 shrink-0" />
-                        <span>Customer</span>
+                        <span>{{ __('Customer') }}</span>
                     </a>
                     {{-- Monitoring lintas divisi: management, ceo, super-admin (via Gate::before) --}}
                     @can('view-monitoring')
@@ -109,7 +109,7 @@
                            aria-current="{{ $monitoringActive ? 'page' : 'false' }}"
                            class="{{ $navLink }} {{ $monitoringActive ? $navActive : $navInactive }}">
                             <x-icon name="chart-bar" class="h-5 w-5 shrink-0" />
-                            <span>Monitoring</span>
+                            <span>{{ __('Monitoring') }}</span>
                         </a>
                     @endcan
                     {{-- AI Assistant SENGAJA full reload (tanpa wire:navigate):
@@ -118,14 +118,14 @@
                        aria-current="{{ request()->routeIs('ai.assistant*') ? 'page' : 'false' }}"
                        class="{{ $navLink }} {{ request()->routeIs('ai.assistant*') ? $navActive : $navInactive }}">
                         <x-icon name="message" class="h-5 w-5 shrink-0" />
-                        <span>AI Assistant</span>
+                        <span>{{ __('AI Assistant') }}</span>
                     </a>
                 </div>
             </section>
 
             @canany(['manage-sales-leads', 'view-technician', 'view-marketing', 'view-sales', 'view-admin', 'manage-inside-sales'])
                 <section aria-labelledby="sidebar-departments-label">
-                    <p id="sidebar-departments-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Departments</p>
+                    <p id="sidebar-departments-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Departments') }}</p>
                     <div class="space-y-1">
                         {{-- Management (Management Hub) --}}
                         @can('manage-sales-leads')
@@ -134,7 +134,7 @@
                                     <a wire:navigate.hover href="{{ route('manage-sales.index') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="briefcase" class="h-5 w-5 shrink-0" />
-                                        <span>Management</span>
+                                        <span>{{ __('Management') }}</span>
                                         <span class="ml-auto flex shrink-0 items-center gap-1.5 sidebar-hide">
                                             <template x-if="$store.notif.unassigned > 0">
                                                 <span class="h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Ada lead belum di-assign') }}"></span>
@@ -155,7 +155,7 @@
                                        aria-current="{{ request()->routeIs('manage-sales*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage-sales*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
-                                        <span>Manage Sales</span>
+                                        <span>{{ __('Manage Sales') }}</span>
                                         <template x-if="$store.notif.unassigned > 0">
                                             <span class="ml-auto h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Ada lead belum di-assign') }}"></span>
                                         </template>
@@ -164,25 +164,25 @@
                                        aria-current="{{ request()->routeIs('manage.marketing*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage.marketing*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden="true"></span>
-                                        <span>Manage Marketing</span>
+                                        <span>{{ __('Manage Marketing') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('manage.technical.index') }}"
                                        aria-current="{{ request()->routeIs('manage.technical*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage.technical*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" aria-hidden="true"></span>
-                                        <span>Manage Technical</span>
+                                        <span>{{ __('Manage Technical') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('manage.admin.index') }}"
                                        aria-current="{{ request()->routeIs('manage.admin*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage.admin*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
-                                        <span>Manage Admin</span>
+                                        <span>{{ __('Manage Admin') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('manage-sales.activity-log') }}"
                                        aria-current="{{ request()->routeIs('manage-sales.activity-log') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage-sales.activity-log') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" aria-hidden="true"></span>
-                                        <span>Activity Log</span>
+                                        <span>{{ __('Activity Log') }}</span>
                                     </a>
                                     </div>
 </div>
@@ -218,7 +218,7 @@
                                         aria-current="{{ request()->routeIs('projects*') ? 'page' : 'false' }}"
                                         class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('projects*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" aria-hidden="true"></span>
-                                         <span>Project</span>
+                                         <span>{{ __('Project') }}</span>
                                      </a>
                                      <a wire:navigate.hover href="{{ route('teknisi.jadwal') }}"
                                         aria-current="{{ request()->routeIs('teknisi.jadwal*') ? 'page' : 'false' }}"
@@ -231,13 +231,13 @@
                                        aria-current="{{ request()->routeIs('teknisi.surveys*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.surveys*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" aria-hidden="true"></span>
-                                        <span>Survey</span>
+                                        <span>{{ __('Survey') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('teknisi.sizing-projects.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.sizing-projects*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.sizing-projects*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" aria-hidden="true"></span>
-                                        <span>Sizing Project</span>
+                                        <span>{{ __('Sizing Project') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('teknisi.request-hargas.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.request-hargas*') ? 'page' : 'false' }}"
@@ -257,7 +257,7 @@
                                        aria-current="{{ request()->routeIs('teknisi.documents*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.documents*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" aria-hidden="true"></span>
-                                         <span>Document</span>
+                                         <span>{{ __('Document') }}</span>
                                      </a>
                                      @endunless
                                      </div>
@@ -272,7 +272,7 @@
                                     <a wire:navigate.hover href="{{ route('marketing.dashboard') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="chart-bar" class="h-5 w-5 shrink-0" />
-                                        <span>Marketing</span>
+                                        <span>{{ __('Marketing') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-marketing-menu"
@@ -288,7 +288,7 @@
                                        aria-current="{{ request()->routeIs('marketing.dashboard') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('marketing.dashboard') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                                         <span>Dashboard</span>
+                                         <span>{{ __('Dashboard') }}</span>
                                      </a>
                                      @unless($mktRecap)
                                      {{-- WhatsApp Center SENGAJA full reload (tanpa wire:navigate):
@@ -304,7 +304,7 @@
                                        aria-current="{{ request()->routeIs(['leads.index', 'leads.show', 'leads.edit']) ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs(['leads.index', 'leads.show', 'leads.edit']) ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden="true"></span>
-                                        <span>Lead / Opportunity</span>
+                                        <span>{{ __('Lead / Opportunity') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('partners.index') }}"
                                        aria-current="{{ request()->routeIs('partners*') ? 'page' : 'false' }}"
@@ -326,7 +326,7 @@
                                            aria-current="{{ request()->routeIs('leads.monitoring') ? 'page' : 'false' }}"
                                            class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('leads.monitoring') ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
-                                            <span>Monitoring</span>
+                                            <span>{{ __('Monitoring') }}</span>
                                         </a>
                                      @endunless
                                     @endcan
@@ -342,7 +342,7 @@
                                     <a wire:navigate.hover href="{{ $salesLanding }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="calendar" class="h-5 w-5 shrink-0" />
-                                        <span>Sales</span>
+                                        <span>{{ __('Sales') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-sales-menu"
@@ -359,7 +359,7 @@
                                            aria-current="{{ request()->routeIs($item['match']) ? 'page' : 'false' }}"
                                            class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs($item['match']) ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ $item['dot'] }}" aria-hidden="true"></span>
-                                            <span>{{ $item['label'] }}</span>
+                                            <span>{{ __($item['label']) }}</span>
                                         </a>
                                     @endforeach
                                     </div>
@@ -374,7 +374,7 @@
                                     <a wire:navigate.hover href="{{ route('admin.invoices.index') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="folder" class="h-5 w-5 shrink-0" />
-                                        <span>Admin</span>
+                                        <span>{{ __('Admin') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-admin-menu"
@@ -390,19 +390,19 @@
                                        aria-current="{{ request()->routeIs('admin.invoices.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.invoices.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>Invoice</span>
+                                        <span>{{ __('Invoice') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin.pos.index') }}"
                                        aria-current="{{ request()->routeIs('admin.pos.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.pos.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" aria-hidden="true"></span>
-                                        <span>Purchase Order</span>
+                                        <span>{{ __('Purchase Order') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin.payments.index') }}"
                                        aria-current="{{ request()->routeIs('admin.payments.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.payments.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
-                                        <span>Payment</span>
+                                        <span>{{ __('Payment') }}</span>
                                     </a>
                                     </div>
 </div>
@@ -415,7 +415,7 @@
 
             @canany(['view-trash', 'manage-monitoring'])
                 <section aria-labelledby="sidebar-system-label">
-                    <p id="sidebar-system-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">System</p>
+                    <p id="sidebar-system-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('System') }}</p>
                     <div class="space-y-1">
                         {{-- Trash --}}
                         @can('view-trash')
@@ -423,7 +423,7 @@
                                aria-current="{{ request()->routeIs('trash*') ? 'page' : 'false' }}"
                                class="{{ $navLink }} {{ request()->routeIs('trash*') ? $navActive : $navInactive }}">
                                 <x-icon name="trash" class="h-5 w-5 shrink-0" />
-                                <span>Trash</span>
+                                <span>{{ __('Trash') }}</span>
                             </a>
                         @endcan
 
@@ -433,13 +433,13 @@
                                aria-current="{{ request()->routeIs('knowledge-base*') ? 'page' : 'false' }}"
                                class="{{ $navLink }} {{ request()->routeIs('knowledge-base*') ? $navActive : $navInactive }}">
                                 <x-icon name="book" class="h-5 w-5 shrink-0" />
-                                <span>Knowledge Base</span>
+                                <span>{{ __('Knowledge Base') }}</span>
                             </a>
                             <a wire:navigate.hover href="{{ route('product-knowledge.index') }}"
                                aria-current="{{ request()->routeIs('product-knowledge*') ? 'page' : 'false' }}"
                                class="{{ $navLink }} {{ request()->routeIs('product-knowledge*') ? $navActive : $navInactive }}">
                                 <x-icon name="book" class="h-5 w-5 shrink-0" />
-                                <span>Product KB</span>
+                                <span>{{ __('Product KB') }}</span>
                             </a>
                         @endcan
 
@@ -450,7 +450,7 @@
                                     <a wire:navigate.hover href="{{ route('admin-panel.index') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="settings" class="h-5 w-5 shrink-0" />
-                                        <span>Admin Panel</span>
+                                        <span>{{ __('Admin Panel') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
                                             :aria-expanded="open" aria-controls="sidebar-admin-panel-menu"
@@ -466,37 +466,37 @@
                                        aria-current="{{ request()->routeIs('admin-panel.index') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.index') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
-                                        <span>User Management</span>
+                                        <span>{{ __('User Management') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin-panel.account-managers.index') }}"
                                        aria-current="{{ request()->routeIs('admin-panel.account-managers.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.account-managers.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>Account Manager</span>
+                                        <span>{{ __('Account Manager') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin-panel.work-types.index') }}"
                                        aria-current="{{ request()->routeIs('admin-panel.work-types.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.work-types.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>Work Type</span>
+                                        <span>{{ __('Work Type') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin-panel.document-categories.index') }}"
                                        aria-current="{{ request()->routeIs('admin-panel.document-categories.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.document-categories.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>Document Category</span>
+                                        <span>{{ __('Document Category') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin-panel.project-statuses.index') }}"
                                        aria-current="{{ request()->routeIs('admin-panel.project-statuses.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.project-statuses.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>Project Status</span>
+                                        <span>{{ __('Project Status') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('admin-panel.audit-log') }}"
                                        aria-current="{{ request()->routeIs('admin-panel.audit-log') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.audit-log') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>Audit Log</span>
+                                        <span>{{ __('Audit Log') }}</span>
                                     </a>
                                     </div>
 </div>
