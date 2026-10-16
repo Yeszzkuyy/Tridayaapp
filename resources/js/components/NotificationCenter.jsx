@@ -740,7 +740,7 @@ export default function NotificationCenter() {
                                             <button
                                                 type="button"
                                                 onClick={markAllRead}
-                                                className="rounded-lg px-2 py-1 text-[11px] font-medium text-accent-600 transition hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500/10"
+                                                className="rounded-lg px-2 py-1 text-[11px] font-medium text-accent-600 transition hover:bg-accent-50 dark:text-accent-400 dark:hover:bg-accent-500 dark:hover:text-white"
                                             >
                                                 {I18N.markAllRead}
                                             </button>
@@ -789,7 +789,7 @@ export default function NotificationCenter() {
                                     type="button"
                                     onClick={loadMore}
                                     disabled={loadingMore}
-                                    className="w-full rounded-xl px-3 py-2 text-xs font-medium text-accent-600 transition hover:bg-accent-50 disabled:opacity-50 dark:text-accent-400 dark:hover:bg-accent-500/10"
+                                    className="w-full rounded-xl px-3 py-2 text-xs font-medium text-accent-600 transition hover:bg-accent-50 disabled:opacity-50 dark:text-accent-400 dark:hover:bg-accent-500 dark:hover:text-white"
                                 >
                                     {loadingMore ? I18N.loading : I18N.loadMore}
                                 </button>

@@ -132,7 +132,7 @@
                     <div class="mt-4 flex flex-wrap justify-center gap-2">
                         <template x-for="qa in quickActions" :key="qa">
                             <button type="button" @click="sendQuick(qa)" :disabled="busy"
-                                    class="rounded-full border border-accent-500/40 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-700 transition hover:-translate-y-0.5 hover:bg-accent-100 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50 dark:bg-accent-500/10 dark:text-accent-300 dark:hover:bg-accent-500/20"
+                                    class="rounded-full border border-accent-500/40 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-700 transition hover:-translate-y-0.5 hover:bg-accent-100 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50 dark:bg-accent-500/10 dark:text-accent-300 dark:hover:bg-accent-500 dark:hover:text-white"
                                     x-text="qa"></button>
                         </template>
                     </div>
