@@ -241,7 +241,7 @@
                     </span>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Dashboard umum') }}</p>
-                        <p class="mt-0.5 text-sm font-bold text-slate-700 dark:text-[#f2f6ff]">Overview 3DY Group</p>
+                        <p class="mt-0.5 text-sm font-bold text-slate-700 dark:text-[#f2f6ff]">{{ __('Overview 3DY Group') }}</p>
                     </div>
                 </div>
             </div>
@@ -297,7 +297,7 @@
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                             <p class="min-w-0 text-sm leading-snug text-slate-700 dark:text-[#f2f6ff]">
-                                <span class="font-bold text-slate-900 dark:text-[#f2f6ff]">{{ $activity->user?->name ?? 'System' }}</span>
+                                <span class="font-bold text-slate-900 dark:text-[#f2f6ff]">{{ $activity->user?->name ?? __('System') }}</span>
                                 <span class="text-slate-600 dark:text-[#a6b1d4]">{{ $activity->title ?? __('Aktivitas') }}</span>
                             </p>
                             <time class="shrink-0 text-xs font-medium text-slate-400" datetime="{{ $activity->activity_date?->toIso8601String() }}">
