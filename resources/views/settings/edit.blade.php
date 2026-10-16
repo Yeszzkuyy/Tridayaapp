@@ -36,7 +36,7 @@
         <x-profile-tabs />
 
         @if (session('status') === 'settings-updated')
-            <div class="rounded-xl border border-green-300 bg-green-100 px-5 py-3 text-sm text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400">
+            <div class="rounded-lg border border-green-300 bg-green-100 px-5 py-3 text-sm text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400">
                 {{ __('Pengaturan berhasil disimpan.') }}
             </div>
         @endif
@@ -46,7 +46,7 @@
             @method('patch')
 
             {{-- Tampilan --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800"
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800"
                      x-data="{
                         theme: '{{ $currentTheme }}',
                         accent: '{{ $currentAccent }}',
@@ -70,7 +70,7 @@
                             <input type="radio" name="theme" value="{{ $option['value'] }}" class="peer sr-only"
                                    x-model="theme" @change="apply('{{ $option['value'] }}')"
                                    @checked($currentTheme === $option['value'])>
-                            <span class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
+                            <span class="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
                                 <x-icon name="{{ $option['icon'] }}" class="h-5 w-5" />
                                 {{ $option['label'] }}
                             </span>
@@ -88,8 +88,8 @@
                                 <input type="radio" name="accent" value="{{ $option['value'] }}" class="peer sr-only"
                                        x-model="accent" @change="applyAccent('{{ $option['value'] }}')"
                                        @checked($currentAccent === $option['value'])>
-                                <span class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
-                                    <span class="inline-block h-6 w-6 rounded-full ring-2 ring-white" style="background-color: {{ $option['color'] }}"></span>
+                                <span class="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
+                                    <span class="h-10 w-full rounded-md ring-1 ring-slate-200 dark:ring-slate-600" style="background-color: {{ $option['color'] }}"></span>
                                     {{ $option['label'] }}
                                 </span>
                             </label>
@@ -100,7 +100,7 @@
             </section>
 
             {{-- Notifikasi --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                 <header>
                     <h2 class="text-lg font-bold text-slate-800">{{ __('Notifikasi') }}</h2>
                     <p class="mt-1 text-sm text-slate-500">{{ __('Atur bagaimana Anda menerima pemberitahuan.') }}</p>
@@ -145,7 +145,7 @@
                 </div>
 
                 {{-- Status push browser ini --}}
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-900/40"
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-900/40"
                      x-data="{ pushState: 'checking', pushMsg: '' }"
                      x-init="(async () => { pushState = await window.WebPush.status() })()">
                     <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -170,7 +170,7 @@
             </section>
 
             {{-- Bahasa --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                 <header>
                     <h2 class="text-lg font-bold text-slate-800">{{ __('Bahasa') }}</h2>
                     <p class="mt-1 text-sm text-slate-500">{{ __('Pilih bahasa tampilan aplikasi.') }}</p>
@@ -245,8 +245,8 @@
 
         {{-- Area lanjutan (digerbang password) — kartu link full-width --}}
         <a href="{{ route('settings.advanced') }}"
-           class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-accent-400 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400">
+           class="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-accent-400 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400">
                 <x-icon name="settings" class="h-5 w-5" />
             </span>
             <span class="min-w-0 flex-1">
