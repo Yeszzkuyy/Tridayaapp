@@ -243,5 +243,13 @@
     "Open": "Terbuka",
     "On Progress": "Sedang Berjalan",
     "Done": "Selesai",
-    ":count document|:count documents": ":count dokumen"
+    ":count document|:count documents": ":count dokumen",
+    "Project Information": "Informasi Project",
+    "Project Team": "Tim Project",
+    "Stages Done": "Tahap Selesai",
+    "Documents": "Dokumen",
+    "Team Members": "Anggota Tim",
+    "Created At": "Tanggal Dibuat",
+    "Workflow Progress": "Progres Workflow",
+    "No activity yet.": "Belum ada aktivitas."
 }
