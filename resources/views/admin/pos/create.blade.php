@@ -8,7 +8,7 @@
             <form action="{{ route('admin.pos.store') }}" method="POST" class="space-y-6">
                 @csrf
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Customer <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
                         name="customer_id"
                         :options="$customers->mapWithKeys(fn ($c) => [$c->id => $c->name])->all()"
@@ -29,7 +29,7 @@
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Item <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Item') }} <span class="text-red-500">*</span></label>
                     <textarea name="items" rows="4" required placeholder="{{ __('Deskripsi barang/jasa yang dipesan...') }}" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('items') }}</textarea>
                     @error('items') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -40,7 +40,7 @@
                         @error('amount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status') }}</label>
                         <select name="status" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                             @foreach($statuses as $val => $label) <option value="{{ $val }}" {{ old('status', 'draft') == $val ? 'selected' : '' }}>{{ $label }}</option> @endforeach
                         </select>

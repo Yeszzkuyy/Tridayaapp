@@ -8,7 +8,7 @@
             <form action="{{ route('admin.payments.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Invoice <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Invoice') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
                         name="invoice_id"
                         :options="$invoices->mapWithKeys(fn ($i) => [$i->id => $i->invoice_number . ' — ' . ($i->customer?->name ?? '-') . ' (Rp ' . number_format($i->amount, 0, ',', '.') . ', ' . $i->status . ')'])->all()"

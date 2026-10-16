@@ -7,7 +7,7 @@
             </div>
             <div class="flex gap-2">
                 @can('manage-admin')
-                    <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $invoice) }}" title="Edit" />
+                    <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $invoice) }}" title="{{ __('Edit') }}" />
                 @endcan
                 <x-icon-button as="a" icon="back" href="{{ route('admin.invoices.index') }}" title="{{ __('Kembali') }}" />
             </div>
@@ -18,11 +18,11 @@
                 <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">{{ __('Informasi Invoice') }}</h3>
                 <dl class="space-y-3">
                     <div><dt class="text-xs text-slate-400">{{ __('No Invoice') }}</dt><dd class="font-mono font-semibold text-slate-800">{{ $invoice->invoice_number }}</dd></div>
-                    <div><dt class="text-xs text-slate-400">Customer</dt><dd class="font-medium text-slate-800">{{ $invoice->customer->name }}</dd></div>
+                    <div><dt class="text-xs text-slate-400">{{ __('Customer') }}</dt><dd class="font-medium text-slate-800">{{ $invoice->customer->name }}</dd></div>
                     <div><dt class="text-xs text-slate-400">{{ __('Proyek') }}</dt><dd class="font-medium text-slate-800">{{ $invoice->project?->project_name ?? '-' }}</dd></div>
                     <div><dt class="text-xs text-slate-400">{{ __('Tanggal Terbit') }}</dt><dd class="font-medium text-slate-800">{{ $invoice->issue_date->format('d M Y') }}</dd></div>
                     <div><dt class="text-xs text-slate-400">{{ __('Jatuh Tempo') }}</dt><dd class="font-medium text-slate-800">{{ $invoice->due_date?->format('d M Y') ?? '-' }}</dd></div>
-                    <div><dt class="text-xs text-slate-400">Status</dt>
+                    <div><dt class="text-xs text-slate-400">{{ __('Status') }}</dt>
                         <dd><span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full @if($invoice->status === 'paid') bg-green-100 text-green-700 @elseif($invoice->status === 'cancelled') bg-red-100 text-red-700 @else bg-yellow-100 text-yellow-700 @endif">{{ $invoice->status === 'paid' ? __('Lunas') : ($invoice->status === 'cancelled' ? __('Dibatalkan') : __('Belum Bayar')) }}</span></dd>
                     </div>
                     <div><dt class="text-xs text-slate-400">{{ __('Nominal') }}</dt><dd class="font-semibold text-lg text-slate-800">Rp {{ number_format($invoice->amount, 0, ',', '.') }}</dd></div>
@@ -52,7 +52,7 @@
                                 @if($payment->proof_file)
                                     <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" title="{{ __('Bukti') }}" />
                                 @endif
-                                <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $payment) }}" title="Detail" />
+                                <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $payment) }}" title="{{ __('Detail') }}" />
                             </div>
                         </div>
                         @if($payment->notes)<p class="text-xs text-slate-400 mt-1">{{ $payment->notes }}</p>@endif

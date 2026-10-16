@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Dashboard Marketing</h1>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Dashboard Marketing') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Ringkasan performa lead dan pipeline') }}</p>
         </div>
-        <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}" title="Lihat Lead" />
+        <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}" title="{{ __('Lihat Lead') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 mb-6">
@@ -21,8 +21,8 @@
             </div>
 
             <div class="flex items-end gap-2">
-                <x-icon-button icon="filter" type="submit" title="Filter" />
-                <x-icon-button as="a" icon="reset" href="{{ route('marketing.dashboard') }}" title="Reset" />
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                <x-icon-button as="a" icon="reset" href="{{ route('marketing.dashboard') }}" title="{{ __('Reset') }}" />
             </div>
 
             <div class="flex items-end">
@@ -92,7 +92,7 @@
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-indigo-500/5"></div>
             <div class="relative flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Lead</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Total Lead') }}</p>
                     <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $stats['total'] }}</p>
                 </div>
                 <div class="shrink-0 p-2.5 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
@@ -118,9 +118,9 @@
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-green-500/5"></div>
             <div class="relative flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Won</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Won') }}</p>
                     <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $stats['won'] }}</p>
-                    <p class="text-xs text-red-500 mt-1">Lost: {{ $stats['lost'] }}</p>
+                    <p class="text-xs text-red-500 mt-1">{{ __('Lost:') }} {{ $stats['lost'] }}</p>
                 </div>
                 <div class="shrink-0 p-2.5 rounded-xl bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -132,9 +132,9 @@
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-cyan-500/5"></div>
             <div class="relative flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Conversion Rate</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Conversion Rate') }}</p>
                     <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $stats['conversion'] }}%</p>
-                    <p class="text-xs text-slate-400 mt-1">won ÷ (won + lost)</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('won ÷ (won + lost)') }}</p>
                 </div>
                 <div class="shrink-0 p-2.5 rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"></path></svg>
@@ -218,7 +218,7 @@
                 <x-donut-chart :data="$donutMarketing" :size="280" :strokeWidth="34" :scroll="true" />
             </div>
             <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-10">
-                <span class="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-full" x-text="activeSeg() ? activeSeg().label : 'Total Lead'">Total Lead</span>
+                <span class="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-full" x-text="activeSeg() ? activeSeg().label : '{{ __('Total Lead') }}'">{{ __('Total Lead') }}</span>
                 <span class="mt-0.5 text-3xl font-bold text-slate-800 tabular-nums dark:text-slate-100" x-text="activeSeg() ? activeSeg().value : total">{{ $stats['total'] }}</span>
                 <span x-show="activeSeg() && total > 0" class="text-sm font-medium text-slate-400" x-text="activeSeg() ? '[' + Math.round(activeSeg().value / total * 100) + '%]' : ''"></span>
             </div>
@@ -247,11 +247,11 @@
                 <h3 class="font-semibold text-slate-700 dark:text-slate-200">
                     <span x-show="!selectedStatus">{{ __('Semua Lead') }}</span>
                     <span x-show="selectedStatus">{{ __('Detail Lead') }} <span class="text-accent-600 dark:text-accent-400 uppercase" x-text="selectedStatus"></span></span>
-                    <span class="text-sm font-medium text-slate-400">(<span x-text="filteredLeads().length"></span> lead)</span>
+                    <span class="text-sm font-medium text-slate-400">(<span x-text="filteredLeads().length"></span> {{ __('lead') }})</span>
                 </h3>
                 <button type="button" x-show="selectedStatus" @click="select(selectedStatus)"
                         class="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition">
-                    Tampilkan semua
+                    {{ __('Tampilkan semua') }}
                 </button>
             </div>
 
@@ -260,10 +260,10 @@
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
                         <thead class="bg-slate-50 dark:bg-slate-900/40">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Lead / Customer</th>
-                                <th x-show="!selectedStatus" class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
+                                <th x-show="!selectedStatus" class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status') }}</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Sumber') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Partner</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Partner') }}</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Tanggal Masuk') }}</th>
                             </tr>
                         </thead>

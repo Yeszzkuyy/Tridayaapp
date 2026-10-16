@@ -15,9 +15,9 @@
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('No PO') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">Customer</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">Item</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Item') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Aksi') }}</th>
                     </tr>
                 </thead>
@@ -38,9 +38,9 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="Detail PO" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="{{ __('Detail PO') }}" />
                                     @can('manage-admin')
-                                        <x-icon-button as="a" icon="edit" href="{{ route('admin.pos.edit', $po) }}" title="Edit PO" />
+                                        <x-icon-button as="a" icon="edit" href="{{ route('admin.pos.edit', $po) }}" title="{{ __('Edit PO') }}" />
                                         <form action="{{ route('admin.pos.destroy', $po) }}" method="POST" onsubmit="return confirm('{{ __('Hapus PO ini?') }}')" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Hapus PO') }}" />

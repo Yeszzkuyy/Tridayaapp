@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Tambah Role Baru') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Buat role baru dan assign permission') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="Back" />
+        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="{{ __('Back') }}" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
@@ -27,7 +27,7 @@
                                 class="px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
                             <option value="">{{ __('Pilih role...') }}</option>
                             @foreach($rolePresets as $preset)
-                                <option value="{{ $preset->name }}">{{ $preset->name }} ({{ $preset->permissions->count() }} permission)</option>
+                                <option value="{{ $preset->name }}">{{ $preset->name }} ({{ $preset->permissions->count() }} {{ __('permission') }})</option>
                             @endforeach
                         </select>
                     </div>

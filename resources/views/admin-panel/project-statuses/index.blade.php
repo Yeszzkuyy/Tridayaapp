@@ -2,7 +2,7 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">Project Status</h1>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Project Status') }}</h1>
                 <p class="text-slate-500 mt-1">{{ __('Kelola status project') }}</p>
             </div>
             <x-icon-button as="a" icon="add" href="{{ route('admin-panel.project-statuses.create') }}" label="{{ __('Tambah Status') }}" title="{{ __('Tambah Status') }}" />
@@ -15,7 +15,7 @@
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Nama Status') }}</th>
                             <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Warna') }}</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Default</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Default') }}</th>
                             <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Dibuat Pada') }}</th>
                             <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
                         </tr>
@@ -26,12 +26,12 @@
                                 <td class="px-6 py-4 font-medium text-slate-800">{{ $status->name }}</td>
                                 <td class="px-6 py-4">
                                     <span class="px-3 py-1 text-xs font-semibold rounded-full" style="background-color: {{ $status->color ?? '#gray' }}20; color: {{ $status->color ?? '#gray' }}">
-                                        {{ $status->color ?? 'Default' }}
+                                        {{ $status->color ?? __('Default') }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($status->is_default)
-                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Primary</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">{{ __('Primary') }}</span>
                                     @else
                                         <span class="text-slate-400">-</span>
                                     @endif
@@ -39,7 +39,7 @@
                                 <td class="px-6 py-4 text-slate-600">{{ $status->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">
-                                        <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.project-statuses.edit', $status) }}" title="Edit" />
+                                        <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.project-statuses.edit', $status) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.project-statuses.destroy', $status) }}" 
                                               method="POST" 
                                               onsubmit="return confirm('{{ __('Hapus status ini?') }}')"

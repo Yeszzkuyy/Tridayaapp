@@ -2,7 +2,7 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">Document Category</h1>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Document Category') }}</h1>
                 <p class="text-slate-500 mt-1">{{ __('Kelola kategori dokumen') }}</p>
             </div>
             <x-icon-button as="a" icon="add" href="{{ route('admin-panel.document-categories.create') }}" label="{{ __('Tambah Kategori') }}" title="{{ __('Tambah Kategori') }}" />
@@ -25,7 +25,7 @@
                                 <td class="px-6 py-4 text-slate-600">{{ $category->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">
-                                        <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.document-categories.edit', $category) }}" title="Edit" />
+                                        <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.document-categories.edit', $category) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.document-categories.destroy', $category) }}" 
                                               method="POST" 
                                               onsubmit="return confirm('{{ __('Hapus kategori ini?') }}')"

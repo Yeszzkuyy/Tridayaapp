@@ -1,14 +1,14 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Admin Panel</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Admin Panel') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Manajemen User, Role & Permission (Super Admin)') }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" href="{{ route('admin-panel.roles.create') }}" title="Add Role">
+            <x-icon-button as="a" href="{{ route('admin-panel.roles.create') }}" title="{{ __('Add Role') }}">
                 <x-icon name="users" class="h-5 w-5" />
             </x-icon-button>
-            <x-icon-button as="a" href="{{ route('admin-panel.users.create') }}" title="Add User">
+            <x-icon-button as="a" href="{{ route('admin-panel.users.create') }}" title="{{ __('Add User') }}">
                 <x-icon name="user" class="h-5 w-5" />
             </x-icon-button>
         </div>
@@ -34,9 +34,9 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider w-16">{{ __('Foto') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Nama') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">Email</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">Role</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Email') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Role') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Dibuat') }}</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Aksi') }}</th>
                     </tr>

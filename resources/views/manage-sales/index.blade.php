@@ -4,7 +4,7 @@
     @endif
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Manage Sales</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Manage Sales') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Lead dari marketing — isi solusi, progress follow-up, dan assign ke Sales') }}</p>
         </div>
     </div>
@@ -52,7 +52,7 @@
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">Status Assignment</label>
+                    <label class="text-sm font-medium text-slate-500">{{ __('Status Assignment') }}</label>
                     <x-glide-select name="assignment" class="mt-1" :label="__('Status Assignment')" :empty-label="__('Semua')"
                         :options="[['value' => 'new', 'label' => __('NEW (Belum di-assign)')], ['value' => 'assigned', 'label' => __('ASSIGNED')]]"
                         :value="request('assignment', '')" autosubmit />
@@ -74,8 +74,8 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Lead / Customer</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Aktivitas') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Kebutuhan') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Tanggal Masuk') }}</th>
@@ -88,7 +88,7 @@
                     @forelse($leads as $lead)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition align-middle">
                             <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900">{{ $lead->customer->name ?? 'N/A' }}</div>
+                                <div class="font-medium text-slate-900">{{ $lead->customer->name ?? __('N/A') }}</div>
                                 <div class="text-sm text-slate-500">
                                     @if($lead->pt_group)<span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-[11px] font-semibold mr-1">{{ $lead->pt_group }}</span>@endif
                                     {{ $lead->customer->contact_person ? 'PIC: '.$lead->customer->contact_person : '' }}
@@ -100,13 +100,13 @@
                                         <x-user-avatar :user="$lead->assignee" size="w-7 h-7" text="text-[11px]" color="green" :clickable="false" />
                                         <div class="flex flex-col items-start text-left leading-tight">
                                             <span class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ $lead->assignee->name }}</span>
-                                            <span class="text-[10px] uppercase tracking-wide text-green-600 dark:text-green-400">Assigned</span>
+                                            <span class="text-[10px] uppercase tracking-wide text-green-600 dark:text-green-400">{{ __('Assigned') }}</span>
                                         </div>
                                     </div>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 dark:text-blue-400">
                                         <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-                                        New
+                                        {{ __('New') }}
                                     </span>
                                 @endif
                             </td>
@@ -147,7 +147,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-left">
-                                <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="Updating…">
+                                <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="{{ __('Updating…') }}">
                                     @csrf
                                     @method('PUT')
                                     <x-glide-select name="pt_group" size="sm" class="w-24" :label="__('Lead dari PT')" empty-label="—"
@@ -156,13 +156,13 @@
                                 </form>
                             </td>
                             <td class="px-6 py-4 text-left">
-                                <form action="{{ route('manage-sales.assign', $lead) }}" method="POST" class="flex items-center gap-2" data-loading-text="Assigning…">
+                                <form action="{{ route('manage-sales.assign', $lead) }}" method="POST" class="flex items-center gap-2" data-loading-text="{{ __('Assigning…') }}">
                                     @csrf
                                     <x-glide-select name="assigned_to" size="sm" class="w-40" :label="__('Assign ke Sales')"
                                         :placeholder="__('— Pilih Sales —')"
                                         :options="$salesUsers->map(fn ($u) => ['value' => $u->id, 'label' => $u->name])->all()"
                                         :value="$lead->assigned_to" required />
-                                    <x-icon-button type="submit" title="{{ __('Assign ke Sales') }}" label="Assign">
+                                    <x-icon-button type="submit" title="{{ __('Assign ke Sales') }}" label="{{ __('Assign') }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
                                         </svg>

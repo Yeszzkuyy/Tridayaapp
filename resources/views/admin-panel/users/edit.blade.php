@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Edit User: {{ $user->name }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit User:') }} {{ $user->name }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Perbarui informasi user dan role') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="Back" />
+        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="{{ __('Back') }}" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
@@ -18,7 +18,7 @@
             </div>
 
             <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label for="email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                 <input type="email" id="email" name="email" required value="{{ $user->email }}"
                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
             </div>
@@ -50,7 +50,7 @@
             </div>
 
             <div class="mb-6">
-                <label class="block text-sm font-medium text-slate-700 mb-2">Role(s)</label>
+                <label class="block text-sm font-medium text-slate-700 mb-2">{{ __('Role(s)') }}</label>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     @foreach($roles as $role)
                         <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 cursor-pointer hover:border-accent-400 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition">
@@ -59,7 +59,7 @@
                                    class="w-4 h-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
                             <span class="min-w-0 flex-1">
                                 <span class="block text-sm font-medium text-slate-800 capitalize">{{ $role->name }}</span>
-                                <span class="block text-xs text-slate-500">{{ $role->permissions->count() }} permission</span>
+                                <span class="block text-xs text-slate-500">{{ $role->permissions->count() }} {{ __('permission') }}</span>
                             </span>
                         </label>
                     @endforeach

@@ -1,13 +1,13 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Kelola Lead:') }} {{ $lead->customer->name ?? 'N/A' }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Kelola Lead:') }} {{ $lead->customer->name ?? __('N/A') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Isi solusi, progress follow-up, catatan internal, dan assign ke Sales') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="Kembali" />
+        <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="{{ __('Back') }}" />
     </div>
 
-    <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="Saving…"
+    <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="{{ __('Saving…') }}"
           class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
         @csrf
         @method('PUT')
@@ -23,7 +23,7 @@
                 @endif
             </div>
             <div>
-                <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">PIC</div>
+                <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('PIC') }}</div>
                 <div class="text-sm text-slate-700 mt-1">{{ $lead->customer->contact_person ?? '-' }}</div>
             </div>
             <div>
@@ -80,7 +80,7 @@
                         {{ __('Lead dari PT') }}
                         <x-info-tip tip="{{ __('Jenama penyedia yang menangani lead ini. Bisa diubah jikalau management menggantinya.') }}" />
                     </label>
-                    <x-glide-select name="pt_group" id="pt_group" :label="__('Lead dari PT')" empty-label="— Pilih PT —"
+                    <x-glide-select name="pt_group" id="pt_group" :label="__('Lead dari PT')" empty-label="{{ __('— Pilih PT —') }}"
                         :options="collect(\App\Models\Lead::PT_GROUPS)->map(fn ($g) => ['value' => $g, 'label' => $g])->all()"
                         :value="old('pt_group', $lead->pt_group)" :error="$errors->first('pt_group')" />
                 </div>

@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Activity Log Management</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Activity Log Management') }}</h1>
             <p class="text-slate-500 mt-1">
                 {{ __('Riwayat aktivitas user management (assign & kelola lead)') }}
                 @if($filterUser)
@@ -17,7 +17,7 @@
         <div class="p-4 mb-4 rounded-xl bg-slate-50 border border-slate-200">
             <form method="GET" action="{{ route('manage-sales.activity-log') }}" class="flex flex-wrap gap-4">
                 <div>
-                    <label for="user" class="sr-only">User</label>
+                    <label for="user" class="sr-only">{{ __('User') }}</label>
                     <select id="user" name="user" class="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
                         <option value="">{{ __('Semua User') }}</option>
                         @foreach($managementUsers as $user)
@@ -33,8 +33,8 @@
                     <label for="date_to" class="sr-only">{{ __('Sampai Tanggal') }}</label>
                     <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
                 </div>
-                <x-icon-button icon="filter" type="submit" title="Filter" />
-                <x-icon-button as="a" icon="reset" href="{{ route('manage-sales.activity-log') }}" title="Reset" />
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                <x-icon-button as="a" icon="reset" href="{{ route('manage-sales.activity-log') }}" title="{{ __('Reset') }}" />
             </form>
         </div>
 
@@ -185,7 +185,7 @@
                                                     <span class="text-slate-400 italic text-xs">{{ __('lead sudah dihapus permanen') }}</span>
                                                 @endif
                                             </div>
-                                            <p class="text-xs text-slate-400 mt-1">{{ $activity->created_at->format('H:i') }} WIB</p>
+                                            <p class="text-xs text-slate-400 mt-1">{{ $activity->created_at->format('H:i') }} {{ __('WIB') }}</p>
                                             @if($activity->changes)
                                                 <div class="mt-1.5 space-y-1">
                                                     @foreach($activity->changes as $field => $change)

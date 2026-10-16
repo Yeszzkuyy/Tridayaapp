@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Edit Role: {{ $role->name }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit Role:') }} {{ $role->name }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Perbarui nama role dan permission') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="Back" />
+        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="{{ __('Back') }}" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
@@ -19,7 +19,7 @@
 
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
-                    <label class="block text-sm font-medium text-slate-700">Permissions</label>
+                    <label class="block text-sm font-medium text-slate-700">{{ __('Permissions') }}</label>
                     <div class="flex gap-2">
                         <x-icon-button id="select-all" icon="leads" label="{{ __('Pilih Semua') }}" title="{{ __('Pilih Semua') }}" />
                         <x-icon-button id="deselect-all" icon="reset" label="{{ __('Batal Pilih') }}" title="{{ __('Batal Pilih') }}" />
