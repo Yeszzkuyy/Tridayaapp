@@ -2,12 +2,12 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Detail Survey') }}</h1>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Survey Detail') }}</h1>
             <p class="text-slate-500 mt-1 max-w-[560px] truncate" title="{{ $survey->title ?? '' }}">{{ $survey->title ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.surveys.edit', $survey) }}" title="Edit" />
-            <x-icon-button as="a" icon="back" href="{{ route('teknisi.surveys.index') }}" title="{{ __('Kembali') }}" />
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.surveys.edit', $survey) }}" title="{{ __('Edit') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.surveys.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -15,9 +15,9 @@
         <div class="space-y-6">
             {{-- Status Badge --}}
             <div class="flex items-center gap-3">
-                <span class="text-sm font-medium text-slate-500">Status:</span>
+                <span class="text-sm font-medium text-slate-500">{{ __('Status') }}:</span>
                 @php
-                    $statusLabels = ['draft' => 'Draft', 'scheduled' => 'Scheduled', 'on_survey' => 'On Survey', 'completed' => 'Completed'];
+                    $statusLabels = ['draft' => __('Draft'), 'scheduled' => __('Scheduled'), 'on_survey' => __('On Survey'), 'completed' => __('Completed')];
                 @endphp
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                     @if($survey->status === 'completed') bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
@@ -31,7 +31,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {{-- Judul --}}
                 <div>
-                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Judul') }}</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Title') }}</p>
                     <p class="text-slate-800 dark:text-slate-100 font-semibold break-words">{{ $survey->title ?? '-' }}</p>
                 </div>
 
@@ -49,13 +49,13 @@
 
                 {{-- Tanggal Survey --}}
                 <div>
-                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Tanggal Survey') }}</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Survey Date') }}</p>
                     <p class="text-slate-800 dark:text-slate-100">{{ $survey->survey_date ? \Carbon\Carbon::parse($survey->survey_date)->format('d M Y') : '-' }}</p>
                 </div>
 
                 {{-- Lokasi --}}
                 <div>
-                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Lokasi') }}</p>
+                    <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Location') }}</p>
                     <p class="text-slate-800 dark:text-slate-100 break-words">{{ $survey->location ?? '-' }}</p>
                 </div>
 
@@ -70,25 +70,25 @@
 
             {{-- Sales Request --}}
             <div>
-                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">Sales Request</p>
+                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Sales Request') }}</p>
                 <p class="text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words">{{ $survey->sales_request ?: '-' }}</p>
             </div>
 
             {{-- Survey Data --}}
             <div>
-                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Data Survey') }}</p>
+                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Survey Data') }}</p>
                 <p class="text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words">{{ $survey->survey_data ?: '-' }}</p>
             </div>
 
             {{-- Survey Report --}}
             <div>
-                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Laporan Survey') }}</p>
+                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Survey Report') }}</p>
                 <p class="text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words">{{ $survey->survey_report ?: '-' }}</p>
             </div>
 
             {{-- Notes --}}
             <div>
-                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Catatan') }}</p>
+                <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Notes') }}</p>
                 <p class="text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words">{{ $survey->notes ?: '-' }}</p>
             </div>
 

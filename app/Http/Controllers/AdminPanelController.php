@@ -56,7 +56,7 @@ class AdminPanelController extends Controller
         }
 
         return redirect()->route('admin-panel.index')
-            ->with('success', __('User berhasil dibuat.'));
+            ->with('success', __('User created successfully.'));
     }
 
     public function editUser(User $user)
@@ -99,13 +99,13 @@ class AdminPanelController extends Controller
         }
 
         return redirect()->route('admin-panel.index')
-            ->with('success', __('User berhasil diupdate.'));
+            ->with('success', __('User updated successfully.'));
     }
 
     public function destroyUser(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', __('Tidak bisa menghapus akun sendiri.'));
+            return back()->with('error', __('You cannot delete your own account.'));
         }
 
         if ($reason = $user->deletionBlockReason()) {
@@ -114,7 +114,7 @@ class AdminPanelController extends Controller
 
         $user->delete();
         return redirect()->route('admin-panel.index')
-            ->with('success', __('User berhasil dihapus.'));
+            ->with('success', __('User deleted successfully.'));
     }
 
     /**
@@ -126,7 +126,7 @@ class AdminPanelController extends Controller
     {
         if (in_array('super-admin', $request->input('roles', []), true)
             && ! $request->user()->hasRole('super-admin')) {
-            abort(403, __('Hanya super-admin yang boleh memberikan role super-admin.'));
+            abort(403, __('Only super-admins may grant the super-admin role.'));
         }
     }
 
@@ -148,11 +148,11 @@ class AdminPanelController extends Controller
         }
 
         if ((int) $user->id === (int) $request->user()->id) {
-            abort(403, __('Tidak bisa mencabut role super-admin dari akun sendiri.'));
+            abort(403, __('Cannot revoke the super-admin role from your own account.'));
         }
 
         if (User::role('super-admin')->count() <= 1) {
-            abort(403, __('Tidak bisa demote super-admin terakhir (sistem akan terkunci).'));
+            abort(403, __('Cannot demote the last super-admin (the system will be locked).'));
         }
     }
 
@@ -181,13 +181,13 @@ class AdminPanelController extends Controller
         }
 
         return redirect()->route('admin-panel.index')
-            ->with('success', __('Role berhasil dibuat.'));
+            ->with('success', __('Role created successfully.'));
     }
 
     public function editRole(Role $role)
     {
         if ($role->name === 'super-admin') {
-            abort(403, __('Role super-admin tidak bisa diedit.'));
+            abort(403, __('The super-admin role cannot be edited.'));
         }
         
         return view('admin-panel.roles.edit', compact('role') + ['permissions' => $this->groupedPermissions()]);
@@ -196,7 +196,7 @@ class AdminPanelController extends Controller
     public function updateRole(Request $request, Role $role)
     {
         if ($role->name === 'super-admin') {
-            abort(403, __('Role super-admin tidak bisa diedit.'));
+            abort(403, __('The super-admin role cannot be edited.'));
         }
 
         $request->validate([
@@ -214,18 +214,18 @@ class AdminPanelController extends Controller
         }
 
         return redirect()->route('admin-panel.index')
-            ->with('success', __('Role berhasil diupdate.'));
+            ->with('success', __('Role updated successfully.'));
     }
 
     public function destroyRole(Role $role)
     {
         if ($role->name === 'super-admin') {
-            abort(403, __('Role super-admin tidak bisa dihapus.'));
+            abort(403, __('The super-admin role cannot be deleted.'));
         }
         
         $role->delete();
         return redirect()->route('admin-panel.index')
-            ->with('success', __('Role berhasil dihapus.'));
+            ->with('success', __('Role deleted successfully.'));
     }
 
     // ========== AUDIT LOG ==========

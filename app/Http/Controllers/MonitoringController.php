@@ -153,7 +153,7 @@ class MonitoringController extends Controller
         $customers->transform(function ($customer) {
             $latest = $this->getLatestActivity($customer);
             $customer->latest_activity = $latest;
-            $customer->overall_status = $latest['overall'] ?? __('Baru');
+            $customer->overall_status = $latest['overall'] ?? __('New');
             $customer->latest_divisi = $latest['divisi'] ?? null;
             return $customer;
         });
@@ -201,7 +201,7 @@ class MonitoringController extends Controller
 
         $projects = $customer->projects;
         foreach ($projects as $project) {
-            $statusName = $project->status?->name ?? __('Belum Memulai');
+            $statusName = $project->status?->name ?? __('Not Started');
             $activities->push([
                 'type' => 'project',
                 'label' => 'Project: ' . $statusName,

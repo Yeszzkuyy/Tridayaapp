@@ -2,8 +2,8 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isSuperAdmin ? 'All Trash' : __('My Trash') }}</h1>
-                <p class="text-slate-500 mt-1">{{ $isSuperAdmin ? __('Seluruh data terhapus dari semua user') : __('Data milikmu yang telah dihapus') }}</p>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isSuperAdmin ? __('All Trash') : __('My Trash') }}</h1>
+                <p class="text-slate-500 mt-1">{{ $isSuperAdmin ? __('All deleted data from every user') : __('Your deleted data') }}</p>
             </div>
 
             <div class="flex items-center gap-3">
@@ -26,25 +26,25 @@
                     @method('DELETE')
                     <x-icon-button icon="delete" type="submit" title="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}" />
                 </form>
-                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="Back" />
+                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
         {{-- Customer Trash --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700">
-                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Customer Terhapus') }}</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Deleted Customers') }}</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Nama Customer') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Email</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Email') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Owner') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Oleh') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Pada') }}</th>
-                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted By') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -61,12 +61,12 @@
                                         <form action="{{ route('trash.restore-customer', $customer->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <x-icon-button icon="reset" type="submit" title="Restore" />
+                                            <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $customer)
                                         <x-icon-button icon="delete" type="button" x-data=""
-                                                       title="Delete permanently"
+                                                       title="{{ __('Delete permanently') }}"
                                                        @click="$dispatch('open-modal', 'confirm-destroy-customer-{{ $customer->id }}')" />
                                         @endcan
                                     </div>
@@ -75,7 +75,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-16 text-center text-slate-400">
-                                    {{ __('Tidak ada customer yang terhapus.') }}
+                                    {{ __('No deleted customers.') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -122,18 +122,18 @@
         {{-- Project Trash --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700">
-                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Project Terhapus') }}</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Deleted Projects') }}</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Nama Project') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Customer</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Project Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Owner') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Oleh') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Pada') }}</th>
-                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted By') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -150,12 +150,12 @@
                                         <form action="{{ route('trash.restore-project', $project->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <x-icon-button icon="reset" type="submit" title="Restore" />
+                                            <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $project)
                                         <x-icon-button icon="delete" type="button" x-data=""
-                                                       title="Delete permanently"
+                                                       title="{{ __('Delete permanently') }}"
                                                        @click="$dispatch('open-modal', 'confirm-destroy-project-{{ $project->id }}')" />
                                         @endcan
                                     </div>
@@ -164,7 +164,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-16 text-center text-slate-400">
-                                    {{ __('Tidak ada project yang terhapus.') }}
+                                    {{ __('No deleted projects.') }}
                                 </td>
                             </tr>
                         @endforelse

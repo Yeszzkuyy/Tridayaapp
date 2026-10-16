@@ -596,10 +596,10 @@ class GoogleCalendarService
         $technicianNames = $schedule->technicianList()->pluck('name')->filter()->implode(', ');
 
         $lines = [
-            'Project: '.($schedule->project?->project_name ?? '-'),
-            'Customer: '.($schedule->project?->customer?->company_name ?? '-'),
-            'Teknisi: '.($technicianNames !== '' ? $technicianNames : '-'),
-            'Status: '.(TechnicianSchedule::STATUSES[$schedule->status] ?? $schedule->status),
+            __('Project').': '.($schedule->project?->project_name ?? '-'),
+            __('Customer').': '.($schedule->project?->customer?->company_name ?? '-'),
+            __('Technician').': '.($technicianNames !== '' ? $technicianNames : '-'),
+            __('Status').': '.__(TechnicianSchedule::STATUSES[$schedule->status] ?? $schedule->status),
         ];
 
         if ($schedule->description) {

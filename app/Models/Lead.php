@@ -16,12 +16,12 @@ class Lead extends Model
     public static function lostReasonLabel(?string $reason): string
     {
         return match ($reason) {
-            'price' => __('Harga'),
-            'competitor' => __('Kompetitor'),
+            'price' => __('Price'),
+            'competitor' => __('Competitor'),
             'budget' => __('Budget'),
-            'requirement_changed' => __('Kebutuhan berubah'),
-            'no_response' => __('Tidak ada respon'),
-            'other' => __('Lainnya'),
+            'requirement_changed' => __('Requirements changed'),
+            'no_response' => __('No response'),
+            'other' => __('Others'),
             default => '-',
         };
     }
@@ -32,7 +32,12 @@ class Lead extends Model
      */
     public static function salesStatusLabel(?string $status): string
     {
-        return $status === 'cool' ? __('New') : ucfirst((string) $status);
+        return match ($status) {
+            'cool' => __('New'),
+            'warm' => __('Warm'),
+            'hot' => __('Hot'),
+            default => ucfirst((string) $status),
+        };
     }
 
     /**

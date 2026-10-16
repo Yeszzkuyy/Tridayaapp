@@ -48,9 +48,9 @@ class FollowUp extends Model
             'call' => __('Telepon'),
             'whatsapp' => 'WhatsApp',
             'email' => 'Email',
-            'meeting' => __('Kunjungan/Meeting'),
-            'proposal' => __('Kirim Penawaran'),
-            'note' => __('Catatan'),
+            'meeting' => __('Visit/Meeting'),
+            'proposal' => __('Send Offer'),
+            'note' => __('Notes'),
             default => __('Follow Up'),
         };
     }

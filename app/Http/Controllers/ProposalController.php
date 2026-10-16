@@ -217,13 +217,13 @@ class ProposalController extends Controller
                 return $proposal;
             });
         } catch (QueryException $e) {
-            return back()->withInput()->withErrors(['proposal_number' => __('Gagal membuat nomor proposal, coba lagi.')]);
+            return back()->withInput()->withErrors(['proposal_number' => __('Failed to generate the proposal number, please try again.')]);
         }
 
         $this->log($lead, 'proposal_created', ['number' => $proposal->proposal_number]);
 
         return redirect()->route('sales.proposals.show', $proposal)
-            ->with('success', __('Proposal draft berhasil dibuat.'));
+            ->with('success', __('Proposal draft created successfully.'));
     }
 
     public function show(Proposal $proposal)
@@ -278,7 +278,7 @@ class ProposalController extends Controller
         });
 
         return redirect()->route('sales.proposals.show', $proposal)
-            ->with('success', __('Proposal berhasil diperbarui.'));
+            ->with('success', __('Proposal updated successfully.'));
     }
 
     public function markReady(Proposal $proposal)
@@ -288,7 +288,7 @@ class ProposalController extends Controller
 
         $proposal->update(['status' => 'ready']);
 
-        return back()->with('success', __('Proposal siap dikirim.'));
+        return back()->with('success', __('Proposal is ready to be sent.'));
     }
 
     /** Sales menyerahkan draft ke tim teknis untuk penyesuaian BOQ/harga. */
@@ -303,7 +303,7 @@ class ProposalController extends Controller
         \App\Models\User::role(['admin', 'lead-technician'])->get()
             ->each(fn ($u) => $u->notify(new ProposalStatusNotification($proposal, 'pending_technical')));
 
-        return back()->with('success', __('Proposal diserahkan ke tim teknis.'));
+        return back()->with('success', __('Proposal submitted to the technical team.'));
     }
 
     /** Tim teknis/admin mengembalikan ke draft (butuh koreksi sales). */
@@ -320,7 +320,7 @@ class ProposalController extends Controller
             $assignee->notify(new ProposalStatusNotification($proposal, 'returned_to_draft'));
         }
 
-        return back()->with('success', __('Proposal dikembalikan ke draft.'));
+        return back()->with('success', __('Proposal returned to draft.'));
     }
 
     /** Tim teknis/admin selesai menyesuaikan → siap dikirim sales. */
@@ -337,7 +337,7 @@ class ProposalController extends Controller
             $assignee->notify(new ProposalStatusNotification($proposal, 'ready'));
         }
 
-        return back()->with('success', __('Penyesuaian teknis selesai, proposal siap dikirim.'));
+        return back()->with('success', __('Technical adjustment done, proposal ready to send.'));
     }
 
     public function send(Proposal $proposal)
@@ -358,7 +358,7 @@ class ProposalController extends Controller
             $assignee->notify(new ProposalStatusNotification($proposal, 'sent'));
         }
 
-        return back()->with('success', __('Proposal ditandai terkirim.'));
+        return back()->with('success', __('Proposal marked as sent.'));
     }
 
     public function markViewed(Proposal $proposal)
@@ -368,7 +368,7 @@ class ProposalController extends Controller
 
         $proposal->update(['status' => 'viewed']);
 
-        return back()->with('success', __('Proposal ditandai sudah dilihat customer.'));
+        return back()->with('success', __('Proposal marked as viewed by the customer.'));
     }
 
     public function revise(Proposal $proposal)
@@ -379,7 +379,7 @@ class ProposalController extends Controller
         $proposal->update(['status' => 'revision']);
         $this->log($proposal->lead, 'proposal_revised', ['number' => $proposal->proposal_number]);
 
-        return back()->with('success', __('Proposal dikembalikan ke revisi.'));
+        return back()->with('success', __('Proposal returned for revision.'));
     }
 
     public function respond(Request $request, Proposal $proposal)
@@ -409,7 +409,7 @@ class ProposalController extends Controller
             $assignee->notify(new ProposalStatusNotification($proposal, $validated['decision']));
         }
 
-        return back()->with('success', __('Status proposal dicatat.'));
+        return back()->with('success', __('Proposal status recorded.'));
     }
 
     public function cancel(Proposal $proposal)
@@ -419,7 +419,7 @@ class ProposalController extends Controller
 
         $proposal->update(['status' => 'cancelled']);
 
-        return back()->with('success', __('Proposal dibatalkan.'));
+        return back()->with('success', __('Proposal canceled.'));
     }
 
     /** Upload dokumen PO klien (hanya saat proposal accepted/WON). */
@@ -444,7 +444,7 @@ class ProposalController extends Controller
         }
         $proposal->update(['po_document_path' => $path]);
 
-        return back()->with('success', __('Dokumen PO berhasil diunggah.'));
+        return back()->with('success', __('PO document uploaded successfully.'));
     }
 
     public function downloadPo(Proposal $proposal)
@@ -464,7 +464,7 @@ class ProposalController extends Controller
     {
         $this->authorizeProposal($proposal);
         abort_unless($proposal->status === 'accepted', 422);
-        abort_if($proposal->project()->exists(), 422, __('Proposal ini sudah dikonversi.'));
+        abort_if($proposal->project()->exists(), 422, __('This proposal has already been converted.'));
 
         $validated = $request->validate([
             'work_type_id' => 'required|exists:work_types,id',
@@ -498,6 +498,6 @@ class ProposalController extends Controller
         });
 
         return redirect()->route('projects.show', $project)
-            ->with('success', __('Project berhasil dibuat dari proposal.'));
+            ->with('success', __('Project created from proposal successfully.'));
     }
 }

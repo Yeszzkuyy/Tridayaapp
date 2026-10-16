@@ -161,7 +161,7 @@ class TechnicalRequestController extends Controller
         );
 
         return redirect()->route('sales.technical-requests.show', $technicalRequest)
-            ->with('success', __('Technical request dikirim ke Lead Teknisi.'));
+            ->with('success', __('Technical request sent to the Lead Technician.'));
     }
 
     public function show(TechnicalRequest $technicalRequest)
@@ -200,7 +200,7 @@ class TechnicalRequestController extends Controller
         $validated = $request->validate(['technician_id' => 'required|exists:users,id']);
 
         $technician = User::findOrFail($validated['technician_id']);
-        abort_unless($technician->hasRole('technician'), 422, __('Hanya user role Teknisi yang bisa di-assign.'));
+        abort_unless($technician->hasRole('technician'), 422, __('Only users with the Technician role can be assigned.'));
 
         $technicalRequest->update([
             'assigned_technician_id' => $technician->id,
@@ -220,7 +220,7 @@ class TechnicalRequestController extends Controller
         ]);
         $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
 
-        return back()->with('success', __('Teknisi berhasil di-assign.'));
+        return back()->with('success', __('Technician assigned successfully.'));
     }
 
     public function progress(Request $request, TechnicalRequest $technicalRequest)
@@ -235,7 +235,7 @@ class TechnicalRequestController extends Controller
             'notes' => $validated['notes'] ?? $technicalRequest->notes,
         ]);
 
-        return back()->with('success', __('Progress diperbarui.'));
+        return back()->with('success', __('Progress updated.'));
     }
 
     public function result(Request $request, TechnicalRequest $technicalRequest)
@@ -249,7 +249,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->update(['technical_result' => $validated['technical_result']]);
         $this->log($technicalRequest->lead, 'technical_result_submitted', ['title' => $technicalRequest->title]);
 
-        return back()->with('success', __('Hasil teknis tersimpan.'));
+        return back()->with('success', __('Technical results saved.'));
     }
 
     public function complete(TechnicalRequest $technicalRequest)
@@ -262,7 +262,7 @@ class TechnicalRequestController extends Controller
         );
         $this->authorizeView($technicalRequest);
         abort_unless(in_array($technicalRequest->status, ['assigned', 'in_progress']), 422);
-        abort_unless(filled($technicalRequest->technical_result), 422, __('Isi hasil teknis dulu sebelum menyelesaikan.'));
+        abort_unless(filled($technicalRequest->technical_result), 422, __('Fill in the technical results before completing.'));
 
         // Konsistensi status: request tipe survey TIDAK boleh selesai sebelum
         // Survey-nya punya laporan — jangan sampai request menyatakan selesai
@@ -273,7 +273,7 @@ class TechnicalRequestController extends Controller
             abort_unless(
                 $survey?->hasReport(),
                 422,
-                __('Survey belum memiliki laporan. Unggah laporan survey dulu sebelum menyelesaikan request ini.')
+                __('The survey has no report yet. Upload the survey report before completing this request.')
             );
         }
 
@@ -286,7 +286,7 @@ class TechnicalRequestController extends Controller
         $this->log($technicalRequest->lead, 'tech_request_completed', ['title' => $technicalRequest->title]);
         $technicalRequest->requester?->notify(new TechnicalWorkCompletedNotification($technicalRequest));
 
-        return back()->with('success', __('Technical request selesai.'));
+        return back()->with('success', __('Technical request completed.'));
     }
 
     public function cancel(TechnicalRequest $technicalRequest)
@@ -303,7 +303,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->update(['status' => 'cancelled']);
         $this->log($technicalRequest->lead, 'tech_request_cancelled', ['title' => $technicalRequest->title]);
 
-        return back()->with('success', __('Technical request dibatalkan.'));
+        return back()->with('success', __('Technical request canceled.'));
     }
 
     public function downloadAttachment(TechnicalRequest $technicalRequest)

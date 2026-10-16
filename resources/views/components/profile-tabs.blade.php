@@ -1,12 +1,12 @@
 @php
     $tabs = [
-        ['route' => 'profile.edit', 'label' => __('Profil'), 'icon' => 'user'],
+        ['route' => 'profile.edit', 'label' => __('Profile'), 'icon' => 'user'],
         ['route' => 'settings.edit', 'label' => __('Setting'), 'icon' => 'settings'],
     ];
 @endphp
 
 <div class="border-b border-slate-200 dark:border-slate-700">
-    <nav class="flex gap-6" aria-label="{{ __('Profil dan Setting') }}">
+    <nav class="flex gap-6" aria-label="{{ __('Profile and Settings') }}">
         @foreach($tabs as $tab)
             @php $active = request()->routeIs($tab['route']); @endphp
             <a href="{{ route($tab['route']) }}"

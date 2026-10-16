@@ -28,7 +28,7 @@ class DocumentCategoryController extends Controller
 
         return redirect()
             ->route('admin-panel.document-categories.index')
-            ->with('success', __('Document Category berhasil ditambahkan.'));
+            ->with('success', __('Document Category added successfully.'));
     }
 
     public function edit(DocumentCategory $documentCategory)
@@ -46,7 +46,7 @@ class DocumentCategoryController extends Controller
 
         return redirect()
             ->route('admin-panel.document-categories.index')
-            ->with('success', __('Document Category berhasil diupdate.'));
+            ->with('success', __('Document Category updated successfully.'));
     }
 
     public function destroy(DocumentCategory $documentCategory)
@@ -54,6 +54,6 @@ class DocumentCategoryController extends Controller
         $documentCategory->delete();
         return redirect()
             ->route('admin-panel.document-categories.index')
-            ->with('success', __('Document Category berhasil dihapus.'));
+            ->with('success', __('Document Category deleted successfully.'));
     }
 }

@@ -130,7 +130,7 @@ class TrashController extends Controller
         }
 
         return redirect()->route('trash.index')
-            ->with('success', __('Trash berhasil dibersihkan'));
+            ->with('success', __('Trash cleared successfully'));
     }
 
     /**

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Register - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Register') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -145,7 +145,7 @@
                             x-show="!logoFailed"
                             x-on:error="logoFailed = true"
                             src="{{ asset('images/logo/Logo3dydark-256.webp') }}"
-                            alt="Logo"
+                            alt="{{ __('Logo') }}"
                             class="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                         >
                         <div
@@ -155,12 +155,12 @@
                         >W</div>
                     </div>
                     <h1 class="text-xl sm:text-2xl font-bold">{{ config('app.name', 'Tridaya App') }}</h1>
-                    <p class="text-xs sm:text-sm text-white/60 mt-1">Internal Engineer Management System</p>
+                    <p class="text-xs sm:text-sm text-white/60 mt-1">{{ __('Internal Engineer Management System') }}</p>
                 </div>
 
                 <div class="text-center mb-6">
-                    <h2 class="text-base sm:text-lg font-semibold">Create Account</h2>
-                    <p class="text-xs sm:text-sm text-white/50 mt-1">Register a new account</p>
+                    <h2 class="text-base sm:text-lg font-semibold">{{ __('Create Account') }}</h2>
+                    <p class="text-xs sm:text-sm text-white/50 mt-1">{{ __('Register a new account') }}</p>
                 </div>
 
                 <form method="POST" action="{{ route('register') }}" class="space-y-3 sm:space-y-4">
@@ -179,7 +179,7 @@
                                 required
                                 autofocus
                                 autocomplete="name"
-                                placeholder="Full name"
+                                placeholder="{{ __('Full name') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0 text-sm sm:text-base"
                             >
                         </div>
@@ -198,7 +198,7 @@
                                 value="{{ old('email') }}"
                                 required
                                 autocomplete="username"
-                                placeholder="Email address"
+                                placeholder="{{ __('Email address') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0 text-sm sm:text-base"
                             >
                         </div>
@@ -216,7 +216,7 @@
                                 name="password"
                                 required
                                 autocomplete="new-password"
-                                placeholder="Password"
+                                placeholder="{{ __('Password') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0 text-sm sm:text-base"
                             >
                             <button type="button" x-on:click="showPassword = !showPassword" class="text-white/50 hover:text-white ml-2 shrink-0">
@@ -243,7 +243,7 @@
                                 name="password_confirmation"
                                 required
                                 autocomplete="new-password"
-                                placeholder="Confirm password"
+                                placeholder="{{ __('Confirm Password') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0 text-sm sm:text-base"
                             >
                             <button type="button" x-on:click="showConfirmPassword = !showConfirmPassword" class="text-white/50 hover:text-white ml-2 shrink-0">
@@ -266,19 +266,19 @@
                         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
-                        Register
+                        {{ __('Register') }}
                     </button>
 
                     <div class="text-center pt-2">
                         <a href="{{ route('login') }}" class="text-sm accent-text hover:opacity-80">
-                            Already registered? Sign in
+                            {{ __('Already registered? Sign in') }}
                         </a>
                     </div>
                 </form>
             </div>
 
             <p class="text-center text-xs text-white/35 mt-6">
-                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. {{ __('All rights reserved.') }}
             </p>
         </div>
     </div>

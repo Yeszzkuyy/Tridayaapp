@@ -239,7 +239,7 @@ class WhatsAppCenterTest extends TestCase
         $this->assertTrue($accounts->contains('id', $mine->id));
         $this->assertTrue($accounts->contains('id', $shared->id));
         $this->assertFalse($accounts->contains('id', $other->id));
-        $response->assertSee('Pengaturan Bot');
+        $response->assertSee(__('Pengaturan Bot'));
     }
 
     public function test_user_cannot_access_account_belonging_to_others(): void

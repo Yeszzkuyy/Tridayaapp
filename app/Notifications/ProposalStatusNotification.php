@@ -56,7 +56,7 @@ class ProposalStatusNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => 'Proposal ' . $this->event,
+            'title' => __('Proposal') . ' ' . $this->event,
             'body' => $this->proposal->proposal_number,
             'url' => route('sales.proposals.show', $this->proposal->id),
         ];

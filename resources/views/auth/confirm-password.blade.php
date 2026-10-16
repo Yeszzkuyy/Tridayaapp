@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Confirm Password - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Confirm Password') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -144,7 +144,7 @@
                             x-show="!logoFailed"
                             x-on:error="logoFailed = true"
                             src="{{ asset('images/logo/Logo3dydark-256.webp') }}"
-                            alt="Logo"
+                            alt="{{ __('Logo') }}"
                             class="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                         >
                         <div
@@ -154,12 +154,12 @@
                         >W</div>
                     </div>
                     <h1 class="text-xl sm:text-2xl font-bold">{{ config('app.name', 'Tridaya App') }}</h1>
-                    <p class="text-xs sm:text-sm text-white/60 mt-1">Internal Engineer Management System</p>
+                    <p class="text-xs sm:text-sm text-white/60 mt-1">{{ __('Internal Engineer Management System') }}</p>
                 </div>
 
                 <div class="text-center mb-6">
-                    <h2 class="text-base sm:text-lg font-semibold">Confirm Password</h2>
-                    <p class="text-xs sm:text-sm text-white/50 mt-1">This is a secure area. Please confirm your password before continuing.</p>
+                    <h2 class="text-base sm:text-lg font-semibold">{{ __('Confirm Password') }}</h2>
+                    <p class="text-xs sm:text-sm text-white/50 mt-1">{{ __('This is a secure area. Please confirm your password before continuing.') }}</p>
                 </div>
 
                 <form method="POST" action="{{ route('password.confirm') }}" class="space-y-4">
@@ -176,7 +176,7 @@
                                 name="password"
                                 required
                                 autocomplete="current-password"
-                                placeholder="Password"
+                                placeholder="{{ __('Password') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0 text-sm sm:text-base"
                             >
                             <button type="button" x-on:click="showPassword = !showPassword" class="text-white/50 hover:text-white ml-2 shrink-0">
@@ -199,13 +199,13 @@
                         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
-                        Confirm
+                        {{ __('Confirm') }}
                     </button>
                 </form>
             </div>
 
             <p class="text-center text-xs text-white/35 mt-6">
-                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. {{ __('All rights reserved.') }}
             </p>
         </div>
     </div>

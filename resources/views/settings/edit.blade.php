@@ -8,9 +8,9 @@
         $notifyPush = (bool) $user->preference('notify_push', true);
 
         $themeOptions = [
-            ['value' => 'light', 'label' => __('Terang'), 'icon' => 'sun'],
-            ['value' => 'dark', 'label' => __('Gelap'), 'icon' => 'moon'],
-            ['value' => 'system', 'label' => __('Sistem'), 'icon' => 'settings'],
+            ['value' => 'light', 'label' => __('Light'), 'icon' => 'sun'],
+            ['value' => 'dark', 'label' => __('Dark'), 'icon' => 'moon'],
+            ['value' => 'system', 'label' => __('System'), 'icon' => 'settings'],
         ];
 
         $accentOptions = [
@@ -26,18 +26,18 @@
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">{{ __('Setting') }}</h1>
-                <p class="mt-1 text-slate-500">{{ __('Preferensi aplikasi Anda') }}</p>
+                <p class="mt-1 text-slate-500">{{ __('Your app preferences') }}</p>
             </div>
             <div class="flex items-center gap-3">
-                <x-icon-button as="a" icon="back" href="{{ route('dashboard') }}" title="{{ __('Kembali') }}" />
+                <x-icon-button as="a" icon="back" href="{{ route('dashboard') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
         <x-profile-tabs />
 
         @if (session('status') === 'settings-updated')
-            <div class="rounded-xl border border-green-300 bg-green-100 px-5 py-3 text-sm text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400">
-                {{ __('Pengaturan berhasil disimpan.') }}
+            <div class="rounded-lg border border-green-300 bg-green-100 px-5 py-3 text-sm text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400">
+                {{ __('Settings saved successfully.') }}
             </div>
         @endif
 
@@ -46,7 +46,7 @@
             @method('patch')
 
             {{-- Tampilan --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800"
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800"
                      x-data="{
                         theme: '{{ $currentTheme }}',
                         accent: '{{ $currentAccent }}',
@@ -60,8 +60,8 @@
                         }
                      }">
                 <header>
-                    <h2 class="text-lg font-bold text-slate-800">{{ __('Tampilan') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Pilih tema dan aksen aplikasi saat Anda masuk.') }}</p>
+                    <h2 class="text-lg font-bold text-slate-800">{{ __('Appearance') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Choose the app theme and accent when you sign in.') }}</p>
                 </header>
 
                 <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -70,7 +70,7 @@
                             <input type="radio" name="theme" value="{{ $option['value'] }}" class="peer sr-only"
                                    x-model="theme" @change="apply('{{ $option['value'] }}')"
                                    @checked($currentTheme === $option['value'])>
-                            <span class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
+                            <span class="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-5 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
                                 <x-icon name="{{ $option['icon'] }}" class="h-5 w-5" />
                                 {{ $option['label'] }}
                             </span>
@@ -80,16 +80,16 @@
                 <x-input-error class="mt-2" :messages="$errors->get('theme')" />
 
                 <div class="mt-5">
-                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Aksen warna') }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500">{{ __('Warna yang dipakai tombol utama, link, sidebar aktif, dan fokus.') }}</p>
+                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Accent color') }}</p>
+                    <p class="mt-0.5 text-xs text-slate-500">{{ __('The color used for primary buttons, links, the active sidebar, and focus.') }}</p>
                     <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                         @foreach($accentOptions as $option)
                             <label class="cursor-pointer">
                                 <input type="radio" name="accent" value="{{ $option['value'] }}" class="peer sr-only"
                                        x-model="accent" @change="applyAccent('{{ $option['value'] }}')"
                                        @checked($currentAccent === $option['value'])>
-                                <span class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
-                                    <span class="inline-block h-6 w-6 rounded-full ring-2 ring-white" style="background-color: {{ $option['color'] }}"></span>
+                                <span class="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-600 transition peer-checked:border-accent-500 peer-checked:bg-accent-50 peer-checked:text-accent-700 peer-checked:ring-2 peer-checked:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300 dark:peer-checked:border-accent-400 dark:peer-checked:bg-accent-900/30 dark:peer-checked:text-accent-300 dark:peer-checked:ring-accent-400">
+                                    <span class="h-10 w-full rounded-md ring-1 ring-slate-200 dark:ring-slate-600" style="background-color: {{ $option['color'] }}"></span>
                                     {{ $option['label'] }}
                                 </span>
                             </label>
@@ -100,17 +100,17 @@
             </section>
 
             {{-- Notifikasi --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                 <header>
-                    <h2 class="text-lg font-bold text-slate-800">{{ __('Notifikasi') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Atur bagaimana Anda menerima pemberitahuan.') }}</p>
+                    <h2 class="text-lg font-bold text-slate-800">{{ __('Notifications') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Control how you receive notifications.') }}</p>
                 </header>
 
                 <div class="mt-5 divide-y divide-slate-100 dark:divide-slate-700">
                     <label class="flex cursor-pointer items-center justify-between gap-4 py-4 first:pt-0">
                         <span class="min-w-0">
-                            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Notifikasi Email') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Jika dimatikan, notifikasi email tidak dikirim (notifikasi sistem & push tetap aktif).') }}</span>
+                            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Email Notifications') }}</span>
+                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('If turned off, email notifications are not sent (system & push notifications stay active).') }}</span>
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_email" value="1" class="peer sr-only" @checked($notifyEmail)>
@@ -121,8 +121,8 @@
 
                     <label class="flex cursor-pointer items-center justify-between gap-4 py-4 last:pb-0">
                         <span class="min-w-0">
-                            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Notifikasi Sistem') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Tampilkan notifikasi di dalam aplikasi.') }}</span>
+                            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('In-App Notifications') }}</span>
+                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Show notifications inside the app.') }}</span>
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_system" value="1" class="peer sr-only" @checked($notifySystem)>
@@ -134,7 +134,7 @@
                     <label class="flex cursor-pointer items-center justify-between gap-4 py-4 last:pb-0">
                         <span class="min-w-0">
                             <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Web Push') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Kirim notifikasi ke browser, tetap tiba walau tab ditutup.') }}</span>
+                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Send notifications to the browser, they still arrive even when the tab is closed.') }}</span>
                         </span>
                         <span class="relative inline-flex shrink-0 items-center">
                             <input type="checkbox" name="notify_push" value="1" class="peer sr-only" @checked($notifyPush)>
@@ -145,39 +145,39 @@
                 </div>
 
                 {{-- Status push browser ini --}}
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-900/40"
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-900/40"
                      x-data="{ pushState: 'checking', pushMsg: '' }"
                      x-init="(async () => { pushState = await window.WebPush.status() })()">
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        <span x-cloak x-show="pushState === 'checking'">{{ __('Memeriksa status push browser ini…') }}</span>
-                        <span x-cloak x-show="pushState === 'subscribed'">{{ __('Push aktif di browser ini.') }}</span>
-                        <span x-cloak x-show="pushState === 'default'">{{ __('Browser ini belum mengizinkan notifikasi.') }}</span>
-                        <span x-cloak x-show="pushState === 'granted'">{{ __('Izin diberikan, tapi browser ini belum terdaftar — tekan Aktifkan.') }}</span>
-                        <span x-cloak x-show="pushState === 'blocked'">{{ __('Notifikasi diblokir di browser — izinkan lewat ikon gembok di address bar.') }}</span>
-                        <span x-cloak x-show="pushState === 'unsupported'">{{ __('Browser ini tidak mendukung Web Push.') }}</span>
-                        <span x-cloak x-show="pushState === 'unsubscribed'">{{ __('Push nonaktif di browser ini.') }}</span>
+                        <span x-cloak x-show="pushState === 'checking'">{{ __('Checking push status for this browser…') }}</span>
+                        <span x-cloak x-show="pushState === 'subscribed'">{{ __('Push is active in this browser.') }}</span>
+                        <span x-cloak x-show="pushState === 'default'">{{ __('This browser has not allowed notifications.') }}</span>
+                        <span x-cloak x-show="pushState === 'granted'">{{ __('Permission granted, but this browser is not registered yet — press Activate.') }}</span>
+                        <span x-cloak x-show="pushState === 'blocked'">{{ __('Notifications are blocked in the browser — allow them via the lock icon in the address bar.') }}</span>
+                        <span x-cloak x-show="pushState === 'unsupported'">{{ __('This browser does not support Web Push.') }}</span>
+                        <span x-cloak x-show="pushState === 'unsubscribed'">{{ __('Push is disabled in this browser.') }}</span>
                         <span class="text-red-500" x-cloak x-show="pushMsg" x-text="pushMsg"></span>
                     </p>
                     <div class="flex gap-2">
                         <button type="button" x-cloak x-show="pushState === 'default' || pushState === 'granted' || pushState === 'unsubscribed'"
-                                @click="pushMsg = ''; window.WebPush.enable().then(s => pushState = s).catch((e) => pushMsg = '{{ __('Gagal mengaktifkan push:') }} ' + (e && e.message ? e.message : e))"
-                                class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">{{ __('Aktifkan di browser ini') }}</button>
+                                @click="pushMsg = ''; window.WebPush.enable().then(s => pushState = s).catch((e) => pushMsg = '{{ __('Failed to enable push notifications:') }} ' + (e && e.message ? e.message : e))"
+                                class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">{{ __('Enable in this browser') }}</button>
                         <button type="button" x-cloak x-show="pushState === 'subscribed'"
                                 @click="window.WebPush.disable().then(s => pushState = s)"
-                                class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200">{{ __('Nonaktifkan') }}</button>
+                                class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white dark:border-slate-600 dark:text-slate-200">{{ __('Deactivate') }}</button>
                     </div>
                 </div>
             </section>
 
             {{-- Bahasa --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                 <header>
-                    <h2 class="text-lg font-bold text-slate-800">{{ __('Bahasa') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Pilih bahasa tampilan aplikasi.') }}</p>
+                    <h2 class="text-lg font-bold text-slate-800">{{ __('Language') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Choose the app display language.') }}</p>
                 </header>
 
                 <div class="mt-5 max-w-xs">
-                    <x-input-label for="locale" :value="__('Bahasa')" />
+                    <x-input-label for="locale" :value="__('Language')" />
                     <select id="locale" name="locale"
                             class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-accent-500 focus:ring-accent-500">
                         <option value="id" @selected($currentLocale === 'id')>Indonesia</option>
@@ -192,7 +192,7 @@
                 <div class="flex items-center gap-4">
                     <button type="submit"
                             class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                        {{ __('Simpan Pengaturan') }}
+                        {{ __('Save Settings') }}
                         <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                 </div>
@@ -236,7 +236,7 @@
                                 window.location.reload();
                             }
                         }).catch(function () {
-                            if (window.toast) window.toast('{{ __('Gagal menyimpan pengaturan.') }}', false);
+                            if (window.toast) window.toast('{{ __('Failed to save settings.') }}', false);
                         });
                     }, 400);
                 });
@@ -245,13 +245,13 @@
 
         {{-- Area lanjutan (digerbang password) — kartu link full-width --}}
         <a href="{{ route('settings.advanced') }}"
-           class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-accent-400 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400">
+           class="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-accent-400 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700 dark:bg-accent-500/10 dark:text-accent-400">
                 <x-icon name="settings" class="h-5 w-5" />
             </span>
             <span class="min-w-0 flex-1">
-                <span class="block text-sm font-bold text-slate-800 dark:text-white">{{ __('Pengaturan Lanjutan') }}</span>
-                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{{ __('Ganti password dan hapus akun. Area ini dilindungi konfirmasi password.') }}</span>
+                <span class="block text-sm font-bold text-slate-800 dark:text-white">{{ __('Advanced Settings') }}</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">{{ __('Change your password and delete your account. This area is protected by password confirmation.') }}</span>
             </span>
             <x-icon name="chevron-right" class="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-accent-600 dark:group-hover:text-accent-400" />
         </a>

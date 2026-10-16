@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Reset Password - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Reset Password') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -145,7 +145,7 @@
                             x-show="!logoFailed"
                             x-on:error="logoFailed = true"
                             src="{{ asset('images/logo/Logo3dydark-256.webp') }}"
-                            alt="Logo"
+                            alt="{{ __('Logo') }}"
                             class="w-14 h-14 object-contain"
                         >
                         <div
@@ -155,12 +155,12 @@
                         >W</div>
                     </div>
                     <h1 class="text-2xl font-bold">{{ config('app.name', 'Tridaya App') }}</h1>
-                    <p class="text-sm text-white/60 mt-1">Internal Engineer Management System</p>
+                    <p class="text-sm text-white/60 mt-1">{{ __('Internal Engineer Management System') }}</p>
                 </div>
 
                 <div class="text-center mb-6">
-                    <h2 class="text-lg font-semibold">Reset Password</h2>
-                    <p class="text-sm text-white/50 mt-1">Choose a new password for your account</p>
+                    <h2 class="text-lg font-semibold">{{ __('Reset Password') }}</h2>
+                    <p class="text-sm text-white/50 mt-1">{{ __('Choose a new password for your account') }}</p>
                 </div>
 
                 <form method="POST" action="{{ route('password.store') }}" class="space-y-4">
@@ -181,7 +181,7 @@
                                 required
                                 autofocus
                                 autocomplete="email"
-                                placeholder="Email address"
+                                placeholder="{{ __('Email address') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0"
                             >
                         </div>
@@ -199,7 +199,7 @@
                                 name="password"
                                 required
                                 autocomplete="new-password"
-                                placeholder="New password"
+                                placeholder="{{ __('New Password') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0"
                             >
                             <button type="button" x-on:click="showPassword = !showPassword" class="text-white/50 hover:text-white ml-2 shrink-0">
@@ -226,7 +226,7 @@
                                 name="password_confirmation"
                                 required
                                 autocomplete="new-password"
-                                placeholder="Confirm new password"
+                                placeholder="{{ __('Confirm new password') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0"
                             >
                             <button type="button" x-on:click="showConfirmPassword = !showConfirmPassword" class="text-white/50 hover:text-white ml-2 shrink-0">
@@ -249,19 +249,19 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        Reset Password
+                        {{ __('Reset Password') }}
                     </button>
 
                     <div class="text-center pt-2">
                         <a href="{{ route('login') }}" class="text-sm accent-text hover:opacity-80">
-                            Back to Login
+                            {{ __('Back to Login') }}
                         </a>
                     </div>
                 </form>
             </div>
 
             <p class="text-center text-xs text-white/35 mt-6">
-                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. {{ __('All rights reserved.') }}
             </p>
         </div>
     </div>

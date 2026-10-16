@@ -157,7 +157,7 @@ class ProductKnowledgeController extends Controller
         $product->forceFill($validated)->save();
 
         return redirect()->route('product-knowledge.show', $product)
-            ->with('success', __('Data produk diperbarui.'));
+            ->with('success', __('Product data updated.'));
     }
 
     public function publish(Product $product): RedirectResponse
@@ -165,20 +165,20 @@ class ProductKnowledgeController extends Controller
         $this->authorize('manage-admin');
 
         if (!$product->hasClearIdentity()) {
-            return back()->withErrors(['product' => __('Identitas produk belum jelas, tetap Needs Review.')]);
+            return back()->withErrors(['product' => __('Product identity is unclear, kept as Needs Review.')]);
         }
 
         $doc = KnowledgeDocument::where('product_id', $product->id)->latest('version')->first();
 
         if (!$doc) {
-            return back()->withErrors(['product' => __('Belum ada dokumen untuk dipublish.')]);
+            return back()->withErrors(['product' => __('No documents to publish yet.')]);
         }
 
         $product->forceFill(['status' => Product::STATUS_PUBLISHED])->save();
         $doc->forceFill(['status' => KnowledgeDocument::STATUS_PUBLISHED])->save();
 
         return redirect()->route('product-knowledge.show', $product)
-            ->with('success', __('Produk dipublish ke Knowledge Base.'));
+            ->with('success', __('Product published to the Knowledge Base.'));
     }
 
     public function reject(Product $product): RedirectResponse
@@ -191,7 +191,7 @@ class ProductKnowledgeController extends Controller
             ->update(['status' => KnowledgeDocument::STATUS_REJECTED]);
 
         return redirect()->route('product-knowledge.show', $product)
-            ->with('success', __('Produk ditolak, tidak masuk pencarian AI.'));
+            ->with('success', __('Product rejected, it will not appear in AI search.'));
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
@@ -222,7 +222,7 @@ class ProductKnowledgeController extends Controller
 
         $source->delete();
 
-        return back()->with('success', __('Source dihapus permanen.'));
+        return back()->with('success', __('Source permanently deleted.'));
     }
 
     public function refetch(ProductSource $source): RedirectResponse
@@ -232,6 +232,6 @@ class ProductKnowledgeController extends Controller
         $source->forceFill(['status' => ProductSource::STATUS_QUEUED, 'error' => null])->save();
         ImportProductSource::dispatch($source->id);
 
-        return back()->with('success', __('URL masuk antrean fetch ulang.'));
+        return back()->with('success', __('URL queued for refetch.'));
     }
 }

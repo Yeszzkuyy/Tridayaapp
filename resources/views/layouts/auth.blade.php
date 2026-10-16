@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Sign in') - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>@yield('title', __('Sign in')) - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -373,7 +373,7 @@
                     </picture>
                     <i aria-hidden="true"></i><b>3DY App</b>
                 </div>
-                <h2 id="visual-title">Connecting people, projects, and operations.</h2>
+                <h2 id="visual-title">{{ __('Connecting people, projects, and operations.') }}</h2>
                 <picture>
                     <source srcset="{{ asset('images/Login-Page/finaldesign-cut.webp') }}" type="image/webp">
                     <img

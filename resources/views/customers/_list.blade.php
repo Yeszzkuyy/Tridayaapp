@@ -2,11 +2,11 @@
     <table class="min-w-[760px] w-full">
         <thead class="bg-slate-50/80 dark:bg-slate-700/40">
             <tr>
-                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">Customer</th>
-                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">Company</th>
-                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">PIC</th>
-                <th scope="col" class="px-5 py-4 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">Project</th>
-                <th scope="col" class="px-5 py-4 text-right text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Aksi') }}</th>
+                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Customer') }}</th>
+                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Company') }}</th>
+                <th scope="col" class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('PIC') }}</th>
+                <th scope="col" class="px-5 py-4 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Project') }}</th>
+                <th scope="col" class="px-5 py-4 text-right text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300 sm:px-6">{{ __('Actions') }}</th>
             </tr>
         </thead>
 
@@ -22,10 +22,10 @@
                     <td class="px-5 py-4 sm:px-6">
                         <p class="font-semibold text-slate-800 dark:text-slate-100">{{ $customer->name }}</p>
                         <p class="mt-1 max-w-sm truncate text-sm text-slate-500 dark:text-slate-400">
-                            {{ $customer->address ?: __('Alamat belum diisi') }}
+                            {{ $customer->address ?: __('Address not filled') }}
                         </p>
                         @if($customer->whatsapp)
-                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ __('WA perusahaan:') }} {{ \App\Support\PhoneFormatter::format($customer->whatsapp) }}</p>
+                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ __('Company WhatsApp:') }} {{ \App\Support\PhoneFormatter::format($customer->whatsapp) }}</p>
                         @endif
                     </td>
 
@@ -41,13 +41,13 @@
                         @if($picName)
                             <p class="font-semibold text-slate-700 dark:text-slate-200">{{ $picName }}</p>
                             @if($picWhatsapp)
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('WA PIC:') }} {{ \App\Support\PhoneFormatter::format($picWhatsapp) }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('PIC WhatsApp:') }} {{ \App\Support\PhoneFormatter::format($picWhatsapp) }}</p>
                             @endif
                             @if($picEmail)
                                 <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{{ $picEmail }}</p>
                             @endif
                         @else
-                            <x-status-badge color="yellow">{{ __('Belum ada PIC') }}</x-status-badge>
+                            <x-status-badge color="yellow">{{ __('No PIC yet') }}</x-status-badge>
                         @endif
                     </td>
 
@@ -63,17 +63,17 @@
 
                     <td class="px-5 py-4 sm:px-6">
                         <div class="flex justify-end gap-2">
-                            <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}" title="{{ __('Lihat customer') }}" />
+                            <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}" title="{{ __('View customer') }}" />
 
                             @can('update', $customer)
                                 <x-icon-button as="a" icon="edit" href="{{ route('customers.edit', $customer) }}" title="{{ __('Edit customer') }}" />
                             @endcan
 
                             @can('delete', $customer)
-                                <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Hapus customer ini?') }}')">
+                                <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Delete this customer?') }}')">
                                     @csrf
                                     @method('DELETE')
-                                    <x-icon-button icon="delete" type="submit" title="{{ __('Hapus customer') }}" />
+                                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete customer') }}" />
                                 </form>
                             @endcan
                         </div>
@@ -87,11 +87,11 @@
                                 <x-icon name="users" class="h-6 w-6" />
                             </span>
                             @if(request()->filled('search') || request()->filled('pt_group'))
-                                <p class="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer tidak ditemukan') }}</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Coba gunakan nama, perusahaan, atau email lain.') }}</p>
+                                <p class="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer not found') }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Try another name, company, or email.') }}</p>
                             @else
-                                <p class="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Belum ada customer') }}</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Data customer yang baru ditambahkan akan muncul di sini.') }}</p>
+                                <p class="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No customers yet') }}</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Newly added customer data will appear here.') }}</p>
                             @endif
                         </div>
                     </td>

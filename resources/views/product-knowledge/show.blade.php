@@ -11,7 +11,7 @@
                         <form action="{{ route('product-knowledge.publish', $product) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <x-icon-button type="submit" title="Publish">
+                            <x-icon-button type="submit" title="{{ __('Publish') }}">
                                 <x-icon name="check-circle" class="h-5 w-5" />
                             </x-icon-button>
                         </form>
@@ -20,21 +20,21 @@
                         <form action="{{ route('product-knowledge.reject', $product) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <x-icon-button icon="delete" type="submit" title="Reject"
-                                           onclick="return confirm('{{ __('Tolak produk ini? Tidak masuk pencarian AI.') }}')" />
+                            <x-icon-button icon="delete" type="submit" title="{{ __('Reject') }}"
+                                           onclick="return confirm('{{ __('Reject this product? It will not appear in AI search.') }}')" />
                         </form>
                     @endif
                 @endif
-                <x-icon-button as="a" icon="back" href="{{ route('product-knowledge.index') }}" title="Back" />
+                <x-icon-button as="a" icon="back" href="{{ route('product-knowledge.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
         {{-- Facts --}}
         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                <div><dt class="font-semibold text-slate-500">Brand</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->brand ?? '-' }}</dd></div>
-                <div><dt class="font-semibold text-slate-500">Model</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->model ?? '-' }}</dd></div>
-                <div><dt class="font-semibold text-slate-500">SKU</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->sku ?? '-' }}</dd></div>
+                <div><dt class="font-semibold text-slate-500">{{ __('Brand') }}</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->brand ?? '-' }}</dd></div>
+                <div><dt class="font-semibold text-slate-500">{{ __('Model') }}</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->model ?? '-' }}</dd></div>
+                <div><dt class="font-semibold text-slate-500">{{ __('SKU') }}</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->sku ?? '-' }}</dd></div>
                 <div><dt class="font-semibold text-slate-500">{{ __('Category') }}</dt><dd class="text-slate-800 dark:text-slate-100">{{ $product->category ?? '-' }}</dd></div>
             </dl>
             <p class="mt-4 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{{ $product->description ?? '-' }}</p>
@@ -92,14 +92,14 @@
                             @if($source->error)<p class="text-xs text-red-600 mt-1">{{ $source->error }}</p>@endif
                         </div>
                         <x-status-badge :color="match($source->status) { 'published' => 'green', 'success' => 'green', 'failed' => 'red', 'needs_review' => 'orange', 'duplicate' => 'slate', default => 'blue' }">{{ ucfirst(str_replace('_', ' ', $source->status)) }}</x-status-badge>
-                        <form action="{{ route('product-knowledge.sources.destroy', $source) }}" method="POST" onsubmit="return confirm('{{ __('Hapus source ini permanen? Dokumennya ikut terhapus.') }}')">
+                        <form action="{{ route('product-knowledge.sources.destroy', $source) }}" method="POST" onsubmit="return confirm('{{ __('Delete this source permanently? Its documents will be deleted as well.') }}')">
                             @csrf
                             @method('DELETE')
-                            <x-icon-button icon="delete" type="submit" title="Delete source" />
+                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete source') }}" />
                         </form>
                         <form action="{{ route('product-knowledge.refetch', $source) }}" method="POST">
                             @csrf
-                            <x-icon-button type="submit" title="Refetch">
+                            <x-icon-button type="submit" title="{{ __('Refetch') }}">
                                 <x-icon name="restore" class="h-5 w-5" />
                             </x-icon-button>
                         </form>

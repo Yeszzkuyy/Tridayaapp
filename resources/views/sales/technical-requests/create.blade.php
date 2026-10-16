@@ -9,7 +9,7 @@
                 <p class="text-slate-500 mt-1">{{ __('Choose a lead first — the request goes directly to the Lead Technician.') }}</p>
                 @endif
             </div>
-            <x-icon-button as="a" icon="back" href="{{ $backUrl ?? ($lead ? route('leads.show', $lead) : route('sales.requests.index')) }}" title="Back" />
+            <x-icon-button as="a" icon="back" href="{{ $backUrl ?? ($lead ? route('leads.show', $lead) : route('sales.requests.index')) }}" title="{{ __('Back') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">

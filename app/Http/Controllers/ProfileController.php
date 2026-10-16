@@ -97,7 +97,7 @@ class ProfileController extends Controller
         if ($src === false) {
             // finfo bilang gambar tapi GD tak bisa parse (= korup/polyglot):
             // tolak, jangan simpan mentah ke public.
-            abort(422, __('File gambar tidak valid atau rusak.'));
+            abort(422, __('The image file is invalid or corrupted.'));
         }
 
         // Koreksi orientasi EXIF (foto HP) sebelum crop.
@@ -191,7 +191,7 @@ class ProfileController extends Controller
         };
 
         if ($src === false) {
-            abort(422, __('File gambar tidak valid atau rusak.'));
+            abort(422, __('The image file is invalid or corrupted.'));
         }
 
         if ($mime === 'image/jpeg' && function_exists('exif_read_data')) {
