@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">Project Status</h1>
                 <p class="text-slate-500 mt-1">{{ __('Kelola status project') }}</p>
             </div>
-            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.project-statuses.create') }}" label="{{ __('+ Tambah Status') }}" title="{{ __('+ Tambah Status') }}" />
+            <x-icon-button as="a" icon="add" href="{{ route('admin-panel.project-statuses.create') }}" label="{{ __('Tambah Status') }}" title="{{ __('Tambah Status') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">

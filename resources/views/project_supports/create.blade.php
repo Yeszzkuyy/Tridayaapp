@@ -31,7 +31,7 @@
                         @method('DELETE')
                         <x-icon-button icon="delete" type="submit" label="Hapus" title="Hapus" />
                     </form>
-                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectSupport->project) }}" title="← Kembali ke project" />
+                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectSupport->project) }}" title="Kembali ke project" />
                 </div>
             </div>
 

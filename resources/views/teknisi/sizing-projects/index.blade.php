@@ -21,7 +21,7 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Sizing Projects</h1>
             <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Kelola hasil sizing / usulan solusi per project') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('teknisi.sizing-projects.create') }}" label="{{ __('+ Tambah Sizing') }}" title="{{ __('+ Tambah Sizing') }}" />
+        <x-icon-button as="a" icon="add" href="{{ route('teknisi.sizing-projects.create') }}" label="{{ __('Tambah Sizing') }}" title="{{ __('Tambah Sizing') }}" />
     </div>
 
     @if (session('success'))

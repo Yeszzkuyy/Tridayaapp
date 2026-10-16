@@ -6,11 +6,6 @@
         </div>
         <div class="flex gap-2">
             <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="Export CSV" />
-            <x-icon-button as="a" href="{{ route('sales.dar.export', request()->only(['date_from', 'date_to', 'user_id'])) }}" title="Export DAR">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75h6m-6-3h6m-7.5 10.5h9a2.25 2.25 0 0 0 2.25-2.25v-7.19a2.25 2.25 0 0 0-.66-1.59l-2.81-2.81a2.25 2.25 0 0 0-1.59-.66H6.75A2.25 2.25 0 0 0 4.5 7.5v11.25A2.25 2.25 0 0 0 6.75 21Z" />
-                </svg>
-            </x-icon-button>
             <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="Dashboard Sales" />
         </div>
     </div>
@@ -61,6 +56,7 @@
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">Lead / Customer</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider whitespace-nowrap">{{ __('Follow Up') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Needs / Progress') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider whitespace-nowrap">{{ __('Entry Date') }}</th>
                         <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
@@ -74,9 +70,6 @@
                                 <div class="text-sm text-slate-500">
                                     @if($lead->pt_group)<span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-[11px] font-semibold mr-1">{{ $lead->pt_group }}</span>@endif
                                     {{ $lead->customer->contact_person ? 'PIC: '.$lead->customer->contact_person : '' }}
-                                </div>
-                                <div class="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
-                                    {{ $lead->follow_ups_count }} {{ __('follow up') }}
                                 </div>
                                 <div class="mt-1">
                                     @if($lead->has_done_fu)
@@ -98,6 +91,11 @@
                                     @endswitch
                                 ">
                                     {{ \App\Models\Lead::salesStatusLabel($lead->status) }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap {{ $lead->follow_ups_count > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300' }}">
+                                    {{ $lead->follow_ups_count }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -125,31 +123,16 @@
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap">
                                 <div class="flex justify-end gap-2">
-                                    <a href="{{ route('leads.show', $lead) }}"
-                                       title="{{ __('View details') }}"
-                                       aria-label="{{ __('View details') }} {{ $lead->customer?->name }}"
-                                       class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20">
-                                        <x-icon name="eye" class="h-4 w-4" />
-                                    </a>
+                                    <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View details') }}" />
                                     @if($lead->has_done_fu)
-                                        <span title="{{ __('Done') }}" aria-label="{{ __('Done') }} {{ $lead->customer?->name }}"
-                                              class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300">
-                                            <x-icon name="check-circle" class="h-4 w-4" />
-                                        </span>
+                                        <x-icon-button as="a" icon="mail" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
                                     @else
-                                        <a href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}"
-                                           title="{{ __('Create Follow Up') }}"
-                                           aria-label="{{ __('Create Follow Up') }} {{ $lead->customer?->name }}"
-                                           class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 transition dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20">
-                                            <x-icon name="chat" class="h-4 w-4" />
-                                        </a>
+                                        <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
                                     @endif
-                                </div>
-                            </td>
                         </tr>
                     @empty
                         <tr>
-                                <td colspan="5" class="px-6 py-12 text-center">
+                                <td colspan="6" class="px-6 py-12 text-center">
                                 <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300">
                                     <x-icon name="briefcase" class="h-6 w-6" />
                                 </span>

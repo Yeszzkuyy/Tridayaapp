@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
+    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" @teknisi:view.window="setView($event.detail.value)" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
         {{-- Top bar --}}
         <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3 min-w-0">
@@ -46,18 +46,24 @@
             </button>
         </div>
 
-        {{-- View switcher --}}
-        <div class="flex justify-center mb-4" id="teknisi-view-switcher">
-            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800" role="tablist" aria-label="{{ __('Calendar view') }}">
-                <template x-for="v in [{id:'month',label:'{{ __('Month') }}'},{id:'week',label:'{{ __('Week') }}'},{id:'day',label:'{{ __('Day') }}'}]" :key="v.id">
-                    <button type="button" role="tab" :aria-selected="view === v.id" @click="setView(v.id)"
-                            :class="view === v.id
-                                ? 'bg-slate-800 text-white shadow dark:bg-accent-600'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'"
-                            class="rounded-lg px-4 sm:px-6 py-1.5 text-sm font-semibold transition" x-text="v.label"></button>
-                </template>
-            </div>
+        {{-- View switcher (RubberSegment — island React, animasi spring) --}}
+        @php
+            $viewSegments = [
+                ['value' => 'month', 'label' => __('Month')],
+                ['value' => 'week', 'label' => __('Week')],
+                ['value' => 'day', 'label' => __('Day')],
+            ];
+        @endphp
+        <div class="flex justify-center mb-4">
+            <div id="teknisi-view-segment"
+                 data-rubber-segment
+                 data-mode="event"
+                 data-event-name="teknisi:view"
+                 data-label="{{ __('Calendar view') }}"
+                 data-active="month"
+                 data-items='@json($viewSegments)'></div>
         </div>
+        @vite('resources/js/rubber-segment.jsx')
 
         {{-- Month view --}}
         <div x-show="view === 'month'" x-transition.opacity>
@@ -368,13 +374,6 @@
                             </form>
                             <div class="flex items-center gap-2">
                                 <x-icon-button icon="edit" title="{{ __('Edit') }}" @click="openModal(selected.date, selected)" />
-                                <form method="POST" :action="completeScheduleUrl(selected.id)" @submit.prevent="completeSchedule($event)" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <x-icon-button type="submit" title="{{ __('Mark as done') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                    </x-icon-button>
-                                </form>
                             </div>
                         </div>
                     </div>
@@ -425,13 +424,42 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Technician') }}</label>
-                                <select name="technician_user_id" x-model="form.technician_user_id"
-                                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                                    <option value="">{{ __('Choose a technician (optional)') }}</option>
-                                    @foreach($technicians as $t)
-                                        <option value="{{ $t->id }}">{{ $t->name }}</option>
-                                    @endforeach
-                                </select>
+
+                                {{-- Multi-select: dropdown + centang + cari (bisa lebih dari satu teknisi) --}}
+                                <div class="relative" x-data @click.outside="techOpen = false">
+                                    <button type="button" @click="techOpen = !techOpen"
+                                            class="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-left dark:bg-slate-700 dark:border-slate-600 focus:border-accent-500 focus:ring-accent-500">
+                                        <span class="truncate" :class="form.technician_ids.length ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'"
+                                              x-text="technicianSummary()"></span>
+                                        <svg class="h-4 w-4 shrink-0 text-slate-400" :class="techOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                    </button>
+
+                                    <div x-show="techOpen" x-cloak x-transition
+                                         class="absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600">
+                                        <div class="p-2">
+                                            <input type="text" x-model="techQuery"
+                                                   placeholder="{{ __('Search technician...') }}"
+                                                   class="w-full rounded-lg border-slate-300 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                                        </div>
+                                        <div class="max-h-52 overflow-y-auto pb-1">
+                                            <template x-for="t in filteredTechnicians()" :key="t.id">
+                                                <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition hover:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                    <input type="checkbox" :value="t.id"
+                                                           :checked="form.technician_ids.includes(t.id)"
+                                                           @change="toggleTechnician(t.id)"
+                                                           class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                    <span class="truncate" x-text="t.name"></span>
+                                                </label>
+                                            </template>
+                                            <p x-show="filteredTechnicians().length === 0" class="px-3 py-2 text-sm text-slate-400">{{ __('No results.') }}</p>
+                                        </div>
+                                    </div>
+
+                                    {{-- Nilai yang dikirim ke server --}}
+                                    <template x-for="id in form.technician_ids" :key="id">
+                                        <input type="hidden" name="technician_ids[]" :value="id">
+                                    </template>
+                                </div>
                             </div>
                         </div>
 
@@ -496,11 +524,15 @@
 
                         <div class="flex items-center justify-end gap-2 pt-2">
                             <button type="button" @click="isModalOpen = false"
-                                    class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Cancel') }}</button>
+                                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
+                                {{ __('Cancel') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
                             <button type="submit"
-                                    class="group relative overflow-hidden px-4 py-2 rounded-xl text-sm font-medium bg-accent-600 hover:bg-accent-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
-                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
-                                {{ __('Save') }}</button>
+                                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                                {{ __('Save') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -541,11 +573,13 @@
                         </div>
                         <div class="flex items-center justify-end gap-2 pt-2">
                             <button type="button" @click="apiOpen = false"
-                                    class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Close') }}</button>
+                                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">{{ __('Close') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
                             <button type="submit"
-                                    class="group relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:brightness-110 active:scale-95">
+                                    class="group relative overflow-hidden inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
-                                {{ __('Sync Now') }}</button>
+                                {{ __('Sync Now') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
                         </div>
                     </form>
 
@@ -568,7 +602,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                            class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-500 hover:bg-red-50 hover:shadow-md active:scale-95 dark:border-red-500/30 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-400 dark:hover:bg-red-500/15">{{ __('Disconnect') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
+                                            class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">{{ __('Disconnect') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
                                 </form>
                             </div>
                         </div>
@@ -581,6 +615,7 @@
 
     <script>
         window.__teknisiProjects = @json($projects->map(fn ($p) => ['id' => $p->id, 'name' => $p->project_name]));
+        window.__teknisiTechnicians = @json($technicians->map(fn ($t) => ['id' => $t->id, 'name' => $t->name]));
 
         function teknisiScheduleManager() {
             return {
@@ -614,7 +649,11 @@
                 saveError: null,
                 apiOpen: false,
                 editingId: null,
-                form: { title: '', project_id: '', technician_user_id: '', date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
+                form: { title: '', project_id: '', technician_ids: [], date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
+                // Dropdown centang teknisi (multi, dengan pencarian).
+                techOpen: false,
+                techQuery: '',
+                allTechnicians: window.__teknisiTechnicians || [],
 
                 init() {
                     const active = new Date(this.activeDate + 'T12:00:00');
@@ -689,6 +728,8 @@
 
                 setView(v) {
                     this.view = v;
+                    // Sinkronkan thumb RubberSegment bila view diganti dari jalur lain
+                    window.dispatchEvent(new CustomEvent('rubber-segment:set', { detail: { id: 'teknisi-view-segment', value: v } }));
                     if (v === 'week') this.fetchRange(this.weekDays[0].date, this.weekDays[6].date);
                     else if (v === 'day') this.fetchEvents();
                     else { this.fetchMonth(); this.fetchEvents(); }
@@ -775,39 +816,17 @@
                     return String(this.scheduleBase).replace(/\/schedules\/?$/, '/schedules/' + id);
                 },
 
-                completeScheduleUrl(id) {
-                    return this.scheduleUrl(id) + '/complete';
-                },
-
-                // Tandai selesai via AJAX — tanpa reload halaman.
-                completeSchedule(e) {
-                    const form = e.target;
-                    const fd = new FormData(form);
-                    fetch(form.getAttribute('action'), {
-                        method: 'POST',
-                        body: fd,
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-                        },
-                    }).then((r) => {
-                        if (r.ok) {
-                            this.drawerOpen = false;
-                            this.refreshAll();
-                        }
-                    }).catch(() => {});
-                },
-
                 openModal(date, event = null) {
                     if (!this.canManage) return;
                     this.isModalOpen = true;
+                    this.techOpen = false;
+                    this.techQuery = '';
                     if (event) {
                         this.editingId = event.id;
                         this.form = {
                             title: event.title || '',
                             project_id: event.project_id || '',
-                            technician_user_id: event.technician_user_id || '',
+                            technician_ids: Array.isArray(event.technician_ids) ? [...event.technician_ids] : (event.technician_user_id ? [event.technician_user_id] : []),
                             date: event.date || date,
                             start_time: event.start_time || '',
                             end_time: event.end_time || '',
@@ -818,8 +837,26 @@
                         };
                     } else {
                         this.editingId = null;
-                        this.form = { title: '', project_id: '', technician_user_id: '', date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
+                        this.form = { title: '', project_id: '', technician_ids: [], date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
                     }
+                },
+
+                // --- Dropdown centang teknisi (multi + cari) ---
+                toggleTechnician(id) {
+                    const i = this.form.technician_ids.indexOf(id);
+                    if (i === -1) this.form.technician_ids.push(id);
+                    else this.form.technician_ids.splice(i, 1);
+                },
+                filteredTechnicians() {
+                    const q = this.techQuery.toLowerCase().trim();
+                    return this.allTechnicians.filter(t => !q || t.name.toLowerCase().includes(q));
+                },
+                technicianSummary() {
+                    const names = this.allTechnicians
+                        .filter(t => this.form.technician_ids.includes(t.id))
+                        .map(t => t.name);
+                    if (names.length === 0) return '{{ __('Choose technicians (optional)') }}';
+                    return names.join(', ');
                 },
 
                 // Simpan jadwal via AJAX — tanpa reload halaman.
@@ -827,11 +864,15 @@
                     const form = e.target;
                     const fd = new FormData(form);
                     const action = form.getAttribute('action');
-                    const method = (fd.get('_method') || form.getAttribute('method') || 'POST').toUpperCase();
+                    // Selalu POST: PHP hanya membaca isi form (title, date, dst.)
+                    // untuk request POST. Tanda edit tetap lewat _method=PUT di
+                    // dalam FormData — Laravel membacanya sebagai PUT (method
+                    // spoofing). Mengirim fetch ber-method PUT membuat isi form
+                    // terbaca kosong oleh server ("field is required").
                     this.saveError = null;
 
                     fetch(action, {
-                        method: method,
+                        method: 'POST',
                         body: fd,
                         headers: {
                             'Accept': 'application/json',
@@ -850,7 +891,17 @@
                             this.saveError = Object.values(data.errors || {}).flat().join(' ');
                             return;
                         }
-                        this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                        // Pesan spesifik dari server (mis. penolakan izin).
+                        const data = await r.json().catch(() => ({}));
+                        if (r.status === 403) {
+                            this.saveError = data.message || '{{ __('Kamu tidak punya izin mengubah jadwal ini.') }}';
+                            return;
+                        }
+                        if (r.status === 419) {
+                            this.saveError = '{{ __('Sesi sudah berakhir. Muat ulang halaman lalu coba lagi.') }}';
+                            return;
+                        }
+                        this.saveError = data.message || '{{ __('Terjadi kesalahan. Coba lagi.') }}';
                     }).catch(() => {
                         this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
                     });
