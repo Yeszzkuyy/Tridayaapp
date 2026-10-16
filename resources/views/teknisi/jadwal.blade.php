@@ -192,7 +192,7 @@
                                     <a :href="locHref(event.location)" target="_blank" rel="noopener" class="min-w-0 truncate text-sm text-slate-600 hover:underline dark:text-slate-300" x-text="event.location"></a>
                                     <a :href="mapsDirectionsUrl(event.location)" target="_blank" rel="noopener" class="shrink-0 text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('Directions') }}</a>
                                 </div>
-                                <iframe :src="mapsEmbedUrl(event.location)" class="mt-2 h-28 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
+                                <iframe :src="mapsEmbedUrl(event.location)" class="mt-2 h-56 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
                             </div>
                         </template>
                     </div>
@@ -326,7 +326,7 @@
                                         <a :href="locHref(selected.location)" target="_blank" rel="noopener" class="min-w-0 flex-1 hover:underline" x-text="selected.location"></a>
                                         <a :href="mapsDirectionsUrl(selected.location)" target="_blank" rel="noopener" class="shrink-0 text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('Directions') }}</a>
                                     </div>
-                                    <iframe :src="mapsEmbedUrl(selected.location)" class="mt-2 h-40 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
+                                    <iframe :src="mapsEmbedUrl(selected.location)" class="mt-2 h-72 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
                                 </div>
                             </template>
 
