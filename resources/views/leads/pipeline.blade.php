@@ -1,13 +1,13 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Pipeline Lead</h1>
-            <p class="text-slate-500 mt-1">{{ __('Pipeline milik :name — lead baru masuk di kolom New, geser ke Cool/Warm/Hot untuk menindaklanjuti', ['name' => auth()->user()->name]) }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead Pipeline') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Pipeline of :name — new leads land in the New column, drag to Cool/Warm/Hot to follow up', ['name' => auth()->user()->name]) }}</p>
         </div>
         <div class="flex items-center gap-2">
             <x-icon-button as="a" icon="filter" href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
-                           label="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}"
-                           title="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}" />
+                           label="{{ ($showAllClosed ?? false) ? __('This Week') : __('Show All') }}"
+                           title="{{ ($showAllClosed ?? false) ? __('This Week') : __('Show All') }}" />
             @if(auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing'))
                 <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}"
                                label="{{ __('Tabel Lead') }}" title="{{ __('Tabel Lead') }}" />
@@ -64,7 +64,7 @@
                         </span>
                         <span class="text-sm font-semibold text-slate-500" data-count>{{ $columnLeads->count() }}</span>
                         @if(in_array($status, ['won', 'lost'], true) && !($showAllClosed ?? false))
-                            <span class="ml-1 text-[11px] text-slate-400">{{ __('minggu ini') }}</span>
+                            <span class="ml-1 text-[11px] text-slate-400">{{ __('this week') }}</span>
                         @endif
                     </div>
                     <div class="kanban-list p-3 space-y-3 min-h-24" data-status="{{ $status }}">
@@ -78,7 +78,7 @@
     </div>
     @else
         <div class="rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-5 py-12 text-center">
-            <p class="text-sm font-medium text-slate-500">{{ __('Belum ada lead di pipeline Anda.') }}</p>
+            <p class="text-sm font-medium text-slate-500">{{ __('No leads in your pipeline yet.') }}</p>
             <p class="mt-1 text-xs text-slate-400">{{ __('Lead baru dari Management akan muncul di sini.') }}</p>
         </div>
     @endif

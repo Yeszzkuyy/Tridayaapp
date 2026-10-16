@@ -218,5 +218,11 @@
     "Search technician...": "Cari teknisi...",
     "No results.": "Tidak ada hasil.",
     "You do not have permission to edit this schedule.": "Kamu tidak punya izin mengubah jadwal ini.",
-    "Session expired. Reload the page and try again.": "Sesi sudah berakhir. Muat ulang halaman lalu coba lagi."
+    "Session expired. Reload the page and try again.": "Sesi sudah berakhir. Muat ulang halaman lalu coba lagi.",
+    "Lead Pipeline": "Pipeline Lead",
+    "Pipeline of :name — new leads land in the New column, drag to Cool/Warm/Hot to follow up": "Pipeline milik :name — lead baru masuk di kolom New, geser ke Cool/Warm/Hot untuk menindaklanjuti",
+    "Show All": "Tampilkan semua",
+    "This Week": "Minggu ini",
+    "this week": "minggu ini",
+    "No leads in your pipeline yet.": "Belum ada lead di pipeline Anda."
 }
