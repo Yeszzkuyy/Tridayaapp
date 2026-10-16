@@ -164,8 +164,21 @@
         {{-- Notification Center — React island (bell + feed).
              Data awal & i18n dipasang di layouts/app.blade.php (window.notifCenter).
              Bell tampil untuk SEMUA role: notifikasi database bisa diterima
-             siapa saja (teknisi, marketing, sales, admin, dll). --}}
-        <div data-notification-center class="relative shrink-0"></div>
+             siapa saja (teknisi, marketing, sales, admin, dll).
+
+             `wire:ignore` = bell tidak ikut diganti saat pindah menu
+             (wire:navigate), jadi selalu tampil di navbar. --}}
+        <div data-notification-center wire:ignore class="relative shrink-0">
+            {{-- Fallback statis: bell sudah tampil sejak render pertama,
+                 sebelum island React selesai dimuat (React menggantinya
+                 saat mount — lihat resources/js/notification-center.jsx). --}}
+            <span data-notif-fallback aria-hidden="true"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-accent-600 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.66V5a2 2 0 1 0-4 0v.34A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9" />
+                </svg>
+            </span>
+        </div>
 
         <span class="hidden shrink-0 whitespace-nowrap text-[11px] tabular-nums text-slate-400 md:block dark:text-slate-300">{{ now()->translatedFormat('d M Y') }}</span>
 

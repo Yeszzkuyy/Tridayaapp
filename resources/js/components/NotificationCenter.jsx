@@ -278,25 +278,31 @@ export default function NotificationCenter() {
     }, [sessionExpired]);
 
     /**
-     * Posisi panel: pas di tengah bawah ikon bell. Kalau tidak cukup ruang di
-     * kanan, panel digeser ke kiri (clamp) supaya selalu utuh di layar —
-     * tidak menempel tepi kanan dan tidak terpotong.
+     * Posisi panel: pas di tengah bawah ikon bell. `left` dihitung relatif
+     * ke pembungkus bell (anchor), BUKAN viewport — header memakai
+     * backdrop-blur yang membuat position:fixed "nyangkut" ke header
+     * (bukan ke layar), sehingga koordinat viewport jadi meleset.
+     * Kalau mepet tepi kanan/kiri, panel digeser (clamp) agar selalu utuh.
      */
     const placePanel = useCallback(() => {
         const bell = bellRef.current;
+        const anchor = rootRef.current;
 
-        if (!bell) return;
+        if (!bell || !anchor) return;
 
-        const rect = bell.getBoundingClientRect();
+        const bellRect = bell.getBoundingClientRect();
+        const anchorRect = anchor.getBoundingClientRect();
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         const width = Math.min(PANEL_WIDTH, vw - VIEWPORT_PAD * 2);
-        const top = rect.bottom + PANEL_GAP;
-        const spaceBelow = vh - top - VIEWPORT_PAD;
+        const desiredLeft = anchorRect.left + anchorRect.width / 2 - width / 2;
+        const clampLeft = Math.min(Math.max(desiredLeft, VIEWPORT_PAD), vw - VIEWPORT_PAD - width);
+        const top = bellRect.height + PANEL_GAP;
+        const spaceBelow = vh - (bellRect.bottom + PANEL_GAP) - VIEWPORT_PAD;
 
         setPanelPos((previous) => {
             const next = {
-                left: Math.min(Math.max(VIEWPORT_PAD, rect.left + rect.width / 2 - width / 2), vw - width - VIEWPORT_PAD),
+                left: clampLeft - anchorRect.left,
                 top,
                 width,
                 maxHeight: Math.max(240, Math.min(spaceBelow, Math.round(vh * 0.7), 512)),
@@ -652,7 +658,7 @@ export default function NotificationCenter() {
                 ref={bellRef}
                 type="button"
                 onClick={togglePanel}
-                className={`beam-notif relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-all duration-300 hover:scale-105 hover:bg-accent-500/10 hover:text-accent-600 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-400/10 dark:hover:text-accent-400 ${
+                className={`beam-notif relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-lg hover:shadow-accent-500/50 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white ${
                     unread > 0 ? 'beam-on' : ''
                 }`}
                 aria-label={I18N.title}
@@ -697,7 +703,7 @@ export default function NotificationCenter() {
                             maxHeight: panelPos?.maxHeight,
                             visibility: panelPos ? 'visible' : 'hidden',
                         }}
-                        className="fixed z-50 flex origin-top flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40"
+                        className="absolute z-50 flex origin-top flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40"
                     >
                         <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 px-3.5 py-2.5 dark:border-zinc-800">
                             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent-600 dark:bg-accent-500/15 dark:text-accent-400">
