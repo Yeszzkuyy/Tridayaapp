@@ -28,6 +28,7 @@ use App\Http\Controllers\ProjectSupportController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TechnicalRequestController;
@@ -208,6 +209,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
+        Route::get('requests', [SalesRequestHubController::class, 'index'])->name('requests.index');
         Route::get('schedules', [SalesScheduleController::class, 'index'])->name('schedules.index');
         Route::get('schedules/api', [SalesScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('schedules/{schedule}', [SalesScheduleController::class, 'show'])->name('schedules.show');

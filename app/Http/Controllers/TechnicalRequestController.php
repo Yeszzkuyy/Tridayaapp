@@ -86,10 +86,37 @@ class TechnicalRequestController extends Controller
 
     public function create(Request $request)
     {
-        $lead = Lead::findOrFail($request->get('lead_id'));
-        $this->authorize('view', $lead);
+        $lead = $request->filled('lead_id') ? Lead::findOrFail($request->get('lead_id')) : null;
+        if ($lead) {
+            $this->authorize('view', $lead);
+        }
 
-        return view('sales.technical-requests.create', compact('lead'));
+        // Dari tab Request Price: tipe dikunci ke estimasi. Dari tab Engineer:
+        // estimasi disembunyikan (punya tab sendiri). Dari detail lead: semua tipe.
+        $lockedType = null;
+        $hideEstimate = false;
+        if ($request->filled('request_type') && in_array($request->get('request_type'), TechnicalRequest::TYPES, true)) {
+            $lockedType = $request->get('request_type');
+        } elseif ($request->boolean('hide_estimate')) {
+            $hideEstimate = true;
+        }
+
+        // Tanpa lead bawaan: tampilkan pemilih lead (sales biasa hanya miliknya).
+        $leads = null;
+        if (!$lead) {
+            $leadsQuery = Lead::with('customer')->latest()->limit(100);
+            $user = $request->user();
+            if ($user && $user->hasRole('sales') && !$user->can('manage-marketing') && !$user->can('manage-sales-leads')) {
+                $leadsQuery->where('assigned_to', $user->id);
+            }
+            $leads = $leadsQuery->get();
+        }
+
+        $backUrl = $lead && !$lockedType && !$hideEstimate
+            ? route('leads.show', $lead)
+            : route('sales.requests.index', ['tab' => $lockedType === 'estimate' ? 'price' : 'engineer']);
+
+        return view('sales.technical-requests.create', compact('lead', 'leads', 'lockedType', 'hideEstimate', 'backUrl'));
     }
 
     public function store(Request $request)

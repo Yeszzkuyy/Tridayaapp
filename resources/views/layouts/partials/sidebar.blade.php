@@ -33,7 +33,10 @@
         $canViewSales ? ['route' => route('sales.pocs.index'), 'match' => 'sales.pocs.*', 'label' => 'POC/Demo', 'dot' => 'bg-orange-400'] : null,
         $canViewSales ? ['route' => route('leads.pipeline'), 'match' => 'leads.pipeline', 'label' => 'Pipeline', 'dot' => 'bg-sky-400'] : null,
         $hasSalesProject ? ['route' => route('projects.index'), 'match' => 'projects*', 'label' => 'Project', 'dot' => 'bg-cyan-400'] : null,
-        (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('lead-tasks.index'), 'match' => 'lead-tasks*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
+        // Sales (dan admin read-only): satu pintu Request (3 tab). Inside-sales
+        // murni tanpa view-sales tetap memakai menu kerja Inside Sales.
+        $canViewSales ? ['route' => route('sales.requests.index'), 'match' => 'sales.requests*', 'label' => 'Request', 'dot' => 'bg-fuchsia-400'] : null,
+        (!$canViewSales && auth()->user()->can('manage-inside-sales')) ? ['route' => route('lead-tasks.index'), 'match' => 'lead-tasks*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
     ]));
     // Header grup harus menuju halaman pertama yang boleh dibuka user ini (mis. inside-sales).
     $salesLanding = $salesItems[0]['route'] ?? route('dashboard');
