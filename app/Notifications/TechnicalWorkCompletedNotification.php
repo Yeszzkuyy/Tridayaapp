@@ -56,7 +56,7 @@ class TechnicalWorkCompletedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => 'Hasil teknis tersedia',
+            'title' => __('Hasil teknis tersedia'),
             'body' => $this->request->title,
             'url' => route('sales.technical-requests.show', $this->request->id),
         ];

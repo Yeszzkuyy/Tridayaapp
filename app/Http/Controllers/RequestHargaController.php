@@ -48,7 +48,7 @@ class RequestHargaController extends Controller
         RequestHarga::create($validated);
 
         return redirect()->route('teknisi.request-hargas.index')
-            ->with('success', 'Request Harga berhasil ditambahkan.');
+            ->with('success', __('Request Harga berhasil ditambahkan.'));
     }
 
     public function show(RequestHarga $requestHarga)
@@ -80,7 +80,7 @@ class RequestHargaController extends Controller
         $requestHarga->update($validated);
 
         return redirect()->route('teknisi.request-hargas.show', $requestHarga)
-            ->with('success', 'Request Harga berhasil diupdate.');
+            ->with('success', __('Request Harga berhasil diupdate.'));
     }
 
     public function destroy(RequestHarga $requestHarga)
@@ -88,6 +88,6 @@ class RequestHargaController extends Controller
         $requestHarga->delete();
 
         return redirect()->route('teknisi.request-hargas.index')
-            ->with('success', 'Request Harga berhasil dihapus.');
+            ->with('success', __('Request Harga berhasil dihapus.'));
     }
 }

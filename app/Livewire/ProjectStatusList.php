@@ -40,7 +40,7 @@ class ProjectStatusList extends Component
         ]);
 
         $this->reset(['name', 'color', 'is_default']);
-        session()->flash('message', 'Status berhasil ditambahkan!');
+        session()->flash('message', __('Status berhasil ditambahkan!'));
     }
 
     public function edit($id)
@@ -67,14 +67,14 @@ class ProjectStatusList extends Component
         ]);
 
         $this->reset(['editId', 'editName', 'editColor', 'editIsDefault']);
-        session()->flash('message', 'Status berhasil diupdate!');
+        session()->flash('message', __('Status berhasil diupdate!'));
     }
 
     public function delete($id)
     {
         $status = ProjectStatus::find($id);
         $status->delete();
-        session()->flash('message', 'Status berhasil dihapus!');
+        session()->flash('message', __('Status berhasil dihapus!'));
     }
 
     public function cancelEdit()

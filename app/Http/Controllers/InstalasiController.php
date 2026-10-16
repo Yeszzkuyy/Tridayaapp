@@ -95,7 +95,7 @@ class InstalasiController extends Controller
         Instalasi::create($validated + $reportFields);
 
         return redirect()->route('teknisi.instalasis.index')
-            ->with('success', 'Instalasi berhasil ditambahkan.');
+            ->with('success', __('Instalasi berhasil ditambahkan.'));
     }
 
     public function show(Instalasi $instalasi)
@@ -155,7 +155,7 @@ class InstalasiController extends Controller
         }
 
         return redirect()->route('teknisi.instalasis.show', $instalasi)
-            ->with('success', 'Instalasi berhasil diupdate.');
+            ->with('success', __('Instalasi berhasil diupdate.'));
     }
 
     public function destroy(Instalasi $instalasi)
@@ -167,7 +167,7 @@ class InstalasiController extends Controller
         }
 
         return redirect()->route('teknisi.instalasis.index')
-            ->with('success', 'Instalasi berhasil dihapus.');
+            ->with('success', __('Instalasi berhasil dihapus.'));
     }
 
     /**

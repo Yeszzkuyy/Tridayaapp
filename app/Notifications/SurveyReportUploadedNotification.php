@@ -55,7 +55,7 @@ class SurveyReportUploadedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => 'Laporan survey siap',
+            'title' => __('Laporan survey siap'),
             'body' => $this->survey->title,
             'url' => route('teknisi.surveys.show', $this->survey->id),
         ];

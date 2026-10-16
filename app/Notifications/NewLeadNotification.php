@@ -63,7 +63,7 @@ class NewLeadNotification extends Notification implements ShouldQueue
     protected function pushContent(): array
     {
         return [
-            'title' => 'Lead baru diterima',
+            'title' => __('Lead baru diterima'),
             'body' => 'Customer: ' . ($this->lead->customer?->name ?? 'Lead baru'),
             'url' => self::indexUrl(),
         ];

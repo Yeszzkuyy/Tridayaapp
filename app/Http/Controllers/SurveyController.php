@@ -115,7 +115,7 @@ class SurveyController extends Controller
             $survey->sales?->notify(new SurveyCreatedNotification($survey));
 
             return redirect()->route('teknisi.surveys.show', $survey)
-                ->with('success', 'Survey berhasil ditambahkan.');
+                ->with('success', __('Survey berhasil ditambahkan.'));
         }
 
         // Nama file dibuat server-side; ekstensi dari MIME (bukan nama user),
@@ -158,7 +158,7 @@ class SurveyController extends Controller
         $survey->sales?->notify(new SurveyReportUploadedNotification($survey));
 
         return redirect()->route('teknisi.surveys.show', $survey)
-            ->with('success', 'Survey berhasil ditambahkan.');
+            ->with('success', __('Survey berhasil ditambahkan.'));
     }
 
     public function show(Request $request, Survey $survey)
@@ -200,7 +200,7 @@ class SurveyController extends Controller
         $survey->update($validated);
 
         return redirect()->route('teknisi.surveys.show', $survey)
-            ->with('success', 'Survey berhasil diupdate.');
+            ->with('success', __('Survey berhasil diupdate.'));
     }
 
     public function destroy(Survey $survey)
@@ -208,7 +208,7 @@ class SurveyController extends Controller
         $survey->delete();
 
         return redirect()->route('teknisi.surveys.index')
-            ->with('success', 'Survey berhasil dihapus.');
+            ->with('success', __('Survey berhasil dihapus.'));
     }
 
     /**

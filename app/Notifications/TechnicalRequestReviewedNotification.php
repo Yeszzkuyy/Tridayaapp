@@ -56,7 +56,7 @@ class TechnicalRequestReviewedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => 'Technical Request ' . $this->decision,
+            'title' => __('Technical Request') . ' ' . $this->decision,
             'body' => $this->request->title,
             'url' => route('sales.technical-requests.show', $this->request->id),
         ];

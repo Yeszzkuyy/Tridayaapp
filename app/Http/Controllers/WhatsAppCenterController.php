@@ -703,7 +703,7 @@ class WhatsAppCenterController extends Controller
         }
 
         return redirect()->route('whatsapp-center.index')
-            ->with('success', 'Kredensial gateway disimpan.');
+            ->with('success', __('Kredensial gateway disimpan.'));
     }
 
     /**
@@ -722,7 +722,7 @@ class WhatsAppCenterController extends Controller
         $account->update(['bot_instructions' => $validated['bot_instructions'] ?? null]);
 
         return redirect()->route('whatsapp-center.index')
-            ->with('success', 'Pengaturan bot disimpan.');
+            ->with('success', __('Pengaturan bot disimpan.'));
     }
 
     private function handleIncoming(WhatsappAccount $account, array $payload): JsonResponse

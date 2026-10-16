@@ -32,7 +32,12 @@ class Lead extends Model
      */
     public static function salesStatusLabel(?string $status): string
     {
-        return $status === 'cool' ? __('New') : ucfirst((string) $status);
+        return match ($status) {
+            'cool' => __('New'),
+            'warm' => __('Warm'),
+            'hot' => __('Hot'),
+            default => ucfirst((string) $status),
+        };
     }
 
     /**
