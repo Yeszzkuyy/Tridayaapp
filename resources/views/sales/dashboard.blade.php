@@ -10,7 +10,7 @@
         <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}" title="My Leads" />
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
         <a href="{{ route('sales.my-leads', ['active' => 1]) }}"
            class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
             <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-blue-500/5"></div>
