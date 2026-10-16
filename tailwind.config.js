@@ -14,6 +14,9 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        // Kelas Tailwind yang dipakai island React (notification center, dsb.)
+        // wajib ikut discan — tanpa ini kelasnya tidak ter-compile ke app.css.
+        './resources/js/**/*.{js,jsx}',
         './app/**/*.php',
     ],
 

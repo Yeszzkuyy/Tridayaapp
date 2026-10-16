@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('/notifications/status', [NotificationController::class, 'status'])->name('notifications.status');
+    Route::get('/notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
+    Route::delete('/notifications', [NotificationController::class, 'destroyAll'])->name('notifications.destroy-all');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
@@ -275,7 +277,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::post('/schedules', [TechnicianScheduleController::class, 'store'])->name('schedules.store');
         Route::put('/schedules/{schedule}', [TechnicianScheduleController::class, 'update'])->name('schedules.update');
-        Route::patch('/schedules/{schedule}/complete', [TechnicianScheduleController::class, 'complete'])->name('schedules.complete');
         Route::delete('/schedules/{schedule}', [TechnicianScheduleController::class, 'destroy'])->name('schedules.destroy');
         Route::post('/kalender/credentials', [TechnicianScheduleController::class, 'saveCredentials'])->name('kalender.credentials');
         Route::post('/kalender/sync', [TechnicianScheduleController::class, 'syncNow'])->name('kalender.sync');
@@ -298,6 +299,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/instalasis', [\App\Http\Controllers\InstalasiController::class, 'index'])->name('instalasis.index');
         Route::get('/instalasis/create', [\App\Http\Controllers\InstalasiController::class, 'create'])->name('instalasis.create');
         Route::get('/instalasis/{instalasi}', [\App\Http\Controllers\InstalasiController::class, 'show'])->name('instalasis.show');
+        Route::get('/instalasis/{instalasi}/report', [\App\Http\Controllers\InstalasiController::class, 'viewReport'])->name('instalasis.report.view');
+        Route::get('/instalasis/{instalasi}/report/download', [\App\Http\Controllers\InstalasiController::class, 'downloadReport'])->name('instalasis.report.download');
         Route::get('/documents', [\App\Http\Controllers\DocumentRepositoryController::class, 'index'])->name('documents.index');
     });
 
@@ -494,7 +497,6 @@ Route::middleware('auth')->group(function () {
     // Lead milik sales (muncul di menu Sales)
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/dashboard', [ManageSalesController::class, 'dashboard'])->name('sales.dashboard');
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/my-leads/export', [ManageSalesController::class, 'exportMyLeads'])->name('sales.my-leads.export');
-    Route::middleware('permission:view-sales|manage-sales')->get('/sales/dar/export', [ManageSalesController::class, 'exportDar'])->name('sales.dar.export');
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/my-leads', [ManageSalesController::class, 'myLeads'])->name('sales.my-leads');
 
     // ============================================

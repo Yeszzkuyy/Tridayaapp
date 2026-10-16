@@ -1,5 +1,7 @@
-{{-- Tombol ikon kotak putih + border tipis — berwarna saat hover
-     (gaya tombol aksi di menu Project). Tinggal panggil, tanpa utak-atik detail:
+{{-- Tombol ikon kotak putih + border tipis — hover mengisi background dengan
+     warna aksinya + ikon putih. Warna ikon mengikuti jenis aksi supaya tombol
+     berjajar tidak monoton: view=indigo, edit=amber, delete=merah,
+     add/sparkles=hijau, sisanya (filter/reset/back/search/...) = accent theme.
 
      <x-icon-button icon="filter" type="submit" title="Filter" />
      <x-icon-button as="a" icon="reset" href="{{ route('marketing.dashboard') }}" title="Reset" />
@@ -19,8 +21,8 @@
                                         (semua SVG inline, ikut warna teks;
                                         kosongkan + isi slot untuk ikon sendiri)
        variant : default | delete      (default: ngikut icon — delete otomatis
-                                        merah saat hover; nama lama filter/reset
-                                        tetap diterima, dipetakan ke default)
+                                        merah; nama lama filter/reset tetap
+                                        diterima, dipetakan ke default)
        size    : md (= h-10 w-10) | lg (= h-11 w-11)
        title   : title/aria-label (tooltip bawaan browser)
        tooltip : pill tooltip gelap saat hover — ISI EKSPLISIT untuk menampilkan;
@@ -51,9 +53,38 @@ if (!in_array($variant, ['default', 'delete'], true)) {
     $variant = 'default';
 }
 
-$colors = $variant === 'delete'
-    ? 'border-slate-200 bg-white text-slate-600 hover:border-red-500 hover:text-red-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-red-400 dark:hover:text-red-400'
-    : 'border-slate-200 bg-white text-slate-600 hover:border-accent-500 hover:text-accent-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:text-accent-300';
+// Warna per aksi — idle putih + ikon berwarna, hover fill warna aksi + ikon putih.
+// Setiap ikon punya identitas warna supaya tombol berjajar tidak menyatu.
+$palettes = [
+    'accent' => 'border-slate-200 bg-white text-accent-600 hover:border-accent-600 hover:bg-accent-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white',
+    'indigo' => 'border-slate-200 bg-white text-indigo-600 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400 dark:hover:border-indigo-500 dark:hover:bg-indigo-500 dark:hover:text-white',
+    'sky' => 'border-slate-200 bg-white text-sky-600 hover:border-sky-600 hover:bg-sky-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-sky-400 dark:hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:text-white',
+    'violet' => 'border-slate-200 bg-white text-violet-600 hover:border-violet-600 hover:bg-violet-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-violet-400 dark:hover:border-violet-500 dark:hover:bg-violet-500 dark:hover:text-white',
+    'amber' => 'border-slate-200 bg-white text-amber-600 hover:border-amber-600 hover:bg-amber-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-amber-400 dark:hover:border-amber-500 dark:hover:bg-amber-500 dark:hover:text-white',
+    'green' => 'border-slate-200 bg-white text-green-600 hover:border-green-600 hover:bg-green-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-green-400 dark:hover:border-green-500 dark:hover:bg-green-500 dark:hover:text-white',
+    'emerald' => 'border-slate-200 bg-white text-emerald-600 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400 dark:hover:border-emerald-500 dark:hover:bg-emerald-500 dark:hover:text-white',
+    'cyan' => 'border-slate-200 bg-white text-cyan-600 hover:border-cyan-600 hover:bg-cyan-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-cyan-400 dark:hover:border-cyan-500 dark:hover:bg-cyan-500 dark:hover:text-white',
+    'teal' => 'border-slate-200 bg-white text-teal-600 hover:border-teal-600 hover:bg-teal-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-teal-400 dark:hover:border-teal-500 dark:hover:bg-teal-500 dark:hover:text-white',
+    'red' => 'border-slate-200 bg-white text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white',
+    'slate' => 'border-slate-200 bg-white text-slate-500 hover:border-slate-600 hover:bg-slate-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-500 dark:hover:text-white',
+];
+
+$actionColor = match ($variant) {
+    'delete' => 'red',
+    default => match ($icon) {
+        'view' => 'indigo',
+        'customer' => 'sky',
+        'project' => 'violet',
+        'edit' => 'amber',
+        'add', 'sparkles' => 'green',
+        'whatsapp' => 'emerald',
+        'mail' => 'cyan',
+        'download', 'upload', 'import', 'print' => 'teal',
+        'reset', 'more' => 'slate',
+        default => 'accent',
+    },
+};
+$colors = $palettes[$actionColor];
 
 $sizes = [
     'md' => 'h-10 w-10',
@@ -82,6 +113,8 @@ $paths = [
     'reset' => '<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992m-.002-4.992v4.992M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />',
     'search' => '<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" />',
     'view' => '<path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />',
+    'customer' => '<path stroke-linecap="round" stroke-linejoin="round" d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M15 9.5h3a2 2 0 0 1 2 2V21M8 7h3M8 11h3M8 15h3M17 13h1M17 17h1M2.5 21h19" />',
+    'project' => '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44z" />',
     'edit' => '<path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />',
     'delete' => '<path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />',
     'print' => '<path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659" />',

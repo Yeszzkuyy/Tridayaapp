@@ -57,4 +57,18 @@ return [
     */
     'survey-report-template' => env('SURVEY_REPORT_TEMPLATE_URL', 'https://docs.google.com/document/create'),
 
+    /*
+    | URL template Google Drive untuk dokumen BAST, per perusahaan
+    | (MGK / NTI / TPS / WANI). Diisi copy-link template (format .../copy)
+    | supaya pengguna membuat salinan sendiri tanpa mengubah template asli.
+    | Tautan dibuka apa adanya di tab baru — tanpa Google Drive API.
+    | Entry yang kosong tidak ditampilkan di tombol BAST.
+    */
+    'bast-templates' => [
+        'MGK' => env('BAST_TEMPLATE_MGK_URL'),
+        'NTI' => env('BAST_TEMPLATE_NTI_URL'),
+        'TPS' => env('BAST_TEMPLATE_TPS_URL'),
+        'WANI' => env('BAST_TEMPLATE_WANI_URL'),
+    ],
+
 ];

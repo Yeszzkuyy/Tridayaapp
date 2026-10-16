@@ -43,7 +43,7 @@
                 <div class="mt-6 flex items-center gap-4">
                     <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $projectDocument) }}"
                                    target="_blank" label="Lihat / Download File" title="Lihat / Download File" />
-                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectDocument->project) }}" title="← Kembali ke project" />
+                    <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectDocument->project) }}" title="Kembali ke project" />
                 </div>
             </div>
 

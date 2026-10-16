@@ -69,21 +69,11 @@
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('admin-panel.users.edit', $user) }}"
-                                   title="{{ __('Edit user') }}"
-                                   aria-label="{{ __('Edit user') }} {{ $user->name }}"
-                                   class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
-                                    <x-icon name="edit" class="h-4 w-4" />
-                                </a>
+                                <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.users.edit', $user) }}" title="{{ __('Edit user') }}" />
                                 @if($user->id !== auth()->id())
                                     <form action="{{ route('admin-panel.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Hapus user ini?') }}')">
                                         @csrf @method('DELETE')
-                                        <button type="submit"
-                                                title="{{ __('Delete user') }}"
-                                                aria-label="{{ __('Delete user') }} {{ $user->name }}"
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20">
-                                            <x-icon name="trash" class="h-4 w-4" />
-                                        </button>
+                                        <x-icon-button icon="delete" type="submit" title="{{ __('Delete user') }}" />
                                     </form>
                                 @endif
                             </td>

@@ -4,31 +4,49 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\User;
-use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
+use App\Support\NotificationPresenter;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class NotificationController extends Controller
 {
+    /** Jumlah item per halaman feed. */
+    private const PAGE_SIZE = 10;
+
     public function status(Request $request)
     {
-        // itemsFor lebih dulu: ia menghapus baris basi (self-healing)
+        // pageFor lebih dulu: ia menghapus baris basi (self-healing)
         // sehingga angka unread cocok dengan isi daftar.
-        $items = self::itemsFor($request->user());
+        $page = self::pageFor($request->user());
 
         return response()->json([
             'unread' => $request->user()->unreadNotifications()->count(),
-            'unassigned' => \Illuminate\Support\Facades\Cache::remember('leads:unassigned-count', 60, fn () => Lead::whereNull('assigned_to')->count()),
-            'items' => $items,
+            'unassigned' => Cache::remember('leads:unassigned-count', 60, fn () => Lead::whereNull('assigned_to')->count()),
+            'items' => $page['items'],
+            'next_cursor' => $page['next_cursor'],
+            'has_more' => $page['has_more'],
         ]);
+    }
+
+    /** Halaman berikutnya dari feed (cursor pagination, 10 item per halaman). */
+    public function feed(Request $request)
+    {
+        $validated = $request->validate(['cursor' => 'nullable|string|max:512']);
+
+        return response()->json(self::pageFor($request->user(), $validated['cursor'] ?? null));
     }
 
     public function readAll(Request $request)
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
-        return back();
+        return $request->wantsJson()
+            ? response()->json(['unread' => 0])
+            : back();
     }
 
     public function read(Request $request, string $notification)
@@ -45,69 +63,138 @@ class NotificationController extends Controller
         return response()->json(['unread' => $request->user()->unreadNotifications()->count()]);
     }
 
+    /** Hapus semua notifikasi user (read + unread). */
+    public function destroyAll(Request $request)
+    {
+        $request->user()->notifications()->delete();
+
+        return response()->json(['unread' => 0]);
+    }
+
+    /**
+     * Item halaman pertama — bentuk lama dipertahankan (daftar item saja)
+     * untuk pemakaian internal & test.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public static function itemsFor(User $user): array
     {
+        return self::pageFor($user)['items'];
+    }
+
+    /**
+     * Satu halaman feed: urut `created_at desc, id desc`, cursor komposit
+     * agar item detik yang sama tidak terlewat, plus self-healing baris basi.
+     *
+     * @return array{items: array<int, array<string, mixed>>, next_cursor: ?string, has_more: bool}
+     */
+    public static function pageFor(User $user, ?string $cursor = null): array
+    {
+        $query = $user->notifications()
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        if ($cursor !== null && ($position = self::decodeCursor($cursor)) !== null) {
+            [$createdAt, $id] = $position;
+            $query->where(function ($q) use ($createdAt, $id) {
+                $q->where('created_at', '<', $createdAt)
+                    ->orWhere(function ($q) use ($createdAt, $id) {
+                        $q->where('created_at', '=', $createdAt)->where('id', '<', $id);
+                    });
+            });
+        }
+
+        $rows = $query->limit(self::PAGE_SIZE + 1)->get();
+        $hasMore = $rows->count() > self::PAGE_SIZE;
+        $rows = $rows->take(self::PAGE_SIZE);
+
         $canManageLeads = $user->can('manage-sales-leads');
-        $stale = [];
+        $assignedLeadOwners = self::assignedLeadOwners($rows);
+
         $items = [];
+        $stale = [];
 
-        foreach ($user->notifications()->limit(10)->get() as $n) {
-            $data = $n->data;
-
+        foreach ($rows as $row) {
             // Assign lama yang lead-nya sudah pindah tangan / dihapus:
             // bukan lagi untuk user ini — hapus agar bell bersih.
-            if ($n->type === LeadAssignedNotification::class) {
-                $lead = Lead::find($data['lead_id'] ?? 0);
-                if (! $lead || (int) $lead->assigned_to !== (int) $user->id) {
-                    $stale[] = $n->id;
+            if ($row->type === LeadAssignedNotification::class) {
+                $leadId = (int) ($row->data['lead_id'] ?? 0);
+                if (($assignedLeadOwners[$leadId] ?? null) !== (int) $user->id) {
+                    $stale[] = $row->id;
 
                     continue;
                 }
-                // Perbaiki URL baris lama (dulu leads.show) ke My Leads.
-                $data['url'] = LeadAssignedNotification::myLeadsUrl($data['customer'] ?? null);
-            }
-
-            // Reminder follow-up lama menunjuk ke halaman detail;
-            // arahkan ke daftar Follow Up (filter jatuh tempo).
-            if (($data['type'] ?? null) === 'followup') {
-                $data['url'] = FollowUpOverdueNotification::indexUrl();
             }
 
             // Notifikasi lead-baru untuk management yang nyasar ke user
             // tanpa permission manage-sales-leads (mis. sales): buang.
-            if ($n->type === NewLeadNotification::class && ! $canManageLeads) {
-                $stale[] = $n->id;
+            if ($row->type === NewLeadNotification::class && ! $canManageLeads) {
+                $stale[] = $row->id;
 
                 continue;
             }
 
-            // Notif lead-baru (baru maupun lama yang masih menyimpan URL
-            // halaman edit): klik langsung ke Manage Sales.
-            if ($n->type === NewLeadNotification::class) {
-                $data['url'] = NewLeadNotification::indexUrl();
-            }
-
-            $isWhatsapp = ($data['type'] ?? null) === 'whatsapp';
-
-            $items[] = [
-                'id' => $n->id,
-                'url' => $data['url']
-                    ?? ($isWhatsapp
-                        ? route('whatsapp-center.index')
-                        : route('manage-sales.edit', $data['lead_id'] ?? 0)),
-                'title' => $data['title'] ?? null,
-                'customer' => $data['customer'] ?? __('New lead'),
-                'preview' => $data['preview'] ?? null,
-                'type' => $data['type'] ?? ($isWhatsapp ? 'whatsapp' : 'lead'),
-                'read' => (bool) $n->read_at,
-                'ago' => $n->created_at->diffForHumans(),
-            ];
+            $items[] = NotificationPresenter::present($row);
         }
 
         if ($stale !== []) {
             $user->notifications()->whereIn('id', $stale)->delete();
         }
 
-        return $items;
+        $last = $rows->last();
+
+        return [
+            'items' => $items,
+            'next_cursor' => $hasMore && $last !== null ? self::encodeCursor($last) : null,
+            'has_more' => $hasMore,
+        ];
+    }
+
+    /**
+     * assigned_to terkini untuk semua lead yang muncul di halaman ini —
+     * satu query batch, bukan satu `Lead::find` per notifikasi (dulu N+1).
+     *
+     * @return array<int, int>
+     */
+    private static function assignedLeadOwners(Collection $rows): array
+    {
+        $leadIds = $rows
+            ->filter(fn ($row) => $row->type === LeadAssignedNotification::class)
+            ->map(fn ($row) => (int) ($row->data['lead_id'] ?? 0))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($leadIds === []) {
+            return [];
+        }
+
+        return Lead::whereIn('id', $leadIds)
+            ->pluck('assigned_to', 'id')
+            ->map(fn ($owner) => (int) $owner)
+            ->all();
+    }
+
+    private static function encodeCursor(DatabaseNotification $row): string
+    {
+        $raw = $row->created_at->format('Y-m-d H:i:s').'|'.$row->id;
+
+        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+    }
+
+    /** @return array{0:string,1:string}|null */
+    private static function decodeCursor(string $cursor): ?array
+    {
+        $padded = $cursor.str_repeat('=', (4 - strlen($cursor) % 4) % 4);
+        $decoded = base64_decode(strtr($padded, '-_', '+/'), true);
+
+        if ($decoded === false || ! str_contains($decoded, '|')) {
+            return null;
+        }
+
+        [$createdAt, $id] = explode('|', $decoded, 2);
+
+        return $createdAt !== '' && $id !== '' ? [$createdAt, $id] : null;
     }
 }

@@ -400,18 +400,26 @@ class GoogleCalendarService
      */
     public function createSchedule(User $user, array $data): TechnicianSchedule
     {
+        // technician_ids bukan kolom tabel — disimpan ke relasi pivot.
+        $technicianIds = array_values(array_unique(array_map('intval', $data['technician_ids'] ?? [])));
+        unset($data['technician_ids']);
+
         $schedule = new TechnicianSchedule(array_merge($data, [
             'user_id' => $user->id,
             'google_sync_status' => $this->isConnected($user) ? 'syncing' : 'not_connected',
         ]));
         $schedule->save();
+        $schedule->technicians()->sync($technicianIds);
 
         if ($this->isConnected($user)) {
             $this->pushEvent($schedule);
         }
 
-        $this->notifyTechnician($schedule->technician, $user,
-            new TechnicianScheduleAssignedNotification($schedule));
+        // Semua teknisi yang ditugaskan menerima notifikasi.
+        foreach ($schedule->technicians as $technician) {
+            $this->notifyTechnician($technician, $user,
+                new TechnicianScheduleAssignedNotification($schedule));
+        }
 
         return $schedule;
     }
@@ -423,7 +431,12 @@ class GoogleCalendarService
     public function updateSchedule(TechnicianSchedule $schedule, array $data): TechnicianSchedule
     {
         $editor = auth()->user();
-        $oldTechnicianId = $schedule->technician_user_id;
+
+        // Teknisi lama (pivot) untuk deteksi siapa yang ditambah/dihapus.
+        $oldTechnicianIds = $schedule->technicians()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $newTechnicianIds = array_values(array_unique(array_map('intval', $data['technician_ids'] ?? $oldTechnicianIds)));
+        unset($data['technician_ids']);
+
         $change = ($data['status'] ?? $schedule->status) === 'cancelled' ? 'cancelled' : 'updated';
         // Waktu berubah → reminder perlu dikirim ulang.
         $startChanged = isset($data['start_at']) && ! $schedule->start_at->equalTo($data['start_at']);
@@ -435,6 +448,8 @@ class GoogleCalendarService
             'reminder_sent_at' => $startChanged ? null : $schedule->reminder_sent_at,
         ]));
 
+        $schedule->technicians()->sync($newTechnicianIds);
+
         if ($schedule->google_sync_status !== 'not_connected') {
             $this->pushEvent($schedule);
         }
@@ -442,19 +457,25 @@ class GoogleCalendarService
         $schedule->refresh();
         $notified = [];
 
-        // Teknisi baru → notif assign; teknisi lama yang diganti → notif perubahan.
-        if ($schedule->technician_user_id && $schedule->technician_user_id !== $oldTechnicianId) {
-            $this->notifyTechnician($schedule->technician, $editor,
-                new TechnicianScheduleAssignedNotification($schedule), $notified);
+        // Teknisi baru → notif assign; teknisi lama yang diganti/dihapus → notif perubahan.
+        foreach ($newTechnicianIds as $id) {
+            if (! in_array($id, $oldTechnicianIds, true)) {
+                $this->notifyTechnician(User::find($id), $editor,
+                    new TechnicianScheduleAssignedNotification($schedule), $notified);
+            }
         }
-        if ($oldTechnicianId && $oldTechnicianId !== $schedule->technician_user_id) {
-            $this->notifyTechnician(User::find($oldTechnicianId), $editor,
-                new TechnicianScheduleChangedNotification($schedule, $change), $notified);
+        foreach ($oldTechnicianIds as $id) {
+            if (! in_array($id, $newTechnicianIds, true)) {
+                $this->notifyTechnician(User::find($id), $editor,
+                    new TechnicianScheduleChangedNotification($schedule, $change), $notified);
+            }
         }
 
         // Teknisi saat ini + owner (selain editor & yang sudah dinotifikasi).
-        $this->notifyTechnician($schedule->technician, $editor,
-            new TechnicianScheduleChangedNotification($schedule, $change), $notified);
+        foreach ($schedule->technicians as $technician) {
+            $this->notifyTechnician($technician, $editor,
+                new TechnicianScheduleChangedNotification($schedule, $change), $notified);
+        }
         $this->notifyTechnician($schedule->owner, $editor,
             new TechnicianScheduleChangedNotification($schedule, $change), $notified);
 
@@ -464,12 +485,14 @@ class GoogleCalendarService
     public function deleteSchedule(TechnicianSchedule $schedule): void
     {
         $deleter = auth()->user();
-        $technician = $schedule->technician;
+        $technicians = $schedule->technicianList();
         $owner = $schedule->owner;
         // Notifikasi dikirim sebelum hapus agar relasi masih tersedia.
         $notified = [];
-        $this->notifyTechnician($technician, $deleter,
-            new TechnicianScheduleChangedNotification($schedule, 'deleted'), $notified);
+        foreach ($technicians as $technician) {
+            $this->notifyTechnician($technician, $deleter,
+                new TechnicianScheduleChangedNotification($schedule, 'deleted'), $notified);
+        }
         $this->notifyTechnician($owner, $deleter,
             new TechnicianScheduleChangedNotification($schedule, 'deleted'), $notified);
 
@@ -570,10 +593,12 @@ class GoogleCalendarService
 
     private function buildDescription(TechnicianSchedule $schedule): string
     {
+        $technicianNames = $schedule->technicianList()->pluck('name')->filter()->implode(', ');
+
         $lines = [
             'Project: '.($schedule->project?->project_name ?? '-'),
             'Customer: '.($schedule->project?->customer?->company_name ?? '-'),
-            'Teknisi: '.($schedule->technician?->name ?? '-'),
+            'Teknisi: '.($technicianNames !== '' ? $technicianNames : '-'),
             'Status: '.(TechnicianSchedule::STATUSES[$schedule->status] ?? $schedule->status),
         ];
 

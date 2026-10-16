@@ -199,7 +199,7 @@
                     <x-section-header title="{{ __('Daftar Project') }}">
                         @can('manage-technician')
                             <x-add-button href="{{ route('projects.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('+ Tambah Project') }}
+                                {{ __('Tambah Project') }}
                             </x-add-button>
                         @endcan
                     </x-section-header>
@@ -272,7 +272,7 @@
                     <x-section-header title="{{ __('Daftar PIC / Customer Contacts') }}">
                         @can('manage-sales')
                             <x-add-button href="{{ route('customer-contacts.create', $customer) }}">
-                                {{ __('+ Tambah PIC') }}
+                                {{ __('Tambah PIC') }}
                             </x-add-button>
                         @endcan
                     </x-section-header>
@@ -345,7 +345,7 @@
                         @can('manage-technician')
                             @if($firstProject)
                                 <x-add-button href="{{ route('project-documents.index', $firstProject) }}">
-                                    {{ __('+ Kelola Dokumen') }}
+                                    {{ __('Kelola Dokumen') }}
                                 </x-add-button>
                             @else
                                 <span class="inline-flex justify-center items-center px-4 py-2 bg-gray-300 text-white text-sm rounded-md cursor-not-allowed">
@@ -417,7 +417,7 @@
                             <x-section-header title="Invoice">
                                 @can('manage-admin')
                                     <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('+ Create Invoice') }}
+                                        {{ __('Create Invoice') }}
                                     </x-add-button>
                                 @endcan
                             </x-section-header>
@@ -461,7 +461,7 @@
                             <x-section-header title="Purchase Order">
                                 @can('manage-admin')
                                     <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('+ Create PO') }}
+                                        {{ __('Create PO') }}
                                     </x-add-button>
                                 @endcan
                             </x-section-header>
@@ -506,7 +506,7 @@
                             <x-section-header title="{{ __('Payment') }}">
                                 @can('manage-admin')
                                     <x-add-button href="{{ route('admin.payments.create') }}">
-                                        {{ __('+ Record Payment') }}
+                                        {{ __('Record Payment') }}
                                     </x-add-button>
                                 @endcan
                             </x-section-header>
@@ -550,7 +550,7 @@
                             <x-section-header title="Follow Up">
                                 @can('manage-sales')
                                     <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('+ Add Follow Up') }}
+                                        {{ __('Add Follow Up') }}
                                     </x-add-button>
                                 @endcan
                             </x-section-header>

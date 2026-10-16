@@ -380,7 +380,8 @@ class SalesFlowTest extends TestCase
         $this->actingAs($sales)->get(route('leads.show', $lead))
             ->assertOk()
             ->assertSee('Technical Request')
-            ->assertSee('Jadwal Sales')
+            // Locale default EN: heading baru ikut terjemahan resmi.
+            ->assertSee('Sales Schedule')
             ->assertSee('Penawaran')
             ->assertSee('Visit Pabrik');
 
