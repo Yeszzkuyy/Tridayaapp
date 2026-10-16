@@ -283,7 +283,8 @@ class LeadNotificationTest extends TestCase
             ->get(route('notifications.status'))
             ->assertOk()
             ->assertJson(['unread' => 1, 'unassigned' => 1])
-            ->assertJsonPath('items.0.customer', 'PT Notif JSON');
+            ->assertJsonPath('items.0.body', 'PT Notif JSON')
+            ->assertJsonPath('items.0.type', 'lead');
     }
 
     public function test_assigned_lead_removes_its_notifications(): void

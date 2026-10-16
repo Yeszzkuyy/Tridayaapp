@@ -161,76 +161,11 @@
 
     <div class="flex items-center gap-2 sm:gap-3">
 
-        {{-- Notifikasi (Management: lead baru butuh di-assign; Sales: follow-up jatuh tempo; Inside Sales: task) --}}
-        @canany(['manage-sales-leads', 'manage-sales', 'manage-inside-sales'])
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open; $store.notif.refresh()"
-                        class="beam-notif relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-all duration-300 hover:scale-105 hover:bg-accent-500/10 hover:text-accent-600 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-400/10 dark:hover:text-accent-400"
-                        :class="{ 'beam-on': $store.notif.unread > 0 }"
-                        aria-label="{{ __('Notifikasi') }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.66V5a2 2 0 10-4 0v.34A6 6 0 006 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    <template x-if="$store.notif.unread > 0">
-                        <span class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white" x-text="$store.notif.unread"></span>
-                    </template>
-                </button>
-                <div x-show="open" x-cloak @click.away="open = false"
-                     class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-slate-200 dark:border-zinc-800 py-2 z-50 origin-top-right">
-                    <div class="flex items-center justify-between px-4 py-1.5 border-b border-slate-100 dark:border-zinc-800">
-                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Notifikasi') }}</span>
-                        <template x-if="$store.notif.unread > 0">
-                            <form method="POST" action="{{ route('notifications.read-all') }}">
-                                @csrf
-                                <button class="text-xs text-accent-600 hover:text-accent-700">{{ __('Tandai semua dibaca') }}</button>
-                            </form>
-                        </template>
-                    </div>
-                    <template x-for="n in $store.notif.items" :key="n.id">
-                        <div class="group flex items-start gap-1 pr-2 hover:bg-slate-50 dark:hover:bg-zinc-800 transition"
-                             :class="n.read ? 'opacity-60' : ''">
-                            <a :href="n.url"
-                               @click="$store.notif.markRead(n.id)"
-                               class="flex items-start gap-3 min-w-0 flex-1 px-4 py-2.5">
-                                <span class="mt-1.5 h-2 w-2 rounded-full shrink-0" :class="n.read ? 'bg-slate-300 dark:bg-zinc-600' : 'bg-red-500'"></span>
-                                <span class="min-w-0">
-                                    <span class="block text-sm text-slate-700 dark:text-slate-200"><strong x-text="n.title || '{{ __('New lead') }}'"></strong>: <strong x-text="n.customer"></strong></span>
-                                    <template x-if="n.preview">
-                                        <span class="block text-xs text-slate-500 dark:text-slate-400 truncate" x-text="n.preview"></span>
-                                    </template>
-                                    <span class="block text-xs text-slate-400 dark:text-slate-500" x-text="n.ago"></span>
-                                </span>
-                            </a>
-                            <button type="button"
-                                    @click.stop="$store.notif.remove(n.id)"
-                                    class="mt-2 shrink-0 h-5 w-5 flex items-center justify-center rounded text-xs text-slate-400 hover:text-red-500 transition"
-                                    aria-label="{{ __('Hapus notifikasi') }}">&#10005;</button>
-                        </div>
-                    </template>
-                    <template x-if="$store.notif.items.length === 0">
-                        <p class="px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-500">{{ __('Tidak ada notifikasi') }}</p>
-                    </template>
-                </div>
-
-                {{-- Toast kecil: lead baru belum di-assign (khusus management) --}}
-                @can('manage-sales-leads')
-                <template x-teleport="body">
-                    <div x-show="$store.notif.toast" x-cloak
-                         x-transition.opacity.duration.300ms
-                         class="fixed bottom-4 right-4 z-[100]">
-                        <div class="flex items-center gap-2.5 rounded-lg bg-white dark:bg-zinc-900 shadow-lg border border-slate-200 dark:border-zinc-800 py-2.5 px-3.5">
-                            <span class="h-2 w-2 shrink-0 rounded-full bg-red-500 animate-ping"></span>
-                            <p class="text-sm text-slate-700 dark:text-slate-200">
-                                {{ __('Lead baru belum di-assign') }} &mdash;
-                                <a wire:navigate.hover href="{{ route('manage-sales.index') }}" class="font-semibold text-accent-600 hover:text-accent-700">{{ __('kelola') }}</a>
-                            </p>
-                            <button @click="$store.notif.toast = false" class="text-slate-400 hover:text-slate-600" aria-label="{{ __('Tutup') }}">&#10005;</button>
-                        </div>
-                    </div>
-                </template>
-                @endcan
-            </div>
-        @endcan
+        {{-- Notification Center — React island (bell + feed).
+             Data awal & i18n dipasang di layouts/app.blade.php (window.notifCenter).
+             Bell tampil untuk SEMUA role: notifikasi database bisa diterima
+             siapa saja (teknisi, marketing, sales, admin, dll). --}}
+        <div data-notification-center class="relative shrink-0"></div>
 
         <span class="hidden shrink-0 whitespace-nowrap text-[11px] tabular-nums text-slate-400 md:block dark:text-slate-300">{{ now()->translatedFormat('d M Y') }}</span>
 

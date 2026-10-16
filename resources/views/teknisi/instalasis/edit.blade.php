@@ -9,7 +9,7 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 w-full">
-        <form action="{{ route('teknisi.instalasis.update', $instalasi) }}" method="POST">
+        <form action="{{ route('teknisi.instalasis.update', $instalasi) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -64,15 +64,18 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Laporan Instalasi') }}</label>
-                    <textarea name="installation_report" rows="4" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">{{ old('installation_report', $instalasi->installation_report) }}</textarea>
-                    @error('installation_report') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Catatan') }}</label>
-                    <textarea name="notes" rows="3" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">{{ old('notes', $instalasi->notes) }}</textarea>
-                    @error('notes') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Upload Installation Report File') }}</label>
+                    @if($instalasi->hasReport())
+                        <div class="mb-2 flex items-center gap-2">
+                            <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View') }}" />
+                            <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" />
+                            <span class="text-sm text-slate-600 dark:text-slate-300 truncate">{{ $instalasi->report_file_name }}</span>
+                        </div>
+                    @endif
+                    <input type="file" name="report_file" accept=".pdf,.doc,.docx"
+                           class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium">
+                    <p class="mt-2 text-xs text-slate-400">{{ __('PDF or DOC, max 5 MB.') }}</p>
+                    @error('report_file') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 
