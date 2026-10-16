@@ -122,6 +122,60 @@ class FollowUpFormTest extends TestCase
         $this->assertStringContainsString('Lead #', $html);
     }
 
+    public function test_lead_dropdown_label_shows_kebutuhan_between_status_and_date(): void
+    {
+        $lead = new Lead([
+            'status' => 'warm',
+            'kebutuhan' => "  Pasang CCTV\n gudang  ",
+            'incoming_date' => '2026-10-05',
+        ]);
+        $lead->id = 7;
+
+        $this->assertSame(
+            'Lead #7 — Warm — Pasang CCTV gudang — 05 Oct 2026',
+            Lead::salesDropdownLabel($lead)
+        );
+    }
+
+    public function test_lead_dropdown_label_truncates_long_kebutuhan(): void
+    {
+        $long = 'Pengadaan empat puluh unit access point untuk gedung kantor pusat lantai satu';
+        $lead = new Lead(['status' => 'hot', 'kebutuhan' => $long]);
+        $lead->id = 8;
+
+        $label = Lead::salesDropdownLabel($lead);
+
+        $this->assertStringContainsString('Lead #8 — Hot — '.mb_substr($long, 0, 50).'…', $label);
+        $this->assertStringNotContainsString($long, $label);
+    }
+
+    public function test_lead_dropdown_label_skips_empty_kebutuhan(): void
+    {
+        $lead = new Lead(['status' => 'cool']);
+        $lead->id = 9;
+
+        $this->assertSame('Lead #9 — New', Lead::salesDropdownLabel($lead));
+    }
+
+    public function test_lead_options_include_kebutuhan_in_label(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'kebutuhan' => 'Pasang CCTV gudang',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create'))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Pasang CCTV gudang', $html);
+    }
+
     public function test_store_accepts_matching_relations(): void
     {
         $sales = $this->salesMgk();

@@ -211,7 +211,7 @@ class FollowUpController extends Controller
     }
 
     /**
-     * Lead untuk dropdown: label unik "Lead #id — status — tgl masuk".
+     * Lead untuk dropdown: label unik "Lead #id — status — kebutuhan — tgl masuk".
      * Sales-like hanya melihat lead miliknya sendiri.
      */
     private function leadItems($user): array
@@ -221,12 +221,11 @@ class FollowUpController extends Controller
             $query->where('assigned_to', $user->id);
         }
 
-        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'assigned_to'])
+        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'kebutuhan', 'assigned_to'])
             ->map(fn ($lead) => [
                 'id' => (string) $lead->id,
                 'customer_id' => (string) $lead->customer_id,
-                'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
-                    .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
+                'label' => Lead::salesDropdownLabel($lead),
             ])->all();
     }
 
