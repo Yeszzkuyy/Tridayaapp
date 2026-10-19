@@ -47,6 +47,9 @@ class CompanyUserSeeder extends Seeder
             ['April', 'april@tridayaapp.com', ['admin']],
             ['Audi', 'audi@tridayaapp.com', ['inside-sales', 'sales', 'sales-nti']],
             ['Dini', 'dini@tridayaapp.com', ['inside-sales', 'sales', 'sales-nti']],
+            ['Felisia', 'felisia@tridayaapp.com', ['sales', 'sales-wani']],
+            ['Jeremy', 'jeremy@tridayaapp.com', ['sales', 'sales-nti']],
+            ['Tsamara', 'tsamara@tridayaapp.com', ['sales', 'sales-nti']],
             ['Ryan', 'ryan@tridayaapp.com', ['technician']],
         ];
 
