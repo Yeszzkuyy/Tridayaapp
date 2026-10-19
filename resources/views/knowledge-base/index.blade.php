@@ -74,14 +74,30 @@
             </form>
         </div>
 
+        {{-- Search --}}
+        <form method="GET" action="{{ route('knowledge-base.index') }}" class="mb-4 flex flex-wrap items-center gap-2">
+            @if(filled($filters['category'] ?? null))
+                <input type="hidden" name="category" value="{{ $filters['category'] }}">
+            @endif
+            @if(filled($filters['status'] ?? null))
+                <input type="hidden" name="status" value="{{ $filters['status'] }}">
+            @endif
+            <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ __('Search document name') }}"
+                   class="px-4 py-2 border border-slate-300 rounded-xl text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100" />
+            <x-icon-button icon="search" type="submit" title="{{ __('Search') }}" />
+            @if(filled($filters['q'] ?? null))
+                <x-icon-button as="a" icon="reset" href="{{ route('knowledge-base.index', array_filter(['category' => $filters['category'] ?? null, 'status' => $filters['status'] ?? null])) }}" title="{{ __('Reset') }}" />
+            @endif
+        </form>
+
         {{-- Filter --}}
         <div class="mb-4 flex flex-wrap gap-2">
-            <a href="{{ route('knowledge-base.index') }}"
+            <a href="{{ route('knowledge-base.index', array_filter(['q' => $filters['q'] ?? null, 'status' => $filters['status'] ?? null])) }}"
                class="rounded-full px-4 py-1.5 text-xs font-semibold transition {{ blank($filters['category'] ?? null) ? 'bg-accent-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
                 {{ __('All Categories') }}
             </a>
             @foreach($categories as $category)
-                <a href="{{ route('knowledge-base.index', ['category' => $category->value, 'status' => $filters['status'] ?? null]) }}"
+                <a href="{{ route('knowledge-base.index', array_filter(['q' => $filters['q'] ?? null, 'category' => $category->value, 'status' => $filters['status'] ?? null])) }}"
                    class="rounded-full px-4 py-1.5 text-xs font-semibold transition {{ ($filters['category'] ?? null) === $category->value ? 'bg-accent-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
                     {{ $category->label() }}
                 </a>
@@ -115,7 +131,7 @@
                                         {{ $document->category->label() }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $document->project?->name ?? '—' }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $document->project?->project_name ?? '—' }}</td>
                                 <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $document->uploader?->name ?? '—' }}</td>
                                 <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $document->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4">

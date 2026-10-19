@@ -21,6 +21,14 @@ class KnowledgeBaseController extends Controller
 
         $documents = KnowledgeBaseDocument::with(['uploader', 'project'])
             ->when(
+                $request->filled('q'),
+                fn ($query) => $query->whereLike(
+                    'original_name',
+                    '%'.$request->query('q').'%',
+                    false
+                )
+            )
+            ->when(
                 $request->filled('category'),
                 fn ($query) => $query->where('category', $request->query('category'))
             )
@@ -36,7 +44,7 @@ class KnowledgeBaseController extends Controller
             'documents' => $documents,
             'categories' => KnowledgeBaseCategory::cases(),
             'projects' => Project::orderBy('project_name')->limit(200)->get(['id', 'project_name']),
-            'filters' => $request->only(['category', 'status']),
+            'filters' => $request->only(['q', 'category', 'status']),
         ]);
     }
 

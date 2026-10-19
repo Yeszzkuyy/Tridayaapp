@@ -203,4 +203,55 @@ class KnowledgeBaseTest extends TestCase
 
         $this->assertDatabaseCount('knowledge_base_documents', 0);
     }
+
+    public function test_index_can_search_documents_by_name(): void
+    {
+        $this->setStoreId();
+        $admin = $this->userWithRole('admin');
+
+        $this->makeDocument($admin->id, 'SOP Keamanan.pdf');
+        $this->makeDocument($admin->id, 'Proposal Jaringan.pdf');
+
+        $this->actingAs($admin)
+            ->get(route('knowledge-base.index', ['q' => 'keamanan']))
+            ->assertOk()
+            ->assertSee('SOP Keamanan.pdf')
+            ->assertDontSee('Proposal Jaringan.pdf');
+    }
+
+    public function test_index_shows_linked_project_name(): void
+    {
+        $this->setStoreId();
+        $admin = $this->userWithRole('admin');
+        $this->actingAs($admin);
+
+        $customer = \App\Models\Customer::create(['name' => 'PT Uji Dokumen']);
+        $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
+        $project = \App\Models\Project::create([
+            'customer_id' => $customer->id,
+            'work_type_id' => $workType->id,
+            'project_name' => 'Project Jaringan Uji',
+        ]);
+
+        $this->makeDocument($admin->id, 'Dokumen Project.pdf', $project->id);
+
+        $this->actingAs($admin)
+            ->get(route('knowledge-base.index'))
+            ->assertOk()
+            ->assertSee('Project Jaringan Uji');
+    }
+
+    private function makeDocument(int $userId, string $name, ?int $projectId = null): KnowledgeBaseDocument
+    {
+        return KnowledgeBaseDocument::create([
+            'original_name' => $name,
+            'category' => KnowledgeBaseCategory::Sop->value,
+            'project_id' => $projectId,
+            'user_id' => $userId,
+            'store_id' => 'store-test',
+            'mime' => 'application/pdf',
+            'size' => 100,
+            'status' => 'ready',
+        ]);
+    }
 }
