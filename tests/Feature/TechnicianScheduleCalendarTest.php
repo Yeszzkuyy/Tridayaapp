@@ -200,12 +200,12 @@ class TechnicianScheduleCalendarTest extends TestCase
             'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
         ]);
 
-        // Google sekarang TIDAK punya gcal-123 (sudah dihapus user di Google).
-        \Illuminate\Support\Facades\Http::fake([
-            'www.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['items' => []], 200),
-        ]);
+        // Google sekarang TIDAK punya gcal-123 (dihapus di Google) → read mengembalikan [].
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andReturn([]);
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
 
-        app(\App\Services\GoogleCalendarService::class)->syncFromGoogle();
+        $mock->syncFromGoogle();
 
         // Yang dari Google → soft-delete; yang lokal murni → tetap aman.
         $this->assertSoftDeleted('technician_schedules', ['id' => $fromGoogle->id]);
@@ -225,18 +225,18 @@ class TechnicianScheduleCalendarTest extends TestCase
         \Illuminate\Support\Facades\DB::table('technician_schedules')->where('id', $schedule->id)
             ->update(['updated_at' => now()->addDay()]);
 
-        \Illuminate\Support\Facades\Http::fake([
-            'www.googleapis.com/*' => \Illuminate\Support\Facades\Http::response([
-                'items' => [[
-                    'id' => 'gcal-999', 'summary' => 'Judul dari Google',
-                    'start' => ['dateTime' => '2026-10-20T09:00:00'],
-                    'end' => ['dateTime' => '2026-10-20T11:00:00'],
-                    'updated' => now()->subDay()->toIso8601String(),
-                ]],
-            ], 200),
-        ]);
+        // Read via OAuth (mock) — event dari Google lebih LAMA dari lokal.
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andReturn([[
+            'id' => 'gcal-999', 'title' => 'Judul dari Google',
+            'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+            'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+            'location' => '', 'description' => '',
+            'updated' => now()->subDay(),
+        ]]);
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
 
-        app(\App\Services\GoogleCalendarService::class)->syncFromGoogle();
+        $mock->syncFromGoogle();
 
         // Google lebih lama → lokal TIDAK ditimpa; status/teknisi tetap.
         $fresh = $schedule->fresh();
@@ -494,14 +494,69 @@ class TechnicianScheduleCalendarTest extends TestCase
             ->assertForbidden();
         $this->assertSame(0, \App\Models\GoogleCredential::count());
 
-        // C. Role diizinkan + state BENAR → alur callback berlanjut (OAuth di-mock).
+        // C. Role diizinkan + state BENAR → alur callback diteruskan ke handler OAuth.
+        // Kode palsu 'c' → handler memanggil pertukaran token Google; pesan error
+        // 'Malformed auth code' HANYA dihasilkan dari dalam handleCallback() → bukti
+        // handler BENAR-BENAR dieksekusi (bukan sekadar redirect).
+        $res = $this->actingAs($lead)->withSession(['google_oauth_state' => 'benar'])
+            ->get(route('teknisi.kalender.callback', ['state' => 'benar', 'code' => 'c']));
+        $res->assertRedirect(route('teknisi.jadwal'));
+        $res->assertSessionHas('error');
+        $this->assertStringContainsString('auth code', (string) session('error'));
+    }
+
+    public function test_read_requires_oauth_not_api_key(): void
+    {
+        // API key tersedia, tapi TIDAK ada token OAuth → baca ditolak (tanpa fallback API key).
+        GoogleAppCredential::current()->fill(['api_key' => 'AIza-fake', 'calendar_id' => 'cal@x'])->save();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('belum terhubung');
+        app(\App\Services\GoogleCalendarService::class)->upcomingEvents(1);
+    }
+
+    public function test_read_and_write_use_same_canonical_calendar_id(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        GoogleAppCredential::current()->fill(['calendar_id' => 'cal-office'])->save();
+
+        // Mock read mengembalikan 1 event → sync menyimpan google_calendar_id = 'cal-office'.
         $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
-        $mock->shouldReceive('handleCallback')->andReturnNull();
+        $mock->shouldReceive('upcomingEvents')->andReturn([[
+            'id' => 'gcal-cal', 'title' => 'Judul',
+            'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+            'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+            'location' => '', 'description' => '', 'updated' => now(),
+        ]]);
         $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
 
-        $this->actingAs($lead)->withSession(['google_oauth_state' => 'benar'])
-            ->get(route('teknisi.kalender.callback', ['state' => 'benar', 'code' => 'c']))
-            ->assertRedirect(route('teknisi.jadwal'));
+        $mock->syncFromGoogle();
+
+        $this->assertDatabaseHas('technician_schedules', [
+            'google_event_id' => 'gcal-cal', 'google_calendar_id' => 'cal-office',
+        ]);
+    }
+
+    public function test_no_mass_delete_when_read_fails(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $keep = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Tetap', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-x', 'google_sync_status' => 'synced',
+        ]);
+
+        // Read gagal (mis. invalid_grant / jaringan) → tidak boleh memicu hapus massal.
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andThrow(new \RuntimeException('invalid_grant'));
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
+
+        try {
+            $mock->syncFromGoogle();
+        } catch (\Throwable) {
+        }
+
+        $this->assertNotSoftDeleted('technician_schedules', ['id' => $keep->id]);
     }
 
     public function test_index_renders_calendar_views(): void
