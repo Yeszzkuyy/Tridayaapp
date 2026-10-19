@@ -139,8 +139,10 @@ class TechnicianScheduleController extends Controller
             'calendar_id' => 'nullable|string|max:255',
         ]);
 
-        GoogleAppCredential::current()->fill($validated)->save();
-        $this->google->forgetReachableCache();
+        $error = $this->applyCredentials($validated);
+        if ($error !== null) {
+            return back()->withErrors([$error]);
+        }
 
         return back()->with('success', __('Kredensial Google Calendar tersimpan.'));
     }
@@ -160,22 +162,12 @@ class TechnicianScheduleController extends Controller
             'calendar_id' => 'nullable|string|max:255',
         ]);
 
-        if ($validated !== []) {
-            try {
-                GoogleAppCredential::current()->fill($validated)->save();
-            } catch (\Throwable $e) {
-                try {
-                    \Illuminate\Support\Facades\Log::warning('Simpan kredensial Google gagal: '.$e->getMessage());
-                } catch (\Throwable) {
-                }
-
-                return back()->with('sync_message', __('Kredensial Google gagal disimpan: :error', [
-                    'error' => $e->getMessage(),
-                ]));
-            }
+        $configError = $this->applyCredentials($validated);
+        if ($configError !== null) {
+            return back()->with('sync_message', __('Konfigurasi tidak valid — konfigurasi lama dipertahankan. :error', [
+                'error' => $configError,
+            ]));
         }
-
-        $this->google->forgetReachableCache();
 
         try {
             $stats = $this->google->syncTwoWay();
@@ -224,6 +216,48 @@ class TechnicianScheduleController extends Controller
     private function canManageApi(): bool
     {
         return auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']) ?? false;
+    }
+
+    /**
+     * Simpan input kredensial dengan aturan:
+     * - Field kosong = pertahankan nilai lama, bukan menghapus (G4).
+     * - Validasi dulu sebelum mengaktifkan; gagal = pertahankan lama (G6).
+     * Mengembalikan pesan kesalahan yang aman, atau null bila sukses.
+     */
+    private function applyCredentials(array $validated): ?string
+    {
+        $filtered = array_filter($validated, fn ($v) => $v !== null && $v !== '');
+        if ($filtered === []) {
+            return null; // tidak ada perubahan
+        }
+
+        $current = GoogleAppCredential::current();
+        $candidate = [
+            'client_id' => $filtered['client_id'] ?? $current->client_id,
+            'client_secret' => $filtered['client_secret'] ?? $current->client_secret,
+            'api_key' => $filtered['api_key'] ?? $current->api_key,
+            'calendar_id' => $filtered['calendar_id'] ?? $current->calendar_id,
+        ];
+
+        $error = $this->google->validateCredentials($candidate);
+        if ($error !== null) {
+            return $error;
+        }
+
+        try {
+            $current->fill($filtered)->save();
+        } catch (\Throwable $e) {
+            try {
+                \Illuminate\Support\Facades\Log::warning('Simpan kredensial Google gagal: '.$e->getMessage());
+            } catch (\Throwable) {
+            }
+
+            return __('Kredensial Google gagal disimpan.');
+        }
+
+        $this->google->forgetReachableCache();
+
+        return null;
     }
 
     /**

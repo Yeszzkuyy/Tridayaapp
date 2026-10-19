@@ -343,6 +343,55 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->assertSame('Instalasi server', $schedule->fresh()->title);
     }
 
+    public function test_empty_credential_fields_keep_previous_values(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $cred = \App\Models\GoogleAppCredential::create([
+            'client_id' => 'id-lama', 'client_secret' => 'secret-lama',
+            'api_key' => 'key-lama', 'calendar_id' => 'cal-lama',
+        ]);
+
+        // Semua field dikosongkan → nilai lama harus dipertahankan (G4).
+        $this->actingAs($lead)->post(route('teknisi.kalender.credentials'), [
+            'client_id' => '', 'client_secret' => '', 'api_key' => '', 'calendar_id' => '',
+        ])->assertSessionHasNoErrors();
+
+        $fresh = $cred->fresh();
+        $this->assertSame('secret-lama', $fresh->client_secret);
+        $this->assertSame('key-lama', $fresh->api_key);
+        $this->assertSame('id-lama', $fresh->client_id);
+        $this->assertSame('cal-lama', $fresh->calendar_id);
+    }
+
+    public function test_secret_not_rendered_in_html(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        \App\Models\GoogleAppCredential::create([
+            'client_id' => 'id-xyz', 'client_secret' => 'RAHASIA-SECRET',
+            'api_key' => 'RAHASIA-APIKEY', 'calendar_id' => 'cal@x',
+        ]);
+
+        $res = $this->actingAs($lead)->get(route('teknisi.jadwal'));
+        $res->assertOk();
+        $res->assertDontSee('RAHASIA-SECRET');
+        $res->assertDontSee('RAHASIA-APIKEY');
+    }
+
+    public function test_invalid_config_keeps_previous_and_shows_error(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $cred = \App\Models\GoogleAppCredential::create([
+            'client_id' => 'id-lama', 'client_secret' => null, 'calendar_id' => 'cal-lama',
+        ]);
+
+        // client_id tanpa client_secret (pasangan tidak lengkap) → gagal, lama bertahan (G6).
+        $this->actingAs($lead)->post(route('teknisi.kalender.credentials'), [
+            'client_id' => 'id-baru',
+        ])->assertSessionHasErrors();
+
+        $this->assertSame('id-lama', $cred->fresh()->client_id);
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');

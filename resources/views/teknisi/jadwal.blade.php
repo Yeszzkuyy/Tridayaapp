@@ -558,12 +558,14 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Client Secret') }}</label>
-                            <input type="password" name="client_secret" value="{{ $credential->client_secret }}" autocomplete="off"
+                            <input type="password" name="client_secret" value="" autocomplete="off"
+                                   placeholder="{{ $credential->client_secret ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('API Key') }}</label>
-                            <input type="password" name="api_key" value="{{ $credential->api_key }}" autocomplete="off"
+                            <input type="password" name="api_key" value="" autocomplete="off"
+                                   placeholder="{{ $credential->api_key ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
@@ -571,6 +573,7 @@
                             <input type="text" name="calendar_id" value="{{ $credential->calendar_id }}" autocomplete="off"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
+                        <p class="text-xs text-slate-400">{{ __('Kosongkan bila tidak ingin mengubah nilai tersimpan.') }}</p>
                         <div class="flex items-center justify-end gap-2 pt-2">
                             <button type="button" @click="apiOpen = false"
                                     class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">{{ __('Close') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>

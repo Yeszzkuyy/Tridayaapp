@@ -57,6 +57,29 @@ class GoogleCalendarService
     }
 
     /**
+     * Validasi struktur konfigurasi kredensial (tanpa menyimpan).
+     * Mengembalikan pesan kesalahan yang aman, atau null bila valid.
+     * Uji koneksi nyata ke Google menyusul di tahap OAuth.
+     */
+    public function validateCredentials(array $creds): ?string
+    {
+        $clientId = trim((string) ($creds['client_id'] ?? ''));
+        $clientSecret = trim((string) ($creds['client_secret'] ?? ''));
+
+        // Client ID & Client Secret harus satu paket.
+        if (($clientId === '') !== ($clientSecret === '')) {
+            return __('Client ID dan Client Secret harus diisi bersama.');
+        }
+
+        $calendarId = trim((string) ($creds['calendar_id'] ?? ''));
+        if ($calendarId !== '' && (str_contains($calendarId, ' ') || strlen($calendarId) > 255)) {
+            return __('Calendar ID tidak valid.');
+        }
+
+        return null;
+    }
+
+    /**
      * Kredensial aplikasi: diprioritaskan dari tabel (di-manage via UI),
      * fallback ke config/env.
      */
