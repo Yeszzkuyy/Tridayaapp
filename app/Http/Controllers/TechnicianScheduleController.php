@@ -134,7 +134,6 @@ class TechnicianScheduleController extends Controller
         $validated = $request->validate([
             'client_id' => 'nullable|string|max:255',
             'client_secret' => 'nullable|string|max:255',
-            'api_key' => 'nullable|string|max:255',
             'calendar_id' => 'nullable|string|max:255',
         ]);
 
@@ -157,7 +156,6 @@ class TechnicianScheduleController extends Controller
         $validated = $request->validate([
             'client_id' => 'nullable|string|max:255',
             'client_secret' => 'nullable|string|max:255',
-            'api_key' => 'nullable|string|max:255',
             'calendar_id' => 'nullable|string|max:255',
         ]);
 
@@ -225,7 +223,6 @@ class TechnicianScheduleController extends Controller
         $candidate = [
             'client_id' => $filtered['client_id'] ?? $current->client_id,
             'client_secret' => $filtered['client_secret'] ?? $current->client_secret,
-            'api_key' => $filtered['api_key'] ?? $current->api_key,
             'calendar_id' => $filtered['calendar_id'] ?? $current->calendar_id,
         ];
 

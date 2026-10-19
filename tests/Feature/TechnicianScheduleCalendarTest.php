@@ -66,7 +66,7 @@ class TechnicianScheduleCalendarTest extends TestCase
 
         $payload = [
             'client_id' => 'cid', 'client_secret' => 'secret',
-            'api_key' => 'key', 'calendar_id' => 'cal@group',
+            'calendar_id' => 'cal@group',
         ];
 
         // lead-technician & super-admin boleh simpan
@@ -103,9 +103,9 @@ class TechnicianScheduleCalendarTest extends TestCase
     {
         $lead = $this->userWithRole('lead-technician');
 
-        // API key kosong → upcomingEvents() melempar, harus ditangkap controller.
+        // Tanpa koneksi OAuth → sync gagal, harus ditangkap controller (bukan 500).
         $res = $this->actingAs($lead)->post(route('teknisi.kalender.sync'), [
-            'api_key' => 'salah', 'calendar_id' => 'bukan@kalender.ada',
+            'calendar_id' => 'bukan@kalender.ada',
         ]);
 
         $res->assertRedirect();
@@ -382,17 +382,16 @@ class TechnicianScheduleCalendarTest extends TestCase
         $lead = $this->userWithRole('lead-technician');
         $cred = \App\Models\GoogleAppCredential::create([
             'client_id' => 'id-lama', 'client_secret' => 'secret-lama',
-            'api_key' => 'key-lama', 'calendar_id' => 'cal-lama',
+            'calendar_id' => 'cal-lama',
         ]);
 
         // Semua field dikosongkan → nilai lama harus dipertahankan (G4).
         $this->actingAs($lead)->post(route('teknisi.kalender.credentials'), [
-            'client_id' => '', 'client_secret' => '', 'api_key' => '', 'calendar_id' => '',
+            'client_id' => '', 'client_secret' => '', 'calendar_id' => '',
         ])->assertSessionHasNoErrors();
 
         $fresh = $cred->fresh();
         $this->assertSame('secret-lama', $fresh->client_secret);
-        $this->assertSame('key-lama', $fresh->api_key);
         $this->assertSame('id-lama', $fresh->client_id);
         $this->assertSame('cal-lama', $fresh->calendar_id);
     }
@@ -402,13 +401,12 @@ class TechnicianScheduleCalendarTest extends TestCase
         $lead = $this->userWithRole('lead-technician');
         \App\Models\GoogleAppCredential::create([
             'client_id' => 'id-xyz', 'client_secret' => 'RAHASIA-SECRET',
-            'api_key' => 'RAHASIA-APIKEY', 'calendar_id' => 'cal@x',
+            'calendar_id' => 'cal@x',
         ]);
 
         $res = $this->actingAs($lead)->get(route('teknisi.jadwal'));
         $res->assertOk();
         $res->assertDontSee('RAHASIA-SECRET');
-        $res->assertDontSee('RAHASIA-APIKEY');
     }
 
     public function test_invalid_config_keeps_previous_and_shows_error(): void
@@ -513,8 +511,8 @@ class TechnicianScheduleCalendarTest extends TestCase
 
     public function test_read_requires_oauth_not_api_key(): void
     {
-        // API key tersedia, tapi TIDAK ada token OAuth → baca ditolak (tanpa fallback API key).
-        GoogleAppCredential::current()->fill(['api_key' => 'AIza-fake', 'calendar_id' => 'cal@x'])->save();
+        // TIDAK ada token OAuth → baca ditolak (hanya OAuth, tanpa fallback API key).
+        GoogleAppCredential::current()->fill(['calendar_id' => 'cal@x'])->save();
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('belum terhubung');
@@ -693,7 +691,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         // Sisipkan nilai "terenkripsi" rusak langsung ke DB (bypass cast).
         \Illuminate\Support\Facades\DB::table('google_app_credentials')->insert([
             'client_id' => 'cid', 'client_secret' => 'bukan-kripto-valid',
-            'api_key' => 'bukan-kripto-valid', 'calendar_id' => 'cal@x',
+            'calendar_id' => 'cal@x',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
