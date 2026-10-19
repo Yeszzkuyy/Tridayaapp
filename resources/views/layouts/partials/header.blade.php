@@ -194,7 +194,12 @@
         {{-- Dropdown Avatar --}}
         <div class="relative" x-data="{ open: false }">
             {{-- Avatar --}}
-            <button @click="open = !open"
+            <button type="button"
+                    @click="open = !open"
+                    aria-label="{{ __('Account menu') }}"
+                    aria-haspopup="true"
+                    :aria-expanded="open"
+                    title="{{ __('Account menu') }}"
                     class="flex items-center justify-center rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/50 active:scale-95 shrink-0">
                 <x-user-avatar :user="auth()->user()" size="w-10 h-10" text="text-sm" :clickable="false" />
             </button>
