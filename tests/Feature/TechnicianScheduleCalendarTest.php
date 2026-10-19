@@ -908,6 +908,18 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->assertSame(1, TechnicianSchedule::whereNull('deleted_at')->where('google_event_id', 'gcal-k')->count());
     }
 
+    public function test_google_client_transport_has_timeout_config(): void
+    {
+        // Bukti timeout diterapkan pada transport Google SDK (Guzzle client),
+        // bukan Http::timeout() yang tidak berlaku untuk Google Client.
+        $svc = app(\App\Services\GoogleCalendarService::class);
+        $client = $svc->clientFor(null);
+
+        $http = $client->getHttpClient();
+        $this->assertSame(\App\Services\GoogleCalendarService::HTTP_TIMEOUT, $http->getConfig('timeout'));
+        $this->assertSame(\App\Services\GoogleCalendarService::HTTP_CONNECT_TIMEOUT, $http->getConfig('connect_timeout'));
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');

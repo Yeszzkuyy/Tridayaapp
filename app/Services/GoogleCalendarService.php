@@ -29,6 +29,10 @@ class GoogleCalendarService
     /** Nama partial unique index (google_event_id unik untuk baris aktif). */
     private const UNIQUE_INDEX_NAME = 'technician_schedules_google_event_id_active_unique';
 
+    /** Timeout transport Google (detik): koneksi & baca/tulis. */
+    public const HTTP_CONNECT_TIMEOUT = 5;
+    public const HTTP_TIMEOUT = 30;
+
 /**
      * Cek apakah Google Calendar API dapat diakses (berdasarkan hasil request, bukan DB).
      */
@@ -619,6 +623,14 @@ class GoogleCalendarService
     public function clientFor(?User $user = null): Client
     {
         $client = new Client;
+        // Timeout transport nyata pada Guzzle yang dipakai Google SDK —
+        // `Http::timeout()` TIDAK berlaku di sini. Connect + read/write timeout
+        // diterapkan pada http client agar listEvents/insert/update/delete
+        // tidak menggantung tanpa batas.
+        $client->setHttpClient(new \GuzzleHttp\Client([
+            'timeout' => self::HTTP_TIMEOUT,
+            'connect_timeout' => self::HTTP_CONNECT_TIMEOUT,
+        ]));
         $client->setApplicationName(config('app.name'));
         $client->setClientId($this->appCredentials()['client_id']);
         $client->setClientSecret($this->appCredentials()['client_secret']);
@@ -665,7 +677,11 @@ class GoogleCalendarService
         // Tukar authorization code → token via HTTP (memakai Http facade agar
         // bisa di-fake di tes tanpa jaringan Google nyata). Semantik sama
         // dengan fetchAccessTokenWithAuthCode, hanya transport yang berbeda.
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+        // Connect + read timeout diterapkan pada request ini.
+        $response = Http::asForm()
+            ->connectTimeout(self::HTTP_CONNECT_TIMEOUT)
+            ->timeout(self::HTTP_TIMEOUT)
+            ->post('https://oauth2.googleapis.com/token', [
             'client_id' => $this->appCredentials()['client_id'],
             'client_secret' => $this->appCredentials()['client_secret'],
             'code' => $code,
