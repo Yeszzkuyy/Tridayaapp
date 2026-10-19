@@ -636,15 +636,21 @@ class TechnicianScheduleCalendarTest extends TestCase
     public function test_database_duplicates_are_not_auto_deleted(): void
     {
         $lead = $this->userWithRole('lead-technician');
-        foreach ([1, 2] as $i) {
-            TechnicianSchedule::create([
-                'user_id' => $lead->id, 'title' => 'Duplikat '.$i, 'start_at' => '2026-10-20 09:00:00',
-                'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
-                'google_event_id' => 'gcal-dup', 'google_sync_status' => 'synced',
-            ]);
-        }
+        // Baris terhapus (soft) + baris aktif dengan google_event_id sama —
+        // partial unique index mengizinkan kombinasi ini (hanya aktif yang unik).
+        $trashed = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Duplikat terhapus', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-dup', 'google_sync_status' => 'synced',
+        ]);
+        $trashed->delete();
+        TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Duplikat aktif', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-dup', 'google_sync_status' => 'synced',
+        ]);
 
-        // Google masih punya gcal-dup → sync upsert, TIDAK menghapus duplikat.
+        // Google masih punya gcal-dup → sync TIDAK menghapus keduanya.
         $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
         $mock->shouldReceive('upcomingEvents')->andReturn([[
             'id' => 'gcal-dup', 'title' => 'Masih ada',
@@ -656,7 +662,8 @@ class TechnicianScheduleCalendarTest extends TestCase
 
         $mock->syncFromGoogle();
 
-        $this->assertSame(2, TechnicianSchedule::where('google_event_id', 'gcal-dup')->count());
+        $this->assertSame(1, TechnicianSchedule::where('google_event_id', 'gcal-dup')->whereNull('deleted_at')->count());
+        $this->assertSame(2, TechnicianSchedule::withTrashed()->where('google_event_id', 'gcal-dup')->count());
     }
 
     public function test_incomplete_read_does_not_mass_delete(): void
@@ -698,6 +705,207 @@ class TechnicianScheduleCalendarTest extends TestCase
         // appCredentials gagal decrypt → fallback config, TANPA exception.
         $stats = $mock->syncFromGoogle();
         $this->assertIsArray($stats);
+    }
+
+    public function test_migration_creates_partial_unique_index(): void
+    {
+        // RefreshDatabase menjalankan migration di DB tes. Verifikasi index
+        // partial terbentuk dgn kondisi benar — cross-DB (PostgreSQL/SQLite).
+        $driver = \Illuminate\Support\Facades\DB::getDriverName();
+        if ($driver === 'pgsql') {
+            $rows = \Illuminate\Support\Facades\DB::select(
+                "SELECT indexdef FROM pg_indexes WHERE tablename='technician_schedules' AND indexname='technician_schedules_google_event_id_active_unique'"
+            );
+            $this->assertNotEmpty($rows);
+            $def = (string) ($rows[0]->indexdef ?? '');
+            $this->assertStringContainsString('UNIQUE', $def);
+            $this->assertStringContainsString('deleted_at IS NULL', $def);
+            $this->assertStringContainsString('google_event_id IS NOT NULL', $def);
+        } else {
+            $rows = \Illuminate\Support\Facades\DB::select(
+                "SELECT sql FROM sqlite_master WHERE type='index' AND name='technician_schedules_google_event_id_active_unique'"
+            );
+            $this->assertNotEmpty($rows);
+            $sql = (string) ($rows[0]->sql ?? '');
+            $this->assertStringContainsString('google_event_id', $sql);
+            $this->assertStringContainsString('deleted_at IS NULL', $sql);
+        }
+    }
+
+    public function test_two_active_rows_same_google_event_id_rejected(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Aktif 1', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-t', 'google_sync_status' => 'synced',
+        ]);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Aktif 2', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-t', 'google_sync_status' => 'synced',
+        ]);
+    }
+
+    public function test_multiple_null_google_event_id_allowed(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        foreach ([1, 2, 3] as $i) {
+            TechnicianSchedule::create([
+                'user_id' => $lead->id, 'title' => 'Lokal '.$i, 'start_at' => '2026-10-20 09:00:00',
+                'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            ]);
+        }
+
+        $this->assertSame(3, TechnicianSchedule::whereNull('google_event_id')->count());
+    }
+
+    public function test_soft_deleted_may_keep_same_id_as_active(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $trashed = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Terhapus', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-s', 'google_sync_status' => 'synced',
+        ]);
+        $trashed->delete();
+
+        $active = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Aktif', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-s', 'google_sync_status' => 'synced',
+        ]);
+
+        $this->assertNotNull($active->id);
+        $this->assertSame(1, TechnicianSchedule::whereNull('deleted_at')->where('google_event_id', 'gcal-s')->count());
+        $this->assertSame(2, TechnicianSchedule::withTrashed()->where('google_event_id', 'gcal-s')->count());
+    }
+
+    public function test_restore_succeeds_without_conflict(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $trashed = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Untuk direstore', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-r', 'google_sync_status' => 'synced',
+        ]);
+        $trashed->delete();
+
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andReturn([[
+            'id' => 'gcal-r', 'title' => 'Kembali',
+            'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+            'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+            'location' => '', 'description' => '', 'updated' => now(),
+        ]]);
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
+
+        $mock->syncFromGoogle();
+
+        $this->assertSame(1, TechnicianSchedule::whereNull('deleted_at')->where('google_event_id', 'gcal-r')->count());
+        $this->assertSame(1, TechnicianSchedule::withTrashed()->where('google_event_id', 'gcal-r')->count());
+    }
+
+    public function test_restore_conflict_handled_safely(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        // Trashed dibuat DULU (id terendah) → dipilih first() → restore → konflik
+        // dengan baris aktif yang sama.
+        $trashed = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Trashed', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-c', 'google_sync_status' => 'synced',
+        ]);
+        $trashed->delete();
+        TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Aktif', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-c', 'google_sync_status' => 'synced',
+        ]);
+
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andReturn([[
+            'id' => 'gcal-c', 'title' => 'Masih ada',
+            'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+            'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+            'location' => '', 'description' => '', 'updated' => now(),
+        ]]);
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
+
+        $stats = $mock->syncFromGoogle(); // tidak boleh melempar
+
+        // Tidak ada aktif kedua, tidak ada data hilang.
+        $this->assertSame(1, TechnicianSchedule::whereNull('deleted_at')->where('google_event_id', 'gcal-c')->count());
+        $this->assertSame(2, TechnicianSchedule::withTrashed()->where('google_event_id', 'gcal-c')->count());
+        $this->assertGreaterThanOrEqual(1, $stats['conflicts'] ?? 0);
+    }
+
+    public function test_same_event_updates_correct_row_on_next_sync(): void
+    {
+        $this->userWithRole('lead-technician');
+        $event = [
+            'id' => 'gcal-next', 'title' => 'Versi 1',
+            'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+            'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+            'location' => '', 'description' => '', 'updated' => now(),
+        ];
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andReturn([$event]);
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
+
+        $mock->syncFromGoogle();
+        $mock->syncFromGoogle();
+
+        $this->assertSame(1, TechnicianSchedule::where('google_event_id', 'gcal-next')->count());
+    }
+
+    public function test_restore_conflict_no_destructive_delete_no_false_success(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $b = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Trashed k', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-k', 'google_sync_status' => 'synced',
+        ]);
+        $b->delete();
+        TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Aktif k', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-k', 'google_sync_status' => 'synced',
+        ]);
+        $other = TechnicianSchedule::create([
+            'user_id' => $lead->id, 'title' => 'Event lain', 'start_at' => '2026-10-20 09:00:00',
+            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'google_event_id' => 'gcal-m', 'google_sync_status' => 'synced',
+        ]);
+
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('upcomingEvents')->andReturn([
+            [
+                'id' => 'gcal-k', 'title' => 'Masih ada k',
+                'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+                'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+                'location' => '', 'description' => '', 'updated' => now(),
+            ],
+            [
+                'id' => 'gcal-m', 'title' => 'Event lain',
+                'start' => \Illuminate\Support\Carbon::parse('2026-10-20 09:00'),
+                'end' => \Illuminate\Support\Carbon::parse('2026-10-20 11:00'),
+                'location' => '', 'description' => '', 'updated' => now(),
+            ],
+        ]);
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
+
+        $stats = $mock->syncFromGoogle();
+
+        // gcal-m TIDAK dihapus oleh delete-detection (masih ada di Google).
+        $this->assertNotSoftDeleted('technician_schedules', ['id' => $other->id]);
+        // Konflik tercatat → sync TIDAK dianggap sukses bersih.
+        $this->assertGreaterThanOrEqual(1, $stats['conflicts'] ?? 0);
+        // Tetap 1 aktif untuk gcal-k (tidak jadi 2).
+        $this->assertSame(1, TechnicianSchedule::whereNull('deleted_at')->where('google_event_id', 'gcal-k')->count());
     }
 
     public function test_index_renders_calendar_views(): void

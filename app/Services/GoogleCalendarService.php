@@ -26,6 +26,9 @@ class GoogleCalendarService
     /** Batas aman halaman saat baca event (pagination) — lebih dari ini = baca dianggap tidak lengkap. */
     private const MAX_SYNC_PAGES = 20;
 
+    /** Nama partial unique index (google_event_id unik untuk baris aktif). */
+    private const UNIQUE_INDEX_NAME = 'technician_schedules_google_event_id_active_unique';
+
 /**
      * Cek apakah Google Calendar API dapat diakses (berdasarkan hasil request, bukan DB).
      */
@@ -237,7 +240,7 @@ class GoogleCalendarService
             now()->addMonths(2),
         );
 
-        $stats = ['created' => 0, 'updated' => 0, 'restored' => 0, 'skipped' => 0, 'deleted' => 0];
+        $stats = ['created' => 0, 'updated' => 0, 'restored' => 0, 'skipped' => 0, 'deleted' => 0, 'conflicts' => 0];
         $calendarId = $this->canonicalCalendarId();
         $owner = User::query()
             ->whereHas('permissions', fn ($q) => $q->whereIn('name', ['manage-technician', 'manage-admin']))
@@ -268,7 +271,7 @@ class GoogleCalendarService
                 continue;
             }
 
-            $schedule = TechnicianSchedule::withTrashed()->where('google_event_id', $id)->first();
+            $schedule = TechnicianSchedule::withTrashed()->orderBy('id')->where('google_event_id', $id)->first();
 
             // Field milik aplikasi (project, teknisi, status, reminder) TIDAK pernah
             // ditimpa Google — hanya judul/deskripsi/lokasi/jam yang diperebutkan.
@@ -295,9 +298,31 @@ class GoogleCalendarService
                 ]);
 
                 if ($schedule->trashed()) {
-                    $schedule->restore();
-                    $stats['restored']++;
-                    Log::debug('Google sync: jadwal trash direstore', ['id' => $schedule->id, 'google_event_id' => $id]);
+                    try {
+                        // Savepoint: bila restore ditolak unique constraint,
+                        // rollback hanya savepoint ini — transaksi luar tetap
+                        // valid (tidak diracuni) sehingga query berikutnya jalan.
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($schedule) {
+                            $schedule->restore();
+                        });
+                        $stats['restored']++;
+                        Log::debug('Google sync: jadwal trash direstore', ['id' => $schedule->id, 'google_event_id' => $id]);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        if (! $this->isRestoreUniqueConflict($e)) {
+                            throw $e; // QueryException lain → jangan ditelan
+                        }
+
+                        // Konflik: sudah ada baris AKTIF dengan google_event_id sama.
+                        // Jangan buat aktif kedua / jangan hapus apa pun → biarkan
+                        // baris ini tetap terhapus (soft-delete) dan catat konflik.
+                        $stats['conflicts']++;
+                        try {
+                            Log::warning('Restore jadwal ditolak: sudah ada baris aktif dengan google_event_id sama.', [
+                                'google_event_id' => $id,
+                            ]);
+                        } catch (\Throwable) {
+                        }
+                    }
                 }
                 $stats['updated']++;
                 Log::debug('Google sync: UPDATE jadwal', ['id' => $schedule->id, 'google_event_id' => $id]);
@@ -406,6 +431,9 @@ class GoogleCalendarService
                 $this->recordSyncFailure('auth', __('Izin Google kedaluwarsa, hubungkan kembali.'));
             } elseif (! empty($push['errors'])) {
                 $this->recordSyncFailure('sync', __('Sebagian jadwal gagal dikirim ke Google.'));
+            } elseif (! empty($stats['conflicts'])) {
+                // Ada konflik unik saat restore → jangan klaim sinkron sempurna.
+                $this->recordSyncFailure('sync', __('Sebagian jadwal tidak dapat dipulihkan (konflik google_event_id).'));
             } else {
                 $this->recordSyncSuccess(__(
                     ':created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim',
@@ -548,6 +576,24 @@ class GoogleCalendarService
             || str_contains($m, 'revoked')
             || str_contains($m, 'hubungkan kembali')
             || str_contains($m, 'unauthorized');
+    }
+
+    /**
+     * Deteksi spesifik pelanggaran unique pada index google_event_id aktif
+     * (PostgreSQL SQLSTATE 23505 + nama index). TIDAK menelan QueryException lain.
+     */
+    private function isRestoreUniqueConflict(\Illuminate\Database\QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $msg = (string) $e->getMessage();
+
+        // Hanya pelanggaran UNIQUE pada google_event_id — BUKAN semua QueryException.
+        $isUnique = $sqlState === '23505'
+            || stripos($msg, 'unique') !== false;
+        $isOurs = str_contains($msg, self::UNIQUE_INDEX_NAME)
+            || str_contains($msg, 'google_event_id');
+
+        return $isUnique && $isOurs;
     }
 
     private function parseEventTime(array $time): ?Carbon
