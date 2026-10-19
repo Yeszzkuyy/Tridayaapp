@@ -53,11 +53,10 @@ class TechnicianScheduleController extends Controller
         $this->autoSyncSoon();
         $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
-        $connected = $this->google->isApiReachable();
-        $oauth = $this->google->hasOAuthConnection(auth()->user());
+        $connection = $this->google->connectionStatus(auth()->user());
         $credential = GoogleAppCredential::current();
 
-        return view('teknisi.jadwal', compact('technicians', 'projects', 'connected', 'credential', 'oauth'));
+        return view('teknisi.jadwal', compact('technicians', 'projects', 'credential', 'connection'));
     }
 
     /**
@@ -201,16 +200,7 @@ class TechnicianScheduleController extends Controller
      */
     public function googleStatus()
     {
-        $importOk = $this->google->isApiReachable();
-        $oauth = $this->google->hasOAuthConnection(auth()->user());
-
-        // "Connected" = koneksi Google berfungsi: import (baca) jalan.
-        // oauth_connected dilaporkan terpisah untuk transparansi tulis-balik.
-        return response()->json([
-            'connected' => $importOk,
-            'import_ok' => $importOk,
-            'oauth_connected' => $oauth,
-        ]);
+        return response()->json($this->google->connectionStatus(auth()->user()));
     }
 
     private function canManageApi(): bool

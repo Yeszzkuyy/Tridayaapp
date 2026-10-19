@@ -117,12 +117,46 @@ class TechnicianScheduleCalendarTest extends TestCase
         $lead = $this->userWithRole('lead-technician');
 
         $res = $this->actingAs($lead)->getJson(route('teknisi.kalender.status'));
-        $res->assertOk()->assertJsonStructure(['connected']);
+        $res->assertOk()->assertJsonStructure(['status', 'connected', 'oauth_connected', 'last_sync_at', 'last_sync_summary', 'last_sync_error']);
 
-        // badge realtime: punya state Alpine + teks Connected/Disconnected
+        // badge realtime: state Alpine 4 status + label
         $res = $this->actingAs($lead)->get(route('teknisi.jadwal'));
-        $res->assertSee('googleConnected', false);
-        $res->assertSee('Disconnected');
+        $res->assertSee('googleStatus', false);
+        $res->assertSee('statusLabel()', false);
+        $res->assertSee('Not Connected');
+    }
+
+    public function test_connection_status_reflects_oauth_and_last_sync(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        // Belum ada OAuth → not_connected.
+        $this->actingAs($lead)->getJson(route('teknisi.kalender.status'))
+            ->assertOk()->assertJson(['status' => 'not_connected']);
+
+        // Ada token OAuth + sinkron sukses → connected.
+        $this->userWithRole('technician');
+        $owner = \App\Models\User::orderBy('id')->first();
+        \App\Models\GoogleCredential::create([
+            'user_id' => $owner->id, 'access_token' => 'a', 'refresh_token' => 'r',
+            'expires_at' => now()->addHour(), 'calendar_id' => 'primary',
+        ]);
+        \App\Models\GoogleAppCredential::current()->forceFill([
+            'last_sync_at' => now(), 'last_sync_summary' => '2 baru', 'last_sync_error' => null, 'last_sync_error_kind' => null,
+        ])->save();
+
+        $this->actingAs($lead)->getJson(route('teknisi.kalender.status'))
+            ->assertOk()->assertJson(['status' => 'connected']);
+
+        // Terakhir gagal auth → needs_reauth.
+        \App\Models\GoogleAppCredential::current()->forceFill(['last_sync_error_kind' => 'auth', 'last_sync_error' => 'izin kedaluwarsa'])->save();
+        $this->actingAs($lead)->getJson(route('teknisi.kalender.status'))
+            ->assertOk()->assertJson(['status' => 'needs_reauth']);
+
+        // Terakhir gagal non-auth (jaringan/sync) → error.
+        \App\Models\GoogleAppCredential::current()->forceFill(['last_sync_error_kind' => 'network', 'last_sync_error' => 'timeout'])->save();
+        $this->actingAs($lead)->getJson(route('teknisi.kalender.status'))
+            ->assertOk()->assertJson(['status' => 'error']);
     }
 
     public function test_store_update_delete_return_json_for_ajax(): void

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\GoogleAppCredential;
 use App\Models\GoogleCredential;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
@@ -280,7 +281,7 @@ class GoogleCalendarService
      */
     public function pushLocalChanges(): array
     {
-        $out = ['pushed' => 0, 'errors' => 0, 'skipped_no_oauth' => false];
+        $out = ['pushed' => 0, 'errors' => 0, 'skipped_no_oauth' => false, 'auth_error' => false];
 
         if (! $this->hasOAuthConnection()) {
             $out['skipped_no_oauth'] = true;
@@ -301,6 +302,9 @@ class GoogleCalendarService
                 $out['pushed']++;
             } else {
                 $out['errors']++;
+                if ($this->looksLikeAuthError((string) $schedule->google_sync_error)) {
+                    $out['auth_error'] = true;
+                }
             }
         }
 
@@ -313,14 +317,159 @@ class GoogleCalendarService
      */
     public function syncTwoWay(): array
     {
-        $stats = $this->syncFromGoogle();
+        try {
+            $stats = $this->syncFromGoogle();
+        } catch (\Throwable $e) {
+            $c = $this->classifySyncError($e);
+            $this->recordSyncFailure($c['kind'], $c['message']);
+
+            throw $e;
+        }
 
         $push = $this->pushLocalChanges();
         $stats['pushed'] = $push['pushed'];
         $stats['push_errors'] = $push['errors'];
         $stats['push_no_oauth'] = $push['skipped_no_oauth'];
 
+        if (! empty($push['auth_error'])) {
+            $this->recordSyncFailure('auth', __('Izin Google kedaluwarsa, hubungkan kembali.'));
+        } elseif (! empty($push['errors'])) {
+            $this->recordSyncFailure('sync', __('Sebagian jadwal gagal dikirim ke Google.'));
+        } else {
+            $this->recordSyncSuccess(__(
+                ':created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim',
+                [
+                    'created' => $stats['created'] ?? 0,
+                    'updated' => $stats['updated'] ?? 0,
+                    'deleted' => $stats['deleted'] ?? 0,
+                    'pushed' => $stats['pushed'] ?? 0,
+                ]
+            ));
+        }
+
         return $stats;
+    }
+
+    /**
+     * Status koneksi untuk badge (4 state) + info sinkron terakhir.
+     * Berbasis kondisi nyata: adanya token OAuth & hasil sinkron terakhir.
+     */
+    public function connectionStatus(?User $user = null): array
+    {
+        $cred = GoogleAppCredential::current();
+        $oauth = $this->hasOAuthConnection($user);
+        $kind = $cred->last_sync_error_kind;
+
+        if (! $oauth) {
+            $state = 'not_connected';
+        } elseif ($kind === 'auth') {
+            $state = 'needs_reauth';
+        } elseif ($kind !== null) {
+            $state = 'error';
+        } else {
+            $state = 'connected';
+        }
+
+        return [
+            'status' => $state,
+            'connected' => $state === 'connected',
+            'oauth_connected' => $oauth,
+            'last_sync_at' => $cred->last_sync_at
+                ? \Illuminate\Support\Carbon::parse($cred->last_sync_at)->toIso8601String()
+                : null,
+            'last_sync_summary' => $cred->last_sync_summary,
+            'last_sync_error' => $cred->last_sync_error,
+        ];
+    }
+
+    /**
+     * Klasifikasi kegagalan: auth (perlu otorisasi ulang) | network | sync.
+     */
+    private function classifySyncError(\Throwable $e): array
+    {
+        $msg = $e->getMessage();
+        $lower = strtolower($msg);
+        $code = (int) $e->getCode();
+
+        if (
+            str_contains($lower, 'invalid_grant')
+            || str_contains($lower, 'invalid_client')
+            || str_contains($lower, 'invalid_token')
+            || str_contains($lower, 'unauthorized')
+            || str_contains($lower, 'mac is invalid')
+            || str_contains($lower, 'revoked')
+            || $code === 401
+        ) {
+            return ['kind' => 'auth', 'message' => $this->sanitizeError($msg)];
+        }
+
+        if (
+            str_contains($lower, 'curl error')
+            || str_contains($lower, 'timed out')
+            || str_contains($lower, 'timeout')
+            || str_contains($lower, 'could not resolve')
+            || str_contains($lower, 'network')
+            || str_contains($lower, 'failed to connect')
+            || str_contains($lower, 'connection')
+        ) {
+            return ['kind' => 'network', 'message' => $this->sanitizeError($msg)];
+        }
+
+        return ['kind' => 'sync', 'message' => $this->sanitizeError($msg)];
+    }
+
+    /**
+     * Bersihkan pesan error dari nilai yang mirip rahasia (key/token/secret).
+     */
+    private function sanitizeError(string $msg): string
+    {
+        $msg = preg_replace('/\b(key|token|access_token|refresh_token|client_secret|api_key|secret|authorization|bearer)\b[=:\s]*[^\s&"\']*/i', '$1=[REDACTED]', (string) $msg);
+        $msg = preg_replace('/\b[A-Za-z0-9_\-\.]{25,}\b/', '[REDACTED]', (string) $msg);
+
+        return \Illuminate\Support\Str::limit(trim((string) $msg), 160);
+    }
+
+    /**
+     * Catat sinkronisasi berhasil (tanpa rahasia).
+     */
+    private function recordSyncSuccess(string $summary): void
+    {
+        try {
+            GoogleAppCredential::current()->forceFill([
+                'last_sync_at' => now(),
+                'last_sync_summary' => \Illuminate\Support\Str::limit($summary, 255),
+                'last_sync_error' => null,
+                'last_sync_error_kind' => null,
+            ])->save();
+        } catch (\Throwable) {
+        }
+    }
+
+    /**
+     * Catat sinkronisasi gagal — $kind: auth|network|sync. Pesan disanitasi.
+     */
+    private function recordSyncFailure(string $kind, string $message): void
+    {
+        try {
+            GoogleAppCredential::current()->forceFill([
+                'last_sync_at' => now(),
+                'last_sync_summary' => null,
+                'last_sync_error' => $this->sanitizeError($message),
+                'last_sync_error_kind' => $kind,
+            ])->save();
+        } catch (\Throwable) {
+        }
+    }
+
+    private function looksLikeAuthError(string $msg): bool
+    {
+        $m = strtolower($msg);
+
+        return str_contains($m, 'invalid_grant')
+            || str_contains($m, 'kedaluwarsa')
+            || str_contains($m, 'revoked')
+            || str_contains($m, 'hubungkan kembali')
+            || str_contains($m, 'unauthorized');
     }
 
     private function parseEventTime(array $time): ?Carbon
