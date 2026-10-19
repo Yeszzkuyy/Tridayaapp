@@ -270,7 +270,7 @@
                 {{-- TAB 3: CONTACTS --}}
                 <div x-show="tab === 'contacts'" x-transition>
                     <x-section-header title="{{ __('PIC / Customer Contacts List') }}">
-                        @can('manage-sales')
+                        @can('update', $customer)
                             <x-add-button href="{{ route('customer-contacts.create', $customer) }}">
                                 {{ __('Add PIC') }}
                             </x-add-button>
@@ -298,22 +298,28 @@
                                             <span class="text-xs text-slate-400">{{ $contact->email ?? '-' }}</span>
                                         </td>
                                         <td class="px-6 py-3 align-middle">
-                                            <form action="{{ route('customer-contacts.primary', $contact) }}" method="POST">
-                                                @csrf @method('PATCH')
-                                                <label class="flex cursor-pointer items-center gap-1.5">
-                                                    <input type="checkbox" value="1" {{ $contact->is_primary ? 'checked' : '' }}
-                                                           onchange="this.form.submit()"
-                                                           class="h-5 w-5 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                                                    <span class="text-xs text-slate-500">{{ __('Primary') }}</span>
-                                                </label>
-                                            </form>
+                                            @can('update', $customer)
+                                                <form action="{{ route('customer-contacts.primary', $contact) }}" method="POST">
+                                                    @csrf @method('PATCH')
+                                                    <label class="flex cursor-pointer items-center gap-1.5">
+                                                        <input type="checkbox" value="1" {{ $contact->is_primary ? 'checked' : '' }}
+                                                               onchange="this.form.submit()"
+                                                               class="h-5 w-5 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                        <span class="text-xs text-slate-500">{{ __('Primary') }}</span>
+                                                    </label>
+                                                </form>
+                                            @else
+                                                @if($contact->is_primary)
+                                                    <x-status-badge color="green">{{ __('Primary') }}</x-status-badge>
+                                                @endif
+                                            @endcan
                                         </td>
                                         <td class="px-6 py-3 text-right align-middle">
-                                            @can('manage-sales')
+                                            @can('update', $customer)
                                                 <a href="{{ route('customer-contacts.edit', $contact) }}"
                                                    class="text-amber-600 hover:text-amber-800 text-sm inline-block align-middle">{{ __('Edit') }}</a>
                                             @endcan
-                                            @can('manage-sales')
+                                            @can('update', $customer)
                                                 <form action="{{ route('customer-contacts.destroy', $contact) }}"
                                                       method="POST"
                                                       onsubmit="return confirm('{{ __('Delete this PIC?') }}')"
@@ -548,7 +554,7 @@
                     <div class="space-y-8">
                         <div>
                             <x-section-header title="{{ __('Follow Up') }}">
-                                @can('manage-sales')
+                                @can('update', $customer)
                                     <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
                                         {{ __('Add Follow Up') }}
                                     </x-add-button>

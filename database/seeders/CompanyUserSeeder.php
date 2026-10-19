@@ -20,11 +20,13 @@ class CompanyUserSeeder extends Seeder
     {
         $users = [
             // [nama, email, [roles...]] — role pertama = kolom role legacy
+            // Role sales-<PT> mengunci tulis customer/lead ke PT itu (lihat App\Support\PtAccess).
+            // User management tetap tanpa batas walau punya role sales-*.
             ['Victor GM', 'victor@tridayaapp.com', ['ceo']],
-            ['Ardian Widhi Prabowo', 'ardian@tridayaapp.com', ['management', 'lead-technician', 'sales']],
-            ['Christina Yoan', 'christina@tridayaapp.com', ['management', 'sales']],
-            ['Yanita', 'yanita@tridayaapp.com', ['management', 'sales']],
-            ['Ayu', 'ayu@tridayaapp.com', ['management', 'sales']],
+            ['Ardian Widhi Prabowo', 'ardian@tridayaapp.com', ['management', 'lead-technician', 'sales', 'sales-nti']],
+            ['Christina Yoan', 'christina@tridayaapp.com', ['management', 'sales', 'sales-mgk']],
+            ['Yanita', 'yanita@tridayaapp.com', ['management', 'sales', 'sales-nti']],
+            ['Ayu', 'ayu@tridayaapp.com', ['management', 'sales', 'sales-tps']],
             ['Syifa', 'syifa@tridayaapp.com', ['lead-marketing']],
             ['Amir', 'amir@tridayaapp.com', ['lead-technician']],
             ['Anggie', 'anggie@tridayaapp.com', ['marketing']],
@@ -38,13 +40,13 @@ class CompanyUserSeeder extends Seeder
             ['Naufal', 'naufal@tridayaapp.com', ['technician']],
             ['Hanifah', 'hanifah@tridayaapp.com', ['admin']],
             ['Vanesha', 'vanesha@tridayaapp.com', ['admin']],
-            ['Adi Santosa', 'adi.santosa@tridayaapp.com', ['sales']],
-            ['Hendry', 'hendry@tridayaapp.com', ['sales']],
-            ['Irfan', 'irfan@tridayaapp.com', ['sales']],
-            ['Deby', 'deby@tridayaapp.com', ['sales']],
+            ['Adi Santosa', 'adi.santosa@tridayaapp.com', ['sales', 'sales-mgk']],
+            ['Hendry', 'hendry@tridayaapp.com', ['sales', 'sales-mgk']],
+            ['Irfan', 'irfan@tridayaapp.com', ['sales', 'sales-nti']],
+            ['Deby', 'deby@tridayaapp.com', ['sales', 'sales-tps']],
             ['April', 'april@tridayaapp.com', ['admin']],
-            ['Audi', 'audi@tridayaapp.com', ['sales']],
-            ['Dini', 'dini@tridayaapp.com', ['sales']],
+            ['Audi', 'audi@tridayaapp.com', ['inside-sales', 'sales', 'sales-nti']],
+            ['Dini', 'dini@tridayaapp.com', ['inside-sales', 'sales', 'sales-nti']],
             ['Ryan', 'ryan@tridayaapp.com', ['technician']],
         ];
 

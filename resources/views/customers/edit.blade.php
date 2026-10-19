@@ -38,10 +38,20 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">
                             {{ __('Customers from Company') }} <span class="text-red-500">*</span>
                         </label>
-                        <x-glide-select name="pt_group" :label="__('Customers from Company')" required
-                            :options="collect($ptGroups)->all()"
-                            :value="old('pt_group', $customer->pt_group ?? '')"
-                            :placeholder="__('Pilih Company')" :error="$errors->first('pt_group')" />
+                        @if(count($ptGroups) === 1)
+                            {{-- Sales terkunci ke company-nya: PT tidak bisa dipindah --}}
+                            <input type="hidden" name="pt_group" value="{{ old('pt_group', $customer->pt_group ?: $ptGroups[0]) }}">
+                            <div class="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-200">
+                                <x-icon name="building" class="h-4 w-4 text-slate-400" />
+                                {{ old('pt_group', $customer->pt_group ?: $ptGroups[0]) }}
+                            </div>
+                            @error('pt_group') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        @else
+                            <x-glide-select name="pt_group" :label="__('Customers from Company')" required
+                                :options="collect($ptGroups)->all()"
+                                :value="old('pt_group', $customer->pt_group ?? '')"
+                                :placeholder="__('Pilih Company')" :error="$errors->first('pt_group')" />
+                        @endif
                     </div>
 
                     {{-- Address --}}
