@@ -382,12 +382,12 @@ class SalesFlowTest extends TestCase
             ->assertSee('Technical Request')
             // Locale default EN: heading baru ikut terjemahan resmi.
             ->assertSee('Sales Schedule')
-            ->assertSee('Penawaran')
+            ->assertSee(__('Penawaran'))
             ->assertSee('Visit Pabrik');
 
         $this->actingAs($sales)->get(route('sales.dashboard'))
             ->assertOk()
-            ->assertSee('Jadwal Saya');
+            ->assertSee(__('Jadwal Saya'));
     }
 
     public function test_other_sales_cannot_touch_foreign_proposal(): void

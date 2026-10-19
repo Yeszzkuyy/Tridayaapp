@@ -27,7 +27,7 @@
     @if(!empty($method)) @method($method) @endif
 
     <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">Customer <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
         @include('sales._customer-picker', [
             'name' => 'customer_id',
             'options' => $customerOptions,
@@ -47,26 +47,26 @@
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Related Lead (optional)') }}</label>
         <div x-show="customerId">
             <div id="fu-lead-glider">
-                <x-glide-select name="lead_id" label="Related lead"
+                <x-glide-select name="lead_id" label="{{ __('Related lead') }}"
                     :options="$initialLeadOptions"
                     :value="old('lead_id', $leadId ?? null)"
                     :empty-label="__('No specific opportunity')"
                     :error="$errors->first('lead_id')" />
             </div>
         </div>
-        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Select a customer first.') }}</p>
+        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Pilih customer terlebih dahulu.') }}</p>
         <p class="mt-1 text-xs text-slate-400">{{ __('Links this follow-up to an opportunity. Auto-linked when the customer has exactly one of your active leads.') }}</p>
     </div>
     @endif
 
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Type Follow Up') }}</label>
-        <x-glide-select name="type" label="Type Follow Up"
+        <x-glide-select name="type" label="{{ __('Type Follow Up') }}"
             :options="collect(\App\Models\FollowUp::LOG_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\FollowUp::typeLabel($t)])->all()"
             :value="old('type', $followUp?->type)"
             :empty-label="__('Select type')"
             :error="$errors->first('type')" />
-        <p class="mt-1 text-xs text-slate-400">{{ __('Cara follow up ke customer.') }}</p>
+        <p class="mt-1 text-xs text-slate-400">{{ __('How to follow up with the customer.') }}</p>
     </div>
 
     <div>

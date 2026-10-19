@@ -15,7 +15,7 @@
 ])
 
 @php
-    $placeholder ??= __('Pilih…');
+    $placeholder ??= __('Select…');
     $label ??= $placeholder;
     // Baris kosong di menu agar pilihan bisa dikosongkan lagi (seperti <option value="">).
     $items = array_merge(
@@ -38,9 +38,9 @@
          @if($tags) data-tags="1" @endif
          @if($autosubmit) data-autosubmit="1" @endif
          @if($full) data-full="1" @endif
-         @if($required) data-required="1" data-required-message="{{ __('Bidang ini wajib diisi.') }}" @endif></div>
+         @if($required) data-required="1" data-required-message="{{ __('This field is required.') }}" @endif></div>
     @if($required || $error)
-        <p class="glide-select-error mt-1 text-sm text-red-600" @if(!$error) hidden @endif>{{ $error ?? __('Bidang ini wajib diisi.') }}</p>
+        <p class="glide-select-error mt-1 text-sm text-red-600" @if(!$error) hidden @endif>{{ $error ?? __('This field is required.') }}</p>
     @endif
     @vite('resources/js/glide-select.jsx')
     <noscript>

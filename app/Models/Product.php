@@ -54,7 +54,7 @@ class Product extends Model
     {
         return match ($category) {
             'barang' => __('Barang'),
-            'jasa' => __('Jasa'),
+            'jasa' => __('Services'),
             'software' => __('Software'),
             default => $category,
         };

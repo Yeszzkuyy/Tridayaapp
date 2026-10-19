@@ -55,7 +55,7 @@ class ProjectDocumentController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', 'Dokumen berhasil diupload.');
+            ->with('success', __('Document uploaded successfully.'));
     }
 
     public function preview(ProjectDocument $document)
@@ -92,6 +92,6 @@ class ProjectDocumentController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', 'Dokumen berhasil dihapus.');
+            ->with('success', __('Document deleted successfully.'));
     }
 }

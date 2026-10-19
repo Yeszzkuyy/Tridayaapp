@@ -50,7 +50,7 @@ class SizingProjectController extends Controller
         SizingProject::create($validated);
 
         return redirect()->route('teknisi.sizing-projects.index')
-            ->with('success', 'Sizing Project berhasil ditambahkan.');
+            ->with('success', __('Sizing project added successfully.'));
     }
 
     public function show(SizingProject $sizingProject)
@@ -84,7 +84,7 @@ class SizingProjectController extends Controller
         $sizingProject->update($validated);
 
         return redirect()->route('teknisi.sizing-projects.show', $sizingProject)
-            ->with('success', 'Sizing Project berhasil diupdate.');
+            ->with('success', __('Sizing project updated successfully.'));
     }
 
     public function destroy(SizingProject $sizingProject)
@@ -92,6 +92,6 @@ class SizingProjectController extends Controller
         $sizingProject->delete();
 
         return redirect()->route('teknisi.sizing-projects.index')
-            ->with('success', 'Sizing Project berhasil dihapus.');
+            ->with('success', __('Sizing project deleted successfully.'));
     }
 }

@@ -86,7 +86,7 @@ class SurveyController extends Controller
         // tidak "hilang" dari timeline.
         if ($file && blank($validated['customer_id'] ?? null) && blank($validated['project_id'] ?? null)) {
             return back()->withInput()
-                ->withErrors(['customer_id' => __('Pilih customer dulu sebelum melampirkan laporan.')]);
+                ->withErrors(['customer_id' => __('Select a customer before attaching a report.')]);
         }
 
         try {
@@ -106,7 +106,7 @@ class SurveyController extends Controller
             report($e);
 
             return back()->withInput()
-                ->withErrors(['report' => __('Gagal membuat survey. Coba lagi.')]);
+                ->withErrors(['report' => __('Failed to create the survey. Please try again.')]);
         }
 
         // Laporan menyusul nanti juga bisa — baru kirim notifikasi + simpan
@@ -115,7 +115,7 @@ class SurveyController extends Controller
             $survey->sales?->notify(new SurveyCreatedNotification($survey));
 
             return redirect()->route('teknisi.surveys.show', $survey)
-                ->with('success', 'Survey berhasil ditambahkan.');
+                ->with('success', __('Survey added successfully.'));
         }
 
         // Nama file dibuat server-side; ekstensi dari MIME (bukan nama user),
@@ -136,7 +136,7 @@ class SurveyController extends Controller
             $survey->delete();
 
             return back()->withInput()
-                ->withErrors(['report' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+                ->withErrors(['report' => __('Failed to store the report file. Please try again.')]);
         }
 
         try {
@@ -152,13 +152,13 @@ class SurveyController extends Controller
             report($e);
 
             return back()->withInput()
-                ->withErrors(['report' => __('Gagal menyimpan laporan. Coba lagi.')]);
+                ->withErrors(['report' => __('Failed to save the report. Please try again.')]);
         }
 
         $survey->sales?->notify(new SurveyReportUploadedNotification($survey));
 
         return redirect()->route('teknisi.surveys.show', $survey)
-            ->with('success', 'Survey berhasil ditambahkan.');
+            ->with('success', __('Survey added successfully.'));
     }
 
     public function show(Request $request, Survey $survey)
@@ -200,7 +200,7 @@ class SurveyController extends Controller
         $survey->update($validated);
 
         return redirect()->route('teknisi.surveys.show', $survey)
-            ->with('success', 'Survey berhasil diupdate.');
+            ->with('success', __('Survey updated successfully.'));
     }
 
     public function destroy(Survey $survey)
@@ -208,7 +208,7 @@ class SurveyController extends Controller
         $survey->delete();
 
         return redirect()->route('teknisi.surveys.index')
-            ->with('success', 'Survey berhasil dihapus.');
+            ->with('success', __('Survey deleted successfully.'));
     }
 
     /**
@@ -227,7 +227,7 @@ class SurveyController extends Controller
         // timeline. Survey lama yang nempel project tetap bisa ganti laporan.
         if (blank($survey->customer_id) && blank($survey->project_id)) {
             return back()->withInput()
-                ->withErrors(['report' => __('Isi customer survey dulu (lewat Edit) sebelum mengunggah laporan.')]);
+                ->withErrors(['report' => __('Fill in the survey customer (via Edit) before uploading a report.')]);
         }
 
         $request->validate([
@@ -254,7 +254,7 @@ class SurveyController extends Controller
 
         if (! $newPath) {
             return back()->withInput()
-                ->withErrors(['report' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+                ->withErrors(['report' => __('Failed to store the report file. Please try again.')]);
         }
 
         try {
@@ -272,7 +272,7 @@ class SurveyController extends Controller
             report($e);
 
             return back()->withInput()
-                ->withErrors(['report' => __('Gagal menyimpan laporan. Coba lagi.')]);
+                ->withErrors(['report' => __('Failed to save the report. Please try again.')]);
         }
 
         // Baru setelah DB sukses, file lama (jika ada) dibersihkan.
@@ -284,7 +284,7 @@ class SurveyController extends Controller
         $survey->sales?->notify(new SurveyReportUploadedNotification($survey));
 
         return redirect()->route('teknisi.surveys.index')
-            ->with('success', __('Laporan survey berhasil diunggah.'));
+            ->with('success', __('Survey report uploaded successfully.'));
     }
 
     /**

@@ -73,7 +73,7 @@ class TechnicianScheduleController extends Controller
                 $start = Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
                 $end = Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
             } catch (\Throwable) {
-                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+                return response()->json(['message' => __('Invalid date range.')], 422);
             }
             $query->whereDate('start_at', '<=', $end)
                 ->whereDate('end_at', '>=', $start);
@@ -82,7 +82,7 @@ class TechnicianScheduleController extends Controller
             try {
                 $parsed = Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
             } catch (\Throwable) {
-                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+                return response()->json(['message' => __('Invalid date.')], 422);
             }
             $query->whereDate('start_at', '<=', $parsed)
                 ->whereDate('end_at', '>=', $parsed);
@@ -142,7 +142,7 @@ class TechnicianScheduleController extends Controller
             return back()->withErrors([$error]);
         }
 
-        return back()->with('success', __('Kredensial Google Calendar tersimpan.'));
+        return back()->with('success', __('Google Calendar credentials saved.'));
     }
 
     /**
@@ -266,10 +266,10 @@ class TechnicianScheduleController extends Controller
         $schedule = $this->google->createSchedule(auth()->user(), $data);
 
         if ($request->expectsJson()) {
-            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dibuat.']);
+            return response()->json(['ok' => true, 'message' => __('Schedule created successfully.')]);
         }
 
-        return back()->with('success', 'Jadwal berhasil dibuat.')
+        return back()->with('success', __('Schedule created successfully.'))
             ->with('sync_message', $this->syncMessage($schedule));
     }
 
@@ -286,17 +286,17 @@ class TechnicianScheduleController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            return $this->denyResponse($request, __('Kamu tidak punya izin mengubah jadwal ini.'));
+            return $this->denyResponse($request, __('You do not have permission to edit this schedule.'));
         }
 
         $data = $this->validateSchedule($request);
         $schedule = $this->google->updateSchedule($schedule, $data);
 
         if ($request->expectsJson()) {
-            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil diupdate.']);
+            return response()->json(['ok' => true, 'message' => __('Jadwal berhasil diupdate.')]);
         }
 
-        return back()->with('success', 'Jadwal berhasil diupdate.')
+        return back()->with('success', __('Jadwal berhasil diupdate.'))
             ->with('sync_message', $this->syncMessage($schedule));
     }
 
@@ -309,10 +309,10 @@ class TechnicianScheduleController extends Controller
         $this->google->deleteSchedule($schedule);
 
         if ($request->expectsJson()) {
-            return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dihapus.']);
+            return response()->json(['ok' => true, 'message' => __('Schedule deleted successfully.')]);
         }
 
-        return back()->with('success', 'Jadwal berhasil dihapus.');
+        return back()->with('success', __('Schedule deleted successfully.'));
     }
 
     public function connect()
@@ -349,7 +349,7 @@ class TechnicianScheduleController extends Controller
         session()->forget('google_oauth_state');
 
         return redirect()->route('teknisi.jadwal')
-            ->with('success', 'Google Calendar Terhubung.');
+            ->with('success', __('Google Calendar Connected.'));
     }
 
     public function disconnect()
@@ -358,7 +358,7 @@ class TechnicianScheduleController extends Controller
 
         $this->google->disconnect(auth()->user());
 
-        return back()->with('success', 'Koneksi Google Calendar diputuskan.');
+        return back()->with('success', __('Google Calendar connection disconnected.'));
     }
 
     private function schedulesForRange(?string $start, ?string $end, $search = null)

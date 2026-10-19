@@ -3,13 +3,13 @@
         <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
             <thead class="bg-slate-50 dark:bg-slate-700">
                 <tr>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">Customer</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Deskripsi') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Tanggal Follow Up') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Lokasi') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Terkait Lead') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Oleh') }}</th>
-                    <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Aksi') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Description') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Follow Up Date') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Location') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Related Lead') }}</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('By') }}</th>
+                    <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
                 </tr>
             </thead>
             <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
@@ -33,10 +33,10 @@
                                 <span class="block mt-0.5 text-[11px] text-slate-500">{{ substr((string) $fu->activity_time, 0, 5) }}</span>
                             @endif
                             @if(!$fu->completed_at && $fu->follow_up_date && $fu->follow_up_date->isBefore(today()))
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{{ __('Terlambat') }}</span>
+                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{{ __('Overdue') }}</span>
                             @endif
                             @if($fu->next_follow_up_date)
-                                <span class="block mt-1 text-[11px] text-slate-500">{{ __('Berikutnya:') }} {{ $fu->next_follow_up_date->format('d M Y') }}</span>
+                                <span class="block mt-1 text-[11px] text-slate-500">{{ __('Next:') }} {{ $fu->next_follow_up_date->format('d M Y') }}</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
@@ -73,13 +73,13 @@
                                 @endif
                                 <x-dropdown align="right" width="w-52">
                                     <x-slot name="trigger">
-                                        <x-icon-button icon="more" title="{{ __('Aksi') }}" />
+                                        <x-icon-button icon="more" title="{{ __('Actions') }}" />
                                     </x-slot>
                                     <x-slot name="content">
                                         <a href="{{ route('sales.follow-ups.show', $fu) }}"
                                            class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
                                             <x-icon name="eye" class="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
-                                            {{ __('Lihat detail follow up') }}
+                                            {{ __('View follow up detail') }}
                                         </a>
                                         @can('manage-sales')
                                             <a href="{{ route('sales.follow-ups.edit', $fu) }}"
@@ -125,9 +125,9 @@
                                                             <input type="number" name="days" min="1" max="60" value="3" required
                                                                    aria-label="{{ __('Reschedule') }}"
                                                                    class="h-8 w-16 rounded-lg border-slate-300 bg-white text-center text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
-                                                            <span class="text-xs text-slate-500 dark:text-slate-400">days</span>
+                                                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ __('days') }}</span>
                                                             <button type="submit"
-                                                                    class="group/btn relative inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white">OK</button>
+                                                                    class="group/btn relative inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white">{{ __('OK') }}</button>
                                                         </form>
                                                         <form action="{{ route('sales.follow-ups.snooze', $fu) }}" method="POST" class="flex items-center gap-2">
                                                             @csrf
@@ -135,19 +135,19 @@
                                                                    aria-label="{{ __('Reschedule') }}"
                                                                    class="h-8 min-w-0 flex-1 rounded-lg border-slate-300 bg-white text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
                                                             <button type="submit"
-                                                                    class="group/btn relative inline-flex h-8 shrink-0 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white">OK</button>
+                                                                    class="group/btn relative inline-flex h-8 shrink-0 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white">{{ __('OK') }}</button>
                                                         </form>
                                                     </div>
                                                 </div>
                                             @endif
                                             <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
                                             <form action="{{ route('sales.follow-ups.destroy', $fu) }}"
-                                                  method="POST" data-ajax data-ajax-remove="tr" onsubmit="return confirm('{{ __('Hapus follow up ini?') }}')">
+                                                  method="POST" data-ajax data-ajax-remove="tr" onsubmit="return confirm('{{ __('Delete this follow up?') }}')">
                                                 @csrf @method('DELETE')
                                                 <button type="submit"
                                                         class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
                                                     <x-icon name="trash" class="h-4 w-4 shrink-0" />
-                                                    {{ __('Hapus follow up') }}
+                                                    {{ __('Delete follow up') }}
                                                 </button>
                                             </form>
                                         @endcan
@@ -162,8 +162,8 @@
                             <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300">
                                 <x-icon name="chat" class="h-6 w-6" />
                             </span>
-                            <p class="mt-4 text-sm font-medium text-slate-500">{{ __('Belum ada follow up.') }}</p>
-                            <p class="mt-1 text-xs text-slate-400">{{ __('Catat follow up pertama dari tombol di atas.') }}</p>
+                            <p class="mt-4 text-sm font-medium text-slate-500">{{ __('No follow ups yet.') }}</p>
+                            <p class="mt-1 text-xs text-slate-400">{{ __('Record the first follow up from the button above.') }}</p>
                         </td>
                     </tr>
                 @endforelse

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -40,13 +41,22 @@ class CustomerController extends Controller
     }
 
     /**
+     * PT yang boleh ditulis user ini. Kosong (tanpa role PT / management /
+     * super-admin) berarti semua PT.
+     */
+    private function writablePtGroups(): array
+    {
+        return PtAccess::userPts(auth()->user()) ?: Lead::PT_GROUPS;
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
         $this->authorize('create', Customer::class);
 
-        return view('customers.create', ['ptGroups' => Lead::PT_GROUPS]);
+        return view('customers.create', ['ptGroups' => $this->writablePtGroups()]);
     }
 
     /**
@@ -60,7 +70,7 @@ class CustomerController extends Controller
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
-            'pt_group' => 'required|in:'.implode(',', Lead::PT_GROUPS),
+            'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
             'phone' => 'nullable|string|max:50',
             'whatsapp' => 'nullable|string|max:50',
@@ -82,7 +92,7 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.index')
-            ->with('success', __('Customer berhasil ditambahkan'))
+            ->with('success', __('Customer added successfully'))
             ->with('success_card', true);
     }
 
@@ -112,7 +122,7 @@ class CustomerController extends Controller
     {
         $this->authorize('update', $customer);
 
-        return view('customers.edit', ['customer' => $customer, 'ptGroups' => Lead::PT_GROUPS]);
+        return view('customers.edit', ['customer' => $customer, 'ptGroups' => $this->writablePtGroups()]);
     }
 
     private function storeNpwp(UploadedFile $file, Customer $customer): string
@@ -147,7 +157,7 @@ class CustomerController extends Controller
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
-            'pt_group' => 'required|in:'.implode(',', Lead::PT_GROUPS),
+            'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
             'phone' => 'nullable|string|max:50',
             'whatsapp' => 'nullable|string|max:50',
@@ -171,7 +181,7 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.index')
-            ->with('success', __('Customer berhasil diupdate'))
+            ->with('success', __('Customer updated successfully'))
             ->with('success_card', true);
     }
 
@@ -186,6 +196,6 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.index')
-            ->with('success', __('Customer berhasil dihapus'));
+            ->with('success', __('Customer deleted successfully'));
     }
 }

@@ -184,4 +184,14 @@ class RoleMenuTest extends TestCase
             $this->assertTrue($u->can($p), $p);
         }
     }
+
+    public function test_header_account_menu_has_accessible_name()
+    {
+        $u = $this->loginAs('sales');
+        $html = $this->actingAs($u)->get(route('dashboard'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-label="'.e(__('Account menu')).'"', $html);
+        $this->assertStringContainsString('aria-haspopup="true"', $html);
+        $this->assertStringContainsString(':aria-expanded="open"', $html);
+    }
 }

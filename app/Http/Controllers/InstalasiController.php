@@ -83,7 +83,7 @@ class InstalasiController extends Controller
 
             if (! $newPath) {
                 return back()->withInput()
-                    ->withErrors(['report_file' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+                    ->withErrors(['report_file' => __('Failed to store the report file. Please try again.')]);
             }
 
             $reportFields = [
@@ -95,7 +95,7 @@ class InstalasiController extends Controller
         Instalasi::create($validated + $reportFields);
 
         return redirect()->route('teknisi.instalasis.index')
-            ->with('success', 'Instalasi berhasil ditambahkan.');
+            ->with('success', __('Installation added successfully.'));
     }
 
     public function show(Instalasi $instalasi)
@@ -138,7 +138,7 @@ class InstalasiController extends Controller
 
             if (! $newPath) {
                 return back()->withInput()
-                    ->withErrors(['report_file' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+                    ->withErrors(['report_file' => __('Failed to store the report file. Please try again.')]);
             }
 
             $reportFields = [
@@ -155,7 +155,7 @@ class InstalasiController extends Controller
         }
 
         return redirect()->route('teknisi.instalasis.show', $instalasi)
-            ->with('success', 'Instalasi berhasil diupdate.');
+            ->with('success', __('Installation updated successfully.'));
     }
 
     public function destroy(Instalasi $instalasi)
@@ -167,7 +167,7 @@ class InstalasiController extends Controller
         }
 
         return redirect()->route('teknisi.instalasis.index')
-            ->with('success', 'Instalasi berhasil dihapus.');
+            ->with('success', __('Installation deleted successfully.'));
     }
 
     /**

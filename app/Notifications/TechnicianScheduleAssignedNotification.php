@@ -48,7 +48,7 @@ class TechnicianScheduleAssignedNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => 'Jadwal teknisi baru',
+            'title' => __('New technician schedule'),
             'body' => $this->schedule->title . ' — ' . $this->schedule->start_at->format('d M Y H:i'),
             'url' => route('teknisi.jadwal'),
         ];

@@ -1,10 +1,10 @@
 <x-app-layout>
 @php
     $statuses = [
-        'draft' => 'Draft',
-        'in_progress' => 'In Progress',
-        'waiting_approval' => 'Waiting Approval',
-        'completed' => 'Completed',
+        'draft' => __('Draft'),
+        'in_progress' => __('In Progress'),
+        'waiting_approval' => __('Waiting Approval'),
+        'completed' => __('Completed'),
     ];
 
     $statusColors = [
@@ -18,10 +18,10 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Sizing Projects</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Kelola hasil sizing / usulan solusi per project') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Sizing Projects') }}</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-1">{{ __('Manage sizing results / proposed solutions per project') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('teknisi.sizing-projects.create') }}" label="{{ __('Tambah Sizing') }}" title="{{ __('Tambah Sizing') }}" />
+        <x-icon-button as="a" icon="add" href="{{ route('teknisi.sizing-projects.create') }}" label="{{ __('Add Sizing') }}" title="{{ __('Add Sizing') }}" />
     </div>
 
     @if (session('success'))
@@ -34,10 +34,10 @@
     <form method="GET" action="{{ route('teknisi.sizing-projects.index') }}"
           class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 mb-4 flex flex-wrap items-end gap-3">
         <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Status') }}</label>
             <select name="status"
                     class="rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
-                <option value="">{{ __('Semua Status') }}</option>
+                <option value="">{{ __('All Statuses') }}</option>
                 @foreach ($statuses as $value => $label)
                     <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                 @endforeach
@@ -45,10 +45,10 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Project</label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Project') }}</label>
             <select name="project_id"
                     class="rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
-                <option value="">{{ __('Semua Project') }}</option>
+                <option value="">{{ __('All Projects') }}</option>
                 @foreach ($projects as $project)
                     <option value="{{ $project->id }}" @selected(request('project_id') == $project->id)>
                         {{ $project->project_name }}
@@ -58,10 +58,10 @@
             </select>
         </div>
 
-        <x-icon-button icon="filter" type="submit" title="Filter" />
+        <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
 
         @if (request()->filled('status') || request()->filled('project_id'))
-            <x-icon-button as="a" icon="reset" href="{{ route('teknisi.sizing-projects.index') }}" title="Reset" />
+            <x-icon-button as="a" icon="reset" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Reset') }}" />
         @endif
     </form>
 
@@ -72,7 +72,7 @@
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
                         @php
-                            $headers = ['Project', 'Customer', 'Sales PIC', 'Quantity', 'Status', __('Aksi')];
+                            $headers = [__('Project'), __('Customer'), __('Sales PIC'), __('Quantity'), __('Status'), __('Actions')];
                         @endphp
                         @foreach ($headers as $header)
                             <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ $header }}</th>
@@ -101,13 +101,13 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    <x-icon-button as="a" icon="view" href="{{ route('teknisi.sizing-projects.show', $sizing) }}" title="{{ __('Lihat') }}" />
-                                    <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizing) }}" title="Edit" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('teknisi.sizing-projects.show', $sizing) }}" title="{{ __('View') }}" />
+                                    <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizing) }}" title="{{ __('Edit') }}" />
                                     <form action="{{ route('teknisi.sizing-projects.destroy', $sizing) }}" method="POST"
-                                          onsubmit="return confirm('{{ __('Hapus sizing project ini?') }}');">
+                                          onsubmit="return confirm('{{ __('Delete this sizing project?') }}');">
                                         @csrf
                                         @method('DELETE')
-                                        <x-icon-button icon="delete" type="submit" title="{{ __('Hapus') }}" />
+                                        <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
                                     </form>
                                 </div>
                             </td>
@@ -115,7 +115,7 @@
                     @empty
                         <tr>
                             <td colspan="6">
-                                <x-empty-state label="sizing project" description="{{ __('Belum ada data sizing.') }}" />
+                                <x-empty-state label="{{ __('sizing project') }}" description="{{ __('No sizing data yet.') }}" />
                             </td>
                         </tr>
                     @endforelse

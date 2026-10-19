@@ -108,7 +108,7 @@ class OfficeAssistantController extends Controller
 
         if (blank(config('ai.providers.openrouter.key'))) {
             return response()->json([
-                'message' => __('Asisten AI belum aktif karena API key OpenRouter belum dikonfigurasi. Hubungi administrator.'),
+                'message' => __('AI Assistant is not active because the OpenRouter API key is not configured. Contact the administrator.'),
             ], 422);
         }
 
@@ -118,13 +118,13 @@ class OfficeAssistantController extends Controller
 
             if (! $conversation) {
                 return response()->json([
-                    'message' => __('Percakapan tidak valid. Silakan mulai percakapan baru.'),
+                    'message' => __('Invalid conversation. Please start a new conversation.'),
                 ], 422);
             }
         }
 
         $message = trim((string) ($validated['message'] ?? ''));
-        $prompt = $message !== '' ? $message : __('Tolong analisis lampiran ini.');
+        $prompt = $message !== '' ? $message : __('Please analyze this attachment.');
         $storedPaths = [];
 
         try {
@@ -148,8 +148,8 @@ class OfficeAssistantController extends Controller
 
             return response()->json([
                 'message' => ! empty($serverBusy)
-                    ? __('Server AI sedang sibuk. Coba lagi sebentar.')
-                    : __('Maaf, asisten tidak dapat merespons saat ini. Coba lagi beberapa saat.'),
+                    ? __('The AI server is busy. Please try again in a moment.')
+                    : __('Sorry, the assistant cannot respond right now. Please try again later.'),
             ], 500);
         }
     }
@@ -236,7 +236,7 @@ class OfficeAssistantController extends Controller
                 );
 
                 if (! is_string($path)) {
-                    throw new \RuntimeException(__('Lampiran gagal disimpan.'));
+                    throw new \RuntimeException(__('Attachment failed to save.'));
                 }
 
                 $storedPaths[] = $path;
@@ -270,7 +270,7 @@ class OfficeAssistantController extends Controller
                     : [],
                 'attachments' => $message->role === 'user'
                     ? collect($message->attachments ?? [])->map(fn ($attachment) => [
-                        'name' => $attachment['name'] ?? __('Lampiran'),
+                        'name' => $attachment['name'] ?? __('Attachments'),
                         'type' => $attachment['type'] ?? 'file',
                         'mime' => $attachment['mime'] ?? null,
                     ])->values()->all()

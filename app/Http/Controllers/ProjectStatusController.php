@@ -33,7 +33,7 @@ class ProjectStatusController extends Controller
 
         return redirect()
             ->route('admin-panel.project-statuses.index')
-            ->with('success', __('Project Status berhasil ditambahkan.'));
+            ->with('success', __('Project Status added successfully.'));
     }
 
     public function edit(ProjectStatus $projectStatus)
@@ -55,7 +55,7 @@ class ProjectStatusController extends Controller
 
         return redirect()
             ->route('admin-panel.project-statuses.index')
-            ->with('success', __('Project Status berhasil diupdate.'));
+            ->with('success', __('Project Status updated successfully.'));
     }
 
     public function destroy(ProjectStatus $projectStatus)
@@ -65,6 +65,6 @@ class ProjectStatusController extends Controller
         Cache::forget('tek:status-counts');
         return redirect()
             ->route('admin-panel.project-statuses.index')
-            ->with('success', __('Project Status berhasil dihapus.'));
+            ->with('success', __('Project Status deleted successfully.'));
     }
 }

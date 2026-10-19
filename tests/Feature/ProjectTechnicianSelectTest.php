@@ -46,7 +46,7 @@ class ProjectTechnicianSelectTest extends TestCase
         // Form edit menampilkan dropdown berisi daftar teknisi
         $this->get(route('projects.edit', $project))
             ->assertOk()
-            ->assertSee('- Pilih Teknisi')
+            ->assertSee(__('- Pilih Teknisi -'))
             ->assertSee('Teknisi Satu')
             ->assertSee('Teknisi Dua');
 

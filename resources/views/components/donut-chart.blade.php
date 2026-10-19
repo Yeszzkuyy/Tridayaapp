@@ -26,7 +26,7 @@ $cum = 0.0;
     viewBox="0 0 {{ $size }} {{ $size }}"
     class="donut-svg h-auto w-full -rotate-90 overflow-visible{{ $scroll ? ' donut-scroll' : '' }}"
     role="img"
-    aria-label="{{ __('Diagram donat') }}"
+    aria-label="{{ __('Donut chart') }}"
 >
     {{-- Ring dasar --}}
     <circle

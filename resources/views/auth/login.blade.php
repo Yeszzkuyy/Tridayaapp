@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sign in - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Sign in') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -353,7 +353,7 @@
                     </picture>
                     <i aria-hidden="true"></i><b>3DY App</b>
                 </div>
-                <h2 id="visual-title">Connecting people, projects, and operations.</h2>
+                <h2 id="visual-title">{{ __('Connecting people, projects, and operations.') }}</h2>
                 <picture>
                     <source srcset="{{ asset('images/Login-Page/finaldesign-cut.webp') }}" type="image/webp">
                     <img
@@ -371,8 +371,8 @@
             </aside>
 
             <div class="panel">
-                <h1 id="login-title">Welcome back</h1>
-                <p class="sub">Sign in to your 3DY account</p>
+                <h1 id="login-title">{{ __('Welcome back') }}</h1>
+                <p class="sub">{{ __('Sign in to your 3DY account') }}</p>
 
                 <x-auth-session-status
                     class="status"
@@ -392,7 +392,7 @@
                     @csrf
 
                     <div class="field" style="--i:1">
-                        <label class="t" for="email">Email</label>
+                        <label class="t" for="email">{{ __('Email') }}</label>
                         <div class="box{{ $errors->has('email') ? ' bad' : '' }}">
                             <input
                                 id="email"
@@ -413,7 +413,7 @@
                     </div>
 
                     <div x-data="{ showPassword: false, capsLock: false }" class="field" style="--i:2">
-                        <label class="t" for="password">Password</label>
+                        <label class="t" for="password">{{ __('Password') }}</label>
                         <div class="box{{ $errors->has('password') ? ' bad' : '' }}">
                             <input
                                 id="password"
@@ -429,7 +429,7 @@
                             <button
                                 type="button"
                                 x-on:click="showPassword = !showPassword"
-                                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                                :aria-label="showPassword ? '{{ __('Hide password') }}' : '{{ __('Show password') }}'"
                                 :aria-pressed="showPassword"
                                 aria-controls="password"
                                 class="eye"
@@ -438,7 +438,7 @@
                                 <svg x-show="showPassword" x-cloak viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.5 6.7C3.7 8.5 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 004.2 4.2"/></svg>
                             </button>
                         </div>
-                        <p id="caps-lock-warning" x-show="capsLock" x-cloak role="alert" class="caps">Caps Lock is on</p>
+                        <p id="caps-lock-warning" x-show="capsLock" x-cloak role="alert" class="caps">{{ __('Caps Lock is on') }}</p>
                         <div id="password-error" aria-live="polite">
                             <x-input-error :messages="$errors->get('password')" class="msg" />
                         </div>
@@ -447,10 +447,10 @@
                     <div class="row" style="--i:3">
                         <label class="chk" for="remember">
                             <input id="remember" type="checkbox" name="remember" value="1" @checked(old('remember'))>
-                            <span class="cb" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.6L10 3.5"/></svg></span>Remember me
+                            <span class="cb" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.6L10 3.5"/></svg></span>{{ __('Remember me') }}
                         </label>
                         @if (Route::has('password.request'))
-                            <a class="login-link" href="{{ route('password.request') }}">Forgot password?</a>
+                            <a class="login-link" href="{{ route('password.request') }}">{{ __('Forgot password?') }}</a>
                         @endif
                     </div>
 
@@ -462,7 +462,7 @@
                         x-bind:aria-busy="isSubmitting"
                         x-bind:class="{ 'loading': isSubmitting }"
                     >
-                        <span class="lab" x-show="!isSubmitting">Sign in</span>
+                        <span class="lab" x-show="!isSubmitting">{{ __('Sign in') }}</span>
                         <span class="spn" x-show="isSubmitting" x-cloak aria-hidden="true"><i></i></span>
                     </button>
                 </form>

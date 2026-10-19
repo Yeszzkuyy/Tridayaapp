@@ -47,7 +47,7 @@ class PartnerController extends Controller
 
         return redirect()
             ->route('partners.index')
-            ->with('success', __('Partner berhasil ditambahkan.'));
+            ->with('success', __('Partner added successfully.'));
     }
 
     public function edit(Partner $partner)
@@ -71,7 +71,7 @@ class PartnerController extends Controller
 
         return redirect()
             ->route('partners.index')
-            ->with('success', __('Partner berhasil diupdate.'));
+            ->with('success', __('Partner updated successfully.'));
     }
 
     public function destroy(Partner $partner)
@@ -80,6 +80,6 @@ class PartnerController extends Controller
 
         return redirect()
             ->route('partners.index')
-            ->with('success', __('Partner berhasil dihapus.'));
+            ->with('success', __('Partner deleted successfully.'));
     }
 }

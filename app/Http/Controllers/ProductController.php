@@ -58,7 +58,7 @@ class ProductController extends Controller
 
         Product::create($validated);
 
-        return redirect()->route('products.index')->with('success', __('Produk berhasil ditambahkan.'));
+        return redirect()->route('products.index')->with('success', __('Product added successfully.'));
     }
 
     public function edit(Product $product)
@@ -80,7 +80,7 @@ class ProductController extends Controller
 
         $product->update($validated);
 
-        return redirect()->route('products.index')->with('success', __('Produk berhasil diperbarui.'));
+        return redirect()->route('products.index')->with('success', __('Product updated successfully.'));
     }
 
     public function destroy(Product $product)
@@ -88,6 +88,6 @@ class ProductController extends Controller
         // Nonaktifkan, jangan hapus: riwayat BOQ proposal lama tetap terbaca.
         $product->update(['is_active' => false]);
 
-        return redirect()->route('products.index')->with('success', __('Produk dinonaktifkan.'));
+        return redirect()->route('products.index')->with('success', __('Product deactivated.'));
     }
 }

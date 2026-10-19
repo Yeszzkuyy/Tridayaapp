@@ -94,7 +94,7 @@ class SalesScheduleController extends Controller
                 $start = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
                 $end = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
             } catch (\Throwable) {
-                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+                return response()->json(['message' => __('Invalid date range.')], 422);
             }
             $query->whereDate('follow_up_date', '>=', $start)
                 ->whereDate('follow_up_date', '<=', $end);
@@ -103,7 +103,7 @@ class SalesScheduleController extends Controller
             try {
                 $parsed = \Carbon\Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
             } catch (\Throwable) {
-                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+                return response()->json(['message' => __('Invalid date.')], 422);
             }
             $query->whereDate('follow_up_date', $parsed);
         }
@@ -178,7 +178,7 @@ class SalesScheduleController extends Controller
         $this->authorize('view', $lead);
 
         $pic = User::findOrFail($validated['assigned_to']);
-        abort_unless($pic->hasAnyRole(['sales', 'inside-sales']), 422, __('PIC harus Sales atau Inside Sales.'));
+        abort_unless($pic->hasAnyRole(['sales', 'inside-sales']), 422, __('The PIC must be Sales or Inside Sales.'));
 
         $schedule = SalesSchedule::create($validated + ['created_by' => auth()->id()]);
 
@@ -189,7 +189,7 @@ class SalesScheduleController extends Controller
         }
 
         return redirect()->route('sales.schedules.show', $schedule)
-            ->with('success', __('Jadwal berhasil dibuat.'));
+            ->with('success', __('Schedule created successfully.'));
     }
 
     public function show(SalesSchedule $schedule)
@@ -249,7 +249,7 @@ class SalesScheduleController extends Controller
         $schedule->update(['status' => 'completed']);
         $this->log($schedule->lead, 'schedule_completed', ['title' => $schedule->title]);
 
-        return back()->with('success', __('Jadwal ditandai selesai.'));
+        return back()->with('success', __('Schedule marked as done.'));
     }
 
     public function cancel(SalesSchedule $schedule)
@@ -260,7 +260,7 @@ class SalesScheduleController extends Controller
         $schedule->update(['status' => 'cancelled']);
         $this->log($schedule->lead, 'schedule_cancelled', ['title' => $schedule->title]);
 
-        return back()->with('success', __('Jadwal dibatalkan.'));
+        return back()->with('success', __('Schedule cancelled.'));
     }
 
     /**

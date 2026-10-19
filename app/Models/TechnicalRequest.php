@@ -72,8 +72,8 @@ class TechnicalRequest extends Model
     {
         return match ($type) {
             'survey' => __('Survey'),
-            'estimate' => __('Estimasi'),
-            'installation' => __('Instalasi'),
+            'estimate' => __('Estimate'),
+            'installation' => __('Installation'),
             'troubleshooting' => __('Troubleshooting'),
             'consultation' => __('Technical Consultation'),
             default => __('Other'),
@@ -83,7 +83,7 @@ class TechnicalRequest extends Model
     public static function statusLabel(string $status): string
     {
         return match ($status) {
-            'waiting_lead' => __('Waiting Lead Teknisi'),
+            'waiting_lead' => __('Waiting for Lead Technician'),
             'accepted' => __('Accepted'),
             'rejected' => __('Rejected'),
             'assigned' => __('Assigned'),

@@ -45,9 +45,9 @@ class PurchaseOrder extends Model
     {
         return match ($this->status) {
             'draft' => __('Draft'),
-            'diproses' => __('Diproses'),
-            'selesai' => __('Selesai'),
-            'dibatalkan' => __('Dibatalkan'),
+            'diproses' => __('In Process'),
+            'selesai' => __('Completed'),
+            'dibatalkan' => __('Cancelled'),
             default => ucfirst((string) $this->status),
         };
     }

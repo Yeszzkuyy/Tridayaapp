@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="max-w-2xl">
-        <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">{{ __('Edit Produk') }}</h1>
+        <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6">{{ __('Edit Product') }}</h1>
         <form action="{{ route('products.update', $product) }}" method="POST" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-4">
             @csrf @method('PUT')
             @include('sales.products._form')

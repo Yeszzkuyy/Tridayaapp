@@ -16,7 +16,7 @@ class PublicUrl implements ValidationRule
         $parts = parse_url((string) $value);
 
         if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['http', 'https'], true) || empty($parts['host'])) {
-            $fail(__('URL tidak valid.'));
+            $fail(__('Invalid URL.'));
 
             return;
         }
@@ -24,7 +24,7 @@ class PublicUrl implements ValidationRule
         $host = strtolower($parts['host']);
 
         if ($host === 'localhost' || str_ends_with($host, '.localhost') || str_ends_with($host, '.internal')) {
-            $fail(__('URL localhost/internal tidak diizinkan.'));
+            $fail(__('Localhost/internal URLs are not allowed.'));
 
             return;
         }
@@ -37,7 +37,7 @@ class PublicUrl implements ValidationRule
         }
 
         if (!$ips) {
-            $fail(__('Host tidak dapat dijangkau.'));
+            $fail(__('Host is unreachable.'));
 
             return;
         }
@@ -45,7 +45,7 @@ class PublicUrl implements ValidationRule
         foreach ($ips as $ip) {
             if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
                 || str_starts_with($ip, '169.254.')) {
-                $fail(__('URL ke jaringan privat/internal tidak diizinkan.'));
+                $fail(__('URLs to private/internal networks are not allowed.'));
 
                 return;
             }

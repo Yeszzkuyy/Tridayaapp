@@ -56,11 +56,11 @@
                 <span class="block truncate text-sm font-bold">3DY AI</span>
                 <span class="block truncate text-xs text-white/80" x-text="activeTitle()">{{ __('Online') }}</span>
             </span>
-            <button type="button" @click="toggleList()" aria-label="{{ __('Daftar percakapan') }}" title="{{ __('Daftar percakapan') }}"
+            <button type="button" @click="toggleList()" aria-label="{{ __('Conversation list') }}" title="{{ __('Conversation list') }}"
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
                 <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
             </button>
-            <button type="button" @click="newChat()" :disabled="busy" aria-label="{{ __('Percakapan baru') }}" title="{{ __('Percakapan baru') }}"
+            <button type="button" @click="newChat()" :disabled="busy" aria-label="{{ __('New conversation') }}" title="{{ __('New conversation') }}"
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:opacity-40">
                 <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
             </button>
@@ -68,7 +68,7 @@
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
                 <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14" /></svg>
             </button>
-            <button type="button" @click="closeChat()" aria-label="{{ __('Tutup chat') }}" title="{{ __('Tutup dan mulai baru') }}"
+            <button type="button" @click="closeChat()" aria-label="{{ __('Close chat') }}" title="{{ __('Close and start a new one') }}"
                     class="rounded-lg p-1.5 transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
                 <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
@@ -77,14 +77,14 @@
         {{-- Messages --}}
         <div x-show="!showList" x-ref="msgs"
              class="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 px-4 py-4 dark:bg-slate-900/60"
-             aria-live="polite" aria-label="{{ __('Riwayat percakapan') }}">
+             aria-live="polite" aria-label="{{ __('Conversation history') }}">
             <template x-if="!messages.length && !busy">
                 <div class="py-6 text-center">
                     <p class="whitespace-pre-line text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __("👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?") }}</p>
                     <div class="mt-4 flex flex-wrap justify-center gap-2">
                         <template x-for="q in quicks" :key="q">
                             <button type="button" @click="sendQuick(q)" :disabled="busy"
-                                    class="rounded-full border border-accent-500/40 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-700 transition hover:-translate-y-0.5 hover:bg-accent-100 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50 dark:bg-accent-500/10 dark:text-accent-300 dark:hover:bg-accent-500/20"
+                                    class="rounded-full border border-accent-500/40 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-700 transition hover:-translate-y-0.5 hover:bg-accent-100 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50 dark:bg-accent-500/10 dark:text-accent-300 dark:hover:bg-accent-500 dark:hover:text-white"
                                     x-text="q"></button>
                         </template>
                     </div>
@@ -112,7 +112,7 @@
             </template>
             <template x-if="busy">
                 <div class="flex items-end justify-start gap-2">
-                    <div class="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800" role="status" aria-label="{{ __('AI sedang mengetik') }}">
+                    <div class="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800" role="status" aria-label="{{ __('AI is typing') }}">
                         <span class="aiv2-dot"></span><span class="aiv2-dot"></span><span class="aiv2-dot"></span>
                     </div>
                 </div>
@@ -122,7 +122,7 @@
                     <p x-text="error"></p>
                     <button type="button" @click="retry()" :disabled="busy || !lastUserText"
                             class="mt-2 rounded-lg bg-red-100 px-3 py-1.5 font-semibold text-red-700 transition hover:bg-red-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:opacity-50 dark:bg-red-500/20 dark:text-red-200">
-                        {{ __('Coba lagi') }}
+                        {{ __('Try again') }}
                     </button>
                 </div>
             </template>
@@ -131,13 +131,13 @@
         {{-- Conversation list --}}
         <div x-show="showList"
              class="aiv2-safe-bottom min-h-0 flex-1 space-y-1.5 overflow-y-auto bg-slate-50 px-3 py-3 dark:bg-slate-900/60"
-             aria-label="{{ __('Daftar percakapan') }}">
+             aria-label="{{ __('Conversation list') }}">
             <button type="button" @click="newChat()" :disabled="busy || loadingConvo"
                     class="w-full rounded-xl bg-accent-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 disabled:opacity-50">
-                {{ __('+ Percakapan baru') }}
+                {{ __('+ New conversation') }}
             </button>
             <template x-if="loadingConvo">
-                <div class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800" role="status" aria-label="{{ __('Memuat percakapan...') }}">
+                <div class="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800" role="status" aria-label="{{ __('Loading conversation...') }}">
                     <span class="aiv2-dot"></span><span class="aiv2-dot"></span><span class="aiv2-dot"></span>
                 </div>
             </template>
@@ -151,7 +151,7 @@
                 </button>
             </template>
             <template x-if="!convos.length && !loadingConvo">
-                <p class="py-4 text-center text-xs text-slate-500 dark:text-slate-400">{{ __('Belum ada percakapan.') }}</p>
+                <p class="py-4 text-center text-xs text-slate-500 dark:text-slate-400">{{ __('No conversations yet.') }}</p>
             </template>
         </div>
 
@@ -160,11 +160,11 @@
             <div class="flex items-end gap-2">
                 <textarea x-ref="input" x-model="draft" rows="1" maxlength="2000"
                           @input="resize()" @keydown.enter="onEnter($event)"
-                          :placeholder="busy ? '{{ __('Menunggu jawaban...') }}' : '{{ __('Tulis pesan...') }}'"
-                          aria-label="{{ __('Tulis pesan untuk 3DY AI') }}"
+                          :placeholder="busy ? '{{ __('Waiting for a response...') }}' : '{{ __('Type a message...') }}'"
+                          aria-label="{{ __('Type a message to 3DY AI') }}"
                           class="max-h-[120px] min-h-[40px] flex-1 resize-none rounded-xl border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"></textarea>
                 <button type="button" @click="send()" :disabled="!canSend()"
-                        aria-label="{{ __('Kirim pesan') }}"
+                        aria-label="{{ __('Send message') }}"
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-600 text-white shadow-sm transition hover:bg-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40">
                     <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>
                 </button>
@@ -217,7 +217,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
         vvo: window.visualViewport ? (window.visualViewport.offsetTop || 0) : 0,
         dragging: false, dragWhich: null, moved: false, suppressUntil: 0, dragThreshold: 10,
         sx: 0, sy: 0, ox: 0, oy: 0, bx: 0, by: 0,
-        quicks: @js([__('Jelaskan data server saya'), __('Bantu analisis masalah'), __('Buatkan kode Laravel'), __('Jelaskan konsep jaringan')]),
+        quicks: @js([__('Describe my server data'), __('Help analyze issues'), __('Generate Laravel code'), __('Explain network concepts')]),
         key() { return '3dy.ai.v2.conv.' + this.uid; },
         posKey() { return '3dy.ai.v2.pos.' + this.uid; },
         chatOffKey() { return '3dy.ai.v2.chatoff.' + this.uid; },
@@ -260,7 +260,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
             if (!c || !c.id) return;
             this.convos = [{
                 id: c.id,
-                title: c.title || @js(__('Percakapan baru')),
+                title: c.title || @js(__('New conversation')),
                 updated_at: c.updated_at ?? null,
             }, ...this.convos.filter(x => x.id !== c.id)].slice(0, 20);
         },
@@ -285,7 +285,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
                 this.showList = false;
                 this.scrollBottom();
             } catch (e) {
-                this.error = e?.message || @js(__('Gagal memuat percakapan.'));
+                this.error = e?.message || @js(__('Failed to load the conversation.'));
                 this.showList = false;
             } finally {
                 this.loadingConvo = false;
@@ -518,7 +518,7 @@ function aiChatV2(uid, sendUrl, showUrl, initialConvos) {
                 if (data.conversation) this.touchConvo(data.conversation);
                 this.messages.push({ id: Date.now() + 1, role: 'assistant', content: data.message ?? '', time: this.nowTime() });
             } catch (e) {
-                this.error = e?.message || @js(__('Maaf, terjadi masalah saat menghubungi AI. Silakan coba lagi.'));
+                this.error = e?.message || @js(__('Sorry, something went wrong while contacting the AI. Please try again.'));
             } finally {
                 this.busy = false;
                 this.scrollBottom();

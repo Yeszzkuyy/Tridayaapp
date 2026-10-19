@@ -30,7 +30,7 @@ class ProjectService
                 'project_id' => $project->id,
                 'user_id' => Auth::id(),
                 'activity_date' => now(),
-                'title' => 'Project Dibuat',
+                'title' => __('Projects Created'),
                 'description' => 'Project baru berhasil dibuat',
             ]);
 
