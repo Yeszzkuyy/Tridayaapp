@@ -559,13 +559,13 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Client Secret') }}</label>
                             <input type="password" name="client_secret" value="" autocomplete="off"
-                                   placeholder="{{ $credential->client_secret ? '•••••••• (' . __('stored') . ')' : '' }}"
+                                   placeholder="{{ $credential->hasSecret() ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('API Key') }}</label>
                             <input type="password" name="api_key" value="" autocomplete="off"
-                                   placeholder="{{ $credential->api_key ? '•••••••• (' . __('stored') . ')' : '' }}"
+                                   placeholder="{{ $credential->hasApiKey() ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
