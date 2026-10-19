@@ -665,7 +665,7 @@ export default function NotificationCenter() {
                 aria-haspopup="true"
                 aria-expanded={open}
             >
-                <TypeIcon name="bell" className="h-5 w-5" />
+                <TypeIcon name="bell" className="h-5 w-5 notif-bell-icon" />
                 <AnimatePresence>
                     {unread > 0 && (
                         <motion.span

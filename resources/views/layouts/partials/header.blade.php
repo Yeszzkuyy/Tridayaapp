@@ -175,7 +175,7 @@
                  saat mount — lihat resources/js/notification-center.jsx). --}}
             <span data-notif-fallback aria-hidden="true"
                   class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-accent-600 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 notif-bell-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                     <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.66V5a2 2 0 1 0-4 0v.34A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9" />
                 </svg>
             </span>
