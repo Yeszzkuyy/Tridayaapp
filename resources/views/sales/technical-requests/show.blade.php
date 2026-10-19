@@ -18,9 +18,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <p class="text-slate-500">{{ __('Lead') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $technicalRequest->lead->customer?->name ?? 'Lead #'.$technicalRequest->lead_id }}</span></p>
                 <p class="text-slate-500">{{ __('Requested by') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $technicalRequest->requester?->name ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Target') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $technicalRequest->target_date?->format('d M Y') ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Target') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $technicalRequest->target_date?->format('d M Y') ?? '-' }}@if($technicalRequest->target_time) • {{ substr((string) $technicalRequest->target_time, 0, 5) }}@endif</span></p>
                 <p class="text-slate-500">{{ __('Technician') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $technicalRequest->technician?->name ?? '-' }}</span></p>
             </div>
+            @if($technicalRequest->purpose)
+                <div><p class="text-xs font-semibold text-slate-400 uppercase">{{ __('Purpose') }}</p><p class="text-sm whitespace-pre-wrap">{{ $technicalRequest->purpose }}</p></div>
+            @endif
+            @if($technicalRequest->location)
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase">{{ __('Location') }}</p>
+                    <x-location-link :location="$technicalRequest->location" class="mt-1" />
+                </div>
+            @endif
+            {{-- Kolom lama (request yang dibuat sebelum Purpose/Location ada): tampil hanya bila terisi. --}}
             @if($technicalRequest->requirement)
                 <div><p class="text-xs font-semibold text-slate-400 uppercase">{{ __('Requirement') }}</p><p class="text-sm whitespace-pre-wrap">{{ $technicalRequest->requirement }}</p></div>
             @endif

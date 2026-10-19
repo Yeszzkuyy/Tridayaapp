@@ -65,23 +65,38 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Target Date') }}</label>
-                        <input type="date" name="target_date" value="{{ old('target_date') }}"
-                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        <div class="flex items-center gap-2">
+                            <input type="date" name="target_date" value="{{ old('target_date') }}"
+                                   class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            <input type="time" name="target_time" value="{{ old('target_time') }}"
+                                   ondblclick="try { this.showPicker() } catch (e) {}"
+                                   title="{{ __('Double-click to open the time picker') }}"
+                                   class="w-32 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        </div>
                         @error('target_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        @error('target_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Requirement') }}</label>
-                    <textarea name="requirement" rows="2" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('requirement') }}</textarea>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Location (optional)') }}</label>
+                    <div class="flex items-center gap-2">
+                        <input id="tr-location" type="text" name="location" maxlength="255" value="{{ old('location') }}"
+                               placeholder="{{ __('Address / meeting point or meeting link') }}"
+                               data-location-autocomplete
+                               class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        <x-maps-open-button input="tr-location" />
+                        <x-location-autocomplete />
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
+                    @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Problem Description') }}</label>
-                    <textarea name="problem_description" rows="3" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('problem_description') }}</textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Scope') }}</label>
-                    <textarea name="scope" rows="2" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('scope') }}</textarea>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Purpose') }}</label>
+                    <textarea name="purpose" rows="3" placeholder="{{ __('What does the customer need? Keep it short...') }}"
+                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('purpose') }}</textarea>
+                    @error('purpose') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -32,4 +32,19 @@ class GoogleAppCredential extends Model
     {
         return static::query()->first() ?? new static();
     }
+
+    /**
+     * Cek ada/tidaknya secret tersimpan TANPA men-decrypt (aman dari
+     * kegagalan dekripsi). Dipakai view untuk placeholder — jangan
+     * menampilkan nilai rahasia.
+     */
+    public function hasSecret(): bool
+    {
+        return ! empty($this->getAttributes()['client_secret']);
+    }
+
+    public function hasApiKey(): bool
+    {
+        return ! empty($this->getAttributes()['api_key']);
+    }
 }

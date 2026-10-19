@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" @teknisi:view.window="setView($event.detail.value)" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
+    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" @teknisi:view.window="setView($event.detail.value)" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-status="{{ $connection['status'] }}" data-oauth="{{ ($connection['oauth_connected'] ?? false) ? '1' : '0' }}">
         {{-- Top bar --}}
         <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3 min-w-0">
@@ -12,12 +12,12 @@
             <div class="flex items-center gap-2 shrink-0">
                 <span id="google-status-badge"
                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors"
-                      :class="googleConnected
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'">
-                    <svg x-show="googleConnected" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <svg x-show="!googleConnected" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-                    <span x-text="googleConnected ? '{{ __('Connected') }}' : '{{ __('Disconnected') }}'"></span>
+                      :class="badgeClass()">
+                    <svg x-show="googleStatus==='connected'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg x-show="googleStatus==='needs_reauth'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M9 12.75L11.25 15 15 9.75"/></svg>
+                    <svg x-show="googleStatus==='error'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                    <svg x-show="googleStatus==='not_connected'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636L5.636 18.364m12.728 0L5.636 5.636"/></svg>
+                    <span x-text="statusLabel()"></span>
                 </span>
                 @if(auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']))
                     <x-icon-button title="{{ __('Google Calendar API') }}" @click="apiOpen = true">
@@ -559,13 +559,13 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Client Secret') }}</label>
                             <input type="password" name="client_secret" value="" autocomplete="off"
-                                   placeholder="{{ $credential->client_secret ? '•••••••• (' . __('stored') . ')' : '' }}"
+                                   placeholder="{{ $credential->hasSecret() ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('API Key') }}</label>
                             <input type="password" name="api_key" value="" autocomplete="off"
-                                   placeholder="{{ $credential->api_key ? '•••••••• (' . __('stored') . ')' : '' }}"
+                                   placeholder="{{ $credential->hasApiKey() ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
@@ -592,12 +592,18 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Two-way sync (write to Google)') }}</p>
                                 <p class="text-xs text-slate-400">
-                                    <span x-show="oauthConnected" class="text-emerald-500">{{ __('Connected — schedules will be pushed to Google.') }}</span>
-                                    <span x-show="!oauthConnected">{{ __('Connect to push schedules back to Google Calendar.') }}</span>
+                                    <span class="font-semibold" :class="badgeClass()" x-text="statusLabel()"></span>
+                                    <span x-show="googleStatus==='connected'" class="text-emerald-500"> — {{ __('schedules will be pushed to Google.') }}</span>
+                                    <span x-show="googleStatus==='not_connected'"> — {{ __('Connect to push schedules back to Google Calendar.') }}</span>
+                                    <span x-show="googleStatus==='needs_reauth'" class="text-amber-500"> — {{ __('Authorization expired. Please reconnect.') }}</span>
+                                    <span x-show="googleStatus==='error'" class="text-red-500"> — <span x-text="googleLastError || '{{ __('Sync failed.') }}'"></span></span>
+                                </p>
+                                <p class="mt-1 text-xs text-slate-400" x-show="googleLastSync">
+                                    {{ __('Last sync') }}: <span x-text="googleLastSync"></span><span x-show="googleLastSummary"> — <span x-text="googleLastSummary"></span></span>
                                 </p>
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
-                                <x-icon-button as="a" href="{{ route('teknisi.kalender.connect') }}" x-show="!oauthConnected"
+                                <x-icon-button as="a" href="{{ route('teknisi.kalender.connect') }}" x-show="!oauthConnected || googleStatus === 'needs_reauth'"
                                                title="{{ __('Connect') }}" label="{{ __('Connect') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.02a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
                                 </x-icon-button>
@@ -624,8 +630,11 @@
             return {
                 apiUrl: document.getElementById('teknisi-schedule-root')?.dataset.apiUrl || '',
                 statusUrl: document.getElementById('teknisi-schedule-root')?.dataset.statusUrl || '',
-                googleConnected: document.getElementById('teknisi-schedule-root')?.dataset.connected === '1',
+                googleStatus: document.getElementById('teknisi-schedule-root')?.dataset.status || 'not_connected',
                 oauthConnected: document.getElementById('teknisi-schedule-root')?.dataset.oauth === '1',
+                googleLastSync: '',
+                googleLastSummary: '',
+                googleLastError: '',
                 canManage: {{ auth()->user()->can('manage-technician') ? 'true' : 'false' }},
                 scheduleBase: @json(route('teknisi.schedules.store')),
                 view: 'month',
@@ -678,14 +687,37 @@
                     fetch(this.statusUrl + sep + '_=' + Date.now())
                         .then((r) => r.json())
                         .then((data) => {
-                            if (typeof data?.connected === 'boolean') {
-                                this.googleConnected = data.connected;
-                            }
-                            if (typeof data?.oauth_connected === 'boolean') {
-                                this.oauthConnected = data.oauth_connected;
-                            }
+                            if (data?.status) this.googleStatus = data.status;
+                            if (typeof data?.oauth_connected === 'boolean') this.oauthConnected = data.oauth_connected;
+                            this.googleLastSync = data?.last_sync_at ? this.fmtSyncTime(data.last_sync_at) : '';
+                            this.googleLastSummary = data?.last_sync_summary || '';
+                            this.googleLastError = data?.last_sync_error || '';
                         })
                         .catch(() => {});
+                },
+
+                fmtSyncTime(iso) {
+                    try {
+                        return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    } catch (e) { return iso; }
+                },
+
+                badgeClass() {
+                    return {
+                        connected: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                        needs_reauth: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                        error: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+                        not_connected: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                    }[this.googleStatus] || 'bg-slate-100 text-slate-600';
+                },
+
+                statusLabel() {
+                    return {
+                        connected: '{{ __('Connected') }}',
+                        needs_reauth: '{{ __('Needs Re-authorization') }}',
+                        error: '{{ __('Error') }}',
+                        not_connected: '{{ __('Not Connected') }}',
+                    }[this.googleStatus] || '';
                 },
 
                 fmt(d) {

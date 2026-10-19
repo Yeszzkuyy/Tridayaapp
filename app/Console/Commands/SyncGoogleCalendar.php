@@ -15,23 +15,22 @@ class SyncGoogleCalendar extends Command
 
     public function handle(GoogleCalendarService $google): int
     {
-        // Lock anti-bentrok bila scheduler & auto-sync-on-fetch berbarengan.
-        $lock = Cache::lock('gcal:sync', 300);
-
-        if (! $lock->get()) {
-            return self::SUCCESS;
-        }
-
+        // Lock anti-bentrok kini terpusat di syncTwoWay() (dipakai juga oleh
+        // job & tombol manual), sehingga semua jalur saling eksklusif.
         try {
             $stats = $google->syncTwoWay();
+
+            if (! empty($stats['locked'])) {
+                return self::SUCCESS; // sync lain sedang berjalan
+            }
 
             Log::info('gcal:sync selesai', $stats);
             $this->info(sprintf(
                 'Sinkron selesai: %d baru, %d diperbarui, %d dipulihkan, %d dilewati.',
-                $stats['created'],
-                $stats['updated'],
-                $stats['restored'],
-                $stats['skipped'],
+                $stats['created'] ?? 0,
+                $stats['updated'] ?? 0,
+                $stats['restored'] ?? 0,
+                $stats['skipped'] ?? 0,
             ));
         } catch (\Throwable $e) {
             // Jangan biarkan kegagalan Google menggagalkan scheduler.
@@ -42,7 +41,6 @@ class SyncGoogleCalendar extends Command
             $this->warn('Sinkron Google gagal: '.$e->getMessage());
         } finally {
             $google->forgetReachableCache();
-            $lock->release();
         }
 
         return self::SUCCESS;

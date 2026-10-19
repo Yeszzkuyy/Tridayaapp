@@ -3414,5 +3414,8 @@
     "Kredensial Google gagal disimpan.": "Kredensial Google gagal disimpan.",
     "Client ID dan Client Secret harus diisi bersama.": "Client ID dan Client Secret harus diisi bersama.",
     "Calendar ID tidak valid.": "Calendar ID tidak valid.",
-    "Kosongkan bila tidak ingin mengubah nilai tersimpan.": "Kosongkan bila tidak ingin mengubah nilai tersimpan."
+    "Kosongkan bila tidak ingin mengubah nilai tersimpan.": "Kosongkan bila tidak ingin mengubah nilai tersimpan.",
+    "Purpose": "Keperluan",
+    "What does the customer need? Keep it short...": "Apa kebutuhan customer? Tulis singkat saja...",
+    "Double-click to open the time picker": "Dobel-klik untuk membuka pemilih jam"
 }

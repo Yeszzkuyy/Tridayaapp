@@ -124,7 +124,7 @@ class TechnicianScheduleTest extends TestCase
             ->get(route('teknisi.jadwal'))
             ->assertOk()
             ->assertSee(__('Technician Schedule'))
-            ->assertSee('Disconnected')
+            ->assertSee('Not Connected')
             ->assertDontSee('filter-teknisi');
     }
 

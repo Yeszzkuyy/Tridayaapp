@@ -38,10 +38,11 @@ class TechnicalRequestController extends Controller
                 'customer_id' => $technicalRequest->lead?->customer_id,
                 'sales_user_id' => $technicalRequest->lead?->assigned_to
                     ?? $technicalRequest->requested_by,
-                'sales_request' => $technicalRequest->requirement
+                'sales_request' => $technicalRequest->purpose
+                    ?: $technicalRequest->requirement
                     ?: $technicalRequest->problem_description,
                 'survey_date' => $technicalRequest->target_date,
-                'location' => $technicalRequest->lead?->customer?->address,
+                'location' => $technicalRequest->location ?: $technicalRequest->lead?->customer?->address,
                 'status' => 'scheduled',
             ]
         );
@@ -125,11 +126,11 @@ class TechnicalRequestController extends Controller
             'lead_id' => 'required|exists:leads,id',
             'request_type' => 'required|in:' . implode(',', TechnicalRequest::TYPES),
             'title' => 'required|string|max:255',
-            'requirement' => 'nullable|string',
-            'problem_description' => 'nullable|string',
-            'scope' => 'nullable|string',
+            'purpose' => 'nullable|string|max:2000',
+            'location' => 'nullable|string|max:255',
             'priority' => 'required|in:' . implode(',', TechnicalRequest::PRIORITIES),
             'target_date' => 'nullable|date|after_or_equal:today',
+            'target_time' => 'nullable|date_format:H:i',
             'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx',
             'notes' => 'nullable|string',
         ]);
