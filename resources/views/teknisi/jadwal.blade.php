@@ -563,12 +563,6 @@
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('API Key') }}</label>
-                            <input type="password" name="api_key" value="" autocomplete="off"
-                                   placeholder="{{ $credential->hasApiKey() ? '•••••••• (' . __('stored') . ')' : '' }}"
-                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                        </div>
-                        <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Calendar ID') }}</label>
                             <input type="text" name="calendar_id" value="{{ $credential->calendar_id }}" autocomplete="off"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">

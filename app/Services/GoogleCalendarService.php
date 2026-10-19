@@ -104,7 +104,6 @@ class GoogleCalendarService
             return [
                 'client_id' => $cred->client_id ?: config('services.google-calendar.client_id'),
                 'client_secret' => $cred->client_secret ?: config('services.google-calendar.client_secret'),
-                'api_key' => $cred->api_key ?: config('services.google-calendar.api_key'),
                 'calendar_id' => $cred->calendar_id ?: config('services.google-calendar.calendar_id'),
             ];
         } catch (\Throwable $e) {
@@ -118,7 +117,6 @@ class GoogleCalendarService
             return [
                 'client_id' => config('services.google-calendar.client_id'),
                 'client_secret' => config('services.google-calendar.client_secret'),
-                'api_key' => config('services.google-calendar.api_key'),
                 'calendar_id' => config('services.google-calendar.calendar_id'),
             ];
         }
