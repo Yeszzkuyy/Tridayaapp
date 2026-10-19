@@ -3406,5 +3406,13 @@
     "— Select Technician —": "— Pilih Teknisi —",
     "— Unassigned (NEW) —": "— Belum di-assign (NEW) —",
     "— filter:": "— filter:",
-    "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?": "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?"
+    "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?": "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?",
+    "Account menu": "Menu akun",
+    "Search document name": "Cari nama dokumen",
+    "stored": "tersimpan",
+    "Konfigurasi tidak valid — konfigurasi lama dipertahankan. :error": "Konfigurasi tidak valid — konfigurasi lama dipertahankan. :error",
+    "Kredensial Google gagal disimpan.": "Kredensial Google gagal disimpan.",
+    "Client ID dan Client Secret harus diisi bersama.": "Client ID dan Client Secret harus diisi bersama.",
+    "Calendar ID tidak valid.": "Calendar ID tidak valid.",
+    "Kosongkan bila tidak ingin mengubah nilai tersimpan.": "Kosongkan bila tidak ingin mengubah nilai tersimpan."
 }
