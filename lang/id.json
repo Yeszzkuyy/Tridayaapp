@@ -257,5 +257,20 @@
     "Target Date": "Target Tanggal",
     "Requirement": "Kebutuhan",
     "Problem Description": "Deskripsi Masalah",
-    "Attachment (1 file, max 10MB)": "Lampiran (1 file, maks 10MB)"
+    "Attachment (1 file, max 10MB)": "Lampiran (1 file, maks 10MB)",
+    "Purpose": "Keperluan",
+    "What does the customer need? Keep it short...": "Apa kebutuhan customer? Tulis singkat saja...",
+    "Location": "Lokasi",
+    "Location (optional)": "Lokasi (opsional)",
+    "Address / meeting point or meeting link": "Alamat / titik temu atau link meeting",
+    "Address opens in Google Maps; meeting links open directly.": "Alamat dibuka di Google Maps; link meeting dibuka langsung.",
+    "Double-click to open the time picker": "Dobel-klik untuk membuka pemilih jam",
+    "Time": "Waktu",
+    "Scope": "Scope",
+    "Requested by": "Diminta oleh",
+    "Technician": "Teknisi",
+    "Download Attachment": "Unduh Lampiran",
+    "Open meeting link": "Buka link meeting",
+    "Map preview": "Pratinjau peta",
+    "Directions": "Rute perjalanan"
 }
