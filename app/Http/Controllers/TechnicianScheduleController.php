@@ -320,6 +320,8 @@ class TechnicianScheduleController extends Controller
 
     public function connect()
     {
+        abort_unless($this->canManageApi(), 403);
+
         $state = Str::random(40);
         session(['google_oauth_state' => $state]);
 
@@ -328,6 +330,8 @@ class TechnicianScheduleController extends Controller
 
     public function callback(Request $request)
     {
+        abort_unless($this->canManageApi(), 403);
+
         if (! is_string($request->query('state'))
             || ! hash_equals((string) session('google_oauth_state'), $request->query('state'))) {
             abort(403, 'OAuth state tidak valid.');
@@ -353,6 +357,8 @@ class TechnicianScheduleController extends Controller
 
     public function disconnect()
     {
+        abort_unless($this->canManageApi(), 403);
+
         $this->google->disconnect(auth()->user());
 
         return back()->with('success', 'Koneksi Google Calendar diputuskan.');

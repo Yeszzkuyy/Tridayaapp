@@ -426,6 +426,84 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->assertSame('id-lama', $cred->fresh()->client_id);
     }
 
+    public function test_api_management_endpoints_forbidden_without_roles(): void
+    {
+        foreach (['technician', 'management', 'ceo'] as $role) {
+            $u = $this->userWithRole($role);
+
+            $this->actingAs($u)->post(route('teknisi.kalender.credentials'), ['client_id' => 'x'])->assertForbidden();
+            $this->actingAs($u)->post(route('teknisi.kalender.sync'), [])->assertForbidden();
+            $this->actingAs($u)->get(route('teknisi.kalender.connect'))->assertForbidden();
+            $this->actingAs($u)->delete(route('teknisi.kalender.disconnect'))->assertForbidden();
+            // Callback dengan state valid pun tetap ditolak di gate sebelum token/session berubah.
+            $this->actingAs($u)->withSession(['google_oauth_state' => 'st'])
+                ->get(route('teknisi.kalender.callback', ['state' => 'st', 'code' => 'c']))
+                ->assertForbidden();
+        }
+
+        // Penolakan tidak membuat/mengubah token maupun kredensial.
+        $this->assertSame(0, \App\Models\GoogleCredential::count());
+        $this->assertSame(0, GoogleAppCredential::count());
+    }
+
+    public function test_api_management_endpoints_allowed_for_admin_roles(): void
+    {
+        foreach (['super-admin', 'lead-technician'] as $role) {
+            $u = $this->userWithRole($role);
+
+            // credentials: simpan (tanpa panggil Google).
+            $this->actingAs($u)->post(route('teknisi.kalender.credentials'), ['client_id' => 'cid', 'client_secret' => 'csec'])
+                ->assertSessionHas('success');
+
+            // disconnect: sukses (hanya DB, tanpa Google).
+            $this->actingAs($u)->delete(route('teknisi.kalender.disconnect'))
+                ->assertSessionHas('success');
+
+            // connect: redirect ke Google (membangun URL, tanpa HTTP).
+            $this->actingAs($u)->get(route('teknisi.kalender.connect'))
+                ->assertStatus(302);
+        }
+    }
+
+    public function test_sync_allowed_for_admin_roles_without_hitting_google(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'www.googleapis.com/*' => \Illuminate\Support\Facades\Http::response(['items' => []], 200),
+        ]);
+
+        foreach (['super-admin', 'lead-technician'] as $role) {
+            $u = $this->userWithRole($role);
+            $this->actingAs($u)->post(route('teknisi.kalender.sync'), [])
+                ->assertSessionHas('sync_message');
+        }
+    }
+
+    public function test_callback_authorization_and_state(): void
+    {
+        // A. Role tidak diizinkan → 403 sebelum token dibuat.
+        $tech = $this->userWithRole('technician');
+        $this->actingAs($tech)->withSession(['google_oauth_state' => 'st'])
+            ->get(route('teknisi.kalender.callback', ['state' => 'st', 'code' => 'c']))
+            ->assertForbidden();
+        $this->assertSame(0, \App\Models\GoogleCredential::count());
+
+        // B. Role diizinkan + state SALAH → 403 (CSRF tetap berlaku).
+        $lead = $this->userWithRole('lead-technician');
+        $this->actingAs($lead)->withSession(['google_oauth_state' => 'benar'])
+            ->get(route('teknisi.kalender.callback', ['state' => 'salah', 'code' => 'c']))
+            ->assertForbidden();
+        $this->assertSame(0, \App\Models\GoogleCredential::count());
+
+        // C. Role diizinkan + state BENAR → alur callback berlanjut (OAuth di-mock).
+        $mock = \Mockery::mock(\App\Services\GoogleCalendarService::class)->makePartial();
+        $mock->shouldReceive('handleCallback')->andReturnNull();
+        $this->app->instance(\App\Services\GoogleCalendarService::class, $mock);
+
+        $this->actingAs($lead)->withSession(['google_oauth_state' => 'benar'])
+            ->get(route('teknisi.kalender.callback', ['state' => 'benar', 'code' => 'c']))
+            ->assertRedirect(route('teknisi.jadwal'));
+    }
+
     public function test_index_renders_calendar_views(): void
     {
         $tech = $this->userWithRole('technician');
