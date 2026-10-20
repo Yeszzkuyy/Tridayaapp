@@ -134,7 +134,7 @@ class NotificationCenterTest extends TestCase
         ]);
         $this->makeNotification($user, TechnicalRequestCreatedNotification::class, [
             'type' => 'technical_request_created', 'title' => 'Pasang CCTV',
-            'priority' => 'urgent', 'url' => '/tech/1',
+            'type_label' => 'Installation', 'url' => '/tech/1',
         ]);
         $this->makeNotification($user, TechnicianScheduleAssignedNotification::class, [
             'type' => 'schedule', 'schedule_id' => 1, 'customer' => 'Survey PT A',
@@ -163,8 +163,8 @@ class NotificationCenterTest extends TestCase
         $this->assertSame(__('Menunggu review teknis'), $items['proposal']['chips'][0]['label']);
         $this->assertSame('warning', $items['proposal']['chips'][0]['tone']);
 
-        $this->assertSame(__('Technical request baru'), $items['technical_request_created']['title']);
-        $this->assertSame(__('Mendesak'), $items['technical_request_created']['chips'][0]['label']);
+        $this->assertSame(__('New technical request'), $items['technical_request_created']['title']);
+        $this->assertSame(__('Installation'), $items['technical_request_created']['chips'][0]['label']);
 
         $this->assertSame(__('Jadwal'), $items['schedule_assigned']['app']);
         $this->assertSame(__('Jadwal teknisi baru'), $items['schedule_assigned']['title']);

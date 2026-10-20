@@ -55,6 +55,55 @@ class TechnicalRequestFormTest extends TestCase
         ], $overrides));
     }
 
+    public function test_form_has_no_priority_and_offers_pic_for_installation(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.technical-requests.create', ['lead_id' => $lead->id]))
+            ->assertOk()->getContent();
+
+        // Priority tidak lagi ditanyakan.
+        $this->assertStringNotContainsString('name="priority"', $html);
+        // PIC Contact tersedia (ditampilkan hanya untuk tipe Instalasi).
+        $this->assertStringContainsString('name="pic_contact_name"', $html);
+        $this->assertStringContainsString('name="pic_contact_phone"', $html);
+        $this->assertStringContainsString("type === 'installation'", $html);
+    }
+
+    public function test_store_keeps_pic_only_for_installation_type(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'installation',
+            'title' => 'Instalasi CCTV',
+            'purpose' => 'Pasang 8 titik',
+            'pic_contact_name' => 'Budi',
+            'pic_contact_phone' => '08123456789',
+        ])->assertRedirect();
+
+        $request = TechnicalRequest::where('title', 'Instalasi CCTV')->firstOrFail();
+        $this->assertSame('Budi', $request->pic_contact_name);
+        $this->assertSame('08123456789', $request->pic_contact_phone);
+        $this->assertSame('normal', $request->priority);
+
+        $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'survey',
+            'title' => 'Survey tanpa PIC',
+            'pic_contact_name' => 'Tidak Dipakai',
+            'pic_contact_phone' => '0800',
+        ])->assertRedirect();
+
+        $survey = TechnicalRequest::where('title', 'Survey tanpa PIC')->firstOrFail();
+        $this->assertNull($survey->pic_contact_name);
+        $this->assertNull($survey->pic_contact_phone);
+    }
+
     public function test_form_uses_purpose_location_and_time_and_drops_legacy_fields(): void
     {
         $sales = $this->userWithRole('sales');

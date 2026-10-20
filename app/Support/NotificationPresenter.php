@@ -6,6 +6,9 @@ use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadTaskNotification;
 use App\Notifications\NewLeadNotification;
+use App\Notifications\PriceRequestCompletedNotification;
+use App\Notifications\PriceRequestCreatedNotification;
+use App\Notifications\PriceRequestReviewedNotification;
 use App\Notifications\ProposalStatusNotification;
 use App\Notifications\SalesScheduleAssignedNotification;
 use App\Notifications\SurveyCreatedNotification;
@@ -77,6 +80,9 @@ final class NotificationPresenter
             TechnicalRequestCreatedNotification::class => 'technical_request_created',
             TechnicalRequestReviewedNotification::class => 'technical_request_reviewed',
             TechnicalWorkCompletedNotification::class => 'technical_work_completed',
+            PriceRequestCreatedNotification::class => 'price_request_created',
+            PriceRequestReviewedNotification::class => 'price_request_reviewed',
+            PriceRequestCompletedNotification::class => 'price_request_completed',
             SurveyCreatedNotification::class => 'survey_created',
             SurveyReportUploadedNotification::class => 'survey_report_uploaded',
             default => self::legacyKind($data),
@@ -171,10 +177,7 @@ final class NotificationPresenter
                 'app' => __('Technical Request'),
                 'title' => __('New technical request'),
                 'body' => (string) ($data['title'] ?? ''),
-                'chips' => [self::chip(
-                    ($data['priority'] ?? null) === 'urgent' ? __('Urgent') : __('Normal'),
-                    ($data['priority'] ?? null) === 'urgent' ? 'danger' : 'default',
-                )],
+                'chips' => ($data['type_label'] ?? null) ? [self::chip((string) $data['type_label'], 'info')] : [],
             ],
             'technical_request_reviewed' => [
                 'app' => __('Technical Request'),
@@ -188,6 +191,27 @@ final class NotificationPresenter
             'technical_work_completed' => [
                 'app' => __('Technical Request'),
                 'title' => __('Technical result is available'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'price_request_created' => [
+                'app' => __('Price Request'),
+                'title' => __('New price request'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'price_request_reviewed' => [
+                'app' => __('Price Request'),
+                'title' => __('Price request update'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [self::chip(
+                    self::decisionLabel($data['decision'] ?? null),
+                    self::decisionTone($data['decision'] ?? null),
+                )],
+            ],
+            'price_request_completed' => [
+                'app' => __('Price Request'),
+                'title' => __('Price reply is available'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],

@@ -212,6 +212,12 @@
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
                                          <span>{{ __('Technician Dashboard') }}</span>
                                      </a>
+                                     <a wire:navigate.hover href="{{ route('teknisi.requests.index') }}"
+                                        aria-current="{{ request()->routeIs('teknisi.requests*') ? 'page' : 'false' }}"
+                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.requests*') ? $navActive : $navInactive }}">
+                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
+                                         <span>{{ __('Request Sales') }}</span>
+                                     </a>
                                      <a wire:navigate.hover href="{{ route('projects.index') }}"
                                         aria-current="{{ request()->routeIs('projects*') ? 'page' : 'false' }}"
                                         class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('projects*') ? $navActive : $navInactive }}">

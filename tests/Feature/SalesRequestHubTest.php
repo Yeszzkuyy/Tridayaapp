@@ -88,16 +88,21 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringContainsString('Buatkan penawaran', $html);
     }
 
-    public function test_price_tab_lists_only_estimates(): void
+    public function test_price_tab_lists_only_price_requests(): void
     {
         $sales = $this->userWithRole('sales');
-        $estimate = $this->makeTechRequest($sales, 'estimate');
+        $customer = \App\Models\Customer::create(['name' => 'PT Price Uji'.uniqid()]);
+        \App\Models\PriceRequest::create([
+            'customer_id' => $customer->id,
+            'requested_by' => $sales->id,
+            'status' => 'waiting_lead',
+        ]);
         $survey = $this->makeTechRequest($sales, 'survey');
 
         $html = $this->actingAs($sales)->get(route('sales.requests.index', ['tab' => 'price']))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString($estimate->title, $html);
+        $this->assertStringContainsString($customer->name, $html);
         $this->assertStringNotContainsString($survey->title, $html);
     }
 
@@ -183,31 +188,7 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringNotContainsString('value="'.$foreign->id.'"', $html);
     }
 
-    public function test_create_from_price_tab_locks_estimate_type(): void
-    {
-        $sales = $this->userWithRole('sales');
-
-        $html = $this->actingAs($sales)
-            ->get(route('sales.technical-requests.create', ['request_type' => 'estimate', 'locked' => 1]))
-            ->assertOk()->getContent();
-
-        $this->assertStringContainsString('name="request_type" value="estimate"', $html);
-        $this->assertStringNotContainsString('<select name="request_type"', $html);
-    }
-
-    public function test_create_from_engineer_tab_hides_estimate_option(): void
-    {
-        $sales = $this->userWithRole('sales');
-
-        $html = $this->actingAs($sales)
-            ->get(route('sales.technical-requests.create', ['hide_estimate' => 1]))
-            ->assertOk()->getContent();
-
-        $this->assertStringContainsString('<select name="request_type"', $html);
-        $this->assertStringNotContainsString('value="estimate"', $html);
-    }
-
-    public function test_create_from_lead_detail_keeps_all_types(): void
+    public function test_engineer_form_never_offers_estimate_and_offers_new_types(): void
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales);
@@ -216,7 +197,32 @@ class SalesRequestHubTest extends TestCase
             ->get(route('sales.technical-requests.create', ['lead_id' => $lead->id]))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString('value="estimate"', $html);
+        // Estimasi sudah pindah ke sistem Request Harga.
+        $this->assertStringNotContainsString('value="estimate"', $html);
         $this->assertStringContainsString('value="survey"', $html);
+        $this->assertStringContainsString('value="installation"', $html);
+        $this->assertStringContainsString('value="demo"', $html);
+        $this->assertStringContainsString('value="poc"', $html);
+        // Priority tidak lagi ditanyakan.
+        $this->assertStringNotContainsString('name="priority"', $html);
+    }
+
+    public function test_price_tab_new_button_opens_price_form(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.requests.index', ['tab' => 'price']))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString(route('sales.price-requests.create'), $html);
+
+        $form = $this->actingAs($sales)
+            ->get(route('sales.price-requests.create'))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('name="quotation"', $form);
+        $this->assertStringContainsString('name="customer_id"', $form);
+        $this->assertStringContainsString('name="notes"', $form);
     }
 }

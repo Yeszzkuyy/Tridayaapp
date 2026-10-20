@@ -19,6 +19,7 @@ use App\Http\Controllers\OfficeAssistantController;
 use App\Http\Controllers\ProductKnowledgeController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PocController;
+use App\Http\Controllers\PriceRequestController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TechnicalRequestController;
+use App\Http\Controllers\TeknisiRequestController;
 use App\Http\Controllers\TechnicianDashboardController;
 use App\Http\Controllers\TechnicianScheduleController;
 use App\Http\Controllers\TrashController;
@@ -172,6 +174,10 @@ Route::middleware('auth')->group(function () {
         Route::post('technical-requests', [TechnicalRequestController::class, 'store'])->name('technical-requests.store');
         Route::post('technical-requests/{technicalRequest}/cancel', [TechnicalRequestController::class, 'cancel'])->name('technical-requests.cancel');
 
+        Route::get('price-requests/create', [PriceRequestController::class, 'create'])->name('price-requests.create');
+        Route::post('price-requests', [PriceRequestController::class, 'store'])->name('price-requests.store');
+        Route::post('price-requests/{priceRequest}/cancel', [PriceRequestController::class, 'cancel'])->name('price-requests.cancel');
+
         Route::get('proposals/create', [ProposalController::class, 'create'])->name('proposals.create');
         Route::post('proposals', [ProposalController::class, 'store'])->name('proposals.store');
         Route::get('proposals/{proposal}/edit', [ProposalController::class, 'edit'])->name('proposals.edit');
@@ -215,6 +221,9 @@ Route::middleware('auth')->group(function () {
         Route::get('schedules/{schedule}', [SalesScheduleController::class, 'show'])->name('schedules.show');
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
+        Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
+        Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
+        Route::get('price-requests/{priceRequest}/reply', [PriceRequestController::class, 'downloadReply'])->name('price-requests.reply');
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
@@ -227,6 +236,10 @@ Route::middleware('auth')->group(function () {
         Route::post('technical-requests/{technicalRequest}/progress', [TechnicalRequestController::class, 'progress'])->name('technical-requests.progress');
         Route::post('technical-requests/{technicalRequest}/result', [TechnicalRequestController::class, 'result'])->name('technical-requests.result');
         Route::post('technical-requests/{technicalRequest}/complete', [TechnicalRequestController::class, 'complete'])->name('technical-requests.complete');
+
+        Route::post('price-requests/{priceRequest}/take', [PriceRequestController::class, 'take'])->name('price-requests.take');
+        Route::post('price-requests/{priceRequest}/reject', [PriceRequestController::class, 'reject'])->name('price-requests.reject');
+        Route::post('price-requests/{priceRequest}/reply', [PriceRequestController::class, 'reply'])->name('price-requests.reply.store');
     });
 
     Route::middleware('permission:view-sales|manage-sales')->prefix('sales')->name('sales.')->group(function () {
@@ -291,6 +304,8 @@ Route::middleware('auth')->group(function () {
     // TEKNISI — Technical Workflow (Survey, Sizing, Request Harga, Instalasi, Document)
     // ============================================
     Route::middleware('permission:view-technician|manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
+        // Inbox permintaan masuk dari sales (Request Harga + Request Tim Engineer).
+        Route::get('/requests', [TeknisiRequestController::class, 'index'])->name('requests.index');
         Route::get('/surveys/create', [\App\Http\Controllers\SurveyController::class, 'create'])->name('surveys.create');
         Route::get('/sizing-projects', [\App\Http\Controllers\SizingProjectController::class, 'index'])->name('sizing-projects.index');
         Route::get('/sizing-projects/create', [\App\Http\Controllers\SizingProjectController::class, 'create'])->name('sizing-projects.create');

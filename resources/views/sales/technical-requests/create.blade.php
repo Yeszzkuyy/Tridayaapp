@@ -13,7 +13,8 @@
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-            <form action="{{ route('sales.technical-requests.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <form action="{{ route('sales.technical-requests.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
+                  x-data="{ type: '{{ old('request_type', 'survey') }}' }">
                 @csrf
                 @if($lead)
                 <input type="hidden" name="lead_id" value="{{ $lead->id }}">
@@ -39,30 +40,33 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Request Type') }} <span class="text-red-500">*</span></label>
-                        @if(!empty($lockedType))
-                        <input type="hidden" name="request_type" value="{{ $lockedType }}">
-                        <p class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/40 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                            {{ \App\Models\TechnicalRequest::typeLabel($lockedType) }}
-                        </p>
-                        @else
-                        <select name="request_type" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                            @foreach(\App\Models\TechnicalRequest::TYPES as $type)
-                                @continue(!empty($hideEstimate) && $type === 'estimate')
+                        <select name="request_type" x-model="type" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            @foreach(\App\Models\TechnicalRequest::FORM_TYPES as $type)
                                 <option value="{{ $type }}" @selected(old('request_type') === $type)>{{ \App\Models\TechnicalRequest::typeLabel($type) }}</option>
                             @endforeach
                         </select>
-                        @endif
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- PIC Contact hanya relevan untuk pekerjaan Instalasi. --}}
+                <div x-show="type === 'installation'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Priority') }} <span class="text-red-500">*</span></label>
-                        <select name="priority" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                            <option value="normal" @selected(old('priority') === 'normal')>{{ __('Normal') }}</option>
-                            <option value="urgent" @selected(old('priority') === 'urgent')>{{ __('Urgent') }}</option>
-                        </select>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('PIC Contact Name') }}</label>
+                        <input type="text" name="pic_contact_name" value="{{ old('pic_contact_name') }}" maxlength="150"
+                               placeholder="{{ __('On-site contact person') }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        @error('pic_contact_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('PIC Contact Phone') }}</label>
+                        <input type="text" name="pic_contact_phone" value="{{ old('pic_contact_phone') }}" maxlength="40"
+                               placeholder="{{ __('Phone / WhatsApp number') }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        @error('pic_contact_phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Target Date') }}</label>
                         <div class="flex items-center gap-2">

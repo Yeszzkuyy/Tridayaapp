@@ -92,16 +92,6 @@ class TechnicalRequestController extends Controller
             $this->authorize('view', $lead);
         }
 
-        // Dari tab Request Price: tipe dikunci ke estimasi. Dari tab Engineer:
-        // estimasi disembunyikan (punya tab sendiri). Dari detail lead: semua tipe.
-        $lockedType = null;
-        $hideEstimate = false;
-        if ($request->filled('request_type') && in_array($request->get('request_type'), TechnicalRequest::TYPES, true)) {
-            $lockedType = $request->get('request_type');
-        } elseif ($request->boolean('hide_estimate')) {
-            $hideEstimate = true;
-        }
-
         // Tanpa lead bawaan: tampilkan pemilih lead (sales biasa hanya miliknya).
         $leads = null;
         if (!$lead) {
@@ -113,11 +103,11 @@ class TechnicalRequestController extends Controller
             $leads = $leadsQuery->get();
         }
 
-        $backUrl = $lead && !$lockedType && !$hideEstimate
+        $backUrl = $lead
             ? route('leads.show', $lead)
-            : route('sales.requests.index', ['tab' => $lockedType === 'estimate' ? 'price' : 'engineer']);
+            : route('sales.requests.index', ['tab' => 'engineer']);
 
-        return view('sales.technical-requests.create', compact('lead', 'leads', 'lockedType', 'hideEstimate', 'backUrl'));
+        return view('sales.technical-requests.create', compact('lead', 'leads', 'backUrl'));
     }
 
     public function store(Request $request)
@@ -128,7 +118,8 @@ class TechnicalRequestController extends Controller
             'title' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:2000',
             'location' => 'nullable|string|max:255',
-            'priority' => 'required|in:' . implode(',', TechnicalRequest::PRIORITIES),
+            'pic_contact_name' => 'nullable|string|max:150',
+            'pic_contact_phone' => 'nullable|string|max:40',
             'target_date' => 'nullable|date|after_or_equal:today',
             'target_time' => 'nullable|date_format:H:i',
             'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx',
@@ -138,8 +129,14 @@ class TechnicalRequestController extends Controller
         $lead = Lead::findOrFail($validated['lead_id']);
         $this->authorize('view', $lead);
 
+        // Priority tidak lagi diisi sales; default normal. PIC hanya untuk Instalasi.
+        $isInstallation = $validated['request_type'] === 'installation';
+
         $technicalRequest = TechnicalRequest::create([
             ...collect($validated)->except('attachment')->all(),
+            'priority' => 'normal',
+            'pic_contact_name' => $isInstallation ? ($validated['pic_contact_name'] ?? null) : null,
+            'pic_contact_phone' => $isInstallation ? ($validated['pic_contact_phone'] ?? null) : null,
             'requested_by' => auth()->id(),
             'status' => 'waiting_lead',
         ]);

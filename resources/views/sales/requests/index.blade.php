@@ -10,14 +10,14 @@
             'price' => [
                 'label' => __('Request Price'),
                 'icon' => 'receipt',
-                'desc' => __('Ask Engineering to calculate installation requirements and cost.'),
-                'create' => route('sales.technical-requests.create', ['request_type' => 'estimate', 'locked' => 1]),
+                'desc' => __('Attach your quotation — Engineering replies with the installation price.'),
+                'create' => route('sales.price-requests.create'),
             ],
             'engineer' => [
                 'label' => __('Engineer'),
                 'icon' => 'tools',
-                'desc' => __('Survey, installation, troubleshooting, or technical consultation in the field.'),
-                'create' => route('sales.technical-requests.create', ['hide_estimate' => 1]),
+                'desc' => __('Survey, installation, troubleshooting, demo, or technical consultation in the field.'),
+                'create' => route('sales.technical-requests.create'),
             ],
         ];
         $taskColors = [
@@ -33,6 +33,7 @@
             'assigned' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
             'in_progress' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
             'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
             'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
         ];
     @endphp
@@ -116,10 +117,10 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Request') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Lead') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Requested by') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Target') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Requested') }}</th>
                         <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Action') }}</th>
                     </tr>
                 </thead>
@@ -127,24 +128,24 @@
                     @forelse($priceRequests as $req)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
                             <td class="px-6 py-4">
-                                <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $req->title }}</span>
-                                <span class="block text-xs text-slate-500">{{ $req->technician?->name ?? __('Waiting for technician') }}</span>
+                                <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $req->customer?->name ?? '-' }}</span>
+                                <span class="block text-xs text-slate-500">{{ $req->assignee?->name ?? __('Waiting for engineer') }}</span>
                             </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->lead?->customer?->name ?? '-' }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->requester?->name ?? '-' }}</td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $techColors[$req->status] ?? 'bg-slate-200 text-slate-700' }}">
-                                    {{ \App\Models\TechnicalRequest::statusLabel($req->status) }}
+                                    {{ \App\Models\PriceRequest::statusLabel($req->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->target_date ? $req->target_date->format('d M Y') : '-' }}</td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->created_at?->format('d M Y') ?? '-' }}</td>
                             <td class="px-6 py-4 text-right">
-                                <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $req) }}" title="{{ __('View details') }}" />
+                                <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.show', $req) }}" title="{{ __('View details') }}" />
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="5">
-                                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No installation price requests yet — ask Engineering to calculate the cost.') }}">
+                                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet — attach your quotation and Engineering will reply with the price.') }}">
                                     <x-icon-button as="a" icon="add" href="{{ $tabs['price']['create'] }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />
                                 </x-empty-state>
                             </td>
