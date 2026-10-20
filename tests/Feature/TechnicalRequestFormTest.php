@@ -127,11 +127,21 @@ class TechnicalRequestFormTest extends TestCase
         $sales = $this->userWithRole('sales');
         $leadTech = $this->userWithRole('lead-technician');
         $lead = $this->makeLead($sales);
-        $request = $this->makeRequest($sales, $lead, ['status' => 'waiting_lead']);
+        $request = $this->makeRequest($sales, $lead, [
+            'status' => 'waiting_lead',
+            'purpose' => 'Check access requirements',
+        ]);
 
-        $this->actingAs($leadTech)
+        $html = $this->actingAs($leadTech)
             ->get(route('teknisi.technical-requests.show', $request))
-            ->assertOk();
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString(__('Request details'), $html);
+        $this->assertStringContainsString(__('Work details'), $html);
+        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(strtoupper(substr($sales->name, 0, 1)), $html);
+        $this->assertStringContainsString(__('Not assigned yet'), $html);
+        $this->assertStringContainsString('Check access requirements', $html);
     }
 
     public function test_engineer_creator_is_not_notified_about_own_request(): void
