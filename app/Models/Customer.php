@@ -20,6 +20,7 @@ class Customer extends Model
         'email',
         'npwp',
         'npwp_document_path',
+        'npwp_document_name',
         'notes',
         'status',
         'deleted_by',
@@ -99,5 +100,24 @@ class Customer extends Model
         }
 
         return 'https://wa.me/' . $digits . ($text ? '?text=' . rawurlencode($text) : '');
+    }
+
+    /**
+     * Nama file NPWP untuk tampil & download: nama asli upload,
+     * fallback ke nama lama untuk data sebelum kolom ini ada.
+     */
+    public function npwpDisplayName(): ?string
+    {
+        if (! $this->npwp_document_path) {
+            return null;
+        }
+
+        if (! empty($this->npwp_document_name)) {
+            return \App\Rules\SecureFile::sanitizeName($this->npwp_document_name);
+        }
+
+        $ext = pathinfo($this->npwp_document_path, PATHINFO_EXTENSION);
+
+        return 'NPWP-' . \Illuminate\Support\Str::slug($this->name) . ($ext ? '.' . $ext : '');
     }
 }
