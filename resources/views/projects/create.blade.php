@@ -31,17 +31,6 @@
                     @error('work_type_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Account Manager') }}</label>
-                    <select name="account_manager_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">{{ __('Select Account Manager') }}</option>
-                        @foreach($accountManagers as $am)
-                            <option value="{{ $am->id }}" {{ old('account_manager_id') == $am->id ? 'selected' : '' }}>{{ $am->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('account_manager_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-
                 {{-- PIC Engineer --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
