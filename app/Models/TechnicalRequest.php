@@ -10,7 +10,15 @@ class TechnicalRequest extends Model
     use SoftDeletes;
 
     public const TYPES = [
-        'survey', 'estimate', 'installation', 'troubleshooting', 'consultation', 'other',
+        'survey', 'estimate', 'installation', 'troubleshooting', 'consultation', 'demo', 'poc', 'other',
+    ];
+
+    /**
+     * Tipe yang ditawarkan di form Request Tim Engineer. 'estimate'
+     * dikeluarkan karena sudah punya sistem sendiri (Request Harga).
+     */
+    public const FORM_TYPES = [
+        'survey', 'installation', 'troubleshooting', 'consultation', 'demo', 'poc', 'other',
     ];
 
     public const PRIORITIES = ['normal', 'urgent'];
@@ -26,6 +34,8 @@ class TechnicalRequest extends Model
         'title',
         'location',
         'purpose',
+        'pic_contact_name',
+        'pic_contact_phone',
         'requirement',
         'problem_description',
         'scope',
@@ -72,10 +82,12 @@ class TechnicalRequest extends Model
     {
         return match ($type) {
             'survey' => __('Survey'),
-            'estimate' => __('Estimate'),
+            'estimate' => __('Price Estimation'),
             'installation' => __('Installation'),
             'troubleshooting' => __('Troubleshooting'),
             'consultation' => __('Technical Consultation'),
+            'demo' => __('Product Demo'),
+            'poc' => __('Product POC'),
             default => __('Other'),
         };
     }

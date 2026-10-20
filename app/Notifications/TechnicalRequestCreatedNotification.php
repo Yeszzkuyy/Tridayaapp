@@ -39,6 +39,7 @@ class TechnicalRequestCreatedNotification extends Notification
             'technical_request_id' => $this->request->id,
             'lead_id' => $this->request->lead_id,
             'title' => $this->request->title,
+            'type_label' => TechnicalRequest::typeLabel($this->request->request_type),
             'priority' => $this->request->priority,
             'url' => route('sales.technical-requests.show', $this->request->id),
         ];

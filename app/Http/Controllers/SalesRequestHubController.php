@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeadTask;
+use App\Models\PriceRequest;
 use App\Models\TechnicalRequest;
 use Illuminate\Http\Request;
 
@@ -20,15 +21,16 @@ class SalesRequestHubController extends Controller
 
         $taskQuery = $this->tasksFor($user);
         $techBase = $this->techRequestsFor($user);
+        $priceBase = $this->priceRequestsFor($user);
 
         return view('sales.requests.index', [
             'tab' => $tab,
             'tasks' => (clone $taskQuery)->paginate(10)->withQueryString(),
-            'priceRequests' => (clone $techBase)->where('request_type', 'estimate')->paginate(10, ['*'], 'price_page')->withQueryString(),
+            'priceRequests' => (clone $priceBase)->paginate(10, ['*'], 'price_page')->withQueryString(),
             'engineerRequests' => (clone $techBase)->where('request_type', '!=', 'estimate')->paginate(10, ['*'], 'engineer_page')->withQueryString(),
             'counts' => [
                 'inside-sales' => (clone $taskQuery)->count(),
-                'price' => (clone $techBase)->where('request_type', 'estimate')->count(),
+                'price' => (clone $priceBase)->count(),
                 'engineer' => (clone $techBase)->where('request_type', '!=', 'estimate')->count(),
             ],
         ]);
@@ -60,6 +62,21 @@ class SalesRequestHubController extends Controller
     private function techRequestsFor($user)
     {
         $query = TechnicalRequest::with(['lead.customer', 'technician'])->latest();
+
+        if (!($user && $user->can('manage-sales-leads'))) {
+            $query->where('requested_by', $user->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Request Harga (sistem terpisah): pemilik melihat miliknya sendiri,
+     * management (manage-sales-leads) melihat semua.
+     */
+    private function priceRequestsFor($user)
+    {
+        $query = PriceRequest::with(['customer', 'requester', 'assignee'])->latest();
 
         if (!($user && $user->can('manage-sales-leads'))) {
             $query->where('requested_by', $user->id);

@@ -30,6 +30,17 @@
                     <x-location-link :location="$technicalRequest->location" class="mt-1" />
                 </div>
             @endif
+            @if($technicalRequest->pic_contact_name || $technicalRequest->pic_contact_phone)
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase">{{ __('PIC Contact') }}</p>
+                    <p class="text-sm">
+                        {{ $technicalRequest->pic_contact_name ?: '-' }}
+                        @if($technicalRequest->pic_contact_phone)
+                            • <a href="tel:{{ $technicalRequest->pic_contact_phone }}" class="text-accent-600 hover:underline dark:text-accent-400">{{ $technicalRequest->pic_contact_phone }}</a>
+                        @endif
+                    </p>
+                </div>
+            @endif
             {{-- Kolom lama (request yang dibuat sebelum Purpose/Location ada): tampil hanya bila terisi. --}}
             @if($technicalRequest->requirement)
                 <div><p class="text-xs font-semibold text-slate-400 uppercase">{{ __('Requirement') }}</p><p class="text-sm whitespace-pre-wrap">{{ $technicalRequest->requirement }}</p></div>
