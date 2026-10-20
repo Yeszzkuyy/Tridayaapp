@@ -24,6 +24,14 @@ class PriceRequestCompletedNotification extends Notification
             : route('sales.price-requests.show', $this->request->id);
     }
 
+    /** URL in-app: relatif supaya tetap di domain tempat user login. */
+    private function relativeUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.price-requests.show', $this->request->id, false)
+            : route('sales.price-requests.show', $this->request->id, false);
+    }
+
     protected function pushUrl(object $notifiable): string
     {
         return $this->showUrl($notifiable);
@@ -53,7 +61,7 @@ class PriceRequestCompletedNotification extends Notification
             'price_request_id' => $this->request->id,
             'customer_id' => $this->request->customer_id,
             'title' => $this->request->customer?->name ?? ('#'.$this->request->customer_id),
-            'url' => $this->showUrl($notifiable),
+            'url' => $this->relativeUrl($notifiable),
         ];
     }
 

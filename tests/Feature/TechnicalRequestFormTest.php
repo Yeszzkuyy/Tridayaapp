@@ -116,7 +116,7 @@ class TechnicalRequestFormTest extends TestCase
         $items = collect(\App\Http\Controllers\NotificationController::itemsFor($leadTech))->keyBy('type');
 
         $this->assertSame(
-            route('teknisi.technical-requests.show', $request),
+            route('teknisi.technical-requests.show', $request, false),
             $items['technical_request_created']['url']
         );
     }

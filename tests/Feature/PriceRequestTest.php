@@ -376,7 +376,7 @@ class PriceRequestTest extends TestCase
         $this->assertSame(__('Price Request'), $items['price_request_created']['app']);
         $this->assertSame(__('New price request'), $items['price_request_created']['title']);
         $this->assertSame('PT Kartu Notif', $items['price_request_created']['body']);
-        $this->assertSame(route('teknisi.price-requests.show', $request), $items['price_request_created']['url']);
+        $this->assertSame(route('teknisi.price-requests.show', $request, false), $items['price_request_created']['url']);
     }
 
     public function test_created_notification_opens_teknisi_request_sales_for_lead_technician(): void
@@ -389,7 +389,7 @@ class PriceRequestTest extends TestCase
         $items = collect(\App\Http\Controllers\NotificationController::itemsFor($leadTech))->keyBy('type');
 
         $this->assertSame(
-            route('teknisi.price-requests.show', $request),
+            route('teknisi.price-requests.show', $request, false),
             $items['price_request_created']['url']
         );
     }
@@ -403,7 +403,7 @@ class PriceRequestTest extends TestCase
         $items = collect(\App\Http\Controllers\NotificationController::itemsFor($sales))->keyBy('type');
 
         $this->assertSame(
-            route('sales.price-requests.show', $request),
+            route('sales.price-requests.show', $request, false),
             $items['price_request_completed']['url']
         );
     }

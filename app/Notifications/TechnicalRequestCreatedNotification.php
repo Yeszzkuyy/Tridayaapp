@@ -24,6 +24,14 @@ class TechnicalRequestCreatedNotification extends Notification
             : route('sales.technical-requests.show', $this->request->id);
     }
 
+    /** URL in-app: relatif supaya tetap di domain tempat user login. */
+    private function relativeUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id, false)
+            : route('sales.technical-requests.show', $this->request->id, false);
+    }
+
     protected function pushUrl(object $notifiable): string
     {
         return $this->showUrl($notifiable);
@@ -55,7 +63,7 @@ class TechnicalRequestCreatedNotification extends Notification
             'title' => $this->request->title,
             'type_label' => TechnicalRequest::typeLabel($this->request->request_type),
             'priority' => $this->request->priority,
-            'url' => $this->showUrl($notifiable),
+            'url' => $this->relativeUrl($notifiable),
         ];
     }
 
