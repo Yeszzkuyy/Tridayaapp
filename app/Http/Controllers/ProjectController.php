@@ -9,6 +9,7 @@ use App\Models\AccountManager;
 use App\Models\WorkType;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Services\Project\ProjectService;
 use App\Enums\ProjectStatus as ProjectStatusEnum;
 
@@ -67,7 +68,7 @@ class ProjectController extends Controller
         $statuses = ProjectStatus::orderBy('sort_order')->get();
         $technicians = User::role('technician')->orderBy('name')->get(['id', 'name']);
 
-        return view('projects.create', compact('customer', 'workTypes', 'accountManagers', 'statuses', 'technicians'));
+        return view('projects.create', compact('customer', 'workTypes', 'accountManagers', 'statuses', 'technicians') + ['busyPics' => Project::busyPicEngineerNames()]);
     }
 
     public function store(Request $request)
@@ -88,9 +89,11 @@ class ProjectController extends Controller
             'account_manager_id' => 'nullable|exists:account_managers,id',
             'pic_engineer' => 'nullable|string|max:255',
             'support_technicians' => 'nullable|array',
-            'support_technicians.*' => 'string|max:255',
+            'support_technicians.*' => ['string', 'max:255', Rule::notIn(Project::busyPicEngineerNames())],
             'project_status_id' => 'nullable|exists:project_statuses,id',
             'description' => 'nullable|string',
+        ], [
+            'support_technicians.*.not_in' => __('Teknisi tersebut sedang menjadi PIC Engineer aktif dan tidak bisa dipilih sebagai support.'),
         ]);
 
         $validated['support_technicians'] = implode(', ', array_filter($validated['support_technicians'] ?? []));
@@ -129,7 +132,7 @@ class ProjectController extends Controller
         $statuses = ProjectStatus::orderBy('sort_order')->get();
         $technicians = User::role('technician')->orderBy('name')->get(['id', 'name']);
 
-        return view('projects.edit', compact('project', 'customers', 'workTypes', 'accountManagers', 'statuses', 'technicians'));
+        return view('projects.edit', compact('project', 'customers', 'workTypes', 'accountManagers', 'statuses', 'technicians') + ['busyPics' => Project::busyPicEngineerNames($project->id)]);
     }
 
     public function update(Request $request, Project $project)
@@ -142,10 +145,12 @@ class ProjectController extends Controller
             'account_manager_id' => 'nullable|exists:account_managers,id',
             'pic_engineer' => 'nullable|string|max:255',
             'support_technicians' => 'nullable|array',
-            'support_technicians.*' => 'string|max:255',
+            'support_technicians.*' => ['string', 'max:255', Rule::notIn(Project::busyPicEngineerNames($project->id))],
             'project_status_id' => 'nullable|exists:project_statuses,id',
             'progress' => 'nullable|integer|min:0|max:100',
             'description' => 'nullable|string',
+        ], [
+            'support_technicians.*.not_in' => __('Teknisi tersebut sedang menjadi PIC Engineer aktif dan tidak bisa dipilih sebagai support.'),
         ]);
 
         $validated['support_technicians'] = implode(', ', array_filter($validated['support_technicians'] ?? []));

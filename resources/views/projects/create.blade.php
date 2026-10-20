@@ -53,11 +53,14 @@
                     </label>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         @foreach($technicians as $tech)
-                            <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer">
+                            @php $isBusyPic = in_array($tech->name, $busyPics ?? []); @endphp
+                            <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 {{ $isBusyPic ? 'cursor-not-allowed opacity-50' : 'hover:bg-slate-50 cursor-pointer' }}">
                                 <input type="checkbox" name="support_technicians[]" value="{{ $tech->name }}"
                                        class="rounded border-slate-300 text-accent-600 focus:ring-accent-500"
-                                       {{ in_array($tech->name, (array) old('support_technicians', [])) ? 'checked' : '' }}>
-                                {{ $tech->name }}
+                                       {{ in_array($tech->name, (array) old('support_technicians', [])) ? 'checked' : '' }}
+                                       {{ $isBusyPic ? 'disabled' : '' }}>
+                                <span class="{{ $isBusyPic ? 'line-through' : '' }}">{{ $tech->name }}</span>
+                                @if($isBusyPic)<span class="text-[11px] text-amber-600">({{ __('PIC aktif') }})</span>@endif
                             </label>
                         @endforeach
                     </div>
