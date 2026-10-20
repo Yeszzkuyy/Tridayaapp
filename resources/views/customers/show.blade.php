@@ -199,11 +199,11 @@
                 {{-- TAB 2: PROJECTS --}}
                 <div x-show="tab === 'projects'" x-transition>
                     <x-section-header title="{{ __('Project List') }}">
-                        @can('manage-technician')
+                        @if(auth()->user()->can('create', App\Models\Project::class) || auth()->user()->can('update', $customer))
                             <x-add-button href="{{ route('projects.create', ['customer_id' => $customer->id]) }}">
                                 {{ __('Add Project') }}
                             </x-add-button>
-                        @endcan
+                        @endif
                     </x-section-header>
 
                     @if($customer->projects->isNotEmpty())
@@ -247,11 +247,11 @@
                                             <div class="flex flex-wrap justify-end items-center gap-x-3 gap-y-1">
                                                 <a href="{{ route('projects.show', $project) }}"
                                                    class="text-accent-600 hover:text-accent-800 text-sm whitespace-nowrap">{{ __('Detail') }}</a>
-                                                @can('manage-technician')
+                                                @can('update', $project)
                                                     <a href="{{ route('projects.edit', $project) }}"
                                                        class="text-amber-600 hover:text-amber-800 text-sm whitespace-nowrap">{{ __('Edit') }}</a>
                                                 @endcan
-                                                @can('manage-technician')
+                                                @can('delete', $project)
                                                     <form action="{{ route('projects.destroy', $project) }}" method="POST"
                                                           onsubmit="return confirm('{{ __('Delete this project?') }}')" class="inline-block m-0">
                                                         @csrf @method('DELETE')

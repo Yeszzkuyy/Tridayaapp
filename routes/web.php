@@ -253,21 +253,21 @@ Route::middleware('auth')->group(function () {
         Route::get('pocs', [PocController::class, 'index'])->name('pocs.index');
     });
 
-    // Tambah project: teknisi ATAU sales untuk customer yang boleh ia edit
-    // (cek customer di controller). Edit/hapus tetap khusus teknisi.
+    // Tambah/ubah/hapus project: teknisi ATAU sales untuk customer yang
+    // boleh ia edit (cek customer di policy/controller). Daftar project
+    // dan halaman Kelola Dokumen tetap ikut aturan masing-masing.
     Route::middleware('permission:manage-technician|manage-sales')->group(function () {
         Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
         Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+        Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+        Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     });
 
     // ============================================
     // TEKNISI — manage
     // ============================================
     Route::middleware('permission:manage-technician')->group(function () {
-        Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
-        Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
-        Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-
         Route::get('/projects/{project}/supports/create', [ProjectSupportController::class, 'create'])->name('project-supports.create');
         Route::post('/projects/{project}/supports', [ProjectSupportController::class, 'store'])->name('project-supports.store');
         Route::delete('/project-supports/{projectSupport}', [ProjectSupportController::class, 'destroy'])->name('project-supports.destroy');

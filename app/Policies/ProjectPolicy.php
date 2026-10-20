@@ -29,12 +29,16 @@ class ProjectPolicy
 
     public function update(User $user, Project $project): bool
     {
-        return $user->can('manage-technician');
+        // Teknisi boleh ubah project apa pun; sales boleh untuk project
+        // milik customer yang boleh ia edit (batas PT tetap berlaku).
+        return $user->can('manage-technician')
+            || ($project->customer && $user->can('update', $project->customer));
     }
 
     public function delete(User $user, Project $project): bool
     {
-        return $user->can('manage-technician');
+        return $user->can('manage-technician')
+            || ($project->customer && $user->can('update', $project->customer));
     }
 
     public function restore(User $user, Project $project): bool

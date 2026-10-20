@@ -74,9 +74,12 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/projects')->assertOk();
         $this->actingAs($u)->get('/projects/'.$project->id)->assertOk();
         $this->actingAs($u)->post('/projects', [])->assertRedirect();
-        $this->actingAs($u)->put('/projects/'.$project->id, [])->assertForbidden();
-        $this->actingAs($u)->delete('/projects/'.$project->id)->assertForbidden();
-        $this->assertNotNull($project->fresh());
+        $this->actingAs($u)->put('/projects/'.$project->id, [
+            'project_name' => 'Proj Sales 2',
+            'work_type_id' => $workType->id,
+        ])->assertRedirect();
+        $this->actingAs($u)->delete('/projects/'.$project->id)->assertRedirect();
+        $this->assertSoftDeleted('projects', ['id' => $project->id]);
 
         $this->actingAs($u)->get('/teknisi/dashboard')->assertForbidden();
         // Sales read-only pada Admin: lihat boleh, mutasi 403 ( tested di RoleMatrixTest )

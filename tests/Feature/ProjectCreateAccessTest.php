@@ -105,4 +105,63 @@ class ProjectCreateAccessTest extends TestCase
         $this->actingAs($sales);
         $this->get(route('projects.create'))->assertRedirect(route('customers.index'));
     }
+
+    public function test_sales_bisa_edit_dan_hapus_project_customernya(): void
+    {
+        $sales = $this->userWithRoles('Sales', ['sales', 'sales-nti']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($sales);
+        $this->post(route('projects.store'), $this->payload($customer))->assertRedirect();
+        $project = Project::where('customer_id', $customer->id)->firstOrFail();
+
+        $this->get(route('projects.edit', $project))->assertOk();
+        $this->put(route('projects.update', $project), [
+            'project_name' => 'Project Diubah',
+            'work_type_id' => $project->work_type_id,
+        ])->assertRedirect();
+        $this->assertSame('Project Diubah', $project->fresh()->project_name);
+
+        $this->delete(route('projects.destroy', $project))->assertRedirect();
+        $this->assertSoftDeleted('projects', ['id' => $project->id]);
+    }
+
+    public function test_sales_beda_pt_tidak_bisa_edit_atau_hapus_project(): void
+    {
+        $owner = $this->userWithRoles('Pemilik', ['technician']);
+        $sales = $this->userWithRoles('Sales MGK', ['sales-mgk']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($owner);
+        $this->post(route('projects.store'), $this->payload($customer))->assertRedirect();
+        $project = Project::where('customer_id', $customer->id)->firstOrFail();
+
+        $this->actingAs($sales);
+        $this->get(route('projects.edit', $project))->assertForbidden();
+        $this->put(route('projects.update', $project), [
+            'project_name' => 'Coba Ubah',
+            'work_type_id' => $project->work_type_id,
+        ])->assertForbidden();
+        $this->delete(route('projects.destroy', $project))->assertForbidden();
+        $this->assertNotNull($project->fresh());
+    }
+
+    public function test_marketing_tidak_bisa_edit_atau_hapus_project(): void
+    {
+        $owner = $this->userWithRoles('Pemilik', ['technician']);
+        $mkt = $this->userWithRoles('Marketing', ['marketing']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($owner);
+        $this->post(route('projects.store'), $this->payload($customer))->assertRedirect();
+        $project = Project::where('customer_id', $customer->id)->firstOrFail();
+
+        $this->actingAs($mkt);
+        $this->get(route('projects.edit', $project))->assertForbidden();
+        $this->put(route('projects.update', $project), [
+            'project_name' => 'Coba Ubah',
+            'work_type_id' => $project->work_type_id,
+        ])->assertForbidden();
+        $this->delete(route('projects.destroy', $project))->assertForbidden();
+    }
 }

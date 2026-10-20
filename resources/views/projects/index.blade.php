@@ -64,7 +64,7 @@
                                 <div class="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="customer" href="{{ route('customers.show', $project->customer_id) }}" title="{{ __('View customer') }}" />
                                     <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('Project detail') }}" />
-                                    @can('manage-technician')
+                                    @can('update', $project)
                                         <x-icon-button as="a" icon="edit" href="{{ route('projects.edit', $project) }}" title="{{ __('Edit project') }}" />
                                     @endcan
                                 </div>
