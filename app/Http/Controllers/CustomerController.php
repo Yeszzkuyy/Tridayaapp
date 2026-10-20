@@ -116,7 +116,143 @@ class CustomerController extends Controller
             }
         ]);
 
-        return view('customers.show', compact('customer'));
+        return view('customers.show', [
+            'customer' => $customer,
+            'timeline' => $this->buildTimeline($customer),
+        ]);
+    }
+
+    /**
+     * Timeline gabungan urut waktu: aktivitas project + follow-up +
+     * meeting + dokumen + PIC + invoice/PO/payment. Dibatasi 50 terbaru.
+     */
+    private function buildTimeline(Customer $customer): \Illuminate\Support\Collection
+    {
+        $projectIds = $customer->projects->pluck('id');
+        $leadIds = $customer->leads()->pluck('id');
+
+        $items = collect();
+
+        $projectActivities = \App\Models\ProjectActivity::whereIn('project_id', $projectIds)
+            ->with(['project', 'user'])
+            ->latest('activity_date')
+            ->take(50)
+            ->get()
+            ->map(fn ($a) => [
+                'date' => $a->activity_date ?? $a->created_at,
+                'type' => 'project',
+                'user' => $a->user,
+                'title' => $a->title ?? __('Activity'),
+                'detail' => $a->description,
+                'context' => $a->project?->project_name,
+            ]);
+
+        $followUps = $customer->followUps()->with('creator')
+            ->latest('follow_up_date')
+            ->take(50)
+            ->get()
+            ->map(fn ($fu) => [
+                'date' => $fu->follow_up_date ?? $fu->created_at,
+                'type' => 'followup',
+                'user' => $fu->creator,
+                'title' => \App\Models\FollowUp::typeLabel($fu->type),
+                'detail' => $fu->description,
+                'context' => $fu->follow_up_date?->format('d M Y'),
+            ]);
+
+        $meetings = \App\Models\SalesSchedule::whereIn('lead_id', $leadIds)
+            ->with('creator')
+            ->latest('start_at')
+            ->take(50)
+            ->get()
+            ->map(fn ($m) => [
+                'date' => $m->start_at ?? $m->created_at,
+                'type' => 'meeting',
+                'user' => $m->creator,
+                'title' => $m->title ?? __('Meeting'),
+                'detail' => $m->location,
+                'context' => $m->start_at?->format('d M Y H:i'),
+            ]);
+
+        $documents = \App\Models\ProjectDocument::whereIn('project_id', $projectIds)
+            ->with(['project', 'uploader'])
+            ->latest()
+            ->take(50)
+            ->get()
+            ->map(fn ($d) => [
+                'date' => $d->created_at,
+                'type' => 'document',
+                'user' => $d->uploader,
+                'title' => __('Document uploaded'),
+                'detail' => $d->file_name,
+                'context' => $d->project?->project_name,
+            ]);
+
+        $pics = $customer->contacts()->with('creator')
+            ->latest()
+            ->take(50)
+            ->get()
+            ->map(fn ($c) => [
+                'date' => $c->created_at,
+                'type' => 'pic',
+                'user' => $c->creator,
+                'title' => __('PIC added'),
+                'detail' => $c->name . ($c->position ? ' · ' . $c->position : ''),
+                'context' => null,
+            ]);
+
+        $invoices = $customer->invoices()->with('creator')
+            ->latest('issue_date')
+            ->take(20)
+            ->get()
+            ->map(fn ($inv) => [
+                'date' => $inv->issue_date ?? $inv->created_at,
+                'type' => 'invoice',
+                'user' => $inv->creator,
+                'title' => __('Invoice created'),
+                'detail' => $inv->invoice_number . ' · Rp ' . number_format($inv->amount, 0, ',', '.'),
+                'context' => null,
+            ]);
+
+        $pos = $customer->purchaseOrders()->with('creator')
+            ->latest('issue_date')
+            ->take(20)
+            ->get()
+            ->map(fn ($po) => [
+                'date' => $po->issue_date ?? $po->created_at,
+                'type' => 'po',
+                'user' => $po->creator,
+                'title' => __('PO created'),
+                'detail' => $po->po_number,
+                'context' => null,
+            ]);
+
+        $payments = \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
+            ->with(['creator', 'invoice'])
+            ->latest('payment_date')
+            ->take(20)
+            ->get()
+            ->map(fn ($pm) => [
+                'date' => $pm->payment_date ?? $pm->created_at,
+                'type' => 'payment',
+                'user' => $pm->creator,
+                'title' => __('Payment recorded'),
+                'detail' => $pm->invoice?->invoice_number . ' · Rp ' . number_format($pm->amount, 0, ',', '.'),
+                'context' => null,
+            ]);
+
+        return $items
+            ->concat($projectActivities)
+            ->concat($followUps)
+            ->concat($meetings)
+            ->concat($documents)
+            ->concat($pics)
+            ->concat($invoices)
+            ->concat($pos)
+            ->concat($payments)
+            ->sortByDesc('date')
+            ->values()
+            ->take(50);
     }
 
     /**

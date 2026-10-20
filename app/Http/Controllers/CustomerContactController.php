@@ -39,7 +39,7 @@ class CustomerContactController extends Controller
             $customer->contacts()->update(['is_primary' => false]);
         }
 
-        $customer->contacts()->create($validated);
+        $customer->contacts()->create($validated + ['created_by' => auth()->id()]);
 
         return redirect()
             ->route('customers.show', $customer)

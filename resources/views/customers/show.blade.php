@@ -103,11 +103,6 @@
                         $doneProjects = $customer->projects->where('project_status_id', 5)->count();
                         $activeProjects = $customer->projects->where('project_status_id', '!=', 5)->where('project_status_id', '!=', 6)->count();
                         $totalContacts = $customer->contacts->count();
-                        $activities = App\Models\ProjectActivity::whereIn('project_id', $customer->projects->pluck('id'))
-                            ->with(['project', 'user'])
-                            ->latest()
-                            ->take(5)
-                            ->get();
                         $infoFields = [
                             ['icon' => 'building', 'label' => __('Name'), 'value' => $customer->name],
                             ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group ?? '-'],
@@ -169,24 +164,28 @@
                         </div>
                     </div>
 
-                    {{-- Recent Activity: vertical timeline --}}
+                    {{-- Recent Activity: vertical timeline (gabungan semua sumber) --}}
                     <div data-rise="3" class="mt-6 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6">
                         <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">{{ __('Recent Activity') }}</h3>
-                        @if($activities->isNotEmpty())
+                        @php $recentTimeline = $timeline->take(5); @endphp
+                        @if($recentTimeline->isNotEmpty())
                             <div class="relative">
                                 <div class="absolute left-[15px] top-8 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
-                                @foreach($activities as $activity)
+                                @foreach($recentTimeline as $item)
                                     <div class="relative pl-10 pb-5 last:pb-0" data-rise="{{ min($loop->iteration, 4) }}">
                                         <div class="absolute left-0 top-0">
-                                            <x-user-avatar :user="$activity->user" size="w-8 h-8" text="text-xs" />
+                                            <x-user-avatar :user="$item['user']" size="w-8 h-8" text="text-xs" />
                                         </div>
                                         <div class="bg-white dark:bg-slate-800 rounded-xl p-3.5 shadow-sm">
-                                            <p class="text-sm text-slate-800 dark:text-slate-100">
-                                                <span class="font-semibold">{{ $activity->user?->name ?? __('System') }}</span>
-                                                {{ $activity->title ?? __('Activity') }}
-                                                <span class="text-xs text-slate-400">· {{ $activity->created_at->diffForHumans() }}</span>
+                                            <p class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-slate-800 dark:text-slate-100">
+                                                <span class="font-semibold">{{ $item['user']?->name ?? __('System') }}</span>
+                                                <x-timeline-badge :type="$item['type']" />
+                                                <span>{{ $item['title'] }}</span>
+                                                <span class="text-xs text-slate-400">· {{ $item['date']?->diffForHumans() }}</span>
                                             </p>
-                                            <p class="text-xs text-slate-500 mt-0.5">{{ $activity->project?->name ?? __('Project') }}</p>
+                                            @if($item['detail'] || $item['context'])
+                                                <p class="text-xs text-slate-500 mt-0.5">{{ $item['detail'] }}@if($item['context']) · {{ $item['context'] }}@endif</p>
+                                            @endif
                                         </div>
                                     </div>
                                 @endforeach
@@ -642,28 +641,21 @@
                 <div x-show="tab === 'activity'" x-transition>
                     <x-section-header title="{{ __('Activity Timeline') }}" />
 
-                    @php
-                        $allActivities = App\Models\ProjectActivity::whereIn('project_id', $customer->projects->pluck('id'))
-                            ->with(['project', 'user'])
-                            ->latest()
-                            ->get();
-                    @endphp
-
-                    @if($allActivities->isNotEmpty())
+                    @if($timeline->isNotEmpty())
                         <div class="relative">
-                            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
-                            @foreach($allActivities as $activity)
+                            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
+                            @foreach($timeline as $item)
                                 <div class="relative pl-12 pb-6 last:pb-0">
-                                    <div class="absolute left-2 top-1 w-5 h-5 rounded-full bg-accent-500 border-4 border-white shadow-sm"></div>
+                                    <div class="absolute left-2 top-1 w-5 h-5 rounded-full bg-accent-500 border-4 border-white shadow-sm dark:border-slate-800"></div>
                                     <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4">
-                                        <div class="flex items-center gap-3">
-                                            <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">{{ $activity->user?->name ?? __('System') }}</span>
-                                            <span class="text-xs text-slate-400">{{ $activity->created_at->format('d M Y H:i') }}</span>
+                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                            <x-timeline-badge :type="$item['type']" />
+                                            <span class="font-semibold text-sm text-slate-800 dark:text-slate-100">{{ $item['user']?->name ?? __('System') }}</span>
+                                            <span class="text-xs text-slate-400">{{ $item['date']?->format('d M Y H:i') }}</span>
                                         </div>
-                                        <p class="text-sm text-slate-700 mt-1">{{ $activity->title ?? __('Activity') }}</p>
-                                        <p class="text-xs text-slate-500">{{ $activity->project?->name ?? __('Project') }}</p>
-                                        @if($activity->description)
-                                            <p class="text-xs text-slate-400 mt-1">{{ $activity->description }}</p>
+                                        <p class="text-sm text-slate-700 dark:text-slate-200 mt-1">{{ $item['title'] }}</p>
+                                        @if($item['detail'] || $item['context'])
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">{{ $item['detail'] }}@if($item['context']) · {{ $item['context'] }}@endif</p>
                                         @endif
                                     </div>
                                 </div>
