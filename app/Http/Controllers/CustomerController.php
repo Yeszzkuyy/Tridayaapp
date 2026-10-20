@@ -126,6 +126,8 @@ class CustomerController extends Controller
     {
         $this->authorize('update', $customer);
 
+        $customer->load(['contacts' => fn ($query) => $query->orderByDesc('is_primary')->latest()]);
+
         return view('customers.edit', ['customer' => $customer, 'ptGroups' => $this->writablePtGroups()]);
     }
 
