@@ -1,4 +1,7 @@
 <x-app-layout>
+    @if(session('success') && session('success_card'))
+        <x-status-card :message="session('success')" />
+    @endif
     @php
         $isTech = auth()->user()?->can('manage-technician');
         $backUrl = $isTech
@@ -63,12 +66,12 @@
             {{-- Lead Teknisi: review + atur penghandle (seperti TechnicalRequest) --}}
             @if($isTech && $priceRequest->status === 'waiting_lead')
                 <div class="flex flex-wrap gap-2 pt-2">
-                    <form action="{{ route('sales.price-requests.review', $priceRequest) }}" method="POST" class="inline">
+                    <form action="{{ route('sales.price-requests.review', $priceRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}">
                         @csrf
                         <input type="hidden" name="decision" value="accepted">
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                     </form>
-                    <form action="{{ route('sales.price-requests.review', $priceRequest) }}" method="POST" class="inline"
+                    <form action="{{ route('sales.price-requests.review', $priceRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}"
                           onsubmit="return confirm('{{ __('Reject this request?') }}')">
                         @csrf
                         <input type="hidden" name="decision" value="rejected">
@@ -78,7 +81,7 @@
             @endif
 
             @if($isTech && in_array($priceRequest->status, ['accepted', 'assigned', 'in_progress']))
-                <form action="{{ route('sales.price-requests.assign', $priceRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 pt-2">
+                <form action="{{ route('sales.price-requests.assign', $priceRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 pt-2" data-loading-text="{{ __('Assigning…') }}">
                     @csrf
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Assign Technician') }}</label>
@@ -101,18 +104,18 @@
             {{-- Teknisi: ambil cepat, atau balas dengan file --}}
             @if($isTech && !$priceRequest->isClosed())
                 <div class="flex flex-wrap gap-2 pt-2">
-                    <form action="{{ route('sales.price-requests.take', $priceRequest) }}" method="POST" class="inline">
+                    <form action="{{ route('sales.price-requests.take', $priceRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}">
                         @csrf
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Take Request') }}" title="{{ __('Take Request') }}" />
                     </form>
-                    <form action="{{ route('sales.price-requests.reject', $priceRequest) }}" method="POST" class="inline"
+                    <form action="{{ route('sales.price-requests.reject', $priceRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}"
                           onsubmit="return confirm('{{ __('Reject this request?') }}')">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
                     </form>
                 </div>
 
-                <form action="{{ route('sales.price-requests.reply.store', $priceRequest) }}" method="POST" enctype="multipart/form-data" class="space-y-3 pt-2">
+                <form action="{{ route('sales.price-requests.reply.store', $priceRequest) }}" method="POST" enctype="multipart/form-data" class="space-y-3 pt-2" data-loading-text="{{ __('Sending…') }}">
                     @csrf
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Reply File (calculation / price)') }} <span class="text-red-500">*</span></label>
@@ -136,7 +139,7 @@
 
             {{-- Sales pemilik / management: batalkan --}}
             @if(!$priceRequest->isClosed() && ((int) $priceRequest->requested_by === (int) auth()->id() || auth()->user()?->can('manage-sales-leads')))
-                <form action="{{ route('sales.price-requests.cancel', $priceRequest) }}" method="POST" class="pt-2"
+                <form action="{{ route('sales.price-requests.cancel', $priceRequest) }}" method="POST" class="pt-2" data-loading-text="{{ __('Cancelling…') }}"
                       onsubmit="return confirm('{{ __('Cancel this request?') }}')">
                     @csrf
                     <x-icon-button type="submit" icon="delete" label="{{ __('Cancel Request') }}" title="{{ __('Cancel Request') }}" />

@@ -70,7 +70,8 @@ class PriceRequestController extends Controller
         );
 
         return redirect()->route('sales.price-requests.show', $priceRequest)
-            ->with('success', __('Price request dikirim ke tim Engineer.'));
+            ->with('success', __('Price request dikirim ke tim Engineer.'))
+            ->with('success_card', true);
     }
 
     public function show(Request $request, PriceRequest $priceRequest)
@@ -97,7 +98,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->update(['status' => 'cancelled']);
 
-        return back()->with('success', __('Price request canceled.'));
+        return back()->with('success', __('Price request canceled.'))->with('success_card', true);
     }
 
     /** Lead Teknisi/Teknisi mengambil request untuk dikerjakan. */
@@ -113,7 +114,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'in_progress'));
 
-        return back()->with('success', __('Price request diambil untuk dikerjakan.'));
+        return back()->with('success', __('Price request diambil untuk dikerjakan.'))->with('success_card', true);
     }
 
     /** Lead Teknisi menolak request (mis. quotation tidak jelas). */
@@ -126,7 +127,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'rejected'));
 
-        return back()->with('success', __('Price request ditolak.'));
+        return back()->with('success', __('Price request ditolak.'))->with('success_card', true);
     }
 
     /** Lead Teknisi mereview: terima request lalu tentukan penghandle. */
@@ -140,7 +141,7 @@ class PriceRequestController extends Controller
         $priceRequest->update(['status' => $validated['decision']]);
         $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
 
-        return back()->with('success', __('Price request telah di-' . $validated['decision'] . '.'));
+        return back()->with('success', __('Price request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
     }
 
     /** Lead Teknisi mengatur siapa teknisi penghandle (seperti TechnicalRequest). */
@@ -161,7 +162,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'assigned'));
 
-        return back()->with('success', __('Technician assigned successfully.'));
+        return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
     }
 
     /** Balas request dengan file hasil hitungan → status selesai. */
@@ -185,7 +186,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->requester?->notify(new PriceRequestCompletedNotification($priceRequest));
 
-        return back()->with('success', __('Balasan harga terkirim ke sales.'));
+        return back()->with('success', __('Balasan harga terkirim ke sales.'))->with('success_card', true);
     }
 
     public function downloadQuotation(Request $request, PriceRequest $priceRequest)
