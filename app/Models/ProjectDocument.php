@@ -11,6 +11,7 @@ class ProjectDocument extends Model
 
     protected $fillable = [
         'project_id',
+        'customer_id',
         'file_name',
         'file_path',
         'notes',
@@ -21,6 +22,11 @@ class ProjectDocument extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function category()

@@ -123,4 +123,75 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertSee('data-pdf-url', false)
             ->assertSee('Upload File', false);
     }
+
+    public function test_upload_tanpa_project_tersimpan_sebagai_dokumen_umum(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $this->actingAs($sales);
+        $customer = Customer::create(['name' => 'PT Tanpa Proyek', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('umum.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('project_documents', [
+            'customer_id' => $customer->id,
+            'project_id' => null,
+            'file_name' => 'umum.pdf',
+        ]);
+
+        $this->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee('umum.pdf', false);
+    }
+
+    public function test_upload_ditolak_bila_project_milik_customer_lain(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $this->actingAs($sales);
+        $customer = Customer::create(['name' => 'PT A', 'pt_group' => 'NTI']);
+        $otherProject = $this->makeProject('NTI');
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('x.pdf', 100, 'application/pdf'),
+            'project_id' => $otherProject->id,
+        ])->assertStatus(422);
+    }
+
+    public function test_teknisi_bisa_upload_tanpa_project_dan_marketing_ditolak(): void
+    {
+        $customer = Customer::create(['name' => 'PT Teknisi', 'pt_group' => 'NTI']);
+
+        $tech = $this->userWithRoles('Teknisi', ['technician']);
+        $this->actingAs($tech);
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('tek.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+
+        $mkt = $this->userWithRoles('Marketing', ['marketing']);
+        $this->actingAs($mkt);
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('mkt.pdf', 100, 'application/pdf'),
+        ])->assertForbidden();
+    }
+
+    public function test_hapus_customer_ikut_hapus_dokumen_umum(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $this->actingAs($sales);
+        $customer = Customer::create(['name' => 'PT Hapus', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('hapus.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+        $doc = \App\Models\ProjectDocument::where('customer_id', $customer->id)->firstOrFail();
+
+        $customer->delete();
+
+        $this->assertSoftDeleted('project_documents', ['id' => $doc->id]);
+    }
 }

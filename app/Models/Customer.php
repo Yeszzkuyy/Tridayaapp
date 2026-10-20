@@ -36,6 +36,11 @@ class Customer extends Model
         return $this->hasMany(CustomerContact::class);
     }
 
+    public function documents()
+    {
+        return $this->hasMany(ProjectDocument::class);
+    }
+
     public function deleter()
     {
         return $this->belongsTo(User::class, 'deleted_by');

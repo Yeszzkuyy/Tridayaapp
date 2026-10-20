@@ -135,6 +135,12 @@ Route::middleware('auth')->group(function () {
         Route::patch('/customer-contacts/{customerContact}/primary', [CustomerContactController::class, 'togglePrimary'])->name('customer-contacts.primary');
     });
 
+    // Upload file langsung ke customer (boleh tanpa project).
+    // Izin rinci dicek di controller: teknisi ATAU pengedit customer.
+    Route::middleware('permission:manage-technician|manage-sales')->group(function () {
+        Route::post('/customers/{customer}/documents', [ProjectDocumentController::class, 'storeForCustomer'])->name('customer-documents.store');
+    });
+
     Route::middleware('permission:view-sales|manage-sales|view-customer')->group(function () {
         Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');

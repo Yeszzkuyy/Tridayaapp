@@ -185,7 +185,7 @@ class CustomerController extends Controller
                 'user' => $d->uploader,
                 'title' => __('Document uploaded'),
                 'detail' => $d->file_name,
-                'context' => $d->project?->project_name,
+                'context' => $d->project?->project_name ?? __('General'),
             ]);
 
         $pics = $customer->contacts()->with('creator')

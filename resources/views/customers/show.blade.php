@@ -347,17 +347,18 @@
                 {{-- TAB 4: DOCUMENTS --}}
                 <div x-show="tab === 'documents'" x-transition>
                     @php
-                        $firstProject = $customer->projects->first();
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
                     @endphp
                     <x-section-header title="{{ __('Documents') }}" />
                     
                     @php
-                        // Ambil semua project ID dari customer
+                        // Dokumen project-project customer + dokumen umum (tanpa project)
                         $projectIds = $customer->projects->pluck('id')->toArray();
-                        
-                        // Query dokumen berdasarkan project ID
-                        $documents = App\Models\ProjectDocument::whereIn('project_id', $projectIds)
+
+                        $documents = App\Models\ProjectDocument::where(function ($query) use ($projectIds, $customer) {
+                                $query->whereIn('project_id', $projectIds)
+                                    ->orWhere('customer_id', $customer->id);
+                            })
                             ->with(['project', 'category', 'uploader'])
                             ->whereNull('deleted_at')
                             ->latest()
@@ -399,26 +400,26 @@
                                     </div>
                                     <div class="p-3">
                                         <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $doc->file_name }}</p>
-                                        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $doc->project?->project_name ?? __('Project') }} · {{ number_format($doc->file_size / 1024, 1) }} KB</p>
+                                        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $doc->project?->project_name ?? __('General') }} · {{ number_format($doc->file_size / 1024, 1) }} KB</p>
                                     </div>
                                 </a>
                             @endforeach
                         </div>
                     @else
-                        <x-empty-state label="{{ __('documents') }}" :description="$firstProject ? null : __('Create a project first to upload documents.')" />
+                        <x-empty-state label="{{ __('documents') }}" />
                     @endif
-                    @if($firstProject && $canUploadDocs)
-                        <form action="{{ route('project-documents.store', $firstProject) }}" method="POST" enctype="multipart/form-data"
-                              x-data="{ projectId: '{{ $firstProject->id }}', dragging: false, fileName: '' }"
-                              :action="'{{ url('projects') }}/' + projectId + '/documents'"
+                    @if($canUploadDocs)
+                        <form action="{{ route('customer-documents.store', $customer) }}" method="POST" enctype="multipart/form-data"
+                              x-data="{ dragging: false, fileName: '' }"
                               class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
                             @csrf
                             <p class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Upload File') }}</p>
                             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                @if($customer->projects->count() > 1)
+                                @if($customer->projects->isNotEmpty())
                                     <div>
                                         <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
-                                        <select name="project_id" x-model="projectId" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                        <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                            <option value="">{{ __('General') }}</option>
                                             @foreach($customer->projects as $p)
                                                 <option value="{{ $p->id }}">{{ $p->project_name }}</option>
                                             @endforeach
@@ -461,8 +462,6 @@
                                 </button>
                             </div>
                         </form>
-                    @elseif(! $firstProject)
-                        <p class="mt-4 text-center text-sm text-slate-400">{{ __('Create a project first to upload documents.') }}</p>
                     @endif
                 </div>
 
