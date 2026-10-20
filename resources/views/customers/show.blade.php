@@ -5,7 +5,7 @@
     <div class="px-4 sm:px-6 lg:px-8">
         
         {{-- Banner Header --}}
-        <div data-rise class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-950 px-5 py-6 sm:px-8 sm:py-7 mb-6">
+        <div data-rise class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-indigo-50 to-accent-100 px-5 py-6 sm:px-8 sm:py-7 mb-6 border border-slate-200/60 dark:border-0 dark:from-slate-800 dark:via-slate-900 dark:to-indigo-950">
             <div class="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl"></div>
             <div class="pointer-events-none absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-blue-500/10 blur-3xl"></div>
 
@@ -15,8 +15,8 @@
                         {{ strtoupper(Str::substr($customer->name, 0, 1)) }}
                     </div>
                     <div class="min-w-0">
-                        <h1 class="truncate text-2xl font-bold text-white sm:text-3xl">{{ $customer->name }}</h1>
-                        <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-300">
+                        <h1 class="truncate text-2xl font-bold text-slate-800 dark:text-white sm:text-3xl">{{ $customer->name }}</h1>
+                        <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-500 dark:text-slate-300">
                             <x-icon name="map-pin" class="h-4 w-4 shrink-0 text-slate-400" />
                             {{ __('Customer Detail') }} • {{ $customer->address ?? __('Address not available') }}
                         </p>
@@ -31,7 +31,7 @@
                         </a>
                     @endcan
                     <a href="{{ route('customers.index') }}"
-                       class="flex-1 sm:flex-none text-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-white/30 text-white hover:bg-white/10 text-sm font-medium transition-all duration-200 hover:scale-[1.03]">
+                       class="flex-1 sm:flex-none text-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/30 dark:text-white dark:hover:bg-white/10 text-sm font-medium transition-all duration-200 hover:scale-[1.03]">
                         {{ __('Back') }}
                     </a>
                 </div>

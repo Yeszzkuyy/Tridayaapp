@@ -531,14 +531,21 @@ tbody tr { transition: background-color 0.2s ease; }
 }
 
 /* ============================================================
-   Ikon bell notifikasi — dipaksa putih apa pun tema/warna asal
-   (brightness(0) invert(1) = putih solid dari aset berwarna apa
-   saja). drop-shadow tipis hanya pengaman kontras: tombolnya
-   tetap bg-white di light mode, bell putih polos akan hilang
-   di atas background putih tanpa ini.
+   Ikon bell notifikasi — mengikuti tema: hitam di mode terang,
+   putih di mode gelap (brightness(0) invert(1)). drop-shadow
+   tipis hanya pengaman kontras.
    ============================================================ */
 .notif-bell-icon {
+    filter: brightness(0) drop-shadow(0 1px 1.5px rgba(15, 23, 42, 0.25));
+}
+
+.dark .notif-bell-icon {
     filter: brightness(0) invert(1) drop-shadow(0 1px 1.5px rgba(15, 23, 42, 0.35));
+}
+
+/* Saat hover tombol jadi accent solid — bell ikut putih biar kontras. */
+.beam-notif:hover .notif-bell-icon {
+    filter: brightness(0) invert(1);
 }
 
 /* ============================================================
