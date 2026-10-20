@@ -716,6 +716,7 @@
     </script>
     {{-- 3DY AI Chat V2 (pengganti floating lama; file lama dipertahankan tapi tidak di-mount) --}}
     @include('components.ai-chat-v2')
+    @stack('scripts')
     @livewireScripts
 </body>
 </html>

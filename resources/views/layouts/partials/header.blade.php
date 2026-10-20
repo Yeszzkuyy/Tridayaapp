@@ -34,6 +34,7 @@
                 ['teknisi.instalasis',              ['Teknisi', 'Instalasi']],
                 ['teknisi.documents',               ['Teknisi', 'Document']],
                 ['projects',                        ['Teknisi', 'Project']],
+                ['project-documents',             ['Teknisi', 'Document']],
                 ['marketing.dashboard',             ['Marketing', 'Marketing Dashboard']],
                 ['whatsapp-center',                 ['Marketing', 'WhatsApp Center']],
                 ['sales.dashboard',                 ['Sales', 'Sales Dashboard']],
