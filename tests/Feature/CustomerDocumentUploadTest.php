@@ -120,6 +120,7 @@ class CustomerDocumentUploadTest extends TestCase
         $this->upload($project)->assertRedirect();
         $this->get(route('customers.show', $project->customer_id))
             ->assertOk()
-            ->assertSee('data-pdf-url', false);
+            ->assertSee('data-pdf-url', false)
+            ->assertSee('Upload File', false);
     }
 }

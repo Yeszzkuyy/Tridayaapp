@@ -1,4 +1,7 @@
 <x-app-layout>
+    @if(session('success'))
+        <x-status-card :message="session('success')" />
+    @endif
     <div class="px-4 sm:px-6 lg:px-8">
         
         {{-- Banner Header --}}
@@ -37,7 +40,7 @@
 
         {{-- Tabs --}}
         <div x-data="{
-                tab: 'overview',
+                tab: '{{ session('doc_uploaded') || $errors->has('file') ? 'documents' : 'overview' }}',
                 moveIndicator(btn) {
                     if (!btn) return;
                     const i = this.$refs.indicator;
@@ -426,17 +429,76 @@
                     @else
                         <x-empty-state label="{{ __('documents') }}" :description="$firstProject ? null : __('Create a project first to upload documents.')" />
                     @endif
-                    <div class="mt-4 flex justify-center">
-                        @if($firstProject)
-                            @if($canUploadDocs)
+                    @php $docCategories = \App\Models\DocumentCategory::all(); @endphp
+                    @if($firstProject && $canUploadDocs)
+                        <form action="{{ route('project-documents.store', $firstProject) }}" method="POST" enctype="multipart/form-data"
+                              x-data="{ projectId: '{{ $firstProject->id }}', dragging: false, fileName: '' }"
+                              :action="'{{ url('projects') }}/' + projectId + '/documents'"
+                              class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+                            @csrf
+                            <p class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Upload File') }}</p>
+                            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                @if($customer->projects->count() > 1)
+                                    <div>
+                                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
+                                        <select name="project_id" x-model="projectId" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                            @foreach($customer->projects as $p)
+                                                <option value="{{ $p->id }}">{{ $p->project_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endif
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Category') }}</label>
+                                    <select name="document_category_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                        <option value="">{{ __('Tanpa Kategori') }}</option>
+                                        @foreach($docCategories as $category)
+                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Notes') }}</label>
+                                    <input type="text" name="notes" value="{{ old('notes') }}" placeholder="{{ __('Document notes') }}"
+                                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                </div>
+                            </div>
+                            <div class="relative mt-3 rounded-xl border-2 border-dashed p-4 text-center transition-all duration-200"
+                                 :class="dragging ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/40 dark:border-accent-400' : 'border-slate-300 dark:border-slate-600 hover:border-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/40'"
+                                 @dragover.prevent="dragging = true"
+                                 @dragenter.prevent="dragging = true"
+                                 @dragleave.prevent="dragging = false"
+                                 @drop.prevent="dragging = false; if ($event.dataTransfer.files.length) { $refs.fileInput.files = $event.dataTransfer.files; fileName = $event.dataTransfer.files[0].name; }">
+                                <input type="file"
+                                       name="file"
+                                       x-ref="fileInput"
+                                       @change="fileName = $event.target.files.length ? $event.target.files[0].name : ''"
+                                       class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+                                <svg class="mx-auto mb-2 h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('Drag & drop files here') }}</p>
+                                <p class="text-xs text-slate-400">{{ __('or click to browse') }} · {{ __('Maximum 20MB') }}</p>
+                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400" x-text="fileName || '{{ __('No file selected') }}'"></p>
+                                @error('file')
+                                    <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="mt-3 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                                <button type="submit"
+                                        class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                                    {{ __('Upload') }}
+                                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                                </button>
                                 <x-add-button href="{{ route('project-documents.index', $firstProject) }}">
                                     {{ __('Manage Documents') }}
                                 </x-add-button>
-                            @endif
-                        @else
-                            <p class="text-sm text-slate-400">{{ __('Create a project first to upload documents.') }}</p>
-                        @endif
-                    </div>
+                            </div>
+                        </form>
+                    @elseif(! $firstProject)
+                        <p class="mt-4 text-center text-sm text-slate-400">{{ __('Create a project first to upload documents.') }}</p>
+                    @endif
                 </div>
 
                 {{-- TAB 5: ADMIN DOCUMENTS --}}
