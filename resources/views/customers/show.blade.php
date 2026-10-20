@@ -140,8 +140,8 @@
                                 @endforeach
                             </div>
                             @if($customer->npwp_document_path)
-                                <a href="{{ route('customers.npwp', $customer) }}" class="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
-                                    <x-icon name="file-text" class="w-4 h-4" />{{ __('Download NPWP Document') }}
+                                <a href="{{ route('customers.npwp', $customer) }}" class="mt-3 inline-flex max-w-full items-center gap-1.5 text-sm text-indigo-600 hover:underline">
+                                    <x-icon name="file-text" class="h-4 w-4 shrink-0" /><span class="truncate">{{ $customer->npwpDisplayName() }}</span>
                                 </a>
                             @endif
                         </div>

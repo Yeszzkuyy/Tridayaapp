@@ -87,7 +87,11 @@ class CustomerController extends Controller
         $customer = Customer::create($validated);
 
         if ($request->hasFile('npwp_document')) {
-            $customer->update(['npwp_document_path' => $this->storeNpwp($request->file('npwp_document'), $customer)]);
+            $file = $request->file('npwp_document');
+            $customer->update([
+                'npwp_document_path' => $this->storeNpwp($file, $customer),
+                'npwp_document_name' => $file->getClientOriginalName(),
+            ]);
         }
 
         return redirect()
@@ -142,7 +146,7 @@ class CustomerController extends Controller
         return \App\Rules\SecureFile::fileResponse(
             'private',
             $customer->npwp_document_path,
-            'NPWP-' . Str::slug($customer->name) . '.' . pathinfo($customer->npwp_document_path, PATHINFO_EXTENSION)
+            $customer->npwpDisplayName() ?? basename($customer->npwp_document_path)
         );
     }
 
@@ -174,7 +178,9 @@ class CustomerController extends Controller
             if ($customer->npwp_document_path) {
                 Storage::disk('private')->delete($customer->npwp_document_path);
             }
-            $validated['npwp_document_path'] = $this->storeNpwp($request->file('npwp_document'), $customer);
+            $file = $request->file('npwp_document');
+            $validated['npwp_document_path'] = $this->storeNpwp($file, $customer);
+            $validated['npwp_document_name'] = $file->getClientOriginalName();
         }
 
         $customer->update($validated);
