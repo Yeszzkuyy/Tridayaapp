@@ -380,7 +380,8 @@
                                         default => 'bg-slate-500',
                                     };
                                 @endphp
-                                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                                <a href="{{ route('project-documents.preview', $doc) }}" target="_blank" title="{{ $doc->file_name }}"
+                                   class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
                                     {{-- Thumbnail ala Drive --}}
                                     <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                         @if($isImage)
@@ -396,34 +397,12 @@
                                             </svg>
                                         @endif
                                         <span class="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[11px] font-bold uppercase text-white {{ $badgeColor }}">{{ $docExt ?: __('File') }}</span>
-                                        <div x-data="{ open: false }" class="absolute right-2 top-2">
-                                            <button type="button" @click="open = !open" aria-label="{{ __('Document actions') }}"
-                                                    class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-200">
-                                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/>
-                                                </svg>
-                                            </button>
-                                            <div x-show="open" @click.outside="open = false" x-transition
-                                                 class="absolute right-0 top-9 z-20 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lg dark:border-slate-600 dark:bg-slate-800">
-                                                <a href="{{ route('project-documents.preview', $doc) }}" target="_blank"
-                                                   class="block px-4 py-2 text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700">{{ __('Preview') }}</a>
-                                                <a href="{{ route('project-documents.download', $doc) }}"
-                                                   class="block px-4 py-2 text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700">{{ __('Download') }}</a>
-                                                @can('manage-technician')
-                                                    <form action="{{ route('project-documents.destroy', $doc) }}" method="POST"
-                                                          onsubmit="return confirm('{{ __('Delete this document?') }}')">
-                                                        @csrf @method('DELETE')
-                                                        <button type="submit" class="block w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">{{ __('Delete') }}</button>
-                                                    </form>
-                                                @endcan
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="p-3">
-                                        <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100" title="{{ $doc->file_name }}">{{ $doc->file_name }}</p>
+                                        <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $doc->file_name }}</p>
                                         <p class="mt-0.5 truncate text-xs text-slate-400">{{ $doc->project?->project_name ?? __('Project') }} · {{ number_format($doc->file_size / 1024, 1) }} KB</p>
                                     </div>
-                                </div>
+                                </a>
                             @endforeach
                         </div>
                     @else
@@ -509,35 +488,35 @@
                             <x-section-header title="{{ __('Invoice') }}" />
                             @php $custInvoices = $customer->invoices()->with('payments')->latest('issue_date')->get(); @endphp
                             @if($custInvoices->isNotEmpty())
-                                <x-data-table>
-                                    <thead class="bg-slate-50 dark:bg-slate-700">
-                                        <tr>
-                                            <x-th>{{ __('Invoice No.') }}</x-th>
-                                            <x-th class="text-right">{{ __('Amount') }}</x-th>
-                                            <x-th class="text-center">{{ __('Status') }}</x-th>
-                                            <x-th class="text-right">{{ __('Actions') }}</x-th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                        @foreach($custInvoices as $inv)
-                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                <td class="px-6 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $inv->invoice_number }}</td>
-                                                <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($inv->amount, 0, ',', '.') }}</td>
-                                                <td class="px-6 py-3 text-center">
-                                                    @php
-                                                        $invBadgeColor = match($inv->status) {
-                                                            'paid' => 'green',
-                                                            'cancelled' => 'red',
-                                                            default => 'yellow',
-                                                        };
-                                                    @endphp
-                                                    <x-status-badge :color="$invBadgeColor">{{ $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid')) }}</x-status-badge>
-                                                </td>
-                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.invoices.show', $inv) }}" class="text-accent-600 hover:text-accent-800 text-sm">{{ __('Detail') }}</a></td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </x-data-table>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($custInvoices as $inv)
+                                        @php
+                                            $invBadgeColor = match($inv->status) {
+                                                'paid' => 'green',
+                                                'cancelled' => 'red',
+                                                default => 'yellow',
+                                            };
+                                            $invStatusLabel = $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid'));
+                                        @endphp
+                                        <a href="{{ route('admin.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
+                                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                                            <div class="relative flex h-24 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <span class="absolute left-2 top-2 rounded bg-teal-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">INV</span>
+                                            </div>
+                                            <div class="p-3">
+                                                <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                                    <span class="truncate">{{ $inv->invoice_number }}</span>
+                                                    <x-status-badge :color="$invBadgeColor">{{ $invStatusLabel }}</x-status-badge>
+                                                </p>
+                                                <p class="mt-0.5 font-mono text-sm text-slate-500 dark:text-slate-400">Rp {{ number_format($inv->amount, 0, ',', '.') }}</p>
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
                             @else
                                 <x-empty-state label="{{ __('invoices') }}" />
                             @endif
@@ -554,36 +533,35 @@
                             <x-section-header title="{{ __('Purchase Order') }}" />
                             @php $custPos = $customer->purchaseOrders()->latest('issue_date')->get(); @endphp
                             @if($custPos->isNotEmpty())
-                                <x-data-table>
-                                    <thead class="bg-slate-50 dark:bg-slate-700">
-                                        <tr>
-                                            <x-th>{{ __('PO No.') }}</x-th>
-                                            <x-th>{{ __('Item') }}</x-th>
-                                            <x-th class="text-center">{{ __('Status') }}</x-th>
-                                            <x-th class="text-right">{{ __('Actions') }}</x-th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                        @foreach($custPos as $po)
-                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                <td class="px-6 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $po->po_number }}</td>
-                                                <td class="px-6 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate">{{ Str::limit($po->items, 60) }}</td>
-                                                <td class="px-6 py-3 text-center">
-                                                    @php
-                                                        $poBadgeColor = match($po->status) {
-                                                            'selesai' => 'green',
-                                                            'dibatalkan' => 'red',
-                                                            'diproses' => 'yellow',
-                                                            default => 'slate',
-                                                        };
-                                                    @endphp
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($custPos as $po)
+                                        @php
+                                            $poBadgeColor = match($po->status) {
+                                                'selesai' => 'green',
+                                                'dibatalkan' => 'red',
+                                                'diproses' => 'yellow',
+                                                default => 'slate',
+                                            };
+                                        @endphp
+                                        <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
+                                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                                            <div class="relative flex h-24 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                                <span class="absolute left-2 top-2 rounded bg-violet-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">PO</span>
+                                            </div>
+                                            <div class="p-3">
+                                                <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                                    <span class="truncate">{{ $po->po_number }}</span>
                                                     <x-status-badge :color="$poBadgeColor">{{ $po->statusLabel() }}</x-status-badge>
-                                                </td>
-                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.pos.show', $po) }}" class="text-accent-600 hover:text-accent-800 text-sm">{{ __('Detail') }}</a></td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </x-data-table>
+                                                </p>
+                                                <p class="mt-0.5 truncate text-xs text-slate-400">{{ Str::limit($po->items, 60) }}</p>
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
                             @else
                                 <x-empty-state label="{{ __('PO') }}" />
                             @endif
@@ -600,28 +578,25 @@
                             <x-section-header title="{{ __('Payment') }}" />
                             @php $custPayments = \App\Models\Payment::whereHas('invoice', fn($q) => $q->where('customer_id', $customer->id))->with('invoice')->latest('payment_date')->get(); @endphp
                             @if($custPayments->isNotEmpty())
-                                <x-data-table>
-                                    <thead class="bg-slate-50 dark:bg-slate-700">
-                                        <tr>
-                                            <x-th>{{ __('Invoice') }}</x-th>
-                                            <x-th>{{ __('Tgl Bayar') }}</x-th>
-                                            <x-th class="text-right">{{ __('Amount') }}</x-th>
-                                            <x-th class="text-center">{{ __('Proof') }}</x-th>
-                                            <x-th class="text-right">{{ __('Actions') }}</x-th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                        @foreach($custPayments as $pm)
-                                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                                <td class="px-6 py-3 font-mono text-sm text-slate-800 dark:text-slate-100">{{ $pm->invoice->invoice_number }}</td>
-                                                <td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ $pm->payment_date->format('d M Y') }}</td>
-                                                <td class="px-6 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($pm->amount, 0, ',', '.') }}</td>
-                                                <td class="px-6 py-3 text-center">@if($pm->proof_file)<a href="{{ route('admin.payments.proof', $pm) }}" target="_blank" class="text-accent-600 hover:text-accent-800 text-xs underline">{{ __('View') }}</a>@else - @endif</td>
-                                                <td class="px-6 py-3 text-right"><a href="{{ route('admin.payments.show', $pm) }}" class="text-accent-600 hover:text-accent-800 text-sm">{{ __('Detail') }}</a></td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </x-data-table>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($custPayments as $pm)
+                                        <a href="{{ route('admin.payments.show', $pm) }}" title="{{ $pm->invoice->invoice_number }}"
+                                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                                            <div class="relative flex h-24 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                          d="M9 14l6-6m-5.5.5h.01m4.99 1H15a5 5 0 015 5v7H5v-7a5 5 0 015-5h2.5z"/>
+                                                </svg>
+                                                <span class="absolute left-2 top-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">PAY</span>
+                                            </div>
+                                            <div class="p-3">
+                                                <p class="truncate font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $pm->invoice->invoice_number }}</p>
+                                                <p class="mt-0.5 font-mono text-sm text-slate-500 dark:text-slate-400">Rp {{ number_format($pm->amount, 0, ',', '.') }}</p>
+                                                <p class="mt-0.5 truncate text-xs text-slate-400">{{ $pm->payment_date->format('d M Y') }}{{ $pm->proof_file ? ' · ' . __('Proof') : '' }}</p>
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
                             @else
                                 <x-empty-state label="{{ __('payments') }}" />
                             @endif
