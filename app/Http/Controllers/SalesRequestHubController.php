@@ -61,7 +61,7 @@ class SalesRequestHubController extends Controller
      */
     private function techRequestsFor($user)
     {
-        $query = TechnicalRequest::with(['lead.customer', 'technician'])->latest();
+        $query = TechnicalRequest::with(['lead.customer', 'requester', 'technician'])->latest();
 
         if (!($user && $user->can('manage-sales-leads'))) {
             $query->where('requested_by', $user->id);
