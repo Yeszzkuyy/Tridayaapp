@@ -7,6 +7,8 @@ use App\Models\Lead;
 use App\Models\TechnicalRequest;
 use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
+use App\Notifications\TechnicalRequestReviewedNotification;
+use App\Notifications\SurveyCreatedNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -179,6 +181,31 @@ class TechnicalRequestFormTest extends TestCase
             ->assertRedirect();
 
         Notification::assertNotSentTo($admin, \App\Notifications\TechnicalWorkCompletedNotification::class);
+    }
+
+    public function test_assign_sends_single_forward_notification_and_no_survey_duplicate(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'accepted']);
+
+        $this->actingAs($leadTech)->post(route('sales.technical-requests.assign', $request), [
+            'technician_id' => $tech->id,
+        ])->assertRedirect();
+
+        // Satu aksi assign → tepat satu notifikasi "Forwarded to technician".
+        $sent = Notification::sent($sales, TechnicalRequestReviewedNotification::class);
+        $this->assertCount(1, $sent);
+        $this->assertSame('assigned', $sent->first()->decision);
+        Notification::assertNotSentTo($sales, SurveyCreatedNotification::class);
+
+        // Survey tetap dibuat untuk tim teknisi.
+        $this->assertNotNull($request->fresh()->survey);
     }
 
     public function test_form_uses_purpose_location_and_time_and_drops_legacy_fields(): void
