@@ -4,7 +4,7 @@
             'price' => [
                 'label' => __('Price'),
                 'icon' => 'receipt',
-                'desc' => __('Quotations from Sales that need an installation price.'),
+                'desc' => __('Price quotations (PDF/file) shared with Sales — same table, connected.'),
             ],
             'engineer' => [
                 'label' => __('Engineer'),
@@ -14,21 +14,21 @@
         ];
         $priceColors = [
             'waiting_lead' => 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200',
+            'accepted' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+            'assigned' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
             'in_progress' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
             'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
             'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
             'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
         ];
-        $techColors = $priceColors + [
-            'accepted' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-            'assigned' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
-        ];
+        $techColors = $priceColors;
     @endphp
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Request Sales') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Incoming requests from Sales — take one to process or reply.') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Incoming requests — take one to process or reply. You can also create a price request with the same file form.') }}</p>
         </div>
+        <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />
     </div>
 
     <div class="mb-4 overflow-x-auto">
@@ -69,7 +69,7 @@
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
                             <td class="px-6 py-4">
                                 <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $req->customer?->name ?? '-' }}</span>
-                                <span class="block text-xs text-slate-500">{{ $req->assignee?->name ?? __('Unassigned') }}</span>
+                                <span class="block text-xs text-slate-500">{{ $req->assignee?->name ?? __('Waiting for engineer') }}</span>
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->requester?->name ?? '-' }}</td>
                             <td class="px-6 py-4">
@@ -79,13 +79,15 @@
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->created_at?->format('d M Y') ?? '-' }}</td>
                             <td class="px-6 py-4 text-right">
-                                <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.show', $req) }}" label="{{ __('Process') }}" title="{{ __('Process') }}" />
+                                <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.show', $req) }}" title="{{ __('View details') }}" />
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="5">
-                                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests from Sales yet.') }}" />
+                                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet — attach a quotation PDF and Engineering will reply with the price.') }}">
+                                    <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />
+                                </x-empty-state>
                             </td>
                         </tr>
                     @endforelse

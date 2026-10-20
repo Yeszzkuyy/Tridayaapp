@@ -243,12 +243,6 @@
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" aria-hidden="true"></span>
                                         <span>{{ __('Sizing Project') }}</span>
                                     </a>
-                                    <a wire:navigate.hover href="{{ route('teknisi.request-hargas.index') }}"
-                                       aria-current="{{ request()->routeIs('teknisi.request-hargas*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.request-hargas*') ? $navActive : $navInactive }}">
-                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" aria-hidden="true"></span>
-                                         <span>{{ __('Price Request') }}</span>
-                                     </a>
                                      @endunless
                                      <a wire:navigate.hover href="{{ route('teknisi.instalasis.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.instalasis*') ? 'page' : 'false' }}"

@@ -7,8 +7,10 @@ use App\Models\TechnicalRequest;
 use Illuminate\Http\Request;
 
 /**
- * Inbox permintaan yang masuk dari sales untuk tim teknisi:
- * Request Harga (price_requests) dan Request Tim Engineer (technical_requests).
+ * Inbox permintaan untuk tim teknisi (sama persis & terhubung dengan
+ * Request Price sales): Request Harga (price_requests) dan Request Tim
+ * Engineer (technical_requests). Teknisi juga bisa membuat Price Request
+ * sendiri via tombol New Request (form sama persis, file PDF).
  */
 class TeknisiRequestController extends Controller
 {
@@ -32,7 +34,7 @@ class TeknisiRequestController extends Controller
             'priceRequests' => $priceRequests,
             'engineerRequests' => $engineerRequests,
             'openCounts' => [
-                'price' => PriceRequest::whereIn('status', ['waiting_lead', 'in_progress'])->count(),
+                'price' => PriceRequest::whereIn('status', ['waiting_lead', 'accepted', 'assigned', 'in_progress'])->count(),
                 'engineer' => TechnicalRequest::where('request_type', '!=', 'estimate')
                     ->whereIn('status', ['waiting_lead', 'accepted', 'assigned', 'in_progress'])
                     ->count(),
