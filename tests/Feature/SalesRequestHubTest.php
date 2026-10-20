@@ -71,9 +71,53 @@ class SalesRequestHubTest extends TestCase
         $html = $this->actingAs($sales)->get(route('sales.requests.index'))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString('Request Inside Sales', $html);
-        $this->assertStringContainsString('Request Price', $html);
+        $this->assertStringContainsString(__('Inside Sales'), $html);
+        $this->assertStringContainsString(__('Price'), $html);
         $this->assertStringContainsString('Engineer', $html);
+    }
+
+    public function test_engineer_request_card_shows_requester_and_new_request_path(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makeTechRequest($sales, 'survey', ['title' => 'Site survey request']);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.requests.index', ['tab' => 'engineer']))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString($request->title, $html);
+        $this->assertStringContainsString(__('Requested by'), $html);
+        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(route('sales.technical-requests.create'), $html);
+    }
+
+    public function test_sales_new_request_action_follows_the_active_tab(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $createRoutes = [
+            'inside-sales' => route('lead-tasks.create'),
+            'price' => route('sales.price-requests.create'),
+            'engineer' => route('sales.technical-requests.create'),
+        ];
+
+        foreach ($createRoutes as $tab => $createRoute) {
+            $html = $this->actingAs($sales)
+                ->get(route('sales.requests.index', ['tab' => $tab]))
+                ->assertOk()->getContent();
+
+            $this->assertStringContainsString($createRoute, $html);
+        }
+    }
+
+    public function test_read_only_management_does_not_see_request_create_action(): void
+    {
+        $management = $this->userWithRole('management');
+
+        $html = $this->actingAs($management)
+            ->get(route('sales.requests.index', ['tab' => 'price']))
+            ->assertOk()->getContent();
+
+        $this->assertStringNotContainsString(route('sales.price-requests.create'), $html);
     }
 
     public function test_hub_defaults_to_inside_sales_tab(): void
