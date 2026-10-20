@@ -58,7 +58,7 @@
 
         <div>
             <label for="phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                {{ __('Phone No.') }}
+                {{ __('Company Phone No.') }}
             </label>
             <input type="text" id="phone" name="phone" value="{{ old('phone') }}"
                    placeholder="{{ __('e.g. 021-1234-5678') }}"
@@ -68,7 +68,7 @@
 
         <div>
             <label for="whatsapp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
-                {{ __('WhatsApp No.') }}
+                {{ __('Company WhatsApp No.') }}
             </label>
             <input type="text" id="whatsapp" name="whatsapp" value="{{ old('whatsapp') }}"
                    placeholder="{{ __('e.g. 0812-3456-7890') }}"

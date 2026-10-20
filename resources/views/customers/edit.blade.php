@@ -65,26 +65,28 @@
                         @error('address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- Phone --}}
+                    {{-- Phone (perusahaan) --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
-                            {{ __('Phone No.') }}
+                            {{ __('Company Phone No.') }}
                         </label>
                         <input type="text" 
                                name="phone" 
                                value="{{ old('phone', $customer->phone) }}"
+                               placeholder="{{ __('e.g. 021-1234-5678') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @error('phone') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- WhatsApp --}}
+                    {{-- WhatsApp (perusahaan) --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
-                            {{ __('WhatsApp No.') }}
+                            {{ __('Company WhatsApp No.') }}
                         </label>
                         <input type="text"
                                name="whatsapp"
                                value="{{ old('whatsapp', $customer->whatsapp) }}"
+                               placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                inputmode="tel"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @error('whatsapp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -154,6 +156,45 @@
                     </button>
                 </div>
             </form>
+        </div>
+
+        {{-- PIC / Kontak perusahaan --}}
+        <div class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
+            <div class="mb-2 flex items-center justify-between gap-3">
+                <h2 class="text-lg font-bold text-slate-800">{{ __('PIC / Customer Contacts List') }}</h2>
+                <x-icon-button as="a" icon="add" href="{{ route('customer-contacts.create', $customer) }}" label="{{ __('Add PIC') }}" title="{{ __('Add PIC') }}" />
+            </div>
+
+            @if($customer->contacts->isNotEmpty())
+                <ul class="divide-y divide-slate-200">
+                    @foreach($customer->contacts as $contact)
+                        <li class="flex items-center justify-between gap-3 py-3">
+                            <div class="min-w-0">
+                                <p class="flex flex-wrap items-center gap-2 font-semibold text-slate-800">
+                                    <span class="truncate">{{ $contact->name }}</span>
+                                    @if($contact->is_primary)
+                                        <x-status-badge color="green">{{ __('Primary') }}</x-status-badge>
+                                    @endif
+                                </p>
+                                <p class="mt-0.5 truncate text-sm text-slate-500">
+                                    {{ $contact->position ?? '-' }}
+                                    @if($contact->whatsapp) · {{ \App\Support\PhoneFormatter::format($contact->whatsapp) }} @endif
+                                    @if($contact->email) · {{ $contact->email }} @endif
+                                </p>
+                            </div>
+                            <div class="flex shrink-0 gap-2">
+                                <x-icon-button as="a" icon="edit" href="{{ route('customer-contacts.edit', $contact) }}" title="{{ __('Edit PIC') }}" />
+                                <form action="{{ route('customer-contacts.destroy', $contact) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Delete this PIC?') }}')">
+                                    @csrf @method('DELETE')
+                                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete PIC') }}" />
+                                </form>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <x-empty-state label="{{ __('PIC') }}" />
+            @endif
         </div>
     </div>
 </x-app-layout>
