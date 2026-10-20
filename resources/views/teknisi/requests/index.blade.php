@@ -12,136 +12,110 @@
                 'desc' => __('Survey, installation, troubleshooting, demo, and consultation requests from Sales.'),
             ],
         ];
-        $priceColors = [
+        $requestColors = [
             'waiting_lead' => 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200',
             'accepted' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+            'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
             'assigned' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
             'in_progress' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
             'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-            'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
             'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
         ];
-        $techColors = $priceColors;
     @endphp
-    <div class="flex items-center justify-between mb-6">
+
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Request Sales') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Incoming requests — take one to process or reply. You can also create a price request with the same file form.') }}</p>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">{{ __('Request Sales') }}</h1>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Incoming requests — take one to process or reply. You can also create a price request with the same file form.') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />
+        <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Price Request') }}" title="{{ __('New Price Request') }}" class="shrink-0" />
     </div>
 
-    <div class="mb-4 overflow-x-auto">
-        <nav aria-label="{{ __('Request types') }}"
-             class="inline-flex w-full sm:w-auto gap-1 rounded-2xl bg-slate-100 dark:bg-slate-700/60 p-1.5">
-            @foreach($tabs as $key => $t)
-                <a href="{{ route('teknisi.requests.index', ['tab' => $key]) }}"
-                   @if($tab === $key) aria-current="page" @endif
-                   class="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 {{ $tab === $key
-                       ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm'
-                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-white/60 dark:hover:bg-slate-800/50' }}">
-                    <x-icon name="{{ $t['icon'] }}" class="h-5 w-5 {{ $tab === $key ? 'text-accent-600 dark:text-accent-400' : '' }}" />
-                    <span>{{ $t['label'] }}</span>
-                    @if(($openCounts[$key] ?? 0) > 0)
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums {{ $tab === $key ? 'bg-accent-500/10 text-accent-700 dark:bg-accent-500/20 dark:text-accent-200' : 'bg-slate-200/70 text-slate-500 dark:bg-slate-600/60 dark:text-slate-300' }}">{{ $openCounts[$key] }}</span>
-                    @endif
-                </a>
-            @endforeach
-        </nav>
+    <x-request-hub-tabs :tabs="$tabs" :active="$tab" :counts="$openCounts" route-name="teknisi.requests.index" />
+
+    <div class="mb-4 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+        <x-icon name="{{ $tabs[$tab]['icon'] }}" class="mt-0.5 h-4 w-4 shrink-0 text-accent-600 dark:text-accent-400" />
+        <p class="text-sm leading-5 text-slate-600 dark:text-slate-300">{{ $tabs[$tab]['desc'] }}</p>
     </div>
-    <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{{ $tabs[$tab]['desc'] }}</p>
 
     @if($tab === 'price')
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
-                <thead class="bg-slate-50 dark:bg-slate-700">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Requested by') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Requested') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Action') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
-                    @forelse($priceRequests as $req)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
-                            <td class="px-6 py-4">
-                                <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $req->customer?->name ?? '-' }}</span>
-                                <span class="block text-xs text-slate-500">{{ $req->assignee?->name ?? __('Waiting for engineer') }}</span>
-                            </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->requester?->name ?? '-' }}</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $priceColors[$req->status] ?? 'bg-slate-200 text-slate-700' }}">
-                                    {{ \App\Models\PriceRequest::statusLabel($req->status) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->created_at?->format('d M Y') ?? '-' }}</td>
-                            <td class="px-6 py-4 text-right">
-                                <x-icon-button as="a" icon="view" href="{{ route('teknisi.price-requests.show', $req) }}" label="{{ __('Process') }}" title="{{ __('Process') }}" />
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5">
-                                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet — attach a quotation PDF and Engineering will reply with the price.') }}">
-                                    <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />
-                                </x-empty-state>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if($priceRequests->hasPages())
-            <div class="p-4 border-t border-slate-200 dark:border-slate-600">{{ $priceRequests->links() }}</div>
-        @endif
-    </div>
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800" aria-label="{{ __('Price') }}">
+            @forelse($priceRequests as $req)
+                <x-request-list-item
+                    :title="$req->customer?->name ?? '-'"
+                    :subtitle="__('Price Request').' #'.$req->id"
+                    :status="\App\Models\PriceRequest::statusLabel($req->status)"
+                    :status-class="$requestColors[$req->status] ?? 'bg-slate-200 text-slate-700'"
+                    :href="route('teknisi.price-requests.show', $req)"
+                    :action-title="__('Process')"
+                    :action-label="__('Process')">
+                    <x-request-meta :label="__('Requested by')">
+                        @if($req->requester)
+                            <x-user-avatar :user="$req->requester" size="w-7 h-7" text="text-[11px]" :clickable="false" />
+                        @endif
+                        <span class="truncate">{{ $req->requester?->name ?? '-' }}</span>
+                    </x-request-meta>
+                    <x-request-meta :label="__('Engineer')">
+                        @if($req->assignee)
+                            <x-user-avatar :user="$req->assignee" size="w-7 h-7" text="text-[11px]" color="green" :clickable="false" />
+                            <span class="truncate">{{ $req->assignee->name }}</span>
+                        @else
+                            <span>{{ __('Waiting for engineer') }}</span>
+                        @endif
+                    </x-request-meta>
+                    <x-request-meta :label="__('Requested')">
+                        <span>{{ $req->created_at?->format('d M Y') ?? '-' }}</span>
+                    </x-request-meta>
+                </x-request-list-item>
+            @empty
+                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet — attach a quotation PDF and Engineering will reply with the price.') }}">
+                    <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Price Request') }}" title="{{ __('New Price Request') }}" />
+                </x-empty-state>
+            @endforelse
+
+            @if($priceRequests->hasPages())
+                <div class="border-t border-slate-200 p-4 dark:border-slate-600">{{ $priceRequests->links() }}</div>
+            @endif
+        </section>
     @else
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
-                <thead class="bg-slate-50 dark:bg-slate-700">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Request') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Type') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Lead') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Action') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
-                    @forelse($engineerRequests as $req)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
-                            <td class="px-6 py-4">
-                                <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $req->title }}</span>
-                                <span class="block text-xs text-slate-500">{{ $req->requester?->name ?? '-' }}</span>
-                            </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ \App\Models\TechnicalRequest::typeLabel($req->request_type) }}</td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->lead?->customer?->name ?? '-' }}</td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $techColors[$req->status] ?? 'bg-slate-200 text-slate-700' }}">
-                                    {{ \App\Models\TechnicalRequest::statusLabel($req->status) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <x-icon-button as="a" icon="view" href="{{ route('teknisi.technical-requests.show', $req) }}" label="{{ __('Process') }}" title="{{ __('Process') }}" />
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5">
-                                <x-empty-state label="{{ __('engineer requests') }}" description="{{ __('No engineer requests from Sales yet.') }}" />
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if($engineerRequests->hasPages())
-            <div class="p-4 border-t border-slate-200 dark:border-slate-600">{{ $engineerRequests->links() }}</div>
-        @endif
-    </div>
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800" aria-label="{{ __('Engineer') }}">
+            @forelse($engineerRequests as $req)
+                <x-request-list-item
+                    :title="$req->title"
+                    :subtitle="__('Lead').': '.($req->lead?->customer?->name ?? '#'.$req->lead_id)"
+                    :status="\App\Models\TechnicalRequest::statusLabel($req->status)"
+                    :status-class="$requestColors[$req->status] ?? 'bg-slate-200 text-slate-700'"
+                    :href="route('teknisi.technical-requests.show', $req)"
+                    :action-title="__('Process')"
+                    :action-label="__('Process')">
+                    <x-request-meta :label="__('Type')">
+                        <span>{{ \App\Models\TechnicalRequest::typeLabel($req->request_type) }}</span>
+                    </x-request-meta>
+                    <x-request-meta :label="__('Requested by')">
+                        @if($req->requester)
+                            <x-user-avatar :user="$req->requester" size="w-7 h-7" text="text-[11px]" :clickable="false" />
+                        @endif
+                        <span class="truncate">{{ $req->requester?->name ?? '-' }}</span>
+                    </x-request-meta>
+                    <x-request-meta :label="__('Technician')">
+                        @if($req->technician)
+                            <x-user-avatar :user="$req->technician" size="w-7 h-7" text="text-[11px]" color="green" :clickable="false" />
+                            <span class="truncate">{{ $req->technician->name }}</span>
+                        @else
+                            <span>{{ __('Waiting for technician') }}</span>
+                        @endif
+                    </x-request-meta>
+                    <x-request-meta :label="__('Created')">
+                        <span>{{ $req->created_at?->format('d M Y') ?? '-' }}</span>
+                    </x-request-meta>
+                </x-request-list-item>
+            @empty
+                <x-empty-state label="{{ __('engineer requests') }}" description="{{ __('No engineer requests from Sales yet.') }}" />
+            @endforelse
+
+            @if($engineerRequests->hasPages())
+                <div class="border-t border-slate-200 p-4 dark:border-slate-600">{{ $engineerRequests->links() }}</div>
+            @endif
+        </section>
     @endif
 </x-app-layout>

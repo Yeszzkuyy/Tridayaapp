@@ -255,12 +255,17 @@ class PriceRequestTest extends TestCase
     public function test_technician_menu_shows_request_sales(): void
     {
         $leadTech = $this->userWithRole('lead-technician');
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales);
 
         $html = $this->actingAs($leadTech)->get(route('teknisi.requests.index'))
             ->assertOk()->getContent();
 
         $this->assertStringContainsString(route('teknisi.requests.index'), $html);
         $this->assertStringContainsString('Request Sales', $html);
+        $this->assertStringContainsString(__('New Price Request'), $html);
+        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(route('sales.price-requests.create'), $html);
     }
 
     public function test_technician_can_create_price_request_with_same_form(): void
@@ -362,9 +367,9 @@ class PriceRequestTest extends TestCase
         $html = $this->actingAs($leadTech)->get(route('teknisi.requests.index', ['tab' => 'price']))
             ->assertOk()->getContent();
 
-        // Sama persis dengan hub sales: ada pintu buat request + aksi view.
+        // Tombol menjelaskan bahwa teknisi membuat request harga.
         $this->assertStringContainsString(route('sales.price-requests.create'), $html);
-        $this->assertStringContainsString(__('New Request'), $html);
+        $this->assertStringContainsString(__('New Price Request'), $html);
     }
 
     public function test_notification_center_renders_price_request_cards(): void
