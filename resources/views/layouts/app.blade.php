@@ -189,7 +189,7 @@
 
     @livewireStyles
 
-    @vite(['resources/css/app.css','resources/js/app.js','resources/js/notification-center.jsx'])
+    @vite(['resources/css/app.css','resources/js/app.js','resources/js/notification-center.jsx','resources/js/submit-loader.js'])
 
     <style>
         *{margin:0;padding:0;box-sizing:border-box}

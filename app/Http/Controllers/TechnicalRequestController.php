@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
-use App\Notifications\SurveyCreatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -219,10 +218,9 @@ class TechnicalRequestController extends Controller
 
         // Request tipe survey: buatkan Survey untuk dikerjakan teknisi.
         // Idempoten — request yang sama diproses ulang tetap satu survey.
-        $survey = $this->ensureSurvey($technicalRequest);
-        if ($survey?->wasRecentlyCreated) {
-            $this->notifyRequester($technicalRequest, new SurveyCreatedNotification($survey));
-        }
+        // Notifikasi ke sales cukup satu (di bawah, 'assigned'); survey adalah
+        // artefak internal tim teknisi, jadi tidak dibuatkan notifikasi sendiri.
+        $this->ensureSurvey($technicalRequest);
 
         $this->log($technicalRequest->lead, 'technician_assigned', [
             'title' => $technicalRequest->title,

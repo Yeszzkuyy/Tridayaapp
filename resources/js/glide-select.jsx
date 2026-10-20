@@ -62,7 +62,6 @@ function mountGlider(node) {
 
 function mountAll() {
     document.querySelectorAll('[data-glide-mount]:not([data-mounted])').forEach(mountGlider);
-    wireSubmitGuard();
     wireRequiredValidation();
 }
 
@@ -89,95 +88,8 @@ window.__glideRemount = function (mountNode, options, value = '') {
     return true;
 };
 
-const SUBMIT_BTN = 'button[type="submit"], input[type="submit"]';
-
-// Snippet loader milik user (size-8 diganti width/height 32 karena kelas itu belum ada di build).
-const LOADER_HTML = `<div class="text-center" role="status">
-  <svg class="mx-auto animate-spin text-indigo-600" width="32" height="32" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-  </svg>
-  <p class="mt-4 font-medium text-gray-700" data-text>Loading...</p>
-</div>`;
-
-function setSubmitLocked(form, locked) {
-    form.querySelectorAll(SUBMIT_BTN).forEach((b) => {
-        b.disabled = locked;
-        b.style.opacity = locked ? '.65' : '';
-    });
-    showSubmitOverlay(locked ? form : null);
-}
-
-// Loader submit: kartu tengah layar berisi snippet loader (satu bentuk dengan kartu sukses).
-// Dibuat sekali, dipakai ulang; shell kartu inline style (dark-aware), isi pakai kelas Tailwind.
-function showSubmitOverlay(form) {
-    let el = document.getElementById('gs-submit-overlay');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'gs-submit-overlay';
-        el.className = 'status-card-backdrop';
-        el.style.display = 'none';
-        el.innerHTML = `<div data-card>${LOADER_HTML}</div>`;
-        document.body.appendChild(el);
-    }
-    // ponytail: jangan pakai atribut hidden — display inline menimpanya sehingga overlay abadi
-    if (!form) {
-        el.style.display = 'none';
-        return;
-    }
-    const dark = document.documentElement.classList.contains('dark');
-    // ponytail: left + top TIDAK di-set inline agar offset sidebar (CSS
-    // .status-card-backdrop) dan tinggi navbar (CSS #gs-submit-overlay) berlaku
-    Object.assign(el.style, {
-        position: 'fixed',
-        right: '0',
-        bottom: '0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        background: dark ? 'rgba(2, 6, 23, .55)' : 'rgba(15, 23, 42, .4)',
-        zIndex: '60'
-    });
-    const card = el.querySelector('[data-card]');
-    Object.assign(card.style, {
-        width: '100%',
-        maxWidth: '384px',
-        borderRadius: '16px',
-        padding: '32px 40px',
-        background: dark ? '#1e293b' : '#ffffff',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, .35)'
-    });
-    const text = el.querySelector('[data-text]');
-    text.textContent = form.dataset.loadingText || fallbackLoadingText();
-    if (dark) text.style.color = '#f1f5f9';
-}
-
-function fallbackLoadingText() {
-    return 'Loading...';
-}
-
-// Anti-duplikat: kunci tombol saat submit benar-benar jalan.
-// Dibuka lagi bila digagalkan (native 'invalid', atau required di bawah).
-// Didaftarkan duluan agar wireRequiredValidation bisa membukanya lagi.
-function wireSubmitGuard() {
-    document.querySelectorAll('form:not([data-submit-guarded])').forEach((form) => {
-        if (!form.querySelector('[data-glide-mount]') && !form.hasAttribute('data-loading-text')) return;
-        form.dataset.submitGuarded = 'true';
-        form.addEventListener('invalid', () => setSubmitLocked(form, false), true);
-        form.addEventListener('submit', () => setSubmitLocked(form, true));
-    });
-    // Kembali via tombol back (bfcache): pastikan overlay hilang + tombol aktif lagi.
-    if (!document.body.dataset.gsPageshow) {
-        document.body.dataset.gsPageshow = 'true';
-        window.addEventListener('pageshow', () => {
-            document.querySelectorAll('form[data-submit-guarded]').forEach((form) => setSubmitLocked(form, false));
-        });
-    }
-}
-
-// Opsi A: hidden input lolos validasi browser, jadi cegat submit manual.
-// Native required lain tetap jalan duluan (browser memblokir sebelum event submit).
+// Hidden input tidak ikut validasi native, jadi cegat submit jika pilihan wajib kosong.
+// Submit loader global berjalan di document bubble dan akan melihat defaultPrevented.
 function wireRequiredValidation() {
     document.querySelectorAll('form:not([data-glide-validated])').forEach((form) => {
         const nodes = [...form.querySelectorAll('[data-glide-mount][data-required="1"]')];
@@ -191,7 +103,6 @@ function wireRequiredValidation() {
                 const err = scope?.querySelector('.glide-select-error');
                 if (hidden && !hidden.value) {
                     e.preventDefault();
-                    setSubmitLocked(form, false);
                     if (err) {
                         if (node.dataset.requiredMessage) err.textContent = node.dataset.requiredMessage;
                         err.removeAttribute('hidden');
