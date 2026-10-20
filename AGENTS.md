@@ -21,6 +21,7 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/var/www/3dyapp-ai` | `feature/ai-assistant` | AI Assistant (floating chatbot) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
 | `/home/raafi/3dyapp-i18n` | `feature/i18n-english` | i18n (konsistensi bahasa semua menu) + tampilan settings |
+| `/home/raafi/3dyapp-price` | `feature/sales-price-sync` | Price Request sales+teknisi satu tabel (sementara, hapus setelah merge) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
