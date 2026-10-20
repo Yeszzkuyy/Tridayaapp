@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -131,6 +132,43 @@ class TechnicalRequestFormTest extends TestCase
         $this->actingAs($leadTech)
             ->get(route('teknisi.technical-requests.show', $request))
             ->assertOk();
+    }
+
+    public function test_engineer_creator_is_not_notified_about_own_request(): void
+    {
+        Notification::fake();
+
+        $admin = $this->userWithRole('super-admin');
+        $admin->assignRole('lead-technician');
+        $otherTech = $this->userWithRole('lead-technician');
+        $lead = $this->makeLead($admin);
+
+        $this->actingAs($admin)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'survey',
+            'title' => 'Survey Sendiri',
+        ])->assertRedirect();
+
+        Notification::assertNotSentTo($admin, TechnicalRequestCreatedNotification::class);
+        Notification::assertSentTo($otherTech, TechnicalRequestCreatedNotification::class);
+    }
+
+    public function test_responder_is_not_notified_for_own_action_on_engineer_request(): void
+    {
+        Notification::fake();
+
+        $admin = $this->userWithRole('super-admin');
+        $lead = $this->makeLead($admin);
+        $request = $this->makeRequest($admin, $lead, [
+            'request_type' => 'consultation',
+            'status' => 'in_progress',
+            'technical_result' => 'Sudah selesai.',
+        ]);
+
+        $this->actingAs($admin)->post(route('sales.technical-requests.complete', $request))
+            ->assertRedirect();
+
+        Notification::assertNotSentTo($admin, \App\Notifications\TechnicalWorkCompletedNotification::class);
     }
 
     public function test_form_uses_purpose_location_and_time_and_drops_legacy_fields(): void

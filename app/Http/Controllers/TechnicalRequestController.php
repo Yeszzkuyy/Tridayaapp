@@ -56,6 +56,15 @@ class TechnicalRequestController extends Controller
         return $survey;
     }
 
+    /** Kirim notifikasi ke sales peminta — lewati bila dia sendiri yang beraksi. */
+    private function notifyRequester(TechnicalRequest $technicalRequest, $notification): void
+    {
+        $requester = $technicalRequest->requester;
+        if ($requester && (int) $requester->id !== (int) auth()->id()) {
+            $requester->notify($notification);
+        }
+    }
+
     private function log(Lead $lead, string $action, array $changes = []): void
     {
         LeadActivity::create([
@@ -153,8 +162,10 @@ class TechnicalRequestController extends Controller
         $this->log($lead, 'tech_request_created', ['title' => $technicalRequest->title]);
         $this->log($lead, 'tech_request_sent_to_lead', ['title' => $technicalRequest->title]);
 
+        // Jangan notifikasi pembuat request sendiri (mis. super-admin / multi-role
+        // yang juga memegang role lead-technician).
         Notification::send(
-            User::role('lead-technician')->get(),
+            User::role('lead-technician')->where('id', '!=', $technicalRequest->requested_by)->get(),
             new TechnicalRequestCreatedNotification($technicalRequest)
         );
 
@@ -185,7 +196,7 @@ class TechnicalRequestController extends Controller
 
         $technicalRequest->update(['status' => $validated['decision']]);
         $this->log($technicalRequest->lead, 'tech_request_' . $validated['decision'], ['title' => $technicalRequest->title]);
-        $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, $validated['decision']));
+        $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, $validated['decision']));
 
         return back()->with('success', __('Request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
     }
@@ -210,14 +221,14 @@ class TechnicalRequestController extends Controller
         // Idempoten — request yang sama diproses ulang tetap satu survey.
         $survey = $this->ensureSurvey($technicalRequest);
         if ($survey?->wasRecentlyCreated) {
-            $technicalRequest->requester?->notify(new SurveyCreatedNotification($survey));
+            $this->notifyRequester($technicalRequest, new SurveyCreatedNotification($survey));
         }
 
         $this->log($technicalRequest->lead, 'technician_assigned', [
             'title' => $technicalRequest->title,
             'technician' => $technician->name,
         ]);
-        $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
+        $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
 
         return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
     }
@@ -283,7 +294,7 @@ class TechnicalRequestController extends Controller
         $survey?->update(['status' => Survey::STATUS_COMPLETED]);
 
         $this->log($technicalRequest->lead, 'tech_request_completed', ['title' => $technicalRequest->title]);
-        $technicalRequest->requester?->notify(new TechnicalWorkCompletedNotification($technicalRequest));
+        $this->notifyRequester($technicalRequest, new TechnicalWorkCompletedNotification($technicalRequest));
 
         return back()->with('success', __('Technical request completed.'))->with('success_card', true);
     }

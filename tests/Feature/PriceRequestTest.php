@@ -427,4 +427,44 @@ class PriceRequestTest extends TestCase
         $this->assertStringContainsString(route('teknisi.requests.index'), $html);
         $this->assertStringContainsString('aria-current="page"', $html);
     }
+
+    public function test_creator_is_not_notified_about_own_price_request(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $admin = $this->userWithRole('super-admin');
+        $admin->assignRole('lead-technician');
+        $otherTech = $this->userWithRole('lead-technician');
+        $customer = $this->makeCustomer();
+
+        $this->actingAs($admin)->post(route('sales.price-requests.store'), [
+            'customer_id' => $customer->id,
+            'quotation' => UploadedFile::fake()->create('quotation.pdf', 20, 'application/pdf'),
+        ])->assertRedirect();
+
+        Notification::assertNotSentTo($admin, PriceRequestCreatedNotification::class);
+        Notification::assertSentTo($otherTech, PriceRequestCreatedNotification::class);
+    }
+
+    public function test_responder_is_not_notified_for_own_action_on_price_request(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $admin = $this->userWithRole('super-admin');
+        $request = $this->makePriceRequest($admin);
+
+        $this->actingAs($admin)
+            ->post(route('sales.price-requests.take', $request))
+            ->assertRedirect();
+
+        Notification::assertNotSentTo($admin, \App\Notifications\PriceRequestReviewedNotification::class);
+
+        $this->actingAs($admin)->post(route('sales.price-requests.reply.store', $request), [
+            'reply' => UploadedFile::fake()->create('harga.pdf', 20, 'application/pdf'),
+        ])->assertRedirect();
+
+        Notification::assertNotSentTo($admin, PriceRequestCompletedNotification::class);
+    }
 }

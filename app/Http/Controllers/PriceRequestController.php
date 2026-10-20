@@ -64,8 +64,10 @@ class PriceRequestController extends Controller
             'quotation_path' => $this->storeFile($request->file('quotation'), 'price-requests/'.$priceRequest->id),
         ]);
 
+        // Jangan notifikasi pembuat request sendiri (mis. super-admin / multi-role
+        // yang juga memegang role lead-technician).
         Notification::send(
-            User::role('lead-technician')->get(),
+            User::role('lead-technician')->where('id', '!=', $priceRequest->requested_by)->get(),
             new PriceRequestCreatedNotification($priceRequest)
         );
 
@@ -112,7 +114,7 @@ class PriceRequestController extends Controller
             'assigned_to' => $request->user()->id,
         ]);
 
-        $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'in_progress'));
+        $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'in_progress'));
 
         return back()->with('success', __('Price request diambil untuk dikerjakan.'))->with('success_card', true);
     }
@@ -125,7 +127,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->update(['status' => 'rejected']);
 
-        $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'rejected'));
+        $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'rejected'));
 
         return back()->with('success', __('Price request ditolak.'))->with('success_card', true);
     }
@@ -139,7 +141,7 @@ class PriceRequestController extends Controller
         $validated = $request->validate(['decision' => 'required|in:accepted,rejected']);
 
         $priceRequest->update(['status' => $validated['decision']]);
-        $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
+        $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
 
         return back()->with('success', __('Price request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
     }
@@ -160,7 +162,7 @@ class PriceRequestController extends Controller
             'status' => 'assigned',
         ]);
 
-        $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'assigned'));
+        $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'assigned'));
 
         return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
     }
@@ -184,7 +186,7 @@ class PriceRequestController extends Controller
             'completed_at' => now(),
         ]);
 
-        $priceRequest->requester?->notify(new PriceRequestCompletedNotification($priceRequest));
+        $this->notifyRequester($priceRequest, new PriceRequestCompletedNotification($priceRequest));
 
         return back()->with('success', __('Balasan harga terkirim ke sales.'))->with('success_card', true);
     }
@@ -215,6 +217,15 @@ class PriceRequestController extends Controller
         }
 
         abort(403);
+    }
+
+    /** Kirim notifikasi ke sales peminta — lewati bila dia sendiri yang beraksi. */
+    private function notifyRequester(PriceRequest $priceRequest, $notification): void
+    {
+        $requester = $priceRequest->requester;
+        if ($requester && (int) $requester->id !== (int) auth()->id()) {
+            $requester->notify($notification);
+        }
     }
 
     private function storeFile($file, string $dir): string
