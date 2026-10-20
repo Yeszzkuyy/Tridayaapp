@@ -75,24 +75,6 @@ class Project extends Model
         return $this->belongsTo(ProjectStatus::class, 'project_status_id');
     }
 
-    /**
-     * Nama PIC Engineer yang masih sibuk (project belum Done/Cancelled).
-     * Dipakai untuk mencoret + mengunci pilihan Support Technician.
-     */
-    public static function busyPicEngineerNames(?int $exceptProjectId = null): array
-    {
-        return static::whereNotNull('pic_engineer')
-            ->where('pic_engineer', '!=', '')
-            ->when($exceptProjectId, fn ($query) => $query->where('id', '!=', $exceptProjectId))
-            ->where(function ($query) {
-                $query->whereNull('project_status_id')
-                    ->orWhereHas('status', fn ($q) => $q->whereNotIn('name', ['Done', 'Cancelled', 'Cancel']));
-            })
-            ->distinct()
-            ->pluck('pic_engineer')
-            ->all();
-    }
-
     // Proposal asal convert (WON flow sales).
     public function proposal()
     {
