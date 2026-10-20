@@ -294,7 +294,12 @@ class PriceRequestTest extends TestCase
         Notification::assertSentTo($leadTech, PriceRequestCreatedNotification::class);
 
         // Detail bisa dibuka teknisi pembuat (terhubung satu tabel).
-        $this->actingAs($tech)->get(route('sales.price-requests.show', $request))->assertOk();
+        $detailHtml = $this->actingAs($tech)->get(route('sales.price-requests.show', $request))
+            ->assertOk()->getContent();
+        $this->assertStringContainsString(__('Request details'), $detailHtml);
+        $this->assertStringContainsString($tech->name, $detailHtml);
+        $this->assertStringContainsString(strtoupper(substr($tech->name, 0, 1)), $detailHtml);
+        $this->assertStringContainsString(__('No engineering reply has been submitted yet.'), $detailHtml);
     }
 
     public function test_lead_reviews_and_assigns_technician(): void
