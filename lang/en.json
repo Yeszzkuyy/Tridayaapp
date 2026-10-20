@@ -3474,5 +3474,10 @@
     "Sebagian jadwal gagal dikirim ke Google.": "Some schedules failed to sync to Google.",
     "Sebagian jadwal tidak dapat dipulihkan (konflik google_event_id).": "Some schedules could not be recovered (google_event_id conflict).",
     ":created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim": ":created created, :updated updated, :deleted deleted, :pushed pushed",
-    "What does the customer need? Keep it short...": "What does the customer need? Keep it short..."
+    "What does the customer need? Keep it short...": "What does the customer need? Keep it short...",
+    "Price quotations (PDF/file) shared with Sales — same table, connected.": "Price quotations (PDF/file) shared with Sales — same table, connected.",
+    "Incoming requests — take one to process or reply. You can also create a price request with the same file form.": "Incoming requests — take one to process or reply. You can also create a price request with the same file form.",
+    "No price requests yet — attach a quotation PDF and Engineering will reply with the price.": "No price requests yet — attach a quotation PDF and Engineering will reply with the price.",
+    "PDF quotation — max 10 MB. Excel, Word, or image also allowed.": "PDF quotation — max 10 MB. Excel, Word, or image also allowed.",
+    "Price request telah di-": "Price request has been "
 }

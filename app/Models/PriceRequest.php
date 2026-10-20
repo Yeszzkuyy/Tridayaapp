@@ -6,15 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Request Harga: sales mengirim file Quotation + customer (PT) + catatan,
- * tim engineer membalas dengan file hasil hitungan.
+ * Request Harga: sales/teknisi mengirim file Quotation + customer (PT) + catatan,
+ * tim engineer membalas dengan file hasil hitungan. Satu tabel dipakai berdua
+ * (sales + teknisi) sehingga keduanya terhubung.
  * Terpisah dari TechnicalRequest (Request Tim Engineer).
  */
 class PriceRequest extends Model
 {
     use SoftDeletes;
 
-    public const STATUSES = ['waiting_lead', 'in_progress', 'completed', 'rejected', 'cancelled'];
+    public const STATUSES = ['waiting_lead', 'accepted', 'assigned', 'in_progress', 'completed', 'rejected', 'cancelled'];
 
     protected $fillable = [
         'customer_id',
@@ -51,6 +52,8 @@ class PriceRequest extends Model
     {
         return match ($status) {
             'waiting_lead' => __('Waiting'),
+            'accepted' => __('Accepted'),
+            'assigned' => __('Assigned'),
             'in_progress' => __('In Progress'),
             'completed' => __('Completed'),
             'rejected' => __('Rejected'),

@@ -3474,5 +3474,10 @@
     "Izin Google kedaluwarsa, hubungkan kembali.": "Izin Google kedaluwarsa, hubungkan kembali.",
     "Sebagian jadwal gagal dikirim ke Google.": "Sebagian jadwal gagal dikirim ke Google.",
     "Sebagian jadwal tidak dapat dipulihkan (konflik google_event_id).": "Sebagian jadwal tidak dapat dipulihkan (konflik google_event_id).",
-    ":created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim": ":created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim"
+    ":created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim": ":created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim",
+    "Price quotations (PDF/file) shared with Sales — same table, connected.": "Kutipan harga (PDF/berkas) bersama dengan Sales — satu tabel, terhubung.",
+    "Incoming requests — take one to process or reply. You can also create a price request with the same file form.": "Request masuk — ambil untuk diproses atau dibalas. Anda juga bisa membuat price request dengan form berkas yang sama.",
+    "No price requests yet — attach a quotation PDF and Engineering will reply with the price.": "Belum ada price request — lampirkan PDF penawaran dan Engineering akan membalas dengan harganya.",
+    "PDF quotation — max 10 MB. Excel, Word, or image also allowed.": "Kutipan PDF — maks 10 MB. Excel, Word, atau gambar juga boleh.",
+    "Price request telah di-": "Price request telah di-"
 }

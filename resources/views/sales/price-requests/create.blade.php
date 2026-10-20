@@ -27,9 +27,9 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quotation File') }} <span class="text-red-500">*</span></label>
-                    <input type="file" name="quotation" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
+                    <input type="file" name="quotation" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                    <p class="mt-1 text-xs text-slate-400">{{ __('PDF, Excel, or Word — max 10 MB.') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('PDF quotation — max 10 MB. Excel, Word, or image also allowed.') }}</p>
                     @error('quotation') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 

@@ -174,10 +174,6 @@ Route::middleware('auth')->group(function () {
         Route::post('technical-requests', [TechnicalRequestController::class, 'store'])->name('technical-requests.store');
         Route::post('technical-requests/{technicalRequest}/cancel', [TechnicalRequestController::class, 'cancel'])->name('technical-requests.cancel');
 
-        Route::get('price-requests/create', [PriceRequestController::class, 'create'])->name('price-requests.create');
-        Route::post('price-requests', [PriceRequestController::class, 'store'])->name('price-requests.store');
-        Route::post('price-requests/{priceRequest}/cancel', [PriceRequestController::class, 'cancel'])->name('price-requests.cancel');
-
         Route::get('proposals/create', [ProposalController::class, 'create'])->name('proposals.create');
         Route::post('proposals', [ProposalController::class, 'store'])->name('proposals.store');
         Route::get('proposals/{proposal}/edit', [ProposalController::class, 'edit'])->name('proposals.edit');
@@ -196,6 +192,14 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:manage-technician|manage-admin')->prefix('sales')->name('sales.')->group(function () {
         Route::post('proposals/{proposal}/return-technical', [ProposalController::class, 'returnTechnical'])->name('proposals.return-technical');
         Route::post('proposals/{proposal}/complete-technical', [ProposalController::class, 'completeTechnical'])->name('proposals.complete-technical');
+    });
+
+    // Price Request dipakai bersama sales + teknisi (satu tabel, terhubung):
+    // form & file sama persis, teknisi juga bisa membuat.
+    Route::middleware('permission:manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
+        Route::get('price-requests/create', [PriceRequestController::class, 'create'])->name('price-requests.create');
+        Route::post('price-requests', [PriceRequestController::class, 'store'])->name('price-requests.store');
+        Route::post('price-requests/{priceRequest}/cancel', [PriceRequestController::class, 'cancel'])->name('price-requests.cancel');
     });
 
     // ============================================
@@ -239,6 +243,8 @@ Route::middleware('auth')->group(function () {
 
         Route::post('price-requests/{priceRequest}/take', [PriceRequestController::class, 'take'])->name('price-requests.take');
         Route::post('price-requests/{priceRequest}/reject', [PriceRequestController::class, 'reject'])->name('price-requests.reject');
+        Route::post('price-requests/{priceRequest}/review', [PriceRequestController::class, 'review'])->name('price-requests.review');
+        Route::post('price-requests/{priceRequest}/assign', [PriceRequestController::class, 'assign'])->name('price-requests.assign');
         Route::post('price-requests/{priceRequest}/reply', [PriceRequestController::class, 'reply'])->name('price-requests.reply.store');
     });
 

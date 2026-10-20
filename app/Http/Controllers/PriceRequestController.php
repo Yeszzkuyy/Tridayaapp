@@ -14,9 +14,10 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Request Harga: sales kirim file Quotation + customer (PT) + catatan;
- * tim engineer (Lead Teknisi) mengambil/menolak lalu membalas dengan file
- * hasil hitungan. Terpisah dari TechnicalRequest (Request Tim Engineer).
+ * Request Harga: sales/teknisi kirim file Quotation (PDF) + customer (PT) + catatan;
+ * Lead Teknisi mereview lalu mengatur teknisi penghandle (assign), teknisi
+ * membalas dengan file hasil hitungan. Satu tabel untuk sales + teknisi
+ * sehingga keduanya terhubung. Terpisah dari TechnicalRequest.
  */
 class PriceRequestController extends Controller
 {
@@ -25,9 +26,19 @@ class PriceRequestController extends Controller
 
     public function create(Request $request)
     {
+        $user = $request->user();
+        // Form sama persis untuk sales & teknisi — hanya tombol kembali yang
+        // menyesuaikan asal (inbox teknisi vs hub sales) agar terhubung.
+        $isTechOnly = $user->can('manage-technician')
+            && ! $user->can('manage-sales')
+            && ! $user->can('manage-inside-sales');
+        $backUrl = $isTechOnly
+            ? route('teknisi.requests.index', ['tab' => 'price'])
+            : route('sales.requests.index', ['tab' => 'price']);
+
         return view('sales.price-requests.create', [
-            'customers' => $this->customerOptions($request->user()),
-            'backUrl' => route('sales.requests.index', ['tab' => 'price']),
+            'customers' => $this->customerOptions($user),
+            'backUrl' => $backUrl,
         ]);
     }
 
@@ -67,7 +78,11 @@ class PriceRequestController extends Controller
         $priceRequest->load(['customer', 'requester', 'assignee']);
         $this->authorizeView($request->user(), $priceRequest);
 
-        return view('sales.price-requests.show', compact('priceRequest'));
+        $technicians = $request->user()->can('manage-technician')
+            ? User::role('technician')->orderBy('name')->get(['id', 'name'])
+            : collect();
+
+        return view('sales.price-requests.show', compact('priceRequest', 'technicians'));
     }
 
     /** Sales pemilik (atau management) membatalkan request yang belum selesai. */
@@ -114,11 +129,46 @@ class PriceRequestController extends Controller
         return back()->with('success', __('Price request ditolak.'));
     }
 
+    /** Lead Teknisi mereview: terima request lalu tentukan penghandle. */
+    public function review(Request $request, PriceRequest $priceRequest)
+    {
+        abort_unless($request->user()->can('manage-technician'), 403);
+        abort_unless($priceRequest->status === 'waiting_lead', 422);
+
+        $validated = $request->validate(['decision' => 'required|in:accepted,rejected']);
+
+        $priceRequest->update(['status' => $validated['decision']]);
+        $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
+
+        return back()->with('success', __('Price request telah di-' . $validated['decision'] . '.'));
+    }
+
+    /** Lead Teknisi mengatur siapa teknisi penghandle (seperti TechnicalRequest). */
+    public function assign(Request $request, PriceRequest $priceRequest)
+    {
+        abort_unless($request->user()->can('manage-technician'), 403);
+        abort_unless(in_array($priceRequest->status, ['waiting_lead', 'accepted', 'assigned', 'in_progress'], true), 422);
+
+        $validated = $request->validate(['technician_id' => 'required|exists:users,id']);
+
+        $technician = User::findOrFail($validated['technician_id']);
+        abort_unless($technician->hasRole('technician'), 422, __('Only users with the Technician role can be assigned.'));
+
+        $priceRequest->update([
+            'assigned_to' => $technician->id,
+            'status' => 'assigned',
+        ]);
+
+        $priceRequest->requester?->notify(new PriceRequestReviewedNotification($priceRequest, 'assigned'));
+
+        return back()->with('success', __('Technician assigned successfully.'));
+    }
+
     /** Balas request dengan file hasil hitungan → status selesai. */
     public function reply(Request $request, PriceRequest $priceRequest)
     {
         abort_unless($request->user()->can('manage-technician'), 403);
-        abort_unless(in_array($priceRequest->status, ['waiting_lead', 'in_progress'], true), 422);
+        abort_unless(in_array($priceRequest->status, ['waiting_lead', 'accepted', 'assigned', 'in_progress'], true), 422);
 
         $validated = $request->validate([
             'reply' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,

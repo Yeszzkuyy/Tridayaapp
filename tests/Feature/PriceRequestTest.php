@@ -263,6 +263,105 @@ class PriceRequestTest extends TestCase
         $this->assertStringContainsString('Request Sales', $html);
     }
 
+    public function test_technician_can_create_price_request_with_same_form(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $tech = $this->userWithRole('technician');
+        $leadTech = $this->userWithRole('lead-technician');
+        $customer = $this->makeCustomer('PT Dibuat Teknisi');
+
+        // Form sama persis seperti sales: customer + quotation + notes.
+        $html = $this->actingAs($tech)->get(route('sales.price-requests.create'))
+            ->assertOk()->getContent();
+        $this->assertStringContainsString('name="customer_id"', $html);
+        $this->assertStringContainsString('name="quotation"', $html);
+        $this->assertStringContainsString('name="notes"', $html);
+
+        $this->actingAs($tech)->post(route('sales.price-requests.store'), [
+            'customer_id' => $customer->id,
+            'notes' => 'Mohon hitung dari sisi teknisi.',
+            'quotation' => UploadedFile::fake()->create('quotation-teknisi.pdf', 120, 'application/pdf'),
+        ])->assertRedirect();
+
+        $request = PriceRequest::firstOrFail();
+        $this->assertSame($customer->id, $request->customer_id);
+        $this->assertSame($tech->id, $request->requested_by);
+        $this->assertSame('waiting_lead', $request->status);
+        Storage::disk('private')->assertExists($request->quotation_path);
+
+        Notification::assertSentTo($leadTech, PriceRequestCreatedNotification::class);
+
+        // Detail bisa dibuka teknisi pembuat (terhubung satu tabel).
+        $this->actingAs($tech)->get(route('sales.price-requests.show', $request))->assertOk();
+    }
+
+    public function test_lead_reviews_and_assigns_technician(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $request = $this->makePriceRequest($sales);
+
+        // Lead menerima request.
+        $this->actingAs($leadTech)
+            ->post(route('sales.price-requests.review', $request), ['decision' => 'accepted'])
+            ->assertRedirect();
+        $this->assertSame('accepted', $request->fresh()->status);
+
+        // Review ulang dari status accepted ditolak.
+        $this->actingAs($leadTech)
+            ->post(route('sales.price-requests.review', $request), ['decision' => 'accepted'])
+            ->assertStatus(422);
+
+        // Lead mengatur siapa teknisi penghandle.
+        $this->actingAs($leadTech)
+            ->post(route('sales.price-requests.assign', $request), ['technician_id' => $tech->id])
+            ->assertRedirect();
+
+        $request->refresh();
+        $this->assertSame('assigned', $request->status);
+        $this->assertSame($tech->id, $request->assigned_to);
+
+        // Teknisi yang di-assign membalas dengan file → selesai.
+        $this->actingAs($leadTech)->post(route('sales.price-requests.reply.store', $request), [
+            'reply' => UploadedFile::fake()->create('harga-final.pdf', 90, 'application/pdf'),
+            'reply_notes' => 'Sudah dihitung.',
+        ])->assertRedirect();
+
+        $this->assertSame('completed', $request->fresh()->status);
+        Notification::assertSentTo($sales, PriceRequestCompletedNotification::class);
+    }
+
+    public function test_assign_requires_technician_role(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $request = $this->makePriceRequest($sales);
+
+        $this->actingAs($leadTech)
+            ->post(route('sales.price-requests.assign', $request), ['technician_id' => $sales->id])
+            ->assertStatus(422);
+
+        $this->assertSame('waiting_lead', $request->fresh()->status);
+    }
+
+    public function test_teknisi_price_tab_has_same_new_request_entry(): void
+    {
+        $leadTech = $this->userWithRole('lead-technician');
+
+        $html = $this->actingAs($leadTech)->get(route('teknisi.requests.index', ['tab' => 'price']))
+            ->assertOk()->getContent();
+
+        // Sama persis dengan hub sales: ada pintu buat request + aksi view.
+        $this->assertStringContainsString(route('sales.price-requests.create'), $html);
+        $this->assertStringContainsString(__('New Request'), $html);
+    }
+
     public function test_notification_center_renders_price_request_cards(): void
     {
         $sales = $this->userWithRole('sales');
