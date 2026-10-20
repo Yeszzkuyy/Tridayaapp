@@ -62,7 +62,8 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/customers')->assertOk();
         $this->actingAs($u)->get('/trash')->assertOk();
 
-        // Sales read-only pada Project: boleh lihat, dilarang mengubah
+        // Sales pada Project: boleh lihat + tambah (untuk customer yang boleh
+        // ia edit), tetapi dilarang edit/hapus.
         $customer = \App\Models\Customer::create(['name' => 'Cust Sales']);
         $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
         $project = \App\Models\Project::create([
@@ -72,7 +73,7 @@ class DivisionAccessTest extends TestCase
         ]);
         $this->actingAs($u)->get('/projects')->assertOk();
         $this->actingAs($u)->get('/projects/'.$project->id)->assertOk();
-        $this->actingAs($u)->post('/projects', [])->assertForbidden();
+        $this->actingAs($u)->post('/projects', [])->assertRedirect();
         $this->actingAs($u)->put('/projects/'.$project->id, [])->assertForbidden();
         $this->actingAs($u)->delete('/projects/'.$project->id)->assertForbidden();
         $this->assertNotNull($project->fresh());

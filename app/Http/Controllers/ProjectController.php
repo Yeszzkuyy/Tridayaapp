@@ -47,16 +47,21 @@ class ProjectController extends Controller
 
     public function create(Request $request)
     {
-        $this->authorize('create', Project::class);
-
         $customerId = $request->query('customer_id');
-        
+
         if (!$customerId) {
             return redirect()->route('customers.index')
                 ->with('error', __('Please select a customer first.'));
         }
-        
+
         $customer = Customer::findOrFail($customerId);
+
+        // Teknisi boleh buat project apa pun; sales boleh untuk customer
+        // yang boleh ia edit (batas PT tetap berlaku).
+        abort_unless(
+            auth()->user()->can('create', Project::class) || auth()->user()->can('update', $customer),
+            403
+        );
         $workTypes = WorkType::all();
         $accountManagers = AccountManager::all();
         $statuses = ProjectStatus::orderBy('sort_order')->get();
@@ -67,14 +72,21 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
-        $this->authorize('create', Project::class);
+        $customer = Customer::findOrFail(
+            $request->validate(['customer_id' => 'required|exists:customers,id'])['customer_id']
+        );
+
+        abort_unless(
+            auth()->user()->can('create', Project::class) || auth()->user()->can('update', $customer),
+            403
+        );
 
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'name' => 'required|string|max:255',
             'work_type_id' => 'required|exists:work_types,id',
             'account_manager_id' => 'nullable|exists:account_managers,id',
-            'pic_engineer' => 'required|string|max:255',
+            'pic_engineer' => 'nullable|string|max:255',
             'support_technicians' => 'nullable|array',
             'support_technicians.*' => 'string|max:255',
             'project_status_id' => 'nullable|exists:project_statuses,id',
@@ -128,7 +140,7 @@ class ProjectController extends Controller
             'project_name' => 'required|string|max:255',
             'work_type_id' => 'required|exists:work_types,id',
             'account_manager_id' => 'nullable|exists:account_managers,id',
-            'pic_engineer' => 'required|string|max:255',
+            'pic_engineer' => 'nullable|string|max:255',
             'support_technicians' => 'nullable|array',
             'support_technicians.*' => 'string|max:255',
             'project_status_id' => 'nullable|exists:project_statuses,id',

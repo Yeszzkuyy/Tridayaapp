@@ -253,12 +253,17 @@ Route::middleware('auth')->group(function () {
         Route::get('pocs', [PocController::class, 'index'])->name('pocs.index');
     });
 
+    // Tambah project: teknisi ATAU sales untuk customer yang boleh ia edit
+    // (cek customer di controller). Edit/hapus tetap khusus teknisi.
+    Route::middleware('permission:manage-technician|manage-sales')->group(function () {
+        Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
+        Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
+    });
+
     // ============================================
     // TEKNISI — manage
     // ============================================
     Route::middleware('permission:manage-technician')->group(function () {
-        Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
-        Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
         Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
         Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');

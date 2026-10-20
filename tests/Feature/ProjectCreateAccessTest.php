@@ -1,0 +1,108 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Customer;
+use App\Models\Project;
+use App\Models\User;
+use App\Models\WorkType;
+use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ProjectCreateAccessTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RoleAndPermissionSeeder::class);
+    }
+
+    private function userWithRoles(string $name, array $roles): User
+    {
+        $user = User::factory()->create(['name' => $name]);
+        foreach ($roles as $role) {
+            $user->assignRole($role);
+        }
+
+        return $user;
+    }
+
+    private function makeCustomer(string $pt = 'NTI'): Customer
+    {
+        return Customer::create(['name' => 'PT Proyek ' . uniqid(), 'pt_group' => $pt]);
+    }
+
+    private function payload(Customer $customer, array $overrides = []): array
+    {
+        $workType = WorkType::create(['name' => 'Instalasi']);
+
+        return array_merge([
+            'customer_id' => $customer->id,
+            'name' => 'Project Baru',
+            'work_type_id' => $workType->id,
+        ], $overrides);
+    }
+
+    public function test_sales_bisa_tambah_project_tanpa_pic_engineer(): void
+    {
+        $sales = $this->userWithRoles('Sales', ['sales', 'sales-nti']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($sales);
+        $this->get(route('projects.create', ['customer_id' => $customer->id]))->assertOk();
+        $this->post(route('projects.store'), $this->payload($customer))
+            ->assertRedirect(route('customers.show', $customer));
+
+        $this->assertDatabaseHas('projects', [
+            'customer_id' => $customer->id,
+            'project_name' => 'Project Baru',
+            'pic_engineer' => null,
+        ]);
+    }
+
+    public function test_sales_beda_pt_tidak_bisa_tambah_project(): void
+    {
+        $sales = $this->userWithRoles('Sales MGK', ['sales-mgk']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($sales);
+        $this->get(route('projects.create', ['customer_id' => $customer->id]))->assertForbidden();
+        $this->post(route('projects.store'), $this->payload($customer))->assertForbidden();
+    }
+
+    public function test_marketing_tidak_bisa_tambah_project(): void
+    {
+        $mkt = $this->userWithRoles('Marketing', ['marketing']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($mkt);
+        $this->get(route('projects.create', ['customer_id' => $customer->id]))->assertForbidden();
+        $this->post(route('projects.store'), $this->payload($customer))->assertForbidden();
+    }
+
+    public function test_teknisi_tetap_bisa_tambah_project_dengan_pic(): void
+    {
+        $tech = $this->userWithRoles('Teknisi', ['technician']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($tech);
+        $this->post(route('projects.store'), $this->payload($customer, ['pic_engineer' => 'Andi']))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('projects', [
+            'customer_id' => $customer->id,
+            'pic_engineer' => 'Andi',
+        ]);
+    }
+
+    public function test_tambah_project_tanpa_customer_dialihkan(): void
+    {
+        $sales = $this->userWithRoles('Sales', ['sales']);
+
+        $this->actingAs($sales);
+        $this->get(route('projects.create'))->assertRedirect(route('customers.index'));
+    }
+}

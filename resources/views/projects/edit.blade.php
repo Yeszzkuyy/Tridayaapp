@@ -60,9 +60,9 @@
                 @endphp
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        {{ __('PIC Engineer') }} <span class="text-red-500">*</span>
+                        {{ __('PIC Engineer') }} <span class="text-slate-400 text-xs">{{ __('(Optional)') }}</span>
                     </label>
-                    <select name="pic_engineer" required
+                    <select name="pic_engineer"
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         <option value="">{{ __('- Select Technician -') }}</option>
                         @foreach($technicians as $tech)
