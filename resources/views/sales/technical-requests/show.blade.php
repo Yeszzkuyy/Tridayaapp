@@ -11,7 +11,7 @@
                     @endif
                 </p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('leads.show', $technicalRequest->lead) }}" title="{{ __('Back') }}" />
+            <x-icon-button as="a" icon="back" href="{{ auth()->user()?->can('manage-technician') ? route('teknisi.requests.index', ['tab' => 'engineer']) : route('leads.show', $technicalRequest->lead) }}" title="{{ __('Back') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-3">

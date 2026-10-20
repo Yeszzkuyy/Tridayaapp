@@ -25,6 +25,8 @@
                 ['manage.admin',                    ['Management', 'Manage Admin']],
                 ['teknisi.dashboard',               ['Teknisi', 'Dashboard Teknisi']],
                 ['teknisi.requests',                ['Teknisi', 'Request Sales']],
+                ['teknisi.price-requests',          ['Teknisi', 'Request Sales']],
+                ['teknisi.technical-requests',      ['Teknisi', 'Request Sales']],
                 ['teknisi.jadwal',                  ['Teknisi', 'Jadwal']],
                 ['teknisi.surveys',                 ['Teknisi', 'Survey']],
                 ['teknisi.sizing-projects',         ['Teknisi', 'Sizing Project']],

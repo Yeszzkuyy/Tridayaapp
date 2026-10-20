@@ -376,6 +376,50 @@ class PriceRequestTest extends TestCase
         $this->assertSame(__('Price Request'), $items['price_request_created']['app']);
         $this->assertSame(__('New price request'), $items['price_request_created']['title']);
         $this->assertSame('PT Kartu Notif', $items['price_request_created']['body']);
-        $this->assertSame(route('sales.price-requests.show', $request), $items['price_request_created']['url']);
+        $this->assertSame(route('teknisi.price-requests.show', $request), $items['price_request_created']['url']);
+    }
+
+    public function test_created_notification_opens_teknisi_request_sales_for_lead_technician(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $request = $this->makePriceRequest($sales);
+
+        $leadTech->notify(new PriceRequestCreatedNotification($request));
+        $items = collect(\App\Http\Controllers\NotificationController::itemsFor($leadTech))->keyBy('type');
+
+        $this->assertSame(
+            route('teknisi.price-requests.show', $request),
+            $items['price_request_created']['url']
+        );
+    }
+
+    public function test_reply_notification_opens_sales_view_for_requester(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales);
+
+        $sales->notify(new PriceRequestCompletedNotification($request));
+        $items = collect(\App\Http\Controllers\NotificationController::itemsFor($sales))->keyBy('type');
+
+        $this->assertSame(
+            route('sales.price-requests.show', $request),
+            $items['price_request_completed']['url']
+        );
+    }
+
+    public function test_teknisi_detail_route_renders_with_teknisi_menu(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $request = $this->makePriceRequest($sales);
+
+        $html = $this->actingAs($leadTech)
+            ->get(route('teknisi.price-requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(route('teknisi.requests.index'), $html);
+        $this->assertStringContainsString('aria-current="page"', $html);
     }
 }
