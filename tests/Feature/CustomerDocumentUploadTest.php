@@ -194,4 +194,57 @@ class CustomerDocumentUploadTest extends TestCase
 
         $this->assertSoftDeleted('project_documents', ['id' => $doc->id]);
     }
+
+    public function test_rename_menyimpan_nama_dan_ekstensi_asli(): void
+    {
+        $tech = $this->userWithRoles('Teknisi', ['technician']);
+        $customer = Customer::create(['name' => 'PT Rename', 'pt_group' => 'NTI']);
+        $this->actingAs($tech);
+        $project = $this->makeProject('NTI');
+        $project->update(['customer_id' => $customer->id]);
+
+        Storage::fake('private');
+        $this->upload($project)->assertRedirect();
+        $doc = \App\Models\ProjectDocument::where('project_id', $project->id)->firstOrFail();
+
+        // Coba ganti ekstensi lewat nama -> ekstensi asli dipertahankan.
+        $this->patch(route('project-documents.rename', $doc), ['name' => 'laporan-baru.exe'])
+            ->assertRedirect();
+
+        $this->assertSame('laporan-baru.pdf', $doc->fresh()->file_name);
+    }
+
+    public function test_rename_ditolak_untuk_yang_tidak_berhak(): void
+    {
+        $tech = $this->userWithRoles('Teknisi', ['technician']);
+        $customer = Customer::create(['name' => 'PT Rename2', 'pt_group' => 'NTI']);
+        $this->actingAs($tech);
+        $project = $this->makeProject('NTI');
+        $project->update(['customer_id' => $customer->id]);
+
+        Storage::fake('private');
+        $this->upload($project)->assertRedirect();
+        $doc = \App\Models\ProjectDocument::where('project_id', $project->id)->firstOrFail();
+
+        $mkt = $this->userWithRoles('Marketing', ['marketing']);
+        $this->actingAs($mkt);
+        $this->patch(route('project-documents.rename', $doc), ['name' => ' Jahat '])
+            ->assertForbidden();
+        $this->assertNotSame('Jahat', $doc->fresh()->file_name);
+
+        $salesLain = $this->userWithRoles('Sales MGK', ['sales-mgk']);
+        $customerTanpaProyek = Customer::create(['name' => 'PT Umum', 'pt_group' => 'MGK']);
+        $this->actingAs($tech);
+        $this->post(route('customer-documents.store', $customerTanpaProyek), [
+            'file' => UploadedFile::fake()->create('umum.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+        $docUmum = \App\Models\ProjectDocument::where('customer_id', $customerTanpaProyek->id)->firstOrFail();
+
+        // Sales beda PT tidak boleh rename dokumen umum PT lain... (sales-mgk vs MGK = boleh)
+        // jadi pakai sales NTI untuk customer MGK -> ditolak.
+        $salesNti = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $this->actingAs($salesNti);
+        $this->patch(route('project-documents.rename', $docUmum), ['name' => 'Coba'])
+            ->assertForbidden();
+    }
 }

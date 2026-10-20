@@ -74,3 +74,174 @@ if (document.readyState === 'loading') {
 } else {
     initDocThumbs();
 }
+
+function initDocPage() {
+    initDocModals();
+    initDocFilter();
+    initDocLightbox();
+    initDocRename();
+}
+
+function showModal(el) {
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideModal(el) {
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function hideAllDocModals() {
+    document.querySelectorAll('[data-doc-modal]').forEach(hideModal);
+}
+
+// Popup upload + tutup via tombol/backdrop/Escape.
+function initDocModals() {
+    document.querySelectorAll('[data-doc-upload-open]').forEach((btn) => {
+        btn.addEventListener('click', () => showModal(document.getElementById('doc-upload-modal')));
+    });
+    document.querySelectorAll('[data-doc-modal-close]').forEach((btn) => {
+        btn.addEventListener('click', () => hideModal(btn.closest('[data-doc-modal]')));
+    });
+    document.querySelectorAll('[data-doc-modal]').forEach((modal) => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideModal(modal);
+        });
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideAllDocModals();
+    });
+}
+
+// Saring kartu: nama + project, tanpa reload.
+function initDocFilter() {
+    const search = document.getElementById('doc-search');
+    const projectFilter = document.getElementById('doc-project-filter');
+    const grid = document.getElementById('doc-grid');
+    if (!grid || (!search && !projectFilter)) return;
+
+    const apply = () => {
+        const q = (search?.value || '').trim().toLowerCase();
+        const proj = projectFilter?.value || '';
+        let visible = 0;
+        grid.querySelectorAll('.doc-card').forEach((card) => {
+            const matchName = !q || (card.dataset.name || '').includes(q);
+            const matchProj = !proj || (card.dataset.project || '') === proj;
+            const show = matchName && matchProj;
+            card.classList.toggle('hidden', !show);
+            if (show) visible += 1;
+        });
+        document.getElementById('doc-no-results')?.classList.toggle('hidden', visible > 0);
+    };
+
+    search?.addEventListener('input', apply);
+    projectFilter?.addEventListener('change', apply);
+}
+
+// Tampilan file dalam layar.
+function initDocLightbox() {
+    const lightbox = document.getElementById('doc-lightbox');
+    const body = document.getElementById('doc-lightbox-body');
+    const nameEl = document.getElementById('doc-lightbox-name');
+    const downloadEl = document.getElementById('doc-lightbox-download');
+    if (!lightbox || !body) return;
+
+    const esc = (s) => {
+        const div = document.createElement('div');
+        div.textContent = s ?? '';
+        return div.innerHTML;
+    };
+
+    const openFrom = (trigger) => {
+        const kind = trigger.dataset.kind || 'other';
+        const url = trigger.dataset.url || '';
+        const filename = trigger.dataset.filename || '';
+        const download = trigger.dataset.download || url;
+
+        nameEl.textContent = filename;
+        downloadEl.setAttribute('href', download);
+        body.innerHTML = '';
+
+        if (kind === 'image') {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = filename;
+            img.className = 'max-h-[70vh] max-w-full rounded-lg object-contain';
+            body.appendChild(img);
+        } else if (kind === 'pdf') {
+            const frame = document.createElement('iframe');
+            frame.src = url;
+            frame.title = filename;
+            frame.className = 'h-[70vh] w-full rounded-lg bg-white';
+            body.appendChild(frame);
+        } else if (kind === 'video') {
+            const video = document.createElement('video');
+            video.controls = true;
+            video.src = url;
+            video.className = 'max-h-[70vh] w-full max-w-3xl rounded-lg bg-black';
+            body.appendChild(video);
+        } else if (kind === 'audio') {
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = url;
+            audio.className = 'w-full max-w-xl';
+            body.appendChild(audio);
+        } else {
+            const wrap = document.createElement('div');
+            wrap.className = 'py-10 text-center';
+            wrap.innerHTML =
+                '<svg class="mx-auto mb-3 h-16 w-16 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">'
+                + '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
+                + '<p class="mb-1 text-sm font-semibold text-slate-700">' + esc(filename) + '</p>'
+                + '<p class="mb-4 text-xs text-slate-400">Preview tidak tersedia — unduh untuk membuka file.</p>';
+            const dl = document.createElement('a');
+            dl.href = download;
+            dl.className = 'inline-block rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700';
+            dl.textContent = 'Download';
+            wrap.appendChild(dl);
+            body.appendChild(wrap);
+        }
+
+        showModal(lightbox);
+    };
+
+    document.querySelectorAll('[data-doc-open]').forEach((thumb) => {
+        thumb.addEventListener('click', () => openFrom(thumb));
+    });
+    document.querySelectorAll('[data-doc-open-child]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.doc-card');
+            const thumb = card?.querySelector('[data-doc-open]');
+            if (thumb) openFrom(thumb);
+        });
+    });
+}
+
+// Popup ubah nama: isi aksi + nama file saat ini.
+function initDocRename() {
+    const modal = document.getElementById('doc-rename-modal');
+    const form = document.getElementById('doc-rename-form');
+    const input = document.getElementById('doc-rename-input');
+    if (!modal || !form || !input) return;
+
+    document.querySelectorAll('[data-doc-rename]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            form.setAttribute('action', btn.dataset.action || '#');
+            input.value = btn.dataset.name || '';
+            showModal(modal);
+            setTimeout(() => input.focus(), 50);
+        });
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDocPage);
+} else {
+    initDocPage();
+}

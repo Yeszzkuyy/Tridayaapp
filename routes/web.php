@@ -289,6 +289,7 @@ Route::middleware('auth')->group(function () {
     // (cek ganda di controller). Hapus tetap khusus teknisi.
     Route::middleware('permission:manage-technician|manage-sales')->group(function () {
         Route::post('/projects/{project}/documents', [ProjectDocumentController::class, 'store'])->name('project-documents.store');
+        Route::patch('/project-documents/{document}/rename', [ProjectDocumentController::class, 'rename'])->name('project-documents.rename');
     });
 
     Route::middleware('permission:view-technician|manage-technician|view-sales|manage-sales')->group(function () {

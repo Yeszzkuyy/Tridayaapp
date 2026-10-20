@@ -149,6 +149,40 @@ class ProjectDocumentController extends Controller
         return Storage::disk('private')->download($document->file_path, $document->file_name);
     }
 
+    /**
+     * Ubah nama file (ekstensi asli dipertahankan demi keamanan).
+     * Izin mengikuti aturan hapus: dokumen project = teknisi,
+     * dokumen umum = teknisi ATAU pengedit customer.
+     */
+    public function rename(Request $request, ProjectDocument $document)
+    {
+        if ($document->project) {
+            $this->authorize('update', $document->project);
+        } else {
+            $owner = $document->customer;
+            abort_if(! $owner, 404);
+            abort_unless(
+                auth()->user()->can('manage-technician') || auth()->user()->can('update', $owner),
+                403
+            );
+        }
+
+        $validated = $request->validate(['name' => 'required|string|max:255']);
+
+        $base = trim(pathinfo(\App\Rules\SecureFile::sanitizeName($validated['name']), PATHINFO_FILENAME));
+        if ($base === '') {
+            $base = pathinfo($document->file_name, PATHINFO_FILENAME);
+        }
+        $ext = strtolower(pathinfo($document->file_name, PATHINFO_EXTENSION));
+
+        $document->update(['file_name' => $base . ($ext ? '.' . $ext : '')]);
+
+        return redirect()
+            ->back()
+            ->with('success', __('File renamed successfully.'))
+            ->with('doc_uploaded', true);
+    }
+
     public function destroy(ProjectDocument $document)
     {
         if ($document->project) {
