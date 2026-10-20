@@ -74,6 +74,16 @@ sehingga build dari worktree basi menimpa CSS/JS website dengan hasil sisiran
 Tailwind atas view lama — kelas yang cuma dipakai view baru ikut terbuang
 dan halaman live berantakan.
 
+**Cache view & user web server:** setelah menjalankan `php artisan test` atau
+perintah artisan lain di folder main sebagai user selain `www-data`, file cache
+view ikut dimiliki user tersebut. Web server (`www-data`) lalu gagal `touch`
+saat Blade memperbarui cache → **seluruh halaman 500**. Setelah menjalankan
+test/artisan di main, bersihkan cache view sebagai pemilik web server:
+
+```bash
+sudo -u www-data php artisan view:clear
+```
+
 ## 6. Jangan commit
 
 - Folder `backups/` (sudah di-gitignore)
