@@ -80,19 +80,20 @@ function initDocPage() {
     initDocFilter();
     initDocLightbox();
     initDocRename();
+    initDocUploadGuard();
 }
 
 function showModal(el) {
     if (!el) return;
     el.classList.remove('hidden');
-    el.classList.add('flex');
+    el.classList.add('doc-open');
     document.body.style.overflow = 'hidden';
 }
 
 function hideModal(el) {
     if (!el) return;
     el.classList.add('hidden');
-    el.classList.remove('flex');
+    el.classList.remove('doc-open');
     document.body.style.overflow = '';
 }
 
@@ -236,6 +237,21 @@ function initDocRename() {
             input.value = btn.dataset.name || '';
             showModal(modal);
             setTimeout(() => input.focus(), 50);
+        });
+    });
+}
+
+// Cegah kirim ganda: kunci tombol saat form upload dikirim.
+function initDocUploadGuard() {
+    document.querySelectorAll('form[action*="/customers/"][action$="/documents"]').forEach((form) => {
+        if (form.dataset.docGuardBound) return;
+        form.dataset.docGuardBound = '1';
+        form.addEventListener('submit', () => {
+            const btn = form.querySelector('[data-doc-upload-submit]');
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                btn.classList.add('opacity-70', 'cursor-wait');
+            }
         });
     });
 }

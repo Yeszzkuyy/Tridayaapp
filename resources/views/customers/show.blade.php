@@ -469,7 +469,7 @@
                     @endif
                     @if($canUploadDocs)
                         {{-- Popup upload --}}
-                        <div id="doc-upload-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
+                        <div id="doc-upload-modal" class="fixed inset-0 z-[90] {{ $errors->has('file') ? 'doc-open' : 'hidden' }} items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
                             <div class="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
                                 <div class="mb-4 flex items-center justify-between">
                                     <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Upload File') }}</h3>
@@ -526,7 +526,9 @@
                                         class="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                                     {{ __('Cancel') }}
                                 </button>
-                                <button type="submit"
+                                <button type="submit" data-doc-upload-submit
+                                        :disabled="!fileName"
+                                        :class="!fileName ? 'opacity-50 cursor-not-allowed' : ''"
                                         class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
                                     {{ __('Upload') }}
                                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>

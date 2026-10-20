@@ -178,6 +178,22 @@ class CustomerDocumentUploadTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_upload_gagal_membuka_lagi_popup_dengan_error(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $this->actingAs($sales);
+        $customer = Customer::create(['name' => 'PT Gagal', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('jahat.exe', 100, 'application/x-msdownload'),
+        ])->assertRedirect();
+
+        $this->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee('doc-open', false);
+    }
+
     public function test_hapus_customer_ikut_hapus_dokumen_umum(): void
     {
         $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);

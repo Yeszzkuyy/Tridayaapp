@@ -531,6 +531,16 @@ tbody tr { transition: background-color 0.2s ease; }
 }
 
 /* ============================================================
+   Modal dokumen customer: tampil = .doc-open (display:flex).
+   Sengaja tidak pakai toggle class flex/hidden Tailwind karena
+   keduanya setara display dan hasilnya tergantung urutan CSS —
+   modal jadi tidak pernah tampil.
+   ============================================================ */
+[data-doc-modal].doc-open {
+    display: flex;
+}
+
+/* ============================================================
    Ikon bell notifikasi — mengikuti tema: hitam di mode terang,
    putih di mode gelap (brightness(0) invert(1)). drop-shadow
    tipis hanya pengaman kontras.
