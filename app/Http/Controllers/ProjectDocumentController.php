@@ -27,7 +27,11 @@ class ProjectDocumentController extends Controller
 
     public function store(Request $request, Project $project)
     {
-        $this->authorize('update', $project);
+        // Boleh upload bila bisa ubah project-nya (teknisi) ATAU bisa ubah
+        // customer pemilik project (sales). Hapus tetap khusus teknisi.
+        $canUpload = auth()->user()->can('update', $project)
+            || ($project->customer && auth()->user()->can('update', $project->customer));
+        abort_unless($canUpload, 403);
 
         $request->validate([
             'file' => ['required', 'file', 'max:20480', \App\Rules\SecureFile::documents()],

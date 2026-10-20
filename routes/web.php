@@ -271,16 +271,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project}/tasks', [ProjectTaskController::class, 'store'])->name('project-tasks.store');
         Route::delete('/project-tasks/{projectTask}', [ProjectTaskController::class, 'destroy'])->name('project-tasks.destroy');
 
-        Route::post('/projects/{project}/documents', [ProjectDocumentController::class, 'store'])->name('project-documents.store');
         Route::delete('/project-documents/{document}', [ProjectDocumentController::class, 'destroy'])->name('project-documents.destroy');
-        Route::get('/project-documents/{document}/preview', [ProjectDocumentController::class, 'preview'])->name('project-documents.preview');
     });
 
-    Route::middleware('permission:view-technician|manage-technician|view-sales')->group(function () {
+    // Upload dokumen proyek: teknisi ATAU sales yang boleh edit customer-nya
+    // (cek ganda di controller). Hapus tetap khusus teknisi.
+    Route::middleware('permission:manage-technician|manage-sales')->group(function () {
+        Route::post('/projects/{project}/documents', [ProjectDocumentController::class, 'store'])->name('project-documents.store');
+    });
+
+    Route::middleware('permission:view-technician|manage-technician|view-sales|manage-sales')->group(function () {
         Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
         Route::get('/projects/{project}/documents', [ProjectDocumentController::class, 'index'])->name('project-documents.index');
         Route::get('/project-documents/{document}/download', [ProjectDocumentController::class, 'download'])->name('project-documents.download');
+        Route::get('/project-documents/{document}/preview', [ProjectDocumentController::class, 'preview'])->name('project-documents.preview');
     });
 
     // ============================================

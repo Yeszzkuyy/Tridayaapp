@@ -346,20 +346,9 @@
                 <div x-show="tab === 'documents'" x-transition>
                     @php
                         $firstProject = $customer->projects->first();
+                        $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
                     @endphp
-                    <x-section-header title="{{ __('Documents') }}">
-                        @can('manage-technician')
-                            @if($firstProject)
-                                <x-add-button href="{{ route('project-documents.index', $firstProject) }}">
-                                    {{ __('Manage Documents') }}
-                                </x-add-button>
-                            @else
-                                <span class="inline-flex justify-center items-center px-4 py-2 bg-gray-300 text-white text-sm rounded-md cursor-not-allowed">
-                                    {{ __('No project yet') }}
-                                </span>
-                            @endif
-                        @endcan
-                    </x-section-header>
+                    <x-section-header title="{{ __('Documents') }}" />
                     
                     @php
                         // Ambil semua project ID dari customer
@@ -374,45 +363,80 @@
                     @endphp
 
                     @if($documents->isNotEmpty())
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach($documents as $doc)
-                                <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 hover:shadow-md transition">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex-1 min-w-0">
-                                            {{-- Icon --}}
-                                            <div class="flex items-center gap-2 mb-1">
-                                                <svg class="w-5 h-5 text-accent-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                @php
+                                    $docExt = strtolower(pathinfo($doc->file_name, PATHINFO_EXTENSION));
+                                    $isImage = in_array($docExt, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                    $isPdf = $docExt === 'pdf';
+                                    $badgeColor = match(true) {
+                                        $isPdf => 'bg-red-500',
+                                        $isImage => 'bg-green-500',
+                                        in_array($docExt, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']) => 'bg-blue-500',
+                                        in_array($docExt, ['zip', 'rar']) => 'bg-amber-500',
+                                        default => 'bg-slate-500',
+                                    };
+                                @endphp
+                                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                                    {{-- Thumbnail ala Drive --}}
+                                    <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                        @if($isImage)
+                                            <img src="{{ route('project-documents.preview', $doc) }}" alt="{{ $doc->file_name }}" loading="lazy" onerror="this.remove()"
+                                                 class="relative h-full w-full object-cover">
+                                        @elseif($isPdf)
+                                            <canvas data-pdf-url="{{ route('project-documents.preview', $doc) }}" class="relative h-full w-full"></canvas>
+                                        @endif
+                                        @if(! $isImage)
+                                            <svg class="absolute h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                        @endif
+                                        <span class="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[11px] font-bold uppercase text-white {{ $badgeColor }}">{{ $docExt ?: __('File') }}</span>
+                                        <div x-data="{ open: false }" class="absolute right-2 top-2">
+                                            <button type="button" @click="open = !open" aria-label="{{ __('Document actions') }}"
+                                                    class="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-600 shadow hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-200">
+                                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z"/>
                                                 </svg>
-                                                <p class="font-medium text-slate-800 dark:text-slate-100 text-sm truncate">{{ $doc->file_name }}</p>
+                                            </button>
+                                            <div x-show="open" @click.outside="open = false" x-transition
+                                                 class="absolute right-0 top-9 z-20 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-sm shadow-lg dark:border-slate-600 dark:bg-slate-800">
+                                                <a href="{{ route('project-documents.preview', $doc) }}" target="_blank"
+                                                   class="block px-4 py-2 text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700">{{ __('Preview') }}</a>
+                                                <a href="{{ route('project-documents.download', $doc) }}"
+                                                   class="block px-4 py-2 text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700">{{ __('Download') }}</a>
+                                                @can('manage-technician')
+                                                    <form action="{{ route('project-documents.destroy', $doc) }}" method="POST"
+                                                          onsubmit="return confirm('{{ __('Delete this document?') }}')">
+                                                        @csrf @method('DELETE')
+                                                        <button type="submit" class="block w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10">{{ __('Delete') }}</button>
+                                                    </form>
+                                                @endcan
                                             </div>
-                                            <p class="text-xs text-slate-500">{{ $doc->project?->project_name ?? __('Project') }}</p>
-                                            <p class="text-xs text-slate-400">{{ $doc->category?->name ?? __('Uncategorized') }}</p>
-                                            <p class="text-xs text-slate-400 mt-1">{{ number_format($doc->file_size / 1024, 1) }} KB</p>
-                                            <p class="text-xs text-slate-400">{{ __('Upload:') }} {{ $doc->uploader?->name ?? '-' }}</p>
                                         </div>
-                                        <div class="flex gap-2 flex-shrink-0 ml-2">
-                                            <a href="{{ route('project-documents.preview', $doc) }}"
-                                               target="_blank"
-                                               class="text-accent-600 hover:text-accent-800 text-xs whitespace-nowrap">{{ __('Preview') }}</a>
-                                            <a href="{{ route('project-documents.download', $doc) }}"
-                                               class="text-accent-600 hover:text-accent-800 text-xs">{{ __('Download') }}</a>
-                                        </div>
+                                    </div>
+                                    <div class="p-3">
+                                        <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100" title="{{ $doc->file_name }}">{{ $doc->file_name }}</p>
+                                        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $doc->project?->project_name ?? __('Project') }} · {{ number_format($doc->file_size / 1024, 1) }} KB</p>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <x-empty-state label="{{ __('documents') }}" :description="$firstProject ? null : __('Create a project first to upload documents.')">
-                            @if($firstProject)
-                                <a href="{{ route('project-documents.index', $firstProject) }}"
-                                   class="text-accent-600 hover:text-accent-800 text-sm font-medium">
-                                    {{ __('Upload documents now') }}
-                                </a>
-                            @endif
-                        </x-empty-state>
+                        <x-empty-state label="{{ __('documents') }}" :description="$firstProject ? null : __('Create a project first to upload documents.')" />
                     @endif
+                    <div class="mt-4 flex justify-center">
+                        @if($firstProject)
+                            @if($canUploadDocs)
+                                <x-add-button href="{{ route('project-documents.index', $firstProject) }}">
+                                    {{ __('Manage Documents') }}
+                                </x-add-button>
+                            @endif
+                        @else
+                            <p class="text-sm text-slate-400">{{ __('Create a project first to upload documents.') }}</p>
+                        @endif
+                    </div>
                 </div>
 
                 {{-- TAB 5: ADMIN DOCUMENTS --}}
@@ -420,13 +444,7 @@
                 <div x-show="tab === 'documents'" x-transition>
                     <div class="mt-8 space-y-6">
                         <div>
-                            <x-section-header title="{{ __('Invoice') }}">
-                                @can('manage-admin')
-                                    <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('Create Invoice') }}
-                                    </x-add-button>
-                                @endcan
-                            </x-section-header>
+                            <x-section-header title="{{ __('Invoice') }}" />
                             @php $custInvoices = $customer->invoices()->with('payments')->latest('issue_date')->get(); @endphp
                             @if($custInvoices->isNotEmpty())
                                 <x-data-table>
@@ -461,16 +479,17 @@
                             @else
                                 <x-empty-state label="{{ __('invoices') }}" />
                             @endif
+                            @can('manage-admin')
+                                <div class="mt-4 flex justify-center">
+                                    <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
+                                        {{ __('Create Invoice') }}
+                                    </x-add-button>
+                                </div>
+                            @endcan
                         </div>
 
                         <div>
-                            <x-section-header title="{{ __('Purchase Order') }}">
-                                @can('manage-admin')
-                                    <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('Create PO') }}
-                                    </x-add-button>
-                                @endcan
-                            </x-section-header>
+                            <x-section-header title="{{ __('Purchase Order') }}" />
                             @php $custPos = $customer->purchaseOrders()->latest('issue_date')->get(); @endphp
                             @if($custPos->isNotEmpty())
                                 <x-data-table>
@@ -506,16 +525,17 @@
                             @else
                                 <x-empty-state label="{{ __('PO') }}" />
                             @endif
+                            @can('manage-admin')
+                                <div class="mt-4 flex justify-center">
+                                    <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
+                                        {{ __('Create PO') }}
+                                    </x-add-button>
+                                </div>
+                            @endcan
                         </div>
 
                         <div>
-                            <x-section-header title="{{ __('Payment') }}">
-                                @can('manage-admin')
-                                    <x-add-button href="{{ route('admin.payments.create') }}">
-                                        {{ __('Record Payment') }}
-                                    </x-add-button>
-                                @endcan
-                            </x-section-header>
+                            <x-section-header title="{{ __('Payment') }}" />
                             @php $custPayments = \App\Models\Payment::whereHas('invoice', fn($q) => $q->where('customer_id', $customer->id))->with('invoice')->latest('payment_date')->get(); @endphp
                             @if($custPayments->isNotEmpty())
                                 <x-data-table>
@@ -543,6 +563,13 @@
                             @else
                                 <x-empty-state label="{{ __('payments') }}" />
                             @endif
+                            @can('manage-admin')
+                                <div class="mt-4 flex justify-center">
+                                    <x-add-button href="{{ route('admin.payments.create') }}">
+                                        {{ __('Record Payment') }}
+                                    </x-add-button>
+                                </div>
+                            @endcan
                         </div>
                     </div>
                 </div>
@@ -649,3 +676,7 @@
         }
     </script>
 </x-app-layout>
+
+@push('scripts')
+    @vite(['resources/js/doc-thumbs.js'])
+@endpush
