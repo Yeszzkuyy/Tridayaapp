@@ -56,7 +56,16 @@ trait SendsWebPush
             ->body($content['body'])
             ->icon(url('/favicon.png'))
             ->badge(url('/favicon.png'))
-            ->data(['url' => $content['url']])
+            ->data(['url' => $this->pushUrl($notifiable)])
             ->action('Lihat', 'open');
+    }
+
+    /**
+     * URL tujuan push. Default sama dengan pushContent(); kelas yang perlu
+     * tujuan berbeda per penerima (mis. sales vs teknisi) meng-override ini.
+     */
+    protected function pushUrl(object $notifiable): string
+    {
+        return $this->pushContent()['url'];
     }
 }

@@ -1,4 +1,7 @@
 <x-app-layout>
+    @if(session('success') && session('success_card'))
+        <x-status-card :message="session('success')" />
+    @endif
     <div>
         <div class="flex items-center justify-between mb-6">
             <div>
@@ -11,7 +14,7 @@
                     @endif
                 </p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('leads.show', $technicalRequest->lead) }}" title="{{ __('Back') }}" />
+            <x-icon-button as="a" icon="back" href="{{ auth()->user()?->can('manage-technician') ? route('teknisi.requests.index', ['tab' => 'engineer']) : route('sales.requests.index', ['tab' => 'engineer']) }}" title="{{ __('Back') }}" />
         </div>
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-3">
@@ -81,12 +84,12 @@
             @can('manage-technician')
                 @if($technicalRequest->status === 'waiting_lead')
                     <div class="flex flex-wrap gap-2 pt-2">
-                        <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline">
+                        <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}">
                             @csrf
                             <input type="hidden" name="decision" value="accepted">
                             <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                         </form>
-                        <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline"
+                        <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}"
                               onsubmit="return confirm('{{ __('Reject this request?') }}')">
                             @csrf
                             <input type="hidden" name="decision" value="rejected">
@@ -95,7 +98,7 @@
                     </div>
                 @endif
                 @if(in_array($technicalRequest->status, ['accepted', 'assigned']))
-                    <form action="{{ route('sales.technical-requests.assign', $technicalRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 pt-2">
+                    <form action="{{ route('sales.technical-requests.assign', $technicalRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 pt-2" data-loading-text="{{ __('Assigning…') }}">
                         @csrf
                         <div>
                             <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Assign Technician') }}</label>
@@ -117,7 +120,7 @@
 
             {{-- Teknisi yang di-assign: progres + hasil + selesai --}}
             @if((int) $technicalRequest->assigned_technician_id === (int) auth()->id() && in_array($technicalRequest->status, ['assigned', 'in_progress']))
-                <form action="{{ route('sales.technical-requests.progress', $technicalRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 pt-2">
+                <form action="{{ route('sales.technical-requests.progress', $technicalRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 pt-2" data-loading-text="{{ __('Updating…') }}">
                     @csrf
                     <div class="flex-1 min-w-52">
                         <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Progress Notes') }}</label>
@@ -126,7 +129,7 @@
                     </div>
                     <x-icon-button type="submit" icon="edit" label="{{ __('Update Progress') }}" title="{{ __('Update Progress') }}" />
                 </form>
-                <form action="{{ route('sales.technical-requests.result', $technicalRequest) }}" method="POST" class="pt-1">
+                <form action="{{ route('sales.technical-requests.result', $technicalRequest) }}" method="POST" class="pt-1" data-loading-text="{{ __('Saving…') }}">
                     @csrf
                     <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Technical Result') }}</label>
                     <textarea name="technical_result" rows="4" required
@@ -140,7 +143,7 @@
                         </button>
                     </div>
                 </form>
-                <form action="{{ route('sales.technical-requests.complete', $technicalRequest) }}" method="POST" class="inline pt-1"
+                <form action="{{ route('sales.technical-requests.complete', $technicalRequest) }}" method="POST" class="inline pt-1" data-loading-text="{{ __('Completing…') }}"
                       onsubmit="return confirm('{{ __('Complete this job?') }}')">
                     @csrf
                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Complete') }}" title="{{ __('Complete') }}" />
@@ -149,7 +152,7 @@
 
             {{-- Sales: batalkan bila belum selesai --}}
             @if(!in_array($technicalRequest->status, ['completed', 'cancelled']) && ((int) $technicalRequest->requested_by === (int) auth()->id() || auth()->user()?->can('manage-sales-leads')))
-                <form action="{{ route('sales.technical-requests.cancel', $technicalRequest) }}" method="POST" class="pt-2"
+                <form action="{{ route('sales.technical-requests.cancel', $technicalRequest) }}" method="POST" class="pt-2" data-loading-text="{{ __('Cancelling…') }}"
                       onsubmit="return confirm('{{ __('Cancel this request?') }}')">
                     @csrf
                     <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />

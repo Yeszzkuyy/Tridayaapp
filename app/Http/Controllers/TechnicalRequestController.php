@@ -159,7 +159,8 @@ class TechnicalRequestController extends Controller
         );
 
         return redirect()->route('sales.technical-requests.show', $technicalRequest)
-            ->with('success', __('Technical request sent to the Lead Technician.'));
+            ->with('success', __('Technical request sent to the Lead Technician.'))
+            ->with('success_card', true);
     }
 
     public function show(TechnicalRequest $technicalRequest)
@@ -186,7 +187,7 @@ class TechnicalRequestController extends Controller
         $this->log($technicalRequest->lead, 'tech_request_' . $validated['decision'], ['title' => $technicalRequest->title]);
         $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, $validated['decision']));
 
-        return back()->with('success', __('Request telah di-' . $validated['decision'] . '.'));
+        return back()->with('success', __('Request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
     }
 
     public function assign(Request $request, TechnicalRequest $technicalRequest)
@@ -218,7 +219,7 @@ class TechnicalRequestController extends Controller
         ]);
         $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
 
-        return back()->with('success', __('Technician assigned successfully.'));
+        return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
     }
 
     public function progress(Request $request, TechnicalRequest $technicalRequest)
@@ -233,7 +234,7 @@ class TechnicalRequestController extends Controller
             'notes' => $validated['notes'] ?? $technicalRequest->notes,
         ]);
 
-        return back()->with('success', __('Progress updated.'));
+        return back()->with('success', __('Progress updated.'))->with('success_card', true);
     }
 
     public function result(Request $request, TechnicalRequest $technicalRequest)
@@ -247,7 +248,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->update(['technical_result' => $validated['technical_result']]);
         $this->log($technicalRequest->lead, 'technical_result_submitted', ['title' => $technicalRequest->title]);
 
-        return back()->with('success', __('Technical results saved.'));
+        return back()->with('success', __('Technical results saved.'))->with('success_card', true);
     }
 
     public function complete(TechnicalRequest $technicalRequest)
@@ -284,7 +285,7 @@ class TechnicalRequestController extends Controller
         $this->log($technicalRequest->lead, 'tech_request_completed', ['title' => $technicalRequest->title]);
         $technicalRequest->requester?->notify(new TechnicalWorkCompletedNotification($technicalRequest));
 
-        return back()->with('success', __('Technical request completed.'));
+        return back()->with('success', __('Technical request completed.'))->with('success_card', true);
     }
 
     public function cancel(TechnicalRequest $technicalRequest)
@@ -301,7 +302,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->update(['status' => 'cancelled']);
         $this->log($technicalRequest->lead, 'tech_request_cancelled', ['title' => $technicalRequest->title]);
 
-        return back()->with('success', __('Technical request canceled.'));
+        return back()->with('success', __('Technical request canceled.'))->with('success_card', true);
     }
 
     public function downloadAttachment(TechnicalRequest $technicalRequest)

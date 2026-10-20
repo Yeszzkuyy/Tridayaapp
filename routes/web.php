@@ -312,6 +312,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-technician|manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         // Inbox permintaan masuk dari sales (Request Harga + Request Tim Engineer).
         Route::get('/requests', [TeknisiRequestController::class, 'index'])->name('requests.index');
+        // Detail request dalam konteks Teknisi: notifikasi sales→teknisi mendarat
+        // di menu Teknisi (sidebar Teknisi aktif), bukan di menu Sales.
+        Route::get('/price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
+        Route::get('/technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('/surveys/create', [\App\Http\Controllers\SurveyController::class, 'create'])->name('surveys.create');
         Route::get('/sizing-projects', [\App\Http\Controllers\SizingProjectController::class, 'index'])->name('sizing-projects.index');
         Route::get('/sizing-projects/create', [\App\Http\Controllers\SizingProjectController::class, 'create'])->name('sizing-projects.create');

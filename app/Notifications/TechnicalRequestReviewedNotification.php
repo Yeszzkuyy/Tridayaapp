@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\TechnicalRequest;
+use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -14,6 +15,27 @@ class TechnicalRequestReviewedNotification extends Notification
     use Queueable, SendsWebPush;
 
     public function __construct(public TechnicalRequest $request, public string $decision) {}
+
+    /** Tujuan klik notifikasi: teknisi → menu Teknisi, sales → menu Sales. */
+    private function showUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id)
+            : route('sales.technical-requests.show', $this->request->id);
+    }
+
+    /** URL in-app: relatif supaya tetap di domain tempat user login. */
+    private function relativeUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id, false)
+            : route('sales.technical-requests.show', $this->request->id, false);
+    }
+
+    protected function pushUrl(object $notifiable): string
+    {
+        return $this->showUrl($notifiable);
+    }
 
     public function via(object $notifiable): array
     {
@@ -40,7 +62,7 @@ class TechnicalRequestReviewedNotification extends Notification
             'lead_id' => $this->request->lead_id,
             'title' => $this->request->title,
             'decision' => $this->decision,
-            'url' => route('sales.technical-requests.show', $this->request->id),
+            'url' => $this->relativeUrl($notifiable),
         ];
     }
 
@@ -49,7 +71,7 @@ class TechnicalRequestReviewedNotification extends Notification
         return (new MailMessage)
             ->subject('Technical Request ' . ucfirst($this->decision))
             ->line('Request "' . $this->request->title . '" telah: ' . $this->decision . '.')
-            ->action('Lihat Progress', url(route('sales.technical-requests.show', $this->request->id)))
+            ->action('Lihat Progress', url($this->showUrl($notifiable)))
             ->line('Terima kasih.');
     }
 
@@ -58,7 +80,7 @@ class TechnicalRequestReviewedNotification extends Notification
         return [
             'title' => __('Technical Request') . ' ' . $this->decision,
             'body' => $this->request->title,
-            'url' => route('sales.technical-requests.show', $this->request->id),
+            'url' => $this->showUrl($notifiable),
         ];
     }
 }

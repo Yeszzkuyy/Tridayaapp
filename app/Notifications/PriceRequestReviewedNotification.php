@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\PriceRequest;
+use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -14,6 +15,27 @@ class PriceRequestReviewedNotification extends Notification
     use Queueable, SendsWebPush;
 
     public function __construct(public PriceRequest $request, public string $decision) {}
+
+    /** Tujuan klik notifikasi: teknisi → menu Teknisi, sales → menu Sales. */
+    private function showUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.price-requests.show', $this->request->id)
+            : route('sales.price-requests.show', $this->request->id);
+    }
+
+    /** URL in-app: relatif supaya tetap di domain tempat user login. */
+    private function relativeUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.price-requests.show', $this->request->id, false)
+            : route('sales.price-requests.show', $this->request->id, false);
+    }
+
+    protected function pushUrl(object $notifiable): string
+    {
+        return $this->showUrl($notifiable);
+    }
 
     public function via(object $notifiable): array
     {
@@ -40,7 +62,7 @@ class PriceRequestReviewedNotification extends Notification
             'customer_id' => $this->request->customer_id,
             'title' => $this->request->customer?->name ?? ('#'.$this->request->customer_id),
             'decision' => $this->decision,
-            'url' => route('sales.price-requests.show', $this->request->id),
+            'url' => $this->relativeUrl($notifiable),
         ];
     }
 
@@ -49,7 +71,7 @@ class PriceRequestReviewedNotification extends Notification
         return (new MailMessage)
             ->subject('Request Harga '.ucfirst($this->decision))
             ->line('Request harga untuk '.($this->request->customer?->name ?? '-').' telah: '.$this->decision.'.')
-            ->action('Lihat Request', url(route('sales.price-requests.show', $this->request->id)))
+            ->action('Lihat Request', url($this->showUrl($notifiable)))
             ->line('Terima kasih.');
     }
 
@@ -58,7 +80,7 @@ class PriceRequestReviewedNotification extends Notification
         return [
             'title' => __('Price Request').' '.$this->decision,
             'body' => $this->request->customer?->name ?? '',
-            'url' => route('sales.price-requests.show', $this->request->id),
+            'url' => $this->showUrl($notifiable),
         ];
     }
 }

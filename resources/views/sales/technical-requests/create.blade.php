@@ -14,6 +14,7 @@
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
             <form action="{{ route('sales.technical-requests.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
+                  data-loading-text="{{ __('Saving…') }}"
                   x-data="{ type: '{{ old('request_type', 'survey') }}' }">
                 @csrf
                 @if($lead)

@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\TechnicalRequest;
 use App\Models\User;
+use App\Notifications\TechnicalRequestCreatedNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -102,6 +103,34 @@ class TechnicalRequestFormTest extends TestCase
         $survey = TechnicalRequest::where('title', 'Survey tanpa PIC')->firstOrFail();
         $this->assertNull($survey->pic_contact_name);
         $this->assertNull($survey->pic_contact_phone);
+    }
+
+    public function test_engineer_created_notification_opens_teknisi_menu_for_lead_technician(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'waiting_lead']);
+
+        $leadTech->notify(new TechnicalRequestCreatedNotification($request));
+        $items = collect(\App\Http\Controllers\NotificationController::itemsFor($leadTech))->keyBy('type');
+
+        $this->assertSame(
+            route('teknisi.technical-requests.show', $request, false),
+            $items['technical_request_created']['url']
+        );
+    }
+
+    public function test_teknisi_detail_route_for_engineer_renders(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'waiting_lead']);
+
+        $this->actingAs($leadTech)
+            ->get(route('teknisi.technical-requests.show', $request))
+            ->assertOk();
     }
 
     public function test_form_uses_purpose_location_and_time_and_drops_legacy_fields(): void

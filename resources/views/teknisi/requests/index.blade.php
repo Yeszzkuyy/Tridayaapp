@@ -79,7 +79,7 @@
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $req->created_at?->format('d M Y') ?? '-' }}</td>
                             <td class="px-6 py-4 text-right">
-                                <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.show', $req) }}" title="{{ __('View details') }}" />
+                                <x-icon-button as="a" icon="view" href="{{ route('teknisi.price-requests.show', $req) }}" label="{{ __('Process') }}" title="{{ __('Process') }}" />
                             </td>
                         </tr>
                     @empty
@@ -126,7 +126,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $req) }}" label="{{ __('Process') }}" title="{{ __('Process') }}" />
+                                <x-icon-button as="a" icon="view" href="{{ route('teknisi.technical-requests.show', $req) }}" label="{{ __('Process') }}" title="{{ __('Process') }}" />
                             </td>
                         </tr>
                     @empty
