@@ -6,7 +6,8 @@
       $canManage  bool  tampilkan tombol rename & hapus
       $badgeClass string  kelas warna badge pojok kiri atas
       $badgeText  string  isi badge (mis. "INV", "PO", "PAY")
-      $metaLine   string  baris info di bawah nama file
+      $metaLine   string  info tambahan di bawah nama file (ukuran file
+                          otomatis dihitung & ditambahkan di belakangnya)
 --}}
 @props(['doc', 'canManage' => false, 'badgeClass' => 'bg-slate-500', 'badgeText' => null, 'metaLine' => null])
 
@@ -24,8 +25,24 @@
         in_array($docExt, ['zip', 'rar']) => 'bg-amber-500',
         default => 'bg-slate-500',
     };
-    $metaLine = $metaLine ?: ($doc->project?->project_name ?? __('General'))
-        . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB';
+    $metaLine = $metaLine ?: ($doc->project?->project_name ?? __('General'));
+
+    // Ukuran file: kolom file_size kosong untuk file era lama (sebelum kolom
+    // ditambahkan) — jangan tampilkan "0 KB", coba hitung langsung dari
+    // storage. Kalau tetap tidak ketahuan, sembunyikan saja.
+    $docBytes = (int) $doc->file_size;
+    if ($docBytes <= 0 && $doc->file_path) {
+        try {
+            $docBytes = \Illuminate\Support\Facades\Storage::disk('private')->size($doc->file_path);
+        } catch (\Throwable $e) {
+            $docBytes = 0;
+        }
+    }
+    $docSize = match (true) {
+        $docBytes <= 0 => '',
+        $docBytes >= 1048576 => number_format($docBytes / 1048576, 1) . ' MB',
+        default => number_format($docBytes / 1024, 1) . ' KB',
+    };
 @endphp
 
 <div class="doc-card overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50"
@@ -55,7 +72,7 @@
     </div>
     <div class="p-3">
         <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $doc->file_name }}</p>
-        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $metaLine }}</p>
+        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $metaLine }}@if($docSize) · {{ $docSize }}@endif</p>
         <div class="mt-2 flex gap-1.5">
             <x-icon-button icon="view" title="{{ __('Preview') }}" data-doc-open-child />
             <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}" title="{{ __('Download') }}" />

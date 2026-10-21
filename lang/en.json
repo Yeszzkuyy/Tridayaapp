@@ -3502,5 +3502,6 @@
     "Incoming requests — take one to process or reply. You can also create a price request with the same file form.": "Incoming requests — take one to process or reply. You can also create a price request with the same file form.",
     "No price requests yet — attach a quotation PDF and Engineering will reply with the price.": "No price requests yet — attach a quotation PDF and Engineering will reply with the price.",
     "PDF quotation — max 10 MB. Excel, Word, or image also allowed.": "PDF quotation — max 10 MB. Excel, Word, or image also allowed.",
-    "Price request telah di-": "Price request has been "
+    "Price request telah di-": "Price request has been ",
+    "Upload the file so it appears here.": "Upload the file so it appears here."
 }

@@ -119,7 +119,54 @@ class CustomerController extends Controller
         return view('customers.show', [
             'customer' => $customer,
             'timeline' => $this->buildTimeline($customer),
+            'documents' => $this->generalDocuments($customer),
+            'typedDocs' => $this->typedDocuments($customer),
+            'custInvoices' => $customer->invoices()->latest('issue_date')->get(),
+            'custPos' => $customer->purchaseOrders()->latest('issue_date')->get(),
+            'custPayments' => \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
+                ->with('invoice')
+                ->latest('payment_date')
+                ->get(),
         ]);
+    }
+
+    /**
+     * Dokumen tab "Documents": dokumen project-project customer + dokumen
+     * umum (tanpa project). File invoice/PO/payment (doc_type) tidak ikut
+     * di sini — mereka punya section sendiri.
+     */
+    private function generalDocuments(Customer $customer): \Illuminate\Support\Collection
+    {
+        $projectIds = $customer->projects->pluck('id')->toArray();
+
+        return \App\Models\ProjectDocument::where(function ($query) use ($projectIds, $customer) {
+                $query->whereIn('project_id', $projectIds)
+                    ->orWhere(function ($q) use ($customer) {
+                        $q->where('customer_id', $customer->id)->whereNull('doc_type');
+                    });
+            })
+            ->with(['project', 'category', 'uploader'])
+            ->whereNull('deleted_at')
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * File invoice/PO/payment per jenis — SATU query dikelompokkan per
+     * doc_type (menggantikan 3 query terpisah yang dulu dijalankan dari
+     * dalam view tiap kali halaman dirender).
+     *
+     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, \App\Models\ProjectDocument>>
+     */
+    private function typedDocuments(Customer $customer): \Illuminate\Support\Collection
+    {
+        return \App\Models\ProjectDocument::where('customer_id', $customer->id)
+            ->whereIn('doc_type', ['invoice', 'po', 'payment'])
+            ->whereNull('deleted_at')
+            ->with(['uploader', 'project'])
+            ->latest()
+            ->get()
+            ->groupBy('doc_type');
     }
 
     /**

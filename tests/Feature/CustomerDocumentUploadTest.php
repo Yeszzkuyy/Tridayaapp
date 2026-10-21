@@ -353,4 +353,83 @@ class CustomerDocumentUploadTest extends TestCase
         $this->patch(route('project-documents.rename', $docUmum), ['name' => 'Coba'])
             ->assertForbidden();
     }
+
+    public function test_section_invoice_tidak_tulis_belum_ada_bila_file_sudah_ada(): void
+    {
+        // Regresi: empty state "No invoices" dulu hanya mengecek data record
+        // (tabel invoices), sehingga tetap muncul walaupun file invoice
+        // sudah diunggah lewat tombol Upload File.
+        $admin = $this->userWithRoles('Super Admin Empty', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Ada File', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('faktur.pdf', 100, 'application/pdf'),
+            'doc_type' => 'invoice',
+        ])->assertRedirect();
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+
+        $this->assertStringContainsString('faktur.pdf', $html);
+        $this->assertStringNotContainsString('No invoices', $html);
+    }
+
+    public function test_section_kosong_total_tampilkan_empty_state_dengan_tombol_upload(): void
+    {
+        $admin = $this->userWithRoles('Super Admin Kosong', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Kosong', 'pt_group' => 'NTI']);
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+
+        // Kosong = benar-benar kosong (tak ada file DAN tak ada data).
+        $this->assertStringContainsString('No invoices', $html);
+        $this->assertStringContainsString('No payments', $html);
+        // Empty state tidak buntu: ada ajakan unggah + tombolnya.
+        $this->assertStringContainsString('Upload the file so it appears here.', $html);
+        $this->assertStringContainsString('data-doc-type="invoice"', $html);
+        $this->assertStringContainsString('data-doc-type="payment"', $html);
+    }
+
+    public function test_section_invoice_dengan_record_tanpa_file_tetap_tampil(): void
+    {
+        $admin = $this->userWithRoles('Super Admin Record', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Record', 'pt_group' => 'NTI']);
+        \App\Models\Invoice::create([
+            'invoice_number' => 'INV-001',
+            'customer_id' => $customer->id,
+            'amount' => 1000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $this->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee('INV-001', false)
+            ->assertDontSee('No invoices', false);
+    }
+
+    public function test_kartu_file_lama_tanpa_file_size_tidak_tampilkan_0_kb(): void
+    {
+        $admin = $this->userWithRoles('Super Admin Ukuran', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Ukuran', 'pt_group' => 'NTI']);
+
+        // File era lama: file_path ada tapi file_size NULL (kolom ukuran baru
+        // ditambahkan lewat migrasi, baris lama tidak ikut terisi).
+        \App\Models\ProjectDocument::create([
+            'customer_id' => $customer->id,
+            'file_name' => 'lama.pdf',
+            'file_path' => 'private/lama.pdf',
+            'file_size' => null,
+            'uploaded_by' => $admin->id,
+        ]);
+
+        $this->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee('lama.pdf', false)
+            ->assertDontSee('0 KB', false);
+    }
 }

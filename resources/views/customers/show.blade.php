@@ -317,20 +317,6 @@
                 <div x-show="tab === 'documents'" x-transition>
                     @php
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
-
-                        // Dokumen project-project customer + dokumen umum (tanpa project).
-                        // File invoice/PO/payment (doc_type) tidak ikut di sini.
-                        $projectIds = $customer->projects->pluck('id')->toArray();
-                        $documents = App\Models\ProjectDocument::where(function ($query) use ($projectIds, $customer) {
-                                $query->whereIn('project_id', $projectIds)
-                                    ->orWhere(function ($q) use ($customer) {
-                                        $q->where('customer_id', $customer->id)->whereNull('doc_type');
-                                    });
-                            })
-                            ->with(['project', 'category', 'uploader'])
-                            ->whereNull('deleted_at')
-                            ->latest()
-                            ->get();
                     @endphp
                     <x-section-header title="{{ __('Documents') }}">
                         @if($canUploadDocs)
@@ -496,11 +482,27 @@
                 @can('view-admin')
                 <div x-show="tab === 'documents'" x-transition>
                     <div class="mt-8 space-y-6">
+                        {{-- Invoice: file unggahan + data invoice dalam satu grid.
+                             "Belum ada" hanya saat file DAN data sama-sama kosong. --}}
                         <div>
-                            <x-section-header title="{{ __('Invoice') }}" />
-                            @php $custInvoices = $customer->invoices()->with('payments')->latest('issue_date')->get(); @endphp
-                            @if($custInvoices->isNotEmpty())
+                            <x-section-header title="{{ __('Invoice') }}">
+                                @if($canUploadDocs)
+                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                   data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
+                                @endif
+                            </x-section-header>
+                            @php $sectionDocs = $typedDocs->get('invoice', collect()); @endphp
+                            @if($custInvoices->isNotEmpty() || $sectionDocs->isNotEmpty())
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($sectionDocs as $doc)
+                                        @include('customers.doc-card', [
+                                            'doc' => $doc,
+                                            'canManage' => $canUploadDocs,
+                                            'badgeClass' => 'bg-teal-500',
+                                            'badgeText' => 'INV',
+                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y'),
+                                        ])
+                                    @endforeach
                                     @foreach($custInvoices as $inv)
                                         @php
                                             $invBadgeColor = match($inv->status) {
@@ -512,7 +514,7 @@
                                         @endphp
                                         <a href="{{ route('admin.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
                                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                            <div class="relative flex h-24 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                                 <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -530,41 +532,35 @@
                                     @endforeach
                                 </div>
                             @else
-                                <x-empty-state label="{{ __('invoices') }}" />
+                                <x-empty-state label="{{ __('invoices') }}" description="{{ __('Upload the file so it appears here.') }}">
+                                    @if($canUploadDocs)
+                                        <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                       data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
+                                    @endif
+                                </x-empty-state>
                             @endif
-@php
-                                $sectionDocs = App\Models\ProjectDocument::where('customer_id', $customer->id)
-                                    ->where('doc_type', 'invoice')
-                                    ->whereNull('deleted_at')
-                                    ->latest()
-                                    ->get();
-                            @endphp
-                            @if($sectionDocs->isNotEmpty())
-                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        </div>
+
+                        {{-- Purchase Order: pola sama dengan Invoice --}}
+                        <div>
+                            <x-section-header title="{{ __('Purchase Order') }}">
+                                @if($canUploadDocs)
+                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                   data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
+                                @endif
+                            </x-section-header>
+                            @php $sectionDocs = $typedDocs->get('po', collect()); @endphp
+                            @if($custPos->isNotEmpty() || $sectionDocs->isNotEmpty())
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @foreach($sectionDocs as $doc)
                                         @include('customers.doc-card', [
                                             'doc' => $doc,
                                             'canManage' => $canUploadDocs,
-                                            'badgeClass' => 'bg-teal-500',
-                                            'badgeText' => 'INV',
-                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y')
-                                                . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB',
+                                            'badgeClass' => 'bg-violet-500',
+                                            'badgeText' => 'PO',
+                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y'),
                                         ])
                                     @endforeach
-                                </div>
-                            @endif
-                            @if($canUploadDocs)
-                                <div class="mt-4 flex justify-center">
-                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                   data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
-                                </div>
-                            @endif                        </div>
-
-                        <div>
-                            <x-section-header title="{{ __('Purchase Order') }}" />
-                            @php $custPos = $customer->purchaseOrders()->latest('issue_date')->get(); @endphp
-                            @if($custPos->isNotEmpty())
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @foreach($custPos as $po)
                                         @php
                                             $poBadgeColor = match($po->status) {
@@ -576,7 +572,7 @@
                                         @endphp
                                         <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
                                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                            <div class="relative flex h-24 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                                 <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -594,45 +590,39 @@
                                     @endforeach
                                 </div>
                             @else
-                                <x-empty-state label="{{ __('PO') }}" />
+                                <x-empty-state label="{{ __('PO') }}" description="{{ __('Upload the file so it appears here.') }}">
+                                    @if($canUploadDocs)
+                                        <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                       data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
+                                    @endif
+                                </x-empty-state>
                             @endif
-@php
-                                $sectionDocs = App\Models\ProjectDocument::where('customer_id', $customer->id)
-                                    ->where('doc_type', 'po')
-                                    ->whereNull('deleted_at')
-                                    ->latest()
-                                    ->get();
-                            @endphp
-                            @if($sectionDocs->isNotEmpty())
-                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        </div>
+
+                        {{-- Payment: pola sama dengan Invoice --}}
+                        <div>
+                            <x-section-header title="{{ __('Payment') }}">
+                                @if($canUploadDocs)
+                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                   data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
+                                @endif
+                            </x-section-header>
+                            @php $sectionDocs = $typedDocs->get('payment', collect()); @endphp
+                            @if($custPayments->isNotEmpty() || $sectionDocs->isNotEmpty())
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @foreach($sectionDocs as $doc)
                                         @include('customers.doc-card', [
                                             'doc' => $doc,
                                             'canManage' => $canUploadDocs,
-                                            'badgeClass' => 'bg-violet-500',
-                                            'badgeText' => 'PO',
-                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y')
-                                                . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB',
+                                            'badgeClass' => 'bg-emerald-500',
+                                            'badgeText' => 'PAY',
+                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y'),
                                         ])
                                     @endforeach
-                                </div>
-                            @endif
-                            @if($canUploadDocs)
-                                <div class="mt-4 flex justify-center">
-                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                   data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
-                                </div>
-                            @endif                        </div>
-
-                        <div>
-                            <x-section-header title="{{ __('Payment') }}" />
-                            @php $custPayments = \App\Models\Payment::whereHas('invoice', fn($q) => $q->where('customer_id', $customer->id))->with('invoice')->latest('payment_date')->get(); @endphp
-                            @if($custPayments->isNotEmpty())
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     @foreach($custPayments as $pm)
                                         <a href="{{ route('admin.payments.show', $pm) }}" title="{{ $pm->invoice->invoice_number }}"
                                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                            <div class="relative flex h-24 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                                 <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                                           d="M9 14l6-6m-5.5.5h.01m4.99 1H15a5 5 0 015 5v7H5v-7a5 5 0 015-5h2.5z"/>
@@ -648,35 +638,14 @@
                                     @endforeach
                                 </div>
                             @else
-                                <x-empty-state label="{{ __('payments') }}" />
+                                <x-empty-state label="{{ __('payments') }}" description="{{ __('Upload the file so it appears here.') }}">
+                                    @if($canUploadDocs)
+                                        <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                       data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
+                                    @endif
+                                </x-empty-state>
                             @endif
-@php
-                                $sectionDocs = App\Models\ProjectDocument::where('customer_id', $customer->id)
-                                    ->where('doc_type', 'payment')
-                                    ->whereNull('deleted_at')
-                                    ->latest()
-                                    ->get();
-                            @endphp
-                            @if($sectionDocs->isNotEmpty())
-                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    @foreach($sectionDocs as $doc)
-                                        @include('customers.doc-card', [
-                                            'doc' => $doc,
-                                            'canManage' => $canUploadDocs,
-                                            'badgeClass' => 'bg-emerald-500',
-                                            'badgeText' => 'PAY',
-                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y')
-                                                . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB',
-                                        ])
-                                    @endforeach
-                                </div>
-                            @endif
-                            @if($canUploadDocs)
-                                <div class="mt-4 flex justify-center">
-                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                   data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
-                                </div>
-                            @endif                        </div>
+                        </div>
                     </div>
                 </div>
                 @endcan
