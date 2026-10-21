@@ -69,18 +69,21 @@ function initDocThumbs() {
     canvases.forEach((c) => io.observe(c));
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDocThumbs);
-} else {
-    initDocThumbs();
-}
-
 function initDocPage() {
     initDocModals();
     initDocFilter();
     initDocLightbox();
     initDocRename();
     initDocUploadGuard();
+}
+
+// Pasang listener sekali saja per elemen (aman dipanggil ulang tiap navigasi SPA).
+function bindOnce(el, event, handler) {
+    if (!el) return;
+    const flag = `docBound${event}`;
+    if (el.dataset[flag]) return;
+    el.dataset[flag] = '1';
+    el.addEventListener(event, handler);
 }
 
 function showModal(el) {
@@ -103,18 +106,19 @@ function hideAllDocModals() {
 
 // Popup upload + tutup via tombol/backdrop/Escape.
 function initDocModals() {
-    const typeInput = document.getElementById('doc-doc-type');
-    const targetEl = document.getElementById('doc-upload-target');
-    const projectField = document.getElementById('doc-project-field');
-
     document.querySelectorAll('[data-doc-upload-open]').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        bindOnce(btn, 'click', () => {
+            // Elemen popup diambil saat diklik — aman setelah navigasi SPA.
+            const typeInput = document.getElementById('doc-doc-type');
+            const targetEl = document.getElementById('doc-upload-target');
+            const projectField = document.getElementById('doc-project-field');
+
             // Tombol dari bagian Invoice/PO/Payment membawa jenisnya sendiri.
             const type = btn.dataset.docType || '';
             if (typeInput) typeInput.value = type;
             if (targetEl) {
                 const section = btn.dataset.docSection || '';
-                targetEl.textContent = section ? section : '';
+                targetEl.textContent = section;
                 targetEl.classList.toggle('hidden', !section);
             }
             // File jenis ini melekat di customer, jadi pilihan project disembunyikan.
@@ -127,16 +131,19 @@ function initDocModals() {
         });
     });
     document.querySelectorAll('[data-doc-modal-close]').forEach((btn) => {
-        btn.addEventListener('click', () => hideModal(btn.closest('[data-doc-modal]')));
+        bindOnce(btn, 'click', () => hideModal(btn.closest('[data-doc-modal]')));
     });
     document.querySelectorAll('[data-doc-modal]').forEach((modal) => {
-        modal.addEventListener('click', (e) => {
+        bindOnce(modal, 'click', (e) => {
             if (e.target === modal) hideModal(modal);
         });
     });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') hideAllDocModals();
-    });
+    if (!window.__docEscBound) {
+        window.__docEscBound = true;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideAllDocModals();
+        });
+    }
 }
 
 // Saring kartu: nama + project, tanpa reload.
@@ -160,8 +167,8 @@ function initDocFilter() {
         document.getElementById('doc-no-results')?.classList.toggle('hidden', visible > 0);
     };
 
-    search?.addEventListener('input', apply);
-    projectFilter?.addEventListener('change', apply);
+    bindOnce(search, 'input', apply);
+    bindOnce(projectFilter, 'change', apply);
 }
 
 // Tampilan file dalam layar.
@@ -232,10 +239,10 @@ function initDocLightbox() {
     };
 
     document.querySelectorAll('[data-doc-open]').forEach((thumb) => {
-        thumb.addEventListener('click', () => openFrom(thumb));
+        bindOnce(thumb, 'click', () => openFrom(thumb));
     });
     document.querySelectorAll('[data-doc-open-child]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
+        bindOnce(btn, 'click', (e) => {
             e.stopPropagation();
             const card = btn.closest('.doc-card');
             const thumb = card?.querySelector('[data-doc-open]');
@@ -252,7 +259,7 @@ function initDocRename() {
     if (!modal || !form || !input) return;
 
     document.querySelectorAll('[data-doc-rename]').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        bindOnce(btn, 'click', () => {
             form.setAttribute('action', btn.dataset.action || '#');
             input.value = btn.dataset.name || '';
             showModal(modal);
@@ -276,8 +283,23 @@ function initDocUploadGuard() {
     });
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDocPage);
-} else {
-    initDocPage();
+function initDocPageSafe() {
+    try {
+        initDocThumbs();
+        initDocPage();
+    } catch (e) {
+        console.error('doc page init gagal', e);
+    }
 }
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDocPageSafe);
+} else {
+    initDocPageSafe();
+}
+
+// Halaman ini dinavigasi ala SPA (Livewire) — pasang ulang listener
+// tiap konten halaman baru selesai dimuat.
+['livewire:navigated', 'turbo:load', 'popstate'].forEach((evt) => {
+    document.addEventListener(evt, initDocPageSafe);
+});
