@@ -16,7 +16,7 @@ const pdfjsWorkerAsset = {
         if (!fs.existsSync(worker)) return;
         this.emitFile({
             type: 'asset',
-            fileName: 'pdf.worker.min.mjs',
+            fileName: 'pdf.worker.min.js',
             source: fs.readFileSync(worker),
         });
     },

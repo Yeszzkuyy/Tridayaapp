@@ -36,7 +36,7 @@ function pdfjsWorkerUrl() {
     if (import.meta.env.DEV) {
         return '/node_modules/pdfjs-dist/build/pdf.worker.min.mjs';
     }
-    return `${import.meta.env.BASE_URL}pdf.worker.min.mjs`;
+    return `${import.meta.env.BASE_URL}pdf.worker.min.js`;
 }
 
 function loadUnzip() {
