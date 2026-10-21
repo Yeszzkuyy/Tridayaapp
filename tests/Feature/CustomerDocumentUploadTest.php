@@ -421,6 +421,11 @@ class CustomerDocumentUploadTest extends TestCase
         $css = file_get_contents(resource_path('css/app.css'));
         $js = file_get_contents(resource_path('js/doc-thumbs.js'));
 
+        // 1. Kartu yang memuat popup fixed tidak boleh terangkat (transform
+        //    membuat kartu jadi containing block popup → popup terkunci ke
+        //    kartu, nempel di kotak kecil lalu melebar, tidak statis).
+        $this->assertStringContainsString('main .bg-white.shadow-sm:not(:has([data-doc-modal])):hover', $css);
+        // 2. Selama popup terbuka, hover-lift dimatikan lewat <html> class.
         $this->assertStringContainsString('html.doc-modal-open main .bg-white.shadow-sm:hover', $css);
         $this->assertStringContainsString('transform: none;', $css);
         $this->assertStringContainsString("classList.toggle('doc-modal-open'", $js);

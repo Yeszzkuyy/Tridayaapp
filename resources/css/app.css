@@ -209,8 +209,13 @@ main .bg-white {
 }
 
 @media (hover: hover) {
-    main .bg-white.shadow-sm:hover,
-    main .bg-white.shadow:hover {
+    /* Kartu yang memuat popup fixed (position:fixed) TIDAK boleh terangkat.
+       Reason: transform membuat kartu itu menjadi containing block untuk
+       popup — popup terkunci ke kartu (bukan layar), jadi overlay cuma
+       menutup area kartu lalu melebar begitu hover berakhir, dan halaman
+       di belakang ikut bergeser. Kartu kecil biasa tetap terangkat. */
+    main .bg-white.shadow-sm:not(:has([data-doc-modal])):hover,
+    main .bg-white.shadow:not(:has([data-doc-modal])):hover {
         transform: translateY(-3px);
         box-shadow: var(--shadow-lift);
     }
