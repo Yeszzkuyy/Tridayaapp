@@ -5,19 +5,57 @@
             <p class="text-slate-500 mt-1">{{ __('Pipeline of :name — new leads land in the New column, drag to Cool/Warm/Hot to follow up', ['name' => auth()->user()->name]) }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="filter" href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
-                           label="{{ ($showAllClosed ?? false) ? __('This Week') : __('Show All') }}"
-                           title="{{ ($showAllClosed ?? false) ? __('This Week') : __('Show All') }}" />
-            @if(auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing'))
-                <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}"
-                               label="{{ __('Lead Table') }}" title="{{ __('Lead Table') }}" />
-            @else
-                <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}"
-                               label="{{ __('My Leads') }}" title="{{ __('My Leads') }}" />
-            @endif
+            @php
+                $isAllClosed = $showAllClosed ?? false;
+                $filterUrl = $isAllClosed ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']);
+                $filterLabel = $isAllClosed ? __('This Week') : __('Show All');
+                $canManageMarketing = auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing');
+                $tableUrl = $canManageMarketing ? route('leads.index') : route('sales.my-leads');
+                $tableLabel = $canManageMarketing ? __('Lead Table') : __('My Leads');
+            @endphp
+
+            {{-- 1. Filter Toggle (Show All / This Week) --}}
+            <a href="{{ $filterUrl }}"
+               wire:navigate.hover
+               title="{{ $filterLabel }}"
+               class="group relative inline-flex h-10 items-center overflow-hidden rounded-xl border border-slate-200 bg-white px-2.5 text-slate-700 shadow-sm transition-all duration-500 ease-in-out hover:border-indigo-600 hover:bg-indigo-600 hover:px-4 hover:text-white hover:shadow-md hover:shadow-indigo-500/25 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-500 dark:hover:text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                <svg class="h-5 w-5 shrink-0 text-indigo-600 transition-colors duration-300 group-hover:text-white dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3z" />
+                </svg>
+                <span class="max-w-0 opacity-0 whitespace-nowrap overflow-hidden text-sm font-semibold transition-all duration-500 ease-in-out group-hover:max-w-36 group-hover:opacity-100 group-hover:ml-2">
+                    {{ $filterLabel }}
+                </span>
+                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+            </a>
+
+            {{-- 2. Lead Table / My Leads View --}}
+            <a href="{{ $tableUrl }}"
+               wire:navigate.hover
+               title="{{ $tableLabel }}"
+               class="group relative inline-flex h-10 items-center overflow-hidden rounded-xl border border-slate-200 bg-white px-2.5 text-slate-700 shadow-sm transition-all duration-500 ease-in-out hover:border-sky-600 hover:bg-sky-600 hover:px-4 hover:text-white hover:shadow-md hover:shadow-sky-500/25 active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:bg-sky-500 dark:hover:text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
+                <svg class="h-5 w-5 shrink-0 text-sky-600 transition-colors duration-300 group-hover:text-white dark:text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+                </svg>
+                <span class="max-w-0 opacity-0 whitespace-nowrap overflow-hidden text-sm font-semibold transition-all duration-500 ease-in-out group-hover:max-w-36 group-hover:opacity-100 group-hover:ml-2">
+                    {{ $tableLabel }}
+                </span>
+                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+            </a>
+
+            {{-- 3. Add Lead Primary Action --}}
             @can('manage-marketing')
-                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}"
-                               label="{{ __('Tambah Lead') }}" title="{{ __('Tambah Lead') }}" />
+                <a href="{{ route('leads.create') }}"
+                   wire:navigate.hover
+                   title="{{ __('Add Lead') }}"
+                   class="group relative inline-flex h-10 items-center overflow-hidden rounded-xl bg-accent-600 px-2.5 text-white shadow-sm shadow-accent-500/20 transition-all duration-500 ease-in-out hover:bg-accent-700 hover:px-4 hover:shadow-md hover:shadow-accent-500/30 hover:brightness-105 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+                    <svg class="h-5 w-5 shrink-0 transition-transform duration-500 ease-in-out group-hover:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span class="max-w-0 opacity-0 whitespace-nowrap overflow-hidden text-sm font-semibold transition-all duration-500 ease-in-out group-hover:max-w-36 group-hover:opacity-100 group-hover:ml-2">
+                        {{ __('Add Lead') }}
+                    </span>
+                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                </a>
             @endcan
         </div>
     </div>
