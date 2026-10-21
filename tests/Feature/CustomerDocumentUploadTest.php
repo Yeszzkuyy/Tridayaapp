@@ -411,6 +411,40 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertDontSee('No invoices', false);
     }
 
+    public function test_kartu_dokumen_punya_thumbnail_per_jenis_file(): void
+    {
+        // Setiap jenis file punya thumbnail sendiri:
+        // - txt/csv/docx/xlsx/pptx/zip -> canvas yang digambar dari isi file
+        // - doc/xls/ppt lama & rar      -> kartu berwarna + label ekstensi
+        $admin = $this->userWithRoles('Super Admin Thumbnail', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Thumbnail', 'pt_group' => 'NTI']);
+
+        $files = array_merge(
+            ['docx', 'xlsx', 'pptx', 'txt', 'csv', 'zip'],
+            ['doc', 'xls', 'ppt', 'rar']
+        );
+        foreach ($files as $ext) {
+            \App\Models\ProjectDocument::create([
+                'customer_id' => $customer->id,
+                'file_name' => 'berkas.' . $ext,
+                'file_path' => 'private/berkas.' . $ext,
+                'file_size' => 2048,
+                'uploaded_by' => $admin->id,
+            ]);
+        }
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+
+        foreach (['txt', 'csv', 'docx', 'xlsx', 'pptx', 'zip'] as $ext) {
+            $this->assertStringContainsString('data-doc-render="' . $ext . '"', $html, "Thumbnail $ext tidak ada");
+        }
+        // Kartu berwarna untuk tipe tak bisa dibaca browser.
+        $this->assertStringContainsString('DOC', $html);
+        $this->assertStringContainsString('RAR', $html);
+        $this->assertStringContainsString('bg-amber-700', $html);
+    }
+
     public function test_css_mematikan_hover_lift_selama_popup_dokumen_terbuka(): void
     {
         // Regresi: :hover berlaku ke semua parent, jadi hover di atas popup

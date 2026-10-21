@@ -2,23 +2,48 @@
  * Thumbnail dokumen ala Drive untuk kartu dokumen customer.
  *
  * - <img> menangani file gambar langsung (URL preview privat, same-origin).
- * - <canvas data-pdf-url="..."> digambar halaman pertamanya via PDF.js,
- *   dimuat malas saat kartu terlihat. Gagal render = ikon fallback di
- *   belakang canvas tetap terlihat (canvas transparan).
+ * - <canvas data-pdf-url="..."> digambar halaman pertamanya via PDF.js.
+ * - <canvas data-doc-render="txt|csv|docx|xlsx|pptx|zip"> digambar dari
+ *   ISI file: teks/tabel asli (Word/Excel/PPT dibaca dari XML di dalam
+ *   file ZIP-nya, tanpa alat konversi di server).
+ * - Semua pustaka berat (PDF.js 431KB, fflate) dimuat LAZILY: hanya saat
+ *   ada file tipe itu yang terlihat di layar.
+ * - Gagal render = ikon fallback di belakang canvas tetap terlihat.
  */
-import * as pdfjsLib from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 const MAX_WIDTH = 480;
 const MAX_DPR = 2;
+const MAX_PARSE_BYTES = 10 * 1024 * 1024; // file > 10MB tidak diparse
+const MAX_TEXT_BYTES = 40000; // cukup untuk 1-2 halaman
+
+// PDF.js (431KB) & fflate diambil saat dipakai, bukan saat halaman dibuka.
+let pdfjsPromise = null;
+let unzipPromise = null;
+
+function loadPdfjs() {
+    if (!pdfjsPromise) {
+        pdfjsPromise = import('pdfjs-dist').then((mod) => {
+            mod.GlobalWorkerOptions.workerSrc = workerUrl;
+            return mod;
+        });
+    }
+    return pdfjsPromise;
+}
+
+function loadUnzip() {
+    if (!unzipPromise) {
+        unzipPromise = import('fflate').then((m) => m.unzipSync);
+    }
+    return unzipPromise;
+}
 
 async function renderPdfThumb(canvas) {
     if (canvas.dataset.rendered || canvas.dataset.rendering) return;
     canvas.dataset.rendering = '1';
 
     try {
+        const pdfjsLib = await loadPdfjs();
         const pdf = await pdfjsLib.getDocument({
             url: canvas.dataset.pdfUrl,
             withCredentials: true,
@@ -48,10 +73,99 @@ async function renderPdfThumb(canvas) {
     }
 }
 
+/* ============================================================
+   Pratinjau isi file di dalam layar (popup preview)
+   ============================================================ */
+
+const CONTENT_KINDS = ['txt', 'csv', 'docx', 'xlsx', 'pptx', 'zip'];
+
+function previewShell() {
+    const wrap = document.createElement('div');
+    wrap.className = 'max-h-[70vh] w-full overflow-auto rounded-lg bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+    return wrap;
+}
+
+function buildTable(rows) {
+    const table = document.createElement('table');
+    table.className = 'w-full border-collapse text-left text-xs';
+    rows.forEach((row, r) => {
+        const tr = document.createElement('tr');
+        row.forEach((cell) => {
+            const td = document.createElement(r === 0 ? 'th' : 'td');
+            td.className = 'border border-slate-200 px-2 py-1 dark:border-slate-700';
+            td.textContent = cell;
+            tr.appendChild(td);
+        });
+        table.appendChild(tr);
+    });
+    return table;
+}
+
+function appendParagraphs(wrap, lines) {
+    if (!lines.length) {
+        wrap.textContent = 'Tidak ada teks yang bisa ditampilkan.';
+        return;
+    }
+    lines.forEach((line) => {
+        const el = document.createElement('p');
+        el.className = 'mb-2 leading-relaxed';
+        el.textContent = line;
+        wrap.appendChild(el);
+    });
+}
+
+async function buildContentPreview(kind, url) {
+    const wrap = previewShell();
+
+    try {
+        if (kind === 'txt') {
+            const text = await fetchText(url);
+            const pre = document.createElement('pre');
+            pre.className = 'whitespace-pre-wrap break-words font-sans';
+            pre.textContent = text || 'File kosong.';
+            wrap.appendChild(pre);
+        } else if (kind === 'csv') {
+            const text = await fetchText(url);
+            wrap.appendChild(buildTable(parseCsv(text)));
+        } else {
+            const bytes = new Uint8Array(await fetchBuffer(url));
+            const unzip = await loadUnzip();
+
+            if (kind === 'docx') {
+                const files = unzip(bytes, { filter: (f) => f.name === 'word/document.xml' });
+                appendParagraphs(wrap, docxParagraphs(files));
+            } else if (kind === 'xlsx') {
+                const files = unzip(bytes, {
+                    filter: (f) => /^xl\/(sharedStrings\.xml|worksheets\/)/i.test(f.name),
+                });
+                wrap.appendChild(buildTable(xlsxRows(files)));
+            } else if (kind === 'pptx') {
+                const files = unzip(bytes, { filter: (f) => /^ppt\/slides\/slide1\.xml$/i.test(f.name) });
+                appendParagraphs(wrap, pptxTexts(files));
+            } else if (kind === 'zip') {
+                const list = document.createElement('ul');
+                list.className = 'list-disc pl-5';
+                zipNames(unzip, bytes).forEach((name) => {
+                    const li = document.createElement('li');
+                    li.textContent = name;
+                    list.appendChild(li);
+                });
+                wrap.appendChild(list);
+            }
+        }
+    } catch (e) {
+        wrap.textContent = 'Pratinjau tidak tersedia. Silakan unduh file.';
+    }
+
+    return wrap;
+}
+
 function initDocThumbs() {
-    const canvases = document.querySelectorAll('canvas[data-pdf-url]:not([data-rendered])');
+    const canvases = document.querySelectorAll(
+        'canvas[data-pdf-url]:not([data-rendered]), canvas[data-doc-render]:not([data-rendered])'
+    );
     if (!canvases.length || !('IntersectionObserver' in window)) {
-        canvases.forEach((c) => renderPdfThumb(c));
+        canvases.forEach((c) => renderThumb(c));
         return;
     }
 
@@ -60,13 +174,309 @@ function initDocThumbs() {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
                     io.unobserve(entry.target);
-                    renderPdfThumb(entry.target);
+                    renderThumb(entry.target);
                 }
             });
         },
         { rootMargin: '200px' }
     );
     canvases.forEach((c) => io.observe(c));
+}
+
+function renderThumb(canvas) {
+    if (canvas.hasAttribute('data-pdf-url')) return renderPdfThumb(canvas);
+    return renderDocThumb(canvas);
+}
+
+/* ============================================================
+   Thumbnail dari isi file (TXT/CSV/DOCX/XLSX/PPTX/ZIP)
+   ============================================================ */
+
+function accentRgb() {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--accent-600').trim();
+    return raw ? `rgb(${raw})` : 'rgb(79 70 229)';
+}
+
+function prepareCanvas(canvas) {
+    const w = canvas.clientWidth || 240;
+    const h = canvas.clientHeight || 144;
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    canvas.width = Math.max(1, Math.floor(w * dpr));
+    canvas.height = Math.max(1, Math.floor(h * dpr));
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx, w, h };
+}
+
+function wrapText(ctx, text, maxWidth) {
+    const out = [];
+    String(text)
+        .split('\n')
+        .forEach((paragraph) => {
+            const words = paragraph.split(/\s+/).filter(Boolean);
+            if (!words.length) {
+                out.push('');
+                return;
+            }
+            let line = '';
+            words.forEach((word) => {
+                const test = line ? line + ' ' + word : word;
+                if (ctx.measureText(test).width > maxWidth && line) {
+                    out.push(line);
+                    line = word;
+                } else {
+                    line = test;
+                }
+            });
+            if (line) out.push(line);
+        });
+    return out;
+}
+
+// Tampilan "halaman kertas" — dipakai untuk txt, docx, pptx.
+function drawTextPage(ctx, w, h, lines, opts = {}) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    const pad = opts.big ? 18 : 12;
+    const lineHeight = opts.big ? 20 : 14;
+    ctx.fillStyle = '#0f172a';
+    ctx.font = (opts.big ? '600 15px ui-sans-serif, system-ui' : '13px ui-sans-serif, system-ui');
+    ctx.textBaseline = 'top';
+
+    let y = pad;
+    for (const line of wrapText(ctx, lines.join('\n'), w - pad * 2)) {
+        if (y + lineHeight > h - 6) break;
+        ctx.fillText(line, pad, y);
+        y += lineHeight;
+    }
+
+    // Aksen tipis di sisi atas supaya terasa "dokumen".
+    ctx.fillStyle = accentRgb();
+    ctx.fillRect(0, 0, w, 3);
+}
+
+// Tampilan tabel — dipakai untuk csv & xlsx.
+function drawTable(ctx, w, h, rows) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    if (!rows.length) return;
+
+    const cols = Math.min(4, Math.max(...rows.map((r) => r.length)));
+    const rowH = Math.max(18, Math.min(28, Math.floor((h - 8) / Math.max(3, rows.length))));
+    const colW = (w - 8) / cols;
+
+    ctx.font = '11px ui-sans-serif, system-ui';
+    ctx.textBaseline = 'middle';
+
+    rows.slice(0, Math.floor((h - 8) / rowH)).forEach((row, r) => {
+        const y = 4 + r * rowH;
+        ctx.fillStyle = r === 0 ? accentRgb() : (r % 2 ? '#f8fafc' : '#ffffff');
+        ctx.fillRect(4, y, w - 8, rowH);
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(4.5, y + 0.5, w - 9, rowH - 1);
+        for (let c = 0; c < cols; c += 1) {
+            ctx.strokeRect(4.5 + c * colW, y + 0.5, colW, rowH - 1);
+            const value = String(row[c] ?? '');
+            if (!value) continue;
+            ctx.fillStyle = r === 0 ? '#ffffff' : '#334155';
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(4 + c * colW + 4, y, colW - 8, rowH);
+            ctx.clip();
+            ctx.fillText(value, 4 + c * colW + 6, y + rowH / 2);
+            ctx.restore();
+        }
+    });
+}
+
+// Tampilan daftar isi — dipakai untuk zip.
+function drawList(ctx, w, h, items) {
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = accentRgb();
+    ctx.fillRect(0, 0, w, 3);
+
+    ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#475569';
+
+    let y = 12;
+    for (const item of items) {
+        if (y + 14 > h - 4) break;
+        ctx.fillText('• ' + item, 10, y);
+        y += 14;
+    }
+}
+
+async function fetchText(url) {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('gagal memuat file');
+    const text = await res.text();
+    return text.slice(0, MAX_TEXT_BYTES);
+}
+
+async function fetchBuffer(url) {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('gagal memuat file');
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength > MAX_PARSE_BYTES) throw new Error('file terlalu besar');
+    return buf;
+}
+
+function parseCsv(text) {
+    return text
+        .split(/\r?\n/)
+        .filter((line) => line.trim() !== '')
+        .slice(0, 8)
+        .map((line) => {
+            const cells = [];
+            let current = '';
+            let inQuotes = false;
+            for (const ch of line) {
+                if (ch === '"') {
+                    inQuotes = !inQuotes;
+                } else if (ch === ',' && !inQuotes) {
+                    cells.push(current.trim());
+                    current = '';
+                } else {
+                    current += ch;
+                }
+            }
+            cells.push(current.trim());
+            return cells;
+        });
+}
+
+// Ambil daftar nama file di dalam ZIP tanpa decompress isinya.
+function zipNames(unzip, bytes) {
+    const names = [];
+    unzip(bytes, {
+        filter: (file) => {
+            names.push(file.name);
+            return false;
+        },
+    });
+    return names.filter((n) => !n.endsWith('/'));
+}
+
+function parseXml(bytes) {
+    const dom = new DOMParser().parseFromString(new TextDecoder().decode(bytes), 'application/xml');
+    return dom;
+}
+
+function docxParagraphs(files) {
+    const entry = files['word/document.xml'];
+    if (!entry) return [];
+    const dom = parseXml(entry);
+    const out = [];
+    for (const p of dom.getElementsByTagName('w:p')) {
+        let text = '';
+        for (const t of p.getElementsByTagName('w:t')) text += t.textContent;
+        const clean = text.trim();
+        if (clean) out.push(clean);
+        if (out.length >= 20) break;
+    }
+    return out;
+}
+
+function xlsxRows(files) {
+    const shared = [];
+    if (files['xl/sharedStrings.xml']) {
+        const dom = parseXml(files['xl/sharedStrings.xml']);
+        for (const si of dom.getElementsByTagName('si')) {
+            let text = '';
+            for (const t of si.getElementsByTagName('t')) text += t.textContent;
+            shared.push(text);
+        }
+    }
+    const sheetKey = Object.keys(files).find((k) => /^xl\/worksheets\/sheet1\.xml$/i.test(k))
+        || Object.keys(files).find((k) => /^xl\/worksheets\//i.test(k));
+    if (!sheetKey) return [];
+
+    const dom = parseXml(files[sheetKey]);
+    const rows = [];
+    for (const row of dom.getElementsByTagName('row')) {
+        const cells = [];
+        for (const c of row.getElementsByTagName('c')) {
+            const type = c.getAttribute('t');
+            let value = '';
+            if (type === 's') {
+                const v = c.getElementsByTagName('v')[0];
+                const index = v ? parseInt(v.textContent, 10) : -1;
+                value = shared[index] ?? '';
+            } else if (type === 'inlineStr') {
+                for (const t of c.getElementsByTagName('t')) value += t.textContent;
+            } else {
+                const v = c.getElementsByTagName('v')[0];
+                value = v ? v.textContent : '';
+            }
+            cells.push(value);
+        }
+        if (cells.length) rows.push(cells);
+        if (rows.length >= 8) break;
+    }
+    return rows;
+}
+
+function pptxTexts(files) {
+    const key = Object.keys(files).find((k) => /^ppt\/slides\/slide1\.xml$/i.test(k));
+    if (!key) return [];
+    const dom = parseXml(files[key]);
+    const out = [];
+    for (const t of dom.getElementsByTagName('a:t')) {
+        const text = (t.textContent || '').trim();
+        if (text) out.push(text);
+        if (out.length >= 12) break;
+    }
+    return out;
+}
+
+async function renderDocThumb(canvas) {
+    if (canvas.dataset.rendered || canvas.dataset.rendering) return;
+    canvas.dataset.rendering = '1';
+
+    const kind = canvas.dataset.docRender;
+    const url = canvas.dataset.url;
+
+    try {
+        const { ctx, w, h } = prepareCanvas(canvas);
+
+        if (kind === 'txt') {
+            const text = await fetchText(url);
+            drawTextPage(ctx, w, h, text.split('\n').filter((l) => l.trim() !== ''));
+        } else if (kind === 'csv') {
+            const text = await fetchText(url);
+            drawTable(ctx, w, h, parseCsv(text));
+        } else {
+            const bytes = new Uint8Array(await fetchBuffer(url));
+            const unzip = await loadUnzip();
+
+            if (kind === 'docx') {
+                const files = unzip(bytes, { filter: (f) => f.name === 'word/document.xml' });
+                drawTextPage(ctx, w, h, docxParagraphs(files));
+            } else if (kind === 'xlsx') {
+                const files = unzip(bytes, {
+                    filter: (f) => /^xl\/(sharedStrings\.xml|worksheets\/)/i.test(f.name),
+                });
+                drawTable(ctx, w, h, xlsxRows(files));
+            } else if (kind === 'pptx') {
+                const files = unzip(bytes, { filter: (f) => /^ppt\/slides\/slide1\.xml$/i.test(f.name) });
+                drawTextPage(ctx, w, h, pptxTexts(files), { big: true });
+            } else if (kind === 'zip') {
+                drawList(ctx, w, h, zipNames(unzip, bytes).slice(0, 8));
+            }
+        }
+
+        canvas.dataset.rendered = '1';
+    } catch (e) {
+        // Biarkan ikon fallback di belakang canvas yang terlihat.
+        canvas.remove();
+    } finally {
+        delete canvas.dataset.rendering;
+    }
 }
 
 function initDocPage() {
@@ -203,7 +613,7 @@ function initDocLightbox() {
         return div.innerHTML;
     };
 
-    const openFrom = (trigger) => {
+    const openFrom = async (trigger) => {
         const kind = trigger.dataset.kind || 'other';
         const url = trigger.dataset.url || '';
         const filename = trigger.dataset.filename || '';
@@ -237,6 +647,9 @@ function initDocLightbox() {
             audio.src = url;
             audio.className = 'w-full max-w-xl';
             body.appendChild(audio);
+        } else if (CONTENT_KINDS.includes(kind)) {
+            // Isi file (teks/tabel) ditampilkan langsung di layar.
+            body.appendChild(await buildContentPreview(kind, url, filename));
         } else {
             const wrap = document.createElement('div');
             wrap.className = 'py-10 text-center';

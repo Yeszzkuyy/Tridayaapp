@@ -17,7 +17,26 @@
     $isPdf = $docExt === 'pdf';
     $isVideo = in_array($docExt, ['mp4', 'webm', 'ogg', 'mov', 'avi']);
     $isAudio = in_array($docExt, ['mp3', 'wav', 'ogg']);
-    $docKind = $isImage ? 'image' : ($isPdf ? 'pdf' : ($isVideo ? 'video' : ($isAudio ? 'audio' : 'other')));
+
+    // Jenis yang thumbnail-nya digambar dari ISI file (bukan hasil konversi).
+    $contentKinds = ['txt' => 'txt', 'csv' => 'csv', 'docx' => 'docx', 'xlsx' => 'xlsx', 'pptx' => 'pptx', 'zip' => 'zip'];
+    $isContent = isset($contentKinds[$docExt]);
+    $docKind = $isImage ? 'image'
+        : ($isPdf ? 'pdf'
+        : ($isVideo ? 'video'
+        : ($isAudio ? 'audio'
+        : ($contentKinds[$docExt] ?? 'other'))));
+
+    // Tipe yang tidak bisa dibaca browser (format biner lama + rar):
+    // kartu berwarna + label ekstensi, ala Drive — tanpa perlu JS.
+    $typeTile = match (true) {
+        $docExt === 'doc' => ['bg-blue-500', 'DOC'],
+        $docExt === 'xls' => ['bg-emerald-500', 'XLS'],
+        $docExt === 'ppt' => ['bg-orange-500', 'PPT'],
+        $docExt === 'rar' => ['bg-amber-700', 'RAR'],
+        default => ['bg-slate-500', strtoupper($docExt ?: 'FILE')],
+    };
+
     $badgeClass = $badgeClass ?: match (true) {
         $isPdf => 'bg-red-500',
         $isImage => 'bg-green-500',
@@ -56,17 +75,31 @@
          data-download="{{ route('project-documents.download', $doc) }}"
          data-filename="{{ $doc->file_name }}"
          title="{{ $doc->file_name }}">
-        @if($isImage)
-            <img src="{{ route('project-documents.preview', $doc) }}" alt="{{ $doc->file_name }}" loading="lazy" onerror="this.remove()"
-                 class="pointer-events-none relative h-full w-full object-cover">
-        @elseif($isPdf)
-            <canvas data-pdf-url="{{ route('project-documents.preview', $doc) }}" class="pointer-events-none relative h-full w-full"></canvas>
-        @endif
+        {{-- Ikon fallback DI BELAKANG: hanya terlihat kalau render thumbnail gagal --}}
         @if(! $isImage)
             <svg class="absolute h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
+        @endif
+        @if($isImage)
+            <img src="{{ route('project-documents.preview', $doc) }}" alt="{{ $doc->file_name }}" loading="lazy" onerror="this.remove()"
+                 class="pointer-events-none relative h-full w-full object-cover">
+        @elseif($isPdf)
+            <canvas data-pdf-url="{{ route('project-documents.preview', $doc) }}" class="pointer-events-none relative h-full w-full"></canvas>
+        @elseif($isContent)
+            {{-- Thumbnail digambar dari isi file (TXT/CSV/DOCX/XLSX/PPTX/ZIP) --}}
+            <canvas data-doc-render="{{ $docKind }}" data-url="{{ route('project-documents.preview', $doc) }}"
+                    data-filename="{{ $doc->file_name }}" class="pointer-events-none relative h-full w-full"></canvas>
+        @else
+            {{-- Tipe tak bisa dibaca browser (DOC/XLS/PPT lama, RAR): kartu berwarna + label --}}
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 {{ $typeTile[0] }} text-white">
+                <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <span class="text-[11px] font-bold tracking-wider">{{ $typeTile[1] }}</span>
+            </div>
         @endif
         <span class="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[11px] font-bold uppercase text-white {{ $badgeClass }}">{{ $badgeText ?: ($docExt ?: __('File')) }}</span>
     </div>
