@@ -122,7 +122,7 @@
                                 {{ __('NPWP Document') }}
                             </label>
                             @if($customer->npwp_document_path)
-                                <p class="mb-1"><a href="{{ route('customers.npwp', $customer) }}" class="text-sm text-indigo-600 hover:underline">{{ $customer->npwpDisplayName() }}</a></p>
+                                <p class="mb-1"><a href="{{ route('customers.npwp', $customer) }}" target="_blank" rel="noopener" class="text-sm text-indigo-600 hover:underline">{{ $customer->npwpDisplayName() }}</a></p>
                             @endif
                             <input type="file"
                                    name="npwp_document" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
