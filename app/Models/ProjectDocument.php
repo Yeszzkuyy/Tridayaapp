@@ -12,12 +12,27 @@ class ProjectDocument extends Model
     protected $fillable = [
         'project_id',
         'customer_id',
+        'doc_type',
         'file_name',
         'file_path',
+        'file_size',
+        'mime_type',
         'notes',
         'uploaded_by',
         'document_category_id',
     ];
+
+    public const DOC_TYPES = ['invoice', 'po', 'payment'];
+
+    public function getTypeLabelAttribute()
+    {
+        return match ($this->doc_type) {
+            'invoice' => 'INV',
+            'po' => 'PO',
+            'payment' => 'PAY',
+            default => null,
+        };
+    }
 
     public function project()
     {

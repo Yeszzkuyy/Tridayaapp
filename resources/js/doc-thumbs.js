@@ -103,8 +103,28 @@ function hideAllDocModals() {
 
 // Popup upload + tutup via tombol/backdrop/Escape.
 function initDocModals() {
+    const typeInput = document.getElementById('doc-doc-type');
+    const targetEl = document.getElementById('doc-upload-target');
+    const projectField = document.getElementById('doc-project-field');
+
     document.querySelectorAll('[data-doc-upload-open]').forEach((btn) => {
-        btn.addEventListener('click', () => showModal(document.getElementById('doc-upload-modal')));
+        btn.addEventListener('click', () => {
+            // Tombol dari bagian Invoice/PO/Payment membawa jenisnya sendiri.
+            const type = btn.dataset.docType || '';
+            if (typeInput) typeInput.value = type;
+            if (targetEl) {
+                const section = btn.dataset.docSection || '';
+                targetEl.textContent = section ? section : '';
+                targetEl.classList.toggle('hidden', !section);
+            }
+            // File jenis ini melekat di customer, jadi pilihan project disembunyikan.
+            if (projectField) {
+                projectField.classList.toggle('hidden', !!type);
+                const select = projectField.querySelector('select');
+                if (select && type) select.value = '';
+            }
+            showModal(document.getElementById('doc-upload-modal'));
+        });
     });
     document.querySelectorAll('[data-doc-modal-close]').forEach((btn) => {
         btn.addEventListener('click', () => hideModal(btn.closest('[data-doc-modal]')));

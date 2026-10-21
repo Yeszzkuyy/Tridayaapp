@@ -194,6 +194,76 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertSee('doc-open', false);
     }
 
+    public function test_upload_file_jenis_invoice_po_payment(): void
+    {
+        $admin = $this->userWithRoles('Super Admin Jenis', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Jenis', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        foreach (['invoice', 'po', 'payment'] as $type) {
+            $this->post(route('customer-documents.store', $customer), [
+                'file' => UploadedFile::fake()->create($type . '.pdf', 100, 'application/pdf'),
+                'doc_type' => $type,
+                // project_id sengaja diisi: file jenis ini tetap milik customer.
+                'project_id' => $this->makeProject('NTI')->id,
+            ])->assertRedirect();
+
+            $doc = \App\Models\ProjectDocument::where('customer_id', $customer->id)
+                ->where('doc_type', $type)
+                ->firstOrFail();
+            $this->assertNull($doc->project_id, "File $type tidak boleh melekat di project.");
+        }
+
+        $this->assertSame(3, \App\Models\ProjectDocument::where('customer_id', $customer->id)->whereNotNull('doc_type')->count());
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+
+        // Tiap bagian menampilkan file-nya + tombol upload, tanpa tombol create lama.
+        $this->assertStringContainsString('invoice.pdf', $html);
+        $this->assertStringContainsString('po.pdf', $html);
+        $this->assertStringContainsString('payment.pdf', $html);
+        $this->assertStringNotContainsString(__('Create Invoice'), $html);
+        $this->assertStringNotContainsString(__('Create PO'), $html);
+        $this->assertStringNotContainsString(__('Record Payment'), $html);
+
+        // Tidak dobel muncul di tab Documents (khusus dokumen umum/project).
+        $grid = substr($html, (int) strpos($html, 'id="doc-grid"'), 4000);
+        $this->assertStringNotContainsString('invoice.pdf', $grid);
+    }
+
+    public function test_doc_type_ngawur_ditolak(): void
+    {
+        $admin = $this->userWithRoles('Super Admin Jenis2', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Jenis Ngawur', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('jahat.pdf', 100, 'application/pdf'),
+            'doc_type' => 'apapun',
+        ])->assertSessionHasErrors('doc_type');
+
+        $this->assertSame(0, \App\Models\ProjectDocument::where('customer_id', $customer->id)->count());
+    }
+
+    public function test_sales_edit_customer_bisa_upload_file_jenis(): void
+    {
+        $sales = $this->userWithRoles('Sales Jenis', ['sales', 'sales-nti']);
+        $this->actingAs($sales);
+        $customer = Customer::create(['name' => 'PT Jenis Sales', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('faktur.pdf', 100, 'application/pdf'),
+            'doc_type' => 'invoice',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('project_documents', [
+            'customer_id' => $customer->id,
+            'doc_type' => 'invoice',
+        ]);
+    }
     public function test_hapus_customer_ikut_hapus_dokumen_umum(): void
     {
         $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);

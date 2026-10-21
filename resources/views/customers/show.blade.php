@@ -318,11 +318,14 @@
                     @php
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
 
-                        // Dokumen project-project customer + dokumen umum (tanpa project)
+                        // Dokumen project-project customer + dokumen umum (tanpa project).
+                        // File invoice/PO/payment (doc_type) tidak ikut di sini.
                         $projectIds = $customer->projects->pluck('id')->toArray();
                         $documents = App\Models\ProjectDocument::where(function ($query) use ($projectIds, $customer) {
                                 $query->whereIn('project_id', $projectIds)
-                                    ->orWhere('customer_id', $customer->id);
+                                    ->orWhere(function ($q) use ($customer) {
+                                        $q->where('customer_id', $customer->id)->whereNull('doc_type');
+                                    });
                             })
                             ->with(['project', 'category', 'uploader'])
                             ->whereNull('deleted_at')
@@ -355,81 +358,12 @@
                     @if($documents->isNotEmpty())
                         <div id="doc-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach($documents as $doc)
-                                @php
-                                    $docExt = strtolower(pathinfo($doc->file_name, PATHINFO_EXTENSION));
-                                    $isImage = in_array($docExt, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                                    $isPdf = $docExt === 'pdf';
-                                    $isVideo = in_array($docExt, ['mp4', 'webm', 'ogg', 'mov', 'avi']);
-                                    $isAudio = in_array($docExt, ['mp3', 'wav', 'ogg']);
-                                    $docKind = $isImage ? 'image' : ($isPdf ? 'pdf' : ($isVideo ? 'video' : ($isAudio ? 'audio' : 'other')));
-                                    $badgeColor = match(true) {
-                                        $isPdf => 'bg-red-500',
-                                        $isImage => 'bg-green-500',
-                                        in_array($docExt, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']) => 'bg-blue-500',
-                                        in_array($docExt, ['zip', 'rar']) => 'bg-amber-500',
-                                        default => 'bg-slate-500',
-                                    };
-                                    $canDocManage = $doc->project_id
+                                @include('customers.doc-card', [
+                                    'doc' => $doc,
+                                    'canManage' => $doc->project_id
                                         ? auth()->user()->can('manage-technician')
-                                        : $canUploadDocs;
-                                @endphp
-                                <div class="doc-card overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50"
-                                     data-name="{{ mb_strtolower($doc->file_name) }}"
-                                     data-project="{{ $doc->project_id ?? 'general' }}">
-                                    {{-- Klik thumbnail = preview dalam layar --}}
-                                    <div class="relative flex h-36 cursor-pointer items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800"
-                                         data-doc-open
-                                         data-kind="{{ $docKind }}"
-                                         data-url="{{ route('project-documents.preview', $doc) }}"
-                                         data-download="{{ route('project-documents.download', $doc) }}"
-                                         data-filename="{{ $doc->file_name }}"
-                                         title="{{ $doc->file_name }}">
-                                        @if($isImage)
-                                            <img src="{{ route('project-documents.preview', $doc) }}" alt="{{ $doc->file_name }}" loading="lazy" onerror="this.remove()"
-                                                 class="pointer-events-none relative h-full w-full object-cover">
-                                        @elseif($isPdf)
-                                            <canvas data-pdf-url="{{ route('project-documents.preview', $doc) }}" class="pointer-events-none relative h-full w-full"></canvas>
-                                        @endif
-                                        @if(! $isImage)
-                                            <svg class="absolute h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 012-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                            </svg>
-                                        @endif
-                                        <span class="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[11px] font-bold uppercase text-white {{ $badgeColor }}">{{ $docExt ?: __('File') }}</span>
-                                    </div>
-                                    <div class="p-3">
-                                        <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $doc->file_name }}</p>
-                                        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $doc->project?->project_name ?? __('General') }} · {{ number_format($doc->file_size / 1024, 1) }} KB</p>
-                                        <div class="mt-2 flex gap-1.5">
-                                            <button type="button" data-doc-open-child title="{{ __('Preview') }}" aria-label="{{ __('Preview') }}"
-                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 transition hover:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:border-slate-600 dark:bg-slate-800 dark:text-indigo-400">
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                            </button>
-                                            <a href="{{ route('project-documents.download', $doc) }}" title="{{ __('Download') }}" aria-label="{{ __('Download') }}"
-                                               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-600 transition hover:border-emerald-600 hover:bg-emerald-600 hover:text-white dark:border-slate-600 dark:bg-slate-800 dark:text-emerald-400">
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                                            </a>
-                                            @if($canDocManage)
-                                                <button type="button" title="{{ __('Rename') }}" aria-label="{{ __('Rename') }}"
-                                                        data-doc-rename
-                                                        data-action="{{ route('project-documents.rename', $doc) }}"
-                                                        data-name="{{ $doc->file_name }}"
-                                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-amber-600 transition hover:border-amber-600 hover:bg-amber-600 hover:text-white dark:border-slate-600 dark:bg-slate-800 dark:text-amber-400">
-                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
-                                                </button>
-                                                <form action="{{ route('project-documents.destroy', $doc) }}" method="POST" class="inline-flex"
-                                                      onsubmit="return confirm('{{ __('Delete this document?') }}')">
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit" title="{{ __('Delete') }}" aria-label="{{ __('Delete') }}"
-                                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white dark:border-slate-600 dark:bg-slate-800 dark:text-red-400">
-                                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
+                                        : $canUploadDocs,
+                                ])
                             @endforeach
                         </div>
                         <div id="doc-no-results" class="hidden py-10 text-center text-sm text-slate-400">{{ __('No documents match the filter.') }}</div>
@@ -441,7 +375,10 @@
                         <div id="doc-upload-modal" class="fixed inset-0 z-[90] {{ $errors->has('file') ? 'doc-open' : 'hidden' }} items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
                             <div class="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
                                 <div class="mb-4 flex items-center justify-between">
-                                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Upload File') }}</h3>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Upload File') }}</h3>
+                                        <p id="doc-upload-target" class="hidden text-xs text-slate-500 dark:text-slate-400"></p>
+                                    </div>
                                     <button type="button" data-doc-modal-close aria-label="{{ __('Close') }}"
                                             class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -450,9 +387,11 @@
                         <form action="{{ route('customer-documents.store', $customer) }}" method="POST" enctype="multipart/form-data"
                               x-data="{ dragging: false, fileName: '' }">
                             @csrf
+                            {{-- Jenis file: kosong = dokumen umum, atau invoice / po / payment --}}
+                            <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
                             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 @if($customer->projects->isNotEmpty())
-                                    <div>
+                                    <div id="doc-project-field">
                                         <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
                                         <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                             <option value="">{{ __('General') }}</option>
@@ -593,14 +532,33 @@
                             @else
                                 <x-empty-state label="{{ __('invoices') }}" />
                             @endif
-                            @can('manage-admin')
-                                <div class="mt-4 flex justify-center">
-                                    <x-add-button href="{{ route('admin.invoices.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('Create Invoice') }}
-                                    </x-add-button>
+@php
+                                $sectionDocs = App\Models\ProjectDocument::where('customer_id', $customer->id)
+                                    ->where('doc_type', 'invoice')
+                                    ->whereNull('deleted_at')
+                                    ->latest()
+                                    ->get();
+                            @endphp
+                            @if($sectionDocs->isNotEmpty())
+                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($sectionDocs as $doc)
+                                        @include('customers.doc-card', [
+                                            'doc' => $doc,
+                                            'canManage' => $canUploadDocs,
+                                            'badgeClass' => 'bg-teal-500',
+                                            'badgeText' => 'INV',
+                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y')
+                                                . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB',
+                                        ])
+                                    @endforeach
                                 </div>
-                            @endcan
-                        </div>
+                            @endif
+                            @if($canUploadDocs)
+                                <div class="mt-4 flex justify-center">
+                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                   data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
+                                </div>
+                            @endif                        </div>
 
                         <div>
                             <x-section-header title="{{ __('Purchase Order') }}" />
@@ -638,14 +596,33 @@
                             @else
                                 <x-empty-state label="{{ __('PO') }}" />
                             @endif
-                            @can('manage-admin')
-                                <div class="mt-4 flex justify-center">
-                                    <x-add-button href="{{ route('admin.pos.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('Create PO') }}
-                                    </x-add-button>
+@php
+                                $sectionDocs = App\Models\ProjectDocument::where('customer_id', $customer->id)
+                                    ->where('doc_type', 'po')
+                                    ->whereNull('deleted_at')
+                                    ->latest()
+                                    ->get();
+                            @endphp
+                            @if($sectionDocs->isNotEmpty())
+                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($sectionDocs as $doc)
+                                        @include('customers.doc-card', [
+                                            'doc' => $doc,
+                                            'canManage' => $canUploadDocs,
+                                            'badgeClass' => 'bg-violet-500',
+                                            'badgeText' => 'PO',
+                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y')
+                                                . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB',
+                                        ])
+                                    @endforeach
                                 </div>
-                            @endcan
-                        </div>
+                            @endif
+                            @if($canUploadDocs)
+                                <div class="mt-4 flex justify-center">
+                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                   data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
+                                </div>
+                            @endif                        </div>
 
                         <div>
                             <x-section-header title="{{ __('Payment') }}" />
@@ -673,14 +650,33 @@
                             @else
                                 <x-empty-state label="{{ __('payments') }}" />
                             @endif
-                            @can('manage-admin')
-                                <div class="mt-4 flex justify-center">
-                                    <x-add-button href="{{ route('admin.payments.create') }}">
-                                        {{ __('Record Payment') }}
-                                    </x-add-button>
+@php
+                                $sectionDocs = App\Models\ProjectDocument::where('customer_id', $customer->id)
+                                    ->where('doc_type', 'payment')
+                                    ->whereNull('deleted_at')
+                                    ->latest()
+                                    ->get();
+                            @endphp
+                            @if($sectionDocs->isNotEmpty())
+                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    @foreach($sectionDocs as $doc)
+                                        @include('customers.doc-card', [
+                                            'doc' => $doc,
+                                            'canManage' => $canUploadDocs,
+                                            'badgeClass' => 'bg-emerald-500',
+                                            'badgeText' => 'PAY',
+                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y')
+                                                . ' · ' . number_format($doc->file_size / 1024, 1) . ' KB',
+                                        ])
+                                    @endforeach
                                 </div>
-                            @endcan
-                        </div>
+                            @endif
+                            @if($canUploadDocs)
+                                <div class="mt-4 flex justify-center">
+                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                                   data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
+                                </div>
+                            @endif                        </div>
                     </div>
                 </div>
                 @endcan

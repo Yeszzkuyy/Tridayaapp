@@ -394,24 +394,17 @@ Route::middleware('auth')->group(function () {
     // ADMIN — Invoice, PO, Payment
     // ============================================
     Route::middleware('permission:manage-admin')->prefix('admin')->name('admin.')->group(function () {
-        // Invoice
-        Route::get('/invoices/create', [AdminController::class, 'invoicesCreate'])->name('invoices.create');
-        Route::post('/invoices', [AdminController::class, 'invoicesStore'])->name('invoices.store');
+        // Invoice — data dibuat via upload file di halaman customer
         Route::get('/invoices/{invoice}/edit', [AdminController::class, 'invoicesEdit'])->name('invoices.edit');
         Route::put('/invoices/{invoice}', [AdminController::class, 'invoicesUpdate'])->name('invoices.update');
         Route::delete('/invoices/{invoice}', [AdminController::class, 'invoicesDestroy'])->name('invoices.destroy');
 
-        // PO
-        Route::get('/pos/create', [AdminController::class, 'posCreate'])->name('pos.create');
-        Route::post('/pos', [AdminController::class, 'posStore'])->name('pos.store');
+        // PO — data dibuat via upload file di halaman customer
         Route::get('/pos/{purchaseOrder}/edit', [AdminController::class, 'posEdit'])->name('pos.edit');
         Route::put('/pos/{purchaseOrder}', [AdminController::class, 'posUpdate'])->name('pos.update');
         Route::delete('/pos/{purchaseOrder}', [AdminController::class, 'posDestroy'])->name('pos.destroy');
 
-        // Payment
-        Route::get('/payments/create', [AdminController::class, 'paymentsCreate'])->name('payments.create');
-        Route::post('/payments', [AdminController::class, 'paymentsStore'])->name('payments.store');
-        Route::delete('/payments/{payment}', [AdminController::class, 'paymentsDestroy'])->name('payments.destroy');
+        // Payment — data dibuat via upload file di halaman customer
         // Bukti transfer memuat nomor rekening — hanya manage-admin (bukan view-only).
         Route::get('/payments/{payment}/proof', [AdminController::class, 'paymentsProof'])->name('payments.proof');
     });

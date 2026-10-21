@@ -78,7 +78,14 @@ class ProjectDocumentController extends Controller
             'project_id' => 'nullable|exists:projects,id',
             'document_category_id' => 'nullable|exists:document_categories,id',
             'notes' => 'nullable|string|max:500',
+            // File pengganti form Create Invoice / Create PO / Record Payment.
+            'doc_type' => 'nullable|in:' . implode(',', \App\Models\ProjectDocument::DOC_TYPES),
         ]);
+
+        // File invoice/PO/payment selalu milik customer, bukan milik project.
+        if ($validated['doc_type'] ?? null) {
+            $validated['project_id'] = null;
+        }
 
         $project = $validated['project_id'] ?? null
             ? Project::findOrFail($validated['project_id'])
@@ -101,6 +108,7 @@ class ProjectDocumentController extends Controller
         ProjectDocument::create([
             'project_id' => $project?->id,
             'customer_id' => $customer->id,
+            'doc_type' => $validated['doc_type'] ?? null,
             'file_name' => $originalName,
             'file_path' => $path,
             'file_size' => $file->getSize(),
