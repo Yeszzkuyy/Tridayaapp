@@ -91,6 +91,7 @@ function showModal(el) {
     el.classList.remove('hidden');
     el.classList.add('doc-open');
     document.body.style.overflow = 'hidden';
+    syncModalOpenClass();
 }
 
 function hideModal(el) {
@@ -98,14 +99,31 @@ function hideModal(el) {
     el.classList.add('hidden');
     el.classList.remove('doc-open');
     document.body.style.overflow = '';
+    syncModalOpenClass();
 }
 
 function hideAllDocModals() {
     document.querySelectorAll('[data-doc-modal]').forEach(hideModal);
+    syncModalOpenClass();
+}
+
+// Sinkron penanda di <html>: ada popup dokumen terbuka atau tidak.
+// CSS mematikan hover-lift kartu selama popup terbuka — transform pada
+// ancestor merusak position:fixed popup (terkunci ke kartu, ikut
+// berpindah tiap hover) dan membuat halaman di belakang popup naik-turun.
+function syncModalOpenClass() {
+    const anyOpen = Array.prototype.some.call(
+        document.querySelectorAll('[data-doc-modal]'),
+        (el) => el.classList.contains('doc-open')
+    );
+    document.documentElement.classList.toggle('doc-modal-open', anyOpen);
 }
 
 // Popup upload + tutup via tombol/backdrop/Escape.
 function initDocModals() {
+    // Sinkron dulu: popup bisa sudah terbuka dari render server
+    // (error validasi menambah class doc-open) tanpa lewat showModal().
+    syncModalOpenClass();
     document.querySelectorAll('[data-doc-upload-open]').forEach((btn) => {
         bindOnce(btn, 'click', () => {
             // Elemen popup diambil saat diklik — aman setelah navigasi SPA.

@@ -541,6 +541,22 @@ tbody tr { transition: background-color 0.2s ease; }
 }
 
 /* ============================================================
+   Saat popup dokumen terbuka, hover-lift kartu DIMATIKAN
+   (html.doc-modal-open di-sync oleh doc-thumbs.js).
+   Dua masalah tanpa ini:
+   1. :hover berlaku ke semua parent — kursor di atas popup membuat
+      kartu besar halaman di belakang popup ikut terangkat 3px
+      (halaman "gerak-gerak" saat hover).
+   2. transform pada ancestor menjadikan kartu itu containing block
+      untuk position:fixed — popup terkunci ke kartu (bukan layar)
+      sehingga ikut berpindah tiap hover, tidak pernah statis.
+   ============================================================ */
+html.doc-modal-open main .bg-white.shadow-sm:hover,
+html.doc-modal-open main .bg-white.shadow:hover {
+    transform: none;
+}
+
+/* ============================================================
    Ikon bell notifikasi — mengikuti tema: hitam di mode terang,
    putih di mode gelap (brightness(0) invert(1)). drop-shadow
    tipis hanya pengaman kontras.
