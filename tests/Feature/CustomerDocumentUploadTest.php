@@ -411,6 +411,21 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertDontSee('No invoices', false);
     }
 
+    public function test_css_mematikan_hover_lift_selama_popup_dokumen_terbuka(): void
+    {
+        // Regresi: :hover berlaku ke semua parent, jadi hover di atas popup
+        // membuat kartu halaman di belakangnya terangkat 3px; transform di
+        // ancestor itu juga menjadikan kartu sebagai containing block untuk
+        // position:fixed — popup terkunci ke kartu dan ikut berpindah tiap
+        // hover ("gerak-gerak, gak mau statis"). Guard: html.doc-modal-open.
+        $css = file_get_contents(resource_path('css/app.css'));
+        $js = file_get_contents(resource_path('js/doc-thumbs.js'));
+
+        $this->assertStringContainsString('html.doc-modal-open main .bg-white.shadow-sm:hover', $css);
+        $this->assertStringContainsString('transform: none;', $css);
+        $this->assertStringContainsString("classList.toggle('doc-modal-open'", $js);
+    }
+
     public function test_kartu_file_lama_tanpa_file_size_tidak_tampilkan_0_kb(): void
     {
         $admin = $this->userWithRoles('Super Admin Ukuran', ['super-admin']);
