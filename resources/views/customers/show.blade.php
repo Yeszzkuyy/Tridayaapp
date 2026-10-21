@@ -163,6 +163,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
                 {{-- TAB 2: PROJECTS --}}
                 <div x-show="tab === 'projects'" x-transition>

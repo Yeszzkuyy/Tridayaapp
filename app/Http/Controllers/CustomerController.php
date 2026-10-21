@@ -123,8 +123,9 @@ class CustomerController extends Controller
     }
 
     /**
-     * Timeline gabungan urut waktu: aktivitas project + follow-up +
-     * meeting + dokumen + PIC + invoice/PO/payment. Dibatasi 50 terbaru.
+     * Timeline gabungan urut waktu: aktivitas project (dibuat/ubah status/
+     * support) + follow-up/catatan + meeting. Dibatasi 50 terbaru.
+     * Sengaja TIDAK memuat PIC/dokumen/invoice — bukan bagian dari "activity".
      */
     private function buildTimeline(Customer $customer): \Illuminate\Support\Collection
     {
@@ -174,82 +175,10 @@ class CustomerController extends Controller
                 'context' => $m->start_at?->format('d M Y H:i'),
             ]);
 
-        $documents = \App\Models\ProjectDocument::whereIn('project_id', $projectIds)
-            ->with(['project', 'uploader'])
-            ->latest()
-            ->take(50)
-            ->get()
-            ->map(fn ($d) => [
-                'date' => $d->created_at,
-                'type' => 'document',
-                'user' => $d->uploader,
-                'title' => __('Document uploaded'),
-                'detail' => $d->file_name,
-                'context' => $d->project?->project_name ?? __('General'),
-            ]);
-
-        $pics = $customer->contacts()->with('creator')
-            ->latest()
-            ->take(50)
-            ->get()
-            ->map(fn ($c) => [
-                'date' => $c->created_at,
-                'type' => 'pic',
-                'user' => $c->creator,
-                'title' => __('PIC added'),
-                'detail' => $c->name . ($c->position ? ' · ' . $c->position : ''),
-                'context' => null,
-            ]);
-
-        $invoices = $customer->invoices()->with('creator')
-            ->latest('issue_date')
-            ->take(20)
-            ->get()
-            ->map(fn ($inv) => [
-                'date' => $inv->issue_date ?? $inv->created_at,
-                'type' => 'invoice',
-                'user' => $inv->creator,
-                'title' => __('Invoice created'),
-                'detail' => $inv->invoice_number . ' · Rp ' . number_format($inv->amount, 0, ',', '.'),
-                'context' => null,
-            ]);
-
-        $pos = $customer->purchaseOrders()->with('creator')
-            ->latest('issue_date')
-            ->take(20)
-            ->get()
-            ->map(fn ($po) => [
-                'date' => $po->issue_date ?? $po->created_at,
-                'type' => 'po',
-                'user' => $po->creator,
-                'title' => __('PO created'),
-                'detail' => $po->po_number,
-                'context' => null,
-            ]);
-
-        $payments = \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
-            ->with(['creator', 'invoice'])
-            ->latest('payment_date')
-            ->take(20)
-            ->get()
-            ->map(fn ($pm) => [
-                'date' => $pm->payment_date ?? $pm->created_at,
-                'type' => 'payment',
-                'user' => $pm->creator,
-                'title' => __('Payment recorded'),
-                'detail' => $pm->invoice?->invoice_number . ' · Rp ' . number_format($pm->amount, 0, ',', '.'),
-                'context' => null,
-            ]);
-
         return $items
             ->concat($projectActivities)
             ->concat($followUps)
             ->concat($meetings)
-            ->concat($documents)
-            ->concat($pics)
-            ->concat($invoices)
-            ->concat($pos)
-            ->concat($payments)
             ->sortByDesc('date')
             ->values()
             ->take(50);

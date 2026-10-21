@@ -33,7 +33,7 @@ class CustomerTimelineTest extends TestCase
         return $user;
     }
 
-    public function test_timeline_gabung_followup_meeting_dokumen_pic_urut_waktu(): void
+    public function test_timeline_gabung_followup_meeting_urut_waktu_serta_tab_lain_tampil(): void
     {
         $sales = $this->sales();
         $this->actingAs($sales);
@@ -99,5 +99,87 @@ class CustomerTimelineTest extends TestCase
         $customer = Customer::create(['name' => 'PT Kosong', 'pt_group' => 'NTI']);
 
         $this->get(route('customers.show', $customer))->assertOk();
+    }
+
+    public function test_timeline_hanya_project_followup_meeting(): void
+    {
+        $sales = $this->sales();
+        $this->actingAs($sales);
+
+        $customer = Customer::create(['name' => 'PT Lingkup', 'pt_group' => 'NTI']);
+        $workType = WorkType::create(['name' => 'Instalasi']);
+        Project::create([
+            'customer_id' => $customer->id,
+            'work_type_id' => $workType->id,
+            'project_name' => 'Project Lingkup',
+        ]);
+        FollowUp::create([
+            'customer_id' => $customer->id,
+            'description' => 'Telepon lingkup',
+            'type' => 'call',
+            'follow_up_date' => now()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
+        Storage::fake('private');
+        $this->post(route('customer-documents.store', $customer), [
+            'file' => UploadedFile::fake()->create('lingkup.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+        $this->post(route('customer-contacts.store', $customer), [
+            'name' => 'PIC Lingkup',
+        ])->assertRedirect();
+
+        $response = $this->get(route('customers.show', $customer));
+        $response->assertOk();
+
+        // Fokus ke segmen tab Activity (timeline) saja.
+        $html = $response->getContent();
+        $activitySeg = substr($html, (int) strpos($html, 'Activity Timeline'));
+
+        // Ada di timeline.
+        $this->assertStringContainsString('Projects Created', $activitySeg);
+        $this->assertStringContainsString('Telepon lingkup', $activitySeg);
+
+        // Tidak ada di timeline (tetap tampil di tab masing-masing).
+        $this->assertStringNotContainsString('PIC Lingkup', $activitySeg);
+        $this->assertStringNotContainsString('lingkup.pdf', $activitySeg);
+        $this->assertStringNotContainsString(__('Invoice created'), $activitySeg);
+    }
+
+    public function test_tab_tidak_bersarang_di_dalam_tab_lain(): void
+    {
+        $sales = $this->sales();
+        $this->actingAs($sales);
+
+        $customer = Customer::create(['name' => 'PT Tab', 'pt_group' => 'NTI']);
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $dom->loadHTML($html);
+        $xp = new \DOMXPath($dom);
+
+        $tabDivs = $xp->query("//div[starts-with(@x-show, 'tab ===')]");
+        $this->assertGreaterThan(0, $tabDivs->length, 'Ketemu div tab di halaman customer.');
+
+        foreach ($tabDivs as $div) {
+            $nested = [];
+            $parent = $div->parentNode;
+            while ($parent instanceof \DOMElement) {
+                if ($parent->hasAttribute('x-show') && str_contains($parent->getAttribute('x-show'), 'tab ===')) {
+                    $nested[] = $parent->getAttribute('x-show');
+                }
+                $parent = $parent->parentNode;
+            }
+
+            $this->assertSame(
+                [],
+                $nested,
+                "Tab '{$div->getAttribute('x-show')}' bersarang di dalam " . implode(', ', $nested)
+                . ' — kontennya tidak akan pernah tampil.'
+            );
+        }
+
+        libxml_clear_errors();
     }
 }
