@@ -10,8 +10,6 @@
  *   ada file tipe itu yang terlihat di layar.
  * - Gagal render = ikon fallback di belakang canvas tetap terlihat.
  */
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
 const MAX_WIDTH = 480;
 const MAX_DPR = 2;
 const MAX_PARSE_BYTES = 10 * 1024 * 1024; // file > 10MB tidak diparse
@@ -23,12 +21,22 @@ let unzipPromise = null;
 
 function loadPdfjs() {
     if (!pdfjsPromise) {
-        pdfjsPromise = import('pdfjs-dist').then((mod) => {
-            mod.GlobalWorkerOptions.workerSrc = workerUrl;
+        pdfjsPromise = (async () => {
+            const mod = await import('pdfjs-dist');
+            mod.GlobalWorkerOptions.workerSrc = await pdfjsWorkerUrl();
             return mod;
-        });
+        })();
     }
     return pdfjsPromise;
+}
+
+// Worker PDF.js: di build, file-nya disalin sebagai aset terpisah
+// (lihat vite.config.js) supaya chunk PDF.js tetap bisa dimuat malas.
+function pdfjsWorkerUrl() {
+    if (import.meta.env.DEV) {
+        return '/node_modules/pdfjs-dist/build/pdf.worker.min.mjs';
+    }
+    return `${import.meta.env.BASE_URL}pdf.worker.min.mjs`;
 }
 
 function loadUnzip() {
