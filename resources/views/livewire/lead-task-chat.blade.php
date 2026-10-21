@@ -1,15 +1,32 @@
 <div x-data="{
-        scrollToBottom() {
+        scrollToBottom(instant = false) {
             this.$nextTick(() => {
-                if (this.$refs.chatBox) {
-                    this.$refs.chatBox.scrollTop = this.$refs.chatBox.scrollHeight;
+                const box = this.$refs.chatBox;
+                if (!box) return;
+                if (instant) {
+                    box.scrollTop = box.scrollHeight;
+                } else {
+                    box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
                 }
             });
+        },
+        init() {
+            // Immediate scroll down to bottom on page load
+            this.scrollToBottom(true);
+            setTimeout(() => this.scrollToBottom(true), 60);
+            setTimeout(() => this.scrollToBottom(true), 250);
+
+            // Auto-scroll down whenever any new messages arrive (MutationObserver)
+            if (this.$refs.chatBox) {
+                const observer = new MutationObserver(() => {
+                    this.scrollToBottom();
+                });
+                observer.observe(this.$refs.chatBox, { childList: true, subtree: true });
+            }
         }
      }"
-     x-init="scrollToBottom()"
+     @chat-updated.window="scrollToBottom()"
      wire:poll.5s
-     x-effect="scrollToBottom()"
      class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
     <div class="flex items-center justify-between mb-4">
         <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Discussion') }} ({{ $comments->count() }})</h3>
@@ -19,8 +36,8 @@
         </span>
     </div>
 
-    {{-- Chat Messages Container --}}
-    <div x-ref="chatBox" class="space-y-3 mb-4 max-h-[420px] overflow-y-auto p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-700/60 scroll-smooth">
+    {{-- Chat Messages Container: WhatsApp flow (oldest at top, newest at bottom, auto-scrolled down) --}}
+    <div x-ref="chatBox" class="flex flex-col space-y-3 mb-4 max-h-[460px] overflow-y-auto p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-700/60">
         @forelse($comments as $comment)
             @php($mine = (int) $comment->user_id === (int) auth()->id())
             <div class="flex {{ $mine ? 'justify-end' : 'justify-start items-end gap-2' }}">

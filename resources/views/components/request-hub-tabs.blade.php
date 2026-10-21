@@ -12,6 +12,7 @@
         @foreach($tabs as $key => $tab)
             @php($count = $counts[$key] ?? 0)
             <a href="{{ route($routeName, ['tab' => $key]) }}"
+               wire:navigate.hover
                @if($active === $key) aria-current="page" @endif
                class="flex shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 sm:px-4 {{ $active === $key
                     ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100'

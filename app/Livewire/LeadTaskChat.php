@@ -33,6 +33,7 @@ class LeadTaskChat extends Component
         ]);
 
         $this->reset('body');
+        $this->dispatch('chat-updated');
 
         // Beri tahu lawan bicara (creator/assignee, kecuali pengirim sendiri).
         foreach ([$this->task->creator, $this->task->assignee] as $recipient) {
