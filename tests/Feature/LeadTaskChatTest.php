@@ -95,4 +95,23 @@ class LeadTaskChatTest extends TestCase
             ->test(LeadTaskChat::class, ['task' => $task])
             ->assertForbidden();
     }
+
+    public function test_messages_render_in_chronological_order_oldest_first(): void
+    {
+        [$sales, $inside, $task] = $this->makeTask();
+
+        $task->comments()->create(['user_id' => $sales->id, 'body' => 'Pesan pertama dari Adi']);
+        $task->comments()->create(['user_id' => $inside->id, 'body' => 'Balasan kedua dari Yeski']);
+
+        $html = Livewire::actingAs($sales)
+            ->test(LeadTaskChat::class, ['task' => $task])
+            ->html();
+
+        $posFirst = strpos($html, 'Pesan pertama dari Adi');
+        $posSecond = strpos($html, 'Balasan kedua dari Yeski');
+
+        $this->assertNotFalse($posFirst);
+        $this->assertNotFalse($posSecond);
+        $this->assertTrue($posFirst < $posSecond, 'Pesan pertama harus muncul sebelum balasan kedua dalam HTML.');
+    }
 }
