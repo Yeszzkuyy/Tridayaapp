@@ -5,11 +5,12 @@ namespace App\Notifications;
 use App\Models\LeadTask;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /** Dikirim saat inside sales task dibuat/di-assign atau statusnya berubah. */
-class LeadTaskNotification extends Notification
+class LeadTaskNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 
