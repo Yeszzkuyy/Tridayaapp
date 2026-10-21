@@ -334,7 +334,7 @@ async function fetchBuffer(url) {
     return buf;
 }
 
-function parseCsv(text) {
+export function parseCsv(text) {
     return text
         .split(/\r?\n/)
         .filter((line) => line.trim() !== '')
@@ -359,7 +359,7 @@ function parseCsv(text) {
 }
 
 // Ambil daftar nama file di dalam ZIP tanpa decompress isinya.
-function zipNames(unzip, bytes) {
+export function zipNames(unzip, bytes) {
     const names = [];
     unzip(bytes, {
         filter: (file) => {
@@ -370,56 +370,77 @@ function zipNames(unzip, bytes) {
     return names.filter((n) => !n.endsWith('/'));
 }
 
-function parseXml(bytes) {
-    const dom = new DOMParser().parseFromString(new TextDecoder().decode(bytes), 'application/xml');
-    return dom;
+// --- Parser XML ringan (regex) ---------------------------------------------
+// File Word/Excel/PPT selalu dibuat program, jadi strukturnya rapi dan
+// aman dibaca dengan regex. Lebih ringan daripada DOMParser dan bisa
+// diuji otomatis (lihat tests/js/doc-thumbs.test.js).
+function decodeXml(text) {
+    return String(text)
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+        .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+        .replace(/&amp;/g, '&');
 }
 
-function docxParagraphs(files) {
+function xmlTexts(xml, tag) {
+    const out = [];
+    const re = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, 'g');
+    let match;
+    while ((match = re.exec(xml)) !== null) {
+        out.push(decodeXml(match[1]));
+    }
+    return out;
+}
+
+export function docxParagraphs(files) {
     const entry = files['word/document.xml'];
     if (!entry) return [];
-    const dom = parseXml(entry);
+    const xml = new TextDecoder().decode(entry);
     const out = [];
-    for (const p of dom.getElementsByTagName('w:p')) {
-        let text = '';
-        for (const t of p.getElementsByTagName('w:t')) text += t.textContent;
-        const clean = text.trim();
-        if (clean) out.push(clean);
+    for (const chunk of xml.split(/<\/w:p>/)) {
+        const text = xmlTexts(chunk, 'w:t').join('').trim();
+        if (text) out.push(text);
         if (out.length >= 20) break;
     }
     return out;
 }
 
-function xlsxRows(files) {
+export function xlsxRows(files) {
     const shared = [];
     if (files['xl/sharedStrings.xml']) {
-        const dom = parseXml(files['xl/sharedStrings.xml']);
-        for (const si of dom.getElementsByTagName('si')) {
-            let text = '';
-            for (const t of si.getElementsByTagName('t')) text += t.textContent;
-            shared.push(text);
+        const xml = new TextDecoder().decode(files['xl/sharedStrings.xml']);
+        for (const chunk of xml.split(/<\/si>/)) {
+            const text = xmlTexts(chunk, 't').join('').trim();
+            if (text) shared.push(text);
         }
     }
     const sheetKey = Object.keys(files).find((k) => /^xl\/worksheets\/sheet1\.xml$/i.test(k))
         || Object.keys(files).find((k) => /^xl\/worksheets\//i.test(k));
     if (!sheetKey) return [];
 
-    const dom = parseXml(files[sheetKey]);
+    const xml = new TextDecoder().decode(files[sheetKey]);
     const rows = [];
-    for (const row of dom.getElementsByTagName('row')) {
+    for (const chunk of xml.split(/<row[\s>]/).slice(1)) {
         const cells = [];
-        for (const c of row.getElementsByTagName('c')) {
-            const type = c.getAttribute('t');
+        const cellRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+        let match;
+        while ((match = cellRe.exec(chunk)) !== null) {
+            const attrs = match[1] || '';
+            const inner = match[2] || '';
+            const type = (attrs.match(/t="([^"]+)"/) || [])[1];
             let value = '';
             if (type === 's') {
-                const v = c.getElementsByTagName('v')[0];
-                const index = v ? parseInt(v.textContent, 10) : -1;
+                const v = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+                const index = v ? parseInt(v, 10) : -1;
                 value = shared[index] ?? '';
             } else if (type === 'inlineStr') {
-                for (const t of c.getElementsByTagName('t')) value += t.textContent;
+                value = xmlTexts(inner, 't').join('');
             } else {
-                const v = c.getElementsByTagName('v')[0];
-                value = v ? v.textContent : '';
+                const v = (inner.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+                value = v ? decodeXml(v) : '';
             }
             cells.push(value);
         }
@@ -429,17 +450,11 @@ function xlsxRows(files) {
     return rows;
 }
 
-function pptxTexts(files) {
+export function pptxTexts(files) {
     const key = Object.keys(files).find((k) => /^ppt\/slides\/slide1\.xml$/i.test(k));
     if (!key) return [];
-    const dom = parseXml(files[key]);
-    const out = [];
-    for (const t of dom.getElementsByTagName('a:t')) {
-        const text = (t.textContent || '').trim();
-        if (text) out.push(text);
-        if (out.length >= 12) break;
-    }
-    return out;
+    const xml = new TextDecoder().decode(files[key]);
+    return xmlTexts(xml, 'a:t').map((t) => t.trim()).filter(Boolean).slice(0, 12);
 }
 
 async function renderDocThumb(canvas) {
@@ -731,14 +746,17 @@ function initDocPageSafe() {
     }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDocPageSafe);
-} else {
-    initDocPageSafe();
-}
+// Guard `document` supaya modul ini bisa di-import di Node (unit test).
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDocPageSafe);
+    } else {
+        initDocPageSafe();
+    }
 
-// Halaman ini dinavigasi ala SPA (Livewire) — pasang ulang listener
-// tiap konten halaman baru selesai dimuat.
-['livewire:navigated', 'turbo:load', 'popstate'].forEach((evt) => {
-    document.addEventListener(evt, initDocPageSafe);
-});
+    // Halaman ini dinavigasi ala SPA (Livewire) — pasang ulang listener
+    // tiap konten halaman baru selesai dimuat.
+    ['livewire:navigated', 'turbo:load', 'popstate'].forEach((evt) => {
+        document.addEventListener(evt, initDocPageSafe);
+    });
+}
