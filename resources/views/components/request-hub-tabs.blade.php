@@ -6,9 +6,9 @@
     'showZero' => false,
 ])
 
-<div class="mb-4 overflow-x-auto pb-1">
+<div class="mb-4 flex justify-center w-full overflow-x-auto pb-1">
     <nav aria-label="{{ __('Request types') }}"
-         class="inline-flex min-w-full w-max gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700 sm:min-w-0 sm:w-fit">
+         class="inline-flex w-max gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700/80 sm:w-fit">
         @foreach($tabs as $key => $tab)
             @php($count = $counts[$key] ?? 0)
             <a href="{{ route($routeName, ['tab' => $key]) }}"
