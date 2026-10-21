@@ -776,8 +776,7 @@
             };
         }
     </script>
+    {{-- Thumbnail PDF + popup/filter/preview dokumen (script langsung, bukan @push
+         yang ternyata terbuang di komponen layout). --}}
+    <script type="module" src="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/doc-thumbs.js') }}"></script>
 </x-app-layout>
-
-@push('scripts')
-    @vite(['resources/js/doc-thumbs.js'])
-@endpush

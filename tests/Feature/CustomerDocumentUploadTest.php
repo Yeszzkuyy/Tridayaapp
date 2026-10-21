@@ -124,6 +124,26 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertSee('Upload File', false);
     }
 
+    public function test_script_dokumen_dipanggil_di_dalam_layout(): void
+    {
+        // Regresi: script popup/filter/preview harus dipanggil DI DALAM
+        // <x-app-layout>. Dulu @vite ditaruh setelah </x-app-layout> sehingga
+        // tag-nya terbuang oleh komponen layout dan semua tombol dokumen
+        // (upload/preview/filter/rename) jadi tidak berfungsi.
+        $view = file_get_contents(resource_path('views/customers/show.blade.php'));
+
+        $scriptPos = strpos($view, 'resources/js/doc-thumbs.js');
+        $layoutEndPos = strpos($view, '</x-app-layout>');
+
+        $this->assertNotFalse($scriptPos, 'View customer harus memanggil script doc-thumbs.js');
+        $this->assertNotFalse($layoutEndPos, 'View customer harus memakai <x-app-layout>');
+        $this->assertLessThan(
+            $layoutEndPos,
+            $scriptPos,
+            'Script doc-thumbs.js harus dipanggil sebelum </x-app-layout> agar tag-nya ikut dirender'
+        );
+    }
+
     public function test_upload_tanpa_project_tersimpan_sebagai_dokumen_umum(): void
     {
         $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
