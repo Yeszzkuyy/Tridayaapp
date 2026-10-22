@@ -2,8 +2,8 @@
     <div>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Proposal') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Sales quotation list.') }}</p>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Quotations') }}</h1>
+                <p class="text-slate-500 mt-1">{{ __('Sales quotation & pricing list.') }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
@@ -66,7 +66,7 @@
                     <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" />
                 </div>
             @empty
-                <p class="text-slate-500 text-center py-8">{{ __('No proposals yet.') }}</p>
+                <p class="text-slate-500 text-center py-8">{{ __('No quotations yet.') }}</p>
             @endforelse
             <div class="mt-4">{{ $proposals->links() }}</div>
         </div>

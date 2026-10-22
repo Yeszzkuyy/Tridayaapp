@@ -41,7 +41,7 @@
                 ['sales.my-leads',                  ['Sales', 'My Leads']],
                 ['sales.follow-ups',                ['Sales', 'Follow Up']],
                 ['sales.schedules',                 ['Sales', 'Schedule']],
-                ['sales.proposals',                 ['Sales', 'Proposal']],
+                ['sales.proposals',                 ['Sales', 'Quotation']],
                 ['sales.requests',                  ['Sales', 'Request']],
                 ['sales.technical-requests',        ['Sales', 'Technical Request']],
                 ['sales',                           ['Sales']],

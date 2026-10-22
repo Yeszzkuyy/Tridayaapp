@@ -119,6 +119,24 @@
                                     <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.reply', $priceRequest) }}" label="{{ __('Download Reply') }}" title="{{ __('Download Reply') }}" />
                                 </div>
                             @endif
+
+                            {{-- Handover ke Quotation untuk Sales --}}
+                            @can('view-sales')
+                                @php
+                                    $customerLead = $priceRequest->customer?->leads()->whereNotIn('status', ['won', 'lost'])->latest()->first()
+                                        ?? $priceRequest->customer?->leads()->latest()->first();
+                                    $createQuotationUrl = $customerLead
+                                        ? route('sales.proposals.create', ['lead_id' => $customerLead->id])
+                                        : route('sales.proposals.create', ['q' => $priceRequest->customer?->name]);
+                                @endphp
+                                <div class="flex flex-col gap-3 border-t border-green-200 pt-3 dark:border-green-800 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-xs font-semibold text-green-900 dark:text-green-200">{{ __('Langkah Selanjutnya: Buat Quotation') }}</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Gunakan hasil kalkulasi harga engineer di atas untuk menerbitkan penawaran resmi ke klien.') }}</p>
+                                    </div>
+                                    <x-icon-button as="a" icon="add" href="{{ $createQuotationUrl }}" label="{{ __('Create Quotation') }}" title="{{ __('Create Quotation') }}" />
+                                </div>
+                            @endcan
                         </div>
                     @else
                         <p class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-700 dark:text-slate-300">{{ __('No engineering reply has been submitted yet.') }}</p>
