@@ -68,7 +68,7 @@
                 </x-icon-button>
             @endif
             @if($sentProposal)
-                <x-icon-button as="a" href="{{ route('sales.proposals.show', $sentProposal) }}" title="{{ __('View proposal') }}"
+                <x-icon-button as="a" href="{{ route('sales.proposals.show', $sentProposal) }}" title="{{ __('View quotation') }}"
                    label="{{ $sentProposal->proposal_number }} • {{ \App\Models\Proposal::statusLabel($sentProposal->status) }}">
                     <x-icon name="receipt" class="h-5 w-5 shrink-0" />
                 </x-icon-button>
@@ -289,7 +289,7 @@
                         @endif
                     </h2>
                     @if($canSalesWrite)
-                        <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add proposal') }}" class="shrink-0">
+                        <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
                             <x-icon name="receipt" class="h-5 w-5" />
                         </x-icon-button>
                     @endif

@@ -317,52 +317,137 @@
                 <div x-show="tab === 'documents'" x-transition>
                     @php
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
+                        // Split dokumen berdasarkan jenis: project, general, dan transaksi (diteruskan ke partial)
+                        $projectDocuments = $documents->whereNotNull('project_id')->whereNull('doc_type');
+                        $generalDocuments = $documents->whereNull('project_id')->whereNull('doc_type');
                     @endphp
-                    <x-section-header title="{{ __('Documents') }}">
-                        @if($canUploadDocs)
-                            <x-icon-button icon="add" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}" data-doc-upload-open />
-                        @endif
-                    </x-section-header>
 
-                    @if($documents->isNotEmpty())
-                        {{-- Sub-tab dokumen (PRD document architecture) --}}
-                        <div id="doc-scope-tabs" class="mb-3 inline-flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700">
-                            <button type="button" data-doc-scope="" class="doc-scope-btn rounded-xl px-3.5 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100">{{ __('All documents') }}</button>
-                            <button type="button" data-doc-scope="general" class="doc-scope-btn rounded-xl px-3.5 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100">{{ __('Customer Documents') }}</button>
-                            <button type="button" data-doc-scope="__projects__" class="doc-scope-btn rounded-xl px-3.5 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100">{{ __('Project Documents') }}</button>
+                    {{-- Breadcrumb + judul halaman Documents --}}
+                    <nav aria-label="Breadcrumb" class="mb-4">
+                        <ol class="flex flex-wrap items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                            <li>
+                                <a href="{{ route('customers.index') }}"
+                                   class="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{{ __('Customer') }}</a>
+                            </li>
+                            <li aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</li>
+                            <li>
+                                <a href="{{ route('customers.show', $customer) }}"
+                                   class="max-w-[12rem] truncate transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{{ $customer->name }}</a>
+                            </li>
+                            <li aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</li>
+                            <li class="font-medium text-slate-700 dark:text-slate-200" aria-current="page">{{ __('Documents') }}</li>
+                        </ol>
+                    </nav>
+
+                    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{{ __('Documents') }}</h2>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                {{ __('Semua dokumen pelanggan: proyek, umum, dan transaksi.') }}
+                            </p>
                         </div>
-                        <div class="mb-4 flex flex-col gap-3 sm:flex-row">
-                            <div class="relative flex-1">
-                                <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <input id="doc-search" type="search" placeholder="{{ __('Search documents') }}" autocomplete="off"
-                                       class="h-11 w-full rounded-xl border border-slate-300 pl-10 pr-4 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                        @if($canUploadDocs)
+                            <div class="shrink-0">
+                                <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
+                                               data-doc-upload-open />
                             </div>
-                            <select id="doc-project-filter" class="h-11 rounded-xl border border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:w-52">
-                                <option value="">{{ __('All projects') }}</option>
-                                <option value="general">{{ __('General') }}</option>
-                                <option value="__projects__">{{ __('Project Documents') }}</option>
-                                @foreach($customer->projects as $p)
-                                    <option value="{{ $p->id }}">{{ $p->project_name }}</option>
+                        @endif
+                    </div>
+
+                    <div class="space-y-8">
+                        {{-- Section 1: Project Documents (kelompokkan per project) --}}
+                        @include('customers.partials.project-documents', [
+                            'projectDocuments' => $projectDocuments,
+                            'projects' => $customer->projects,
+                            'canUploadDocs' => $canUploadDocs,
+                            'customer' => $customer,
+                        ])
+
+                        {{-- Section 2: General Documents (dokumen umum customer) --}}
+                        @include('customers.partials.general-documents', [
+                            'generalDocuments' => $generalDocuments,
+                            'canUploadDocs' => $canUploadDocs,
+                        ])
+                    </div>
+                </div>
+
+                {{-- TAB 5: TRANSACTION DOCUMENTS (Invoice, PO, Payment, Quotation) --}}
+                @canany(['view-admin', 'view-sales'])
+                @php
+                    $custQuotations = \App\Models\Proposal::whereHas('lead', fn ($q) => $q->where('customer_id', $customer->id))
+                        ->with(['lead', 'creator'])
+                        ->latest('proposal_date')
+                        ->get();
+                @endphp
+                <div x-show="tab === 'documents'" x-transition class="space-y-6">
+                    {{-- Section Quotation / Penawaran Harga (Mirroring dari Sales) --}}
+                    <div class="border-t border-slate-200 dark:border-slate-600 pt-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Quotation / Penawaran Harga') }}</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen penawaran harga resmi dari divisi Sales yang terhubung dengan customer ini.') }}</p>
+                            </div>
+                            <a href="{{ route('sales.proposals.index') }}"
+                               class="text-sm font-medium text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                                {{ __('Lihat Semua Quotation') }} →
+                            </a>
+                        </div>
+
+                        @if($custQuotations->isNotEmpty())
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                @foreach($custQuotations as $quo)
+                                    <div class="group relative block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                                        <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                            <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            <span class="absolute left-2 top-2 rounded bg-indigo-600 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">QUO</span>
+                                            <div class="absolute right-2 top-2 flex items-center gap-1">
+                                                <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $quo) }}" target="_blank" title="{{ __('Preview PDF') }}" />
+                                            </div>
+                                        </div>
+                                        <div class="p-3">
+                                            <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                                <a href="{{ route('sales.proposals.show', $quo) }}" class="truncate hover:text-accent-600 dark:hover:text-accent-400">
+                                                    {{ $quo->proposal_number }}
+                                                </a>
+                                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
+                                                    {{ \App\Models\Proposal::statusLabel($quo->status) }}
+                                                </span>
+                                            </p>
+                                            <p class="mt-0.5 font-mono text-sm text-slate-700 dark:text-slate-200 font-medium">Rp {{ number_format($quo->grand_total, 0, ',', '.') }}</p>
+                                            <p class="mt-0.5 truncate text-xs text-slate-400">
+                                                {{ $quo->proposal_date?->format('d M Y') ?? '-' }}
+                                                @if($quo->valid_until)
+                                                    · {{ __('Valid s/d') }} {{ $quo->valid_until->format('d M Y') }}
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </div>
                                 @endforeach
-                            </select>
-                        </div>
-                    @endif
-                    
-                    @if($documents->isNotEmpty())
-                        <div id="doc-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($documents as $doc)
-                                @include('customers.doc-card', [
-                                    'doc' => $doc,
-                                    'canManage' => $doc->project_id
-                                        ? auth()->user()->can('manage-technician')
-                                        : $canUploadDocs,
-                                ])
-                            @endforeach
-                        </div>
-                        <div id="doc-no-results" class="hidden py-10 text-center text-sm text-slate-400">{{ __('No documents match the filter.') }}</div>
-                    @else
-                        <x-empty-state label="{{ __('documents') }}" />
-                    @endif
+                            </div>
+                        @else
+                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 text-center">
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Belum ada quotation / penawaran untuk customer ini.') }}</p>
+                                <a href="{{ route('sales.proposals.create') }}"
+                                   class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                                    {{ __('Buat Quotation Baru') }} →
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+
+                    @include('customers.partials.transaction-documents', [
+                        'custInvoices' => $custInvoices,
+                        'custPos' => $custPos,
+                        'custPayments' => $custPayments,
+                        'typedDocs' => $typedDocs,
+                    ])
+                </div>
+                @endcanany
+
+                    {{-- Modul popup dokumen (dipakai oleh doc-thumbs.js) --}}
                     @if($canUploadDocs)
                         {{-- Popup upload --}}
                         <div id="doc-upload-modal" class="fixed inset-0 z-[90] {{ $errors->has('file') ? 'doc-open' : 'hidden' }} items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
@@ -377,67 +462,68 @@
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
                                 </div>
-                        <form action="{{ route('customer-documents.store', $customer) }}" method="POST" enctype="multipart/form-data"
-                              x-data="{ dragging: false, fileName: '' }">
-                            @csrf
-                            {{-- Jenis file: kosong = dokumen umum, atau invoice / po / payment --}}
-                            <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
-                            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                @if($customer->projects->isNotEmpty())
-                                    <div id="doc-project-field">
-                                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
-                                        <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                            <option value="">{{ __('General') }}</option>
-                                            @foreach($customer->projects as $p)
-                                                <option value="{{ $p->id }}">{{ $p->project_name }}</option>
-                                            @endforeach
-                                        </select>
+                                <form action="{{ route('customer-documents.store', $customer) }}" method="POST" enctype="multipart/form-data"
+                                      x-data="{ dragging: false, fileName: '' }">
+                                    @csrf
+                                    <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
+                                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        @if($customer->projects->isNotEmpty())
+                                            <div id="doc-project-field">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
+                                                <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                                    <option value="">{{ __('General') }}</option>
+                                                    @foreach($customer->projects as $p)
+                                                        <option value="{{ $p->id }}">{{ $p->project_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
+                                        <div>
+                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Notes') }}</label>
+                                            <input type="text" name="notes" value="{{ old('notes') }}" placeholder="{{ __('Document notes') }}"
+                                                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                        </div>
                                     </div>
-                                @endif
-                                <div>
-                                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Notes') }}</label>
-                                    <input type="text" name="notes" value="{{ old('notes') }}" placeholder="{{ __('Document notes') }}"
-                                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                </div>
-                            </div>
-                            <div class="relative mt-3 rounded-xl border-2 border-dashed p-4 text-center transition-all duration-200"
-                                 :class="dragging ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/40 dark:border-accent-400' : 'border-slate-300 dark:border-slate-600 hover:border-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/40'"
-                                 @dragover.prevent="dragging = true"
-                                 @dragenter.prevent="dragging = true"
-                                 @dragleave.prevent="dragging = false"
-                                 @drop.prevent="dragging = false; if ($event.dataTransfer.files.length) { $refs.fileInput.files = $event.dataTransfer.files; fileName = $event.dataTransfer.files[0].name; }">
-                                <input type="file"
-                                       name="file"
-                                       x-ref="fileInput"
-                                       @change="fileName = $event.target.files.length ? $event.target.files[0].name : ''"
-                                       class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
-                                <svg class="mx-auto mb-2 h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                                </svg>
-                                <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('Drag & drop files here') }}</p>
-                                <p class="text-xs text-slate-400">{{ __('or click to browse') }} · {{ __('Maximum 20MB') }}</p>
-                                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400" x-text="fileName || '{{ __('No file selected') }}'"></p>
-                                @error('file')
-                                    <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4 flex justify-end gap-3">
-                                <button type="button" data-doc-modal-close
-                                        class="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                                    {{ __('Cancel') }}
-                                </button>
-                                <button type="submit" data-doc-upload-submit
-                                        :disabled="!fileName"
-                                        :class="!fileName ? 'opacity-50 cursor-not-allowed' : ''"
-                                        class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                                    {{ __('Upload') }}
-                                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                                </button>
-                            </div>
-                        </form>
+                                    <div class="relative mt-3 rounded-xl border-2 border-dashed p-4 text-center transition-all duration-200"
+                                         :class="dragging ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/40 dark:border-accent-400' : 'border-slate-300 dark:border-slate-600 hover:border-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/40'"
+                                         @dragover.prevent="dragging = true"
+                                         @dragenter.prevent="dragging = true"
+                                         @dragleave.prevent="dragging = false"
+                                         @drop.prevent="dragging = false; if ($event.dataTransfer.files.length) { $refs.fileInput.files = $event.dataTransfer.files; fileName = $event.dataTransfer.files[0].name; }">
+                                        <input type="file"
+                                               name="file"
+                                               x-ref="fileInput"
+                                               @change="fileName = $event.target.files.length ? $event.target.files[0].name : ''"
+                                               class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+                                        <svg class="mx-auto mb-2 h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                        </svg>
+                                        <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('Drag & drop files here') }}</p>
+                                        <p class="text-xs text-slate-400">{{ __('or click to browse') }} · {{ __('Maximum 20MB') }}</p>
+                                        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400" x-text="fileName || '{{ __('No file selected') }}'"></p>
+                                        @error('file')
+                                            <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div class="mt-4 flex justify-end gap-3">
+                                        <button type="button" data-doc-modal-close
+                                                class="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                                            {{ __('Cancel') }}
+                                        </button>
+                                        <button type="submit" data-doc-upload-submit
+                                                :disabled="!fileName"
+                                                :class="!fileName ? 'opacity-50 cursor-not-allowed' : ''"
+                                                class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                                            {{ __('Upload') }}
+                                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
+                    @endif
+                    {{-- Lightbox & rename dipakai semua pengunjung dokumen; aksi tulis tetap dijaga backend. --}}
 
                         {{-- Tampilan file dalam layar --}}
                         <div id="doc-lightbox" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/80 p-4" data-doc-modal>
@@ -482,180 +568,6 @@
                                 </form>
                             </div>
                         </div>
-                    @endif
-                </div>
-
-                {{-- TAB 5: ADMIN DOCUMENTS --}}
-                @can('view-admin')
-                <div x-show="tab === 'documents'" x-transition>
-                    <div class="mt-8 space-y-6">
-                        {{-- Invoice: file unggahan + data invoice dalam satu grid.
-                             "Belum ada" hanya saat file DAN data sama-sama kosong. --}}
-                        <div>
-                            <x-section-header title="{{ __('Invoice') }}">
-                                @if($canUploadDocs)
-                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                   data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
-                                @endif
-                            </x-section-header>
-                            @php $sectionDocs = $typedDocs->get('invoice', collect()); @endphp
-                            @if($custInvoices->isNotEmpty() || $sectionDocs->isNotEmpty())
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    @foreach($sectionDocs as $doc)
-                                        @include('customers.doc-card', [
-                                            'doc' => $doc,
-                                            'canManage' => $canUploadDocs,
-                                            'badgeClass' => 'bg-teal-500',
-                                            'badgeText' => 'INV',
-                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y'),
-                                        ])
-                                    @endforeach
-                                    @foreach($custInvoices as $inv)
-                                        @php
-                                            $invBadgeColor = match($inv->status) {
-                                                'paid' => 'green',
-                                                'cancelled' => 'red',
-                                                default => 'yellow',
-                                            };
-                                            $invStatusLabel = $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid'));
-                                        @endphp
-                                        <a href="{{ route('admin.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
-                                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                </svg>
-                                                <span class="absolute left-2 top-2 rounded bg-teal-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">INV</span>
-                                            </div>
-                                            <div class="p-3">
-                                                <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                                    <span class="truncate">{{ $inv->invoice_number }}</span>
-                                                    <x-status-badge :color="$invBadgeColor">{{ $invStatusLabel }}</x-status-badge>
-                                                </p>
-                                                <p class="mt-0.5 font-mono text-sm text-slate-500 dark:text-slate-400">Rp {{ number_format($inv->amount, 0, ',', '.') }}</p>
-                                            </div>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            @else
-                                <x-empty-state label="{{ __('invoices') }}" description="{{ __('Upload the file so it appears here.') }}">
-                                    @if($canUploadDocs)
-                                        <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                       data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
-                                    @endif
-                                </x-empty-state>
-                            @endif
-                        </div>
-
-                        {{-- Purchase Order: pola sama dengan Invoice --}}
-                        <div>
-                            <x-section-header title="{{ __('Purchase Order') }}">
-                                @if($canUploadDocs)
-                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                   data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
-                                @endif
-                            </x-section-header>
-                            @php $sectionDocs = $typedDocs->get('po', collect()); @endphp
-                            @if($custPos->isNotEmpty() || $sectionDocs->isNotEmpty())
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    @foreach($sectionDocs as $doc)
-                                        @include('customers.doc-card', [
-                                            'doc' => $doc,
-                                            'canManage' => $canUploadDocs,
-                                            'badgeClass' => 'bg-violet-500',
-                                            'badgeText' => 'PO',
-                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y'),
-                                        ])
-                                    @endforeach
-                                    @foreach($custPos as $po)
-                                        @php
-                                            $poBadgeColor = match($po->status) {
-                                                'selesai' => 'green',
-                                                'dibatalkan' => 'red',
-                                                'diproses' => 'yellow',
-                                                default => 'slate',
-                                            };
-                                        @endphp
-                                        <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
-                                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                </svg>
-                                                <span class="absolute left-2 top-2 rounded bg-violet-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">PO</span>
-                                            </div>
-                                            <div class="p-3">
-                                                <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                                    <span class="truncate">{{ $po->po_number }}</span>
-                                                    <x-status-badge :color="$poBadgeColor">{{ $po->statusLabel() }}</x-status-badge>
-                                                </p>
-                                                <p class="mt-0.5 truncate text-xs text-slate-400">{{ Str::limit($po->items, 60) }}</p>
-                                            </div>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            @else
-                                <x-empty-state label="{{ __('PO') }}" description="{{ __('Upload the file so it appears here.') }}">
-                                    @if($canUploadDocs)
-                                        <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                       data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
-                                    @endif
-                                </x-empty-state>
-                            @endif
-                        </div>
-
-                        {{-- Payment: pola sama dengan Invoice --}}
-                        <div>
-                            <x-section-header title="{{ __('Payment') }}">
-                                @if($canUploadDocs)
-                                    <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                   data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
-                                @endif
-                            </x-section-header>
-                            @php $sectionDocs = $typedDocs->get('payment', collect()); @endphp
-                            @if($custPayments->isNotEmpty() || $sectionDocs->isNotEmpty())
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    @foreach($sectionDocs as $doc)
-                                        @include('customers.doc-card', [
-                                            'doc' => $doc,
-                                            'canManage' => $canUploadDocs,
-                                            'badgeClass' => 'bg-emerald-500',
-                                            'badgeText' => 'PAY',
-                                            'metaLine' => ($doc->uploader?->name ?? '-') . ' · ' . $doc->created_at->format('d M Y'),
-                                        ])
-                                    @endforeach
-                                    @foreach($custPayments as $pm)
-                                        <a href="{{ route('admin.payments.show', $pm) }}" title="{{ $pm->invoice->invoice_number }}"
-                                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                          d="M9 14l6-6m-5.5.5h.01m4.99 1H15a5 5 0 015 5v7H5v-7a5 5 0 015-5h2.5z"/>
-                                                </svg>
-                                                <span class="absolute left-2 top-2 rounded bg-emerald-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">PAY</span>
-                                            </div>
-                                            <div class="p-3">
-                                                <p class="truncate font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $pm->invoice->invoice_number }}</p>
-                                                <p class="mt-0.5 font-mono text-sm text-slate-500 dark:text-slate-400">Rp {{ number_format($pm->amount, 0, ',', '.') }}</p>
-                                                <p class="mt-0.5 truncate text-xs text-slate-400">{{ $pm->payment_date->format('d M Y') }}{{ $pm->proof_file ? ' · ' . __('Proof') : '' }}</p>
-                                            </div>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            @else
-                                <x-empty-state label="{{ __('payments') }}" description="{{ __('Upload the file so it appears here.') }}">
-                                    @if($canUploadDocs)
-                                        <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                                       data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
-                                    @endif
-                                </x-empty-state>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                @endcan
 
                 {{-- TAB 6: FOLLOW UPS --}}
                 @can('view-sales')

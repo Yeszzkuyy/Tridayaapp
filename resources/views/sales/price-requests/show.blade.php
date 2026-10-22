@@ -103,7 +103,9 @@
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="price-request-quotation-heading">
                     <h2 id="price-request-quotation-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation File') }}</h2>
                     @if($priceRequest->quotation_path)
-                        @php($quotationFileName = preg_replace('/^\d+_/', '', basename($priceRequest->quotation_path)))
+                        @php
+                            $quotationFileName = preg_replace('/^\d+_/', '', basename($priceRequest->quotation_path));
+                        @endphp
                         <div class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between">
                             <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ $quotationFileName }}</p>
                             <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.quotation', $priceRequest) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
@@ -128,7 +130,9 @@
                     @if($priceRequest->replies->isNotEmpty())
                         <div class="mt-4 space-y-3">
                             @foreach($priceRequest->replies as $reply)
-                                @php($replyFileName = preg_replace('/^(?:v\d+_)?\d+_/', '', basename($reply->file_path)))
+                                @php
+                                    $replyFileName = preg_replace('/^(?:v\d+_)?\d+_/', '', basename($reply->file_path));
+                                @endphp
                                 <article class="rounded-xl border border-slate-200 p-4 dark:border-slate-600 {{ $loop->last ? 'bg-slate-50 dark:bg-slate-700/50' : '' }}">
                                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                         <div class="min-w-0">
@@ -154,6 +158,24 @@
                                 </article>
                             @endforeach
                         </div>
+
+                        {{-- Handover ke Quotation untuk Sales --}}
+                        @can('view-sales')
+                            @php
+                                $customerLead = $priceRequest->customer?->leads()->whereNotIn('status', ['won', 'lost'])->latest()->first()
+                                    ?? $priceRequest->customer?->leads()->latest()->first();
+                                $createQuotationUrl = $customerLead
+                                    ? route('sales.proposals.create', ['lead_id' => $customerLead->id])
+                                    : route('sales.proposals.create', ['q' => $priceRequest->customer?->name]);
+                            @endphp
+                            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold text-green-900 dark:text-green-200">{{ __('Langkah Selanjutnya: Buat Quotation') }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Gunakan hasil kalkulasi harga engineer di atas untuk menerbitkan penawaran resmi ke klien.') }}</p>
+                                </div>
+                                <x-icon-button as="a" icon="add" href="{{ $createQuotationUrl }}" label="{{ __('Create Quotation') }}" title="{{ __('Create Quotation') }}" />
+                            </div>
+                        @endcan
                     @else
                         <p class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-700 dark:text-slate-300">{{ __('No engineering reply has been submitted yet.') }}</p>
                     @endif

@@ -3,7 +3,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Proposal Date') }} <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quotation Date') }} <span class="text-red-500">*</span></label>
             <input type="date" name="proposal_date" required value="{{ old('proposal_date', isset($proposal) ? $proposal->proposal_date?->format('Y-m-d') : now()->format('Y-m-d')) }}"
                     class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
         </div>
