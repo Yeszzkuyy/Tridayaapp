@@ -107,10 +107,20 @@ class CustomerController extends Controller
     {
         $this->authorize('view', $customer);
 
-        // Load relasi projects dan contacts sekaligus
-        // Contacts diurutkan berdasarkan is_primary supaya PIC utama muncul di atas
+        // Load relasi projects dan contacts sekaligus.
+        // Kontak diurutkan berdasarkan is_primary supaya PIC utama muncul di atas.
+        // Kartu project butuh status, jenis pekerjaan, dan hitungan progres
+        // kerja (task selesai/total + dokumen) — dimuat di sini supaya tidak
+        // N+1 saat merender grid kartu.
         $customer->load([
-            'projects',
+            'projects' => function ($query) {
+                $query->with(['status', 'workType'])
+                    ->withCount([
+                        'tasks',
+                        'tasks as tasks_done_count' => fn ($q) => $q->where('status', 'Done'),
+                        'documents',
+                    ]);
+            },
             'contacts' => function ($query) {
                 $query->orderBy('is_primary', 'desc')->latest();
             }
