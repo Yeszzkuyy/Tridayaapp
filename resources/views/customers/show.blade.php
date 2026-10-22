@@ -176,63 +176,12 @@
                     </x-section-header>
 
                     @if($customer->projects->isNotEmpty())
-                        <x-data-table>
-                            <thead class="bg-slate-50 dark:bg-slate-700">
-                                <tr>
-                                    <x-th>{{ __('Project Name') }}</x-th>
-                                    <x-th>{{ __('Status') }}</x-th>
-                                    <x-th>{{ __('Progress') }}</x-th>
-                                    <x-th>{{ __('Created Date') }}</x-th>
-                                    <x-th class="text-right">{{ __('Actions') }}</x-th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                                @foreach($customer->projects as $project)
-                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700">
-                                        <td class="px-6 py-3 font-medium text-slate-800 dark:text-slate-100">{{ $project->project_name }}</td>
-
-                                        {{-- Status --}}
-                                        <td class="px-6 py-3">
-                                            <x-status-badge :color="$project->status?->color ?? 'slate'">
-                                                {{ $project->status?->name ?? __('Not Started') }}
-                                            </x-status-badge>
-                                        </td>
-
-                                        {{-- Progress --}}
-                                        <td class="px-6 py-3">
-                                            <div class="flex items-center gap-2">
-                                                <div class="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                                    <div class="h-full bg-accent-600 rounded-full" style="width: {{ $project->progress ?? 0 }}%"></div>
-                                                </div>
-                                                <span class="text-xs text-slate-600 dark:text-slate-300">{{ $project->progress ?? 0 }}%</span>
-                                            </div>
-                                        </td>
-
-                                        {{-- Tanggal Dibuat --}}
-                                        <td class="px-6 py-3 text-sm text-slate-600 dark:text-slate-300">{{ $project->created_at->format('d M Y') }}</td>
-
-                                        {{-- Aksi --}}
-                                        <td class="px-6 py-3 text-right">
-                                            <div class="flex flex-wrap justify-end items-center gap-x-3 gap-y-1">
-                                                <a href="{{ route('projects.show', $project) }}"
-                                                   class="text-accent-600 hover:text-accent-800 text-sm whitespace-nowrap">{{ __('Detail') }}</a>
-                                                @can('update', $project)
-                                                    <a href="{{ route('projects.edit', $project) }}"
-                                                       class="text-amber-600 hover:text-amber-800 text-sm whitespace-nowrap">{{ __('Edit') }}</a>
-                                                @endcan
-                                                @can('delete', $project)
-                                                    <form action="{{ route('projects.destroy', $project) }}" method="POST"
-                                                          onsubmit="return confirm('{{ __('Delete this project?') }}')" class="inline-block m-0">
-                                                        @csrf @method('DELETE')
-                                                        <button class="text-red-600 hover:text-red-800 text-sm whitespace-nowrap">{{ __('Delete') }}</button>
-                                                    </form>
-                                                @endcan
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </x-data-table>
+                        {{-- Satu kartu per project, 3 kolom seperti kartu dokumen. --}}
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            @foreach($customer->projects as $project)
+                                @include('customers.project-card', ['project' => $project])
+                            @endforeach
+                        </div>
                     @else
                         <x-empty-state label="{{ __('projects') }}" />
                     @endif
