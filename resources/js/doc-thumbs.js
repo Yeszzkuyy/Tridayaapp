@@ -50,33 +50,54 @@ async function renderPdfThumb(canvas) {
     if (canvas.dataset.rendered || canvas.dataset.rendering) return;
     canvas.dataset.rendering = '1';
 
+    // PDF.js v6 tidak lagi punya pdf.destroy(); pembersihan dilakukan lewat
+    // loading task. Kalau salah objek yang di-destroy, render sukses pun
+    // dianggap gagal dan kanvas ikut dibuang (pernah terjadi: thumbnail
+    // PDF hilang semua padahal halamannya sudah tergambar).
+    let task = null;
+
     try {
         const pdfjsLib = await loadPdfjs();
-        const pdf = await pdfjsLib.getDocument({
+        task = pdfjsLib.getDocument({
             url: canvas.dataset.pdfUrl,
             withCredentials: true,
-        }).promise;
+        });
+        const pdf = await task.promise;
         const page = await pdf.getPage(1);
-        const boxWidth = canvas.clientWidth || MAX_WIDTH;
-        const scale = Math.min(boxWidth / page.getViewport({ scale: 1 }).width, 2);
+        const base = page.getViewport({ scale: 1 });
+
+        // Isi kartu (bukan ukuran halaman) jadi kanvas: halaman pertama
+        // diskalakan selebar kartu dan dipotong bagian bawahnya — mirip
+        // thumbnail Drive, tidak gepeng seperti kalau halaman dipaksa
+        // masuk ke kotak 16:6.
+        const boxWidth = canvas.clientWidth || canvas.parentElement?.clientWidth || MAX_WIDTH;
+        const boxHeight = canvas.clientHeight || canvas.parentElement?.clientHeight || 144;
+        const scale = boxWidth / base.width;
         const viewport = page.getViewport({ scale });
         const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 
-        canvas.width = Math.floor(viewport.width * dpr);
-        canvas.height = Math.floor(viewport.height * dpr);
+        canvas.width = Math.floor(boxWidth * dpr);
+        canvas.height = Math.floor(boxHeight * dpr);
 
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, viewport.width, viewport.height);
+        ctx.fillRect(0, 0, boxWidth, boxHeight);
 
         await page.render({ canvasContext: ctx, viewport }).promise;
-        await pdf.destroy();
         canvas.dataset.rendered = '1';
     } catch (e) {
         // Biarkan ikon fallback di belakang canvas yang terlihat.
+        console.warn('Thumbnail PDF gagal dirender:', e);
         canvas.remove();
     } finally {
+        if (task) {
+            try {
+                await task.destroy();
+            } catch (e) {
+                /* sudah tidak terpakai */
+            }
+        }
         delete canvas.dataset.rendering;
     }
 }

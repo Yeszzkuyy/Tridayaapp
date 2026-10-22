@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import {
     docxParagraphs,
@@ -87,4 +88,14 @@ test('csv: sel dengan tanda kutip dibaca utuh', () => {
         ['nama', 'ket'],
         ['Kabel 3m', 'warna merah, 5m'],
     ]);
+});
+
+test('thumbnail PDF: bersihkan lewat loading task (PDF.js v6 tak punya pdf.destroy)', () => {
+    // Regresi: sempat pakai pdf.destroy() yang sudah dihapus di PDF.js v6.
+    // Render sukses, tapi destroy melempar TypeError sehingga kanvas
+    // dianggap gagal dan thumbnail PDF hilang semua.
+    const src = readFileSync(new URL('../../resources/js/doc-thumbs.js', import.meta.url), 'utf8');
+
+    assert.match(src, /await task\.destroy\(\)/);
+    assert.doesNotMatch(src, /await pdf\.destroy\(\)/);
 });
