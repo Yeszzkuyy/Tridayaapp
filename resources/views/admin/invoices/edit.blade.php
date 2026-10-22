@@ -9,7 +9,7 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <form action="{{ route('admin.invoices.update', $invoice) }}" method="POST" class="space-y-6">
+            <form action="{{ route('admin.invoices.update', $invoice) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf @method('PUT')
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
@@ -57,6 +57,13 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Notes') }}</label>
                     <textarea name="notes" rows="2" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('notes', $invoice->notes) }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Invoice File') }}</label>
+                    <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500">
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Optional. The file also appears in the customer Documents tab.') }} · {{ __('Maximum 20MB') }}</p>
+                    @error('file') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex gap-3">
                     <button type="submit"

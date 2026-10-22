@@ -20,6 +20,8 @@ class ProjectDocument extends Model
         'notes',
         'uploaded_by',
         'document_category_id',
+        'documentable_type',
+        'documentable_id',
     ];
 
     public const DOC_TYPES = ['invoice', 'po', 'payment'];
@@ -42,6 +44,15 @@ class ProjectDocument extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Record pemilik file (Invoice / PurchaseOrder / Payment). Null untuk
+     * file yang diunggah langsung dari tab Documents customer.
+     */
+    public function documentable()
+    {
+        return $this->morphTo();
     }
 
     public function category()

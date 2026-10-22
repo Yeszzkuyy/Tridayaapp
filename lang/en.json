@@ -3503,5 +3503,20 @@
     "No price requests yet — attach a quotation PDF and Engineering will reply with the price.": "No price requests yet — attach a quotation PDF and Engineering will reply with the price.",
     "PDF quotation — max 10 MB. Excel, Word, or image also allowed.": "PDF quotation — max 10 MB. Excel, Word, or image also allowed.",
     "Price request telah di-": "Price request has been ",
-    "Upload the file so it appears here.": "Upload the file so it appears here."
+    "Upload the file so it appears here.": "Upload the file so it appears here.",
+    "Task / Title": "Task / Title",
+    "Live Discussion": "Live Discussion",
+    "Invoice File": "Invoice File",
+    "PO File": "PO File",
+    "Optional. The file also appears in the customer Documents tab.": "Optional. The file also appears in the customer Documents tab.",
+    "Optional. The proof also appears in the customer Documents tab.": "Optional. The proof also appears in the customer Documents tab.",
+    "Remaining": "Remaining",
+    "Invoice Remaining": "Invoice Remaining",
+    "No file uploaded yet.": "No file uploaded yet.",
+    "The invoice number is generated automatically by the system.": "The invoice number is generated automatically by the system.",
+    "The PO number is generated automatically by the system.": "The PO number is generated automatically by the system.",
+    "Payments can be made in installments. The invoice is marked paid automatically once the total is settled.": "Payments can be made in installments. The invoice is marked paid automatically once the total is settled.",
+    "Selecting an invoice fills in the remaining amount automatically.": "Selecting an invoice fills in the remaining amount automatically.",
+    "Maximum 5MB": "Maximum 5MB",
+    "Cancelled invoices cannot receive payments.": "Cancelled invoices cannot receive payments."
 }

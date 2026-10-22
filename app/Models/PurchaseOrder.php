@@ -41,6 +41,11 @@ class PurchaseOrder extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function documents()
+    {
+        return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {

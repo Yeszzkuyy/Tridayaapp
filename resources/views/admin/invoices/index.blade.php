@@ -4,6 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Invoice Management') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Manage invoices for customers.') }}</p>
         </div>
+        <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -23,7 +24,12 @@
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
                             <td class="px-4 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $inv->invoice_number }}</td>
                             <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $inv->customer->name }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($inv->amount, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-slate-800 dark:text-slate-100">
+                                Rp {{ number_format($inv->amount, 0, ',', '.') }}
+                                @if(! $inv->isFullyPaid() && $inv->paidAmount() > 0)
+                                    <span class="block text-xs text-amber-600 dark:text-amber-400">{{ __('Paid') }} Rp {{ number_format($inv->paidAmount(), 0, ',', '.') }}</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full
                                     @if($inv->status === 'paid') bg-green-100 text-green-700
@@ -36,6 +42,9 @@
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.invoices.show', $inv) }}" title="{{ __('Invoice detail') }}" />
                                     @can('manage-admin')
+                                        @if($inv->status !== 'cancelled' && ! $inv->isFullyPaid())
+                                            <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $inv->id]) }}" title="{{ __('Record Payment') }}" />
+                                        @endif
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $inv) }}" title="{{ __('Edit invoice') }}" />
                                         <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" onsubmit="return confirm('{{ __('Delete this invoice?') }}')" class="inline">
                                             @csrf @method('DELETE')
