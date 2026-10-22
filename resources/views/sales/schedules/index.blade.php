@@ -305,12 +305,18 @@
 
         {{-- Detail drawer --}}
         <div x-show="drawerOpen" x-cloak class="fixed inset-0 z-50" id="sales-drawer" @keydown.escape.window="closeDrawer()">
-            <div class="absolute inset-0 bg-slate-900/40" @click="closeDrawer()"
-                 x-show="drawerOpen" x-transition.opacity></div>
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" @click="closeDrawer()"
+                 x-show="drawerOpen"
+                 x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-250" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
             <aside class="absolute right-0 top-0 flex h-full w-full flex-col bg-white shadow-2xl dark:bg-slate-800 sm:max-w-md sm:border-l sm:border-slate-200 dark:sm:border-slate-600"
                    x-show="drawerOpen"
-                   x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-                   x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+                   x-transition:enter="transform transition ease-out duration-350 sm:duration-400"
+                   x-transition:enter-start="translate-x-full"
+                   x-transition:enter-end="translate-x-0"
+                   x-transition:leave="transform transition ease-in duration-250 sm:duration-300"
+                   x-transition:leave-start="translate-x-0"
+                   x-transition:leave-end="translate-x-full"
                    role="dialog" aria-modal="true" aria-label="{{ __('Schedule detail') }}">
                 <template x-if="selectedEvent">
                     <div class="flex h-full flex-col">
@@ -430,9 +436,17 @@
         {{-- Modal tambah jadwal (writers only) --}}
         @can('manage-sales')
         <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" id="sales-add-modal">
-            <div class="absolute inset-0 bg-slate-900/50" @click="isModalOpen = false"
-                 x-show="isModalOpen" x-transition.opacity></div>
-            <div x-show="isModalOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs" @click="isModalOpen = false"
+                 x-show="isModalOpen"
+                 x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+            <div x-show="isModalOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95"
                  class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-y-auto" style="max-height:92vh">
                 <div class="pt-3 sm:hidden" aria-hidden="true"><div class="mx-auto h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600"></div></div>
                 <div class="p-6 pt-3 sm:pt-6">

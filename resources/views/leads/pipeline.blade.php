@@ -118,6 +118,36 @@
     @endif
 
     @if(auth()->user()->can('manage-marketing') || auth()->user()->can('manage-sales'))
+    <style>
+        .kanban-card {
+            cursor: grab;
+            transition: transform 180ms cubic-bezier(0.2, 0, 0, 1), box-shadow 180ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        .kanban-ghost {
+            opacity: 0.55 !important;
+            border: 2px dashed rgb(var(--accent-500, 59 130 246)) !important;
+            background-color: rgb(var(--accent-500, 59 130 246) / 0.08) !important;
+            border-radius: 0.75rem !important;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06) !important;
+        }
+        .dark .kanban-ghost {
+            background-color: rgb(var(--accent-500, 99 102 241) / 0.15) !important;
+            border-color: rgb(var(--accent-500, 99 102 241) / 0.6) !important;
+        }
+        .kanban-chosen {
+            cursor: grabbing !important;
+            transform: scale(1.025) rotate(-0.5deg) !important;
+            box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.15), 0 8px 12px -6px rgba(0, 0, 0, 0.1) !important;
+        }
+        .kanban-drag, .kanban-fallback {
+            cursor: grabbing !important;
+            opacity: 0.96 !important;
+            transform: rotate(1.5deg) scale(1.03) !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.18), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+            pointer-events: none !important;
+            z-index: 9999 !important;
+        }
+    </style>
     <script>
     function initPipelineDnD(retry) {
         var board = document.querySelector('.kanban-board[data-editable]');
@@ -146,8 +176,14 @@
             var isNewSource = list.hasAttribute('data-new-source');
             new Sortable(list, {
                 group: isNewSource ? { name: 'leads', pull: true, put: false } : 'leads',
-                animation: 150,
-                ghostClass: 'opacity-40',
+                animation: 250,
+                easing: 'cubic-bezier(0.2, 0, 0, 1)',
+                ghostClass: 'kanban-ghost',
+                chosenClass: 'kanban-chosen',
+                dragClass: 'kanban-drag',
+                forceFallback: true,
+                fallbackClass: 'kanban-fallback',
+                fallbackTolerance: 4,
                 draggable: salesOnly ? '.kanban-card[data-mine="1"]' : '.kanban-card',
                 onEnd: function (evt) {
                     var leadId = evt.item.dataset.leadId;
