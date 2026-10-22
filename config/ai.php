@@ -131,9 +131,9 @@ return [
             'key' => env('OPENROUTER_API_KEY'),
             'models' => [
                 'text' => [
-                    'default' => env('OPENROUTER_MODEL', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'),
+                    'default' => env('OPENROUTER_MODEL', 'nvidia/nemotron-3.5-super-vl:free'),
                     'cheapest' => env('OPENROUTER_MODEL_CHEAPEST', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'),
-                    'smartest' => env('OPENROUTER_MODEL_SMARTEST', 'nvidia/nemotron-3-super-120b-a12b:free'),
+                    'smartest' => env('OPENROUTER_MODEL_SMARTEST', 'nvidia/nemotron-3.5-super-vl:free'),
                 ],
             ],
         ],
