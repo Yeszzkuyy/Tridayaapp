@@ -9,7 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-/** Dikirim ke Sales saat tim engineer mengunggah file balasan (harga siap). */
+/** Dikirim ke Sales saat engineer mengunggah hitungan yang siap ditinjau. */
 class PriceRequestCompletedNotification extends Notification
 {
     use Queueable, SendsWebPush;

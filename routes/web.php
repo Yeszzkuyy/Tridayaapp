@@ -208,6 +208,11 @@ Route::middleware('auth')->group(function () {
         Route::post('price-requests/{priceRequest}/cancel', [PriceRequestController::class, 'cancel'])->name('price-requests.cancel');
     });
 
+    Route::middleware('permission:manage-sales|manage-inside-sales|manage-sales-leads')->prefix('sales')->name('sales.')->group(function () {
+        Route::post('price-requests/{priceRequest}/accept', [PriceRequestController::class, 'acceptReply'])->name('price-requests.accept');
+        Route::post('price-requests/{priceRequest}/revision', [PriceRequestController::class, 'requestRevision'])->name('price-requests.revision');
+    });
+
     // ============================================
     // MASTER PRODUK (katalog BOQ proposal)
     // ============================================
@@ -234,6 +239,7 @@ Route::middleware('auth')->group(function () {
         Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
         Route::get('price-requests/{priceRequest}/reply', [PriceRequestController::class, 'downloadReply'])->name('price-requests.reply');
+        Route::get('price-requests/{priceRequest}/replies/{reply}', [PriceRequestController::class, 'downloadReplyVersion'])->name('price-requests.replies.download');
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');

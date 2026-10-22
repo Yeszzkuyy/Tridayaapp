@@ -17,11 +17,23 @@ class TeknisiRequestController extends Controller
     public function index(Request $request)
     {
         $tab = $request->get('tab') === 'engineer' ? 'engineer' : 'price';
+        $user = $request->user();
+        $canSeePricingInbox = $user->hasRole('lead-technician')
+            || $user->hasRole('super-admin')
+            || $user->can('manage-sales-leads');
 
-        $priceRequests = PriceRequest::with(['customer', 'requester', 'assignee'])
-            ->latest()
-            ->paginate(15, ['*'], 'price_page')
-            ->withQueryString();
+        $priceQuery = PriceRequest::with(['customer', 'requester', 'assignee'])->latest();
+        $openPriceQuery = PriceRequest::whereIn('status', ['waiting_lead', 'accepted', 'assigned', 'in_progress', 'revision', 'waiting_sales_review']);
+        if (! $canSeePricingInbox) {
+            $scopeToParticipant = fn ($query) => $query->where(function ($participant) use ($user) {
+                $participant->where('requested_by', $user->id)
+                    ->orWhere('assigned_to', $user->id);
+            });
+            $scopeToParticipant($priceQuery);
+            $scopeToParticipant($openPriceQuery);
+        }
+
+        $priceRequests = $priceQuery->paginate(15, ['*'], 'price_page')->withQueryString();
 
         $engineerRequests = TechnicalRequest::with(['lead.customer', 'requester', 'technician'])
             ->where('request_type', '!=', 'estimate')
@@ -34,7 +46,7 @@ class TeknisiRequestController extends Controller
             'priceRequests' => $priceRequests,
             'engineerRequests' => $engineerRequests,
             'openCounts' => [
-                'price' => PriceRequest::whereIn('status', ['waiting_lead', 'accepted', 'assigned', 'in_progress'])->count(),
+                'price' => $openPriceQuery->count(),
                 'engineer' => TechnicalRequest::where('request_type', '!=', 'estimate')
                     ->whereIn('status', ['waiting_lead', 'accepted', 'assigned', 'in_progress'])
                     ->count(),

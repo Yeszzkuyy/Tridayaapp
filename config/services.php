@@ -49,6 +49,10 @@ return [
         'region' => env('GOOGLE_MAPS_REGION', 'id'),
     ],
 
+    'price_request' => [
+        'pricing_engineer_email' => env('PRICE_ENGINEER_EMAIL', 'amir@tridayaapp.com'),
+    ],
+
     /*
     | URL template Google Docs untuk laporan survey. Diisi copy-link template
     | Google Docs milik tim (configurable, bukan template id palsu).

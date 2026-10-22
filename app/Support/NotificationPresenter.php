@@ -7,6 +7,7 @@ use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadTaskNotification;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\PriceRequestCompletedNotification;
+use App\Notifications\PriceRequestCommentNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
 use App\Notifications\ProjectConvertedNotification;
@@ -84,6 +85,7 @@ final class NotificationPresenter
             PriceRequestCreatedNotification::class => 'price_request_created',
             PriceRequestReviewedNotification::class => 'price_request_reviewed',
             PriceRequestCompletedNotification::class => 'price_request_completed',
+            PriceRequestCommentNotification::class => 'price_request_comment',
             ProjectConvertedNotification::class => 'project_converted',
             SurveyCreatedNotification::class => 'survey_created',
             SurveyReportUploadedNotification::class => 'survey_report_uploaded',
@@ -217,6 +219,12 @@ final class NotificationPresenter
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],
+            'price_request_comment' => [
+                'app' => __('Price Request'),
+                'title' => __('New message in Price Request'),
+                'body' => trim((string) ($data['sender_name'] ?? '').': '.(string) ($data['preview'] ?? '')),
+                'chips' => [],
+            ],
             'project_converted' => [
                 'app' => __('Project'),
                 'title' => __('New project from Sales'),
@@ -333,6 +341,7 @@ final class NotificationPresenter
             'accepted' => __('Accepted'),
             'rejected' => __('Rejected'),
             'assigned' => __('Forwarded to technician'),
+            'revision' => __('Revision Requested'),
             default => $decision !== null && $decision !== '' ? Str::headline($decision) : __('Reviewed'),
         };
     }
@@ -342,6 +351,7 @@ final class NotificationPresenter
         return match ($decision) {
             'accepted' => 'success',
             'rejected' => 'danger',
+            'revision' => 'warning',
             default => 'info',
         };
     }

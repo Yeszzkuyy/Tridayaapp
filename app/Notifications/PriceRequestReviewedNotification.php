@@ -9,7 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-/** Dikirim ke Sales (peminta) saat Lead Teknisi mengambil/menolak request harga. */
+/** Dikirim kepada peserta saat status request harga berubah. */
 class PriceRequestReviewedNotification extends Notification
 {
     use Queueable, SendsWebPush;

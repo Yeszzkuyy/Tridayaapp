@@ -5,15 +5,20 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\PriceRequest;
+use App\Models\PriceRequestComment;
+use App\Models\PriceRequestReply;
 use App\Models\TechnicalRequest;
 use App\Models\User;
+use App\Notifications\PriceRequestCommentNotification;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
+use App\Notifications\PriceRequestReviewedNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -53,6 +58,18 @@ class PriceRequestTest extends TestCase
         ], $overrides));
     }
 
+    private function pricingEngineer(): User
+    {
+        $engineer = $this->userWithRole('lead-technician');
+        $engineer->forceFill([
+            'name' => 'Amir Mukhtarin',
+            'email' => 'amir@tridayaapp.com',
+        ])->save();
+        config(['services.price_request.pricing_engineer_email' => 'amir@tridayaapp.com']);
+
+        return $engineer;
+    }
+
     public function test_sales_creates_price_request_with_quotation_and_notifies_lead_technician(): void
     {
         Storage::fake('private');
@@ -75,6 +92,61 @@ class PriceRequestTest extends TestCase
         $this->assertNotNull($request->quotation_path);
         Storage::disk('private')->assertExists($request->quotation_path);
 
+        Notification::assertSentTo($leadTech, PriceRequestCreatedNotification::class);
+    }
+
+    public function test_sales_request_is_auto_assigned_to_configured_pricing_engineer(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $amir = User::factory()->create([
+            'name' => 'Amir Mukhtarin',
+            'email' => 'amir@tridayaapp.com',
+        ]);
+        $amir->assignRole('lead-technician');
+        $otherLeadTech = $this->userWithRole('lead-technician');
+        config(['services.price_request.pricing_engineer_email' => 'amir@tridayaapp.com']);
+        $customer = $this->makeCustomer('PT Pricing Engineer');
+
+        $this->actingAs($sales)->post(route('sales.price-requests.store'), [
+            'customer_id' => $customer->id,
+            'quotation' => UploadedFile::fake()->create('quotation.pdf', 80, 'application/pdf'),
+        ])->assertRedirect();
+
+        $request = PriceRequest::firstOrFail();
+        $this->assertSame($amir->id, $request->assigned_to);
+        $this->assertSame('in_progress', $request->status);
+        Notification::assertSentTo($amir, PriceRequestCreatedNotification::class);
+        Notification::assertNotSentTo($otherLeadTech, PriceRequestCreatedNotification::class);
+
+        $detail = $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()->getContent();
+        $this->assertStringContainsString($amir->name, $detail);
+        $this->assertStringContainsString(__('Pricing Engineer'), $detail);
+        $this->assertStringContainsString(__('Discussion'), $detail);
+    }
+
+    public function test_missing_pricing_engineer_uses_lead_technician_fallback(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        config(['services.price_request.pricing_engineer_email' => 'missing@tridayaapp.com']);
+        $customer = $this->makeCustomer('PT Fallback Engineer');
+
+        $this->actingAs($sales)->post(route('sales.price-requests.store'), [
+            'customer_id' => $customer->id,
+            'quotation' => UploadedFile::fake()->create('quotation.pdf', 80, 'application/pdf'),
+        ])->assertRedirect();
+
+        $request = PriceRequest::firstOrFail();
+        $this->assertSame('waiting_lead', $request->status);
+        $this->assertNull($request->assigned_to);
         Notification::assertSentTo($leadTech, PriceRequestCreatedNotification::class);
     }
 
@@ -156,9 +228,10 @@ class PriceRequestTest extends TestCase
         ])->assertRedirect();
 
         $request->refresh();
-        $this->assertSame('completed', $request->status);
+        $this->assertSame('waiting_sales_review', $request->status);
         $this->assertNotNull($request->reply_path);
-        $this->assertNotNull($request->completed_at);
+        $this->assertNull($request->completed_at);
+        $this->assertSame(1, $request->replies()->firstOrFail()->version);
         Storage::disk('private')->assertExists($request->reply_path);
 
         Notification::assertSentTo($sales, PriceRequestCompletedNotification::class);
@@ -212,6 +285,35 @@ class PriceRequestTest extends TestCase
 
         $this->actingAs($other)
             ->get(route('sales.price-requests.quotation', $request))
+            ->assertForbidden();
+    }
+
+    public function test_calculation_version_download_is_scoped_to_its_price_request(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $otherSales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales, ['status' => 'waiting_sales_review']);
+        $reply = PriceRequestReply::create([
+            'price_request_id' => $request->id,
+            'uploaded_by' => $this->userWithRole('lead-technician')->id,
+            'version' => 1,
+            'file_path' => 'price-requests/'.$request->id.'/replies/v1_calculation.pdf',
+            'notes' => 'Initial calculation',
+        ]);
+        Storage::disk('private')->put($reply->file_path, 'pdf-bytes');
+
+        $this->actingAs($sales)
+            ->get(route('sales.price-requests.replies.download', [$request, $reply]))
+            ->assertOk();
+
+        $this->actingAs($otherSales)
+            ->get(route('sales.price-requests.replies.download', [$request, $reply]))
+            ->assertForbidden();
+
+        $otherRequest = $this->makePriceRequest($otherSales);
+        $this->actingAs($sales)
+            ->get(route('sales.price-requests.replies.download', [$otherRequest, $reply]))
             ->assertForbidden();
     }
 
@@ -302,6 +404,7 @@ class PriceRequestTest extends TestCase
         $detailHtml = $this->actingAs($tech)->get(route('sales.price-requests.show', $request))
             ->assertOk()->getContent();
         $this->assertStringContainsString(__('Request details'), $detailHtml);
+        $this->assertStringContainsString(__('Discussion'), $detailHtml);
         $this->assertStringContainsString($tech->name, $detailHtml);
         $this->assertStringContainsString(strtoupper(substr($tech->name, 0, 1)), $detailHtml);
         $this->assertStringContainsString(__('No engineering reply has been submitted yet.'), $detailHtml);
@@ -337,27 +440,180 @@ class PriceRequestTest extends TestCase
         $this->assertSame('assigned', $request->status);
         $this->assertSame($tech->id, $request->assigned_to);
 
-        // Teknisi yang di-assign membalas dengan file → selesai.
-        $this->actingAs($leadTech)->post(route('sales.price-requests.reply.store', $request), [
+        // Teknisi yang di-assign membalas; Sales masih perlu menyetujui hasil.
+        $this->actingAs($tech)->post(route('sales.price-requests.reply.store', $request), [
             'reply' => UploadedFile::fake()->create('harga-final.pdf', 90, 'application/pdf'),
             'reply_notes' => 'Sudah dihitung.',
         ])->assertRedirect();
 
-        $this->assertSame('completed', $request->fresh()->status);
+        $this->assertSame('waiting_sales_review', $request->fresh()->status);
         Notification::assertSentTo($sales, PriceRequestCompletedNotification::class);
+    }
+
+    public function test_sales_can_request_revisions_and_accept_a_versioned_reply(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $amir = $this->pricingEngineer();
+        $request = $this->makePriceRequest($sales, [
+            'assigned_to' => $amir->id,
+            'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($amir)->post(route('sales.price-requests.reply.store', $request), [
+            'reply' => UploadedFile::fake()->create('calculation-v1.pdf', 90, 'application/pdf'),
+            'reply_notes' => 'Initial calculation',
+        ])->assertRedirect();
+
+        $request->refresh();
+        $firstReply = $request->replies()->firstOrFail();
+        $this->assertSame('waiting_sales_review', $request->status);
+        $this->assertSame(1, $firstReply->version);
+        Storage::disk('private')->assertExists($firstReply->file_path);
+
+        $this->actingAs($sales)->post(route('sales.price-requests.revision', $request), [
+            'reason' => 'Please revise the installation cost for the customer.',
+        ])->assertRedirect();
+
+        $this->assertSame('revision', $request->fresh()->status);
+        $this->assertDatabaseHas('price_request_comments', [
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => 'Please revise the installation cost for the customer.',
+            'type' => 'message',
+        ]);
+        Notification::assertSentTo($amir, PriceRequestReviewedNotification::class);
+
+        $this->actingAs($amir)->post(route('sales.price-requests.reply.store', $request), [
+            'reply' => UploadedFile::fake()->create('calculation-v2.pdf', 95, 'application/pdf'),
+            'reply_notes' => 'Revised calculation',
+        ])->assertRedirect();
+
+        $request->refresh();
+        $this->assertSame('waiting_sales_review', $request->status);
+        $this->assertSame([1, 2], $request->replies()->pluck('version')->all());
+        $secondReply = $request->replies()->where('version', 2)->firstOrFail();
+        Storage::disk('private')->assertExists($firstReply->file_path);
+        Storage::disk('private')->assertExists($secondReply->file_path);
+
+        $this->actingAs($sales)->post(route('sales.price-requests.accept', $request))->assertRedirect();
+
+        $request->refresh();
+        $this->assertSame('completed', $request->status);
+        $this->assertSame($sales->id, $request->replies()->where('version', 2)->value('accepted_by'));
+        $this->assertNotNull($request->replies()->where('version', 2)->value('accepted_at'));
+        $this->assertNotNull($request->completed_at);
+    }
+
+    public function test_only_the_assigned_pricing_engineer_can_upload_a_reply(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $amir = $this->pricingEngineer();
+        $otherTechnician = $this->userWithRole('technician');
+        $request = $this->makePriceRequest($sales, [
+            'assigned_to' => $amir->id,
+            'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($otherTechnician)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertForbidden();
+
+        $this->actingAs($otherTechnician)->post(route('sales.price-requests.reply.store', $request), [
+            'reply' => UploadedFile::fake()->create('unauthorized.pdf', 20, 'application/pdf'),
+        ])->assertForbidden();
+
+        $this->assertSame(0, $request->replies()->count());
+    }
+
+    public function test_price_request_chat_notifies_the_other_participant(): void
+    {
+        Notification::fake();
+        $sales = $this->userWithRole('sales');
+        $amir = $this->pricingEngineer();
+        $request = $this->makePriceRequest($sales, [
+            'assigned_to' => $amir->id,
+            'status' => 'in_progress',
+        ]);
+
+        Livewire::actingAs($sales)
+            ->test(\App\Livewire\PriceRequestChat::class, ['priceRequest' => $request])
+            ->set('body', 'Can you review the camera count?')
+            ->call('send')
+            ->assertHasNoErrors()
+            ->assertSet('body', '');
+
+        $this->assertDatabaseHas('price_request_comments', [
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => 'Can you review the camera count?',
+            'type' => 'message',
+        ]);
+        Notification::assertSentTo($amir, PriceRequestCommentNotification::class);
+
+        Livewire::actingAs($amir)
+            ->test(\App\Livewire\PriceRequestChat::class, ['priceRequest' => $request])
+            ->set('body', 'I have uploaded the initial calculation.')
+            ->call('send')
+            ->assertHasNoErrors();
+
+        Notification::assertSentTo($sales, PriceRequestCommentNotification::class);
+    }
+
+    public function test_price_request_chat_rejects_invalid_comment_lengths(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales);
+
+        Livewire::actingAs($sales)
+            ->test(\App\Livewire\PriceRequestChat::class, ['priceRequest' => $request])
+            ->set('body', '')
+            ->call('send')
+            ->assertHasErrors(['body' => 'required']);
+
+        Livewire::actingAs($sales)
+            ->test(\App\Livewire\PriceRequestChat::class, ['priceRequest' => $request])
+            ->set('body', str_repeat('x', 2001))
+            ->call('send')
+            ->assertHasErrors(['body' => 'max']);
+    }
+
+    public function test_price_request_comment_notification_is_presented_in_the_bell(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $request = $this->makePriceRequest($sales, ['assigned_to' => $leadTech->id]);
+        $comment = PriceRequestComment::create([
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => 'Please confirm the revised price.',
+            'type' => PriceRequestComment::TYPE_MESSAGE,
+        ]);
+
+        $leadTech->notify(new PriceRequestCommentNotification($request, $comment));
+        $items = collect(\App\Http\Controllers\NotificationController::itemsFor($leadTech))->keyBy('type');
+
+        $this->assertArrayHasKey('price_request_comment', $items);
+        $this->assertSame(__('Price Request'), $items['price_request_comment']['app']);
+        $this->assertSame(__('New message in Price Request'), $items['price_request_comment']['title']);
+        $this->assertStringContainsString($sales->name, $items['price_request_comment']['body']);
+        $this->assertSame(route('teknisi.price-requests.show', $request, false), $items['price_request_comment']['url']);
     }
 
     public function test_assign_requires_technician_role(): void
     {
         $sales = $this->userWithRole('sales');
         $leadTech = $this->userWithRole('lead-technician');
-        $request = $this->makePriceRequest($sales);
+        $request = $this->makePriceRequest($sales, ['status' => 'accepted']);
 
         $this->actingAs($leadTech)
             ->post(route('sales.price-requests.assign', $request), ['technician_id' => $sales->id])
             ->assertStatus(422);
 
-        $this->assertSame('waiting_lead', $request->fresh()->status);
+        $this->assertSame('accepted', $request->fresh()->status);
     }
 
     public function test_teknisi_price_tab_has_same_new_request_entry(): void

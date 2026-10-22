@@ -9,7 +9,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-/** Dikirim ke semua Lead Teknisi saat Sales membuat Request Harga. */
+/** Dikirim ke pricing engineer khusus, atau lead technician sebagai fallback. */
 class PriceRequestCreatedNotification extends Notification
 {
     use Queueable, SendsWebPush;
