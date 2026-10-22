@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\DocumentCategory;
 use App\Models\Project;
 use App\Models\SalesSchedule;
 use App\Models\Lead;
@@ -71,6 +72,7 @@ class CustomerTimelineTest extends TestCase
         Storage::fake('private');
         $this->post(route('project-documents.store', $project), [
             'file' => UploadedFile::fake()->create('boq.pdf', 100, 'application/pdf'),
+            'document_category_id' => DocumentCategory::firstOrCreate(['name' => 'Report Survey'])->id,
         ])->assertRedirect();
         $this->post(route('customer-contacts.store', $customer), [
             'name' => 'Budi PIC',

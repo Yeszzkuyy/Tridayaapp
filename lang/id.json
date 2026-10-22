@@ -3518,5 +3518,16 @@
     "Payments can be made in installments. The invoice is marked paid automatically once the total is settled.": "Pembayaran boleh dicicil. Invoice otomatis ditandai lunas saat totalnya terpenuhi.",
     "Selecting an invoice fills in the remaining amount automatically.": "Memilih invoice otomatis mengisi jumlah sisanya.",
     "Maximum 5MB": "Maksimal 5MB",
-    "Cancelled invoices cannot receive payments.": "Invoice yang dibatalkan tidak bisa menerima pembayaran."
+    "Cancelled invoices cannot receive payments.": "Invoice yang dibatalkan tidak bisa menerima pembayaran.",
+    "My Assigned Projects": "Project yang Di-assign ke Saya",
+    "My Sales Projects": "Project Sales Saya",
+    "All documents": "Semua Dokumen",
+    "Customer Documents": "Dokumen Customer",
+    "Notes for Technician (optional)": "Catatan untuk Teknisi (opsional)",
+    "Anything the technician should know before starting...": "Hal yang perlu diketahui teknisi sebelum mulai...",
+    "New Project from Sales": "Project Baru dari Sales",
+    "Sales can only upload Survey documents for their own project.": "Sales hanya boleh mengunggah dokumen Survey untuk project miliknya.",
+    "Project Created": "Project Dibuat",
+    "New project created successfully.": "Project baru berhasil dibuat.",
+    "New project from Sales": "Project baru dari Sales"
 }

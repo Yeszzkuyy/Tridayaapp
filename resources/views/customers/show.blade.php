@@ -325,6 +325,12 @@
                     </x-section-header>
 
                     @if($documents->isNotEmpty())
+                        {{-- Sub-tab dokumen (PRD document architecture) --}}
+                        <div id="doc-scope-tabs" class="mb-3 inline-flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700">
+                            <button type="button" data-doc-scope="" class="doc-scope-btn rounded-xl px-3.5 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100">{{ __('All documents') }}</button>
+                            <button type="button" data-doc-scope="general" class="doc-scope-btn rounded-xl px-3.5 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100">{{ __('Customer Documents') }}</button>
+                            <button type="button" data-doc-scope="__projects__" class="doc-scope-btn rounded-xl px-3.5 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100">{{ __('Project Documents') }}</button>
+                        </div>
                         <div class="mb-4 flex flex-col gap-3 sm:flex-row">
                             <div class="relative flex-1">
                                 <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -334,6 +340,7 @@
                             <select id="doc-project-filter" class="h-11 rounded-xl border border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:w-52">
                                 <option value="">{{ __('All projects') }}</option>
                                 <option value="general">{{ __('General') }}</option>
+                                <option value="__projects__">{{ __('Project Documents') }}</option>
                                 @foreach($customer->projects as $p)
                                     <option value="{{ $p->id }}">{{ $p->project_name }}</option>
                                 @endforeach

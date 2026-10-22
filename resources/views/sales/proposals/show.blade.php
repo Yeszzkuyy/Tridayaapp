@@ -167,6 +167,11 @@
                         <p class="text-sm text-slate-500 mt-1">{{ __('A new project will be created for the Technician division from this proposal.') }}</p>
                         <form action="{{ route('sales.proposals.convert', $proposal) }}" method="POST" class="mt-4 space-y-3">
                             @csrf
+                            {{-- Ringkasan handover (FR-SALES-02) --}}
+                            <div class="space-y-1 rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-700/40">
+                                <p><span class="text-slate-500 dark:text-slate-400">{{ __('Customer') }}:</span> <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->lead?->customer?->name ?? $proposal->customer ?? '-' }}</span></p>
+                                <p><span class="text-slate-500 dark:text-slate-400">{{ __('Scope') }}:</span> <span class="font-medium text-slate-800 dark:text-slate-100">{{ \Illuminate\Support\Str::limit($proposal->lead?->kebutuhan ?? '-', 90) }}</span></p>
+                            </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Jenis Pekerjaan') }} <span class="text-red-500">*</span></label>
                                 <select name="work_type_id" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
@@ -180,6 +185,12 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Start Date') }}</label>
                                 <input type="date" name="start_date" value="{{ now()->format('Y-m-d') }}"
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes for Technician (optional)') }}</label>
+                                <textarea name="notes" rows="2" placeholder="{{ __('Anything the technician should know before starting...') }}"
+                                          class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('notes') }}</textarea>
+                                @error('notes') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                             </div>
                             <div class="flex justify-end gap-2 pt-2">
                                 <button type="button" onclick="document.getElementById('convert-modal').classList.add('hidden')"

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\DocumentCategory;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkType;
@@ -44,13 +45,19 @@ class CustomerDocumentUploadTest extends TestCase
         ]);
     }
 
-    private function upload(Project $project)
+    private function upload(Project $project, ?int $categoryId = null)
     {
         Storage::fake('private');
 
         return $this->post(route('project-documents.store', $project), [
             'file' => UploadedFile::fake()->create('boq.pdf', 100, 'application/pdf'),
+            'document_category_id' => $categoryId,
         ]);
+    }
+
+    private function surveyCategory(): DocumentCategory
+    {
+        return DocumentCategory::firstOrCreate(['name' => 'Report Survey']);
     }
 
     public function test_sales_yang_boleh_edit_customer_bisa_upload(): void
@@ -59,7 +66,7 @@ class CustomerDocumentUploadTest extends TestCase
         $this->actingAs($sales);
         $project = $this->makeProject('NTI');
 
-        $this->upload($project)->assertRedirect();
+        $this->upload($project, $this->surveyCategory()->id)->assertRedirect();
 
         $this->assertDatabaseHas('project_documents', [
             'project_id' => $project->id,
@@ -73,7 +80,7 @@ class CustomerDocumentUploadTest extends TestCase
         $this->actingAs($sales);
         $project = $this->makeProject('NTI');
 
-        $this->upload($project)->assertForbidden();
+        $this->upload($project, $this->surveyCategory()->id)->assertForbidden();
     }
 
     public function test_teknisi_tetap_bisa_upload(): void
@@ -117,7 +124,7 @@ class CustomerDocumentUploadTest extends TestCase
         $project = $this->makeProject('NTI');
 
         $this->get(route('project-documents.index', $project))->assertOk();
-        $this->upload($project)->assertRedirect();
+        $this->upload($project, $this->surveyCategory()->id)->assertRedirect();
         $this->get(route('customers.show', $project->customer_id))
             ->assertOk()
             ->assertSee('data-pdf-url', false)

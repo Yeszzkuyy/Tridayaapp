@@ -21,15 +21,39 @@ class ProjectController extends Controller
         $this->projectService = $projectService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Project::class);
 
+        $user = auth()->user();
+        $isTech = $user->can('manage-technician');
+        $isManager = $user->can('manage-sales-leads');
+        $canSeeAll = $isTech || $isManager;
+
+        // Tab: all (teknisi/manager), assigned (PIC teknisi), sales (sales PIC).
+        // Sales biasa dipaksa ke tab miliknya sendiri.
+        $tab = (string) $request->get('tab', 'all');
+        if (! $canSeeAll) {
+            $tab = 'sales';
+        } elseif (! in_array($tab, ['all', 'assigned', 'sales'], true)) {
+            $tab = 'all';
+        }
+
+        $query = Project::with(['customer', 'workType', 'status'])->latest();
+
+        if ($tab === 'assigned') {
+            $query->where('teknisi_user_id', $user->id);
+        } elseif ($tab === 'sales') {
+            $query->where('sales_user_id', $user->id);
+        }
+
+        $statusFilter = $request->integer('status') ?: null;
+        if ($statusFilter) {
+            $query->where('project_status_id', $statusFilter);
+        }
+
         // Paginasi di SQL supaya perubahan status tidak membuat project "menghilang" dari daftar
-        $projects = Project::with(['customer', 'workType', 'status'])
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+        $projects = $query->paginate(15)->withQueryString();
 
         // Total semua project
         $totalProjects = Project::count();
@@ -41,8 +65,12 @@ class ProjectController extends Controller
         ]))->count();
 
         $statusBadgeColors = ProjectStatus::BADGE_COLORS;
+        $statuses = ProjectStatus::orderBy('sort_order')->get();
 
-        return view('projects.index', compact('projects', 'totalProjects', 'activeProjects', 'statusBadgeColors'));
+        return view('projects.index', compact(
+            'projects', 'totalProjects', 'activeProjects', 'statusBadgeColors',
+            'statuses', 'statusFilter', 'tab', 'isTech', 'isManager'
+        ));
     }
 
     public function create(Request $request)
@@ -56,12 +84,8 @@ class ProjectController extends Controller
 
         $customer = Customer::findOrFail($customerId);
 
-        // Teknisi boleh buat project apa pun; sales boleh untuk customer
-        // yang boleh ia edit (batas PT tetap berlaku).
-        abort_unless(
-            auth()->user()->can('create', Project::class) || auth()->user()->can('update', $customer),
-            403
-        );
+        // Project manual khusus teknisi (sales lewat Convert to Project).
+        abort_unless(auth()->user()->can('create', Project::class), 403);
         $workTypes = WorkType::all();
         $accountManagers = AccountManager::all();
         $statuses = ProjectStatus::orderBy('sort_order')->get();
@@ -76,10 +100,7 @@ class ProjectController extends Controller
             $request->validate(['customer_id' => 'required|exists:customers,id'])['customer_id']
         );
 
-        abort_unless(
-            auth()->user()->can('create', Project::class) || auth()->user()->can('update', $customer),
-            403
-        );
+        abort_unless(auth()->user()->can('create', Project::class), 403);
 
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',

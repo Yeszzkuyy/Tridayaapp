@@ -24,21 +24,19 @@ class ProjectPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('manage-technician');
+        return $user->can('manage-technician') || $user->can('manage-sales-leads');
     }
 
     public function update(User $user, Project $project): bool
     {
-        // Teknisi boleh ubah project apa pun; sales boleh untuk project
-        // milik customer yang boleh ia edit (batas PT tetap berlaku).
-        return $user->can('manage-technician')
-            || ($project->customer && $user->can('update', $project->customer));
+        // Project dikelola tim teknisi/management. Sales read-only
+        // (PRD project workflow & document segregation).
+        return $user->can('manage-technician') || $user->can('manage-sales-leads');
     }
 
     public function delete(User $user, Project $project): bool
     {
-        return $user->can('manage-technician')
-            || ($project->customer && $user->can('update', $project->customer));
+        return $user->can('manage-technician') || $user->can('manage-sales-leads');
     }
 
     public function restore(User $user, Project $project): bool

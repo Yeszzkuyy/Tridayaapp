@@ -259,10 +259,10 @@ Route::middleware('auth')->group(function () {
         Route::get('pocs', [PocController::class, 'index'])->name('pocs.index');
     });
 
-    // Tambah/ubah/hapus project: teknisi ATAU sales untuk customer yang
-    // boleh ia edit (cek customer di policy/controller). Daftar project
-    // dan halaman Kelola Dokumen tetap ikut aturan masing-masing.
-    Route::middleware('permission:manage-technician|manage-sales')->group(function () {
+    // Membuat/ubah/hapus project manual: teknisi atau management (PRD project
+    // workflow). Sales membuat project lewat Proposal → Convert to Project.
+    // Sales bersifat read-only terhadap project (lihat ProjectPolicy).
+    Route::middleware('permission:manage-technician|manage-sales-leads')->group(function () {
         Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
         Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
         Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
@@ -283,13 +283,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/project-tasks/{projectTask}', [ProjectTaskController::class, 'destroy'])->name('project-tasks.destroy');
 
         Route::delete('/project-documents/{document}', [ProjectDocumentController::class, 'destroy'])->name('project-documents.destroy');
+        Route::patch('/project-documents/{document}/rename', [ProjectDocumentController::class, 'rename'])->name('project-documents.rename');
     });
 
-    // Upload dokumen proyek: teknisi ATAU sales yang boleh edit customer-nya
-    // (cek ganda di controller). Hapus tetap khusus teknisi.
+    // Upload dokumen proyek: teknisi, atau sales (khusus kategori Survey
+    // awal — dicek di controller). Rename/hapus tetap khusus teknisi.
     Route::middleware('permission:manage-technician|manage-sales')->group(function () {
         Route::post('/projects/{project}/documents', [ProjectDocumentController::class, 'store'])->name('project-documents.store');
-        Route::patch('/project-documents/{document}/rename', [ProjectDocumentController::class, 'rename'])->name('project-documents.rename');
     });
 
     Route::middleware('permission:view-technician|manage-technician|view-sales|manage-sales')->group(function () {

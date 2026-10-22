@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Support\PtAccess;
 use App\Models\ProjectDocument;
 use App\Models\DocumentCategory;
 use Illuminate\Http\Request;
@@ -20,18 +21,35 @@ class ProjectDocumentController extends Controller
             ->latest()
             ->get();
 
-        $categories = DocumentCategory::all();
+        // Sales hanya boleh upload kategori Survey (survey awal); teknisi &
+        // management boleh semua kategori.
+        $canAll = auth()->user()->can('manage-technician') || auth()->user()->can('manage-sales-leads');
+        $categories = DocumentCategory::query()
+            ->when(! $canAll,
+                fn ($q) => $q->where('name', 'like', '%Survey%'))
+            ->orderBy('name')
+            ->get();
 
         return view('project_documents.index', compact('project', 'documents', 'categories'));
     }
 
     public function store(Request $request, Project $project)
     {
-        // Boleh upload bila bisa ubah project-nya (teknisi) ATAU bisa ubah
-        // customer pemilik project (sales). Hapus tetap khusus teknisi.
-        $canUpload = auth()->user()->can('update', $project)
-            || ($project->customer && auth()->user()->can('update', $project->customer));
-        abort_unless($canUpload, 403);
+        $user = auth()->user();
+
+        // Teknisi: bebas. Sales: hanya dokumen Survey untuk project miliknya
+        // (survey awal) — sesuai matriks peran di PRD project workflow.
+        if (! $user->can('manage-technician') && ! $user->can('manage-sales-leads')) {
+            // Sales: hanya Survey, dan hanya untuk customer di PT-nya
+            // (atau project yang memang ia pegang).
+            $isSalesAllowed = (int) $project->sales_user_id === (int) $user->id
+                || ($project->customer && PtAccess::canWritePt($user, $project->customer->pt_group));
+            abort_unless(
+                $isSalesAllowed && $this->isSurveyCategory($request->input('document_category_id')),
+                403,
+                __('Sales can only upload Survey documents for their own project.')
+            );
+        }
 
         $request->validate([
             'file' => ['required', 'file', 'max:20480', \App\Rules\SecureFile::documents()],
@@ -69,10 +87,9 @@ class ProjectDocumentController extends Controller
      */
     public function storeForCustomer(Request $request, \App\Models\Customer $customer)
     {
-        // Teknisi ATAU siapa pun yang boleh edit customer ini.
+        // Teknisi ATAU siapa pun yang boleh edit customer ini (dokumen legal).
         $canUpload = auth()->user()->can('manage-technician') || auth()->user()->can('update', $customer);
         abort_unless($canUpload, 403);
-
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:20480', \App\Rules\SecureFile::documents()],
             'project_id' => 'nullable|exists:projects,id',
@@ -93,8 +110,18 @@ class ProjectDocumentController extends Controller
         abort_if($project && (int) $project->customer_id !== (int) $customer->id, 422);
 
         if ($project) {
-            $canUploadProject = auth()->user()->can('update', $project) || auth()->user()->can('update', $customer);
-            abort_unless($canUploadProject, 403);
+            // Sales hanya boleh upload dokumen Survey (survey awal) untuk
+            // project miliknya; teknisi bebas.
+            if (! auth()->user()->can('manage-technician') && ! auth()->user()->can('manage-sales-leads')) {
+                $user = auth()->user();
+                $isSalesAllowed = (int) $project->sales_user_id === (int) $user->id
+                    || ($project->customer && PtAccess::canWritePt($user, $project->customer->pt_group));
+                abort_unless(
+                    $isSalesAllowed && $this->isSurveyCategory($validated['document_category_id'] ?? null),
+                    403,
+                    __('Sales can only upload Survey documents for their own project.')
+                );
+            }
         }
 
         $file = $request->file('file');
@@ -223,5 +250,17 @@ class ProjectDocumentController extends Controller
         return redirect()
             ->back()
             ->with('success', __('Document deleted successfully.'));
+    }
+
+    /** Kategori Survey (mis. "Report Survey") — dipakai untuk batas upload sales. */
+    private function isSurveyCategory($categoryId): bool
+    {
+        if (empty($categoryId)) {
+            return false;
+        }
+
+        $name = DocumentCategory::whereKey($categoryId)->value('name');
+
+        return $name !== null && str_contains(mb_strtolower($name), 'survey');
     }
 }

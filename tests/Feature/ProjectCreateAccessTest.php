@@ -46,21 +46,25 @@ class ProjectCreateAccessTest extends TestCase
         ], $overrides);
     }
 
-    public function test_sales_bisa_tambah_project_tanpa_pic_engineer(): void
+    public function test_sales_tidak_bisa_tambah_project(): void
     {
         $sales = $this->userWithRoles('Sales', ['sales', 'sales-nti']);
         $customer = $this->makeCustomer('NTI');
 
         $this->actingAs($sales);
-        $this->get(route('projects.create', ['customer_id' => $customer->id]))->assertOk();
-        $this->post(route('projects.store'), $this->payload($customer))
-            ->assertRedirect(route('customers.show', $customer));
+        $this->get(route('projects.create', ['customer_id' => $customer->id]))->assertForbidden();
+        $this->post(route('projects.store'), $this->payload($customer))->assertForbidden();
+    }
 
-        $this->assertDatabaseHas('projects', [
-            'customer_id' => $customer->id,
-            'project_name' => 'Project Baru',
-            'pic_engineer' => null,
-        ]);
+    public function test_management_bisa_tambah_project(): void
+    {
+        $mgmt = $this->userWithRoles('Management', ['management']);
+        $customer = $this->makeCustomer('NTI');
+
+        $this->actingAs($mgmt);
+        $this->post(route('projects.store'), $this->payload($customer))->assertRedirect();
+
+        $this->assertDatabaseHas('projects', ['customer_id' => $customer->id]);
     }
 
     public function test_sales_beda_pt_tidak_bisa_tambah_project(): void
@@ -100,30 +104,30 @@ class ProjectCreateAccessTest extends TestCase
 
     public function test_tambah_project_tanpa_customer_dialihkan(): void
     {
-        $sales = $this->userWithRoles('Sales', ['sales']);
+        $tech = $this->userWithRoles('Teknisi', ['technician']);
 
-        $this->actingAs($sales);
+        $this->actingAs($tech);
         $this->get(route('projects.create'))->assertRedirect(route('customers.index'));
     }
 
-    public function test_sales_bisa_edit_dan_hapus_project_customernya(): void
+    public function test_sales_tidak_bisa_edit_atau_hapus_project(): void
     {
+        $tech = $this->userWithRoles('Teknisi', ['technician']);
         $sales = $this->userWithRoles('Sales', ['sales', 'sales-nti']);
         $customer = $this->makeCustomer('NTI');
 
-        $this->actingAs($sales);
+        $this->actingAs($tech);
         $this->post(route('projects.store'), $this->payload($customer))->assertRedirect();
         $project = Project::where('customer_id', $customer->id)->firstOrFail();
 
-        $this->get(route('projects.edit', $project))->assertOk();
+        $this->actingAs($sales);
+        $this->get(route('projects.edit', $project))->assertForbidden();
         $this->put(route('projects.update', $project), [
             'project_name' => 'Project Diubah',
             'work_type_id' => $project->work_type_id,
-        ])->assertRedirect();
-        $this->assertSame('Project Diubah', $project->fresh()->project_name);
-
-        $this->delete(route('projects.destroy', $project))->assertRedirect();
-        $this->assertSoftDeleted('projects', ['id' => $project->id]);
+        ])->assertForbidden();
+        $this->delete(route('projects.destroy', $project))->assertForbidden();
+        $this->assertNotNull($project->fresh());
     }
 
     public function test_sales_beda_pt_tidak_bisa_edit_atau_hapus_project(): void

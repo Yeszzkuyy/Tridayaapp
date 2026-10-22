@@ -9,6 +9,7 @@ use App\Notifications\NewLeadNotification;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
+use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
 use App\Notifications\SalesScheduleAssignedNotification;
 use App\Notifications\SurveyCreatedNotification;
@@ -83,6 +84,7 @@ final class NotificationPresenter
             PriceRequestCreatedNotification::class => 'price_request_created',
             PriceRequestReviewedNotification::class => 'price_request_reviewed',
             PriceRequestCompletedNotification::class => 'price_request_completed',
+            ProjectConvertedNotification::class => 'project_converted',
             SurveyCreatedNotification::class => 'survey_created',
             SurveyReportUploadedNotification::class => 'survey_report_uploaded',
             default => self::legacyKind($data),
@@ -212,6 +214,12 @@ final class NotificationPresenter
             'price_request_completed' => [
                 'app' => __('Price Request'),
                 'title' => __('Price reply is available'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'project_converted' => [
+                'app' => __('Project'),
+                'title' => __('New project from Sales'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],

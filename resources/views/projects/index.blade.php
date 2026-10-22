@@ -13,6 +13,40 @@
         </div>
     </div>
 
+    {{-- Tab & filter (FR-PROJ-03) --}}
+    @php
+        $projectTabs = [];
+        if ($isTech || $isManager) {
+            $projectTabs['all'] = __('All Projects');
+        }
+        if ($isTech) {
+            $projectTabs['assigned'] = __('My Assigned Projects');
+        }
+        $projectTabs['sales'] = __('My Sales Projects');
+    @endphp
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="inline-flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700">
+            @foreach($projectTabs as $key => $label)
+                <a href="{{ route('projects.index', array_filter(['tab' => $key, 'status' => $statusFilter])) }}"
+                   class="rounded-xl px-4 py-2 text-sm font-medium transition-colors {{ $tab === $key
+                       ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                       : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-slate-100' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </div>
+        <form method="GET" action="{{ route('projects.index') }}" class="flex items-center gap-2">
+            <input type="hidden" name="tab" value="{{ $tab }}">
+            <select name="status" onchange="this.form.submit()"
+                    class="h-10 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                <option value="">{{ __('All statuses') }}</option>
+                @foreach($statuses as $status)
+                    <option value="{{ $status->id }}" @selected((int) $statusFilter === (int) $status->id)>{{ $status->name }}</option>
+                @endforeach
+            </select>
+        </form>
+    </div>
+
     {{-- Statistik --}}
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 sm:p-6">

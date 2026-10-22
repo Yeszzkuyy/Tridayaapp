@@ -626,13 +626,32 @@ function initDocFilter() {
     const grid = document.getElementById('doc-grid');
     if (!grid || (!search && !projectFilter)) return;
 
+    const scopeButtons = document.querySelectorAll('[data-doc-scope]');
+
+    const setScope = (value) => {
+        scopeButtons.forEach((btn) => {
+            const active = (btn.dataset.docScope || '') === value;
+            btn.classList.toggle('bg-white', active);
+            btn.classList.toggle('text-slate-800', active);
+            btn.classList.toggle('shadow-sm', active);
+            btn.classList.toggle('dark:bg-slate-800', active);
+            btn.classList.toggle('dark:text-slate-100', active);
+            btn.classList.toggle('text-slate-500', !active);
+            btn.classList.toggle('dark:text-slate-300', !active);
+        });
+    };
+
     const apply = () => {
         const q = (search?.value || '').trim().toLowerCase();
         const proj = projectFilter?.value || '';
         let visible = 0;
         grid.querySelectorAll('.doc-card').forEach((card) => {
             const matchName = !q || (card.dataset.name || '').includes(q);
-            const matchProj = !proj || (card.dataset.project || '') === proj;
+            const projectId = card.dataset.project || '';
+            const matchProj = !proj
+                || (proj === '__projects__'
+                    ? (projectId !== '' && projectId !== 'general')
+                    : projectId === proj);
             const show = matchName && matchProj;
             card.classList.toggle('hidden', !show);
             if (show) visible += 1;
@@ -641,7 +660,20 @@ function initDocFilter() {
     };
 
     bindOnce(search, 'input', apply);
-    bindOnce(projectFilter, 'change', apply);
+    bindOnce(projectFilter, 'change', () => {
+        setScope(projectFilter.value);
+        apply();
+    });
+
+    scopeButtons.forEach((btn) => {
+        bindOnce(btn, 'click', () => {
+            if (projectFilter) projectFilter.value = btn.dataset.docScope || '';
+            setScope(btn.dataset.docScope || '');
+            apply();
+        });
+    });
+
+    setScope(projectFilter?.value || '');
 }
 
 // Menu aksi kartu dokumen (tombol titik tiga).

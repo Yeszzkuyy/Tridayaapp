@@ -62,8 +62,7 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/customers')->assertOk();
         $this->actingAs($u)->get('/trash')->assertOk();
 
-        // Sales pada Project: boleh lihat + tambah (untuk customer yang boleh
-        // ia edit), tetapi dilarang edit/hapus.
+        // Sales pada Project: read-only (PRD project workflow).
         $customer = \App\Models\Customer::create(['name' => 'Cust Sales']);
         $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
         $project = \App\Models\Project::create([
@@ -73,13 +72,13 @@ class DivisionAccessTest extends TestCase
         ]);
         $this->actingAs($u)->get('/projects')->assertOk();
         $this->actingAs($u)->get('/projects/'.$project->id)->assertOk();
-        $this->actingAs($u)->post('/projects', [])->assertRedirect();
+        $this->actingAs($u)->post('/projects', [])->assertForbidden();
         $this->actingAs($u)->put('/projects/'.$project->id, [
             'project_name' => 'Proj Sales 2',
             'work_type_id' => $workType->id,
-        ])->assertRedirect();
-        $this->actingAs($u)->delete('/projects/'.$project->id)->assertRedirect();
-        $this->assertSoftDeleted('projects', ['id' => $project->id]);
+        ])->assertForbidden();
+        $this->actingAs($u)->delete('/projects/'.$project->id)->assertForbidden();
+        $this->assertNotSoftDeleted('projects', ['id' => $project->id]);
 
         $this->actingAs($u)->get('/teknisi/dashboard')->assertForbidden();
         // Sales read-only pada Admin: lihat boleh, mutasi 403 ( tested di RoleMatrixTest )

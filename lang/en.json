@@ -3518,5 +3518,16 @@
     "Payments can be made in installments. The invoice is marked paid automatically once the total is settled.": "Payments can be made in installments. The invoice is marked paid automatically once the total is settled.",
     "Selecting an invoice fills in the remaining amount automatically.": "Selecting an invoice fills in the remaining amount automatically.",
     "Maximum 5MB": "Maximum 5MB",
-    "Cancelled invoices cannot receive payments.": "Cancelled invoices cannot receive payments."
+    "Cancelled invoices cannot receive payments.": "Cancelled invoices cannot receive payments.",
+    "My Assigned Projects": "My Assigned Projects",
+    "My Sales Projects": "My Sales Projects",
+    "All documents": "All documents",
+    "Customer Documents": "Customer Documents",
+    "Notes for Technician (optional)": "Notes for Technician (optional)",
+    "Anything the technician should know before starting...": "Anything the technician should know before starting...",
+    "New Project from Sales": "New Project from Sales",
+    "Sales can only upload Survey documents for their own project.": "Sales can only upload Survey documents for their own project.",
+    "Project Created": "Project Created",
+    "New project created successfully.": "New project created successfully.",
+    "New project from Sales": "New project from Sales"
 }

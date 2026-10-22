@@ -9,10 +9,13 @@ use App\Models\ProjectStatus;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
 use App\Models\WorkType;
+use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -469,12 +472,19 @@ class ProposalController extends Controller
         $validated = $request->validate([
             'work_type_id' => 'required|exists:work_types,id',
             'start_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:2000',
         ]);
 
         $lead = $proposal->lead;
         $customerName = $lead->customer?->name ?? $proposal->customer;
 
-        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated) {
+        $description = trim(
+            ($lead->kebutuhan ? "Kebutuhan: {$lead->kebutuhan}\n" : '')
+            . ($proposal->notes ?? '')
+            . (! empty($validated['notes']) ? "\nCatatan untuk Teknisi: ".$validated['notes'] : '')
+        );
+
+        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated, $description) {
             $project = Project::create([
                 'customer_id' => $lead->customer_id,
                 'sales_user_id' => $lead->assigned_to ?? $proposal->created_by,
@@ -484,8 +494,7 @@ class ProposalController extends Controller
                 'quotation_number' => $proposal->proposal_number,
                 'proposal_id' => $proposal->id,
                 'start_date' => $validated['start_date'] ?? null,
-                'description' => trim(($lead->kebutuhan ? "Kebutuhan: {$lead->kebutuhan}\n" : '')
-                    . ($proposal->notes ?? '')),
+                'description' => $description,
                 'progress' => 0,
             ]);
 
@@ -496,6 +505,13 @@ class ProposalController extends Controller
 
             return $project;
         });
+
+        // Beri tahu tim teknisi (jangan notifikasi diri sendiri bila yang
+        // convert juga memegang role lead-technician).
+        Notification::send(
+            User::role('lead-technician')->where('id', '!=', auth()->id())->get(),
+            new ProjectConvertedNotification($project)
+        );
 
         return redirect()->route('projects.show', $project)
             ->with('success', __('Project created from proposal successfully.'));
