@@ -536,6 +536,19 @@ tbody tr { transition: background-color 0.2s ease; }
 }
 
 /* ============================================================
+   Menu aksi kartu dokumen (tombol titik tiga).
+   Pakai class custom, bukan hidden/flex Tailwind — keduanya
+   display dan hasil akhirnya tergantung urutan CSS.
+   ============================================================ */
+.doc-menu {
+    display: none;
+}
+
+.doc-menu.doc-open {
+    display: flex;
+}
+
+/* ============================================================
    Modal dokumen customer: tampil = .doc-open (display:flex).
    Sengaja tidak pakai toggle class flex/hidden Tailwind karena
    keduanya setara display dan hasilnya tergantung urutan CSS —

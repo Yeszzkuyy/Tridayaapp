@@ -59,12 +59,13 @@
     }
     $docSize = match (true) {
         $docBytes <= 0 => '',
+        $docBytes < 1024 => $docBytes . ' B',
         $docBytes >= 1048576 => number_format($docBytes / 1048576, 1) . ' MB',
         default => number_format($docBytes / 1024, 1) . ' KB',
     };
 @endphp
 
-<div class="doc-card overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50"
+<div class="doc-card relative rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50"
      data-name="{{ mb_strtolower($doc->file_name) }}"
      data-project="{{ $doc->project_id ?? 'general' }}">
     {{-- Klik thumbnail = preview dalam layar --}}
@@ -106,20 +107,28 @@
     <div class="p-3">
         <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $doc->file_name }}</p>
         <p class="mt-0.5 truncate text-xs text-slate-400">{{ $metaLine }}@if($docSize) · {{ $docSize }}@endif</p>
-        <div class="mt-2 flex gap-1.5">
-            <x-icon-button icon="view" title="{{ __('Preview') }}" data-doc-open-child />
-            <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}" title="{{ __('Download') }}" />
-            @if($canManage)
-                <x-icon-button icon="edit" title="{{ __('Rename') }}"
-                               data-doc-rename
-                               data-action="{{ route('project-documents.rename', $doc) }}"
-                               data-name="{{ $doc->file_name }}" />
-                <form action="{{ route('project-documents.destroy', $doc) }}" method="POST" class="inline-flex"
-                      onsubmit="return confirm('{{ __('Delete this document?') }}')">
-                    @csrf @method('DELETE')
-                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
-                </form>
-            @endif
+        <div class="mt-2 flex items-center justify-end">
+            {{-- Aksi dokumen diringkas jadi satu tombol titik tiga; isinya
+                 muncul sebagai panel kecil saat diklik. --}}
+            <div class="relative" data-doc-menu>
+                <x-icon-button icon="more" title="{{ __('More actions') }}" data-doc-menu-toggle />
+                <div data-doc-menu-panel
+                     class="doc-menu absolute bottom-full right-0 z-50 mb-2 items-center gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                    <x-icon-button icon="view" title="{{ __('Preview') }}" data-doc-open-child />
+                    <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}" title="{{ __('Download') }}" />
+                    @if($canManage)
+                        <x-icon-button icon="edit" title="{{ __('Rename') }}"
+                                       data-doc-rename
+                                       data-action="{{ route('project-documents.rename', $doc) }}"
+                                       data-name="{{ $doc->file_name }}" />
+                        <form action="{{ route('project-documents.destroy', $doc) }}" method="POST" class="inline-flex"
+                              onsubmit="return confirm('{{ __('Delete this document?') }}')">
+                            @csrf @method('DELETE')
+                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
+                        </form>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 </div>
