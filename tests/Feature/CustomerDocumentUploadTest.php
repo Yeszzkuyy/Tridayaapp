@@ -442,6 +442,16 @@ class CustomerDocumentUploadTest extends TestCase
         $doc = $docs->first();
         $this->assertStringContainsString(route('project-documents.download', $doc), $html);
         $this->assertStringContainsString(route('project-documents.destroy', $doc), $html);
+
+        // Isi menu memakai TEKS (bukan ikon).
+        $panelStart = strpos($html, 'data-doc-menu-panel');
+        $this->assertNotFalse($panelStart);
+        $panel = substr($html, $panelStart, 3000);
+        foreach (['Preview', 'Download', 'Rename', 'Delete'] as $label) {
+            $this->assertMatchesRegularExpression('/>\s*' . $label . '\s*</', $panel, "Menu tidak punya teks $label");
+        }
+        // Tidak ada tombol ikon (x-icon-button) di dalam menu.
+        $this->assertStringNotContainsString('group/btn', $panel);
         // Panel pakai class custom (hidden/flex Tailwind saling bentrok).
         $css = file_get_contents(resource_path('css/app.css'));
         $this->assertStringContainsString('.doc-menu.doc-open', $css);

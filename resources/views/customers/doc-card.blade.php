@@ -113,18 +113,29 @@
             <div class="relative" data-doc-menu>
                 <x-icon-button icon="more" title="{{ __('More actions') }}" data-doc-menu-toggle />
                 <div data-doc-menu-panel
-                     class="doc-menu absolute bottom-full right-0 z-50 mb-2 items-center gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                    <x-icon-button icon="view" title="{{ __('Preview') }}" data-doc-open-child />
-                    <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}" title="{{ __('Download') }}" />
+                     class="doc-menu absolute bottom-full right-0 z-50 mb-2 w-44 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                    <button type="button" data-doc-open-child
+                            class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                        {{ __('Preview') }}
+                    </button>
+                    <a href="{{ route('project-documents.download', $doc) }}"
+                       class="block w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                        {{ __('Download') }}
+                    </a>
                     @if($canManage)
-                        <x-icon-button icon="edit" title="{{ __('Rename') }}"
-                                       data-doc-rename
-                                       data-action="{{ route('project-documents.rename', $doc) }}"
-                                       data-name="{{ $doc->file_name }}" />
-                        <form action="{{ route('project-documents.destroy', $doc) }}" method="POST" class="inline-flex"
+                        <button type="button" data-doc-rename
+                                data-action="{{ route('project-documents.rename', $doc) }}"
+                                data-name="{{ $doc->file_name }}"
+                                class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                            {{ __('Rename') }}
+                        </button>
+                        <form action="{{ route('project-documents.destroy', $doc) }}" method="POST"
                               onsubmit="return confirm('{{ __('Delete this document?') }}')">
                             @csrf @method('DELETE')
-                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
+                            <button type="submit"
+                                    class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
+                                {{ __('Delete') }}
+                            </button>
                         </form>
                     @endif
                 </div>
