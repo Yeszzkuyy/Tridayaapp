@@ -98,7 +98,8 @@ class CustomerProjectCardTest extends TestCase
         $this->assertStringContainsString(route('projects.show', $project), $html);
         $this->assertStringContainsString(route('projects.edit', $project), $html);
         $this->assertStringContainsString(route('projects.destroy', $project), $html);
-        $this->assertStringNotContainsString('text-accent-600 hover:text-accent-800', $html);
+        // Link teks lama "Detail" sudah diganti tombol ikon.
+        $this->assertStringNotContainsString('>Detail</a>', $html);
     }
 
     public function test_kartu_project_tanpa_pic_dan_relasi_tetap_tampil(): void
