@@ -3529,5 +3529,9 @@
     "Sales can only upload Survey documents for their own project.": "Sales hanya boleh mengunggah dokumen Survey untuk project miliknya.",
     "Project Created": "Project Dibuat",
     "New project created successfully.": "Project baru berhasil dibuat.",
-    "New project from Sales": "Project baru dari Sales"
+    "New project from Sales": "Project baru dari Sales",
+    "Choose the lead you want to create a proposal for.": "Pilih lead yang ingin dibuatkan penawarannya.",
+    "Search customer or lead #...": "Cari customer atau lead #...",
+    "No leads yet — create a lead first.": "Belum ada lead — buat lead terlebih dahulu.",
+    "leads": "lead"
 }

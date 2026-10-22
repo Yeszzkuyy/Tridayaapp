@@ -3529,5 +3529,9 @@
     "Sales can only upload Survey documents for their own project.": "Sales can only upload Survey documents for their own project.",
     "Project Created": "Project Created",
     "New project created successfully.": "New project created successfully.",
-    "New project from Sales": "New project from Sales"
+    "New project from Sales": "New project from Sales",
+    "Choose the lead you want to create a proposal for.": "Choose the lead you want to create a proposal for.",
+    "Search customer or lead #...": "Search customer or lead #...",
+    "No leads yet — create a lead first.": "No leads yet — create a lead first.",
+    "leads": "leads"
 }

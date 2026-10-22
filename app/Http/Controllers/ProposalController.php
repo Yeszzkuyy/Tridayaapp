@@ -177,6 +177,31 @@ class ProposalController extends Controller
 
     public function create(Request $request)
     {
+        // Tanpa lead: tampilkan pemilih lead dulu (mis. dari tombol + di
+        // daftar proposal), bukan 404.
+        if (! $request->filled('lead_id')) {
+            $user = $request->user();
+            $query = Lead::with('customer')->latest();
+
+            if (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
+                $query->where('assigned_to', $user->id);
+            }
+
+            $q = trim((string) $request->get('q'));
+            if ($q !== '') {
+                $query->where(function ($w) use ($q) {
+                    if (ctype_digit($q)) {
+                        $w->orWhere('id', (int) $q);
+                    }
+                    $w->orWhereHas('customer', fn ($c) => $c->whereLike('name', $q));
+                });
+            }
+
+            $leads = $query->limit(100)->get();
+
+            return view('sales.proposals.select-lead', compact('leads', 'q'));
+        }
+
         $lead = Lead::with('customer')->findOrFail($request->get('lead_id'));
         $this->authorize('view', $lead);
 

@@ -186,6 +186,40 @@ class ProposalModuleTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_create_without_lead_shows_lead_picker(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $mine = $this->makeLead($sales->id);
+        $otherSales = $this->userWithRole('sales');
+        $foreign = $this->makeLead($otherSales->id);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.proposals.create'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($mine->customer->name, $html);
+        $this->assertStringNotContainsString($foreign->customer->name, $html);
+        $this->assertStringContainsString(route('sales.proposals.create', ['lead_id' => $mine->id]), $html);
+    }
+
+    public function test_create_with_lead_shows_builder_and_rejects_foreign_lead(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $otherSales = $this->userWithRole('sales');
+        $foreign = $this->makeLead($otherSales->id);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertOk()
+            ->assertSee(__('Create Quotation'));
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['lead_id' => $foreign->id]))
+            ->assertForbidden();
+    }
+
     public function test_po_upload_and_download(): void
     {
         Storage::fake('private');
