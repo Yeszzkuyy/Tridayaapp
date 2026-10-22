@@ -32,6 +32,23 @@
                 <p class="text-slate-700 whitespace-pre-wrap">{{ $purchaseOrder->notes }}</p>
             </div>
             @endif
+            <div class="mt-6">
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('PO File') }}</h3>
+                @forelse($purchaseOrder->documents as $document)
+                    <div class="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 py-3 last:border-0">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $document->file_name }}</p>
+                            <p class="text-xs text-slate-400">{{ $document->created_at->format('d M Y') }}</p>
+                        </div>
+                        <div class="flex shrink-0 gap-2">
+                            <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $document) }}" target="_blank" title="{{ __('Preview') }}" />
+                            <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}" title="{{ __('Download') }}" />
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-slate-400 text-sm text-center py-4">{{ __('No file uploaded yet.') }}</p>
+                @endforelse
+            </div>
             <div class="mt-4 text-xs text-slate-400">{{ __('Created by:') }} {{ $purchaseOrder->creator?->name ?? '-' }}</div>
         </div>
     </div>

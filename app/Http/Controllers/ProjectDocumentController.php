@@ -210,6 +210,13 @@ class ProjectDocumentController extends Controller
             Storage::disk('private')->delete($document->file_path);
         }
 
+        // File payment dipakai juga sebagai bukti transfer (path sama).
+        // Lepas tautannya supaya tombol Proof tidak menunjuk file yang hilang.
+        $linked = $document->documentable;
+        if ($linked instanceof \App\Models\Payment && $linked->proof_file === $document->file_path) {
+            $linked->update(['proof_file' => null]);
+        }
+
         // Force delete (hapus permanen dari database)
         $document->forceDelete();
 

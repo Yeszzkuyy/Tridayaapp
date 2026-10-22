@@ -4,6 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Purchase Order Management') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Manage purchase orders for customers.') }}</p>
         </div>
+        <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" label="{{ __('Create PO') }}" title="{{ __('Create PO') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
