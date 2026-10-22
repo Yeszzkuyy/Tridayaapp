@@ -186,4 +186,45 @@ class AdminInvoicePaymentTest extends TestCase
 
         $this->assertSame(0, Payment::count());
     }
+
+    public function test_halaman_admin_invoice_po_payment_bisa_dibuka(): void
+    {
+        $this->actingAs($this->admin());
+        $customer = $this->customer('PT Halaman');
+
+        $invoice = app(AdminService::class)->createInvoice([
+            'customer_id' => $customer->id,
+            'amount' => 750000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $po = app(AdminService::class)->createPurchaseOrder([
+            'customer_id' => $customer->id,
+            'items' => 'Instalasi',
+            'amount' => 750000,
+            'status' => 'draft',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $payment = app(AdminService::class)->createPayment([
+            'invoice_id' => $invoice->id,
+            'amount' => 250000,
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        $this->get(route('admin.invoices.index'))->assertOk();
+        $this->get(route('admin.invoices.create'))->assertOk()->assertSee('Create Invoice', false);
+        $this->get(route('admin.invoices.show', $invoice))->assertOk()->assertSee($invoice->invoice_number, false);
+        $this->get(route('admin.invoices.edit', $invoice))->assertOk();
+
+        $this->get(route('admin.pos.index'))->assertOk();
+        $this->get(route('admin.pos.create'))->assertOk();
+        $this->get(route('admin.pos.show', $po))->assertOk()->assertSee($po->po_number, false);
+        $this->get(route('admin.pos.edit', $po))->assertOk();
+
+        $this->get(route('admin.payments.index'))->assertOk();
+        $this->get(route('admin.payments.create'))->assertOk();
+        $this->get(route('admin.payments.show', $payment))->assertOk()->assertSee($invoice->invoice_number, false);
+    }
 }
