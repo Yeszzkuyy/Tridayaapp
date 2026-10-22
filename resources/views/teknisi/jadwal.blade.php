@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-connected="{{ $connected ? '1' : '0' }}" data-oauth="{{ $oauth ? '1' : '0' }}">
+    <div id="teknisi-schedule-root" x-data="teknisiScheduleManager()" x-init="init()" @teknisi:view.window="setView($event.detail.value)" data-api-url="{{ route('teknisi.schedules.api') }}" data-status-url="{{ route('teknisi.kalender.status') }}" data-status="{{ $connection['status'] }}" data-oauth="{{ ($connection['oauth_connected'] ?? false) ? '1' : '0' }}">
         {{-- Top bar --}}
         <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3 min-w-0">
@@ -12,12 +12,12 @@
             <div class="flex items-center gap-2 shrink-0">
                 <span id="google-status-badge"
                       class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors"
-                      :class="googleConnected
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'">
-                    <svg x-show="googleConnected" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <svg x-show="!googleConnected" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-                    <span x-text="googleConnected ? '{{ __('Connected') }}' : '{{ __('Disconnected') }}'"></span>
+                      :class="badgeClass()">
+                    <svg x-show="googleStatus==='connected'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg x-show="googleStatus==='needs_reauth'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M9 12.75L11.25 15 15 9.75"/></svg>
+                    <svg x-show="googleStatus==='error'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+                    <svg x-show="googleStatus==='not_connected'" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-3.5 w-3.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636L5.636 18.364m12.728 0L5.636 5.636"/></svg>
+                    <span x-text="statusLabel()"></span>
                 </span>
                 @if(auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']))
                     <x-icon-button title="{{ __('Google Calendar API') }}" @click="apiOpen = true">
@@ -36,34 +36,40 @@
         {{-- Centered month + year with arrows --}}
         <div class="flex items-center justify-center gap-1 sm:gap-2 mb-4">
             <button type="button" @click="panMonth(-1)" title="{{ __('Previous month') }}" aria-label="{{ __('Previous month') }}"
-                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <h2 class="min-w-44 sm:min-w-56 text-center text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-slate-800 dark:text-slate-100" x-text="monthLabel"></h2>
             <button type="button" @click="panMonth(1)" title="{{ __('Next month') }}" aria-label="{{ __('Next month') }}"
-                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
         </div>
 
-        {{-- View switcher --}}
-        <div class="flex justify-center mb-4" id="teknisi-view-switcher">
-            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800" role="tablist" aria-label="{{ __('Calendar view') }}">
-                <template x-for="v in [{id:'month',label:'{{ __('Month') }}'},{id:'week',label:'{{ __('Week') }}'},{id:'day',label:'{{ __('Day') }}'}]" :key="v.id">
-                    <button type="button" role="tab" :aria-selected="view === v.id" @click="setView(v.id)"
-                            :class="view === v.id
-                                ? 'bg-slate-800 text-white shadow dark:bg-accent-600'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'"
-                            class="rounded-lg px-4 sm:px-6 py-1.5 text-sm font-semibold transition" x-text="v.label"></button>
-                </template>
-            </div>
+        {{-- View switcher (RubberSegment — island React, animasi spring) --}}
+        @php
+            $viewSegments = [
+                ['value' => 'month', 'label' => __('Month')],
+                ['value' => 'week', 'label' => __('Week')],
+                ['value' => 'day', 'label' => __('Day')],
+            ];
+        @endphp
+        <div class="flex justify-center mb-4">
+            <div id="teknisi-view-segment"
+                 data-rubber-segment
+                 data-mode="event"
+                 data-event-name="teknisi:view"
+                 data-label="{{ __('Calendar view') }}"
+                 data-active="month"
+                 data-items='@json($viewSegments)'></div>
         </div>
+        @vite('resources/js/rubber-segment.jsx')
 
         {{-- Month view --}}
         <div x-show="view === 'month'" x-transition.opacity>
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-3 sm:p-4 mb-4">
                 <div class="grid grid-cols-7 gap-1 text-center mb-1" id="teknisi-month-grid">
-                    <template x-for="name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="name">
+                    <template x-for="name in @js([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')])" :key="name">
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 py-1" x-text="name"></span>
                     </template>
                     <template x-for="cell in monthCells" :key="cell.date">
@@ -101,7 +107,7 @@
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -110,17 +116,17 @@
                                   :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.title"></p>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.title"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
                             </div>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'at ' + fmtTime(event.start_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
-                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
                             <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
                             <span x-show="!event.location" x-text="event.technician || '—'"></span>
@@ -137,15 +143,15 @@
                     <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{{ __('Weekly Schedule') }}</h2>
                     <div class="inline-flex items-center gap-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                         <button type="button" @click="shiftWeek(-1)" title="{{ __('Previous week') }}" aria-label="{{ __('Previous week') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <button type="button" @click="shiftWeek(1)" title="{{ __('Next week') }}" aria-label="{{ __('Next week') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                         </button>
                         <button type="button" @click="goToday()" title="{{ __('Today') }}" aria-label="{{ __('Today') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </button>
                         <x-icon-button x-show="canManage" icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
@@ -186,7 +192,7 @@
                                     <a :href="locHref(event.location)" target="_blank" rel="noopener" class="min-w-0 truncate text-sm text-slate-600 hover:underline dark:text-slate-300" x-text="event.location"></a>
                                     <a :href="mapsDirectionsUrl(event.location)" target="_blank" rel="noopener" class="shrink-0 text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('Directions') }}</a>
                                 </div>
-                                <iframe :src="mapsEmbedUrl(event.location)" class="mt-2 h-28 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
+                                <iframe :src="mapsEmbedUrl(event.location)" class="mt-2 h-56 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
                             </div>
                         </template>
                     </div>
@@ -199,17 +205,17 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4">
                 <div class="flex items-center justify-center gap-1 mb-3">
                     <button type="button" @click="shiftDay(-1)" title="{{ __('Previous day') }}" aria-label="{{ __('Previous day') }}"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                     </button>
                     <p class="min-w-52 text-center text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200" x-text="dayLabel"></p>
                     <button type="button" @click="shiftDay(1)" title="{{ __('Next day') }}" aria-label="{{ __('Next day') }}"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -218,17 +224,17 @@
                                   :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.title"></p>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.title"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
                             </div>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'at ' + fmtTime(event.start_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.start_time)"></span>
                             </div>
                         </div>
-                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
                             <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
                             <span x-show="!event.location" x-text="event.technician || '—'"></span>
@@ -280,11 +286,18 @@
 
         {{-- Detail drawer --}}
         <div x-show="drawerOpen" x-cloak class="fixed inset-0 z-50" @keydown.escape.window="closeDrawer()">
-            <div class="absolute inset-0 bg-slate-900/40" @click="closeDrawer()" x-show="drawerOpen" x-transition.opacity></div>
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" @click="closeDrawer()"
+                 x-show="drawerOpen"
+                 x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-250" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
             <aside class="absolute right-0 top-0 flex h-full w-full flex-col bg-white shadow-2xl dark:bg-slate-800 sm:max-w-md sm:border-l sm:border-slate-200 dark:sm:border-slate-600"
                    x-show="drawerOpen"
-                   x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-                   x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+                   x-transition:enter="transform transition ease-out duration-350 sm:duration-400"
+                   x-transition:enter-start="translate-x-full"
+                   x-transition:enter-end="translate-x-0"
+                   x-transition:leave="transform transition ease-in duration-250 sm:duration-300"
+                   x-transition:leave-start="translate-x-0"
+                   x-transition:leave-end="translate-x-full"
                    role="dialog" aria-modal="true" aria-label="{{ __('Schedule detail') }}">
                 <template x-if="selected">
                     <div class="flex h-full flex-col">
@@ -294,7 +307,7 @@
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="syncClass(selected.sync_status)" x-text="syncLabel(selected.sync_status)"></span>
                             </div>
                             <button type="button" @click="closeDrawer()" title="{{ __('Close') }}" aria-label="{{ __('Close') }}"
-                                    class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                    class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" /></svg>
                             </button>
                         </div>
@@ -320,7 +333,7 @@
                                         <a :href="locHref(selected.location)" target="_blank" rel="noopener" class="min-w-0 flex-1 hover:underline" x-text="selected.location"></a>
                                         <a :href="mapsDirectionsUrl(selected.location)" target="_blank" rel="noopener" class="shrink-0 text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('Directions') }}</a>
                                     </div>
-                                    <iframe :src="mapsEmbedUrl(selected.location)" class="mt-2 h-40 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
+                                    <iframe :src="mapsEmbedUrl(selected.location)" class="mt-2 h-72 w-full rounded-lg border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('Map') }}"></iframe>
                                 </div>
                             </template>
 
@@ -378,8 +391,17 @@
         {{-- Modal tambah/edit jadwal --}}
         @can('manage-technician')
         <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" id="teknisi-add-modal">
-            <div class="absolute inset-0 bg-slate-900/50" @click="isModalOpen = false" x-show="isModalOpen" x-transition.opacity></div>
-            <div x-show="isModalOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs" @click="isModalOpen = false"
+                 x-show="isModalOpen"
+                 x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+            <div x-show="isModalOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95"
                  class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-y-auto" style="max-height:92vh">
                 <div class="pt-3 sm:hidden" aria-hidden="true"><div class="mx-auto h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600"></div></div>
                 <div class="p-6 pt-3 sm:pt-6">
@@ -499,7 +521,7 @@
                                 <select name="status" x-model="form.status"
                                         class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                                     @foreach(\App\Models\TechnicianSchedule::STATUSES as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
+                                        <option value="{{ $value }}">{{ __($label) }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -518,11 +540,15 @@
 
                         <div class="flex items-center justify-end gap-2 pt-2">
                             <button type="button" @click="isModalOpen = false"
-                                    class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Cancel') }}</button>
+                                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
+                                {{ __('Cancel') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
                             <button type="submit"
-                                    class="group relative overflow-hidden px-4 py-2 rounded-xl text-sm font-medium bg-accent-600 hover:bg-accent-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/40 hover:brightness-110 active:scale-95">
-                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"></span>
-                                {{ __('Save') }}</button>
+                                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                                {{ __('Save') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -548,12 +574,8 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Client Secret') }}</label>
-                            <input type="password" name="client_secret" value="{{ $credential->client_secret }}" autocomplete="off"
-                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('API Key') }}</label>
-                            <input type="password" name="api_key" value="{{ $credential->api_key }}" autocomplete="off"
+                            <input type="password" name="client_secret" value="" autocomplete="off"
+                                   placeholder="{{ $credential->hasSecret() ? '•••••••• (' . __('stored') . ')' : '' }}"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
                         <div>
@@ -561,13 +583,16 @@
                             <input type="text" name="calendar_id" value="{{ $credential->calendar_id }}" autocomplete="off"
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
+                        <p class="text-xs text-slate-400">{{ __('Kosongkan bila tidak ingin mengubah nilai tersimpan.') }}</p>
                         <div class="flex items-center justify-end gap-2 pt-2">
                             <button type="button" @click="apiOpen = false"
-                                    class="px-4 py-2 rounded-xl text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white transition-all duration-300 hover:scale-105 active:scale-95">{{ __('Close') }}</button>
+                                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">{{ __('Close') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
                             <button type="submit"
-                                    class="group relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg hover:brightness-110 active:scale-95">
+                                    class="group relative overflow-hidden inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg>
-                                {{ __('Sync Now') }}</button>
+                                {{ __('Sync Now') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
                         </div>
                     </form>
 
@@ -577,12 +602,18 @@
                             <div class="min-w-0">
                                 <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Two-way sync (write to Google)') }}</p>
                                 <p class="text-xs text-slate-400">
-                                    <span x-show="oauthConnected" class="text-emerald-500">{{ __('Connected — schedules will be pushed to Google.') }}</span>
-                                    <span x-show="!oauthConnected">{{ __('Connect to push schedules back to Google Calendar.') }}</span>
+                                    <span class="font-semibold" :class="badgeClass()" x-text="statusLabel()"></span>
+                                    <span x-show="googleStatus==='connected'" class="text-emerald-500"> — {{ __('schedules will be pushed to Google.') }}</span>
+                                    <span x-show="googleStatus==='not_connected'"> — {{ __('Connect to push schedules back to Google Calendar.') }}</span>
+                                    <span x-show="googleStatus==='needs_reauth'" class="text-amber-500"> — {{ __('Authorization expired. Please reconnect.') }}</span>
+                                    <span x-show="googleStatus==='error'" class="text-red-500"> — <span x-text="googleLastError || '{{ __('Sync failed.') }}'"></span></span>
+                                </p>
+                                <p class="mt-1 text-xs text-slate-400" x-show="googleLastSync">
+                                    {{ __('Last sync') }}: <span x-text="googleLastSync"></span><span x-show="googleLastSummary"> — <span x-text="googleLastSummary"></span></span>
                                 </p>
                             </div>
                             <div class="flex shrink-0 items-center gap-2">
-                                <x-icon-button as="a" href="{{ route('teknisi.kalender.connect') }}" x-show="!oauthConnected"
+                                <x-icon-button as="a" href="{{ route('teknisi.kalender.connect') }}" x-show="!oauthConnected || googleStatus === 'needs_reauth'"
                                                title="{{ __('Connect') }}" label="{{ __('Connect') }}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.02a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
                                 </x-icon-button>
@@ -609,8 +640,11 @@
             return {
                 apiUrl: document.getElementById('teknisi-schedule-root')?.dataset.apiUrl || '',
                 statusUrl: document.getElementById('teknisi-schedule-root')?.dataset.statusUrl || '',
-                googleConnected: document.getElementById('teknisi-schedule-root')?.dataset.connected === '1',
+                googleStatus: document.getElementById('teknisi-schedule-root')?.dataset.status || 'not_connected',
                 oauthConnected: document.getElementById('teknisi-schedule-root')?.dataset.oauth === '1',
+                googleLastSync: '',
+                googleLastSummary: '',
+                googleLastError: '',
                 canManage: {{ auth()->user()->can('manage-technician') ? 'true' : 'false' }},
                 scheduleBase: @json(route('teknisi.schedules.store')),
                 view: 'month',
@@ -663,14 +697,37 @@
                     fetch(this.statusUrl + sep + '_=' + Date.now())
                         .then((r) => r.json())
                         .then((data) => {
-                            if (typeof data?.connected === 'boolean') {
-                                this.googleConnected = data.connected;
-                            }
-                            if (typeof data?.oauth_connected === 'boolean') {
-                                this.oauthConnected = data.oauth_connected;
-                            }
+                            if (data?.status) this.googleStatus = data.status;
+                            if (typeof data?.oauth_connected === 'boolean') this.oauthConnected = data.oauth_connected;
+                            this.googleLastSync = data?.last_sync_at ? this.fmtSyncTime(data.last_sync_at) : '';
+                            this.googleLastSummary = data?.last_sync_summary || '';
+                            this.googleLastError = data?.last_sync_error || '';
                         })
                         .catch(() => {});
+                },
+
+                fmtSyncTime(iso) {
+                    try {
+                        return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    } catch (e) { return iso; }
+                },
+
+                badgeClass() {
+                    return {
+                        connected: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+                        needs_reauth: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                        error: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+                        not_connected: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                    }[this.googleStatus] || 'bg-slate-100 text-slate-600';
+                },
+
+                statusLabel() {
+                    return {
+                        connected: '{{ __('Connected') }}',
+                        needs_reauth: '{{ __('Needs Re-authorization') }}',
+                        error: '{{ __('Error') }}',
+                        not_connected: '{{ __('Not Connected') }}',
+                    }[this.googleStatus] || '';
                 },
 
                 fmt(d) {
@@ -700,7 +757,7 @@
                 },
 
                 buildWeek() {
-                    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    const names = @js([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')]);
                     const monday = this.mondayOf(new Date(this.activeDate + 'T12:00:00'));
                     this.weekDays = names.map((name, i) => {
                         const d = new Date(monday);
@@ -716,6 +773,8 @@
 
                 setView(v) {
                     this.view = v;
+                    // Sinkronkan thumb RubberSegment bila view diganti dari jalur lain
+                    window.dispatchEvent(new CustomEvent('rubber-segment:set', { detail: { id: 'teknisi-view-segment', value: v } }));
                     if (v === 'week') this.fetchRange(this.weekDays[0].date, this.weekDays[6].date);
                     else if (v === 'day') this.fetchEvents();
                     else { this.fetchMonth(); this.fetchEvents(); }
@@ -880,16 +939,16 @@
                         // Pesan spesifik dari server (mis. penolakan izin).
                         const data = await r.json().catch(() => ({}));
                         if (r.status === 403) {
-                            this.saveError = data.message || '{{ __('Kamu tidak punya izin mengubah jadwal ini.') }}';
+                            this.saveError = data.message || '{{ __('You do not have permission to edit this schedule.') }}';
                             return;
                         }
                         if (r.status === 419) {
-                            this.saveError = '{{ __('Sesi sudah berakhir. Muat ulang halaman lalu coba lagi.') }}';
+                            this.saveError = '{{ __('Session expired. Reload the page and try again.') }}';
                             return;
                         }
-                        this.saveError = data.message || '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                        this.saveError = data.message || '{{ __('Something went wrong. Please try again.') }}';
                     }).catch(() => {
-                        this.saveError = '{{ __('Terjadi kesalahan. Coba lagi.') }}';
+                        this.saveError = '{{ __('Something went wrong. Please try again.') }}';
                     });
                 },
 
