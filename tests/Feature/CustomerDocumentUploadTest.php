@@ -411,6 +411,42 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertDontSee('No invoices', false);
     }
 
+    public function test_aksi_dokumen_diringkas_ke_satu_tombol_titik_tiga(): void
+    {
+        // Tiap kartu dokumen cuma punya satu tombol (titik tiga); aksi
+        // preview/download/rename/delete muncul di panel menu.
+        $admin = $this->userWithRoles('Super Admin Menu', ['super-admin']);
+        $this->actingAs($admin);
+        $customer = Customer::create(['name' => 'PT Menu', 'pt_group' => 'NTI']);
+
+        $docs = collect();
+        foreach (['a.pdf', 'b.docx', 'c.txt'] as $name) {
+            $docs->push(\App\Models\ProjectDocument::create([
+                'customer_id' => $customer->id,
+                'file_name' => $name,
+                'file_path' => 'private/' . $name,
+                'file_size' => 1024,
+                'uploaded_by' => $admin->id,
+            ]));
+        }
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+
+        // Catatan: atribut pada komponen dirender sebagai name="name",
+        // sedangkan atribut pada elemen HTML biasa tetap tanpa nilai.
+        $this->assertSame(3, substr_count($html, 'data-doc-menu-toggle='));
+        $this->assertSame(3, substr_count($html, 'data-doc-menu-panel'));
+        // Aksi lengkapnya tetap ada di dalam panel menu.
+        $this->assertStringContainsString('data-doc-open-child', $html);
+        $this->assertStringContainsString('data-doc-rename', $html);
+        $doc = $docs->first();
+        $this->assertStringContainsString(route('project-documents.download', $doc), $html);
+        $this->assertStringContainsString(route('project-documents.destroy', $doc), $html);
+        // Panel pakai class custom (hidden/flex Tailwind saling bentrok).
+        $css = file_get_contents(resource_path('css/app.css'));
+        $this->assertStringContainsString('.doc-menu.doc-open', $css);
+    }
+
     public function test_kartu_dokumen_punya_thumbnail_per_jenis_file(): void
     {
         // Setiap jenis file punya thumbnail sendiri:

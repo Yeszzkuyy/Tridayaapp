@@ -505,6 +505,7 @@ async function renderDocThumb(canvas) {
 function initDocPage() {
     initDocModals();
     initDocFilter();
+    initDocMenus();
     initDocLightbox();
     initDocRename();
     initDocUploadGuard();
@@ -622,6 +623,43 @@ function initDocFilter() {
     bindOnce(projectFilter, 'change', apply);
 }
 
+// Menu aksi kartu dokumen (tombol titik tiga).
+function closeAllDocMenus() {
+    document.querySelectorAll('[data-doc-menu-panel].doc-open').forEach((panel) => {
+        panel.classList.remove('doc-open');
+        panel.closest('.doc-card')?.classList.remove('z-20');
+    });
+}
+
+function initDocMenus() {
+    document.querySelectorAll('[data-doc-menu-toggle]').forEach((btn) => {
+        bindOnce(btn, 'click', (e) => {
+            e.stopPropagation();
+            const wrap = btn.closest('[data-doc-menu]');
+            const panel = wrap?.querySelector('[data-doc-menu-panel]');
+            if (!panel) return;
+            const willOpen = !panel.classList.contains('doc-open');
+            closeAllDocMenus();
+            if (willOpen) {
+                panel.classList.add('doc-open');
+                // Kartu yang sedang punya menu harus di atas kartu lain,
+                // supaya panelnya tidak tertutupi kartu di bawahnya.
+                wrap.closest('.doc-card')?.classList.add('z-20');
+            }
+        });
+    });
+
+    if (!window.__docMenuOutsideBound) {
+        window.__docMenuOutsideBound = true;
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-doc-menu]')) closeAllDocMenus();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAllDocMenus();
+        });
+    }
+}
+
 // Tampilan file dalam layar.
 function initDocLightbox() {
     const lightbox = document.getElementById('doc-lightbox');
@@ -637,6 +675,7 @@ function initDocLightbox() {
     };
 
     const openFrom = async (trigger) => {
+        closeAllDocMenus();
         const kind = trigger.dataset.kind || 'other';
         const url = trigger.dataset.url || '';
         const filename = trigger.dataset.filename || '';
@@ -714,6 +753,7 @@ function initDocRename() {
 
     document.querySelectorAll('[data-doc-rename]').forEach((btn) => {
         bindOnce(btn, 'click', () => {
+            closeAllDocMenus();
             form.setAttribute('action', btn.dataset.action || '#');
             input.value = btn.dataset.name || '';
             showModal(modal);
