@@ -226,7 +226,7 @@ class DocumentAccess
     {
         $pts = PtAccess::userPts($user);
 
-        $ids = Customer::query()
+        $ids = Customer::withTrashed()
             ->where(function ($query) use ($pts) {
                 $query->whereNull('pt_group');
                 if ($pts) {
