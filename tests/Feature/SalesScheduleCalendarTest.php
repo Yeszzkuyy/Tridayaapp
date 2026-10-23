@@ -178,13 +178,22 @@ class SalesScheduleCalendarTest extends TestCase
         $sales = $this->userWithRole('sales');
         $fu = $this->makeVisit($sales);
 
+        // Meeting type without MOM must redirect to meeting-report form
         $res = $this->actingAs($sales)->post(route('sales.follow-ups.complete', $fu), [
             'return' => 'schedule',
             'date' => '2026-10-28',
         ]);
 
-        $res->assertRedirect(route('sales.schedules.index', ['date' => '2026-10-28']));
-        $this->assertNotNull($fu->fresh()->completed_at);
+        $res->assertRedirect(route('sales.follow-ups.meeting-report', ['followUp' => $fu, 'return' => 'schedule', 'date' => '2026-10-28']));
+
+        // Non-meeting type completes directly and redirects to schedule
+        $fuNonMeeting = $this->makeVisit($sales, ['type' => 'call']);
+        $resNonMeeting = $this->actingAs($sales)->post(route('sales.follow-ups.complete', $fuNonMeeting), [
+            'return' => 'schedule',
+            'date' => '2026-10-28',
+        ]);
+        $resNonMeeting->assertRedirect(route('sales.schedules.index', ['date' => '2026-10-28']));
+        $this->assertNotNull($fuNonMeeting->fresh()->completed_at);
     }
 
     public function test_index_renders_strip_and_modal(): void
