@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Instalasi;
 use App\Models\Project;
+use App\Models\SizingProject;
+use App\Models\Survey;
 use App\Support\PtAccess;
 use App\Models\ProjectDocument;
 use App\Models\DocumentCategory;
@@ -331,8 +334,14 @@ class ProjectDocumentController extends Controller
 
     public function destroy(ProjectDocument $document)
     {
-        $this->assertNotModuleOwned($document);
         abort_unless(Gate::allows('forceDelete', $document), 403);
+
+        // Dokumen milik modul: lepas dulu tautan file di record modulnya,
+        // supaya setelah dihapus tidak didaftarkan ulang oleh
+        // DocumentRegistry::sync dan menu modul tidak menunjuk file hilang.
+        if ($document->isModuleDocument()) {
+            $this->releaseModuleFile($document);
+        }
 
         if ($document->file_path && Storage::disk('private')->exists($document->file_path)) {
             Storage::disk('private')->delete($document->file_path);
@@ -348,6 +357,42 @@ class ProjectDocumentController extends Controller
         return redirect()
             ->back()
             ->with('success', __('Dokumen dihapus permanen.'));
+    }
+
+    /**
+     * Cabut referensi file dari record pemilik modul (survey/instalasi satu
+     * file, sizing berupa daftar lampiran). File fisiknya dihapus terpisah
+     * oleh destroy().
+     */
+    private function releaseModuleFile(ProjectDocument $document): void
+    {
+        $owner = $document->documentable;
+
+        if ($owner instanceof Survey || $owner instanceof Instalasi) {
+            if ($owner->report_file === $document->file_path) {
+                $owner->forceFill([
+                    'report_file' => null,
+                    'report_file_name' => null,
+                ])->save();
+            }
+
+            return;
+        }
+
+        if ($owner instanceof SizingProject) {
+            $remaining = collect($owner->attachments ?? [])
+                ->reject(function ($attachment) use ($document) {
+                    $path = is_array($attachment)
+                        ? ($attachment['file_path'] ?? $attachment['path'] ?? null)
+                        : $attachment;
+
+                    return $path === $document->file_path;
+                })
+                ->values()
+                ->all();
+
+            $owner->forceFill(['attachments' => $remaining])->save();
+        }
     }
 
     public function versionHistory(ProjectDocument $document)
@@ -374,7 +419,7 @@ class ProjectDocumentController extends Controller
 
     public function archiveIndex(Customer $customer)
     {
-        $this->authorize('viewAny');
+        $this->authorize('viewAny', ProjectDocument::class);
 
         $archivedDocuments = ProjectDocument::with(['project', 'category', 'uploader'])
             ->where('customer_id', $customer->id)

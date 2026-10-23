@@ -208,7 +208,7 @@ class DocumentRegistrySyncTest extends TestCase
         $this->assertSame('surveys/9/reports/lama.pdf', $document->file_path);
     }
 
-    public function test_dokumen_modul_hanya_bisa_dikelola_dari_menu_modulnya(): void
+    public function test_dokumen_modul_tidak_bisa_diubah_tapi_super_admin_bisa_hapus_permanen(): void
     {
         Storage::fake('private');
         $admin = $this->userWithRole('super-admin');
@@ -231,10 +231,116 @@ class DocumentRegistrySyncTest extends TestCase
         $this->patch(route('project-documents.rename', $document), ['name' => 'Ubah Nama'])
             ->assertForbidden();
         $this->post(route('project-documents.archive', $document))->assertForbidden();
-        $this->delete(route('project-documents.destroy', $document))->assertForbidden();
 
-        $this->assertNotNull($document->fresh());
-        $this->assertSame('laporan.pdf', $document->fresh()->file_name);
+        // Hapus permanen boleh (super-admin) — tombolnya juga muncul di
+        // halaman dokumen customer.
+        $html = $this->get(route('customers.show', $project->customer_id))->assertOk()->getContent();
+        $this->assertStringContainsString(route('project-documents.destroy', $document), $html);
+
+        $this->delete(route('project-documents.destroy', $document))->assertRedirect();
+        $this->assertModelMissing($document);
+    }
+
+    public function test_teknisi_bisa_hapus_permanen_dokumen_proyek(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $project = $this->makeProject();
+
+        $document = ProjectDocument::create([
+            'project_id' => $project->id,
+            'customer_id' => $project->customer_id,
+            'file_name' => 'dokumen-proyek.pdf',
+            'file_path' => 'documents/'.$project->id.'/dokumen-proyek.pdf',
+            'file_size' => 10,
+            'uploaded_by' => $technician->id,
+        ]);
+        Storage::disk('private')->put($document->file_path, 'isi-dokumen');
+
+        $this->actingAs($technician)
+            ->delete(route('project-documents.destroy', $document))
+            ->assertRedirect();
+
+        $this->assertModelMissing($document);
+        Storage::disk('private')->assertMissing($document->file_path);
+    }
+
+    public function test_sales_bisa_hapus_permanen_dokumen_umum_customer(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $customer = Customer::create(['name' => 'PT Umum Sales', 'pt_group' => 'NTI']);
+
+        $document = ProjectDocument::create([
+            'customer_id' => $customer->id,
+            'file_name' => 'nib.pdf',
+            'file_path' => 'documents/customer-'.$customer->id.'/nib.pdf',
+            'file_size' => 10,
+            'uploaded_by' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)
+            ->delete(route('project-documents.destroy', $document))
+            ->assertRedirect();
+
+        $this->assertModelMissing($document);
+    }
+
+    public function test_teknisi_tidak_bisa_hapus_dokumen_modul(): void
+    {
+        Storage::fake('private');
+        $technician = $this->userWithRole('technician');
+        $project = $this->makeProject();
+
+        $document = ProjectDocument::create([
+            'project_id' => $project->id,
+            'customer_id' => $project->customer_id,
+            'doc_type' => 'survey',
+            'documentable_type' => Survey::class,
+            'documentable_id' => 1,
+            'file_name' => 'laporan.pdf',
+            'file_path' => 'surveys/1/reports/laporan.pdf',
+            'file_size' => 10,
+            'uploaded_by' => $technician->id,
+        ]);
+
+        $this->actingAs($technician)
+            ->delete(route('project-documents.destroy', $document))
+            ->assertForbidden();
+
+        $this->assertModelExists($document);
+    }
+
+    public function test_hapus_permanen_dokumen_survey_melepas_laporan_survey(): void
+    {
+        Storage::fake('private');
+        $admin = $this->userWithRole('super-admin');
+        $this->actingAs($admin);
+
+        $project = $this->makeProject();
+        Storage::disk('private')->put('surveys/7/reports/laporan.pdf', 'isi-laporan');
+
+        $survey = Survey::create([
+            'title' => 'Survey Hapus Permanen',
+            'project_id' => $project->id,
+            'report_file' => 'surveys/7/reports/laporan.pdf',
+            'report_file_name' => 'laporan.pdf',
+            'status' => Survey::STATUS_COMPLETED,
+        ]);
+
+        \App\Services\DocumentRegistry::sync($survey);
+        $document = ProjectDocument::where('doc_type', 'survey')->firstOrFail();
+
+        $this->delete(route('project-documents.destroy', $document))->assertRedirect();
+
+        $this->assertModelMissing($document);
+        $this->assertNull($survey->fresh()->report_file, 'Tautan laporan survey harus dilepas');
+        $this->assertNull($survey->fresh()->report_file_name);
+        Storage::disk('private')->assertMissing('surveys/7/reports/laporan.pdf');
+
+        // Sync ulang tidak boleh memunculkan dokumen yang sudah dihapus.
+        \App\Services\DocumentRegistry::sync($survey->fresh());
+        $this->assertSame(0, ProjectDocument::count(), 'Dokumen tidak boleh muncul lagi');
     }
 
     public function test_dokumen_transaksi_tidak_ikut_masuk_daftar_dokumen_proyek(): void

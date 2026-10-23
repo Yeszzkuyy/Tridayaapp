@@ -135,18 +135,20 @@ class ProjectDocumentPolicy
 
     /**
      * Cek apakah user boleh menghapus permanen (force delete).
-     * Hanya super-admin.
+     *
+     * Dokumen biasa mengikuti hak edit pemiliknya (teknisi untuk dokumen
+     * proyek, pengedit customer untuk dokumen umum) — sama seperti perilaku
+     * lama. File milik modul hanya super-admin yang boleh menghapus permanen;
+     * controller sekaligus melepas tautan file di record modulnya supaya
+     * tidak muncul lagi setelah sync.
      */
     public function forceDelete(User $user, ProjectDocument $document): bool
     {
-        if (! $user->hasRole('super-admin')) {
-            return false;
+        if ($document->isModuleDocument()) {
+            return $user->hasRole('super-admin');
         }
 
-        // Dokumen modul ikut menanggung file milik modul — menghapusnya di
-        // sini akan membuat file hilang dari menu modul. Dihapus lewat menu
-        // modulnya saja (survey/sizing/instalasi).
-        return ! $document->isModuleDocument();
+        return $this->update($user, $document);
     }
 
     /**

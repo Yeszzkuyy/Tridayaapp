@@ -287,7 +287,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/projects/{project}/tasks/create', [ProjectTaskController::class, 'create'])->name('project-tasks.create');
         Route::post('/projects/{project}/tasks', [ProjectTaskController::class, 'store'])->name('project-tasks.store');
         Route::delete('/project-tasks/{projectTask}', [ProjectTaskController::class, 'destroy'])->name('project-tasks.destroy');
+    });
 
+    // Mutasi dokumen: teknisi, sales, dan management. Izin rinci per dokumen
+    // tetap dicek policy di controller (sales hanya dokumen umum PT-nya,
+    // dokumen proyek tetap khusus teknisi/management).
+    Route::middleware('permission:manage-technician|manage-sales|manage-sales-leads')->group(function () {
         Route::delete('/project-documents/{document}', [ProjectDocumentController::class, 'destroy'])->name('project-documents.destroy');
         Route::patch('/project-documents/{document}/rename', [ProjectDocumentController::class, 'rename'])->name('project-documents.rename');
         Route::patch('/project-documents/{document}', [ProjectDocumentController::class, 'update'])->name('project-documents.update');
@@ -295,8 +300,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/project-documents/{document}/restore', [ProjectDocumentController::class, 'restore'])->name('project-documents.restore');
         Route::post('/project-documents/{document}/version', [ProjectDocumentController::class, 'storeVersion'])->name('project-documents.store-version');
         Route::get('/project-documents/{document}/versions', [ProjectDocumentController::class, 'versionHistory'])->name('project-documents.version-history');
+    });
 
-        // Arsip dokumen customer-level
+    // Arsip dokumen customer-level — read-only untuk divisi yang boleh
+    // melihat halaman dokumen proyek.
+    Route::middleware('permission:view-technician|manage-technician|view-sales|manage-sales|manage-sales-leads')->group(function () {
         Route::get('/customers/{customer}/documents/archive', [ProjectDocumentController::class, 'archiveIndex'])->name('customer-documents.archive');
     });
 

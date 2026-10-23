@@ -132,22 +132,24 @@
                    class="block w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
                     {{ __('Download') }}
                 </a>
-                @if($canManage)
+                @if($canManage && ! $doc->isModuleDocument())
                     <button type="button" data-doc-rename
                             data-action="{{ route('project-documents.rename', $doc) }}"
                             data-name="{{ $doc->file_name }}"
                             class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
                         {{ __('Rename') }}
                     </button>
+                @endif
+                @can('forceDelete', $doc)
                     <form action="{{ route('project-documents.destroy', $doc) }}" method="POST"
-                          onsubmit="return confirm('{{ __('Delete this document?') }}')">
+                          onsubmit="return confirm('{{ __('Hapus permanen dokumen ini? Tindakan ini tidak bisa dibatalkan.') }}')">
                         @csrf @method('DELETE')
                         <button type="submit"
                                 class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
                             {{ __('Delete') }}
                         </button>
                     </form>
-                @endif
+                @endcan
             </div>
         </div>
     </div>

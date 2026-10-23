@@ -280,23 +280,25 @@
                                             </a>
                                         @endif
 
-                                        @can('update', $document)
-                                            <button type="button" data-doc-rename
-                                                    data-action="{{ route('project-documents.rename', $document) }}"
-                                                    data-name="{{ $document->file_name }}"
-                                                    class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                {{ __('Rename') }}
-                                            </button>
-                                        @endcan
+                                        @if(! $document->isModuleDocument())
+                                            @can('update', $document)
+                                                <button type="button" data-doc-rename
+                                                        data-action="{{ route('project-documents.rename', $document) }}"
+                                                        data-name="{{ $document->file_name }}"
+                                                        class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                    {{ __('Rename') }}
+                                                </button>
+                                            @endcan
 
-                                        @can('archive', $document)
-                                            <button type="button" data-doc-archive
-                                                    data-doc-id="{{ $document->id }}"
-                                                    data-doc-name="{{ $document->file_name }}"
-                                                    class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                {{ __('Arsipkan') }}
-                                            </button>
-                                        @endcan
+                                            @can('archive', $document)
+                                                <button type="button" data-doc-archive
+                                                        data-doc-id="{{ $document->id }}"
+                                                        data-doc-name="{{ $document->file_name }}"
+                                                        class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                    {{ __('Arsipkan') }}
+                                                </button>
+                                            @endcan
+                                        @endif
 
                                         @can('forceDelete', $document)
                                             <form action="{{ route('project-documents.destroy', $document) }}"
