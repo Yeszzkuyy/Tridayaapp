@@ -6,6 +6,8 @@
     @php
         $user = auth()->user();
         $fromTasks = $fromTasks ?? false;
+        $readOnly = $readOnly ?? false;
+        $isSuperAdmin = $user?->hasRole('super-admin') ?? false;
         $isTechnicianArea = $user?->can('view-technician') ?? false;
         $isCoordinator = $user?->hasAnyRole(['lead-technician', 'super-admin']) ?? false;
         $backUrl = $fromTasks
@@ -32,12 +34,12 @@
         ];
         $canReview = $isCoordinator && $technicalRequest->status === 'waiting_lead';
         $canAssign = $isCoordinator && in_array($technicalRequest->status, ['accepted', 'assigned'], true);
-        $canWork = (int) $technicalRequest->assigned_technician_id === (int) $user?->id
+        $canWork = ($isSuperAdmin || (int) $technicalRequest->assigned_technician_id === (int) $user?->id)
             && in_array($technicalRequest->status, ['assigned', 'in_progress'], true);
         $canCancel = !in_array($technicalRequest->status, ['completed', 'cancelled'], true)
             && ((int) $technicalRequest->requested_by === (int) $user?->id || $user?->can('manage-sales-leads'));
         $canCreateQuotation = $technicalRequest->status === 'completed' && ($user?->can('manage-sales') ?? false);
-        $hasActions = ! $fromTasks && ($canReview || $canAssign || $canWork || $canCancel || $canCreateQuotation);
+        $hasActions = ! $readOnly && ($canReview || $canAssign || $canWork || $canCancel || $canCreateQuotation);
         $hasWorkDetails = collect([
             $technicalRequest->purpose,
             $displayLocation,
@@ -76,7 +78,7 @@
             <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
         </div>
 
-        @if($fromTasks)
+        @if($fromTasks && $readOnly)
             <div class="mb-4 flex items-start gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 dark:border-accent-500/30 dark:bg-accent-500/10">
                 <x-icon name="eye" class="mt-0.5 h-4 w-4 shrink-0 text-accent-600 dark:text-accent-300" />
                 <div>

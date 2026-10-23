@@ -295,4 +295,157 @@ class TechnicianTaskTest extends TestCase
             ->get(route('teknisi.tasks.index'))
             ->assertForbidden();
     }
+
+    public function test_super_admin_sees_all_technician_tasks_including_unassigned(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $superAdmin = $this->userWithRole('super-admin');
+        $techA = $this->userWithRole('technician');
+        $techB = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+
+        $taskA = $this->makeRequest($sales, $lead, [
+            'title' => 'Tugas Teknisi A',
+            'assigned_technician_id' => $techA->id,
+        ]);
+        $taskB = $this->makeRequest($sales, $lead, [
+            'title' => 'Tugas Teknisi B',
+            'assigned_technician_id' => $techB->id,
+        ]);
+        $unassigned = $this->makeRequest($sales, $lead, [
+            'title' => 'Tugas Belum Di-assign',
+            'status' => 'waiting_lead',
+            'assigned_technician_id' => null,
+        ]);
+        $estimate = $this->makeRequest($sales, $lead, [
+            'title' => 'Estimasi Super Admin',
+            'request_type' => 'estimate',
+            'assigned_technician_id' => $techA->id,
+        ]);
+
+        $html = $this->actingAs($superAdmin)
+            ->get(route('teknisi.tasks.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(__('Technician Tasks'), $html);
+        $this->assertStringContainsString($taskA->title, $html);
+        $this->assertStringContainsString($taskB->title, $html);
+        $this->assertStringContainsString($unassigned->title, $html);
+        $this->assertStringContainsString($techA->name, $html);
+        $this->assertStringContainsString($techB->name, $html);
+        $this->assertStringContainsString(__('All technicians'), $html);
+        $this->assertStringNotContainsString($estimate->title, $html);
+
+        // Filter per teknisi.
+        $filtered = $this->actingAs($superAdmin)
+            ->get(route('teknisi.tasks.index', ['technician_id' => $techA->id]))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($taskA->title, $filtered);
+        $this->assertStringNotContainsString($taskB->title, $filtered);
+        $this->assertStringNotContainsString($unassigned->title, $filtered);
+
+        // Filter khusus tugas yang belum di-assign.
+        $unassignedHtml = $this->actingAs($superAdmin)
+            ->get(route('teknisi.tasks.index', ['technician_id' => 'unassigned']))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($unassigned->title, $unassignedHtml);
+        $this->assertStringNotContainsString($taskA->title, $unassignedHtml);
+        $this->assertStringNotContainsString($taskB->title, $unassignedHtml);
+    }
+
+    public function test_super_admin_can_open_any_task_with_full_actions(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $superAdmin = $this->userWithRole('super-admin');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, [
+            'request_type' => 'installation',
+            'title' => 'Instalasi Untuk Super Admin',
+            'status' => 'assigned',
+            'assigned_technician_id' => $tech->id,
+        ]);
+
+        $html = $this->actingAs($superAdmin)
+            ->get(route('teknisi.tasks.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($request->title, $html);
+        $this->assertStringContainsString(__('Request actions'), $html);
+        $this->assertStringNotContainsString(__('Read-only task view'), $html);
+        $this->assertStringContainsString(route('sales.technical-requests.progress', $request), $html);
+        $this->assertStringContainsString(route('sales.technical-requests.result', $request), $html);
+        $this->assertStringContainsString(route('sales.technical-requests.complete', $request), $html);
+        $this->assertStringContainsString(route('sales.technical-requests.assign', $request), $html);
+
+        // Progres kerja.
+        $this->actingAs($superAdmin)
+            ->post(route('sales.technical-requests.progress', $request), ['notes' => 'Pengerjaan dimulai super-admin.'])
+            ->assertRedirect();
+        $this->assertSame('in_progress', $request->refresh()->status);
+        $this->assertSame('Pengerjaan dimulai super-admin.', $request->notes);
+
+        // Hasil teknis.
+        $this->actingAs($superAdmin)
+            ->post(route('sales.technical-requests.result', $request), ['technical_result' => 'Instalasi selesai dan diuji.'])
+            ->assertRedirect();
+        $this->assertSame('Instalasi selesai dan diuji.', $request->refresh()->technical_result);
+
+        // Selesaikan tugas.
+        $this->actingAs($superAdmin)
+            ->post(route('sales.technical-requests.complete', $request))
+            ->assertRedirect();
+        $this->assertSame('completed', $request->refresh()->status);
+    }
+
+    public function test_super_admin_can_review_assign_and_download_any_task(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $superAdmin = $this->userWithRole('super-admin');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, [
+            'title' => 'Survey Belum Direview',
+            'status' => 'waiting_lead',
+            'assigned_technician_id' => null,
+            'attachment_path' => 'tech-requests/1/berkas-super-admin.pdf',
+        ]);
+        Storage::disk('private')->put($request->attachment_path, 'isi berkas');
+
+        // Detail menampilkan aksi review untuk super-admin.
+        $html = $this->actingAs($superAdmin)
+            ->get(route('teknisi.tasks.show', $request))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString(route('sales.technical-requests.review', $request), $html);
+        $this->assertStringNotContainsString(__('Read-only task view'), $html);
+
+        // Super-admin bisa mengunduh attachment tugas siapa pun.
+        $this->actingAs($superAdmin)
+            ->get(route('teknisi.technical-requests.attachment', $request))
+            ->assertOk();
+
+        // Review lalu assign ke teknisi.
+        $this->actingAs($superAdmin)
+            ->post(route('sales.technical-requests.review', $request), ['decision' => 'accepted'])
+            ->assertRedirect();
+        $this->assertSame('accepted', $request->refresh()->status);
+
+        $this->actingAs($superAdmin)
+            ->post(route('sales.technical-requests.assign', $request), ['technician_id' => $tech->id])
+            ->assertRedirect();
+        $this->assertSame('assigned', $request->refresh()->status);
+        $this->assertSame($tech->id, (int) $request->assigned_technician_id);
+
+        // Teknisi penerima tetap bisa membuka tugas hasil assign super-admin.
+        $this->actingAs($tech)
+            ->get(route('teknisi.tasks.show', $request))
+            ->assertOk();
+    }
 }

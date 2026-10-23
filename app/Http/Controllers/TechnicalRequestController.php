@@ -338,8 +338,10 @@ class TechnicalRequestController extends Controller
     {
         $this->authorizeView($technicalRequest);
         // Sales (termasuk requester) dilarang menyentuh progres/hasil teknis.
+        // Super-admin boleh mengambil alih semua aksi karena memegang sistem.
         abort_unless(
-            (int) $technicalRequest->assigned_technician_id === (int) auth()->id(),
+            (int) $technicalRequest->assigned_technician_id === (int) auth()->id()
+                || (auth()->user()?->hasRole('super-admin') ?? false),
             403
         );
     }

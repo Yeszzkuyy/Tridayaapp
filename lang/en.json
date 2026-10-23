@@ -3706,5 +3706,10 @@
     "Dokumen \":name\" berhasil direstore": "Document \":name\" restored successfully",
     "Dokumen \":name\" dihapus permanen": "Document \":name\" permanently deleted",
     "Pindahkan dokumen ini ke Trash? Bisa dipulihkan dalam :days hari.": "Move this document to Trash? It can be restored within :days days.",
-    "Dokumen yang telah diarsipkan dari project. Otomatis dihapus permanen :days hari setelah tanggal diarsipkan.": "Documents archived from the project. Permanently deleted automatically :days days after the archived date."
+    "Dokumen yang telah diarsipkan dari project. Otomatis dihapus permanen :days hari setelah tanggal diarsipkan.": "Documents archived from the project. Permanently deleted automatically :days days after the archived date.",
+    "Technician Tasks": "Technician Tasks",
+    "All technician tasks": "All technician tasks",
+    "All technicians": "All technicians",
+    "No technician tasks yet.": "No technician tasks yet.",
+    "Technical requests from Sales will appear here.": "Technical requests from Sales will appear here."
 }

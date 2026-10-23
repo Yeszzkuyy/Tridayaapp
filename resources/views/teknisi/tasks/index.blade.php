@@ -14,9 +14,11 @@
 
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">{{ __('My Tasks') }}</h1>
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">
+                {{ $isSuperAdmin ? __('Technician Tasks') : __('My Tasks') }}
+            </h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ __('Assigned to me') }} &middot; {{ $tasks->total() }} {{ __('tasks') }}
+                {{ $isSuperAdmin ? __('All technician tasks') : __('Assigned to me') }} &middot; {{ $tasks->total() }} {{ __('tasks') }}
             </p>
         </div>
     </div>
@@ -40,6 +42,20 @@
                     @endforeach
                 </select>
             </div>
+            @if($isSuperAdmin)
+                <div class="flex min-w-48 flex-1 items-center gap-2">
+                    <label for="task-technician" class="whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ __('Technician') }}:</label>
+                    <select id="task-technician" name="technician_id" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                        <option value="">{{ __('All technicians') }}</option>
+                        <option value="unassigned" @selected(request('technician_id') === 'unassigned')>{{ __('Unassigned') }}</option>
+                        @foreach($technicians as $technician)
+                            <option value="{{ $technician->id }}" @selected((string) request('technician_id') === (string) $technician->id)>
+                                {{ $technician->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
             <div class="flex gap-2">
                 <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
                 <x-icon-button as="a" icon="reset" href="{{ route('teknisi.tasks.index') }}" title="{{ __('Reset') }}" />
@@ -55,6 +71,9 @@
                     <tr>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Task') }}</th>
+                        @if($isSuperAdmin)
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Technician') }}</th>
+                        @endif
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Location') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Schedule') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Status') }}</th>
@@ -84,6 +103,22 @@
                                     {{ \App\Models\TechnicalRequest::typeLabel($task->request_type) }}
                                 </span>
                             </td>
+                            @if($isSuperAdmin)
+                                <td class="px-6 py-4">
+                                    @if($task->technician)
+                                        <div class="flex items-center gap-2">
+                                            <x-user-avatar :user="$task->technician" size="h-7 w-7" />
+                                            <span class="block max-w-[160px] truncate text-sm text-slate-700 dark:text-slate-200" title="{{ $task->technician->name }}">
+                                                {{ $task->technician->name }}
+                                            </span>
+                                        </div>
+                                    @else
+                                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                                            {{ __('Unassigned') }}
+                                        </span>
+                                    @endif
+                                </td>
+                            @endif
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
                                 <span class="block max-w-[200px] truncate" title="{{ $displayLocation ?? '' }}">{{ $displayLocation ?: '-' }}</span>
                             </td>
@@ -110,12 +145,17 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-16 text-center">
+                            <td colspan="{{ $isSuperAdmin ? 7 : 6 }}" class="px-6 py-16 text-center">
                                 <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
                                     <x-icon name="tools" class="h-6 w-6 text-slate-400" />
                                 </div>
-                                <p class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('No tasks assigned to you yet.') }}</p>
-                                <p class="mt-1 text-xs text-slate-400">{{ __('Tasks assigned by your Lead Technician will appear here.') }}</p>
+                                @if($isSuperAdmin)
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('No technician tasks yet.') }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">{{ __('Technical requests from Sales will appear here.') }}</p>
+                                @else
+                                    <p class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('No tasks assigned to you yet.') }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">{{ __('Tasks assigned by your Lead Technician will appear here.') }}</p>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

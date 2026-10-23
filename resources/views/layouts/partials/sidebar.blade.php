@@ -212,12 +212,12 @@
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
                                          <span>{{ __('Technician Dashboard') }}</span>
                                      </a>
-                                     @if(auth()->user()->hasRole('technician'))
+                                     @if(auth()->user()->hasRole('technician') || auth()->user()->hasRole('super-admin'))
                                      <a wire:navigate.hover href="{{ route('teknisi.tasks.index') }}"
                                         aria-current="{{ request()->routeIs('teknisi.tasks*') ? 'page' : 'false' }}"
                                         class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.tasks*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-lime-400" aria-hidden="true"></span>
-                                         <span>{{ __('My Tasks') }}</span>
+                                         <span>{{ auth()->user()->hasRole('super-admin') ? __('Technician Tasks') : __('My Tasks') }}</span>
                                      </a>
                                      @endif
                                      <a wire:navigate.hover href="{{ route('teknisi.requests.index') }}"
