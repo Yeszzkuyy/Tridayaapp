@@ -141,6 +141,13 @@ class SalesScheduleController extends Controller
                 'pic_phone' => $phone === '' ? null : $phone,
                 'pic_whatsapp' => $wa,
                 'completed' => $fu->completed_at !== null,
+                'meeting_notes' => $fu->meeting_notes,
+                'meeting_outcome' => $fu->meeting_outcome,
+                'meeting_outcome_label' => \App\Models\FollowUp::outcomeLabel($fu->meeting_outcome),
+                'meeting_outcome_badge' => \App\Models\FollowUp::outcomeBadgeClass($fu->meeting_outcome),
+                'meeting_photos' => !empty($fu->meeting_photos) ? array_map(fn($p) => asset('storage/'.$p), $fu->meeting_photos) : [],
+                'meeting_next_action_date' => $fu->meeting_next_action_date?->format('d M Y'),
+                'meeting_report_url' => route('sales.follow-ups.meeting-report', $fu),
                 'url' => $fu->lead_id
                     ? route('leads.show', $fu->lead_id)
                     : route('customers.show', $fu->customer_id),

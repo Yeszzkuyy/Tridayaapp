@@ -157,6 +157,8 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('pocs', PocController::class)->except(['show']);
         Route::get('pocs/{poc}', [PocController::class, 'show'])->name('pocs.show');
+        Route::get('follow-ups/{followUp}/meeting-report', [FollowUpController::class, 'meetingReport'])->name('follow-ups.meeting-report');
+        Route::post('follow-ups/{followUp}/meeting-report', [FollowUpController::class, 'storeMeetingReport'])->name('follow-ups.meeting-report.store');
         Route::post('follow-ups/{followUp}/complete', [FollowUpController::class, 'complete'])->name('follow-ups.complete');
         Route::post('follow-ups/{followUp}/reopen', [FollowUpController::class, 'reopen'])->name('follow-ups.reopen');
         Route::post('follow-ups/{followUp}/snooze', [FollowUpController::class, 'snooze'])->name('follow-ups.snooze');

@@ -6,6 +6,7 @@ use App\Models\FollowUp;
 use App\Models\Customer;
 use App\Models\LeadActivity;
 use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class SalesService
@@ -87,6 +88,36 @@ class SalesService
 
         return $followUp;
     }
+
+    public function completeMeetingReport(FollowUp $followUp, array $data): FollowUp
+    {
+        $photoPaths = [];
+        if (!empty($data['meeting_photos'])) {
+            foreach ($data['meeting_photos'] as $file) {
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    $photoPaths[] = $file->store('meeting-reports', 'public');
+                }
+            }
+        }
+
+        $followUp->forceFill([
+            'completed_at' => now(),
+            'meeting_photos' => $photoPaths,
+            'meeting_notes' => $data['meeting_notes'] ?? null,
+            'meeting_outcome' => $data['meeting_outcome'] ?? null,
+            'meeting_next_action_date' => !empty($data['meeting_next_action_date']) ? \Carbon\Carbon::parse($data['meeting_next_action_date']) : null,
+        ])->save();
+
+        $this->logFollowUpActivity($followUp, 'meeting_report_submitted', [
+            'outcome' => $data['meeting_outcome'] ?? null,
+            'photos_count' => count($photoPaths),
+            'next_action_date' => $data['meeting_next_action_date'] ?? null,
+        ]);
+
+        return $followUp;
+    }
+
+    
 
     public function reopenFollowUp(FollowUp $followUp): FollowUp
     {

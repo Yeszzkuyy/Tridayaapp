@@ -379,6 +379,47 @@
                                 <p class="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200" x-text="selectedEvent.description"></p>
                             </div>
 
+                            {{-- Meeting Report & MOM Display (if completed) --}}
+                            <template x-if="selectedEvent.meeting_notes">
+                                <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/20 space-y-3">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            <span>{{ __('Meeting Report (MOM)') }}</span>
+                                        </div>
+                                        <template x-if="selectedEvent.meeting_outcome_label">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                                                  :class="selectedEvent.meeting_outcome_badge"
+                                                  x-text="selectedEvent.meeting_outcome_label"></span>
+                                        </template>
+                                    </div>
+
+                                    <div class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/40"
+                                         x-text="selectedEvent.meeting_notes"></div>
+
+                                    <template x-if="selectedEvent.meeting_next_action_date">
+                                        <div class="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                            <span class="font-medium text-slate-800 dark:text-slate-200">{{ __('Next Action:') }}</span>
+                                            <span x-text="selectedEvent.meeting_next_action_date"></span>
+                                        </div>
+                                    </template>
+
+                                    {{-- Photo Documentation Thumbnails --}}
+                                    <template x-if="selectedEvent.meeting_photos && selectedEvent.meeting_photos.length > 0">
+                                        <div>
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">{{ __('Documentation Photos') }}</p>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <template x-for="(photoUrl, pIdx) in selectedEvent.meeting_photos" :key="pIdx">
+                                                    <a :href="photoUrl" target="_blank" rel="noopener noreferrer" class="group relative aspect-video rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 block">
+                                                        <img :src="photoUrl" class="w-full h-full object-cover transition-transform group-hover:scale-105" alt="Meeting Doc">
+                                                    </a>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
                             <div class="mt-4 flex items-center justify-between gap-3">
                                 <div class="flex min-w-0 items-center gap-2.5">
                                     <template x-if="selectedEvent.creator_avatar">

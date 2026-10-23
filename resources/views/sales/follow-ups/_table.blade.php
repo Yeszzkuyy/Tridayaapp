@@ -23,6 +23,11 @@
                             @if($fu->completed_at)
                                 <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{{ __('Done') }}</span>
                             @endif
+                            @if($fu->type === 'meeting' && $fu->meeting_outcome)
+                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold {{ \App\Models\FollowUp::outcomeBadgeClass($fu->meeting_outcome) }}">
+                                    {{ \App\Models\FollowUp::outcomeLabel($fu->meeting_outcome) }}
+                                </span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-slate-600 dark:text-slate-300 max-w-xs truncate">
                             {{ Str::limit($fu->description, 100) }}
@@ -101,15 +106,23 @@
                                                     </button>
                                                 </form>
                                             @else
-                                                <form action="{{ route('sales.follow-ups.complete', $fu) }}"
-                                                      method="POST" data-ajax>
-                                                    @csrf
-                                                    <button type="submit"
-                                                            class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                        <x-icon name="check-circle" class="h-4 w-4 shrink-0 text-green-600 dark:text-green-300" />
-                                                        {{ __('Mark as done') }}
-                                                    </button>
-                                                </form>
+                                                @if($fu->type === 'meeting')
+                                                    <a href="{{ route('sales.follow-ups.meeting-report', $fu) }}"
+                                                       class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                        <x-icon name="check-circle" class="h-4 w-4 shrink-0 text-accent-600 dark:text-accent-400" />
+                                                        {{ __('Report MOM & Complete') }}
+                                                    </a>
+                                                @else
+                                                    <form action="{{ route('sales.follow-ups.complete', $fu) }}"
+                                                          method="POST" data-ajax>
+                                                        @csrf
+                                                        <button type="submit"
+                                                                class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                            <x-icon name="check-circle" class="h-4 w-4 shrink-0 text-green-600 dark:text-green-300" />
+                                                            {{ __('Mark as done') }}
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
                                                 <div @click.stop x-data="{ openResched: false }">
                                                     <button type="button" @click="openResched = !openResched"
