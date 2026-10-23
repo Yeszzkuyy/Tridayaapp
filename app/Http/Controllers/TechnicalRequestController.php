@@ -74,13 +74,25 @@ class TechnicalRequestController extends Controller
         ]);
     }
 
+    /**
+     * Koordinator teknis: Lead Technician dan Super Admin. Sengaja TIDAK
+     * memakai permission manage-technician karena role technician juga
+     * memegang permission itu — kalau dipakai, semua teknisi bisa melihat
+     * dan mengubah request milik teknisi lain.
+     */
+    private function isTechnicalCoordinator(): bool
+    {
+        return auth()->user()?->hasAnyRole(['lead-technician', 'super-admin']) ?? false;
+    }
+
     private function authorizeView(TechnicalRequest $request): void
     {
         $user = auth()->user();
 
-        // Alur teknisi + requester sendiri: tanpa LeadPolicy view agar
-        // Lead Teknisi bisa memonitor dan teknisi bisa mengerjakan.
-        if ($user->can('manage-technician')
+        // Koordinator teknis boleh memonitor semua request. Teknisi biasa
+        // hanya boleh membuka request yang ditugaskan kepadanya atau yang ia
+        // buat sendiri.
+        if ($this->isTechnicalCoordinator()
             || (int) $request->assigned_technician_id === (int) $user->id
             || (int) $request->requested_by === (int) $user->id) {
             return;
@@ -178,7 +190,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->load(['lead.customer', 'requester', 'technician']);
         $this->authorizeView($technicalRequest);
 
-        $technicians = auth()->user()->can('manage-technician')
+        $technicians = $this->isTechnicalCoordinator()
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
             : collect();
 
@@ -187,7 +199,7 @@ class TechnicalRequestController extends Controller
 
     public function review(Request $request, TechnicalRequest $technicalRequest)
     {
-        abort_unless(auth()->user()->can('manage-technician'), 403);
+        abort_unless($this->isTechnicalCoordinator(), 403);
         $this->authorizeView($technicalRequest);
         abort_unless($technicalRequest->status === 'waiting_lead', 422);
 
@@ -202,7 +214,7 @@ class TechnicalRequestController extends Controller
 
     public function assign(Request $request, TechnicalRequest $technicalRequest)
     {
-        abort_unless(auth()->user()->can('manage-technician'), 403);
+        abort_unless($this->isTechnicalCoordinator(), 403);
         $this->authorizeView($technicalRequest);
         abort_unless(in_array($technicalRequest->status, ['accepted', 'assigned']), 422);
 
@@ -265,7 +277,7 @@ class TechnicalRequestController extends Controller
         $user = auth()->user();
         abort_unless(
             (int) $technicalRequest->assigned_technician_id === (int) $user->id
-                || $user->can('manage-technician'),
+                || $this->isTechnicalCoordinator(),
             403
         );
         $this->authorizeView($technicalRequest);

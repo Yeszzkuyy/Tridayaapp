@@ -5,11 +5,19 @@
 
     @php
         $user = auth()->user();
-        $isTech = $user?->can('manage-technician') ?? false;
-        $backUrl = $isTech
-            ? route('teknisi.requests.index', ['tab' => 'engineer'])
-            : route('sales.requests.index', ['tab' => 'engineer']);
+        $fromTasks = $fromTasks ?? false;
+        $isTechnicianArea = $user?->can('view-technician') ?? false;
+        $isCoordinator = $user?->hasAnyRole(['lead-technician', 'super-admin']) ?? false;
+        $backUrl = $fromTasks
+            ? route('teknisi.tasks.index')
+            : ($isTechnicianArea
+                ? route('teknisi.requests.index', ['tab' => 'engineer'])
+                : route('sales.requests.index', ['tab' => 'engineer']));
         $leadLabel = $technicalRequest->lead?->customer?->name ?? __('Lead').' #'.$technicalRequest->lead_id;
+        $customer = $technicalRequest->lead?->customer;
+        $displayLocation = $technicalRequest->location ?: $customer?->address;
+        $displayPicName = $technicalRequest->pic_contact_name ?: $customer?->contact_person;
+        $displayPicPhone = $technicalRequest->pic_contact_phone ?: ($customer?->whatsapp ?: $customer?->phone);
         $attachmentName = $technicalRequest->attachment_path
             ? preg_replace('/^\d+_/', '', basename($technicalRequest->attachment_path))
             : null;
@@ -22,19 +30,19 @@
             'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
             'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
         ];
-        $canReview = $isTech && $technicalRequest->status === 'waiting_lead';
-        $canAssign = $isTech && in_array($technicalRequest->status, ['accepted', 'assigned'], true);
+        $canReview = $isCoordinator && $technicalRequest->status === 'waiting_lead';
+        $canAssign = $isCoordinator && in_array($technicalRequest->status, ['accepted', 'assigned'], true);
         $canWork = (int) $technicalRequest->assigned_technician_id === (int) $user?->id
             && in_array($technicalRequest->status, ['assigned', 'in_progress'], true);
         $canCancel = !in_array($technicalRequest->status, ['completed', 'cancelled'], true)
             && ((int) $technicalRequest->requested_by === (int) $user?->id || $user?->can('manage-sales-leads'));
         $canCreateQuotation = $technicalRequest->status === 'completed' && ($user?->can('manage-sales') ?? false);
-        $hasActions = $canReview || $canAssign || $canWork || $canCancel || $canCreateQuotation;
+        $hasActions = ! $fromTasks && ($canReview || $canAssign || $canWork || $canCancel || $canCreateQuotation);
         $hasWorkDetails = collect([
             $technicalRequest->purpose,
-            $technicalRequest->location,
-            $technicalRequest->pic_contact_name,
-            $technicalRequest->pic_contact_phone,
+            $displayLocation,
+            $displayPicName,
+            $displayPicPhone,
             $technicalRequest->requirement,
             $technicalRequest->problem_description,
             $technicalRequest->scope,
@@ -67,6 +75,18 @@
             </div>
             <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
         </div>
+
+        @if($fromTasks)
+            <div class="mb-4 flex items-start gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 dark:border-accent-500/30 dark:bg-accent-500/10">
+                <x-icon name="eye" class="mt-0.5 h-4 w-4 shrink-0 text-accent-600 dark:text-accent-300" />
+                <div>
+                    <p class="text-sm font-semibold text-accent-800 dark:text-accent-200">{{ __('Read-only task view') }}</p>
+                    <p class="mt-0.5 text-sm leading-5 text-accent-700 dark:text-accent-300">
+                        {{ __('This task is read-only. Contact your Lead Technician to change the schedule or assignment.') }}
+                    </p>
+                </div>
+            </div>
+        @endif
 
         <div class="space-y-4">
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="technical-request-details-heading">
@@ -119,6 +139,48 @@
                 </dl>
             </section>
 
+            @if($customer)
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="technical-request-customer-heading">
+                    <h2 id="technical-request-customer-heading" class="mb-4 text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Customer details') }}</h2>
+                    <div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Customer') }}</p>
+                            <p class="mt-1 font-semibold text-slate-800 dark:text-slate-100">{{ $customer->name }}</p>
+                        </div>
+                        @if($customer->company)
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Company') }}</p>
+                                <p class="mt-1 font-medium text-slate-800 dark:text-slate-100">{{ $customer->company }}</p>
+                            </div>
+                        @endif
+                        @if($customer->phone || $customer->whatsapp)
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Phone') }}</p>
+                                <p class="mt-1 text-slate-700 dark:text-slate-200">
+                                    <a href="tel:{{ $customer->whatsapp ?: $customer->phone }}" class="font-medium text-accent-600 hover:underline dark:text-accent-400">
+                                        {{ $customer->whatsapp ?: $customer->phone }}
+                                    </a>
+                                </p>
+                            </div>
+                        @endif
+                        @if($customer->email)
+                            <div>
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Email') }}</p>
+                                <p class="mt-1 break-all text-slate-700 dark:text-slate-200">
+                                    <a href="mailto:{{ $customer->email }}" class="font-medium text-accent-600 hover:underline dark:text-accent-400">{{ $customer->email }}</a>
+                                </p>
+                            </div>
+                        @endif
+                        @if($customer->address)
+                            <div class="md:col-span-2">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Address') }}</p>
+                                <x-location-link :location="$customer->address" class="mt-1" />
+                            </div>
+                        @endif
+                    </div>
+                </section>
+            @endif
+
             @if($hasWorkDetails)
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="technical-request-work-heading">
                     <h2 id="technical-request-work-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Work details') }}</h2>
@@ -129,20 +191,20 @@
                                 <p class="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ $technicalRequest->purpose }}</p>
                             </div>
                         @endif
-                        @if($technicalRequest->location)
+                        @if($displayLocation)
                             <div class="min-w-0">
                                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Location') }}</p>
-                                <x-location-link :location="$technicalRequest->location" class="mt-1" />
+                                <x-location-link :location="$displayLocation" class="mt-1" />
                             </div>
                         @endif
-                        @if($technicalRequest->pic_contact_name || $technicalRequest->pic_contact_phone)
+                        @if($displayPicName || $displayPicPhone)
                             <div class="min-w-0">
                                 <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('PIC Contact') }}</p>
                                 <p class="mt-1 break-words text-sm text-slate-700 dark:text-slate-200">
-                                    {{ $technicalRequest->pic_contact_name ?: '-' }}
-                                    @if($technicalRequest->pic_contact_phone)
+                                    {{ $displayPicName ?: '-' }}
+                                    @if($displayPicPhone)
                                         <span aria-hidden="true">·</span>
-                                        <a href="tel:{{ $technicalRequest->pic_contact_phone }}" class="font-medium text-accent-600 hover:underline dark:text-accent-400">{{ $technicalRequest->pic_contact_phone }}</a>
+                                        <a href="tel:{{ $displayPicPhone }}" class="font-medium text-accent-600 hover:underline dark:text-accent-400">{{ $displayPicPhone }}</a>
                                     @endif
                                 </p>
                             </div>
@@ -189,7 +251,7 @@
                     <h2 id="technical-request-attachments-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Attachments') }}</h2>
                     <div class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between">
                         <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ $attachmentName }}</p>
-                        <x-icon-button as="a" icon="download" href="{{ route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
+                        <x-icon-button as="a" icon="download" href="{{ $fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
                     </div>
                 </section>
             @endif
