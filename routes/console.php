@@ -12,6 +12,9 @@ Schedule::command('schedules:remind')->everyMinute();
 Schedule::command('followups:remind')->daily();
 Schedule::command('proposals:expire')->dailyAt('01:30');
 
+// Dokumen di Trash dihapus permanen setelah 14 hari (dihitung dari deleted_at).
+Schedule::command('documents:purge-trash')->hourly();
+
 // Sinkron Google Calendar otomatis tiap 5 menit (idempotent, tidak duplikat).
 Schedule::command('gcal:sync')->everyFiveMinutes()->withoutOverlapping();
 

@@ -8,7 +8,7 @@
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">{{ __('Arsip Dokumen') }}</h1>
                 <p class="text-slate-500 mt-1">
-                    {{ __('Dokumen yang telah diarsipkan dari project.') }}
+                    {{ __('Dokumen yang telah diarsipkan dari project. Otomatis dihapus permanen :days hari setelah tanggal diarsipkan.', ['days' => \App\Models\ProjectDocument::TRASH_RETENTION_DAYS]) }}
                 </p>
             </div>
             <div class="flex gap-2">
@@ -92,6 +92,8 @@
                                         <span>{{ $document->category?->name ?? __('Tanpa Kategori') }}</span>
                                         <span>•</span>
                                         <span>{{ __('Diarsipkan') }}: {{ $archivedDate }}</span>
+                                        <span>•</span>
+                                        <span>{{ __('Auto-deleted on') }}: {{ $document->trashDeadline()?->format('d M Y H:i') ?? '-' }}</span>
                                     </div>
                                     @if($docSize)
                                         <p class="text-xs text-slate-400 mt-1">{{ $docSize }}</p>

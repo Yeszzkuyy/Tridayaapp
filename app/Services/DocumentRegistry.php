@@ -220,6 +220,7 @@ class DocumentRegistry
 
         if ($document->trashed()) {
             $document->restore();
+            $document->forceFill(['deleted_by' => null])->save();
         }
 
         return $document;

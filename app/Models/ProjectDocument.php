@@ -22,6 +22,7 @@ class ProjectDocument extends Model
         'document_category_id',
         'documentable_type',
         'documentable_id',
+        'deleted_by',
     ];
 
     public const DOC_TYPES = ['invoice', 'po', 'payment'];
@@ -31,6 +32,29 @@ class ProjectDocument extends Model
      * modul dan hanya dicatat di sini supaya tampil di semua menu dokumen.
      */
     public const MODULE_TYPES = ['survey', 'sizing', 'instalasi'];
+
+    /**
+     * Masa simpan dokumen di Trash sebelum dihapus permanen otomatis.
+     * Dihitung dari deleted_at, bukan created_at/updated_at.
+     */
+    public const TRASH_RETENTION_DAYS = 14;
+
+    /** Batas waktu dokumen ini dihapus permanen otomatis. */
+    public function trashDeadline(): ?\Illuminate\Support\Carbon
+    {
+        return $this->deleted_at?->copy()->addDays(self::TRASH_RETENTION_DAYS);
+    }
+
+    /** Sisa hari sebelum dihapus permanen (0 = sudah lewat batas). */
+    public function trashDaysLeft(): int
+    {
+        $deadline = $this->trashDeadline();
+        if (! $deadline) {
+            return 0;
+        }
+
+        return max(0, (int) ceil(now()->diffInHours($deadline, false) / 24));
+    }
 
     public function getTypeLabelAttribute()
     {
@@ -108,6 +132,12 @@ class ProjectDocument extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    /** User yang memindahkan dokumen ini ke Trash. */
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
     public function getFileExtensionAttribute()
     {

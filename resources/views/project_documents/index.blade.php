@@ -300,18 +300,20 @@
                                             @endcan
                                         @endif
 
-                                        @can('forceDelete', $document)
-                                            <form action="{{ route('project-documents.destroy', $document) }}"
-                                                  method="POST"
-                                                  onsubmit="return confirm('{{ __('Hapus permanen dokumen ini? Tindakan ini tidak bisa dibatalkan.') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                        class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
-                                                    {{ __('Hapus Permanen') }}
-                                                </button>
-                                            </form>
-                                        @endcan
+                                        @if($document->isModuleDocument())
+                                            @can('forceDelete', $document)
+                                                <form action="{{ route('project-documents.destroy', $document) }}"
+                                                      method="POST"
+                                                      onsubmit="return confirm('{{ __('Hapus permanen dokumen ini? Tindakan ini tidak bisa dibatalkan.') }}')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                            class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
+                                                        {{ __('Hapus Permanen') }}
+                                                    </button>
+                                                </form>
+                                            @endcan
+                                        @endif
                                     </div>
                                 </div>
                             </div>

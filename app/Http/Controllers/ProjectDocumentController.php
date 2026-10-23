@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use App\Models\Instalasi;
 use App\Models\Project;
-use App\Models\SizingProject;
-use App\Models\Survey;
 use App\Support\PtAccess;
 use App\Models\ProjectDocument;
 use App\Models\DocumentCategory;
+use App\Services\ProjectDocumentCleanup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -313,11 +311,14 @@ class ProjectDocumentController extends Controller
         $this->assertNotModuleOwned($document);
         abort_unless(Gate::allows('archive', $document), 403);
 
+        $document->forceFill(['deleted_by' => auth()->id()])->save();
         $document->delete();
 
         return redirect()
             ->back()
-            ->with('success', __('Dokumen berhasil diarsipkan.'));
+            ->with('success', __('Dokumen dipindahkan ke Trash. Bisa dipulihkan dalam :days hari.', [
+                'days' => ProjectDocument::TRASH_RETENTION_DAYS,
+            ]));
     }
 
     public function restore(ProjectDocument $document)
@@ -326,73 +327,22 @@ class ProjectDocumentController extends Controller
         abort_unless(Gate::allows('restore', $document), 403);
 
         $document->restore();
+        $document->forceFill(['deleted_by' => null])->save();
 
         return redirect()
             ->back()
             ->with('success', __('Dokumen berhasil dipulihkan.'));
     }
 
-    public function destroy(ProjectDocument $document)
+    public function destroy(ProjectDocument $document, ProjectDocumentCleanup $cleanup)
     {
         abort_unless(Gate::allows('forceDelete', $document), 403);
 
-        // Dokumen milik modul: lepas dulu tautan file di record modulnya,
-        // supaya setelah dihapus tidak didaftarkan ulang oleh
-        // DocumentRegistry::sync dan menu modul tidak menunjuk file hilang.
-        if ($document->isModuleDocument()) {
-            $this->releaseModuleFile($document);
-        }
-
-        if ($document->file_path && Storage::disk('private')->exists($document->file_path)) {
-            Storage::disk('private')->delete($document->file_path);
-        }
-
-        $linked = $document->documentable;
-        if ($linked instanceof \App\Models\Payment && $linked->proof_file === $document->file_path) {
-            $linked->update(['proof_file' => null]);
-        }
-
-        $document->forceDelete();
+        $cleanup->forceDelete($document);
 
         return redirect()
             ->back()
             ->with('success', __('Dokumen dihapus permanen.'));
-    }
-
-    /**
-     * Cabut referensi file dari record pemilik modul (survey/instalasi satu
-     * file, sizing berupa daftar lampiran). File fisiknya dihapus terpisah
-     * oleh destroy().
-     */
-    private function releaseModuleFile(ProjectDocument $document): void
-    {
-        $owner = $document->documentable;
-
-        if ($owner instanceof Survey || $owner instanceof Instalasi) {
-            if ($owner->report_file === $document->file_path) {
-                $owner->forceFill([
-                    'report_file' => null,
-                    'report_file_name' => null,
-                ])->save();
-            }
-
-            return;
-        }
-
-        if ($owner instanceof SizingProject) {
-            $remaining = collect($owner->attachments ?? [])
-                ->reject(function ($attachment) use ($document) {
-                    $path = is_array($attachment)
-                        ? ($attachment['file_path'] ?? $attachment['path'] ?? null)
-                        : $attachment;
-
-                    return $path === $document->file_path;
-                })
-                ->values()
-                ->all();
-
-            $owner->forceFill(['attachments' => $remaining])->save();
-        }
     }
 
     public function versionHistory(ProjectDocument $document)

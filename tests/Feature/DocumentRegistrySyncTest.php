@@ -241,7 +241,7 @@ class DocumentRegistrySyncTest extends TestCase
         $this->assertModelMissing($document);
     }
 
-    public function test_teknisi_bisa_hapus_permanen_dokumen_proyek(): void
+    public function test_teknisi_bisa_memindahkan_dokumen_proyek_ke_trash(): void
     {
         Storage::fake('private');
         $technician = $this->userWithRole('technician');
@@ -258,14 +258,18 @@ class DocumentRegistrySyncTest extends TestCase
         Storage::disk('private')->put($document->file_path, 'isi-dokumen');
 
         $this->actingAs($technician)
-            ->delete(route('project-documents.destroy', $document))
+            ->post(route('project-documents.archive', $document))
             ->assertRedirect();
 
-        $this->assertModelMissing($document);
-        Storage::disk('private')->assertMissing($document->file_path);
+        $this->assertSoftDeleted($document);
+        Storage::disk('private')->assertExists($document->file_path);
+        $this->assertSame(
+            $technician->id,
+            ProjectDocument::withTrashed()->findOrFail($document->id)->deleted_by
+        );
     }
 
-    public function test_sales_bisa_hapus_permanen_dokumen_umum_customer(): void
+    public function test_sales_bisa_memindahkan_dokumen_umum_ke_trash(): void
     {
         Storage::fake('private');
         $sales = $this->userWithRole('sales');
@@ -280,10 +284,14 @@ class DocumentRegistrySyncTest extends TestCase
         ]);
 
         $this->actingAs($sales)
-            ->delete(route('project-documents.destroy', $document))
+            ->post(route('project-documents.archive', $document))
             ->assertRedirect();
 
-        $this->assertModelMissing($document);
+        $this->assertSoftDeleted($document);
+        $this->assertSame(
+            $sales->id,
+            ProjectDocument::withTrashed()->findOrFail($document->id)->deleted_by
+        );
     }
 
     public function test_teknisi_tidak_bisa_hapus_dokumen_modul(): void
@@ -304,6 +312,9 @@ class DocumentRegistrySyncTest extends TestCase
             'uploaded_by' => $technician->id,
         ]);
 
+        $this->actingAs($technician)
+            ->post(route('project-documents.archive', $document))
+            ->assertForbidden();
         $this->actingAs($technician)
             ->delete(route('project-documents.destroy', $document))
             ->assertForbidden();

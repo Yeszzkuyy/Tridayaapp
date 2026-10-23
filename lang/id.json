@@ -3687,5 +3687,15 @@
     "— Select Technician —": "— Pilih Teknisi —",
     "— Unassigned (NEW) —": "— Belum di-assign (NEW) —",
     "— filter:": "— filter:",
-    "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?": "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?"
+    "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?": "👋 Halo! Saya 3DY AI.\nAda yang bisa saya bantu?",
+    "Deleted Documents": "Dokumen Terhapus",
+    "Documents in Trash are permanently deleted automatically :days days after the deleted date.": "Dokumen di Trash otomatis dihapus permanen :days hari setelah tanggal dihapus.",
+    "Customer / Project": "Customer / Project",
+    "Auto-deleted on": "Dihapus otomatis pada",
+    "No deleted documents.": "Belum ada dokumen terhapus.",
+    "Dokumen dipindahkan ke Trash. Bisa dipulihkan dalam :days hari.": "Dokumen dipindahkan ke Trash. Bisa dipulihkan dalam :days hari.",
+    "Dokumen \":name\" berhasil direstore": "Dokumen \":name\" berhasil direstore",
+    "Dokumen \":name\" dihapus permanen": "Dokumen \":name\" dihapus permanen",
+    "Pindahkan dokumen ini ke Trash? Bisa dipulihkan dalam :days hari.": "Pindahkan dokumen ini ke Trash? Bisa dipulihkan dalam :days hari.",
+    "Dokumen yang telah diarsipkan dari project. Otomatis dihapus permanen :days hari setelah tanggal diarsipkan.": "Dokumen yang telah diarsipkan dari project. Otomatis dihapus permanen :days hari setelah tanggal diarsipkan."
 }
