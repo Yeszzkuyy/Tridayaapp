@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Instalasi;
 use App\Models\Project;
 use App\Rules\SecureFile;
+use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -92,7 +93,12 @@ class InstalasiController extends Controller
             ];
         }
 
-        Instalasi::create($validated + $reportFields);
+        $instalasi = Instalasi::create($validated + $reportFields);
+
+        // Laporan instalasi ikut tercatat sebagai dokumen (tanpa menyalin file).
+        if ($instalasi->report_file) {
+            DocumentRegistry::sync($instalasi);
+        }
 
         return redirect()->route('teknisi.instalasis.index')
             ->with('success', __('Installation added successfully.'));
@@ -149,6 +155,9 @@ class InstalasiController extends Controller
 
         $instalasi->update($validated + $reportFields);
 
+        // Ganti laporan = dokumen yang sama diperbarui, bukan ditambah.
+        DocumentRegistry::sync($instalasi);
+
         // File lama dibersihkan hanya setelah DB sukses (urutan dijaga manual).
         if ($report && $oldPath && $oldPath !== ($reportFields['report_file'] ?? null)) {
             Storage::disk('private')->delete($oldPath);
@@ -160,6 +169,9 @@ class InstalasiController extends Controller
 
     public function destroy(Instalasi $instalasi)
     {
+        // Dokumen turunannya ikut dibersihkan supaya tidak menggantung.
+        DocumentRegistry::forget($instalasi);
+
         $instalasi->delete();
 
         if ($instalasi->report_file) {

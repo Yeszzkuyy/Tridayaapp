@@ -151,9 +151,14 @@ class CustomerController extends Controller
 
         return \App\Models\ProjectDocument::where(function ($query) use ($projectIds, $customer) {
                 $query->whereIn('project_id', $projectIds)
-                    ->orWhere(function ($q) use ($customer) {
-                        $q->where('customer_id', $customer->id)->whereNull('doc_type');
-                    });
+                    ->orWhere('customer_id', $customer->id);
+            })
+            // Dokumen transaksi (invoice/po/payment) punya section sendiri di
+            // bawah; dokumen hasil modul (survey/sizing/instalasi) ikut di sini
+            // supaya semua menu dokumen menampilkan isi yang sama.
+            ->where(function ($query) {
+                $query->whereNull('doc_type')
+                    ->orWhereNotIn('doc_type', \App\Models\ProjectDocument::DOC_TYPES);
             })
             ->with(['project', 'category', 'uploader'])
             ->whereNull('deleted_at')

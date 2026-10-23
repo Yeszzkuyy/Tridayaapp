@@ -266,9 +266,10 @@
                 <div x-show="tab === 'documents'" x-transition>
                     @php
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
-                        // Split dokumen berdasarkan jenis: project, general, dan transaksi (diteruskan ke partial)
-                        $projectDocuments = $documents->whereNotNull('project_id')->whereNull('doc_type');
-                        $generalDocuments = $documents->whereNull('project_id')->whereNull('doc_type');
+                        // Split dokumen berdasarkan jenis: project & general
+                        // (dokumen transaksi sudah dipisah di controller).
+                        $projectDocuments = $documents->whereNotNull('project_id');
+                        $generalDocuments = $documents->whereNull('project_id');
                     @endphp
 
                     {{-- Breadcrumb + judul halaman Documents --}}
@@ -392,6 +393,7 @@
                         'custPos' => $custPos,
                         'custPayments' => $custPayments,
                         'typedDocs' => $typedDocs,
+                        'canUploadDocs' => $canUploadDocs,
                     ])
                 </div>
                 @endcanany

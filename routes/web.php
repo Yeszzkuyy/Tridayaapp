@@ -290,6 +290,14 @@ Route::middleware('auth')->group(function () {
 
         Route::delete('/project-documents/{document}', [ProjectDocumentController::class, 'destroy'])->name('project-documents.destroy');
         Route::patch('/project-documents/{document}/rename', [ProjectDocumentController::class, 'rename'])->name('project-documents.rename');
+        Route::patch('/project-documents/{document}', [ProjectDocumentController::class, 'update'])->name('project-documents.update');
+        Route::post('/project-documents/{document}/archive', [ProjectDocumentController::class, 'archive'])->name('project-documents.archive');
+        Route::post('/project-documents/{document}/restore', [ProjectDocumentController::class, 'restore'])->name('project-documents.restore');
+        Route::post('/project-documents/{document}/version', [ProjectDocumentController::class, 'storeVersion'])->name('project-documents.store-version');
+        Route::get('/project-documents/{document}/versions', [ProjectDocumentController::class, 'versionHistory'])->name('project-documents.version-history');
+
+        // Arsip dokumen customer-level
+        Route::get('/customers/{customer}/documents/archive', [ProjectDocumentController::class, 'archiveIndex'])->name('customer-documents.archive');
     });
 
     // Upload dokumen proyek: teknisi, atau sales (khusus kategori Survey

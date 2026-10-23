@@ -28,7 +28,7 @@
     @endif
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-        <form method="POST" action="{{ route('teknisi.sizing-projects.update', $sizingProject) }}" class="space-y-5">
+        <form method="POST" action="{{ route('teknisi.sizing-projects.update', $sizingProject) }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -107,6 +107,38 @@
                 <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes') }}</label>
                 <textarea name="notes" id="notes" rows="2"
                           class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">{{ old('notes', $sizingProject->notes) }}</textarea>
+            </div>
+
+            <div>
+                <label for="attachments" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Attachments') }}</label>
+
+                @if(($sizingProject->attachments ?? []) !== [])
+                    <ul class="mb-3 space-y-2">
+                        @foreach($sizingProject->attachments as $attachment)
+                            @php
+                                $attPath = is_array($attachment) ? ($attachment['file_path'] ?? '') : $attachment;
+                                $attName = is_array($attachment)
+                                    ? ($attachment['file_name'] ?? basename((string) $attPath))
+                                    : basename((string) $attPath);
+                            @endphp
+                            <li class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600">
+                                <span class="min-w-0 truncate text-slate-700 dark:text-slate-200">{{ $attName }}</span>
+                                <label class="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-red-600 dark:text-red-400">
+                                    <input type="checkbox" name="remove_attachments[]" value="{{ $attPath }}"
+                                           class="rounded border-slate-300 text-red-600 focus:ring-red-500">
+                                    {{ __('Remove') }}
+                                </label>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <input type="file" name="attachments[]" id="attachments" multiple
+                       class="block w-full text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-accent-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent-700 hover:file:bg-accent-200">
+                <p class="mt-1 text-xs text-slate-400">{{ __('Max 20MB per file.') }} {{ __('Files also appear in Customer Documents.') }}</p>
+                @error('attachments')
+                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-2">

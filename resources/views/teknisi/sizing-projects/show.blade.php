@@ -79,6 +79,30 @@
                 </div>
             @endforeach
         </div>
+
+        {{-- Hasil sizing — file yang sama juga tampil di menu Documents. --}}
+        <div class="mt-6">
+            <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Attachments') }}</dt>
+            <dd class="mt-2">
+                @if(($sizingProject->documents ?? collect())->isNotEmpty())
+                    <ul class="space-y-2">
+                        @foreach($sizingProject->documents as $doc)
+                            <li class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600">
+                                <span class="min-w-0 truncate text-slate-700 dark:text-slate-200">{{ $doc->file_name }}</span>
+                                <span class="flex shrink-0 items-center gap-1.5">
+                                    <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $doc) }}"
+                                                   target="_blank" title="{{ __('Preview') }}" />
+                                    <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}"
+                                                   title="{{ __('Download') }}" />
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No attachments yet.') }}</p>
+                @endif
+            </dd>
+        </div>
     </div>
 </div>
 </x-app-layout>

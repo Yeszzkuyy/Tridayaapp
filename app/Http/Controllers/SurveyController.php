@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\SurveyCreatedNotification;
 use App\Notifications\SurveyReportUploadedNotification;
 use App\Rules\SecureFile;
+use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -145,8 +146,13 @@ class SurveyController extends Controller
                 'report_file_name' => SecureFile::sanitizeName($file->getClientOriginalName()),
                 'status' => Survey::STATUS_COMPLETED,
             ]);
+
+            // Laporan survey ikut tercatat sebagai dokumen customer/project
+            // (satu file, satu baris dokumen — tidak disalin).
+            DocumentRegistry::sync($survey);
         } catch (\Throwable $e) {
             // DB gagal: hapus file dan survey agar tidak ada data menggantung.
+            DocumentRegistry::forget($survey);
             Storage::disk('private')->delete($path);
             $survey->delete();
             report($e);
@@ -205,6 +211,10 @@ class SurveyController extends Controller
 
     public function destroy(Survey $survey)
     {
+        // Dokumen turunannya ikut dibersihkan supaya tidak menggantung
+        // di menu dokumen lain.
+        DocumentRegistry::forget($survey);
+
         $survey->delete();
 
         return redirect()->route('teknisi.surveys.index')
@@ -264,6 +274,9 @@ class SurveyController extends Controller
                     'report_file_name' => SecureFile::sanitizeName($file->getClientOriginalName()),
                     'status' => Survey::STATUS_COMPLETED,
                 ]);
+
+                // Ganti laporan = dokumen yang sama diperbarui, bukan dobel.
+                DocumentRegistry::sync($survey);
             });
         } catch (\Throwable $e) {
             // DB gagal: file baru dibuang, laporan lama tetap utuh,

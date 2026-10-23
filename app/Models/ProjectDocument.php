@@ -26,12 +26,57 @@ class ProjectDocument extends Model
 
     public const DOC_TYPES = ['invoice', 'po', 'payment'];
 
+    /**
+     * doc_type hasil kerja modul (Survey, Sizing, Instalasi). File-nya milik
+     * modul dan hanya dicatat di sini supaya tampil di semua menu dokumen.
+     */
+    public const MODULE_TYPES = ['survey', 'sizing', 'instalasi'];
+
     public function getTypeLabelAttribute()
     {
         return match ($this->doc_type) {
             'invoice' => 'INV',
             'po' => 'PO',
             'payment' => 'PAY',
+            default => null,
+        };
+    }
+
+    /** Dokumen transaksi (invoice/PO/payment) — punya aturan akses sendiri. */
+    public function isTransactionDocument(): bool
+    {
+        return in_array($this->doc_type, self::DOC_TYPES, true);
+    }
+
+    /**
+     * Dokumen yang filenya dimiliki modul lain (Survey/Sizing/Instalasi).
+     * Mutasi (rename/archive/hapus) dilakukan di menu modulnya supaya file
+     * dan daftar dokumen tidak pernah berbeda.
+     */
+    public function isModuleDocument(): bool
+    {
+        return in_array($this->doc_type, self::MODULE_TYPES, true);
+    }
+
+    /** Label sumber file untuk badge, mis. "Survey". */
+    public function getSourceLabelAttribute(): ?string
+    {
+        return \App\Services\DocumentRegistry::TYPE_LABELS[$this->doc_type] ?? null;
+    }
+
+    /**
+     * Tautan ke record modul pemilik file (halaman survey/sizing/instalasi).
+     */
+    public function sourceUrl(): ?string
+    {
+        if (! $this->isModuleDocument() || ! $this->documentable_id) {
+            return null;
+        }
+
+        return match ($this->doc_type) {
+            'survey' => route('teknisi.surveys.show', $this->documentable_id),
+            'sizing' => route('teknisi.sizing-projects.show', $this->documentable_id),
+            'instalasi' => route('teknisi.instalasis.show', $this->documentable_id),
             default => null,
         };
     }

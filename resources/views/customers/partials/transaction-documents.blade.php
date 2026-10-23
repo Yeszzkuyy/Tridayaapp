@@ -6,7 +6,7 @@ Props:
   $custPayments    Collection payment customer
   $typedDocs       Collection dokumen transaksi dari ProjectDocument (groupBy doc_type)
 --}}
-@props(['custInvoices', 'custPos', 'custPayments', 'typedDocs'])
+@props(['custInvoices', 'custPos', 'custPayments', 'typedDocs', 'canUploadDocs' => false])
 
 <div class="space-y-6">
     <div class="border-t border-slate-200 pt-6 dark:border-slate-700">
@@ -73,8 +73,15 @@ Props:
                     @endforeach
                 </div>
             @else
-                <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Belum ada invoice untuk customer ini.') }}</p>
+                <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No invoices') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
+                    @if($canUploadDocs ?? false)
+                        <div class="mt-3 flex justify-center">
+                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                           data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
+                        </div>
+                    @endif
                     <a href="{{ route('admin.invoices.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Invoice') }} →
@@ -141,8 +148,15 @@ Props:
                     @endforeach
                 </div>
             @else
-                <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Belum ada purchase order untuk customer ini.') }}</p>
+                <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No purchase orders') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
+                    @if($canUploadDocs ?? false)
+                        <div class="mt-3 flex justify-center">
+                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                           data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
+                        </div>
+                    @endif
                     <a href="{{ route('admin.pos.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Purchase Order') }} →
@@ -199,8 +213,15 @@ Props:
                     @endforeach
                 </div>
             @else
-                <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 text-center">
-                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Belum ada payment untuk customer ini.') }}</p>
+                <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No payments') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
+                    @if($canUploadDocs ?? false)
+                        <div class="mt-3 flex justify-center">
+                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
+                                           data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
+                        </div>
+                    @endif
                     <a href="{{ route('admin.payments.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Payment') }} →

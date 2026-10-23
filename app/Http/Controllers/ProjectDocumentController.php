@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Project;
 use App\Support\PtAccess;
 use App\Models\ProjectDocument;
@@ -9,20 +10,44 @@ use App\Models\DocumentCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class ProjectDocumentController extends Controller
 {
+    private function hasVersioning(): bool
+    {
+        return Schema::hasColumn('project_documents', 'document_group_id')
+            && Schema::hasColumn('project_documents', 'version');
+    }
+
     public function index(Project $project)
     {
         $this->authorize('view', $project);
 
-        $documents = $project->documents()  // ← pakai relasi dari model Project
+        $query = $project->documents()
             ->with(['category', 'uploader'])
-            ->latest()
-            ->get();
+            // Dokumen transaksi (invoice/po/payment) bukan dokumen proyek;
+            // dokumen hasil modul (survey/sizing/instalasi) ikut tampil.
+            ->where(function ($q) {
+                $q->whereNull('doc_type')
+                    ->orWhereNotIn('doc_type', ProjectDocument::DOC_TYPES);
+            })
+            ->whereNull('deleted_at');
 
-        // Sales hanya boleh upload kategori Survey (survey awal); teknisi &
-        // management boleh semua kategori.
+        if (request()->filled('search')) {
+            $query->where('file_name', 'like', '%'.request('search').'%');
+        }
+
+        if (request()->filled('category')) {
+            $query->where('document_category_id', request('category'));
+        }
+
+        $sort = request('sort', 'latest');
+        $query->orderBy($sort === 'oldest' ? 'created_at' : 'created_at', $sort === 'oldest' ? 'asc' : 'desc');
+
+        $documents = $query->paginate(15)->withQueryString();
+
         $canAll = auth()->user()->can('manage-technician') || auth()->user()->can('manage-sales-leads');
         $categories = DocumentCategory::query()
             ->when(! $canAll,
@@ -37,12 +62,8 @@ class ProjectDocumentController extends Controller
     {
         $user = auth()->user();
 
-        // Teknisi: bebas. Sales: hanya dokumen Survey untuk project miliknya
-        // (survey awal) — sesuai matriks peran di PRD project workflow.
         if (! $user->can('manage-technician') && ! $user->can('manage-sales-leads')) {
-            // Sales: hanya Survey, dan hanya untuk customer di PT-nya
-            // (atau project yang memang ia pegang).
-            $isSalesAllowed = (int) $project->sales_user_id === (int) $user->id
+            $isSalesAllowed = (int) ($project->sales_user_id ?? 0) === (int) $user->id
                 || ($project->customer && PtAccess::canWritePt($user, $project->customer->pt_group));
             abort_unless(
                 $isSalesAllowed && $this->isSurveyCategory($request->input('document_category_id')),
@@ -65,7 +86,10 @@ class ProjectDocumentController extends Controller
             'private'
         );
 
-        $project->documents()->create([
+        $attributes = [
+            'project_id' => $project->id,
+            'customer_id' => $project->customer_id,
+            'title' => $originalName,
             'file_name' => $originalName,
             'file_path' => $path,
             'file_size' => $file->getSize(),
@@ -73,7 +97,14 @@ class ProjectDocumentController extends Controller
             'notes' => $request->notes,
             'document_category_id' => $request->document_category_id,
             'uploaded_by' => auth()->id(),
-        ]);
+        ];
+
+        if ($this->hasVersioning()) {
+            $attributes['document_group_id'] = Str::uuid();
+            $attributes['version'] = 1;
+        }
+
+        $project->documents()->create($attributes);
 
         return redirect()
             ->back()
@@ -81,13 +112,8 @@ class ProjectDocumentController extends Controller
             ->with('doc_uploaded', true);
     }
 
-    /**
-     * Upload dari halaman customer: boleh tanpa project (tersimpan dengan
-     * customer_id) atau ke salah satu project milik customer tersebut.
-     */
     public function storeForCustomer(Request $request, \App\Models\Customer $customer)
     {
-        // Teknisi ATAU siapa pun yang boleh edit customer ini (dokumen legal).
         $canUpload = auth()->user()->can('manage-technician') || auth()->user()->can('update', $customer);
         abort_unless($canUpload, 403);
         $validated = $request->validate([
@@ -95,11 +121,9 @@ class ProjectDocumentController extends Controller
             'project_id' => 'nullable|exists:projects,id',
             'document_category_id' => 'nullable|exists:document_categories,id',
             'notes' => 'nullable|string|max:500',
-            // File pengganti form Create Invoice / Create PO / Record Payment.
             'doc_type' => 'nullable|in:' . implode(',', \App\Models\ProjectDocument::DOC_TYPES),
         ]);
 
-        // File invoice/PO/payment selalu milik customer, bukan milik project.
         if ($validated['doc_type'] ?? null) {
             $validated['project_id'] = null;
         }
@@ -110,11 +134,9 @@ class ProjectDocumentController extends Controller
         abort_if($project && (int) $project->customer_id !== (int) $customer->id, 422);
 
         if ($project) {
-            // Sales hanya boleh upload dokumen Survey (survey awal) untuk
-            // project miliknya; teknisi bebas.
             if (! auth()->user()->can('manage-technician') && ! auth()->user()->can('manage-sales-leads')) {
                 $user = auth()->user();
-                $isSalesAllowed = (int) $project->sales_user_id === (int) $user->id
+                $isSalesAllowed = (int) ($project->sales_user_id ?? 0) === (int) $user->id
                     || ($project->customer && PtAccess::canWritePt($user, $project->customer->pt_group));
                 abort_unless(
                     $isSalesAllowed && $this->isSurveyCategory($validated['document_category_id'] ?? null),
@@ -132,10 +154,11 @@ class ProjectDocumentController extends Controller
             'private'
         );
 
-        ProjectDocument::create([
+        $attributes = [
             'project_id' => $project?->id,
             'customer_id' => $customer->id,
             'doc_type' => $validated['doc_type'] ?? null,
+            'title' => $originalName,
             'file_name' => $originalName,
             'file_path' => $path,
             'file_size' => $file->getSize(),
@@ -143,7 +166,14 @@ class ProjectDocumentController extends Controller
             'notes' => $validated['notes'] ?? null,
             'document_category_id' => $validated['document_category_id'] ?? null,
             'uploaded_by' => auth()->id(),
-        ]);
+        ];
+
+        if ($this->hasVersioning()) {
+            $attributes['document_group_id'] = Str::uuid();
+            $attributes['version'] = 1;
+        }
+
+        ProjectDocument::create($attributes);
 
         return redirect()
             ->back()
@@ -152,9 +182,65 @@ class ProjectDocumentController extends Controller
     }
 
     /**
-     * Pemilik dokumen untuk otorisasi: project-nya, atau customer-nya
-     * bila dokumen umum tanpa project.
+     * Dokumen milik modul (survey/sizing/instalasi) dikelola dari menu
+     * modulnya: file yang sama dipakai bersama, jadi mutasi lewat menu
+     * dokumen membuat file dan daftar tidak sinkran. Berlaku untuk semua
+     * role — termasuk super-admin yang di Gate::before mem-bypass policy.
      */
+    private function assertNotModuleOwned(ProjectDocument $document): void
+    {
+        abort_if(
+            $document->isModuleDocument(),
+            403,
+            __('Dokumen ini dikelola dari menu modulnya (Survey/Sizing/Instalasi).')
+        );
+    }
+
+    public function storeVersion(Request $request, ProjectDocument $document)
+    {
+        $this->assertNotModuleOwned($document);
+        abort_unless(Gate::allows('uploadVersion', $document), 403);
+
+        if (! $this->hasVersioning()) {
+            return back()->withErrors(['file' => __('Sistem versi belum aktif. Hubungi administrator.')]);
+        }
+
+        $request->validate([
+            'file' => ['required', 'file', 'max:20480', \App\Rules\SecureFile::documents()],
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $file = $request->file('file');
+        $originalName = \App\Rules\SecureFile::sanitizeName($file->getClientOriginalName());
+        $baseDir = $document->project_id
+            ? 'documents/' . $document->project_id
+            : 'documents/customer-' . $document->customer_id;
+        $path = $file->storeAs(
+            $baseDir,
+            Str::uuid() . '.' . strtolower($file->getClientOriginalExtension()),
+            'private'
+        );
+
+        $nextVersion = ($document->version ?? 1) + 1;
+
+        $newDocument = $document->replicate();
+        $newDocument->version = $nextVersion;
+        $newDocument->file_name = $originalName;
+        $newDocument->file_path = $path;
+        $newDocument->file_size = $file->getSize();
+        $newDocument->mime_type = $file->getMimeType() ?: 'application/octet-stream';
+        $newDocument->notes = $request->notes;
+        $newDocument->uploaded_by = auth()->id();
+        $newDocument->created_at = now();
+        $newDocument->updated_at = now();
+        $newDocument->save();
+
+        return redirect()
+            ->back()
+            ->with('success', __('Versi baru berhasil diunggah.'))
+            ->with('doc_uploaded', true);
+    }
+
     private function ownerOf(ProjectDocument $document)
     {
         return $document->project ?? $document->customer;
@@ -162,21 +248,15 @@ class ProjectDocumentController extends Controller
 
     public function preview(ProjectDocument $document)
     {
-        $owner = $this->ownerOf($document);
-        abort_if(! $owner, 404);
-        $this->authorize('view', $owner);
+        abort_unless(Gate::allows('view', $document), 403);
 
-        // MIME dari isi file + hanya tipe aman yang inline (svg ikut download).
         return \App\Rules\SecureFile::fileResponse('private', $document->file_path, $document->file_name);
     }
 
     public function download(ProjectDocument $document)
     {
-        $owner = $this->ownerOf($document);
-        abort_if(! $owner, 404);
-        $this->authorize('view', $owner);
+        abort_unless(Gate::allows('view', $document), 403);
 
-        // Cek apakah file ada di storage
         if (!Storage::disk('private')->exists($document->file_path)) {
             abort(404, 'File tidak ditemukan.');
         }
@@ -184,75 +264,128 @@ class ProjectDocumentController extends Controller
         return Storage::disk('private')->download($document->file_path, $document->file_name);
     }
 
-    /**
-     * Ubah nama file (ekstensi asli dipertahankan demi keamanan).
-     * Izin mengikuti aturan hapus: dokumen project = teknisi,
-     * dokumen umum = teknisi ATAU pengedit customer.
-     */
-    public function rename(Request $request, ProjectDocument $document)
+    public function update(Request $request, ProjectDocument $document)
     {
-        if ($document->project) {
-            $this->authorize('update', $document->project);
-        } else {
-            $owner = $document->customer;
-            abort_if(! $owner, 404);
-            abort_unless(
-                auth()->user()->can('manage-technician') || auth()->user()->can('update', $owner),
-                403
-            );
+        $this->assertNotModuleOwned($document);
+        abort_unless(Gate::allows('update', $document), 403);
+
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'document_category_id' => 'nullable|exists:document_categories,id',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $updates = [];
+        if ($request->has('name')) {
+            $base = trim(pathinfo(\App\Rules\SecureFile::sanitizeName($validated['name']), PATHINFO_FILENAME));
+            if ($base !== '') {
+                $ext = strtolower(pathinfo($document->file_name, PATHINFO_EXTENSION));
+                $updates['file_name'] = $base . ($ext ? '.' . $ext : '');
+            }
+        }
+        if ($request->has('document_category_id')) {
+            $updates['document_category_id'] = $validated['document_category_id'];
+        }
+        if ($request->has('notes')) {
+            $updates['notes'] = $validated['notes'];
         }
 
-        $validated = $request->validate(['name' => 'required|string|max:255']);
-
-        $base = trim(pathinfo(\App\Rules\SecureFile::sanitizeName($validated['name']), PATHINFO_FILENAME));
-        if ($base === '') {
-            $base = pathinfo($document->file_name, PATHINFO_FILENAME);
+        if (! empty($updates)) {
+            $document->update($updates);
         }
-        $ext = strtolower(pathinfo($document->file_name, PATHINFO_EXTENSION));
-
-        $document->update(['file_name' => $base . ($ext ? '.' . $ext : '')]);
 
         return redirect()
             ->back()
-            ->with('success', __('File renamed successfully.'))
-            ->with('doc_uploaded', true);
+            ->with('success', __('Metadata dokumen berhasil diperbarui.'));
+    }
+
+    public function rename(Request $request, ProjectDocument $document)
+    {
+        $request->merge(['name' => $request->input('name')]);
+        return $this->update($request, $document);
+    }
+
+    public function archive(ProjectDocument $document)
+    {
+        $this->assertNotModuleOwned($document);
+        abort_unless(Gate::allows('archive', $document), 403);
+
+        $document->delete();
+
+        return redirect()
+            ->back()
+            ->with('success', __('Dokumen berhasil diarsipkan.'));
+    }
+
+    public function restore(ProjectDocument $document)
+    {
+        $this->assertNotModuleOwned($document);
+        abort_unless(Gate::allows('restore', $document), 403);
+
+        $document->restore();
+
+        return redirect()
+            ->back()
+            ->with('success', __('Dokumen berhasil dipulihkan.'));
     }
 
     public function destroy(ProjectDocument $document)
     {
-        if ($document->project) {
-            $this->authorize('update', $document->project);
-        } else {
-            // Dokumen umum: teknisi ATAU pengedit customer-nya.
-            $owner = $document->customer;
-            abort_if(! $owner, 404);
-            abort_unless(
-                auth()->user()->can('manage-technician') || auth()->user()->can('update', $owner),
-                403
-            );
-        }
+        $this->assertNotModuleOwned($document);
+        abort_unless(Gate::allows('forceDelete', $document), 403);
 
-        // Hapus file dari storage kalau ada
         if ($document->file_path && Storage::disk('private')->exists($document->file_path)) {
             Storage::disk('private')->delete($document->file_path);
         }
 
-        // File payment dipakai juga sebagai bukti transfer (path sama).
-        // Lepas tautannya supaya tombol Proof tidak menunjuk file yang hilang.
         $linked = $document->documentable;
         if ($linked instanceof \App\Models\Payment && $linked->proof_file === $document->file_path) {
             $linked->update(['proof_file' => null]);
         }
 
-        // Force delete (hapus permanen dari database)
         $document->forceDelete();
 
         return redirect()
             ->back()
-            ->with('success', __('Document deleted successfully.'));
+            ->with('success', __('Dokumen dihapus permanen.'));
     }
 
-    /** Kategori Survey (mis. "Report Survey") — dipakai untuk batas upload sales. */
+    public function versionHistory(ProjectDocument $document)
+    {
+        abort_unless(Gate::allows('view', $document), 403);
+
+        if (! $this->hasVersioning()) {
+            return view('project_documents.version-history', [
+                'document' => $document->load(['category', 'uploader']),
+                'versions' => collect([$document]),
+            ]);
+        }
+
+        $groupId = $document->document_group_id;
+        $versions = $groupId
+            ? ProjectDocument::where('document_group_id', $groupId)
+                ->with(['category', 'uploader'])
+                ->orderBy('version', 'asc')
+                ->get()
+            : collect([$document->load(['category', 'uploader'])]);
+
+        return view('project_documents.version-history', compact('document', 'versions'));
+    }
+
+    public function archiveIndex(Customer $customer)
+    {
+        $this->authorize('viewAny');
+
+        $archivedDocuments = ProjectDocument::with(['project', 'category', 'uploader'])
+            ->where('customer_id', $customer->id)
+            ->whereNotNull('deleted_at')
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('project_documents.archive', compact('customer', 'archivedDocuments'));
+    }
+
     private function isSurveyCategory($categoryId): bool
     {
         if (empty($categoryId)) {
