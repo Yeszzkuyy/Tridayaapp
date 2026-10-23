@@ -354,6 +354,14 @@ class TechnicianTaskTest extends TestCase
         $this->assertStringContainsString($unassigned->title, $unassignedHtml);
         $this->assertStringNotContainsString($taskA->title, $unassignedHtml);
         $this->assertStringNotContainsString($taskB->title, $unassignedHtml);
+
+        // Input filter tidak valid (array) tidak boleh membuat halaman error.
+        $invalid = $this->actingAs($superAdmin)
+            ->get(route('teknisi.tasks.index', ['technician_id' => [$techA->id]]))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($taskA->title, $invalid);
+        $this->assertStringContainsString($taskB->title, $invalid);
     }
 
     public function test_super_admin_can_open_any_task_with_full_actions(): void

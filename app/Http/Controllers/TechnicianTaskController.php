@@ -23,14 +23,19 @@ class TechnicianTaskController extends Controller
         $query = TechnicalRequest::with(['lead.customer', 'requester', 'technician'])
             ->where('request_type', '!=', 'estimate');
 
+        $technicianFilter = null;
+
         if ($isSuperAdmin) {
             // Super-admin melihat semua tugas. Filter teknisi opsional,
             // termasuk tugas yang belum di-assign.
-            $technicianFilter = $request->get('technician_id');
+            $technicianFilter = $request->query('technician_id');
+            if (! is_string($technicianFilter)) {
+                $technicianFilter = null;
+            }
 
             if ($technicianFilter === 'unassigned') {
                 $query->whereNull('assigned_technician_id');
-            } elseif ($technicianFilter !== null && $technicianFilter !== '' && ctype_digit((string) $technicianFilter)) {
+            } elseif ($technicianFilter !== null && $technicianFilter !== '' && ctype_digit($technicianFilter)) {
                 $query->where('assigned_technician_id', (int) $technicianFilter);
             }
         } else {
@@ -55,7 +60,7 @@ class TechnicianTaskController extends Controller
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
             : collect();
 
-        return view('teknisi.tasks.index', compact('tasks', 'isSuperAdmin', 'technicians'));
+        return view('teknisi.tasks.index', compact('tasks', 'isSuperAdmin', 'technicians', 'technicianFilter'));
     }
 
     public function show(TechnicalRequest $technicalRequest)

@@ -47,9 +47,9 @@
                     <label for="task-technician" class="whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ __('Technician') }}:</label>
                     <select id="task-technician" name="technician_id" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
                         <option value="">{{ __('All technicians') }}</option>
-                        <option value="unassigned" @selected(request('technician_id') === 'unassigned')>{{ __('Unassigned') }}</option>
+                        <option value="unassigned" @selected($technicianFilter === 'unassigned')>{{ __('Unassigned') }}</option>
                         @foreach($technicians as $technician)
-                            <option value="{{ $technician->id }}" @selected((string) request('technician_id') === (string) $technician->id)>
+                            <option value="{{ $technician->id }}" @selected($technicianFilter === (string) $technician->id)>
                                 {{ $technician->name }}
                             </option>
                         @endforeach
