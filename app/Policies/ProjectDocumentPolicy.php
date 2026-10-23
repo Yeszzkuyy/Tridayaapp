@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Project;
 use App\Models\ProjectDocument;
 use App\Models\User;
+use App\Support\DocumentAccess;
 use App\Support\PtAccess;
 
 class ProjectDocumentPolicy
@@ -27,6 +28,12 @@ class ProjectDocumentPolicy
      */
     public function view(User $user, ProjectDocument $document): bool
     {
+        // Dokumen yang sedang di Trash memakai aturan Trash (role + PT +
+        // pemilik), bukan aturan dokumen aktif.
+        if ($document->trashed()) {
+            return DocumentAccess::canViewInTrash($user, $document);
+        }
+
         $owner = $this->ownerOf($document);
         if (! $owner) {
             return false;
@@ -119,10 +126,13 @@ class ProjectDocumentPolicy
 
     /**
      * Cek apakah user boleh mengarsipkan (soft delete) dokumen.
+     *
+     * Semua jenis dokumen (termasuk modul Survey/Sizing/Instalasi) lewat
+     * Trash. Kewenangan mengikuti role + modul + kepemilikan.
      */
     public function archive(User $user, ProjectDocument $document): bool
     {
-        return $this->update($user, $document);
+        return DocumentAccess::canManage($user, $document);
     }
 
     /**
@@ -130,25 +140,16 @@ class ProjectDocumentPolicy
      */
     public function restore(User $user, ProjectDocument $document): bool
     {
-        return $this->update($user, $document);
+        return DocumentAccess::canManage($user, $document);
     }
 
     /**
      * Cek apakah user boleh menghapus permanen (force delete).
-     *
-     * Dokumen biasa mengikuti hak edit pemiliknya (teknisi untuk dokumen
-     * proyek, pengedit customer untuk dokumen umum) — sama seperti perilaku
-     * lama. File milik modul hanya super-admin yang boleh menghapus permanen;
-     * controller sekaligus melepas tautan file di record modulnya supaya
-     * tidak muncul lagi setelah sync.
+     * Kewenangannya sama dengan hapus/restore.
      */
     public function forceDelete(User $user, ProjectDocument $document): bool
     {
-        if ($document->isModuleDocument()) {
-            return $user->hasRole('super-admin');
-        }
-
-        return $this->update($user, $document);
+        return DocumentAccess::canManage($user, $document);
     }
 
     /**

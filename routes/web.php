@@ -298,7 +298,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/project-documents/{document}/rename', [ProjectDocumentController::class, 'rename'])->name('project-documents.rename');
         Route::patch('/project-documents/{document}', [ProjectDocumentController::class, 'update'])->name('project-documents.update');
         Route::post('/project-documents/{document}/archive', [ProjectDocumentController::class, 'archive'])->name('project-documents.archive');
-        Route::post('/project-documents/{document}/restore', [ProjectDocumentController::class, 'restore'])->name('project-documents.restore');
+        Route::post('/project-documents/{document}/restore', [ProjectDocumentController::class, 'restore'])->withTrashed()->name('project-documents.restore');
         Route::post('/project-documents/{document}/version', [ProjectDocumentController::class, 'storeVersion'])->name('project-documents.store-version');
         Route::get('/project-documents/{document}/versions', [ProjectDocumentController::class, 'versionHistory'])->name('project-documents.version-history');
     });
@@ -319,8 +319,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
         Route::get('/projects/{project}/documents', [ProjectDocumentController::class, 'index'])->name('project-documents.index');
-        Route::get('/project-documents/{document}/download', [ProjectDocumentController::class, 'download'])->name('project-documents.download');
-        Route::get('/project-documents/{document}/preview', [ProjectDocumentController::class, 'preview'])->name('project-documents.preview');
+        Route::get('/project-documents/{document}/download', [ProjectDocumentController::class, 'download'])->withTrashed()->name('project-documents.download');
+        Route::get('/project-documents/{document}/preview', [ProjectDocumentController::class, 'preview'])->withTrashed()->name('project-documents.preview');
     });
 
     // ============================================

@@ -140,29 +140,16 @@
                         {{ __('Rename') }}
                     </button>
                 @endif
-                @if($doc->isModuleDocument())
-                    @can('forceDelete', $doc)
-                        <form action="{{ route('project-documents.destroy', $doc) }}" method="POST"
-                              onsubmit="return confirm('{{ __('Hapus permanen dokumen ini? Tindakan ini tidak bisa dibatalkan.') }}')">
-                            @csrf @method('DELETE')
-                            <button type="submit"
-                                    class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
-                                {{ __('Hapus Permanen') }}
-                            </button>
-                        </form>
-                    @endcan
-                @else
-                    @can('archive', $doc)
-                        <form action="{{ route('project-documents.archive', $doc) }}" method="POST"
-                              onsubmit="return confirm('{{ __('Pindahkan dokumen ini ke Trash? Bisa dipulihkan dalam :days hari.', ['days' => \App\Models\ProjectDocument::TRASH_RETENTION_DAYS]) }}')">
-                            @csrf
-                            <button type="submit"
-                                    class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
-                                {{ __('Delete') }}
-                            </button>
-                        </form>
-                    @endcan
-                @endif
+                @can('archive', $doc)
+                    <form action="{{ route('project-documents.archive', $doc) }}" method="POST"
+                          onsubmit="return confirm('{{ __('Pindahkan dokumen ini ke Trash? Bisa dipulihkan dalam :days hari.', ['days' => \App\Models\ProjectDocument::TRASH_RETENTION_DAYS]) }}')">
+                        @csrf
+                        <button type="submit"
+                                class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
+                            {{ __('Delete') }}
+                        </button>
+                    </form>
+                @endcan
             </div>
         </div>
     </div>

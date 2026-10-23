@@ -448,7 +448,7 @@ class CustomerDocumentUploadTest extends TestCase
         $this->assertStringContainsString('data-doc-rename', $html);
         $doc = $docs->first();
         $this->assertStringContainsString(route('project-documents.download', $doc), $html);
-        $this->assertStringContainsString(route('project-documents.destroy', $doc), $html);
+        $this->assertStringContainsString(route('project-documents.archive', $doc), $html);
 
         // Isi menu memakai TEKS (bukan ikon).
         $panelStart = strpos($html, 'data-doc-menu-panel');

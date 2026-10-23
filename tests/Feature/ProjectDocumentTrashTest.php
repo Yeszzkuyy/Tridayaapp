@@ -85,10 +85,12 @@ class ProjectDocumentTrashTest extends TestCase
         );
     }
 
-    public function test_dokumen_di_trash_hanya_terlihat_oleh_yang_memindahkannya(): void
+    public function test_dokumen_di_trash_hanya_terlihat_oleh_sales_di_pt_yang_sama(): void
     {
         $sales = $this->userWithRole('sales');
+        $sales->assignRole('sales-nti');
         $otherSales = $this->userWithRole('sales');
+        $otherSales->assignRole('sales-mgk');
 
         $this->actingAs($sales);
         $customer = $this->makeCustomer();
@@ -214,7 +216,7 @@ class ProjectDocumentTrashTest extends TestCase
         );
     }
 
-    public function test_dokumen_modul_tetap_memakai_hapus_permanen_khusus_super_admin(): void
+    public function test_dokumen_modul_memakai_aksi_hapus_ke_trash_bukan_hapus_permanen(): void
     {
         $admin = $this->userWithRole('super-admin');
         $this->actingAs($admin);
@@ -228,9 +230,15 @@ class ProjectDocumentTrashTest extends TestCase
 
         $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
         $this->assertStringContainsString(
-            route('project-documents.destroy', $moduleDocument),
-            $html
+            'action="' . route('project-documents.archive', $moduleDocument) . '"',
+            $html,
+            'Dokumen modul juga harus lewat Trash'
         );
-        $this->assertStringContainsString('Delete Permanently', $html);
+        $this->assertStringNotContainsString(
+            'action="' . route('project-documents.destroy', $moduleDocument) . '"',
+            $html,
+            'Tidak boleh ada tombol hapus permanen di halaman dokumen'
+        );
+        $this->assertStringNotContainsString('Delete Permanently', $html);
     }
 }

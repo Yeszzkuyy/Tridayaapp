@@ -289,31 +289,16 @@
                                                     {{ __('Rename') }}
                                                 </button>
                                             @endcan
-
-                                            @can('archive', $document)
-                                                <button type="button" data-doc-archive
-                                                        data-doc-id="{{ $document->id }}"
-                                                        data-doc-name="{{ $document->file_name }}"
-                                                        class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                    {{ __('Arsipkan') }}
-                                                </button>
-                                            @endcan
                                         @endif
 
-                                        @if($document->isModuleDocument())
-                                            @can('forceDelete', $document)
-                                                <form action="{{ route('project-documents.destroy', $document) }}"
-                                                      method="POST"
-                                                      onsubmit="return confirm('{{ __('Hapus permanen dokumen ini? Tindakan ini tidak bisa dibatalkan.') }}')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="w-full px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40">
-                                                        {{ __('Hapus Permanen') }}
-                                                    </button>
-                                                </form>
-                                            @endcan
-                                        @endif
+                                        @can('archive', $document)
+                                            <button type="button" data-doc-archive
+                                                    data-doc-id="{{ $document->id }}"
+                                                    data-doc-name="{{ $document->file_name }}"
+                                                    class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                {{ __('Arsipkan') }}
+                                            </button>
+                                        @endcan
                                     </div>
                                 </div>
                             </div>
@@ -344,9 +329,9 @@
     {{-- Modal konfirmasi arsip --}}
     <div id="archive-confirm-modal" class="fixed inset-0 z-[95] hidden items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
         <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-            <h3 class="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Arsipkan Dokumen') }}</h3>
+            <h3 class="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Hapus Dokumen') }}</h3>
             <p class="mb-6 text-sm text-slate-600 dark:text-slate-300" id="archive-modal-message">
-                {{ __('Dokumen akan dipindahkan ke Arsip dan tidak lagi muncul di daftar aktif. File dan riwayat versi tetap tersimpan.') }}
+                {{ __('Dokumen akan dipindahkan ke Trash dan dihapus permanen otomatis setelah :days hari. Bisa dipulihkan dari menu Trash.', ['days' => \App\Models\ProjectDocument::TRASH_RETENTION_DAYS]) }}
             </p>
             <form id="archive-confirm-form" method="POST" action="#">
                 @csrf
@@ -358,7 +343,7 @@
                     </button>
                     <button type="submit"
                             class="group relative overflow-hidden rounded-xl border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">
-                        {{ __('Ya, Arsipkan') }}
+                        {{ __('Ya, Hapus') }}
                         <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                 </div>
@@ -450,8 +435,9 @@
                     const modal = document.getElementById('archive-confirm-modal');
 
                     if (message) {
-                        message.textContent = '{{ __('Dokumen :name akan diarsipkan dan tidak lagi muncul di daftar aktif.') }}'
-                            .replace(':name', docName);
+                        message.textContent = '{{ __('Dokumen :name akan dipindahkan ke Trash (bisa dipulihkan :days hari).') }}'
+                            .replace(':name', docName)
+                            .replace(':days', '{{ \App\Models\ProjectDocument::TRASH_RETENTION_DAYS }}');
                     }
 
                     if (form) {

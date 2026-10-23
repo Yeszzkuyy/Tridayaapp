@@ -103,6 +103,7 @@
                             <div class="flex items-center gap-3">
                                 <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
                                                label="{{ __('Download') }}" title="{{ __('Download') }}" />
+                                @can('restore', $document)
                                 <button type="button" data-doc-restore
                                         data-doc-id="{{ $document->id }}"
                                         data-doc-name="{{ $document->file_name }}"
@@ -110,6 +111,7 @@
                                     <x-icon name="refresh" class="h-4 w-4" />
                                     {{ __('Pulihkan') }}
                                 </button>
+                                @endcan
                             </div>
                         </div>
                     @endforeach

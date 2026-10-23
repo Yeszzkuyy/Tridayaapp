@@ -21,8 +21,11 @@ class ProjectDocumentCleanup
     /**
      * Hapus permanen satu dokumen beserta file dan tautannya.
      */
-    public function forceDelete(ProjectDocument $document): void
+    public function forceDelete(ProjectDocument $document, string $action = 'force_deleted'): void
     {
+        // Catat dulu sebelum baris dokumen hilang.
+        DocumentActivityLogger::log($document, $action);
+
         // Dokumen milik modul: lepas dulu tautan file di record modulnya,
         // supaya tidak didaftarkan ulang oleh DocumentRegistry::sync dan
         // menu modul tidak menunjuk file yang sudah hilang.
@@ -59,7 +62,7 @@ class ProjectDocumentCleanup
             ->orderBy('id')
             ->chunkById(100, function ($documents) use (&$count) {
                 foreach ($documents as $document) {
-                    $this->forceDelete($document);
+                    $this->forceDelete($document, 'purged');
                     $count++;
                 }
             });
@@ -107,10 +110,79 @@ class ProjectDocumentCleanup
     }
 
     /**
+     * Pulihkan dokumen dari Trash. Dokumen modul: pasang kembali tautan file
+     * ke record modulnya. Gagal bila modul sudah punya file lain.
+     */
+    public function restore(ProjectDocument $document): bool
+    {
+        if ($document->isModuleDocument() && ! $this->reattachModuleFile($document)) {
+            return false;
+        }
+
+        $document->restore();
+        $document->forceFill(['deleted_by' => null])->save();
+
+        DocumentActivityLogger::log($document, 'restored');
+
+        return true;
+    }
+
+    /**
+     * Pasang kembali file dokumen ke record modul (kebalikan releaseModuleFile).
+     * false = modul sudah punya file lain / record modul tidak ada.
+     */
+    public function reattachModuleFile(ProjectDocument $document): bool
+    {
+        $owner = $document->documentable;
+
+        if (! $owner) {
+            return false;
+        }
+
+        if ($owner instanceof Survey || $owner instanceof Instalasi) {
+            if (filled($owner->report_file)) {
+                return $owner->report_file === $document->file_path;
+            }
+
+            $owner->forceFill([
+                'report_file' => $document->file_path,
+                'report_file_name' => $document->file_name,
+            ])->save();
+
+            return true;
+        }
+
+        if ($owner instanceof SizingProject) {
+            $attachments = $owner->attachments ?? [];
+
+            $paths = collect($attachments)->map(function ($attachment) {
+                return is_array($attachment)
+                    ? ($attachment['file_path'] ?? $attachment['path'] ?? null)
+                    : $attachment;
+            });
+
+            if ($paths->contains($document->file_path)) {
+                return true;
+            }
+
+            $attachments[] = [
+                'file_path' => $document->file_path,
+                'file_name' => $document->file_name,
+            ];
+
+            $owner->forceFill(['attachments' => $attachments])->save();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Cabut referensi file dari record pemilik modul (survey/instalasi satu
      * file, sizing berupa daftar lampiran). File fisik dihapus terpisah.
      */
-    private function releaseModuleFile(ProjectDocument $document): void
+    public function releaseModuleFile(ProjectDocument $document): void
     {
         $owner = $document->documentable;
 

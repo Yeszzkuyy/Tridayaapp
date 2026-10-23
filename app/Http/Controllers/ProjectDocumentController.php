@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Project;
 use App\Support\PtAccess;
+use App\Support\DocumentAccess;
+use App\Services\DocumentActivityLogger;
 use App\Models\ProjectDocument;
 use App\Models\DocumentCategory;
 use App\Services\ProjectDocumentCleanup;
@@ -306,13 +308,20 @@ class ProjectDocumentController extends Controller
         return $this->update($request, $document);
     }
 
-    public function archive(ProjectDocument $document)
+    public function archive(ProjectDocument $document, ProjectDocumentCleanup $cleanup)
     {
-        $this->assertNotModuleOwned($document);
         abort_unless(Gate::allows('archive', $document), 403);
+
+        // Dokumen modul: lepas tautan file di record modulnya dulu, supaya
+        // laporan benar-benar pindah ke Trash (bukan tampil dobel).
+        if ($document->isModuleDocument()) {
+            $cleanup->releaseModuleFile($document);
+        }
 
         $document->forceFill(['deleted_by' => auth()->id()])->save();
         $document->delete();
+
+        DocumentActivityLogger::log($document, 'archived');
 
         return redirect()
             ->back()
@@ -321,13 +330,17 @@ class ProjectDocumentController extends Controller
             ]));
     }
 
-    public function restore(ProjectDocument $document)
+    public function restore(ProjectDocument $document, ProjectDocumentCleanup $cleanup)
     {
-        $this->assertNotModuleOwned($document);
         abort_unless(Gate::allows('restore', $document), 403);
 
-        $document->restore();
-        $document->forceFill(['deleted_by' => null])->save();
+        if (! $cleanup->restore($document)) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'document' => __('Tidak bisa restore: modul sudah punya file lain atau record modulnya sudah tidak ada.'),
+                ]);
+        }
 
         return redirect()
             ->back()
@@ -337,6 +350,15 @@ class ProjectDocumentController extends Controller
     public function destroy(ProjectDocument $document, ProjectDocumentCleanup $cleanup)
     {
         abort_unless(Gate::allows('forceDelete', $document), 403);
+
+        // Hapus permanen dokumen utama hanya lewat menu Trash (atau otomatis
+        // setelah 14 hari). Route ini hanya untuk versi lama di riwayat versi.
+        $isOldVersion = $document->document_group_id
+            && ProjectDocument::where('document_group_id', $document->document_group_id)
+                ->where('version', '>', (int) ($document->version ?? 1))
+                ->exists();
+
+        abort_unless($isOldVersion, 403);
 
         $cleanup->forceDelete($document);
 
@@ -371,9 +393,12 @@ class ProjectDocumentController extends Controller
     {
         $this->authorize('viewAny', ProjectDocument::class);
 
-        $archivedDocuments = ProjectDocument::with(['project', 'category', 'uploader'])
-            ->where('customer_id', $customer->id)
-            ->whereNotNull('deleted_at')
+        $archivedDocuments = DocumentAccess::applyTrashVisibility(
+            ProjectDocument::onlyTrashed()
+                ->with(['project', 'category', 'uploader'])
+                ->where('customer_id', $customer->id),
+            auth()->user()
+        )
             ->orderBy('deleted_at', 'desc')
             ->paginate(15)
             ->withQueryString();

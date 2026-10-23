@@ -208,7 +208,7 @@ class DocumentRegistrySyncTest extends TestCase
         $this->assertSame('surveys/9/reports/lama.pdf', $document->file_path);
     }
 
-    public function test_dokumen_modul_tidak_bisa_diubah_tapi_super_admin_bisa_hapus_permanen(): void
+    public function test_dokumen_modul_tidak_bisa_diubah_tapi_bisa_diarsipkan(): void
     {
         Storage::fake('private');
         $admin = $this->userWithRole('super-admin');
@@ -228,17 +228,30 @@ class DocumentRegistrySyncTest extends TestCase
 
         $this->actingAs($admin);
 
+        // Nama file dokumen modul tetap tidak boleh diubah.
         $this->patch(route('project-documents.rename', $document), ['name' => 'Ubah Nama'])
             ->assertForbidden();
-        $this->post(route('project-documents.archive', $document))->assertForbidden();
 
-        // Hapus permanen boleh (super-admin) — tombolnya juga muncul di
-        // halaman dokumen customer.
         $html = $this->get(route('customers.show', $project->customer_id))->assertOk()->getContent();
-        $this->assertStringContainsString(route('project-documents.destroy', $document), $html);
+        $this->assertStringContainsString(
+            'action="' . route('project-documents.archive', $document) . '"',
+            $html
+        );
+        $this->assertStringNotContainsString(
+            'action="' . route('project-documents.destroy', $document) . '"',
+            $html
+        );
 
-        $this->delete(route('project-documents.destroy', $document))->assertRedirect();
-        $this->assertModelMissing($document);
+        // Dokumen modul sekarang lewat Trash, bukan hapus permanen langsung.
+        $this->post(route('project-documents.archive', $document))->assertRedirect();
+        $this->assertSoftDeleted($document);
+        $this->assertSame(
+            $admin->id,
+            ProjectDocument::withTrashed()->findOrFail($document->id)->deleted_by
+        );
+
+        $this->delete(route('trash.destroy-document', $document->id))->assertRedirect();
+        $this->assertNull(ProjectDocument::withTrashed()->find($document->id));
     }
 
     public function test_teknisi_bisa_memindahkan_dokumen_proyek_ke_trash(): void
@@ -294,10 +307,11 @@ class DocumentRegistrySyncTest extends TestCase
         );
     }
 
-    public function test_teknisi_tidak_bisa_hapus_dokumen_modul(): void
+    public function test_teknisi_hanya_bisa_arsip_dokumen_modul_miliknya(): void
     {
         Storage::fake('private');
-        $technician = $this->userWithRole('technician');
+        $uploader = $this->userWithRole('technician');
+        $otherTechnician = $this->userWithRole('technician');
         $project = $this->makeProject();
 
         $document = ProjectDocument::create([
@@ -309,17 +323,20 @@ class DocumentRegistrySyncTest extends TestCase
             'file_name' => 'laporan.pdf',
             'file_path' => 'surveys/1/reports/laporan.pdf',
             'file_size' => 10,
-            'uploaded_by' => $technician->id,
+            'uploaded_by' => $uploader->id,
         ]);
 
-        $this->actingAs($technician)
+        // Teknisi lain (bukan pengunggah / PIC project) tidak boleh.
+        $this->actingAs($otherTechnician)
             ->post(route('project-documents.archive', $document))
             ->assertForbidden();
-        $this->actingAs($technician)
-            ->delete(route('project-documents.destroy', $document))
-            ->assertForbidden();
+        $this->assertNotSoftDeleted($document);
 
-        $this->assertModelExists($document);
+        // Pengunggah boleh memindahkan ke Trash.
+        $this->actingAs($uploader)
+            ->post(route('project-documents.archive', $document))
+            ->assertRedirect();
+        $this->assertSoftDeleted($document);
     }
 
     public function test_hapus_permanen_dokumen_survey_melepas_laporan_survey(): void
@@ -342,9 +359,14 @@ class DocumentRegistrySyncTest extends TestCase
         \App\Services\DocumentRegistry::sync($survey);
         $document = ProjectDocument::where('doc_type', 'survey')->firstOrFail();
 
-        $this->delete(route('project-documents.destroy', $document))->assertRedirect();
+        // Dokumen utama tidak bisa dihapus permanen langsung; harus lewat Trash.
+        $this->delete(route('project-documents.destroy', $document))->assertForbidden();
 
-        $this->assertModelMissing($document);
+        $this->post(route('project-documents.archive', $document))->assertRedirect();
+        $this->assertSoftDeleted($document);
+        $this->delete(route('trash.destroy-document', $document->id))->assertRedirect();
+
+        $this->assertNull(ProjectDocument::withTrashed()->find($document->id));
         $this->assertNull($survey->fresh()->report_file, 'Tautan laporan survey harus dilepas');
         $this->assertNull($survey->fresh()->report_file_name);
         Storage::disk('private')->assertMissing('surveys/7/reports/laporan.pdf');

@@ -3711,5 +3711,10 @@
     "All technician tasks": "All technician tasks",
     "All technicians": "All technicians",
     "No technician tasks yet.": "No technician tasks yet.",
-    "Technical requests from Sales will appear here.": "Technical requests from Sales will appear here."
+    "Technical requests from Sales will appear here.": "Technical requests from Sales will appear here.",
+    "Hapus Dokumen": "Delete Document",
+    "Dokumen akan dipindahkan ke Trash dan dihapus permanen otomatis setelah :days hari. Bisa dipulihkan dari menu Trash.": "The document will be moved to Trash and permanently deleted automatically after :days days. It can be restored from the Trash menu.",
+    "Ya, Hapus": "Yes, Delete",
+    "Dokumen :name akan dipindahkan ke Trash (bisa dipulihkan :days hari).": "Document :name will be moved to Trash (restorable within :days days).",
+    "Tidak bisa restore: modul sudah punya file lain atau record modulnya sudah tidak ada.": "Cannot restore: the module already has another file or its module record no longer exists."
 }

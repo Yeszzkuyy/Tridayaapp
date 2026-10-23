@@ -8,8 +8,10 @@ use App\Models\Project;
 use App\Models\ProjectDocument;
 use App\Models\User;
 use App\Services\ProjectDocumentCleanup;
+use App\Support\DocumentAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class TrashController extends Controller
 {
@@ -51,33 +53,16 @@ class TrashController extends Controller
     }
 
     /**
-     * Dokumen yang tampil di Trash:
-     * - super-admin: semua (bisa difilter owner customer),
-     * - user lain: dokumen yang dia sendiri pindahkan ke Trash, atau
-     *   dokumen milik customer yang menjadi tanggungannya (owner lead).
+     * Dokumen yang tampil di Trash mengikuti aturan DocumentAccess:
+     * super-admin/management semua, teknisi semua dokumen teknis,
+     * sales sesuai PT/customer + yang dia hapus.
      */
     private function documentsTrashQuery(Request $request, $user)
     {
         $query = ProjectDocument::onlyTrashed();
 
         if (! $user->hasRole('super-admin')) {
-            $customerIds = ProjectDocument::onlyTrashed()
-                ->whereNotNull('customer_id')
-                ->distinct()
-                ->pluck('customer_id')
-                ->all();
-            $owners = $this->customerOwnerMap($customerIds);
-            $owned = array_keys(array_filter($owners, fn ($id) => $id === (int) $user->id));
-            $owned = $this->ptWritableCustomers($user, $owned);
-
-            $query->where(function ($sub) use ($user, $owned) {
-                $sub->where('deleted_by', $user->id);
-                if ($owned) {
-                    $sub->orWhereIn('customer_id', $owned);
-                }
-            });
-
-            return $query;
+            return DocumentAccess::applyTrashVisibility($query, $user);
         }
 
         if ($request->filled('user')) {
@@ -94,24 +79,6 @@ class TrashController extends Controller
         }
 
         return $query;
-    }
-
-    /**
-     * Saring id customer (bisa jadi belum terhapus) sesuai PT yang boleh
-     * ditulis user.
-     */
-    private function ptWritableCustomers($user, array $ids): array
-    {
-        if (! $ids) {
-            return [];
-        }
-
-        $pts = Customer::withTrashed()->whereIn('id', $ids)->pluck('pt_group', 'id')->all();
-
-        return array_values(array_filter(
-            $ids,
-            fn ($id) => PtAccess::canWritePt($user, $pts[$id] ?? null)
-        ));
     }
 
     private function ownTrash(int $userId): array
@@ -187,14 +154,19 @@ class TrashController extends Controller
             ->with('success', __('Project ":name" dihapus permanen', ['name' => $name]));
     }
 
-    public function restoreDocument(int $id)
+    public function restoreDocument(int $id, ProjectDocumentCleanup $cleanup)
     {
         $document = ProjectDocument::onlyTrashed()->findOrFail($id);
         $name = $document->file_name;
 
         $this->authorize('restore', $document);
-        $document->restore();
-        $document->forceFill(['deleted_by' => null])->save();
+
+        if (! $cleanup->restore($document)) {
+            return redirect()->route('trash.index')
+                ->withErrors([
+                    'document' => __('Tidak bisa restore: modul sudah punya file lain atau record modulnya sudah tidak ada.'),
+                ]);
+        }
 
         return redirect()->route('trash.index')
             ->with('success', __('Dokumen ":name" berhasil direstore', ['name' => $name]));
@@ -236,6 +208,7 @@ class TrashController extends Controller
             ProjectDocument::withTrashed()
                 ->whereIn('id', $chunk)
                 ->get()
+                ->filter(fn (ProjectDocument $document) => Gate::allows('forceDelete', $document))
                 ->each(fn (ProjectDocument $document) => $cleanup->forceDelete($document));
         }
 

@@ -71,8 +71,9 @@ class DocumentRegistry
         }
 
         // Baris sisa (file sudah diganti/dihapus di menu modulnya) ikut dibuang
-        // supaya dokumen tidak menggantung di menu lain.
-        ProjectDocument::withTrashed()
+        // supaya dokumen tidak menggantung di menu lain. Hanya dokumen AKTIF:
+        // yang sedang di Trash dibiarkan sampai masa simpannya habis.
+        ProjectDocument::query()
             ->where('documentable_type', $owner::class)
             ->where('documentable_id', $owner->getKey())
             ->whereNotIn('file_path', $paths ?: [''])
@@ -171,19 +172,28 @@ class DocumentRegistry
         $customerId = self::customerIdOf($owner);
 
         // 1 + 2: baris milik pemilik ini (path sama, atau laporan tunggal).
-        $document = ProjectDocument::withTrashed()
+        $owned = ProjectDocument::withTrashed()
             ->where('documentable_type', $owner::class)
-            ->where('documentable_id', $owner->getKey())
-            ->where(function ($query) use ($path, $type, $projectId, $customerId) {
-                $query->where('file_path', $path)
-                    // Pemilik satu-file: ganti laporan = perbarui barisnya.
-                    ->orWhere(function ($single) use ($type, $projectId, $customerId) {
-                        $single->where('doc_type', $type)
-                            ->where('project_id', $projectId)
-                            ->where('customer_id', $customerId);
-                    });
-            })
-            ->orderByRaw('case when file_path = ? then 0 else 1 end', [$path])
+            ->where('documentable_id', $owner->getKey());
+
+        // 1: path sama. Dokumen yang sedang di Trash JANGAN di-restore
+        // otomatis oleh sync — biar tetap di Trash sampai dipulihkan manual.
+        $document = (clone $owned)
+            ->where('file_path', $path)
+            ->orderByRaw('case when deleted_at is null then 0 else 1 end')
+            ->first();
+
+        if ($document && $document->trashed()) {
+            return $document;
+        }
+
+        // 2: pemilik satu-file (laporan survey/instalasi) mengganti laporan
+        // -> perbarui baris yang AKTIF, bukan baris yang sedang di Trash.
+        $document ??= (clone $owned)
+            ->whereNull('deleted_at')
+            ->where('doc_type', $type)
+            ->where('project_id', $projectId)
+            ->where('customer_id', $customerId)
             ->first();
 
         // 3: dokumen yang sama sudah diunggah manual lewat menu Documents.
@@ -217,11 +227,6 @@ class DocumentRegistry
             'mime_type' => $mime ?? $document->mime_type,
             'uploaded_by' => $document->uploaded_by ?: auth()->id(),
         ])->save();
-
-        if ($document->trashed()) {
-            $document->restore();
-            $document->forceFill(['deleted_by' => null])->save();
-        }
 
         return $document;
     }
