@@ -559,6 +559,8 @@ Route::middleware('auth')->group(function () {
     // ============================================
     Route::middleware('permission:manage-sales-leads')->prefix('manage-sales')->name('manage-sales.')->group(function () {
         Route::get('/', [ManageSalesController::class, 'index'])->name('index');
+        Route::get('/kpi', [ManageSalesController::class, 'kpi'])->name('kpi');
+        Route::post('/targets', [ManageSalesController::class, 'updateTarget'])->name('targets.update');
         Route::get('/activity-log', [ManageSalesController::class, 'activityLog'])->name('activity-log');
         Route::get('/{lead}/edit', [ManageSalesController::class, 'edit'])->name('edit');
         Route::put('/{lead}', [ManageSalesController::class, 'update'])->name('update');

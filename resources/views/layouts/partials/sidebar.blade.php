@@ -150,13 +150,19 @@
                                 <div id="sidebar-management-menu" class="sb-sub sidebar-hide">
                                     <div class="sb-sub-list">
                                     <a wire:navigate.hover href="{{ route('manage-sales.index') }}"
-                                       aria-current="{{ request()->routeIs('manage-sales*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage-sales*') ? $navActive : $navInactive }}">
+                                       aria-current="{{ request()->routeIs('manage-sales.index', 'manage-sales.edit') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage-sales.index', 'manage-sales.edit') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
                                         <span>{{ __('Manage Sales') }}</span>
                                         <template x-if="$store.notif.unassigned > 0">
                                             <span class="ml-auto h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" title="{{ __('Unassigned leads') }}"></span>
                                         </template>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('manage-sales.kpi') }}"
+                                       aria-current="{{ request()->routeIs('manage-sales.kpi*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage-sales.kpi*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
+                                        <span>{{ __('Sales KPI & Target') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('manage.marketing.index') }}"
                                        aria-current="{{ request()->routeIs('manage.marketing*') ? 'page' : 'false' }}"

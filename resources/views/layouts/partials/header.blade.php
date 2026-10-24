@@ -19,6 +19,7 @@
             // supaya mis. 'leads.pipeline' tidak tertelan 'leads'.
             $crumbMap = [
                 ['manage-sales.activity-log',       ['Management', 'Activity Log']],
+                ['manage-sales.kpi',                ['Management', 'Sales KPI & Target']],
                 ['manage-sales',                    ['Management', 'Manage Sales']],
                 ['manage.marketing',                ['Management', 'Manage Marketing']],
                 ['manage.technical',                ['Management', 'Manage Technical']],
