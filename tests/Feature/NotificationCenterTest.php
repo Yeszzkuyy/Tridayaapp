@@ -57,6 +57,29 @@ class NotificationCenterTest extends TestCase
         }
     }
 
+    public function test_legacy_task_notification_url_is_relative_and_opens_request_hub(): void
+    {
+        $user = $this->makeUser('sales');
+
+        // Baris lama: domain lama + URL absolut ke halaman task.
+        $this->makeNotification($user, \App\Notifications\LeadTaskNotification::class, [
+            'type' => 'task',
+            'lead_id' => 32,
+            'customer' => 'PT Forvis',
+            'preview' => 'Buatkan penawaran',
+            'url' => 'http://tridayaapp.com/lead-tasks/4',
+        ]);
+
+        $item = $this->actingAs($user)->get(route('notifications.status'))->assertOk()->json('items.0');
+
+        $this->assertSame(
+            route('sales.requests.index', ['tab' => 'inside-sales', 'task' => 4], false),
+            $item['url']
+        );
+        $this->assertStringStartsWith('/sales/requests', $item['url']);
+        $this->assertStringNotContainsString('tridayaapp.com', $item['url']);
+    }
+
     public function test_status_paginates_ten_items_with_cursor(): void
     {
         $user = $this->makeUser('management');
@@ -174,8 +197,12 @@ class NotificationCenterTest extends TestCase
         $this->assertSame(__('Bot mencapai batas balasan'), $items['whatsapp']['chips'][0]['label']);
         $this->assertSame('Acc • 08123: Halo, mau tanya', $items['whatsapp']['body']);
 
-        // URL baris lama dirapikan ke bentuk kanonik (daftar follow-up).
-        $this->assertSame(FollowUpOverdueNotification::indexUrl(), $items['followup']['url']);
+        // URL baris lama dirapikan ke bentuk kanonik (daftar follow-up) dan
+        // dibuat relatif agar klik tidak berpindah host/session.
+        $this->assertSame(
+            route('sales.follow-ups.index', ['overdue' => 1], false).'#followups-table',
+            $items['followup']['url']
+        );
     }
 
     public function test_creating_notification_dispatches_broadcast_event(): void
@@ -205,7 +232,10 @@ class NotificationCenterTest extends TestCase
         $this->assertSame($id, $payload['item']['id']);
         $this->assertSame('followup', $payload['item']['type']);
         $this->assertFalse($payload['item']['read']);
-        $this->assertSame(FollowUpOverdueNotification::indexUrl(), $payload['item']['url']);
+        $this->assertSame(
+            route('sales.follow-ups.index', ['overdue' => 1], false).'#followups-table',
+            $payload['item']['url']
+        );
         $this->assertSame(1, $payload['unread']);
     }
 }

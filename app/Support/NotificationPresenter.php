@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\User;
 use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadTaskNotification;
@@ -42,7 +43,7 @@ final class NotificationPresenter
     /**
      * @return array{id:string,type:string,app:string,title:string,body:string,chips:array<int,array{label:string,tone:string}>,url:?string,read:bool,created_at:?string}
      */
-    public static function present(DatabaseNotification $notification): array
+    public static function present(DatabaseNotification $notification, ?User $user = null): array
     {
         $data = $notification->data;
         $kind = self::kind((string) $notification->type, $data);
@@ -56,7 +57,7 @@ final class NotificationPresenter
             ],
             self::content((string) $notification->type, $kind, $data),
             [
-                'url' => self::url($kind, $data),
+                'url' => self::url($kind, $data, $user ?? $notification->notifiable),
             ],
         );
     }
@@ -252,18 +253,109 @@ final class NotificationPresenter
         };
     }
 
-    /** URL tujuan klik kartu — bentuk kanonik per tipe, termasuk baris lama. */
-    private static function url(string $kind, array $data): ?string
+    /**
+     * URL tujuan klik kartu — bentuk kanonik per tipe, termasuk baris lama.
+     *
+     * Selalu dipaksa menjadi path relatif: notifikasi lama mungkin menyimpan
+     * domain lama/berbeda (mis. http://tridayaapp.com) sementara user sedang
+     * membuka domain kanonis. Pindah host membuat cookie session tidak
+     * terkirim dan user dilempar ke halaman login.
+     */
+    private static function url(string $kind, array $data, mixed $notifiable = null): ?string
     {
         return match ($kind) {
-            'lead' => NewLeadNotification::indexUrl(),
-            'assigned' => LeadAssignedNotification::myLeadsUrl($data['customer'] ?? null),
-            'followup' => FollowUpOverdueNotification::indexUrl(),
-            'whatsapp' => route('whatsapp-center.index'),
-            default => is_string($data['url'] ?? null) && $data['url'] !== ''
-                ? $data['url']
-                : null,
+            'lead' => self::relativeUrl(NewLeadNotification::indexUrl()),
+            'assigned' => self::relativeUrl(LeadAssignedNotification::myLeadsUrl($data['customer'] ?? null)),
+            'followup' => self::relativeUrl(FollowUpOverdueNotification::indexUrl()),
+            'whatsapp' => self::relativeUrl(route('whatsapp-center.index')),
+            'task' => self::taskUrl($data, $notifiable),
+            default => self::relativeUrl(is_string($data['url'] ?? null) ? $data['url'] : null),
         };
+    }
+
+    /**
+     * Deep link diskusi inside sales: ke menu Request → Inside Sales dengan
+     * panel diskusi task terbuka. Penerima tanpa akses sales (inside-sales
+     * murni) tetap diarahkan ke halaman task miliknya.
+     */
+    private static function taskUrl(array $data, mixed $notifiable = null): ?string
+    {
+        $taskId = (int) ($data['lead_task_id'] ?? 0);
+
+        // Baris notifikasi lama tidak punya lead_task_id — ambil dari URL
+        // /lead-tasks/{id} yang tersimpan.
+        if ($taskId <= 0 && is_string($data['url'] ?? null)
+            && preg_match('#/lead-tasks/(\d+)#', $data['url'], $matches)) {
+            $taskId = (int) $matches[1];
+        }
+
+        if ($taskId <= 0) {
+            return self::relativeUrl(is_string($data['url'] ?? null) ? $data['url'] : null);
+        }
+
+        $useRequestHub = $notifiable instanceof User
+            && ($notifiable->can('view-sales')
+                || $notifiable->can('manage-sales')
+                || $notifiable->can('manage-sales-leads'));
+
+        return $useRequestHub
+            ? route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $taskId], false)
+            : route('lead-tasks.show', $taskId, false);
+    }
+
+    /**
+     * Ubah URL absolut internal menjadi path relatif (path + query + fragment).
+     * URL eksternal / host tak dikenal dibiarkan apa adanya.
+     */
+    private static function relativeUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false) {
+            return null;
+        }
+
+        // Bukan URL absolut (mis. "sales/my-leads"): biarkan apa adanya.
+        if (! isset($parts['scheme'])) {
+            return $url;
+        }
+
+        if (! in_array($parts['scheme'], ['http', 'https'], true)) {
+            return $url;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $trustedHosts = array_filter([
+            strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST)),
+            strtolower((string) request()?->getHost()),
+            'tridayaapp.com',
+            'www.tridayaapp.com',
+        ]);
+
+        if ($host === '' || ! in_array($host, $trustedHosts, true)) {
+            return $url;
+        }
+
+        $path = ($parts['path'] ?? '') !== '' ? $parts['path'] : '/';
+
+        if (isset($parts['query'])) {
+            $path .= '?'.$parts['query'];
+        }
+
+        if (isset($parts['fragment'])) {
+            $path .= '#'.$parts['fragment'];
+        }
+
+        return $path;
     }
 
     /** @return array{label:string,tone:string} */

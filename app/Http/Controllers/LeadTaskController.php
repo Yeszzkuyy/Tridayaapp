@@ -50,13 +50,19 @@ class LeadTaskController extends Controller
         $user = $request->user();
         $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->latest();
 
-        // Inside sales biasa hanya melihat task miliknya; management melihat semua.
-        if ($user && $user->can('manage-inside-sales') && !$user->can('manage-sales-leads')) {
-            $query->where('assigned_to', $user->id);
-        }
-        // Sales biasa hanya melihat task dari lead miliknya (anakan sales).
-        if ($user && $user->hasRole('sales') && !$user->can('manage-marketing') && !$user->can('manage-sales-leads')) {
-            $query->whereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
+        // Management melihat semua. Selain itu scope digabung dengan OR:
+        // multi-role (sales + inside-sales) harus melihat task yang di-assign
+        // kepadanya ATAU lead miliknya — bukan irisan keduanya (AND), yang
+        // membuat task hilang saat assignee dan pemilik lead berbeda orang.
+        if ($user && ! $user->can('manage-sales-leads')) {
+            $query->where(function ($q) use ($user) {
+                if ($user->can('manage-inside-sales')) {
+                    $q->orWhere('assigned_to', $user->id);
+                }
+                if (($user->can('view-sales') || $user->can('manage-sales')) && ! $user->can('manage-marketing')) {
+                    $q->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
+                }
+            });
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);

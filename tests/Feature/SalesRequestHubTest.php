@@ -132,6 +132,76 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringContainsString('Buatkan penawaran', $html);
     }
 
+    public function test_task_deep_link_opens_discussion_inside_request_hub(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Diskusi penawaran PT Forvis',
+            'status' => 'todo',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+        $task->comments()->create(['user_id' => $inside->id, 'body' => 'Pesan dari forum diskusi.']);
+
+        foreach ([$sales, $inside] as $viewer) {
+            $this->actingAs($viewer)
+                ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
+                ->assertOk()
+                ->assertSee('Diskusi penawaran PT Forvis')
+                ->assertSee('Pesan dari forum diskusi.');
+        }
+    }
+
+    public function test_task_deep_link_rejects_stranger(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $stranger = User::factory()->create();
+        $stranger->assignRole('sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Task privat',
+            'status' => 'todo',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        $this->actingAs($stranger)
+            ->get(route('sales.requests.index', ['task' => $task->id]))
+            ->assertForbidden();
+    }
+
+    public function test_multi_role_sales_and_inside_sales_sees_assigned_task(): void
+    {
+        $owner = $this->userWithRole('sales');
+        $multi = User::factory()->create();
+        $multi->assignRole(['sales', 'inside-sales']);
+        $lead = $this->makeLead($owner); // lead milik sales lain
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Task untuk multi-role',
+            'status' => 'todo',
+            'assigned_to' => $multi->id,
+            'created_by' => $owner->id,
+        ]);
+
+        $this->actingAs($multi)
+            ->get(route('sales.requests.index', ['tab' => 'inside-sales']))
+            ->assertOk()
+            ->assertSee($task->title);
+
+        $this->actingAs($multi)
+            ->get(route('lead-tasks.index'))
+            ->assertOk()
+            ->assertSee($task->title);
+    }
+
     public function test_price_tab_lists_only_price_requests(): void
     {
         $sales = $this->userWithRole('sales');

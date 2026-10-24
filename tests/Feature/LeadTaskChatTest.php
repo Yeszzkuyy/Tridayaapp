@@ -85,6 +85,44 @@ class LeadTaskChatTest extends TestCase
         Notification::assertSentTo($sales, \App\Notifications\LeadTaskNotification::class);
     }
 
+    public function test_notification_links_sales_to_request_hub_with_relative_url(): void
+    {
+        Notification::fake();
+        [$sales, $inside, $task] = $this->makeTask();
+
+        Livewire::actingAs($inside)
+            ->test(LeadTaskChat::class, ['task' => $task])
+            ->set('body', 'Penawaran sudah saya siapkan.')
+            ->call('send');
+
+        Notification::assertSentTo($sales, \App\Notifications\LeadTaskNotification::class, function ($notification) use ($sales, $task) {
+            $data = $notification->toDatabase($sales);
+
+            return $data['lead_task_id'] === $task->id
+                && $data['url'] === route('sales.requests.index', [
+                    'tab' => 'inside-sales',
+                    'task' => $task->id,
+                ], false);
+        });
+    }
+
+    public function test_notification_links_inside_sales_only_to_own_task_with_relative_url(): void
+    {
+        Notification::fake();
+        [$sales, $inside, $task] = $this->makeTask();
+
+        Livewire::actingAs($sales)
+            ->test(LeadTaskChat::class, ['task' => $task])
+            ->set('body', 'Tolong cek harga prinsipal.')
+            ->call('send');
+
+        Notification::assertSentTo($inside, \App\Notifications\LeadTaskNotification::class, function ($notification) use ($inside, $task) {
+            $data = $notification->toDatabase($inside);
+
+            return $data['url'] === route('lead-tasks.show', $task->id, false);
+        });
+    }
+
     public function test_stranger_cannot_open_chat(): void
     {
         [, , $task] = $this->makeTask();

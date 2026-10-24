@@ -134,7 +134,7 @@ class NotificationController extends Controller
                 continue;
             }
 
-            $items[] = NotificationPresenter::present($row);
+            $items[] = NotificationPresenter::present($row, $user);
         }
 
         if ($stale !== []) {

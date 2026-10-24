@@ -328,7 +328,11 @@ class LeadNotificationTest extends TestCase
 
         $items = NotificationController::itemsFor($sales);
         $this->assertCount(1, $items);
-        $this->assertSame($expected, $items[0]['url']);
+        // Presenter memaksa URL relatif agar klik tidak pindah host/session.
+        $this->assertSame(
+            route('sales.my-leads', ['search' => 'PT Notif My Leads'], false),
+            $items[0]['url']
+        );
     }
 
     public function test_items_for_repairs_legacy_assigned_url_to_my_leads(): void
@@ -356,7 +360,7 @@ class LeadNotificationTest extends TestCase
 
         $items = NotificationController::itemsFor($sales);
         $this->assertCount(1, $items);
-        $this->assertSame(route('sales.my-leads', ['search' => 'PT Notif Lama']), $items[0]['url']);
+        $this->assertSame(route('sales.my-leads', ['search' => 'PT Notif Lama'], false), $items[0]['url']);
     }
 
     public function test_reassign_removes_previous_sales_assigned_notification(): void
@@ -449,7 +453,8 @@ class LeadNotificationTest extends TestCase
 
         $items = NotificationController::itemsFor($management);
         $this->assertCount(1, $items);
-        $this->assertSame($expected, $items[0]['url']);
+        // Presenter memaksa URL relatif agar klik tidak pindah host/session.
+        $this->assertSame(route('manage-sales.index', [], false), $items[0]['url']);
     }
 
     public function test_items_for_repairs_legacy_new_lead_url_to_manage_sales(): void
@@ -476,7 +481,7 @@ class LeadNotificationTest extends TestCase
 
         $items = NotificationController::itemsFor($management);
         $this->assertCount(1, $items);
-        $this->assertSame(route('manage-sales.index'), $items[0]['url']);
+        $this->assertSame(route('manage-sales.index', [], false), $items[0]['url']);
     }
 
     public function test_management_can_open_lead_page_from_notification_link(): void

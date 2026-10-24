@@ -74,6 +74,28 @@
             </p>
         </div>
 
+        {{-- Deep link notifikasi forum diskusi: panel diskusi task langsung
+             dibuka di halaman Request, bukan pindah ke halaman detail task. --}}
+        @if(!empty($openTask))
+            <div class="mb-6">
+                <div class="mb-3 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Inside Sales Discussion') }}</p>
+                        <h2 class="mt-0.5 truncate text-lg font-bold text-slate-800 dark:text-slate-100">{{ $openTask->title }}</h2>
+                        <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                            {{ $openTask->lead?->customer?->name ?? '-' }}
+                            · {{ $openTask->assignee?->name ?? __('Unassigned') }}
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $openTask) }}" title="{{ __('View details') }}" />
+                        <x-icon-button as="a" icon="back" href="{{ route('sales.requests.index', ['tab' => 'inside-sales']) }}" title="{{ __('Close discussion') }}" />
+                    </div>
+                </div>
+                <livewire:lead-task-chat :task="$openTask" />
+            </div>
+        @endif
+
         @if($tab === 'inside-sales')
             <div class="overflow-x-auto">
                 <table class="w-full border-separate border-spacing-y-2 text-left">
