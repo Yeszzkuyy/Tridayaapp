@@ -623,6 +623,10 @@
                 loading: false,
                 loadError: false,
                 fetchSeq: 0,
+                // Cache rentang tanggal yang sudah dimuat (Y-m-d, inklusif)
+                // supaya pindah hari/minggu lampau tidak memanggil API lagi.
+                loadedRanges: [],
+                __booted: false,
                 customerQuery: @json((string) collect($customers)->get((int) old('customer_id'), '')),
                 customerOpen: false,
                 customerActive: -1,
@@ -655,6 +659,11 @@
                 },
 
                 init() {
+                    // Guard: init bisa terpanggil ulang saat morph/navigasi.
+                    // Tanpa guard, request API dan listener jadi dobel.
+                    if (this.__booted) return;
+                    this.__booted = true;
+
                     const urlDate = new URLSearchParams(window.location.search).get('date');
                     if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
                         this.activeDate = urlDate;
@@ -665,11 +674,41 @@
                     this.viewMonth = active.getMonth();
                     this.buildMonth();
                     this.buildWeek();
+                    // Satu request rentang bulanan sudah memuat agenda hari
+                    // terpilih juga — tidak perlu fetchEvents terpisah.
                     this.fetchMonth();
-                    this.fetchEvents();
                     window.addEventListener('sales:view', (e) => {
                         if (e?.detail?.value) this.setView(e.detail.value);
                     });
+                },
+
+                rangeLoaded(start, end) {
+                    return this.loadedRanges.some((range) => range.start <= start && range.end >= end);
+                },
+
+                markRange(start, end) {
+                    this.loadedRanges.push({ start, end });
+                    // Cukup untuk sesi halaman; cegah daftar tumbuh tanpa batas.
+                    if (this.loadedRanges.length > 24) this.loadedRanges.shift();
+                },
+
+                mergeRange(data, start, end) {
+                    const grouped = {};
+                    (Array.isArray(data) ? data : []).forEach((event) => {
+                        (grouped[event.date] = grouped[event.date] || []).push(event);
+                    });
+
+                    // Ganti data lama di rentang ini; cache di luar rentang tetap.
+                    Object.keys(this.monthEvents).forEach((date) => {
+                        if (date >= start && date <= end) delete this.monthEvents[date];
+                    });
+
+                    this.monthEvents = { ...this.monthEvents, ...grouped };
+                    this.markRange(start, end);
+
+                    if (this.activeDate >= start && this.activeDate <= end) {
+                        this.events = this.monthEvents[this.activeDate] || [];
+                    }
                 },
 
                 fmt(date) {
@@ -735,9 +774,16 @@
                     window.dispatchEvent(new CustomEvent('rubber-segment:set', {
                         detail: { id: 'sales-view-segment', value: v },
                     }));
-                    if (v === 'week') this.fetchWeek();
-                    else if (v === 'day') this.fetchEvents();
-                    else { this.fetchMonth(); this.fetchEvents(); }
+                    if (v === 'week') {
+                        // Agenda hari terpilih sudah ada di cache bulanan.
+                        this.events = this.monthEvents[this.activeDate] || this.events;
+                        this.fetchWeek();
+                    } else if (v === 'day') {
+                        this.fetchEvents();
+                    } else {
+                        this.fetchMonth();
+                        this.fetchEvents();
+                    }
                 },
 
                 panMonth(dir) {
@@ -847,15 +893,27 @@
                 selectDay(date) {
                     this.activeDate = date;
                     const d = new Date(date + 'T12:00:00');
+                    let monthChanged = false;
                     if (d.getFullYear() !== this.viewYear || d.getMonth() !== this.viewMonth) {
                         this.viewYear = d.getFullYear();
                         this.viewMonth = d.getMonth();
+                        monthChanged = true;
                         this.buildMonth();
                         this.fetchMonth();
                     }
                     this.buildWeek();
-                    this.fetchEvents();
-                    if (this.view === 'week') this.fetchWeek();
+
+                    if (this.view === 'week') {
+                        if (monthChanged) {
+                            // fetchMonth sudah mencakup seluruh minggu ini.
+                            this.events = this.monthEvents[date] || [];
+                        } else {
+                            this.events = this.monthEvents[date] || this.events;
+                            this.fetchWeek();
+                        }
+                    } else {
+                        this.fetchEvents();
+                    }
                 },
 
                 createOn(date) {
@@ -890,6 +948,16 @@
 
                 fetchEvents() {
                     const date = this.activeDate;
+
+                    // Tanggal yang sudah tercakup cache tampil instan — ini
+                    // yang membuat jadwal lampau tidak lagi menunggu request.
+                    if (this.rangeLoaded(date, date)) {
+                        this.events = this.monthEvents[date] || [];
+                        this.loading = false;
+                        this.loadError = false;
+                        return;
+                    }
+
                     const seq = ++this.fetchSeq;
                     this.loading = true;
                     this.loadError = false;
@@ -898,7 +966,8 @@
                         .then((data) => {
                             if (seq !== this.fetchSeq) return;
                             this.events = Array.isArray(data) ? data : [];
-                            this.monthEvents[date] = this.events;
+                            this.monthEvents = { ...this.monthEvents, [date]: this.events };
+                            this.markRange(date, date);
                         })
                         .catch(() => {
                             if (seq !== this.fetchSeq) return;
@@ -915,16 +984,20 @@
                     if (!this.monthCells.length) return;
                     const start = this.monthCells[0].date;
                     const end = this.monthCells[this.monthCells.length - 1].date;
+
+                    if (this.rangeLoaded(start, end)) {
+                        if (this.activeDate >= start && this.activeDate <= end) {
+                            this.events = this.monthEvents[this.activeDate] || [];
+                        }
+                        return;
+                    }
+
+                    if (this.events.length === 0) this.loading = true;
                     fetch(this.apiUrl + '?start=' + start + '&end=' + end)
                         .then((r) => r.json())
-                        .then((data) => {
-                            const grouped = {};
-                            (Array.isArray(data) ? data : []).forEach((e) => {
-                                (grouped[e.date] = grouped[e.date] || []).push(e);
-                            });
-                            this.monthEvents = { ...this.monthEvents, ...grouped };
-                        })
-                        .catch(() => {});
+                        .then((data) => this.mergeRange(data, start, end))
+                        .catch(() => {})
+                        .finally(() => { this.loading = false; });
                 },
 
                 fetchWeek() {
@@ -933,15 +1006,15 @@
                     sunday.setDate(sunday.getDate() + 6);
                     const start = this.fmt(monday);
                     const end = this.fmt(sunday);
+
+                    if (this.rangeLoaded(start, end)) {
+                        this.events = this.monthEvents[this.activeDate] || this.events;
+                        return;
+                    }
+
                     fetch(this.apiUrl + '?start=' + start + '&end=' + end)
                         .then((r) => r.json())
-                        .then((data) => {
-                            const grouped = {};
-                            (Array.isArray(data) ? data : []).forEach((e) => {
-                                (grouped[e.date] = grouped[e.date] || []).push(e);
-                            });
-                            this.monthEvents = { ...this.monthEvents, ...grouped };
-                        })
+                        .then((data) => this.mergeRange(data, start, end))
                         .catch(() => {});
                 },
 

@@ -96,8 +96,10 @@ class SalesScheduleController extends Controller
             } catch (\Throwable) {
                 return response()->json(['message' => __('Invalid date range.')], 422);
             }
-            $query->whereDate('follow_up_date', '>=', $start)
-                ->whereDate('follow_up_date', '<=', $end);
+            // follow_up_date bertipe date — pakai whereBetween agar index
+            // follow_ups_follow_up_date_index tetap terpakai (whereDate
+            // membungkus kolom dengan cast dan mematikan index).
+            $query->whereBetween('follow_up_date', [$start, $end]);
         } else {
             $date = $request->query('date', today()->toDateString());
             try {

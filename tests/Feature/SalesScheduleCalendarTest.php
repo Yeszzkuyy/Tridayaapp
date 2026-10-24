@@ -109,6 +109,28 @@ class SalesScheduleCalendarTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_api_still_returns_schedules_that_already_passed(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $past = $this->makeVisit($sales, [
+            'follow_up_date' => '2020-01-15',
+            'description' => 'Kunjungan lampau',
+        ]);
+
+        // Mode harian.
+        $day = $this->actingAs($sales)->getJson(route('sales.schedules.api', ['date' => '2020-01-15']));
+        $day->assertOk();
+        $this->assertContains($past->id, collect($day->json())->pluck('id')->all());
+
+        // Mode rentang (week/month) juga harus memuat jadwal lampau.
+        $range = $this->actingAs($sales)->getJson(route('sales.schedules.api', [
+            'start' => '2020-01-13',
+            'end' => '2020-01-19',
+        ]));
+        $range->assertOk();
+        $this->assertContains($past->id, collect($range->json())->pluck('id')->all());
+    }
+
     public function test_api_includes_pic_and_creator_profile(): void
     {
         $sales = $this->userWithRole('sales');
