@@ -62,7 +62,7 @@
         $pct = fn ($n) => $totalShown > 0 ? round($n / $totalShown * 100) : 0;
     @endphp
 
-    <div class="max-w-[1400px] mx-auto space-y-6">
+    <div class="w-full space-y-6">
         {{-- Overview header --}}
         <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7 dark:border-slate-700 dark:bg-slate-800" data-reveal>
             <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-500/5 dark:bg-blue-400/10"></div>

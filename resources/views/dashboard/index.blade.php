@@ -39,7 +39,7 @@
     <div id="dash-skeleton" hidden aria-hidden="true">
         {{-- Padding disamakan dengan <main> agar posisi 1:1 dengan konten asli (main jadi acuan absolute). --}}
         <div class="px-4 sm:px-6 lg:px-8 pb-8">
-            <div class="mx-auto max-w-[1400px] space-y-6">
+            <div class="w-full space-y-6">
                 {{-- Overview header --}}
                 <div class="skel-block rounded-2xl px-5 py-6 sm:px-7 sm:py-7">
                     <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -212,7 +212,7 @@
         ];
     @endphp
 
-    <div class="mx-auto max-w-[1400px] space-y-6">
+    <div class="w-full space-y-6">
         {{-- Overview header --}}
         <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7 dark:border-[#334070] dark:bg-[#232b3e]" data-reveal>
             <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-500/5 dark:bg-blue-400/10" data-parallax-mouse="14"></div>

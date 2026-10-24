@@ -1,5 +1,5 @@
 <x-app-layout>
-<div class="max-w-[1400px] mx-auto space-y-6">
+<div class="w-full space-y-6">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Document Repository') }}</h1>

@@ -1,5 +1,5 @@
 <x-app-layout>
-<div class="max-w-[1400px] mx-auto space-y-8">
+<div class="w-full space-y-8">
     {{-- Header --}}
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
