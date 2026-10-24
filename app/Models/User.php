@@ -20,6 +20,8 @@ class User extends Authenticatable
         'password',
         'password_changed_at',
         'avatar',
+        'google_id',
+        'google_avatar',
         'cover',
         'preferences',
     ];

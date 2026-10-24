@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="google-site-verification" content="oGvxPPGpt9_UBNwgI1WD8_09SgQYH5xjE97G7Ltbvec">
     <title>@yield('title', __('Sign in')) - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
@@ -81,26 +82,60 @@
             text-rendering: optimizeLegibility;
         }
 
-        /* ===== Background only: parallax ===== */
-        .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
-        .layer { position: absolute; inset: -9%; transition: transform .6s cubic-bezier(.2, .7, .2, 1); will-change: transform; }
-        .aurora {
-            background:
-                radial-gradient(38% 34% at 15% 18%, var(--aurora-1), transparent 70%),
-                radial-gradient(34% 30% at 88% 12%, var(--aurora-2), transparent 70%),
-                radial-gradient(46% 38% at 55% 104%, var(--aurora-3), transparent 70%);
-        }
-        .aurora::after {
-            content: "";
+        /* ===== Lightweight Ambient Mesh Background (Zero WebGL lag, 60 FPS) ===== */
+        .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #070a14; }
+        .orb {
             position: absolute;
-            inset: 0;
-            background: radial-gradient(30% 24% at 72% 58%, var(--aurora-4), transparent 70%);
-            animation: drift 20s ease-in-out infinite alternate;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: .42;
+            will-change: transform;
+            pointer-events: none;
         }
-        @keyframes drift { to { transform: translate3d(-6%, 5%, 0) scale(1.15); } }
-        #galaxy { position: absolute; inset: 0; }
-        #galaxy canvas { display: block; width: 100% !important; height: 100% !important; }
-        .vig { position: absolute; inset: 0; background: radial-gradient(transparent 55%, var(--vig)); pointer-events: none; }
+        .orb-1 {
+            top: -10%; left: 8%;
+            width: 520px; height: 520px;
+            background: radial-gradient(circle, #2563eb, #1d4ed8);
+            animation: orb-drift-1 18s ease-in-out infinite alternate;
+        }
+        .orb-2 {
+            bottom: -15%; right: 4%;
+            width: 560px; height: 560px;
+            background: radial-gradient(circle, #0284c7, #0f766e);
+            animation: orb-drift-2 22s ease-in-out infinite alternate;
+        }
+        .orb-3 {
+            top: 38%; right: 28%;
+            width: 440px; height: 440px;
+            background: radial-gradient(circle, #4f46e5, #1e1b4b);
+            opacity: .32;
+            animation: orb-drift-3 16s ease-in-out infinite alternate;
+        }
+        @keyframes orb-drift-1 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(70px, 50px, 0) scale(1.1); }
+        }
+        @keyframes orb-drift-2 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(-60px, -45px, 0) scale(1.08); }
+        }
+        @keyframes orb-drift-3 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(35px, -35px, 0) scale(1.12); }
+        }
+        .grid-pattern {
+            position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 26px 26px;
+            -webkit-mask: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.85) 30%, transparent 80%);
+            mask: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.85) 30%, transparent 80%);
+            pointer-events: none;
+        }
+        .vig {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.65) 100%);
+            pointer-events: none;
+        }
 
         /* ===== Card ===== */
         .stage { position: relative; z-index: 1; display: grid; max-height: 100dvh; min-height: 100dvh; padding: 20px; overflow-y: auto; place-items: center; }
@@ -352,9 +387,12 @@
 </head>
 <body>
     <div class="bg" aria-hidden="true">
-        <div class="layer aurora" data-d="10"></div>
-        <div class="layer"><div id="galaxy"></div></div>
-        <div class="vig"></div><div class="glowline"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="grid-pattern"></div>
+        <div class="vig"></div>
+        <div class="glowline"></div>
     </div>
 
     <main class="stage">
@@ -399,20 +437,6 @@
     <script>
         (() => {
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            const finePointer = window.matchMedia('(hover: hover)').matches;
-
-            /* Parallax applies to the background layers only */
-            const layers = [...document.querySelectorAll('.layer[data-d]')];
-            const move = (nx, ny) => {
-                if (reduce || !finePointer) return;
-                layers.forEach((l) => {
-                    const d = +l.dataset.d;
-                    l.style.transform = `translate3d(${-nx * d}px,${-ny * d}px,0)`;
-                });
-            };
-            window.addEventListener('pointermove', (e) => {
-                move((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
-            });
 
             /* Text reveal on every load */
             if (!reduce) {

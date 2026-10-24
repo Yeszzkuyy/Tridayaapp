@@ -42,6 +42,12 @@ return [
         'calendar_id' => env('GOOGLE_CALENDAR_ID'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_AUTH_CLIENT_ID', env('GOOGLE_CLIENT_ID')),
+        'client_secret' => env('GOOGLE_AUTH_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET')),
+        'redirect' => env('GOOGLE_AUTH_REDIRECT_URI', env('APP_URL') . '/auth/google/callback'),
+    ],
+
     // Google Maps / Places (autocomplete lokasi jadwal sales). Dipakai di sisi
     // browser — batasi key-nya di Google Cloud (HTTP referrer + Maps/Places API).
     'google-maps' => [

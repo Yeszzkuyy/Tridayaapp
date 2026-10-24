@@ -43,7 +43,12 @@ use App\Http\Controllers\WhatsAppCenterController;
 use App\Livewire\ProjectStatusList;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/login');
+Route::get('/', function () {
+    return auth()->check() ? redirect()->route('dashboard') : view('auth.login');
+});
+
+Route::view('/privacy-policy', 'legal.privacy')->name('privacy.policy');
+Route::view('/terms-of-service', 'legal.terms')->name('terms.service');
 
 Route::get('/dashboard',
     [DashboardController::class, 'index']
