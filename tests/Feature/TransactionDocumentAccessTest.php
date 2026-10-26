@@ -62,13 +62,14 @@ class TransactionDocumentAccessTest extends TestCase
     // INVOICE OWNERSHIP
     // ============================================================
 
-    public function test_admin_cannot_update_invoice_not_owned(): void
+    public function test_admin_can_update_invoice_created_by_other_admin(): void
     {
         Storage::fake('private');
         $owner = $this->admin('Admin A');
         $other = $this->admin('Admin B');
         $customer = $this->customer();
 
+        $this->actingAs($owner);
         $invoice = app(AdminService::class)->createInvoice([
             'customer_id' => $customer->id,
             'amount' => 1000000,
@@ -83,21 +84,22 @@ class TransactionDocumentAccessTest extends TestCase
                 'status' => 'paid',
                 'issue_date' => now()->toDateString(),
             ])
-            ->assertForbidden();
+            ->assertRedirect();
 
         $this->assertDatabaseHas('invoices', [
             'id' => $invoice->id,
-            'amount' => 1000000,
+            'amount' => 999999,
         ]);
     }
 
-    public function test_admin_cannot_delete_invoice_not_owned(): void
+    public function test_admin_can_delete_invoice_created_by_other_admin(): void
     {
         Storage::fake('private');
         $owner = $this->admin('Admin A');
         $other = $this->admin('Admin B');
         $customer = $this->customer();
 
+        $this->actingAs($owner);
         $invoice = app(AdminService::class)->createInvoice([
             'customer_id' => $customer->id,
             'amount' => 1000000,
@@ -107,9 +109,9 @@ class TransactionDocumentAccessTest extends TestCase
 
         $this->actingAs($other)
             ->delete(route('admin.invoices.destroy', $invoice))
-            ->assertForbidden();
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('invoices', ['id' => $invoice->id]);
+        $this->assertSoftDeleted('invoices', ['id' => $invoice->id]);
     }
 
     public function test_admin_can_update_own_invoice(): void
@@ -175,13 +177,14 @@ class TransactionDocumentAccessTest extends TestCase
     // PURCHASE ORDER OWNERSHIP
     // ============================================================
 
-    public function test_admin_cannot_update_purchase_order_not_owned(): void
+    public function test_admin_can_update_purchase_order_created_by_other_admin(): void
     {
         Storage::fake('private');
         $owner = $this->admin('Admin A');
         $other = $this->admin('Admin B');
         $customer = $this->customer();
 
+        $this->actingAs($owner);
         $po = app(AdminService::class)->createPurchaseOrder([
             'customer_id' => $customer->id,
             'items' => 'Instalasi jaringan',
@@ -193,26 +196,27 @@ class TransactionDocumentAccessTest extends TestCase
         $this->actingAs($other)
             ->put(route('admin.pos.update', $po), [
                 'customer_id' => $customer->id,
-                'items' => 'Hacked items',
+                'items' => 'Direvisi oleh Admin B',
                 'amount' => 9999999,
                 'status' => 'selesai',
                 'issue_date' => now()->toDateString(),
             ])
-            ->assertForbidden();
+            ->assertRedirect();
 
         $this->assertDatabaseHas('purchase_orders', [
             'id' => $po->id,
-            'amount' => 2500000,
+            'amount' => 9999999,
         ]);
     }
 
-    public function test_admin_cannot_delete_purchase_order_not_owned(): void
+    public function test_admin_can_delete_purchase_order_created_by_other_admin(): void
     {
         Storage::fake('private');
         $owner = $this->admin('Admin A');
         $other = $this->admin('Admin B');
         $customer = $this->customer();
 
+        $this->actingAs($owner);
         $po = app(AdminService::class)->createPurchaseOrder([
             'customer_id' => $customer->id,
             'items' => 'Instalasi jaringan',
@@ -223,9 +227,9 @@ class TransactionDocumentAccessTest extends TestCase
 
         $this->actingAs($other)
             ->delete(route('admin.pos.destroy', $po))
-            ->assertForbidden();
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('purchase_orders', ['id' => $po->id]);
+        $this->assertSoftDeleted('purchase_orders', ['id' => $po->id]);
     }
 
     public function test_admin_can_update_own_purchase_order(): void
@@ -263,12 +267,14 @@ class TransactionDocumentAccessTest extends TestCase
     // PAYMENT OWNERSHIP
     // ============================================================
 
-    public function test_admin_cannot_delete_payment_not_owned(): void
+    public function test_admin_can_delete_payment_created_by_other_admin(): void
     {
         Storage::fake('private');
         $owner = $this->admin('Admin A');
         $other = $this->admin('Admin B');
         $customer = $this->customer();
+
+        $this->actingAs($owner);
         $invoice = app(AdminService::class)->createInvoice([
             'customer_id' => $customer->id,
             'amount' => 1000000,
@@ -285,9 +291,9 @@ class TransactionDocumentAccessTest extends TestCase
 
         $this->actingAs($other)
             ->delete(route('admin.payments.destroy', $payment))
-            ->assertForbidden();
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('payments', ['id' => $payment->id]);
+        $this->assertSoftDeleted('payments', ['id' => $payment->id]);
     }
 
     public function test_admin_can_delete_own_payment(): void
@@ -464,6 +470,51 @@ class TransactionDocumentAccessTest extends TestCase
     }
 
     // ============================================================
+    // SALES & TEKNISI TETAP DITOLAK
+    // ============================================================
+
+    public function test_sales_cannot_update_invoice(): void
+    {
+        $sales = $this->sales('Sales A');
+        $customer = $this->customer();
+
+        $this->actingAs($sales);
+        $invoice = app(AdminService::class)->createInvoice([
+            'customer_id' => $customer->id,
+            'amount' => 1000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($sales)
+            ->put(route('admin.invoices.update', $invoice), [
+                'customer_id' => $customer->id,
+                'amount' => 999999,
+                'status' => 'paid',
+                'issue_date' => now()->toDateString(),
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_technician_cannot_delete_invoice(): void
+    {
+        $tech = $this->technician();
+        $customer = $this->customer();
+
+        $this->actingAs($tech);
+        $invoice = app(AdminService::class)->createInvoice([
+            'customer_id' => $customer->id,
+            'amount' => 1000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($tech)
+            ->delete(route('admin.invoices.destroy', $invoice))
+            ->assertForbidden();
+    }
+
+    // ============================================================
     // PROJECT DOCUMENT - TRANSACTION DOCUMENT LOCK
     // ============================================================
 
@@ -542,7 +593,7 @@ class TransactionDocumentAccessTest extends TestCase
     // ADMIN PAYMENT DELETE DELETES LINKED DOCUMENT
     // ============================================================
 
-    public function test_admin_delete_payment_deletes_linked_document(): void
+    public function test_delete_payment_preserves_proof_file_in_storage(): void
     {
         Storage::fake('private');
         $owner = $this->admin('Admin A');
@@ -563,16 +614,51 @@ class TransactionDocumentAccessTest extends TestCase
             'payment_method' => 'Transfer',
         ], UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf'));
 
-        $documentId = ProjectDocument::where('documentable_type', Payment::class)
+        $document = ProjectDocument::where('documentable_type', Payment::class)
             ->where('documentable_id', $payment->id)
-            ->value('id');
+            ->first();
 
-        $this->assertNotNull($documentId);
+        $this->assertNotNull($document);
+        $filePath = $document->file_path;
+        Storage::disk('private')->assertExists($filePath);
 
         $this->actingAs($owner)
             ->delete(route('admin.payments.destroy', $payment))
             ->assertRedirect();
 
-        $this->assertDatabaseMissing('project_documents', ['id' => $documentId]);
+        // Bukti pembayaran soft-deleted (bukan terhapus permanen).
+        $this->assertSoftDeleted('project_documents', ['id' => $document->id]);
+
+        // File storage TETAP ADA (bisa dipulihkan dari Trash).
+        Storage::disk('private')->assertExists($filePath);
+    }
+
+    public function test_delete_payment_soft_deletes_payment_record(): void
+    {
+        Storage::fake('private');
+        $owner = $this->admin('Admin A');
+        $customer = $this->customer();
+
+        $this->actingAs($owner);
+        $invoice = app(AdminService::class)->createInvoice([
+            'customer_id' => $customer->id,
+            'amount' => 1000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $payment = app(AdminService::class)->createPayment([
+            'invoice_id' => $invoice->id,
+            'amount' => 500000,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'Transfer',
+        ], UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf'));
+
+        $this->actingAs($owner)
+            ->delete(route('admin.payments.destroy', $payment))
+            ->assertRedirect();
+
+        // Payment soft-deleted (bukan terhapus permanen).
+        $this->assertSoftDeleted('payments', ['id' => $payment->id]);
     }
 }

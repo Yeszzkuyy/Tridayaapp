@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectDocument;
+use App\Models\Proposal;
 use App\Models\PurchaseOrder;
-use App\Models\Payment;
+use App\Models\RequestHarga;
 use App\Rules\SecureFile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -72,7 +74,7 @@ class AdminService
 
     public function updateInvoice(Invoice $invoice, array $data, ?UploadedFile $file = null): Invoice
     {
-        $this->assertDocumentOwnership($invoice);
+        $this->assertTransactionAccess($invoice);
         $this->assertProjectBelongsToCustomer($data);
 
         return DB::transaction(function () use ($invoice, $data, $file) {
@@ -88,7 +90,7 @@ class AdminService
 
     public function deleteInvoice(Invoice $invoice): void
     {
-        $this->assertDocumentOwnership($invoice);
+        $this->assertTransactionAccess($invoice);
         DB::transaction(function () use ($invoice) {
             $this->deleteDocuments($invoice);
             $invoice->delete();
@@ -134,7 +136,7 @@ class AdminService
      * Super Admin bypass via Gate::before.
      * Admin hanya boleh mengubah/hapus dokumen transaksi yang dibuatnya sendiri.
      */
-    private function assertDocumentOwnership(Model $document): void
+    private function assertTransactionAccess(Model $document): void
     {
         $user = auth()->user();
 
@@ -143,16 +145,16 @@ class AdminService
             return;
         }
 
-        // Admin hanya boleh mengubah/hapus dokumen transaksi yang dibuatnya sendiri.
+        // Admin dengan manage-admin boleh mengelola SEMUA transaksi (bukan hanya miliknya).
         abort_unless(
-            $document->created_by !== null && (int) $document->created_by === (int) $user->id,
+            $user && $user->can('manage-admin'),
             403
         );
     }
 
     public function updatePurchaseOrder(PurchaseOrder $po, array $data, ?UploadedFile $file = null): PurchaseOrder
     {
-        $this->assertDocumentOwnership($po);
+        $this->assertTransactionAccess($po);
         $this->assertProjectBelongsToCustomer($data);
 
         return DB::transaction(function () use ($po, $data, $file) {
@@ -168,7 +170,7 @@ class AdminService
 
     public function deletePurchaseOrder(PurchaseOrder $po): void
     {
-        $this->assertDocumentOwnership($po);
+        $this->assertTransactionAccess($po);
         DB::transaction(function () use ($po) {
             $this->deleteDocuments($po);
             $po->delete();
@@ -217,16 +219,11 @@ class AdminService
 
     public function deletePayment(Payment $payment): void
     {
-        $this->assertDocumentOwnership($payment);
+        $this->assertTransactionAccess($payment);
         DB::transaction(function () use ($payment) {
             $invoice = $payment->invoice;
 
             $this->deleteDocuments($payment);
-
-            if ($payment->proof_file) {
-                Storage::disk('private')->delete($payment->proof_file);
-            }
-
             $payment->delete();
 
             $this->syncInvoiceStatus($invoice);
@@ -285,12 +282,9 @@ class AdminService
 
     private function deleteDocuments(Model $owner): void
     {
+        // Soft delete — file storage TIDAK dihapus, bisa dipulihkan dari Trash.
         $owner->documents()->get()->each(function (ProjectDocument $document) {
-            if ($document->file_path) {
-                Storage::disk('private')->delete($document->file_path);
-            }
-
-            $document->forceDelete();
+            $document->delete();
         });
     }
 
@@ -306,5 +300,102 @@ class AdminService
                 'project_id' => 'Project yang dipilih tidak sesuai dengan customer.',
             ]);
         }
+    }
+
+    public function getHubData(array $filters = []): array
+    {
+        $ptGroup = !empty($filters['pt_group']) ? $filters['pt_group'] : null;
+
+        // 1. Ready to invoice projects (projects having proposal/proposal accepted but no invoices yet)
+        $readyToInvoiceQuery = Project::with(['customer', 'proposal'])
+            ->whereNotNull('proposal_id')
+            ->doesntHave('invoices');
+
+        if ($ptGroup) {
+            $readyToInvoiceQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+
+        $readyToInvoiceProjects = (clone $readyToInvoiceQuery)->latest()->limit(10)->get();
+        $readyToInvoiceCount = (clone $readyToInvoiceQuery)->count();
+
+        // 2. Invoices & Jatuh Tempo
+        $invoicesQuery = Invoice::with(['customer', 'project', 'payments'])
+            ->withSum('payments', 'amount');
+
+        if ($ptGroup) {
+            $invoicesQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+
+        $unpaidQuery = (clone $invoicesQuery)->where('status', 'unpaid');
+        $unpaidCount = (clone $unpaidQuery)->count();
+        $unpaidAmount = (float) (clone $unpaidQuery)->sum('amount');
+
+        $today = now()->toDateString();
+        $overdueQuery = (clone $unpaidQuery)->whereNotNull('due_date')->where('due_date', '<', $today);
+        $overdueCount = (clone $overdueQuery)->count();
+        $overdueAmount = (float) (clone $overdueQuery)->sum('amount');
+
+        $recentInvoices = (clone $invoicesQuery)->latest('issue_date')->limit(10)->get();
+
+        // 3. Request Harga (Teknisi)
+        $requestHargaQuery = RequestHarga::with(['project.customer']);
+        if ($ptGroup) {
+            $requestHargaQuery->whereHas('project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $queueRequestHargaQuery = (clone $requestHargaQuery)->whereNotIn('status', ['completed', 'rejected']);
+        $requestHargaQueueCount = (clone $queueRequestHargaQuery)->count();
+        $recentRequestHargas = (clone $requestHargaQuery)->latest()->limit(10)->get();
+
+        // 4. Purchase Orders (PO)
+        $poQuery = PurchaseOrder::with(['customer', 'project']);
+        if ($ptGroup) {
+            $poQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $activePoCount = (clone $poQuery)->whereIn('status', ['draft', 'diproses'])->count();
+        $recentPos = (clone $poQuery)->latest('issue_date')->limit(10)->get();
+
+        // 5. Recent Payments
+        $paymentQuery = Payment::with(['invoice.customer', 'invoice.project', 'creator']);
+        if ($ptGroup) {
+            $paymentQuery->whereHas('invoice.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $recentPayments = (clone $paymentQuery)->latest('payment_date')->limit(10)->get();
+
+        // 6. Documents Checklist Projects
+        $documentProjectsQuery = Project::with([
+            'customer',
+            'proposal',
+            'documents.category',
+            'invoices',
+        ]);
+        if ($ptGroup) {
+            $documentProjectsQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $documentProjects = (clone $documentProjectsQuery)->latest()->limit(15)->get();
+
+        return [
+            'ptGroup' => $ptGroup,
+            'kpi' => [
+                'ready_to_invoice_count' => $readyToInvoiceCount,
+                'unpaid_invoices_count' => $unpaidCount,
+                'unpaid_invoices_amount' => $unpaidAmount,
+                'overdue_invoices_count' => $overdueCount,
+                'overdue_invoices_amount' => $overdueAmount,
+                'request_harga_count' => $requestHargaQueueCount,
+                'active_pos_count' => $activePoCount,
+            ],
+            'purchasing' => [
+                'request_hargas' => $recentRequestHargas,
+                'purchase_orders' => $recentPos,
+            ],
+            'finance' => [
+                'ready_projects' => $readyToInvoiceProjects,
+                'invoices' => $recentInvoices,
+                'payments' => $recentPayments,
+            ],
+            'documents' => [
+                'projects' => $documentProjects,
+            ],
+        ];
     }
 }
