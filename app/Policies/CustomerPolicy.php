@@ -26,13 +26,19 @@ class CustomerPolicy
     public function update(User $user, Customer $customer): bool
     {
         return $user->can('manage-sales')
-            && PtAccess::canWritePt($user, $customer->pt_group);
+            && (
+                (int) $customer->assigned_to === (int) $user->id
+                || PtAccess::canWritePt($user, $customer->pt_group)
+            );
     }
 
     public function delete(User $user, Customer $customer): bool
     {
         return $user->can('manage-sales')
-            && PtAccess::canWritePt($user, $customer->pt_group);
+            && (
+                (int) $customer->assigned_to === (int) $user->id
+                || PtAccess::canWritePt($user, $customer->pt_group)
+            );
     }
 
     public function restore(User $user, Customer $customer): bool
