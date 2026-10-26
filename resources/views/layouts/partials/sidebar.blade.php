@@ -14,7 +14,7 @@
     // (user only melihat item yang boleh ia akses).
     $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
     $adminActive = request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*');
-    $adminPanelActive = request()->routeIs('admin-panel*');
+    $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
     $roleName = auth()->user()->roles->first()?->name ?? 'User';
 
@@ -509,6 +509,12 @@
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.audit-log') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
                                         <span>{{ __('Audit Log') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('dev.worklog.index') }}"
+                                       aria-current="{{ request()->routeIs('dev.worklog*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('dev.worklog*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                                        <span>{{ __('Rekap Progres') }}</span>
                                     </a>
                                     </div>
 </div>

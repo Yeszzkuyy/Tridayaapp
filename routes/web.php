@@ -40,6 +40,7 @@ use App\Http\Controllers\TechnicianScheduleController;
 use App\Http\Controllers\TrashController;
 use App\Http\Controllers\WorkTypeController;
 use App\Http\Controllers\WhatsAppCenterController;
+use App\Http\Controllers\DevWorkLogController;
 use App\Livewire\ProjectStatusList;
 use Illuminate\Support\Facades\Route;
 
@@ -651,6 +652,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/project-statuses/{projectStatus}', [ProjectStatusController::class, 'update'])->name('project-statuses.update');
         Route::delete('/project-statuses/{projectStatus}', [ProjectStatusController::class, 'destroy'])->name('project-statuses.destroy');
     });
+
+    // ============================================
+    // WORK LOG & WHATSAPP RECAP (Yeski & Raafi)
+    // ============================================
+    Route::get('/dev-worklog', [DevWorkLogController::class, 'index'])->name('dev.worklog.index');
+    Route::post('/dev-worklog/generate', [DevWorkLogController::class, 'generate'])->name('dev.worklog.generate');
 });
 require __DIR__.'/auth.php';
 
