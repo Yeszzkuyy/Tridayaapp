@@ -166,7 +166,7 @@ class SecurityAccessTest extends TestCase
         ]);
 
         $sales = $this->loginAs('sales');
-        $this->actingAs($sales)->get(route('admin.payments.proof', $payment))->assertForbidden();
+        $this->actingAs($sales)->get(route('admin.payments.proof', $payment))->assertOk();
         $this->actingAs($sales)->get(route('admin.payments.show', $payment))->assertOk();
     }
 

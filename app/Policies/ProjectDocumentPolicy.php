@@ -106,6 +106,12 @@ class ProjectDocumentPolicy
      */
     public function update(User $user, ProjectDocument $document): bool
     {
+        // Dokumen transaksi (invoice/po/payment) dikelola hanya di modul Admin;
+        // tidak boleh diubah melalui route project-dokumen.
+        if ($document->isTransactionDocument()) {
+            return false;
+        }
+
         // File milik modul (survey/sizing/instalasi) hanya dikelola dari menu
         // modulnya supaya nama file & daftar dokumen selalu sama.
         if ($document->isModuleDocument()) {
@@ -132,6 +138,12 @@ class ProjectDocumentPolicy
      */
     public function archive(User $user, ProjectDocument $document): bool
     {
+        // Dokumen transaksi (invoice/po/payment) tidak boleh diarsipkan
+        // melalui route project-dokumen — dikelola di modul Admin.
+        if ($document->isTransactionDocument()) {
+            return false;
+        }
+
         return DocumentAccess::canManage($user, $document);
     }
 
@@ -140,6 +152,12 @@ class ProjectDocumentPolicy
      */
     public function restore(User $user, ProjectDocument $document): bool
     {
+        // Dokumen transaksi (invoice/po/payment) tidak boleh dipulihkan
+        // melalui route project-dokumen — dikelola di modul Admin.
+        if ($document->isTransactionDocument()) {
+            return false;
+        }
+
         return DocumentAccess::canManage($user, $document);
     }
 
@@ -149,6 +167,12 @@ class ProjectDocumentPolicy
      */
     public function forceDelete(User $user, ProjectDocument $document): bool
     {
+        // Dokumen transaksi (invoice/po/payment) tidak boleh dihapus
+        // permanen melalui route project-dokumen — dikelola di modul Admin.
+        if ($document->isTransactionDocument()) {
+            return false;
+        }
+
         return DocumentAccess::canManage($user, $document);
     }
 

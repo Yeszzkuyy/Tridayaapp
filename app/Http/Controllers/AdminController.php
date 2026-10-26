@@ -257,6 +257,12 @@ class AdminController extends Controller
 
     public function paymentsProof(Payment $payment)
     {
+        // Authorization: hanya Admin (manage-admin), Sales (view-admin), dan Super Admin
+        $user = auth()->user();
+        if (! $user || (! $user->can('view-admin') && ! $user->can('manage-admin') && ! $user->hasRole('super-admin'))) {
+            abort(403, __('Akses ditolak.'));
+        }
+
         if (! $payment->proof_file) {
             abort(404, __('Proof file not found.'));
         }

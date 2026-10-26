@@ -72,6 +72,7 @@ class AdminService
 
     public function updateInvoice(Invoice $invoice, array $data, ?UploadedFile $file = null): Invoice
     {
+        $this->assertDocumentOwnership($invoice);
         $this->assertProjectBelongsToCustomer($data);
 
         return DB::transaction(function () use ($invoice, $data, $file) {
@@ -87,6 +88,7 @@ class AdminService
 
     public function deleteInvoice(Invoice $invoice): void
     {
+        $this->assertDocumentOwnership($invoice);
         DB::transaction(function () use ($invoice) {
             $this->deleteDocuments($invoice);
             $invoice->delete();
@@ -127,8 +129,30 @@ class AdminService
         });
     }
 
+    /**
+     * Pastikan user yang login adalah pemilik dokumen transaksi (created_by).
+     * Super Admin bypass via Gate::before.
+     * Admin hanya boleh mengubah/hapus dokumen transaksi yang dibuatnya sendiri.
+     */
+    private function assertDocumentOwnership(Model $document): void
+    {
+        $user = auth()->user();
+
+        // Super Admin bypass.
+        if ($user && $user->hasRole('super-admin')) {
+            return;
+        }
+
+        // Admin hanya boleh mengubah/hapus dokumen transaksi yang dibuatnya sendiri.
+        abort_unless(
+            $document->created_by !== null && (int) $document->created_by === (int) $user->id,
+            403
+        );
+    }
+
     public function updatePurchaseOrder(PurchaseOrder $po, array $data, ?UploadedFile $file = null): PurchaseOrder
     {
+        $this->assertDocumentOwnership($po);
         $this->assertProjectBelongsToCustomer($data);
 
         return DB::transaction(function () use ($po, $data, $file) {
@@ -144,6 +168,7 @@ class AdminService
 
     public function deletePurchaseOrder(PurchaseOrder $po): void
     {
+        $this->assertDocumentOwnership($po);
         DB::transaction(function () use ($po) {
             $this->deleteDocuments($po);
             $po->delete();
@@ -192,6 +217,7 @@ class AdminService
 
     public function deletePayment(Payment $payment): void
     {
+        $this->assertDocumentOwnership($payment);
         DB::transaction(function () use ($payment) {
             $invoice = $payment->invoice;
 

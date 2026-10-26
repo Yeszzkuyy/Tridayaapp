@@ -449,7 +449,6 @@ Route::middleware('auth')->group(function () {
         // Bukti transfer memuat nomor rekening — hanya manage-admin (bukan view-only).
         Route::get('/payments/create', [AdminController::class, 'paymentsCreate'])->name('payments.create');
         Route::post('/payments', [AdminController::class, 'paymentsStore'])->name('payments.store');
-        Route::get('/payments/{payment}/proof', [AdminController::class, 'paymentsProof'])->name('payments.proof');
         Route::delete('/payments/{payment}', [AdminController::class, 'paymentsDestroy'])->name('payments.destroy');
     });
 
@@ -458,6 +457,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/invoices/{invoice}', [AdminController::class, 'invoicesShow'])->name('invoices.show');
         Route::get('/pos', [AdminController::class, 'posIndex'])->name('pos.index');
         Route::get('/pos/{purchaseOrder}', [AdminController::class, 'posShow'])->name('pos.show');
+        Route::get('/payments/{payment}/proof', [AdminController::class, 'paymentsProof'])->name('payments.proof');
         Route::get('/payments', [AdminController::class, 'paymentsIndex'])->name('payments.index');
         Route::get('/payments/{payment}', [AdminController::class, 'paymentsShow'])->name('payments.show');
     });

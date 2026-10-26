@@ -32,6 +32,12 @@ class DocumentAccess
             return true;
         }
 
+        // Dokumen transaksi (invoice/po/payment) tidak boleh diarsipkan/hapus
+        // melalui route project-dokumen — dikelola di modul Admin.
+        if ($document->isTransactionDocument()) {
+            return false;
+        }
+
         if ($user->can('manage-technician') && self::technicianCanManage($user, $document)) {
             return true;
         }
