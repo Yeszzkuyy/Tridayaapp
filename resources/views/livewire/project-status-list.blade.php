@@ -134,3 +134,24 @@
         </div>
     </div>
 </div>
+
+{{-- Feedback ramah saat aksi Livewire ditolak (403) tanpa merusak halaman.
+     Backend tetap menolak dengan 403 — ini hanya lapisan UX. --}}
+@script
+<script>
+    document.addEventListener('livewire:init', () => {
+        const deniedMessage = @js(__('Access Denied') . ' — ' . __('You do not have permission to access this page.'));
+        const originalFetch = window.fetch;
+        window.fetch = async (...args) => {
+            const response = await originalFetch(...args);
+            try {
+                const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '';
+                if (response.status === 403 && url.includes('/livewire/update') && typeof window.toast === 'function') {
+                    window.toast(deniedMessage, false);
+                }
+            } catch (e) { /* jangan ganggu aliran request */ }
+            return response;
+        };
+    });
+</script>
+@endscript

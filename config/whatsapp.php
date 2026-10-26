@@ -18,6 +18,19 @@ return [
     'base_url' => env('GREEN_API_BASE_URL', 'https://api.green-api.com'),
 
     /*
+    | Green API webhook security.
+    | webhook_secret: token yang dikirim GREEN-API dalam header Authorization.
+    | Format sesuai dokumentasi resmi GREEN-API:
+    |   - Bearer (default): "Bearer AuthToken" → header: Authorization: Bearer AuthToken
+    |   - Basic: "Basic AuthToken" → header: Authorization: Basic AuthToken
+    | Konfigurasi di GREEN-API Console → webhookUrlToken.
+    | Kosong = tolak semua webhook Green API (fail-closed).
+    */
+    'green_api' => [
+        'webhook_secret' => env('GREEN_API_WEBHOOK_SECRET', ''),
+    ],
+
+    /*
     | Bot WhatsApp otomatis (lihat App\Services\WhatsappBot).
     | max_turns: batas balasan bot per percakapan sebelum handoff ke manusia.
     | reminder_minutes: jeda minimal notifikasi pengingat untuk percakapan mode human.

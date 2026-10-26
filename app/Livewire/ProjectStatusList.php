@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\ProjectStatus;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -21,6 +22,7 @@ class ProjectStatusList extends Component
     protected $rules = [
         'name' => 'required|string|max:255',
         'color' => 'nullable|string|max:50',
+        'is_default' => 'boolean',
     ];
 
     public function render()
@@ -29,8 +31,20 @@ class ProjectStatusList extends Component
         return view('livewire.project-status-list', compact('statuses'));
     }
 
+    /**
+     * Otorisasi wajib diperiksa SETIAP aksi mutasi dijalankan.
+     * Middleware route (permission:manage-monitoring) hanya menutup GET halaman;
+     * request /livewire/update tidak menjalankan ulang middleware tersebut,
+     * jadi pemeriksaan method-level ini adalah lapisan utamanya.
+     */
+    private function authorizeManage(): void
+    {
+        Gate::authorize('manage', ProjectStatus::class);
+    }
+
     public function save()
     {
+        $this->authorizeManage();
         $this->validate();
 
         ProjectStatus::create([
@@ -45,8 +59,8 @@ class ProjectStatusList extends Component
 
     public function edit($id)
     {
-        $status = ProjectStatus::find($id);
-        $this->editId = $id;
+        $status = ProjectStatus::findOrFail($id);
+        $this->editId = $status->id;
         $this->editName = $status->name;
         $this->editColor = $status->color;
         $this->editIsDefault = $status->is_default;
@@ -54,12 +68,14 @@ class ProjectStatusList extends Component
 
     public function update()
     {
+        $this->authorizeManage();
         $this->validate([
             'editName' => 'required|string|max:255',
             'editColor' => 'nullable|string|max:50',
+            'editIsDefault' => 'boolean',
         ]);
 
-        $status = ProjectStatus::find($this->editId);
+        $status = ProjectStatus::findOrFail($this->editId);
         $status->update([
             'name' => $this->editName,
             'color' => $this->editColor,
@@ -72,7 +88,8 @@ class ProjectStatusList extends Component
 
     public function delete($id)
     {
-        $status = ProjectStatus::find($id);
+        $this->authorizeManage();
+        $status = ProjectStatus::findOrFail($id);
         $status->delete();
         session()->flash('message', __('Status deleted successfully!'));
     }
