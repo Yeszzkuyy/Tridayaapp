@@ -572,6 +572,18 @@ class WhatsAppCenterController extends Controller
      * Green API tidak menandatangani webhook secara kriptografis,
      * jadi kita gunakan shared secret token (standar industri).
      */
+    /**
+     * Verifikasi Authorization header dari GREEN-API webhook.
+     *
+     * Dokumentasi resmi GREEN-API (green-api.com/en/docs/api/receiving/technology-webhook-endpoint):
+     * - Server GREEN-API mengirim header `Authorization: Bearer <token>` (default)
+     *   atau `Authorization: Basic <token>`.
+     * - Token dikonfigurasi di field `webhookUrlToken` pada pengaturan instance GREEN-API.
+     * - Format: "Bearer AuthToken" atau "Basic AuthToken".
+     *
+     * FAIL-CLOSED: token kosong = tolak, bukan dilewati.
+     * Perbandingan token memakai hash_equals() untuk timing-safe comparison.
+     */
     private function verifyGreenApiSecret(Request $request): void
     {
         $secret = (string) config('whatsapp.green_api.webhook_secret');
@@ -581,11 +593,28 @@ class WhatsAppCenterController extends Controller
             abort(403, 'Forbidden.');
         }
 
-        $token = (string) $request->header('X-Webhook-Secret', '');
+        $authHeader = (string) $request->header('Authorization', '');
 
-        if (! hash_equals($secret, $token)) {
-            abort(403, 'Forbidden.');
+        // Parse skema: "Bearer <token>" atau "Basic <token>".
+        if (preg_match('/^(Bearer|Basic)\s+(\S+)$/i', $authHeader, $matches)) {
+            $scheme = strtolower($matches[1]);
+            $token = $matches[2];
+
+            // Cek skema yang diizinkan (Bearer = default, Basic = opsional).
+            if (! in_array($scheme, ['bearer', 'basic'], true)) {
+                abort(403, 'Forbidden.');
+            }
+
+            // Bandingkan token secara timing-safe.
+            if (! hash_equals($secret, $token)) {
+                abort(403, 'Forbidden.');
+            }
+
+            return;
         }
+
+        // Format Authorization tidak sesuai = tolak.
+        abort(403, 'Forbidden.');
     }
 
     /**

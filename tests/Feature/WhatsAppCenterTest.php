@@ -44,11 +44,19 @@ class WhatsAppCenterTest extends TestCase
     }
 
     /**
-     * Generate headers untuk Green API webhook.
+     * Generate headers untuk Green API webhook (Bearer auth sesuai dokumentasi resmi).
      */
     private function greenApiHeaders(): array
     {
-        return ['X-Webhook-Secret' => config('whatsapp.green_api.webhook_secret')];
+        return ['Authorization' => 'Bearer '.config('whatsapp.green_api.webhook_secret')];
+    }
+
+    /**
+     * Generate headers untuk Green API webhook (Basic auth).
+     */
+    private function greenApiHeadersBasic(): array
+    {
+        return ['Authorization' => 'Basic '.config('whatsapp.green_api.webhook_secret')];
     }
 
     private function marketingUser(?int $accountId = null)
@@ -1872,7 +1880,7 @@ class WhatsAppCenterTest extends TestCase
             'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
         ];
 
-        // Tanpa X-Webhook-Secret = ditolak.
+        // Tanpa Authorization header = ditolak.
         $this->postJson('/api/whatsapp/webhook', $payload)->assertForbidden();
         $this->assertSame(0, WhatsappMessage::count());
     }
@@ -1892,7 +1900,7 @@ class WhatsAppCenterTest extends TestCase
         ];
 
         $this->postJson('/api/whatsapp/webhook', $payload, [
-            'X-Webhook-Secret' => 'wrong-secret',
+            'Authorization' => 'Bearer wrong-secret',
         ])->assertForbidden();
 
         $this->assertSame(0, WhatsappMessage::count());
@@ -1916,7 +1924,7 @@ class WhatsAppCenterTest extends TestCase
         ];
 
         $this->postJson('/api/whatsapp/webhook', $payload, [
-            'X-Webhook-Secret' => 'any-value',
+            'Authorization' => 'Bearer any-value',
         ])->assertForbidden();
 
         $this->assertSame(0, WhatsappMessage::count());
@@ -1990,11 +1998,148 @@ class WhatsAppCenterTest extends TestCase
             'instanceData' => ['idInstance' => 1101],
             'idMessage' => 'GREEN-STATUS-TEST',
             'status' => 'delivered',
-        ], ['X-Webhook-Secret' => 'wrong'])->assertForbidden();
+        ], ['Authorization' => 'Bearer wrong'])->assertForbidden();
 
         $this->assertDatabaseHas('whatsapp_messages', [
             'gateway_message_id' => 'GREEN-STATUS-TEST',
             'status' => 'sent', // Status tetap 'sent', bukan 'delivered'.
         ]);
+    }
+
+    // ============================================================
+    // GREEN-API: Authorization header (Bearer/Basic) — sesuai dokumentasi resmi
+    // ============================================================
+
+    public function test_green_api_webhook_accepts_bearer_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BEARER',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Bearer auth works']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer '.config('whatsapp.green_api.webhook_secret'),
+        ])->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'wa_message_id' => 'GREEN-BEARER',
+        ]);
+    }
+
+    public function test_green_api_webhook_accepts_basic_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BASIC',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Basic auth works']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Basic '.config('whatsapp.green_api.webhook_secret'),
+        ])->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'wa_message_id' => 'GREEN-BASIC',
+        ]);
+    }
+
+    public function test_green_api_webhook_rejects_wrong_bearer_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-WRONG-BEARER',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer wrong-token',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_invalid_auth_format(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BAD-FORMAT',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Format salah: bukan Bearer/Basic.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Token abc123',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_empty_auth_header(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-EMPTY-AUTH',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Authorization kosong = ditolak.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => '',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_bearer_without_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BEARER-EMPTY',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Bearer tanpa token = ditolak.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer ',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
     }
 }

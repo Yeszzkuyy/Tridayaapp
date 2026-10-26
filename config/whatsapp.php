@@ -19,8 +19,11 @@ return [
 
     /*
     | Green API webhook security.
-    | webhook_secret: shared secret yang harus dikirim dalam header
-    | X-Webhook-Secret pada setiap POST webhook dari Green API.
+    | webhook_secret: token yang dikirim GREEN-API dalam header Authorization.
+    | Format sesuai dokumentasi resmi GREEN-API:
+    |   - Bearer (default): "Bearer AuthToken" → header: Authorization: Bearer AuthToken
+    |   - Basic: "Basic AuthToken" → header: Authorization: Basic AuthToken
+    | Konfigurasi di GREEN-API Console → webhookUrlToken.
     | Kosong = tolak semua webhook Green API (fail-closed).
     */
     'green_api' => [
