@@ -108,6 +108,11 @@ class FollowUpController extends Controller
 
     public function update(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh mengubah. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -130,6 +135,11 @@ class FollowUpController extends Controller
 
     public function destroy(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh menghapus. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $this->salesService->deleteFollowUp($followUp);
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index', __('Follow up deleted successfully.'));
@@ -141,6 +151,11 @@ class FollowUpController extends Controller
      */
     public function complete(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh menyelesaikan. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         // Meeting type: redirect to meeting report form (wajib isi foto + MOM)
         if ($followUp->type === 'meeting' && !$followUp->hasMeetingReport()) {
             $params = [];
@@ -169,6 +184,11 @@ class FollowUpController extends Controller
      */
     public function meetingReport(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh isi meeting report. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         abort_if($followUp->type !== 'meeting', 422, __('Only meeting type can have a meeting report.'));
         abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
 
@@ -186,6 +206,11 @@ class FollowUpController extends Controller
      */
     public function storeMeetingReport(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh submit meeting report. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         abort_if($followUp->type !== 'meeting', 422, __('Only meeting type can have a meeting report.'));
         abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
 
@@ -219,6 +244,11 @@ class FollowUpController extends Controller
 
     public function reopen(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh reopen. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $this->salesService->reopenFollowUp($followUp);
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
@@ -227,6 +257,11 @@ class FollowUpController extends Controller
 
     public function snooze(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh menunda. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $validated = $request->validate([
             'days' => 'required_without:date|integer|min:1|max:60',
             'date' => 'required_without:days|date|after_or_equal:today',

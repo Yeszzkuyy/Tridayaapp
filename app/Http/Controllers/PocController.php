@@ -105,6 +105,11 @@ class PocController extends Controller
 
     public function update(Request $request, Poc $poc)
     {
+        // Ownership check: hanya pembuat record yang boleh mengubah. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($poc->created_by !== null && (int) $poc->created_by === (int) auth()->id(), 403);
+        }
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -129,6 +134,11 @@ class PocController extends Controller
 
     public function destroy(Request $request, Poc $poc)
     {
+        // Ownership check: hanya pembuat record yang boleh menghapus. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($poc->created_by !== null && (int) $poc->created_by === (int) auth()->id(), 403);
+        }
+
         $poc->delete();
 
         return $this->ajaxOrRedirect($request, 'sales.pocs.index', __('POC/Demo deleted successfully.'));
