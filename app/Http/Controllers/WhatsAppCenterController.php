@@ -527,39 +527,63 @@ class WhatsAppCenterController extends Controller
     {
         $payload = $request->json()->all();
 
+        // Meta: payload memiliki entry.0.changes.0.value
         if (data_get($payload, 'entry.0.changes.0.value')) {
             $this->verifyMetaSignature($request);
 
             return $this->handleMetaNotification($payload);
         }
 
-        return $this->handleNotification($payload);
+        // Green API: payload memiliki typeWebhook
+        if (data_get($payload, 'typeWebhook')) {
+            $this->verifyGreenApiSecret($request);
+
+            return $this->handleNotification($payload);
+        }
+
+        // Legacy: TIDAK DIDUKUNG — tolak.
+        return response()->json(['error' => 'Unsupported payload'], 403);
     }
 
     /**
      * Verifikasi HMAC X-Hub-Signature-256 dari Meta memakai app secret.
-     * Dilewati bila META_WA_APP_SECRET kosong (dev/test) dengan peringatan log.
-     * Green API tidak menandatangani webhook sehingga perlindungannya
-     * berupa throttle route + akun is_active + error generik di bawah.
+     * FAIL-CLOSED: payload yang wajib diverifikasi tetapi gagal diverifikasi
+     * harus ditolak (403). Secret kosong = tolak, bukan dilewati.
      */
     private function verifyMetaSignature(Request $request): void
     {
         $secret = (string) config('whatsapp.meta.app_secret');
 
+        // Fail-closed: secret kosong = tolak, bukan dilewati.
         if ($secret === '') {
-            try {
-                Log::warning('Webhook Meta tanpa verifikasi signature (META_WA_APP_SECRET belum diset).');
-            } catch (\Throwable) {
-                // ponytail: best-effort — logging gagal (mis. izin file) tak boleh menggagalkan webhook.
-            }
-
-            return;
+            abort(403, 'Forbidden.');
         }
 
         $signature = (string) $request->header('X-Hub-Signature-256', '');
         $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $secret);
 
         if (! hash_equals($expected, $signature)) {
+            abort(403, 'Forbidden.');
+        }
+    }
+
+    /**
+     * Verifikasi shared secret untuk Green API webhook.
+     * Green API tidak menandatangani webhook secara kriptografis,
+     * jadi kita gunakan shared secret token (standar industri).
+     */
+    private function verifyGreenApiSecret(Request $request): void
+    {
+        $secret = (string) config('whatsapp.green_api.webhook_secret');
+
+        // Fail-closed: secret kosong = tolak, bukan dilewati.
+        if ($secret === '') {
+            abort(403, 'Forbidden.');
+        }
+
+        $token = (string) $request->header('X-Webhook-Secret', '');
+
+        if (! hash_equals($secret, $token)) {
             abort(403, 'Forbidden.');
         }
     }
