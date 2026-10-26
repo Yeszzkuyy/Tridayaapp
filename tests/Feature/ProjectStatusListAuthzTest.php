@@ -23,6 +23,11 @@ use Tests\TestCase;
  *  - pengguna tanpa permission ditolak (HTTP 403 / AuthorizationException);
  *  - id tidak valid = 404, bukan 500;
  *  - halaman 403 dirender ramah (bukan teks mentah).
+ *
+ * Catatan mekanisme: Livewire 4 (RequestBroker::withoutExceptionHandling) MERENDER
+ * AuthorizationException → response 403 dan ModelNotFoundException → response 404,
+ * bukan melemparnya kembali — jadi penolakan bisa muncul sebagai exception ATAU
+ * sebagai status respons, dan test menerima keduanya.
  */
 class ProjectStatusListAuthzTest extends TestCase
 {
@@ -40,9 +45,10 @@ class ProjectStatusListAuthzTest extends TestCase
     }
 
     /**
-     * Jalankan aksi Livewire dan kembalikan exception yang terlempar (null bila sukses).
+     * Jalankan aksi Livewire dan kembalikan hasilnya:
+     * ['exception' => ?Throwable, 'component' => ?Testable]
      */
-    private function livewireAct(User $user, array $props, string $action, ...$params): ?\Throwable
+    private function livewireAct(User $user, array $props, string $action, ...$params): array
     {
         $this->actingAs($user);
         try {
@@ -51,20 +57,43 @@ class ProjectStatusListAuthzTest extends TestCase
                 $component->set($key, $value);
             }
             $component->call($action, ...$params);
-            return null;
+            return ['exception' => null, 'component' => $component];
         } catch (\Throwable $e) {
-            return $e;
+            return ['exception' => $e, 'component' => null];
         }
     }
 
-    private function assertAuthorizationDenied(?\Throwable $e, string $role, string $action): void
+    private function assertAuthorizationDenied(array $result, string $role, string $action): void
     {
-        $this->assertNotNull($e, "role [{$role}] seharusnya DITOLAK saat {$action}, tapi aksi berhasil dieksekusi");
-        $this->assertInstanceOf(
-            AuthorizationException::class,
-            $e,
-            "role [{$role}] saat {$action} harus ditolak AuthorizationException (HTTP 403), dapat: " . ($e ? get_class($e) . ' — ' . $e->getMessage() : '-')
-        );
+        if ($result['exception'] !== null) {
+            $this->assertInstanceOf(
+                AuthorizationException::class,
+                $result['exception'],
+                "role [{$role}] saat {$action} harus ditolak AuthorizationException (HTTP 403), dapat: " . get_class($result['exception'])
+            );
+            return;
+        }
+
+        $this->assertNotNull($result['component'], "role [{$role}] saat {$action}: tidak ada hasil yang bisa dinilai");
+        $result['component']->assertStatus(403);
+    }
+
+    private function assertNotFoundResult(array $result, string $action): void
+    {
+        if ($result['exception'] !== null) {
+            $this->assertThat(
+                $result['exception'],
+                $this->logicalOr(
+                    $this->isInstanceOf(ModelNotFoundException::class),
+                    $this->isInstanceOf(NotFoundHttpException::class)
+                ),
+                "{$action} dengan id tidak valid harus 404 (ModelNotFound/NotFoundHttpException), bukan 500: " . get_class($result['exception'])
+            );
+            return;
+        }
+
+        $this->assertNotNull($result['component'], "{$action}: tidak ada hasil yang bisa dinilai");
+        $result['component']->assertStatus(404);
     }
 
     // ---------------------------------------------------------------
@@ -74,15 +103,17 @@ class ProjectStatusListAuthzTest extends TestCase
     public function test_livewire_save_denied_without_manage_permission(): void
     {
         foreach (self::UNAUTHORIZED_ROLES as $role) {
-            $e = $this->livewireAct(
+            $result = $this->livewireAct(
                 $this->loginAs($role),
                 ['name' => 'Status Baru', 'color' => '#3b82f6', 'is_default' => false],
                 'save'
             );
-            $this->assertAuthorizationDenied($e, $role, 'save');
+            $this->assertAuthorizationDenied($result, $role, 'save');
         }
 
-        $this->assertDatabaseCount('project_statuses', 0);
+        // Catatan: tabel project_statuses sudah berisi 8 baris bawaan migrasi
+        // (insert data awal) — yang dijaga adalah aksi tidak sah TIDAK menambah baris.
+        $this->assertDatabaseMissing('project_statuses', ['name' => 'Status Baru']);
     }
 
     public function test_livewire_update_denied_without_manage_permission(): void
@@ -90,12 +121,12 @@ class ProjectStatusListAuthzTest extends TestCase
         $status = ProjectStatus::create(['name' => 'Pending', 'color' => '#3b82f6']);
 
         foreach (self::UNAUTHORIZED_ROLES as $role) {
-            $e = $this->livewireAct(
+            $result = $this->livewireAct(
                 $this->loginAs($role),
                 ['editId' => $status->id, 'editName' => 'Dibobol', 'editColor' => '#000000'],
                 'update'
             );
-            $this->assertAuthorizationDenied($e, $role, 'update');
+            $this->assertAuthorizationDenied($result, $role, 'update');
         }
 
         $this->assertSame('Pending', $status->fresh()->name);
@@ -105,8 +136,8 @@ class ProjectStatusListAuthzTest extends TestCase
     {
         foreach (self::UNAUTHORIZED_ROLES as $role) {
             $status = ProjectStatus::create(['name' => 'Aman', 'color' => '#3b82f6']);
-            $e = $this->livewireAct($this->loginAs($role), [], 'delete', $status->id);
-            $this->assertAuthorizationDenied($e, $role, 'delete');
+            $result = $this->livewireAct($this->loginAs($role), [], 'delete', $status->id);
+            $this->assertAuthorizationDenied($result, $role, 'delete');
             $this->assertNotNull(ProjectStatus::find($status->id), "status tidak boleh terhapus oleh role {$role}");
         }
     }
@@ -115,13 +146,14 @@ class ProjectStatusListAuthzTest extends TestCase
     {
         $status = ProjectStatus::create(['name' => 'Snapshot', 'color' => '#3b82f6']);
 
-        $e = $this->livewireAct(
+        $result = $this->livewireAct(
             $this->loginAs('management'),
             ['editId' => $status->id, 'editName' => 'Dimanipulasi', 'editColor' => '#000000', 'editIsDefault' => true],
             'update'
         );
 
-        $this->assertAuthorizationDenied($e, 'management', 'update (via manipulasi state/snapshot)');
+        $this->assertAuthorizationDenied($result, 'management', 'update (via manipulasi state/snapshot)');
+        $this->assertSame('Snapshot', $status->fresh()->name);
     }
 
     // ---------------------------------------------------------------
@@ -132,17 +164,18 @@ class ProjectStatusListAuthzTest extends TestCase
     {
         $admin = $this->loginAs('super-admin');
 
-        $e = $this->livewireAct($admin, ['name' => 'Resmi', 'color' => '#3b82f6'], 'save');
-        $this->assertNull($e, 'super-admin harus bisa save: ' . ($e?->getMessage()));
+        $result = $this->livewireAct($admin, ['name' => 'Resmi', 'color' => '#3b82f6'], 'save');
+        $this->assertNull($result['exception'], 'super-admin harus bisa save: ' . ($result['exception']?->getMessage()));
+        $result['component']->assertStatus(200);
         $this->assertDatabaseHas('project_statuses', ['name' => 'Resmi']);
 
         $status = ProjectStatus::where('name', 'Resmi')->firstOrFail();
-        $e = $this->livewireAct($admin, ['editId' => $status->id, 'editName' => 'Resmi 2', 'editColor' => '#ff0000'], 'update');
-        $this->assertNull($e, 'super-admin harus bisa update: ' . ($e?->getMessage()));
+        $result = $this->livewireAct($admin, ['editId' => $status->id, 'editName' => 'Resmi 2', 'editColor' => '#ff0000'], 'update');
+        $this->assertNull($result['exception'], 'super-admin harus bisa update: ' . ($result['exception']?->getMessage()));
         $this->assertSame('Resmi 2', $status->fresh()->name);
 
-        $e = $this->livewireAct($admin, [], 'delete', $status->id);
-        $this->assertNull($e, 'super-admin harus bisa delete: ' . ($e?->getMessage()));
+        $result = $this->livewireAct($admin, [], 'delete', $status->id);
+        $this->assertNull($result['exception'], 'super-admin harus bisa delete: ' . ($result['exception']?->getMessage()));
         $this->assertSoftDeleted('project_statuses', ['id' => $status->id]);
     }
 
@@ -154,17 +187,9 @@ class ProjectStatusListAuthzTest extends TestCase
     {
         $admin = $this->loginAs('super-admin');
 
-        foreach (['delete' => [999999], 'edit' => [999999]] as $action => $params) {
-            $e = $this->livewireAct($admin, [], $action, ...$params);
-            $this->assertNotNull($e, "{$action} dengan id ngawur harus gagal");
-            $this->assertThat(
-                $e,
-                $this->logicalOr(
-                    $this->isInstanceOf(ModelNotFoundException::class),
-                    $this->isInstanceOf(NotFoundHttpException::class)
-                ),
-                "id tidak valid harus menghasilkan 404 (ModelNotFound/NotFoundHttpException), bukan 500: " . get_class($e)
-            );
+        foreach (['delete', 'edit'] as $action) {
+            $result = $this->livewireAct($admin, [], $action, 999999);
+            $this->assertNotFoundResult($result, $action);
         }
     }
 
