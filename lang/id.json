@@ -4293,5 +4293,15 @@
     "Tempo": "Tempo",
     "Customer PO number is missing.": "Nomor PO pelanggan belum diisi.",
     "Delivery deadline is missing.": "Tenggat pengiriman belum diisi.",
-    "Payment terms are missing.": "Syarat bayar belum diisi."
+    "Payment terms are missing.": "Syarat bayar belum diisi.",
+    "Pending Role": "Menunggu Role",
+    "Menunggu Role": "Menunggu Role",
+    "Menunggu Persetujuan": "Menunggu Persetujuan",
+    "Pendaftaran Akun Berhasil!": "Pendaftaran Akun Berhasil!",
+    "Status: Menunggu Pemberian Role Divisi": "Status: Menunggu Pemberian Role Divisi",
+    "Akun Google Anda telah berhasil diverifikasi dan terhubung ke sistem internal 3DY App.": "Akun Google Anda telah berhasil diverifikasi dan terhubung ke sistem internal 3DY App.",
+    "Demi keamanan data operasional, akun baru memerlukan pembagian role (Teknisi, Sales, Marketing, Admin, dsb.) oleh Super Admin / HR sebelum dapat mengakses menu dashboard.": "Demi keamanan data operasional, akun baru memerlukan pembagian role (Teknisi, Sales, Marketing, Admin, dsb.) oleh Super Admin / HR sebelum dapat mengakses menu dashboard.",
+    "Cek Status / Masuk ke Dashboard": "Cek Status / Masuk ke Dashboard",
+    "Keluar (Sign Out)": "Keluar (Sign Out)",
+    "Your account is pending role assignment by an administrator.": "Akun Anda menunggu pemberian role oleh administrator."
 }
