@@ -8,12 +8,13 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * Halaman utama mengarahkan ke login untuk guest.
+     * Halaman utama menampilkan halaman login untuk guest (tanpa redirect).
      */
-    public function test_the_application_redirects_guests_to_login(): void
+    public function test_the_application_shows_login_page_to_guests(): void
     {
         $response = $this->get('/');
 
-        $response->assertRedirect();
+        $response->assertOk();
+        $response->assertSee(__('Sign in with Google'));
     }
 }
