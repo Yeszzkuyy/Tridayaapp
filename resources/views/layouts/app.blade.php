@@ -380,6 +380,9 @@
                 @if(session('success') && !session('success_card'))
                     <x-toast type="success">{{ session('success') }}</x-toast>
                 @endif
+                @if(session('warning'))
+                    <x-toast type="warning">{{ session('warning') }}</x-toast>
+                @endif
                 @if(session('error'))
                     <x-toast type="error">{{ session('error') }}</x-toast>
                 @endif
