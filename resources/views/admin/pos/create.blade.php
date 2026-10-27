@@ -30,7 +30,7 @@
                         @foreach($projects as $p)
                             <option value="{{ $p->id }}" data-customer="{{ $p->customer_id }}"
                                     x-show="!customerId || customerId == '{{ $p->customer_id }}'"
-                                    {{ old('project_id') == $p->id ? 'selected' : '' }}>{{ $p->project_name }}</option>
+                                    {{ old('project_id', $projectId ?? null) == $p->id ? 'selected' : '' }}>{{ $p->project_name }}</option>
                         @endforeach
                     </select>
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -38,7 +38,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Item') }} <span class="text-red-500">*</span></label>
                     <textarea name="items" rows="4" required placeholder="{{ __('Description of the goods/services ordered...') }}"
-                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">{{ old('items') }}</textarea>
+                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">{{ old('items', $itemsText ?? null) }}</textarea>
                     @error('items') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
