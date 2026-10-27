@@ -1,4 +1,5 @@
 <x-app-layout>
+    @php $isOwner = in_array(auth()->id(), [$proposal->created_by, $proposal->lead->assigned_to]); @endphp
     <div>
         <div class="flex items-center justify-between mb-6">
             <div>
@@ -54,16 +55,49 @@
                 </div>
             </div>
 
+            @can('viewCost', \App\Models\Proposal::class)
+                <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 text-sm space-y-1">
+                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Internal Financials') }}</p>
+                    @if($proposal->hasCompleteCostData())
+                        <p class="flex justify-between text-slate-500"><span>{{ __('Net Sales') }}</span><span>Rp {{ number_format($proposal->netSales(), 0, ',', '.') }}</span></p>
+                        <p class="flex justify-between text-slate-500"><span>{{ __('Total Cost') }}</span><span>Rp {{ number_format($proposal->total_cost, 0, ',', '.') }}</span></p>
+                        <p class="flex justify-between text-slate-500"><span>{{ __('Gross Profit') }}</span><span>Rp {{ number_format($proposal->gross_profit, 0, ',', '.') }}</span></p>
+                        <p class="flex justify-between font-bold text-slate-800 dark:text-slate-100"><span>{{ __('Gross Margin') }}</span><span>{{ $proposal->gross_margin === null ? '-' : number_format($proposal->gross_margin, 2) . '%' }}</span></p>
+                        @if($proposal->items->contains(fn ($item) => $item->unit_cost !== null))
+                            <details class="pt-1">
+                                <summary class="cursor-pointer text-xs text-slate-500">{{ __('Cost per item') }}</summary>
+                                <ul class="mt-1 space-y-0.5 text-xs text-slate-500">
+                                    @foreach($proposal->items as $item)
+                                        <li>{{ $item->description }}: Rp {{ number_format($item->unit_cost, 0, ',', '.') }} × {{ $item->quantity }}</li>
+                                    @endforeach
+                                </ul>
+                            </details>
+                        @endif
+                    @else
+                        <p class="text-amber-600 dark:text-amber-400">
+                            {{ __('Profit calculation incomplete') }} — {{ __(':count item(s) do not have a cost price yet.', ['count' => $proposal->missingCostItemsCount()]) }}
+                        </p>
+                    @endif
+                </div>
+            @endcan
+
             @if($proposal->notes)
                 <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $proposal->notes }}</p>
             @endif
 
+            @if($proposal->internal_notes)
+                <div class="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+                    <p class="text-xs font-semibold text-amber-700 dark:text-amber-300">{{ __('Internal Notes') }}</p>
+                    <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $proposal->internal_notes }}</p>
+                </div>
+            @endif
+
             <div class="flex flex-wrap gap-2 pt-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
-                @if(in_array($proposal->status, ['draft', 'revision']))
+                @if($isOwner && in_array($proposal->status, ['draft', 'revision']))
                     <x-icon-button as="a" icon="edit" href="{{ route('sales.proposals.edit', $proposal) }}" label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
                 @endif
-                @if($proposal->status === 'draft')
+                @if($isOwner && $proposal->status === 'draft')
                     <form action="{{ route('sales.proposals.ready', $proposal) }}" method="POST" class="inline">
                         @csrf
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Ready') }}" title="{{ __('Ready') }}" />
@@ -92,14 +126,14 @@
                         </form>
                     @endcanany
                 @endif
-                @if($proposal->status === 'ready')
+                @if($isOwner && $proposal->status === 'ready')
                     <form action="{{ route('sales.proposals.send', $proposal) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('Mark this proposal as sent?') }}')">
                         @csrf
                         <x-icon-button type="submit" icon="mail" label="{{ __('Send') }}" title="{{ __('Send') }}" />
                     </form>
                 @endif
-                @if(in_array($proposal->status, ['ready', 'sent', 'viewed']) && ($wa = $proposal->lead->customer?->whatsapp))
+                @if($isOwner && in_array($proposal->status, ['ready', 'sent', 'viewed']) && ($wa = $proposal->lead->customer?->whatsapp))
                     @php
                         $waNumber = preg_replace('/\D/', '', $wa);
                         if (str_starts_with($waNumber, '0')) $waNumber = '62' . substr($waNumber, 1);
@@ -116,13 +150,13 @@
                         </svg>
                     </x-icon-button>
                 @endif
-                @if($proposal->status === 'sent')
+                @if($isOwner && $proposal->status === 'sent')
                     <form action="{{ route('sales.proposals.viewed', $proposal) }}" method="POST" class="inline">
                         @csrf
                         <x-icon-button type="submit" icon="view" label="{{ __('Viewed') }}" title="{{ __('Viewed') }}" />
                     </form>
                 @endif
-                @if(in_array($proposal->status, ['sent', 'viewed']))
+                @if($isOwner && in_array($proposal->status, ['sent', 'viewed']))
                     <form action="{{ route('sales.proposals.revise', $proposal) }}" method="POST" class="inline">
                         @csrf
                         <x-icon-button type="submit" icon="edit" label="{{ __('Revision') }}" title="{{ __('Revision') }}" />
@@ -143,25 +177,66 @@
                 @if($proposal->status === 'accepted')
                     @if($proposal->po_document_path)
                         <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
-                    @else
-                        <form action="{{ route('sales.proposals.upload-po', $proposal) }}" method="POST" enctype="multipart/form-data" class="inline-flex items-center gap-2">
-                            @csrf
-                            <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                   class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                            <x-icon-button type="submit" icon="upload" label="{{ __('Upload PO') }}" title="{{ __('Upload PO') }}" />
-                        </form>
-                        @error('po_file') <p class="text-red-500 text-xs w-full">{{ $message }}</p> @enderror
                     @endif
                     @if($proposal->project)
                         <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('View Project') }}: {{ $proposal->project->project_name }}" title="{{ __('View Project') }}: {{ $proposal->project->project_name }}" />
-                    @else
+                    @elseif($isOwner)
                         <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
                                        onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
                     @endif
                 @endif
             </div>
 
-            @if($proposal->status === 'accepted' && !$proposal->project)
+            {{-- Customer PO (pesanan pelanggan ke 3DY) — bukan Supplier PO --}}
+            @if($proposal->status === 'accepted')
+                <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 text-sm space-y-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer PO') }}</p>
+                        <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ $proposal->isReadyForPurchasing() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ $proposal->purchasingStatusLabel() }}</span>
+                    </div>
+                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?? '-' }}</span></p>
+
+                    @if($isOwner)
+                        <form action="{{ route('sales.proposals.upload-po', $proposal) }}" method="POST" enctype="multipart/form-data" class="mt-2 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                            @csrf
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">{{ __('PO Number') }}</label>
+                                <input type="text" name="po_number" value="{{ old('po_number', $proposal->po_number) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">{{ __('PO Date') }}</label>
+                                <input type="date" name="po_date" value="{{ old('po_date', $proposal->po_date?->format('Y-m-d')) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">{{ __('Delivery Deadline') }}</label>
+                                <input type="date" name="delivery_deadline" value="{{ old('delivery_deadline', $proposal->delivery_deadline?->format('Y-m-d')) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-500 mb-1">{{ __('Delivery Address') }}</label>
+                                <input type="text" name="delivery_address" value="{{ old('delivery_address', $proposal->delivery_address) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            @if(! $proposal->po_document_path)
+                                <div class="md:col-span-3">
+                                    <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                           class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                </div>
+                            @endif
+                            <div class="{{ $proposal->po_document_path ? 'md:col-span-4' : '' }}">
+                                <x-icon-button type="submit" icon="upload" label="{{ $proposal->po_document_path ? __('Save PO Info') : __('Upload PO') }}" title="{{ $proposal->po_document_path ? __('Save PO Info') : __('Upload PO') }}" />
+                            </div>
+                            @error('po_file') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                            @error('po_number') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                            @error('po_date') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                            @error('delivery_deadline') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                        </form>
+                    @endif
+                </div>
+            @endif
+
+            @if($isOwner && $proposal->status === 'accepted' && !$proposal->project)
                 <div id="convert-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
                     <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
                         <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Convert to Project') }}</h2>

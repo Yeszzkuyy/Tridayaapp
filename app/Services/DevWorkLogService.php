@@ -18,20 +18,33 @@ class DevWorkLogService
         $since = now()->subDays($days)->startOfDay()->format('Y-m-d H:i:s');
         
         try {
-            // Gunakan Process facade Laravel untuk membaca git log
-            $command = sprintf('git log --since="%s" --pretty=format:"%%h|%%an|%%ad|%%s" --date=short -n 50', $since);
+            // Gunakan -c safe.directory=* agar user www-data tidak terkena 'dubious ownership'
+            $baseCmd = 'git -c safe.directory=* --no-pager log';
+            $command = sprintf('%s --since="%s" --pretty=format:"%%h|%%an|%%ad|%%s" --date=short -n 50', $baseCmd, $since);
+            
             $result = Process::path(base_path())->run($command);
+            $rawOutput = $result->successful() ? trim($result->output()) : '';
 
-            if (! $result->successful() || empty(trim($result->output()))) {
-                // Fallback jika since kosong: ambil 15 commit terakhir
-                $result = Process::path(base_path())->run('git log -n 15 --pretty=format:"%h|%an|%ad|%s" --date=short');
+            // Jika kosong (misal weekend / rentang hari sedikit commit), ambil fallback 15 commit terbaru
+            if (empty($rawOutput)) {
+                $fallbackCmd = sprintf('%s -n 15 --pretty=format:"%%h|%%an|%%ad|%%s" --date=short', $baseCmd);
+                $fallbackRes = Process::path(base_path())->run($fallbackCmd);
+                if ($fallbackRes->successful()) {
+                    $rawOutput = trim($fallbackRes->output());
+                }
             }
 
-            if (! $result->successful()) {
+            // Fallback sekunder bila Process facade terhambat environment FPM: shell_exec
+            if (empty($rawOutput) && function_exists('shell_exec')) {
+                $shellCmd = sprintf('cd %s && %s -n 15 --pretty=format:"%%h|%%an|%%ad|%%s" --date=short 2>/dev/null', escapeshellarg(base_path()), $baseCmd);
+                $rawOutput = trim((string) @shell_exec($shellCmd));
+            }
+
+            if (empty($rawOutput)) {
                 return [];
             }
 
-            $lines = explode("\n", trim($result->output()));
+            $lines = explode("\n", $rawOutput);
             $commits = [];
 
             foreach ($lines as $line) {
@@ -41,13 +54,20 @@ class DevWorkLogService
                 }
 
                 [$hash, $author, $date, $subject] = $parts;
-                $parsed = $this->parseCommitSubject(trim($subject));
+                $subject = trim($subject);
+
+                // Lewati commit merge otomatis agar laporan murni hasil kerjaan fitur/bugfix
+                if (preg_match('/^Merge (branch|pull request|remote-tracking)/i', $subject)) {
+                    continue;
+                }
+
+                $parsed = $this->parseCommitSubject($subject);
 
                 $commits[] = [
                     'hash' => trim($hash),
                     'author' => trim($author),
                     'date' => trim($date),
-                    'subject' => trim($subject),
+                    'subject' => $subject,
                     'category' => $parsed['category'],
                     'summary' => $parsed['summary'],
                 ];
@@ -68,13 +88,17 @@ class DevWorkLogService
      */
     public function parseCommitSubject(string $subject): array
     {
-        // Pola: feat(sales/kpi): modul evaluasi ... atau fix: ...
-        if (preg_match('/^([a-z]+)(?:\(([^)]+)\))?:\s*(.+)$/i', $subject, $matches)) {
-            $type = strtolower($matches[1]);
-            $scope = !empty($matches[2]) ? trim($matches[2]) : '';
-            $desc = trim($matches[3]);
+        // Pola konvensi: tipe(divisi/menu): keterangan
+        if (preg_match('/^[a-z]+(?:\(([^)]+)\))?:\s*(.+)$/i', $subject, $matches)) {
+            $scope = !empty($matches[1]) ? trim($matches[1]) : '';
+            $desc = trim($matches[2]);
 
-            $category = $scope ? Str::headline(str_replace(['/', '-'], ' ', $scope)) : Str::headline($type);
+            // Jika ada scope seperti 'mkt/leads' atau 'tek/jadwal' atau 'panel/worklog'
+            if ($scope) {
+                $category = Str::headline(str_replace(['/', '-'], ' ', $scope));
+            } else {
+                $category = 'Fitur Sistem';
+            }
 
             return [
                 'category' => $category,
@@ -83,7 +107,7 @@ class DevWorkLogService
         }
 
         return [
-            'category' => 'Fitur & Sistem',
+            'category' => 'Fitur Sistem',
             'summary' => ucfirst($subject),
         ];
     }
@@ -99,7 +123,7 @@ class DevWorkLogService
     {
         $commits = $this->getRecentCommits($days);
 
-        // Kelompokkan commit berdasarkan kategori
+        // Kelompokkan commit berdasarkan kategori modul
         $grouped = [];
         foreach ($commits as $c) {
             $cat = $c['category'];
@@ -115,17 +139,18 @@ class DevWorkLogService
                 // Ambil unik dan gabungkan
                 $unique = array_values(array_unique($items));
                 $joined = implode('; ', array_slice($unique, 0, 3));
-                $pekerjaanLines[] = "• [{$cat}]: {$joined}";
+                $pekerjaanLines[] = "• [{$cat}]: {$joined}.";
             }
         } else {
-            $pekerjaanLines[] = "• [Umum]: Pemeliharaan dan pengujian alur fitur aplikasi.";
+            $pekerjaanLines[] = "• [Umum]: Pengujian alur kerja, perapihan tampilan sistem, dan sinkronisasi data antar divisi.";
         }
 
         $pekerjaanText = implode("\n", $pekerjaanLines);
 
+        // Bukti hasil langsung diset untuk dilampirkan via chat WhatsApp langsung
         $bukti = ! empty($customFields['bukti']) 
             ? trim($customFields['bukti']) 
-            : "• " . url('/');
+            : "• (Screenshot / bukti hasil terlampir langsung di chat ini, Pak)";
 
         $kendala = ! empty($customFields['kendala']) 
             ? trim($customFields['kendala']) 
@@ -133,7 +158,7 @@ class DevWorkLogService
 
         $nextSteps = ! empty($customFields['next_steps']) 
             ? trim($customFields['next_steps']) 
-            : "• Optimasi performa halaman dan pemeliharaan modul aktif\n• Lanjutan sinkronisasi request dan pengujian berkala";
+            : "• Lanjut pengujian alur modul terkait dan monitoring kestabilan sistem\n• Sinkronisasi feedback serta persiapan integrasi fitur berikutnya";
 
         return <<<TEXT
 Halo Pak, izin menyampaikan rekap progres pekerjaan {$days} hari terakhir (Yeski & Raafi) ya:

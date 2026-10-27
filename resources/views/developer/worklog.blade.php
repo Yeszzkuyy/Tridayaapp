@@ -12,7 +12,7 @@
                     </span>
                 </div>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {{ __('Generator format pesan WhatsApp untuk Senior (Yeski & Raafi) sesuai standar Section 13 AGENTS.md.') }}
+                    {{ __('Draf otomatis ditarik dari update sistem & commit terbaru (Yeski & Raafi). Tinggal klik salin dan kirim ke WhatsApp Senior.') }}
                 </p>
             </div>
 
@@ -29,13 +29,28 @@
             </div>
         </div>
 
+        {{-- Petunjuk Cepat --}}
+        <div class="rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/70 to-teal-50/50 p-4 dark:border-emerald-900/50 dark:from-emerald-950/20 dark:to-teal-950/10">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </span>
+                <div class="text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                    <strong class="font-semibold text-slate-900 dark:text-white">Cara Pakai Cepat:</strong>
+                    Teks di bawah ini sudah otomatis dibuatkan oleh sistem berdasarkan update commit terbaru. Cukup klik tombol <span class="font-semibold text-emerald-700 dark:text-emerald-400">"Salin Pesan WhatsApp"</span>, lalu paste ke chat WhatsApp Pak Senior. Untuk screenshot hasil pengerjaan, Anda tinggal melampirkannya langsung di chat WhatsApp tersebut.
+                </div>
+            </div>
+        </div>
+
         {{-- Main Grid --}}
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
             
-            {{-- Kolom Kiri: Pesan WhatsApp & Tombol Aksi (7 Cols) --}}
+            {{-- Kolom Kiri: Pesan WhatsApp Siap Salin (7 Cols) --}}
             <div class="space-y-6 lg:col-span-7">
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
+                    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-700">
                         <div class="flex items-center gap-2">
                             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -43,29 +58,29 @@
                                 </svg>
                             </span>
                             <div>
-                                <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Format Teks WhatsApp</h2>
-                                <p class="text-xs text-slate-400 dark:text-slate-500">Bisa diedit langsung sebelum dikirim</p>
+                                <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Format Pesan WhatsApp (Siap Kirim)</h2>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">Otomatis terisi, dapat diedit jika ingin menambahkan catatan</p>
                             </div>
                         </div>
 
-                        {{-- Tombol Salin Cepat --}}
+                        {{-- Tombol Salin Cepat Utama --}}
                         <button type="button"
                                 @click="copyToClipboard()"
-                                class="inline-flex items-center gap-2 rounded-xl bg-accent-600 px-4 py-2 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:bg-accent-700 hover:shadow-accent-500/30 active:scale-95">
+                                class="inline-flex items-center gap-2 rounded-xl bg-accent-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:bg-accent-700 hover:shadow-accent-500/30 active:scale-95">
                             <svg x-show="!copied" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                             </svg>
                             <svg x-show="copied" x-cloak class="h-4 w-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span x-text="copied ? 'Tersalin!' : 'Salin ke WhatsApp'"></span>
+                            <span x-text="copied ? '✅ Berhasil Disalin!' : '📋 Salin Pesan WhatsApp'"></span>
                         </button>
                     </div>
 
                     {{-- Textarea Preview --}}
                     <div class="mt-4 relative">
                         <textarea x-model="summaryText"
-                                  rows="14"
+                                  rows="15"
                                   class="w-full rounded-xl border-slate-200 bg-slate-50/70 p-4 font-mono text-xs leading-relaxed text-slate-800 shadow-inner focus:border-accent-500 focus:bg-white focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:bg-slate-900"></textarea>
                     </div>
 
@@ -78,7 +93,7 @@
                             <svg :class="{'animate-spin': loading}" class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
-                            <span x-text="loading ? 'Memuat Ulang...' : 'Tarik Ulang dari Git'"></span>
+                            <span x-text="loading ? 'Memuat Ulang...' : 'Muat Ulang dari Git'"></span>
                         </button>
 
                         <button type="button"
@@ -92,42 +107,34 @@
                     </div>
                 </div>
 
-                {{-- Penyesuaian Catatan / Bukti --}}
+                {{-- Penyesuaian Opsional: Kendala & Next Steps --}}
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-                        Kustomisasi Catatan Tambahan
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white mb-1">
+                        Kustomisasi Catatan Tambahan (Opsional)
                     </h3>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
+                        Isi di bawah ini jika ingin mengubah keterangan kendala atau target berikutnya, draf teks di atas akan otomatis terupdate.
+                    </p>
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                                Link Bukti / Screenshot:
-                            </label>
-                            <input type="text"
-                                   x-model="buktiInput"
-                                   @input.debounce.500ms="regenerate()"
-                                   placeholder="Contoh: https://tridayaapp.../screenshot.png"
-                                   class="w-full rounded-xl border-slate-200 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" />
-                        </div>
-
                         <div>
                             <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                                 Kendala & Catatan:
                             </label>
                             <input type="text"
                                    x-model="kendalaInput"
-                                   @input.debounce.500ms="regenerate()"
-                                   placeholder="Contoh: Tidak ada kendala teknis yang menghambat"
+                                   @input.debounce.400ms="regenerate()"
+                                   placeholder="Default: Tidak ada kendala teknis yang menghambat"
                                    class="w-full rounded-xl border-slate-200 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" />
                         </div>
 
                         <div>
                             <label class="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                                Next Steps (Target Selanjutnya):
+                                Next Steps (Target 2 Hari Ke Depan):
                             </label>
                             <textarea rows="2"
                                       x-model="nextStepsInput"
-                                      @input.debounce.500ms="regenerate()"
-                                      placeholder="Contoh: • Lanjut optimasi query layout&#10;• Testing form price request"
+                                      @input.debounce.400ms="regenerate()"
+                                      placeholder="Default: Lanjut pengujian alur modul dan pemeliharaan fitur"
                                       class="w-full rounded-xl border-slate-200 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"></textarea>
                         </div>
                     </div>

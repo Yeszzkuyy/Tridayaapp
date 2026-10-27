@@ -26,7 +26,7 @@
             <div id="proposal-catalog-results" class="absolute z-10 w-full mt-1 hidden max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600"></div>
         </div>
         <div id="proposal-items" class="space-y-2">
-            @php $rows = old('items', isset($proposal) ? $proposal->items->map(fn ($i) => ['product_id' => $i->product_id, 'description' => $i->description, 'quantity' => $i->quantity, 'unit' => $i->unit, 'unit_price' => $i->unit_price, 'discount' => $i->discount])->all() : [['product_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'discount' => 0]]); @endphp
+            @php $rows = old('items', isset($proposal) ? $proposal->items->map(fn ($i) => ['product_id' => $i->product_id, 'description' => $i->description, 'quantity' => $i->quantity, 'unit' => $i->unit, 'unit_price' => $i->unit_price, 'unit_cost' => $i->unit_cost, 'discount' => $i->discount])->all() : [['product_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'unit_cost' => null, 'discount' => 0]]); @endphp
             @foreach($rows as $i => $row)
                 <div class="proposal-row grid grid-cols-12 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                     <input type="hidden" name="items[{{ $i }}][product_id]" value="{{ $row['product_id'] }}">
@@ -38,6 +38,10 @@
                             class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <input type="number" name="items[{{ $i }}][unit_price]" required min="0" step="0.01" value="{{ $row['unit_price'] }}" placeholder="{{ __('Price') }}"
                             class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                    @can('updateCost', \App\Models\Proposal::class)
+                        <input type="number" name="items[{{ $i }}][unit_cost]" min="0" step="0.01" value="{{ old('items.'.$i.'.unit_cost', $row['unit_cost']) }}" placeholder="{{ __('Cost Price (Rp)') }}"
+                                class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">
+                    @endcan
                     <input type="number" name="items[{{ $i }}][discount]" min="0" step="0.01" value="{{ $row['discount'] }}" placeholder="{{ __('Discount') }}"
                             class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>
@@ -75,6 +79,10 @@
         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes') }}</label>
         <textarea name="notes" rows="2" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('notes', $proposal->notes ?? $prefillNotes ?? '') }}</textarea>
     </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Internal Notes') }} <span class="text-xs text-slate-400">({{ __('not shown on customer preview') }})</span></label>
+        <textarea name="internal_notes" rows="2" class="w-full rounded-xl border-amber-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">{{ old('internal_notes', $proposal->internal_notes ?? '') }}</textarea>
+    </div>
 </div>
 
 {{-- Tombol hapus baris item — dipakai ulang oleh skrip untuk baris dinamis --}}
@@ -96,6 +104,9 @@ function proposalRowHtml(i, prefill) {
         '<input type="number" name="items[' + i + '][quantity]" required min="0.01" step="0.01" value="' + (prefill.quantity || 1) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="text" name="items[' + i + '][unit]" value="' + esc(prefill.unit || 'pcs') + '" class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="number" name="items[' + i + '][unit_price]" required min="0" step="0.01" value="' + (prefill.unit_price || 0) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
+        @can('updateCost', \App\Models\Proposal::class)
+        '<input type="number" name="items[' + i + '][unit_cost]" min="0" step="0.01" value="' + (prefill.unit_cost ?? '') + '" placeholder="{{ __('Cost Price (Rp)') }}" class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">' +
+        @endcan
         '<input type="number" name="items[' + i + '][discount]" min="0" step="0.01" value="0" class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>';
 }

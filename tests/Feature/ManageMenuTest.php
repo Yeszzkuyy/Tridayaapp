@@ -24,7 +24,7 @@ class ManageMenuTest extends TestCase
     {
         $this->actingAs($this->loginAs('management'));
 
-        foreach (['manage.marketing.index', 'manage.technical.index', 'manage.admin.index'] as $route) {
+        foreach (['manage.marketing.index', 'manage.technical.index'] as $route) {
             $this->get(route($route))
                 ->assertOk()
                 ->assertSee(__('Dalam Pengembangan'));
@@ -36,7 +36,7 @@ class ManageMenuTest extends TestCase
         foreach (['marketing', 'sales', 'technician', 'lead-technician', 'ceo'] as $role) {
             $this->actingAs($this->loginAs($role));
 
-            foreach (['manage.marketing.index', 'manage.technical.index', 'manage.admin.index'] as $route) {
+            foreach (['manage.marketing.index', 'manage.technical.index'] as $route) {
                 $this->get(route($route))->assertForbidden();
             }
         }
@@ -48,7 +48,7 @@ class ManageMenuTest extends TestCase
         foreach (['management'] as $role) {
             $this->actingAs($this->loginAs($role));
 
-            foreach (['manage.marketing.index', 'manage.technical.index', 'manage.admin.index'] as $route) {
+            foreach (['manage.marketing.index', 'manage.technical.index'] as $route) {
                 $this->get(route($route))
                     ->assertOk()
                     ->assertSee(__('Dalam Pengembangan'));

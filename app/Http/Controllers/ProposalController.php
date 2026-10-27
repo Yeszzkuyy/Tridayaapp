@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Project;
+use App\Models\Product;
 use App\Models\ProjectStatus;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
@@ -15,6 +16,7 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -31,19 +33,48 @@ class ProposalController extends Controller
         ]);
     }
 
-    private function authorizeProposal(Proposal $proposal): void
+    private function isOwner(Proposal $proposal): bool
     {
-        $this->authorize('view', $proposal->lead);
+        return in_array(auth()->id(), [$proposal->created_by, $proposal->lead->assigned_to]);
+    }
 
+    /**
+     * Baca quotation:
+     * - pemilik (Sales Owner / Quotation Maker),
+     * - Management (manage-sales-leads) — read-only hub,
+     * - Admin & Purchasing (manage-admin) — keperluan handoff,
+     * - CEO — read-only sesuai matriks (role aktual, bukan view-admin agar
+     *   tidak membuka quotation ke semua role yang punya view-admin).
+     * Marketing, teknisi, inside sales/sales non-pemilik: 403.
+     */
+    private function authorizeView(Proposal $proposal): void
+    {
         $user = auth()->user();
-        $owner = in_array($user->id, [$proposal->created_by, $proposal->lead->assigned_to]);
 
-        abort_unless($owner || $user->can('manage-sales-leads'), 403);
+        abort_unless(
+            $this->isOwner($proposal)
+            || $user->can('manage-sales-leads')
+            || $user->can('manage-admin')
+            || $user->hasRole('ceo'),
+            403
+        );
+    }
+
+    /**
+     * Tulis quotation (ready/send/respond/PO/convert): HANYA pemilik.
+     * Management & CEO hanya baca — tidak memperoleh hak ubah karena
+     * punya akses baca (matriks Role & Permission).
+     */
+    private function authorizeManage(Proposal $proposal): void
+    {
+        $this->authorizeView($proposal);
+
+        abort_unless($this->isOwner($proposal), 403);
     }
 
     private function authorizeEdit(Proposal $proposal): void
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
 
         // Selama pending_technical, BOQ dikunci dari sales; hanya tim teknis/admin yang boleh ubah.
         if ($proposal->status === 'pending_technical') {
@@ -67,7 +98,7 @@ class ProposalController extends Controller
             return;
         }
 
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
     }
 
     private function generateNumber(): string
@@ -95,18 +126,69 @@ class ProposalController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.01|max:999999',
             'items.*.unit' => 'nullable|string|max:16',
             'items.*.unit_price' => 'required|numeric|min:0|max:999999999999',
+            'items.*.unit_cost' => 'nullable|numeric|min:0|max:999999999999',
             'items.*.discount' => 'nullable|numeric|min:0|max:999999999999',
         ];
     }
 
-    private function persistItems(Proposal $proposal, array $items): void
+    /**
+     * Tolak perubahan harga modal dari pengguna tanpa kewenangan (anti-tamper).
+     */
+    private function assertNoCostTampering(array $items, bool $canManageCost): void
     {
+        if ($canManageCost) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if (array_key_exists('unit_cost', $item)
+                && $item['unit_cost'] !== null && $item['unit_cost'] !== '') {
+                abort(403, __('You are not allowed to modify cost prices.'));
+            }
+        }
+    }
+
+    /**
+     * Simpan item + snapshot harga modal.
+     *
+     * - Pengguna berwenang (manage-admin): nilai eksplisit dipakai; kolom
+     *   kosong = pertahankan snapshot lama / default produk.
+     * - Pengguna lain: unit_cost tidak boleh dikirim; nilai lama DIPERTAHANKAN
+     *   (snapshot historis tidak berubah), item baru = snapshot produk saat
+     *   dibuat. Data historis tidak pernah diisi angka perkiraan.
+     */
+    private function persistItems(Proposal $proposal, array $items, bool $canManageCost): void
+    {
+        $existing = [];
+        foreach ($proposal->items()->get() as $old) {
+            $key = $old->product_id ? 'p' . $old->product_id : 'd' . $old->description;
+            $existing[$key] = $old->unit_cost;
+        }
+
         $proposal->items()->delete();
 
         foreach ($items as $item) {
             $qty = (float) $item['quantity'];
             $price = (float) $item['unit_price'];
             $disc = (float) ($item['discount'] ?? 0);
+            $key = ! empty($item['product_id']) ? 'p' . $item['product_id'] : 'd' . $item['description'];
+
+            if ($canManageCost
+                && array_key_exists('unit_cost', $item)
+                && $item['unit_cost'] !== null && $item['unit_cost'] !== '') {
+                // Pembaruan eksplisit oleh yang berwenang.
+                $cost = round((float) $item['unit_cost'], 2);
+            } elseif (array_key_exists($key, $existing)) {
+                // Item lama: pertahankan snapshot apa adanya (termasuk null).
+                $cost = $existing[$key] === null ? null : round((float) $existing[$key], 2);
+            } else {
+                // Item baru: snapshot harga modal produk saat ini.
+                $cost = ! empty($item['product_id'])
+                    ? (Product::find($item['product_id'])?->cost_price === null
+                        ? null
+                        : round((float) Product::find($item['product_id'])->cost_price, 2))
+                    : null;
+            }
 
             $proposal->items()->create([
                 'product_id' => $item['product_id'] ?? null,
@@ -114,6 +196,7 @@ class ProposalController extends Controller
                 'quantity' => $qty,
                 'unit' => $item['unit'] ?? 'pcs',
                 'unit_price' => $price,
+                'unit_cost' => $cost,
                 'discount' => $disc,
                 'subtotal' => ProposalItem::subtotalFor($qty, $price, $disc),
             ]);
@@ -220,13 +303,17 @@ class ProposalController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            'internal_notes' => 'nullable|string',
         ], $this->itemRules()));
+
+        $canManageCost = Gate::allows('updateCost', Proposal::class);
+        $this->assertNoCostTampering($validated['items'], $canManageCost);
 
         $lead = Lead::with('customer')->findOrFail($validated['lead_id']);
         $this->authorize('view', $lead);
 
         try {
-            $proposal = DB::transaction(function () use ($validated, $lead) {
+            $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost) {
                 $proposal = Proposal::create([
                     'lead_id' => $lead->id,
                     'proposal_number' => $this->generateNumber(),
@@ -237,10 +324,11 @@ class ProposalController extends Controller
                     'discount' => $validated['discount'] ?? 0,
                     'tax' => $validated['tax'] ?? 0,
                     'notes' => $validated['notes'] ?? null,
+                    'internal_notes' => $validated['internal_notes'] ?? null,
                     'status' => 'draft',
                 ]);
 
-                $this->persistItems($proposal, $validated['items']);
+                $this->persistItems($proposal, $validated['items'], $canManageCost);
 
                 return $proposal;
             });
@@ -257,7 +345,7 @@ class ProposalController extends Controller
     public function show(Proposal $proposal)
     {
         $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project']);
-        $this->authorizeProposal($proposal);
+        $this->authorizeView($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
             ? WorkType::orderBy('name')->get(['id', 'name'])
@@ -269,7 +357,7 @@ class ProposalController extends Controller
     public function preview(Proposal $proposal)
     {
         $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator']);
-        $this->authorizeProposal($proposal);
+        $this->authorizeView($proposal);
 
         return view('sales.proposals.preview', compact('proposal'));
     }
@@ -292,17 +380,22 @@ class ProposalController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
+            'internal_notes' => 'nullable|string',
         ], $this->itemRules()));
 
-        DB::transaction(function () use ($proposal, $validated) {
+        $canManageCost = Gate::allows('updateCost', Proposal::class);
+        $this->assertNoCostTampering($validated['items'], $canManageCost);
+
+        DB::transaction(function () use ($proposal, $validated, $canManageCost) {
             $proposal->update([
                 'proposal_date' => $validated['proposal_date'],
                 'valid_until' => $validated['valid_until'] ?? null,
                 'discount' => $validated['discount'] ?? 0,
                 'tax' => $validated['tax'] ?? 0,
                 'notes' => $validated['notes'] ?? null,
+                'internal_notes' => $validated['internal_notes'] ?? null,
             ]);
-            $this->persistItems($proposal, $validated['items']);
+            $this->persistItems($proposal, $validated['items'], $canManageCost);
         });
 
         return redirect()->route('sales.proposals.show', $proposal)
@@ -322,7 +415,7 @@ class ProposalController extends Controller
     /** Sales menyerahkan draft ke tim teknis untuk penyesuaian BOQ/harga. */
     public function submitTechnical(Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'draft', 422);
 
         $proposal->update(['status' => 'pending_technical']);
@@ -370,7 +463,7 @@ class ProposalController extends Controller
 
     public function send(Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'ready', 422);
 
         $proposal->update([
@@ -391,7 +484,7 @@ class ProposalController extends Controller
 
     public function markViewed(Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'sent', 422);
 
         $proposal->update(['status' => 'viewed']);
@@ -401,7 +494,7 @@ class ProposalController extends Controller
 
     public function revise(Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless(in_array($proposal->status, ['sent', 'viewed']), 422);
 
         $proposal->update(['status' => 'revision']);
@@ -412,7 +505,7 @@ class ProposalController extends Controller
 
     public function respond(Request $request, Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless(in_array($proposal->status, ['sent', 'viewed', 'revision', 'ready']), 422);
 
         $validated = $request->validate(['decision' => 'required|in:accepted,rejected']);
@@ -442,7 +535,7 @@ class ProposalController extends Controller
 
     public function cancel(Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless(in_array($proposal->status, ['draft', 'ready']), 422);
 
         $proposal->update(['status' => 'cancelled']);
@@ -453,31 +546,53 @@ class ProposalController extends Controller
     /** Upload dokumen PO klien (hanya saat proposal accepted/WON). */
     public function uploadPo(Request $request, Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'accepted', 422);
 
         $validated = $request->validate([
-            'po_file' => ['required', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
+            // File wajib bila belum ada PO tersimpan; bila sudah ada, boleh
+            // hanya memperbarui nomor/tanggal PO & info pengiriman.
+            'po_file' => [
+                $proposal->po_document_path ? 'nullable' : 'required',
+                'file',
+                'max:10240',
+                \App\Rules\SecureFile::documents(),
+            ],
+            'po_number' => 'nullable|string|max:100',
+            'po_date' => 'nullable|date',
+            'delivery_deadline' => 'nullable|date',
+            'delivery_address' => 'nullable|string|max:255',
         ]);
 
-        $file = $validated['po_file'];
-        $path = $file->storeAs(
-            "proposals/{$proposal->id}/po",
-            Str::uuid() . '.' . strtolower($file->getClientOriginalExtension()),
-            'private'
-        );
+        $payload = [
+            'po_number' => $validated['po_number'] ?? $proposal->po_number,
+            'po_date' => $validated['po_date'] ?? $proposal->po_date,
+            'delivery_deadline' => $validated['delivery_deadline'] ?? $proposal->delivery_deadline,
+            'delivery_address' => $validated['delivery_address'] ?? $proposal->delivery_address,
+        ];
 
-        if ($proposal->po_document_path) {
-            Storage::disk('private')->delete($proposal->po_document_path);
+        if ($request->hasFile('po_file')) {
+            $file = $validated['po_file'];
+            $path = $file->storeAs(
+                "proposals/{$proposal->id}/po",
+                Str::uuid() . '.' . strtolower($file->getClientOriginalExtension()),
+                'private'
+            );
+
+            if ($proposal->po_document_path) {
+                Storage::disk('private')->delete($proposal->po_document_path);
+            }
+            $payload['po_document_path'] = $path;
         }
-        $proposal->update(['po_document_path' => $path]);
+
+        $proposal->update($payload);
 
         return back()->with('success', __('PO document uploaded successfully.'));
     }
 
     public function downloadPo(Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeView($proposal);
         abort_if(! $proposal->po_document_path, 404);
 
         return \App\Rules\SecureFile::fileResponse(
@@ -490,7 +605,7 @@ class ProposalController extends Controller
     /** Convert proposal WON menjadi Project untuk divisi Teknisi (sekali saja). */
     public function convertToProject(Request $request, Proposal $proposal)
     {
-        $this->authorizeProposal($proposal);
+        $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'accepted', 422);
         abort_if($proposal->project()->exists(), 422, __('This proposal has already been converted.'));
 
