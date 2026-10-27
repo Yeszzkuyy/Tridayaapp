@@ -588,6 +588,8 @@ class SurveyReportTest extends TestCase
         $this->seed(RoleAndPermissionSeeder::class);
         $sales = User::factory()->create();
         $sales->assignRole('sales');
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
         $customer = Customer::create(['name' => 'PT Convert']);
         $lead = Lead::create([
             'customer_id' => $customer->id,
@@ -598,7 +600,7 @@ class SurveyReportTest extends TestCase
         $status = ProjectStatus::create(['name' => 'Open']);
         $workType = WorkType::create(['name' => 'Instalasi']);
 
-        $this->actingAs($sales)->patch(route('leads.convert', $lead), [
+        $this->actingAs($admin)->patch(route('leads.convert', $lead), [
             'project_name' => 'Project Convert',
             'project_status_id' => $status->id,
             'work_type_id' => $workType->id,

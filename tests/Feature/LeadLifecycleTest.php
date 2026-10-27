@@ -117,10 +117,11 @@ class LeadLifecycleTest extends TestCase
         $this->actingAs($marketing)->patch(route('leads.attachments.category', [$lead, $doc]), ['category' => 'proposal'])
             ->assertRedirect();
 
-        // 7. Won + closing
+        // 7. Won + closing (convert legacy dijalankan Admin; Sales wajib lewat quotation)
         $status = ProjectStatus::create(['name' => 'Open', 'sort_order' => 1]);
         $wt = WorkType::create(['name' => 'Instalasi']);
-        $this->actingAs($marketing)->patch(route('leads.convert', $lead), [
+        $admin = $this->userWithRole('admin');
+        $this->actingAs($admin)->patch(route('leads.convert', $lead), [
             'project_name' => 'Project Lifecycle',
             'project_status_id' => $status->id,
             'work_type_id' => $wt->id,
