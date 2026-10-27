@@ -18,7 +18,8 @@
                 <p class="text-slate-500">{{ __('Customer') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->customer }}</span></p>
                 <p class="text-slate-500">{{ __('Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->proposal_date?->format('d M Y') ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Valid Until') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->valid_until?->format('d M Y') ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Created by') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->creator?->name ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Sales Owner') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->lead->assignee?->name ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Prepared By') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->creator?->name ?? '-' }}</span></p>
             </div>
 
             <div class="overflow-x-auto">

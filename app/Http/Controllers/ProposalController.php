@@ -256,7 +256,7 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'items', 'creator', 'project']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project']);
         $this->authorizeProposal($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
@@ -268,7 +268,7 @@ class ProposalController extends Controller
 
     public function preview(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'items', 'creator']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator']);
         $this->authorizeProposal($proposal);
 
         return view('sales.proposals.preview', compact('proposal'));

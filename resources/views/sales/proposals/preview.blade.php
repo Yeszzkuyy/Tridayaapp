@@ -17,6 +17,12 @@
 <body>
     <h1>{{ $proposal->proposal_number }}</h1>
     <p>{{ $proposal->customer }} • {{ $proposal->proposal_date?->format('d M Y') ?? '-' }}</p>
+    @if($proposal->lead->assignee)
+        <p>{{ __('Sales Owner') }}: {{ $proposal->lead->assignee->name }}</p>
+    @endif
+    @if($proposal->creator)
+        <p>{{ __('Prepared By') }}: {{ $proposal->creator->name }}</p>
+    @endif
     @if($proposal->valid_until)
         <p>{{ __('Valid until') }}: {{ $proposal->valid_until->format('d M Y') }}</p>
     @endif
@@ -42,7 +48,7 @@
         <p><strong>{{ __('Grand Total') }}</strong><strong>Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</strong></p>
     </div>
     @if($proposal->notes)
-        <p>{{ $proposal->notes }}</p>
+        <p><strong>{{ __('Notes') }}:</strong> {{ $proposal->notes }}</p>
     @endif
 </body>
 </html>
