@@ -32,6 +32,15 @@
                     </select>
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                <input type="hidden" name="proposal_id" value="{{ old('proposal_id', $invoice->proposal_id) }}">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Invoice Type') }} <span class="text-red-500">*</span></label>
+                    <select name="invoice_type" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                        @foreach($types as $type => $label)
+                            <option value="{{ $type }}" @selected(old('invoice_type', $invoice->invoice_type ?? 'full') === $type)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>

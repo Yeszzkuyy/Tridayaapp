@@ -25,6 +25,12 @@ class Project extends Model
         'quotation_number',
         'proposal_id',
         'progress',
+        'requires_installation',
+        'bast_number',
+        'bast_date',
+        'bast_document_id',
+        'delivery_deadline',
+        'commercial_closed_at',
         'start_date',
         'end_date',
         'description',
@@ -35,6 +41,10 @@ class Project extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'progress' => 'integer',
+        'requires_installation' => 'boolean',
+        'bast_date' => 'date',
+        'delivery_deadline' => 'date',
+        'commercial_closed_at' => 'datetime',
     ];
 
     // Relasi ke Customer
@@ -124,5 +134,70 @@ class Project extends Model
     public function instalasis()
     {
         return $this->hasMany(Instalasi::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function purchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
+
+    public function supplierPurchaseOrders()
+    {
+        return $this->hasMany(SupplierPurchaseOrder::class);
+    }
+
+    public function supplierInvoices()
+    {
+        return $this->hasMany(SupplierInvoice::class);
+    }
+
+    public function goodsDeliveries()
+    {
+        return $this->hasMany(GoodsDelivery::class);
+    }
+
+    public function bastDocument()
+    {
+        return $this->belongsTo(ProjectDocument::class, 'bast_document_id');
+    }
+
+    /**
+     * Closing komersial (Tahap 5) hanya jika:
+     * 1. seluruh surat jalan proyek berstatus delivered;
+     * 2. instalasi selesai — BAST terisi dan progres 100%/status Done
+     *    (dilewati bila proyek tidak butuh instalasi);
+     * 3. semua invoice pelanggan lunas (invoice cancelled diabaikan).
+     */
+    public function evaluateCommercialClosing(): bool
+    {
+        if ($this->commercial_closed_at) {
+            return true;
+        }
+
+        $deliveryQuery = $this->goodsDeliveries();
+        $deliveryDone = (clone $deliveryQuery)->exists()
+            && (clone $deliveryQuery)->where('status', '!=', 'delivered')->doesntExist();
+
+        $installationDone = ! $this->requires_installation
+            || (filled($this->bast_number)
+                && ((int) $this->progress >= 100
+                    || strcasecmp((string) $this->status?->name, 'Done') === 0));
+
+        $invoiceQuery = $this->invoices();
+        $invoiceDone = (clone $invoiceQuery)->exists()
+            && (clone $invoiceQuery)->whereNotIn('status', ['paid', 'cancelled'])->doesntExist();
+
+        if ($deliveryDone && $installationDone && $invoiceDone) {
+            $this->forceFill(['commercial_closed_at' => now()])->save();
+
+            return true;
+        }
+
+        return false;
     }
 }

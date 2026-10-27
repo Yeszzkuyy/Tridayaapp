@@ -31,11 +31,8 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full
-                                    @if($inv->status === 'paid') bg-green-100 text-green-700
-                                    @elseif($inv->status === 'cancelled') bg-red-100 text-red-700
-                                    @else bg-yellow-100 text-yellow-700 @endif">
-                                    {{ $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid')) }}
+                                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ \App\Models\Invoice::statusBadgeClasses($inv->status) }}">
+                                    {{ \App\Models\Invoice::statusLabel($inv->status) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-right">

@@ -30,15 +30,30 @@
                         @foreach($projects as $p)
                             <option value="{{ $p->id }}" data-customer="{{ $p->customer_id }}"
                                     x-show="!customerId || customerId == '{{ $p->customer_id }}'"
-                                    {{ old('project_id') == $p->id ? 'selected' : '' }}>{{ $p->project_name }}</option>
+                                    {{ old('project_id', $projectId ?? null) == $p->id ? 'selected' : '' }}>{{ $p->project_name }}</option>
                         @endforeach
                     </select>
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                <input type="hidden" name="proposal_id" value="{{ old('proposal_id', $proposalId ?? null) }}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Invoice Type') }} <span class="text-red-500">*</span></label>
+                        <select name="invoice_type" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                            @foreach($types as $type => $label)
+                                <option value="{{ $type }}" @selected(old('invoice_type', $invoiceType ?? 'full') === $type)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('invoice_type') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs text-slate-500 dark:text-slate-400 self-end">
+                        {{ __('When opened from a project, the amount is prefilled with the remaining quotation value.') }}
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>
-                        <input type="number" name="amount" value="{{ old('amount') }}" required step="0.01" min="0"
+                        <input type="number" name="amount" value="{{ old('amount', $amount ?? null) }}" required step="0.01" min="0"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                         @error('amount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -73,7 +88,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Notes') }}</label>
                     <textarea name="notes" rows="2"
-                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">{{ old('notes') }}</textarea>
+                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">{{ old('notes', $notes ?? null) }}</textarea>
                     @error('notes') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex gap-3">

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\GoodsReceipt;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Project;
@@ -9,6 +10,8 @@ use App\Models\ProjectDocument;
 use App\Models\Proposal;
 use App\Models\PurchaseOrder;
 use App\Models\RequestHarga;
+use App\Models\SupplierInvoice;
+use App\Models\SupplierPurchaseOrder;
 use App\Rules\SecureFile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -83,6 +86,9 @@ class AdminService
             if ($file) {
                 $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
             }
+
+            // Perubahan status/amount manual tetap memicu evaluasi closing.
+            $invoice->project?->evaluateCommercialClosing();
 
             return $invoice;
         });
@@ -237,15 +243,28 @@ class AdminService
      */
     public function syncInvoiceStatus(?Invoice $invoice): void
     {
-        if (! $invoice || $invoice->status === 'cancelled') {
+        if (! $invoice) {
             return;
         }
 
-        $paid = (float) $invoice->payments()->sum('amount');
+        $paid = round((float) $invoice->payments()->sum('amount'), 2);
 
-        $invoice->update([
-            'status' => $paid >= (float) $invoice->amount ? 'paid' : 'unpaid',
-        ]);
+        if ($invoice->status === 'cancelled') {
+            $invoice->update(['paid_amount' => $paid]);
+
+            return;
+        }
+
+        $status = match (true) {
+            $paid <= 0 => 'unpaid',
+            $paid >= (float) $invoice->amount => 'paid',
+            default => 'partial',
+        };
+
+        $invoice->update(['status' => $status, 'paid_amount' => $paid]);
+
+        // Tahap 5: pelunasan pelanggan bisa menjadi syarat terakhir closing.
+        $invoice->project?->evaluateCommercialClosing();
     }
 
     /**
@@ -326,14 +345,20 @@ class AdminService
             $invoicesQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
         }
 
-        $unpaidQuery = (clone $invoicesQuery)->where('status', 'unpaid');
+        $unpaidQuery = (clone $invoicesQuery)->whereIn('status', ['unpaid', 'partial']);
         $unpaidCount = (clone $unpaidQuery)->count();
-        $unpaidAmount = (float) (clone $unpaidQuery)->sum('amount');
+        $unpaidAmount = round(
+            (float) (clone $unpaidQuery)->sum('amount') - (float) (clone $unpaidQuery)->sum('paid_amount'),
+            2
+        );
 
         $today = now()->toDateString();
         $overdueQuery = (clone $unpaidQuery)->whereNotNull('due_date')->where('due_date', '<', $today);
         $overdueCount = (clone $overdueQuery)->count();
-        $overdueAmount = (float) (clone $overdueQuery)->sum('amount');
+        $overdueAmount = round(
+            (float) (clone $overdueQuery)->sum('amount') - (float) (clone $overdueQuery)->sum('paid_amount'),
+            2
+        );
 
         $recentInvoices = (clone $invoicesQuery)->latest('issue_date')->limit(10)->get();
 
@@ -373,6 +398,93 @@ class AdminService
         }
         $documentProjects = (clone $documentProjectsQuery)->latest()->limit(15)->get();
 
+        // 7. Procurement & AP (Tahap 3–4): Supplier PO, terima barang belum
+        // ditagih, invoice supplier outstanding, dan proyek menunggu BAST.
+        $supplierPoQuery = SupplierPurchaseOrder::with(['supplier', 'project.customer'])->withCount('items');
+        if ($ptGroup) {
+            $supplierPoQuery->whereHas('project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+
+        $outstandingSupplierPoQuery = (clone $supplierPoQuery)
+            ->whereIn('status', ['ordered', 'partially_received']);
+        $outstandingSupplierPoCount = (clone $outstandingSupplierPoQuery)->count();
+        $recentSupplierPos = (clone $outstandingSupplierPoQuery)->latest('issue_date')->limit(10)->get();
+
+        // Quotation deal accepted + Customer PO sudah diunggah, tetapi belum
+        // ditarik menjadi Supplier PO. Ini antrean "Siap Belanja" Purchasing.
+        $quotationDealQuery = Proposal::with(['lead.customer', 'project'])
+            ->where('status', 'accepted')
+            ->whereNotNull('po_document_path')
+            ->whereDoesntHave('supplierPurchaseOrders', fn ($q) => $q->where('status', '!=', 'cancelled'));
+        if ($ptGroup) {
+            $quotationDealQuery->whereHas('lead', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $quotationDealCount = (clone $quotationDealQuery)->count();
+        $quotationDeals = (clone $quotationDealQuery)
+            ->orderByDesc('po_date')
+            ->latest('id')
+            ->limit(10)
+            ->get();
+
+        $unbilledReceiptQuery = GoodsReceipt::with(['purchaseOrder.supplier', 'project.customer'])
+            ->where('status', 'verified')
+            ->whereDoesntHave('supplierInvoices', fn ($q) => $q->where('status', '!=', 'cancelled'));
+        if ($ptGroup) {
+            $unbilledReceiptQuery->whereHas('project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $unbilledReceiptCount = (clone $unbilledReceiptQuery)->count();
+        $unbilledReceipts = (clone $unbilledReceiptQuery)->latest('received_date')->limit(10)->get();
+
+        $supplierInvoiceQuery = SupplierInvoice::with(['supplier', 'purchaseOrder', 'project.customer'])
+            ->withSum('payments', 'amount')
+            ->whereIn('status', ['unpaid', 'partial']);
+        if ($ptGroup) {
+            $supplierInvoiceQuery->whereHas('project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $outstandingSupplierInvoiceCount = (clone $supplierInvoiceQuery)->count();
+        $outstandingSupplierInvoiceAmount = round(
+            (float) (clone $supplierInvoiceQuery)->sum('amount')
+            - (float) (clone $supplierInvoiceQuery)->sum('paid_amount'),
+            2
+        );
+        $recentSupplierInvoices = (clone $supplierInvoiceQuery)->orderBy('due_date')->limit(10)->get();
+
+        $bastQuery = Project::with(['customer', 'proposal'])
+            ->whereNotNull('proposal_id')
+            ->whereNull('commercial_closed_at')
+            ->whereNull('bast_number')
+            ->where('requires_installation', true);
+        if ($ptGroup) {
+            $bastQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $bastPendingCount = (clone $bastQuery)->count();
+        $bastPendingProjects = (clone $bastQuery)->latest()->limit(10)->get();
+
+        $closedProjectQuery = Project::whereNotNull('commercial_closed_at');
+        if ($ptGroup) {
+            $closedProjectQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $commercialClosedCount = (clone $closedProjectQuery)->count();
+
+        // 8. Anti-denda: proyek dengan tenggat kirim <= 7 hari (atau sudah
+        // lewat) dan barangnya belum seluruhnya berstatus delivered.
+        $deadlineRiskQuery = Project::with(['customer', 'proposal'])
+            ->whereNotNull('delivery_deadline')
+            ->whereNull('commercial_closed_at')
+            ->whereDate('delivery_deadline', '<', now()->addDays(7)->toDateString())
+            ->where(function ($q) {
+                $q->whereDoesntHave('goodsDeliveries')
+                    ->orWhereHas('goodsDeliveries', fn ($d) => $d->where('status', '!=', 'delivered'));
+            });
+        if ($ptGroup) {
+            $deadlineRiskQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $deadlineRiskCount = (clone $deadlineRiskQuery)->count();
+        $deadlineRiskProjects = (clone $deadlineRiskQuery)
+            ->orderBy('delivery_deadline')
+            ->limit(10)
+            ->get();
+
         return [
             'ptGroup' => $ptGroup,
             'kpi' => [
@@ -383,6 +495,14 @@ class AdminService
                 'overdue_invoices_amount' => $overdueAmount,
                 'request_harga_count' => $requestHargaQueueCount,
                 'active_pos_count' => $activePoCount,
+                'quotation_deals_ready_count' => $quotationDealCount,
+                'supplier_pos_outstanding_count' => $outstandingSupplierPoCount,
+                'unbilled_receipts_count' => $unbilledReceiptCount,
+                'supplier_invoices_outstanding_count' => $outstandingSupplierInvoiceCount,
+                'supplier_invoices_outstanding_amount' => $outstandingSupplierInvoiceAmount,
+                'bast_pending_count' => $bastPendingCount,
+                'commercial_closed_count' => $commercialClosedCount,
+                'deadline_risk_count' => $deadlineRiskCount,
             ],
             'purchasing' => [
                 'request_hargas' => $recentRequestHargas,
@@ -395,6 +515,14 @@ class AdminService
             ],
             'documents' => [
                 'projects' => $documentProjects,
+            ],
+            'procurement' => [
+                'quotation_deals' => $quotationDeals,
+                'supplier_pos' => $recentSupplierPos,
+                'unbilled_receipts' => $unbilledReceipts,
+                'supplier_invoices' => $recentSupplierInvoices,
+                'bast_projects' => $bastPendingProjects,
+                'deadline_projects' => $deadlineRiskProjects,
             ],
         ];
     }

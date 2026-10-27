@@ -122,7 +122,9 @@ class AdminInvoicePaymentTest extends TestCase
             'proof_file' => UploadedFile::fake()->create('bukti1.pdf', 100, 'application/pdf'),
         ])->assertRedirect();
 
-        $this->assertSame('unpaid', $invoice->fresh()->status);
+        // Tahap 5: pembayaran sebagian kini berstatus partial.
+        $this->assertSame('partial', $invoice->fresh()->status);
+        $this->assertSame(400000.0, (float) $invoice->fresh()->paid_amount);
 
         // Cicilan kedua: total lunas -> paid otomatis.
         $this->post(route('admin.payments.store'), [
@@ -142,11 +144,38 @@ class AdminInvoicePaymentTest extends TestCase
             'doc_type' => 'payment',
         ]);
 
-        // Hapus cicilan terakhir: status kembali unpaid.
+        // Hapus cicilan terakhir: sisa 400rb -> status kembali partial.
         $last = Payment::orderByDesc('id')->firstOrFail();
         $this->delete(route('admin.payments.destroy', $last))->assertRedirect();
 
-        $this->assertSame('unpaid', $invoice->fresh()->status);
+        $this->assertSame('partial', $invoice->fresh()->status);
+    }
+
+    public function test_hub_kpi_menghitung_sisa_invoice_partial_sebagai_piutang(): void
+    {
+        $this->actingAs($this->admin());
+        $customer = $this->customer('PT Partial KPI');
+
+        $invoice = app(AdminService::class)->createInvoice([
+            'customer_id' => $customer->id,
+            'amount' => 1000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->subDays(10)->toDateString(),
+            'due_date' => now()->subDays(2)->toDateString(),
+        ]);
+
+        app(AdminService::class)->createPayment([
+            'invoice_id' => $invoice->id,
+            'amount' => 400000,
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        $hub = app(AdminService::class)->getHubData();
+
+        $this->assertSame(1, $hub['kpi']['unpaid_invoices_count']);
+        $this->assertSame(600000.0, (float) $hub['kpi']['unpaid_invoices_amount']);
+        $this->assertSame(1, $hub['kpi']['overdue_invoices_count']);
+        $this->assertSame(600000.0, (float) $hub['kpi']['overdue_invoices_amount']);
     }
 
     public function test_sales_read_only_tidak_bisa_membuat_invoice(): void
