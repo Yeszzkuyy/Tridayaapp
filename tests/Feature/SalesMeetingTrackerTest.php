@@ -137,6 +137,30 @@ class SalesMeetingTrackerTest extends TestCase
         Notification::assertSentToTimes($sales, MeetingReportReminderNotification::class, 1);
     }
 
+    public function test_create_form_filters_related_lead_by_customer(): void
+    {
+        $sales = $this->userWithRoles(['sales']);
+        $customerA = $this->makeCustomer('PT Filter A');
+        $customerB = $this->makeCustomer('PT Filter B');
+
+        foreach ([$customerA, $customerB] as $customer) {
+            \App\Models\Lead::create([
+                'customer_id' => $customer->id,
+                'pt_group' => 'NTI',
+                'segment' => 'vendor',
+                'status' => 'warm',
+                'assigned_to' => $sales->id,
+            ]);
+        }
+
+        $html = $this->actingAs($sales)->get(route('sales.meetings.create'))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('id="mtg-lead-glider"', $html);
+        $this->assertStringContainsString('&quot;customer_id&quot;:&quot;'.$customerA->id.'&quot;', $html);
+        $this->assertStringContainsString('&quot;customer_id&quot;:&quot;'.$customerB->id.'&quot;', $html);
+    }
+
     public function test_create_meeting_with_proof_photos(): void
     {
         Storage::fake('public');

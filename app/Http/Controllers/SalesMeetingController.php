@@ -81,7 +81,7 @@ class SalesMeetingController extends Controller
 
         return view('sales.meetings.create', [
             'customers' => $this->customerOptions($user),
-            'leads' => $this->leadOptions($user),
+            'leadItems' => $this->leadItems($user),
             'modes' => FollowUp::MEETING_MODES,
         ]);
     }
@@ -223,8 +223,8 @@ class SalesMeetingController extends Controller
             ->all();
     }
 
-    /** Lead milik user (sales) atau semua (management). */
-    private function leadOptions(User $user)
+    /** Opsi lead untuk glider (difilter per customer di sisi form). */
+    private function leadItems(User $user): array
     {
         $query = Lead::with('customer')->latest()->limit(200);
 
@@ -232,6 +232,11 @@ class SalesMeetingController extends Controller
             $query->where('assigned_to', $user->id);
         }
 
-        return $query->get(['id', 'customer_id', 'status', 'assigned_to']);
+        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'kebutuhan', 'assigned_to'])
+            ->map(fn ($lead) => [
+                'id' => (string) $lead->id,
+                'customer_id' => (string) $lead->customer_id,
+                'label' => Lead::salesDropdownLabel($lead),
+            ])->all();
     }
 }

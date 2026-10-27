@@ -1,4 +1,5 @@
 <x-app-layout>
+    @php($initialLeadOptions = collect($leadItems)->where('customer_id', (string) old('customer_id'))->map(fn ($l) => ['value' => $l['id'], 'label' => $l['label']])->values()->all())
     <div>
         <div class="mb-6 flex items-center justify-between">
             <div>
@@ -9,7 +10,23 @@
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-            <form action="{{ route('sales.meetings.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <form action="{{ route('sales.meetings.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
+                  x-data="{
+                      customerId: {{ json_encode(old('customer_id')) }},
+                      leads: {{ json_encode($leadItems) }},
+                      str(v) { return (v === null || v === undefined || v === '') ? null : String(v); },
+                      init() { this.customerId = this.str(this.customerId); },
+                      toOpts(list) {
+                          const cid = this.customerId ? String(this.customerId) : null;
+                          return list.filter((x) => String(x.customer_id) === String(cid)).map((x) => ({ value: x.id, label: x.label }));
+                      },
+                      refreshGliders() {
+                          if (typeof window.__glideRemount !== 'function') return;
+                          const mount = document.querySelector('#mtg-lead-glider [data-glide-mount]');
+                          window.__glideRemount(mount, this.toOpts(this.leads));
+                      }
+                  }"
+                  @customer-picked.window="if ($event.detail.field === 'customer_id') { customerId = $event.detail.id; refreshGliders(); }">
                 @csrf
 
                 <div>
@@ -28,14 +45,16 @@
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Related Lead (optional)') }}</label>
-                        <select name="lead_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                            <option value="">{{ __('No specific opportunity') }}</option>
-                            @foreach($leads as $lead)
-                                <option value="{{ $lead->id }}" @selected((string) old('lead_id') === (string) $lead->id)>
-                                    {{ $lead->customer?->name ?? 'Lead #'.$lead->id }} — {{ \App\Models\Lead::salesStatusLabel($lead->status) }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div x-show="customerId">
+                            <div id="mtg-lead-glider">
+                                <x-glide-select name="lead_id" label="{{ __('Related lead') }}"
+                                    :options="$initialLeadOptions"
+                                    :value="old('lead_id')"
+                                    :empty-label="__('No specific opportunity')"
+                                    :error="$errors->first('lead_id')" />
+                            </div>
+                        </div>
+                        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Select a customer first.') }}</p>
                         <p class="mt-1 text-xs text-slate-400">{{ __('Only leads that belong to the selected customer are accepted.') }}</p>
                         @error('lead_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
