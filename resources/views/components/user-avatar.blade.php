@@ -7,7 +7,7 @@
         'green' => 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-300',
     ];
 
-    $photoUrl = ($user && $user->avatar) ? asset('storage/' . $user->avatar) : null;
+    $photoUrl = $user?->avatar_url;
     // clickable: null = otomatis (aktif jika ada foto), false = dimatikan (mis. avatar dropdown header)
     $canZoom = $photoUrl !== null && $clickable !== false;
     // Border animasi khusus founder (Yeski) — tampil di semua pemakaian komponen.
