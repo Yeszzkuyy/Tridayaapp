@@ -63,11 +63,25 @@
         <div class="space-y-4">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 text-sm space-y-1">
                 <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">{{ __('Customer PO') }}</h2>
-                <p class="text-slate-500">{{ __('PO Number') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_number ?? __('Not filled') }}</span></p>
-                <p class="text-slate-500">{{ __('PO Date') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_date?->format('d M Y') ?? __('Not filled') }}</span></p>
-                <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not filled') }}</span></p>
-                <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_address ?? __('Not filled') }}</span></p>
+                <p class="text-slate-500">{{ __('PO Number') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
+                <p class="text-slate-500">{{ __('PO Date') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
+                <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</span></p>
+                <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_address ?: __('Not set yet') }}</span></p>
+                <p class="text-slate-500">{{ __('Payment Terms') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->paymentTermsSummary() }}</span></p>
+                @if($proposal->delivery_terms)
+                    <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_terms }}</span></p>
+                @endif
                 <p class="text-slate-500">{{ __('PO Status') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->purchasingStatusLabel() }}</span></p>
+                @if($proposal->handoffWarnings())
+                    <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                        <p class="font-semibold mb-1">{{ __('Handoff data incomplete') }}</p>
+                        <ul class="list-disc list-inside space-y-0.5">
+                            @foreach($proposal->handoffWarnings() as $warning)
+                                <li>{{ $warning }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </div>
 
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 text-sm space-y-2">

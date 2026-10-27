@@ -194,10 +194,14 @@
                         <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer PO') }}</p>
                         <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ $proposal->isReadyForPurchasing() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ $proposal->purchasingStatusLabel() }}</span>
                     </div>
-                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?? '-' }}</span></p>
-                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? '-' }}</span></p>
-                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? '-' }}</span></p>
-                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?: __('Not set yet') }}</span></p>
+                    <p class="text-slate-500">{{ __('Payment Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->paymentTermsSummary() }}</span></p>
+                    @if($proposal->delivery_terms)
+                        <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_terms }}</span></p>
+                    @endif
 
                     @if($isOwner)
                         <form action="{{ route('sales.proposals.upload-po', $proposal) }}" method="POST" enctype="multipart/form-data" class="mt-2 grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
@@ -218,6 +222,35 @@
                                 <label class="block text-xs text-slate-500 mb-1">{{ __('Delivery Address') }}</label>
                                 <input type="text" name="delivery_address" value="{{ old('delivery_address', $proposal->delivery_address) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                             </div>
+
+                            <div class="md:col-span-4 grid grid-cols-1 md:grid-cols-5 gap-2 rounded-xl border border-slate-200 dark:border-slate-600 p-3">
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">{{ __('Payment Scheme') }}</label>
+                                    <select name="payment_scheme" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                        <option value="">{{ __('Not set yet') }}</option>
+                                        @foreach(\App\Models\Proposal::PAYMENT_SCHEMES as $scheme)
+                                            <option value="{{ $scheme }}" @selected(old('payment_scheme', $proposal->payment_scheme) === $scheme)>{{ \App\Models\Proposal::paymentSchemeLabel($scheme) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">{{ __('DP %') }}</label>
+                                    <input type="number" name="dp_percent" min="1" max="99" step="0.01" value="{{ old('dp_percent', $proposal->dp_percent) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">{{ __('Term Days') }}</label>
+                                    <input type="number" name="term_days" min="1" max="365" step="1" value="{{ old('term_days', $proposal->term_days) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">{{ __('Payment Terms Note') }}</label>
+                                    <input type="text" name="payment_terms" maxlength="255" value="{{ old('payment_terms', $proposal->payment_terms) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-500 mb-1">{{ __('Delivery Terms') }}</label>
+                                    <input type="text" name="delivery_terms" maxlength="255" value="{{ old('delivery_terms', $proposal->delivery_terms) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                </div>
+                            </div>
+
                             @if(! $proposal->po_document_path)
                                 <div class="md:col-span-3">
                                     <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
@@ -231,6 +264,9 @@
                             @error('po_number') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                             @error('po_date') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                             @error('delivery_deadline') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                            @error('payment_scheme') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                            @error('dp_percent') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                            @error('term_days') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                         </form>
                     @endif
                 </div>

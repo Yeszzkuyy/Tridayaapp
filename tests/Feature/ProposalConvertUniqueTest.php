@@ -46,6 +46,9 @@ class ProposalConvertUniqueTest extends TestCase
             'proposal_date' => now()->toDateString(),
             'customer' => $customer->name,
             'status' => 'accepted',
+            'po_document_path' => 'proposals/test/po/test.pdf',
+            'po_number' => 'PO-CONVERT-'.uniqid(),
+            'payment_scheme' => 'full',
         ]);
         ProposalItem::create([
             'proposal_id' => $proposal->id,

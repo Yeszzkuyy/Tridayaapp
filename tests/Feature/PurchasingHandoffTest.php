@@ -328,6 +328,9 @@ class PurchasingHandoffTest extends TestCase
         $lead = $this->makeLead($sales->id);
         $proposal = $this->makeProposal($lead, 'accepted', $sales->id);
         $proposal->update([
+            'po_document_path' => 'proposals/test/po/test.pdf',
+            'po_number' => 'PO-TEST-1',
+            'payment_scheme' => 'full',
             'notes' => 'Harga termasuk instalasi.',
             'internal_notes' => 'Jangan disebut ke pelanggan: margin tipis.',
         ]);
