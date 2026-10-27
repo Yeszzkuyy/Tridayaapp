@@ -4303,5 +4303,11 @@
     "Demi keamanan data operasional, akun baru memerlukan pembagian role (Teknisi, Sales, Marketing, Admin, dsb.) oleh Super Admin / HR sebelum dapat mengakses menu dashboard.": "Demi keamanan data operasional, akun baru memerlukan pembagian role (Teknisi, Sales, Marketing, Admin, dsb.) oleh Super Admin / HR sebelum dapat mengakses menu dashboard.",
     "Cek Status / Masuk ke Dashboard": "Cek Status / Masuk ke Dashboard",
     "Keluar (Sign Out)": "Keluar (Sign Out)",
-    "Your account is pending role assignment by an administrator.": "Akun Anda menunggu pemberian role oleh administrator."
+    "Your account is pending role assignment by an administrator.": "Akun Anda menunggu pemberian role oleh administrator.",
+    "Customer PO Number": "Nomor PO Pelanggan",
+    "e.g. PO/2026/001": "mis. PO/2026/001",
+    "Payment terms are taken from the quotation.": "Syarat bayar diambil dari quotation.",
+    "No quotation linked": "Belum tertaut ke quotation",
+    "Payment Terms:": "Syarat Bayar:",
+    "Payment Terms: ": "Syarat Bayar: "
 }

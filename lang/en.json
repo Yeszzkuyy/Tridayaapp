@@ -4303,5 +4303,11 @@
     "Demi keamanan data operasional, akun baru memerlukan pembagian role (Teknisi, Sales, Marketing, Admin, dsb.) oleh Super Admin / HR sebelum dapat mengakses menu dashboard.": "For operational data security, new accounts require a role assignment (Technician, Sales, Marketing, Admin, etc.) by a Super Admin / HR before they can access the dashboard.",
     "Cek Status / Masuk ke Dashboard": "Check Status / Go to Dashboard",
     "Keluar (Sign Out)": "Sign Out",
-    "Your account is pending role assignment by an administrator.": "Your account is pending role assignment by an administrator."
+    "Your account is pending role assignment by an administrator.": "Your account is pending role assignment by an administrator.",
+    "Customer PO Number": "Customer PO Number",
+    "e.g. PO/2026/001": "e.g. PO/2026/001",
+    "Payment terms are taken from the quotation.": "Payment terms are taken from the quotation.",
+    "No quotation linked": "No quotation linked",
+    "Payment Terms:": "Payment Terms:",
+    "Payment Terms: ": "Payment Terms: "
 }
