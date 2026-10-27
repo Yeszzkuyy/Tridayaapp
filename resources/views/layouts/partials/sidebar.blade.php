@@ -13,7 +13,7 @@
     // Grup Sales tampil juga untuk role inside-sales; sub-menu dirakit per-item di bawah
     // (user only melihat item yang boleh ia akses).
     $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
-    $adminActive = request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*');
+    $adminActive = request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.purchasing.*') || request()->routeIs('admin.supplier-pos.*') || request()->routeIs('admin.suppliers.*') || request()->routeIs('admin.goods-receipts.*') || request()->routeIs('admin.goods-deliveries.*') || request()->routeIs('admin.supplier-invoices.*') || request()->routeIs('admin.bast.*');
     $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
     $roleName = auth()->user()->roles->first()?->name ?? 'User';
@@ -416,6 +416,54 @@
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.payments.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
                                         <span>{{ __('Payment') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.purchasing.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.purchasing.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.purchasing.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" aria-hidden="true"></span>
+                                        <span>{{ __('Purchasing') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.supplier-pos.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.supplier-pos.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.supplier-pos.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
+                                        <span>{{ __('Supplier PO') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.suppliers.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.suppliers.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.suppliers.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
+                                        <span>{{ __('Suppliers') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.goods-receipts.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.goods-receipts.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.goods-receipts.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-lime-400" aria-hidden="true"></span>
+                                        <span>{{ __('Goods Receipts') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.goods-deliveries.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.goods-deliveries.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.goods-deliveries.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                                        <span>{{ __('Deliveries') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.supplier-invoices.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.supplier-invoices.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.supplier-invoices.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
+                                        <span>{{ __('Supplier Invoices') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.bast.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.bast.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.bast.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden="true"></span>
+                                        <span>{{ __('BAST') }}</span>
+                                    </a>
+                                    <a wire:navigate.hover href="{{ route('admin.purchasing.reports') }}"
+                                       aria-current="{{ request()->routeIs('admin.purchasing.reports') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.purchasing.reports') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" aria-hidden="true"></span>
+                                        <span>{{ __('Procurement Reports') }}</span>
                                     </a>
                                     </div>
 </div>

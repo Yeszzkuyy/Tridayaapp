@@ -3,6 +3,12 @@
 use App\Http\Controllers\AccountManagerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminPanelController;
+use App\Http\Controllers\BastController;
+use App\Http\Controllers\GoodsDeliveryController;
+use App\Http\Controllers\GoodsReceiptController;
+use App\Http\Controllers\PurchasingReportController;
+use App\Http\Controllers\SupplierInvoiceController;
+use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CustomerContactController;
 use App\Http\Controllers\CustomerController;
@@ -33,6 +39,8 @@ use App\Http\Controllers\SalesMeetingController;
 use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierPurchaseOrderController;
 use App\Http\Controllers\TechnicalRequestController;
 use App\Http\Controllers\TechnicianTaskController;
 use App\Http\Controllers\TeknisiRequestController;
@@ -464,9 +472,43 @@ Route::middleware('auth')->group(function () {
         Route::get('/payments/create', [AdminController::class, 'paymentsCreate'])->name('payments.create');
         Route::post('/payments', [AdminController::class, 'paymentsStore'])->name('payments.store');
         Route::delete('/payments/{payment}', [AdminController::class, 'paymentsDestroy'])->name('payments.destroy');
+
+        // Master pemasok pengadaan (BUKAN partners/marketing).
+        Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+        Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+        Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+        Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+        Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+
+        // Supplier PO (pesanan 3DY ke pemasok) — TERPISAH dari customer PO.
+        // /create didaftarkan sebelum /{supplierPurchaseOrder} agar tidak tertukar.
+        Route::get('/supplier-pos/create', [SupplierPurchaseOrderController::class, 'create'])->name('supplier-pos.create');
+        Route::post('/supplier-pos', [SupplierPurchaseOrderController::class, 'store'])->name('supplier-pos.store');
+        Route::post('/supplier-pos/{supplierPurchaseOrder}/issue', [SupplierPurchaseOrderController::class, 'issue'])->name('supplier-pos.issue');
+        Route::post('/supplier-pos/{supplierPurchaseOrder}/cancel', [SupplierPurchaseOrderController::class, 'cancel'])->name('supplier-pos.cancel');
+
+        // Tahap 3 — Terima Barang dari Supplier & Surat Jalan ke pelanggan.
+        Route::get('/goods-receipts/create', [GoodsReceiptController::class, 'create'])->name('goods-receipts.create');
+        Route::post('/goods-receipts', [GoodsReceiptController::class, 'store'])->name('goods-receipts.store');
+        Route::post('/goods-receipts/{goodsReceipt}/verify', [GoodsReceiptController::class, 'verify'])->name('goods-receipts.verify');
+        Route::get('/goods-deliveries/create', [GoodsDeliveryController::class, 'create'])->name('goods-deliveries.create');
+        Route::post('/goods-deliveries', [GoodsDeliveryController::class, 'store'])->name('goods-deliveries.store');
+        Route::post('/goods-deliveries/{goodsDelivery}/status', [GoodsDeliveryController::class, 'updateStatus'])->name('goods-deliveries.status');
+
+        // Tahap 4 — Invoice Supplier (AP) & pembayaran ke supplier.
+        Route::get('/supplier-invoices/create', [SupplierInvoiceController::class, 'create'])->name('supplier-invoices.create');
+        Route::post('/supplier-invoices', [SupplierInvoiceController::class, 'store'])->name('supplier-invoices.store');
+        Route::post('/supplier-invoices/{supplierInvoice}/cancel', [SupplierInvoiceController::class, 'cancel'])->name('supplier-invoices.cancel');
+        Route::post('/supplier-invoices/{supplierInvoice}/payments', [SupplierPaymentController::class, 'store'])->name('supplier-invoices.payments.store');
+        Route::delete('/supplier-payments/{supplierPayment}', [SupplierPaymentController::class, 'destroy'])->name('supplier-payments.destroy');
+
+        // Tahap 5 — BAST & closing komersial.
+        Route::get('/bast/{project}/edit', [BastController::class, 'edit'])->name('bast.edit');
+        Route::put('/bast/{project}', [BastController::class, 'update'])->name('bast.update');
     });
 
     Route::middleware('permission:view-admin|manage-admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/hub', [AdminController::class, 'hub'])->name('hub');
         Route::get('/invoices', [AdminController::class, 'invoicesIndex'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [AdminController::class, 'invoicesShow'])->name('invoices.show');
         Route::get('/pos', [AdminController::class, 'posIndex'])->name('pos.index');
@@ -474,6 +516,36 @@ Route::middleware('auth')->group(function () {
         Route::get('/payments/{payment}/proof', [AdminController::class, 'paymentsProof'])->name('payments.proof');
         Route::get('/payments', [AdminController::class, 'paymentsIndex'])->name('payments.index');
         Route::get('/payments/{payment}', [AdminController::class, 'paymentsShow'])->name('payments.show');
+
+        // Tahap 4 — laporan pengadaan (unbilled receipt, PO pending, AP).
+        Route::get('/purchasing/reports', [PurchasingReportController::class, 'index'])->name('purchasing.reports');
+
+        // Handoff Sales → Purchasing (read-only). Syarat antrean: quotation
+        // accepted + customer PO terunggah. Tidak ada tulis/duplikasi data.
+        Route::get('/purchasing', [\App\Http\Controllers\PurchasingHandoffController::class, 'index'])->name('purchasing.index');
+        Route::get('/purchasing/{proposal}', [\App\Http\Controllers\PurchasingHandoffController::class, 'show'])->name('purchasing.show');
+
+        // Master pemasok + Supplier PO — baca saja untuk view-only
+        // (management/CEO/sales read-only).
+        Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+        Route::get('/supplier-pos', [SupplierPurchaseOrderController::class, 'index'])->name('supplier-pos.index');
+        Route::get('/supplier-pos/{supplierPurchaseOrder}', [SupplierPurchaseOrderController::class, 'show'])->name('supplier-pos.show');
+
+        // Tahap 3 — baca dokumen terima barang & surat jalan.
+        Route::get('/goods-receipts', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
+        Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
+        Route::get('/goods-receipts/{goodsReceipt}/attachment', [GoodsReceiptController::class, 'attachment'])->name('goods-receipts.attachment');
+        Route::get('/goods-deliveries', [GoodsDeliveryController::class, 'index'])->name('goods-deliveries.index');
+        Route::get('/goods-deliveries/{goodsDelivery}', [GoodsDeliveryController::class, 'show'])->name('goods-deliveries.show');
+
+        // Tahap 4 — baca invoice supplier & bukti pembayaran.
+        Route::get('/supplier-invoices', [SupplierInvoiceController::class, 'index'])->name('supplier-invoices.index');
+        Route::get('/supplier-invoices/{supplierInvoice}', [SupplierInvoiceController::class, 'show'])->name('supplier-invoices.show');
+        Route::get('/supplier-invoices/{supplierInvoice}/file', [SupplierInvoiceController::class, 'file'])->name('supplier-invoices.file');
+        Route::get('/supplier-payments/{supplierPayment}/proof', [SupplierPaymentController::class, 'proof'])->name('supplier-payments.proof');
+
+        // Tahap 5 — daftar BAST & closing.
+        Route::get('/bast', [BastController::class, 'index'])->name('bast.index');
     });
 
     // ============================================
@@ -583,12 +655,15 @@ Route::middleware('auth')->group(function () {
     });
 
     // ============================================
-    // MANAGEMENT — sub-modul baru (under development)
+    // MANAGEMENT — sub-modul baru & Admin Hub
     // ============================================
+    Route::middleware('permission:view-admin|manage-admin|manage-sales-leads')->prefix('manage')->name('manage.')->group(function () {
+        Route::get('admin', [AdminController::class, 'hub'])->name('admin.index');
+    });
+
     Route::middleware('permission:manage-sales-leads')->prefix('manage')->name('manage.')->group(function () {
         Route::view('marketing', 'manage.placeholder', ['title' => 'Manage Marketing'])->name('marketing.index');
         Route::view('technical', 'manage.placeholder', ['title' => 'Manage Technical'])->name('technical.index');
-        Route::view('admin', 'manage.placeholder', ['title' => 'Manage Admin'])->name('admin.index');
     });
 
     // Lead milik sales (muncul di menu Sales)
