@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptItem;
 use App\Models\GoodsDelivery;
+use App\Models\GoodsDeliveryItem;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPurchaseOrder;
 use App\Models\SupplierPurchaseOrderItem;
@@ -93,6 +94,57 @@ class ProcurementService
             ->sum('quantity_received');
 
         return round((float) $item->quantity_ordered - $verified, 2);
+    }
+
+    /**
+     * Hitung ulang kuantitas yang sudah dialokasikan ke surat jalan.
+     * Semua delivery aktif dihitung, termasuk yang masih prepared, supaya
+     * dua surat jalan tidak bisa mengalokasikan barang yang sama.
+     */
+    public function recalculatePurchaseOrderDeliveries(SupplierPurchaseOrder $order): void
+    {
+        $order->loadMissing('items');
+
+        foreach ($order->items as $item) {
+            $delivered = (float) GoodsDeliveryItem::query()
+                ->where('supplier_purchase_order_item_id', $item->id)
+                ->whereHas('delivery')
+                ->sum('quantity');
+
+            $item->forceFill(['quantity_delivered' => round($delivered, 2)])->save();
+        }
+    }
+
+    /** Serial number yang sudah diterima secara verified untuk satu item PO. */
+    public function receivedSerialNumbers(SupplierPurchaseOrderItem $item): array
+    {
+        return GoodsReceiptItem::query()
+            ->where('supplier_purchase_order_item_id', $item->id)
+            ->whereHas('receipt', fn ($q) => $q->where('status', 'verified'))
+            ->whereNotNull('serial_numbers')
+            ->get()
+            ->flatMap(fn ($row) => $row->serial_numbers ?? [])
+            ->map(fn ($serial) => mb_strtoupper(trim((string) $serial)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** Serial number yang sudah dialokasikan ke delivery aktif. */
+    public function deliveredSerialNumbers(SupplierPurchaseOrderItem $item): array
+    {
+        return GoodsDeliveryItem::query()
+            ->where('supplier_purchase_order_item_id', $item->id)
+            ->whereHas('delivery')
+            ->whereNotNull('serial_numbers')
+            ->get()
+            ->flatMap(fn ($row) => $row->serial_numbers ?? [])
+            ->map(fn ($serial) => mb_strtoupper(trim((string) $serial)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

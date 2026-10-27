@@ -117,6 +117,7 @@ class SupplierPurchaseOrder extends Model
         return [
             'ordered' => (float) $items->sum('quantity_ordered'),
             'received' => (float) $items->sum('quantity_received'),
+            'delivered' => (float) $items->sum('quantity_delivered'),
         ];
     }
 }

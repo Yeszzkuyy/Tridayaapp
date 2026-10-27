@@ -183,6 +183,8 @@ class Project extends Model
         $deliveryDone = (clone $deliveryQuery)->exists()
             && (clone $deliveryQuery)->where('status', '!=', 'delivered')->doesntExist();
 
+        $procurementDone = $this->deliveryObligationsMet();
+
         $installationDone = ! $this->requires_installation
             || (filled($this->bast_number)
                 && ((int) $this->progress >= 100
@@ -192,12 +194,43 @@ class Project extends Model
         $invoiceDone = (clone $invoiceQuery)->exists()
             && (clone $invoiceQuery)->whereNotIn('status', ['paid', 'cancelled'])->doesntExist();
 
-        if ($deliveryDone && $installationDone && $invoiceDone) {
+        if ($deliveryDone && $procurementDone && $installationDone && $invoiceDone) {
             $this->forceFill(['commercial_closed_at' => now()])->save();
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Semua item pada Supplier PO aktif project sudah dialokasikan ke
+     * surat jalan. Jika project tidak memiliki Supplier PO (data legacy),
+     * tidak ada kewajiban procurement yang bisa diperiksa.
+     */
+    private function deliveryObligationsMet(): bool
+    {
+        $items = SupplierPurchaseOrderItem::query()
+            ->whereHas('purchaseOrder', fn ($q) => $q
+                ->where('project_id', $this->id)
+                ->whereIn('status', ['ordered', 'partially_received', 'received']))
+            ->get(['id', 'quantity_ordered']);
+
+        if ($items->isEmpty()) {
+            return true;
+        }
+
+        $delivered = GoodsDeliveryItem::query()
+            ->whereIn('supplier_purchase_order_item_id', $items->pluck('id'))
+            ->whereHas('delivery')
+            ->selectRaw('supplier_purchase_order_item_id, SUM(quantity) as total')
+            ->groupBy('supplier_purchase_order_item_id')
+            ->pluck('total', 'supplier_purchase_order_item_id');
+
+        return $items->every(function (SupplierPurchaseOrderItem $item) use ($delivered) {
+            $quantity = (float) ($delivered[$item->id] ?? 0);
+
+            return $quantity + 0.0001 >= (float) $item->quantity_ordered;
+        });
     }
 }
