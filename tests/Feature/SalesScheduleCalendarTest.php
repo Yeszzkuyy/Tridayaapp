@@ -206,7 +206,7 @@ class SalesScheduleCalendarTest extends TestCase
             'date' => '2026-10-28',
         ]);
 
-        $res->assertRedirect(route('sales.follow-ups.meeting-report', ['followUp' => $fu, 'return' => 'schedule', 'date' => '2026-10-28']));
+        $res->assertRedirect(route('sales.meetings.report', ['followUp' => $fu, 'return' => 'schedule', 'date' => '2026-10-28']));
 
         // Non-meeting type completes directly and redirects to schedule
         $fuNonMeeting = $this->makeVisit($sales, ['type' => 'call']);

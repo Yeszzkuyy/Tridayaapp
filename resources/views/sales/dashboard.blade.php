@@ -333,6 +333,32 @@
         @endif
     </div>
 
+    {{-- Meeting tracker (dipisah dari Follow Up) --}}
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
+        <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
+            <div>
+                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Meeting') }}</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Daily meeting tracker summary.') }}</p>
+            </div>
+            <a href="{{ route('sales.meetings.index') }}" class="text-sm font-medium text-accent-600 hover:text-accent-500">{{ __('Open tracker') }}</a>
+        </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Today') }}</p>
+                <p class="mt-1.5 text-2xl font-extrabold text-slate-800 dark:text-white">{{ $meetingsToday ?? 0 }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Report Pending') }}</p>
+                <p class="mt-1.5 text-2xl font-extrabold text-amber-600 dark:text-amber-400">{{ $meetingsPending ?? 0 }}</p>
+            </div>
+            <a href="{{ route('sales.meetings.create') }}"
+               class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent-300 px-4 py-3 text-sm font-semibold text-accent-700 transition hover:bg-accent-50 dark:border-accent-700 dark:text-accent-300 dark:hover:bg-accent-900/20">
+                <x-icon name="add" class="h-4 w-4" />
+                {{ __('New Meeting') }}
+            </a>
+        </div>
+    </div>
+
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6" data-reveal>
         <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
             <div>

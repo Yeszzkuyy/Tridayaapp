@@ -29,6 +29,7 @@ use App\Http\Controllers\ProjectSupportController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\SalesMeetingController;
 use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
 use App\Http\Controllers\SettingsController;
@@ -155,6 +156,21 @@ Route::middleware('auth')->group(function () {
     });
 
     // ============================================
+    // SALES — Meeting (dipisah dari Follow Up)
+    // ============================================
+    Route::middleware('permission:manage-sales|manage-inside-sales')->prefix('sales')->name('sales.')->group(function () {
+        Route::get('meetings/create', [SalesMeetingController::class, 'create'])->name('meetings.create');
+        Route::post('meetings', [SalesMeetingController::class, 'store'])->name('meetings.store');
+        Route::get('meetings/{followUp}/report', [SalesMeetingController::class, 'report'])->name('meetings.report');
+        Route::post('meetings/{followUp}/report', [SalesMeetingController::class, 'reportStore'])->name('meetings.report.store');
+    });
+
+    Route::middleware('permission:view-sales|manage-sales|manage-sales-leads')->prefix('sales')->name('sales.')->group(function () {
+        Route::get('meetings', [SalesMeetingController::class, 'index'])->name('meetings.index');
+        Route::get('meetings/{followUp}', [SalesMeetingController::class, 'show'])->name('meetings.show');
+    });
+
+    // ============================================
     // SALES — Follow Up
     // ============================================
     Route::middleware('permission:manage-sales')->prefix('sales')->name('sales.')->group(function () {
@@ -163,8 +179,6 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('pocs', PocController::class)->except(['show']);
         Route::get('pocs/{poc}', [PocController::class, 'show'])->name('pocs.show');
-        Route::get('follow-ups/{followUp}/meeting-report', [FollowUpController::class, 'meetingReport'])->name('follow-ups.meeting-report');
-        Route::post('follow-ups/{followUp}/meeting-report', [FollowUpController::class, 'storeMeetingReport'])->name('follow-ups.meeting-report.store');
         Route::post('follow-ups/{followUp}/complete', [FollowUpController::class, 'complete'])->name('follow-ups.complete');
         Route::post('follow-ups/{followUp}/reopen', [FollowUpController::class, 'reopen'])->name('follow-ups.reopen');
         Route::post('follow-ups/{followUp}/snooze', [FollowUpController::class, 'snooze'])->name('follow-ups.snooze');

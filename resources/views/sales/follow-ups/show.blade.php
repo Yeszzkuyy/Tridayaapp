@@ -110,7 +110,7 @@
                         <div class="rounded-xl border border-dashed border-amber-300 bg-amber-50/60 dark:border-amber-900/60 dark:bg-amber-950/20 p-5 text-center">
                             <p class="text-xs text-amber-800 dark:text-amber-300 mb-3">{{ __('Meeting report has not been submitted yet.') }}</p>
                             @can('manage-sales')
-                                <a href="{{ route('sales.follow-ups.meeting-report', $followUp) }}"
+                                <a href="{{ route('sales.meetings.report', $followUp) }}"
                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-xs font-semibold shadow-sm transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                     <span>{{ __('Input Meeting Report (MOM & Photos)') }}</span>

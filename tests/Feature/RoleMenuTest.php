@@ -90,7 +90,7 @@ class RoleMenuTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
         $this->actingAs($u)->get('/leads')->assertForbidden();
         $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
-        $this->actingAs($u)->get('/sales/meetings')->assertNotFound();
+        $this->actingAs($u)->get('/sales/meetings')->assertForbidden();
     }
 
     public function test_sales_menu_and_access()
