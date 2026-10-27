@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Project;
+use App\Models\Proposal;
 use App\Models\PurchaseOrder;
 use App\Rules\SecureFile;
 use App\Services\AdminService;
@@ -46,29 +47,72 @@ class AdminController extends Controller
         $amount = $request->filled('amount') ? $request->input('amount') : null;
         $notes = $request->input('notes');
         $proposalId = $request->integer('proposal_id') ?: null;
-        $invoiceType = $request->input('invoice_type', 'full');
+        $invoiceType = $request->filled('invoice_type') ? $request->input('invoice_type') : null;
+        $customerPoNumber = $request->input('customer_po_number');
+        $dueDate = $request->filled('due_date') ? $request->input('due_date') : null;
+        $paymentTermsSummary = null;
 
-        if ($projectId) {
-            $project = Project::with('proposal')->find($projectId);
-            if ($project) {
-                $customerId = $customerId ?: $project->customer_id;
-                $proposalId = $proposalId ?: $project->proposal_id;
-                if (! $amount && $project->proposal) {
-                    // Sisa tagihan = nilai quotation - invoice aktif yang sudah terbit.
-                    $invoiced = (float) $project->invoices()->where('status', '!=', 'cancelled')->sum('amount');
-                    // Jangan pernah menawarkan nominal melebihi sisa nilai quotation;
-                    // jika sudah terinvoice penuh, field mulai dari 0 agar admin sadar.
-                    $amount = max(0, (float) $project->proposal->grand_total - $invoiced);
-                }
-                if (! $notes && $project->proposal) {
-                    $notes = __('Reference Proposal: ') . $project->proposal->proposal_number;
-                }
+        $project = $projectId ? Project::with('proposal')->find($projectId) : null;
+
+        if ($project) {
+            $customerId = $customerId ?: $project->customer_id;
+            $proposalId = $proposalId ?: $project->proposal_id;
+            if (! $notes && $project->proposal) {
+                $notes = __('Reference Proposal: ') . $project->proposal->proposal_number;
             }
         }
 
+        $proposal = $project?->proposal;
+        if (! $proposal && $proposalId) {
+            $proposal = Proposal::find($proposalId);
+        }
+
+        if ($proposal) {
+            $customerPoNumber = $customerPoNumber ?: $proposal->po_number;
+            $paymentTermsSummary = $proposal->paymentTermsSummary();
+
+            // Sisa tagihan = nilai quotation - invoice aktif yang sudah terbit.
+            $invoiceQuery = $project
+                ? $project->invoices()
+                : Invoice::where('proposal_id', $proposal->id);
+            $invoiced = (float) (clone $invoiceQuery)->where('status', '!=', 'cancelled')->sum('amount');
+            $remaining = max(0, (float) $proposal->grand_total - $invoiced);
+
+            if (! $amount) {
+                $hasDp = Invoice::where('proposal_id', $proposal->id)
+                    ->where('invoice_type', 'dp')
+                    ->where('status', '!=', 'cancelled')
+                    ->exists();
+
+                if ($proposal->payment_scheme === 'dp' && ! $hasDp && $invoiced <= 0) {
+                    // Tagihan pertama: DP sesuai persentase quotation.
+                    $invoiceType = $invoiceType ?: 'dp';
+                    $amount = $proposal->expectedDpAmount() ?? $remaining;
+                } elseif ($proposal->payment_scheme === 'dp') {
+                    // DP sudah terbit: berikutnya pelunasan sisa.
+                    $invoiceType = $invoiceType ?: 'pelunasan';
+                    $amount = $remaining;
+                } else {
+                    $invoiceType = $invoiceType ?: 'full';
+                    $amount = $remaining;
+                }
+            }
+
+            if (! $dueDate && $proposal->payment_scheme === 'tempo' && $proposal->term_days) {
+                $dueDate = now()->addDays((int) $proposal->term_days)->toDateString();
+            }
+
+            if ($paymentTermsSummary && ! str_contains((string) $notes, $paymentTermsSummary)) {
+                $notes = trim(($notes ? $notes . "\n" : '') . __('Payment Terms: ') . $paymentTermsSummary);
+            }
+        }
+
+        $invoiceType = $invoiceType ?: 'full';
+
         return view('admin.invoices.create', compact(
             'customers', 'projects', 'statuses', 'types', 'customerId', 'projectId',
-            'amount', 'notes', 'proposalId', 'invoiceType'
+            'amount', 'notes', 'proposalId', 'invoiceType', 'customerPoNumber', 'dueDate',
+            'paymentTermsSummary'
         ));
     }
 
@@ -78,6 +122,7 @@ class AdminController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
+            'customer_po_number' => 'nullable|string|max:100',
             'invoice_type' => 'nullable|in:dp,termin,pelunasan,full',
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:unpaid,partial,paid,cancelled',
@@ -97,13 +142,15 @@ class AdminController extends Controller
 
     public function invoicesShow(Invoice $invoice)
     {
-        $invoice->load(['customer', 'project', 'payments.creator', 'creator', 'documents']);
+        $invoice->load(['customer', 'project', 'proposal', 'payments.creator', 'creator', 'documents']);
+
 
         return view('admin.invoices.show', compact('invoice'));
     }
 
     public function invoicesEdit(Invoice $invoice)
     {
+        $invoice->load('proposal');
         $customers = Customer::orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
         $statuses = ['unpaid' => __('Unpaid'), 'partial' => __('Partial'), 'paid' => __('Paid'), 'cancelled' => __('Cancelled')];
@@ -118,6 +165,7 @@ class AdminController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
+            'customer_po_number' => 'nullable|string|max:100',
             'invoice_type' => 'nullable|in:dp,termin,pelunasan,full',
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:unpaid,partial,paid,cancelled',

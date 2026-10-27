@@ -33,6 +33,22 @@
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <input type="hidden" name="proposal_id" value="{{ old('proposal_id', $invoice->proposal_id) }}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer PO Number') }}</label>
+                        <input type="text" name="customer_po_number" maxlength="100" value="{{ old('customer_po_number', $invoice->customer_po_number) }}"
+                               placeholder="{{ __('e.g. PO/2026/001') }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                        @error('customer_po_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-2 text-xs text-slate-500 self-end">
+                        @if($invoice->proposal)
+                            {{ __('Payment Terms') }}: <span class="font-medium text-slate-700">{{ $invoice->proposal->paymentTermsSummary() }}</span>
+                        @else
+                            {{ __('Payment terms are taken from the quotation.') }}
+                        @endif
+                    </div>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Invoice Type') }} <span class="text-red-500">*</span></label>
                     <select name="invoice_type" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">

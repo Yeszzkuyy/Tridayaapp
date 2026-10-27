@@ -17,6 +17,7 @@ class Invoice extends Model
         'customer_id',
         'project_id',
         'proposal_id',
+        'customer_po_number',
         'invoice_type',
         'amount',
         'paid_amount',
