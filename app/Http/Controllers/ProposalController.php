@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GoodsReceipt;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Project;
@@ -9,6 +10,8 @@ use App\Models\Product;
 use App\Models\ProjectStatus;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
+use App\Models\SupplierInvoice;
+use App\Models\SupplierPurchaseOrder;
 use App\Models\WorkType;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
@@ -670,6 +673,21 @@ class ProposalController extends Controller
                 'description' => $description,
                 'progress' => 0,
             ]);
+
+            // Purchasing boleh membuat Supplier PO sebelum project lahir.
+            // Saat project dibuat, tautkan dokumen procurement yang masih
+            // yatim agar filter project/PT dan laporan tidak kehilangan data.
+            SupplierPurchaseOrder::where('proposal_id', $proposal->id)
+                ->whereNull('project_id')
+                ->update(['project_id' => $project->id]);
+
+            GoodsReceipt::whereNull('project_id')
+                ->whereHas('purchaseOrder', fn ($q) => $q->where('proposal_id', $proposal->id))
+                ->update(['project_id' => $project->id]);
+
+            SupplierInvoice::whereNull('project_id')
+                ->whereHas('purchaseOrder', fn ($q) => $q->where('proposal_id', $proposal->id))
+                ->update(['project_id' => $project->id]);
 
             $this->log($lead, 'proposal_converted', [
                 'number' => $proposal->proposal_number,
