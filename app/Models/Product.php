@@ -12,17 +12,32 @@ class Product extends Model
     public const STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
-        'brand', 'name', 'model', 'sku', 'category', 'description', 'status',
-        'unit', 'default_price', 'is_active',
+        'brand', 'name', 'model', 'part_number', 'sku', 'category', 'description', 'status',
+        'unit', 'default_price', 'cost_price', 'has_serial_number', 'is_active',
     ];
 
     protected $casts = [
         'default_price' => 'float',
+        'cost_price' => 'float',
+        'has_serial_number' => 'boolean',
         'is_active' => 'boolean',
     ];
 
     /** Kategori untuk picker BOQ proposal (kolom category bebas, ini opsinya). */
     public const SALE_CATEGORIES = ['barang', 'jasa', 'software'];
+
+    /** Pemasok pengadaan (boleh lebih dari satu; is_primary = preferensi). */
+    public function suppliers()
+    {
+        return $this->belongsToMany(Supplier::class, 'product_suppliers')
+            ->withPivot(['is_primary', 'supplier_part_number', 'last_cost_price'])
+            ->withTimestamps();
+    }
+
+    public function primarySupplier()
+    {
+        return $this->suppliers()->wherePivot('is_primary', true)->first();
+    }
 
     public function sources()
     {

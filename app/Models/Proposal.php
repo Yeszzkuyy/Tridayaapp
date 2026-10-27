@@ -25,7 +25,15 @@ class Proposal extends Model
         'tax',
         'grand_total',
         'notes',
+        'internal_notes',
         'po_document_path',
+        'po_number',
+        'po_date',
+        'delivery_deadline',
+        'delivery_address',
+        'total_cost',
+        'gross_profit',
+        'gross_margin',
         'status',
         'sent_at',
         'sent_by',
@@ -34,6 +42,8 @@ class Proposal extends Model
     protected $casts = [
         'proposal_date' => 'date',
         'valid_until' => 'date',
+        'po_date' => 'date',
+        'delivery_deadline' => 'date',
         'sent_at' => 'datetime',
     ];
 
@@ -62,16 +72,90 @@ class Proposal extends Model
         return $this->hasOne(Project::class);
     }
 
+    /** Supplier PO (pesanan 3DY ke pemasok) — satu quotation boleh punya banyak. */
+    public function supplierPurchaseOrders()
+    {
+        return $this->hasMany(SupplierPurchaseOrder::class);
+    }
+
     public function recalculate(): void
     {
-        $subtotal = (float) $this->items()->sum('subtotal');
-        $discount = min((float) ($this->discount ?? 0), $subtotal);
-        $tax = max(0, (float) ($this->tax ?? 0));
+        $items = $this->items()->get();
+        $subtotal = round((float) $items->sum('subtotal'), 2);
+        $discount = round(min((float) ($this->discount ?? 0), $subtotal), 2);
+        $tax = round(max(0, (float) ($this->tax ?? 0)), 2);
+
+        // Penjualan bersih = subtotal setelah diskon, SEBELUM pajak.
+        $netSales = round($subtotal - $discount, 2);
+
+        // Modal hanya dihitung bila SEMUA item punya harga modal.
+        // Item tanpa harga modal / quotation lama = NULL (belum lengkap),
+        // bukan 0 — jangan menampilkan margin palsu.
+        $incomplete = $items->isEmpty()
+            || $items->contains(fn ($item) => $item->unit_cost === null);
+
+        $totalCost = null;
+        $grossProfit = null;
+        $grossMargin = null;
+
+        if (! $incomplete) {
+            $totalCost = round((float) $items->sum(
+                fn ($item) => (float) $item->quantity * (float) $item->unit_cost
+            ), 2);
+            $grossProfit = round($netSales - $totalCost, 2);
+            // Margin negatif dibiarkan apa adanya; penjualan bersih 0 = margin NULL.
+            $grossMargin = $netSales == 0.0 ? null : round($grossProfit / $netSales * 100, 2);
+        }
+
         $this->forceFill([
             'subtotal' => $subtotal,
             'discount' => $discount,
             'grand_total' => $subtotal - $discount + $tax,
+            'total_cost' => $totalCost,
+            'gross_profit' => $grossProfit,
+            'gross_margin' => $grossMargin,
         ])->save();
+    }
+
+    /** Penjualan bersih = subtotal setelah diskon, sebelum pajak. */
+    public function netSales(): float
+    {
+        return round((float) $this->subtotal - (float) $this->discount, 2);
+    }
+
+    /** false bila ada item tanpa harga modal atau data historis sebelum fitur ini. */
+    public function hasCompleteCostData(): bool
+    {
+        return $this->total_cost !== null;
+    }
+
+    /** Jumlah item yang belum punya harga modal (untuk penanda UI). */
+    public function missingCostItemsCount(): int
+    {
+        return $this->items()->whereNull('unit_cost')->count();
+    }
+
+    /**
+     * Quotation siap diproses Purchasing = sudah accepted DAN customer PO
+     * sudah diunggah. Antrean admin diturunkan dari kondisi ini (tanpa
+     * membuat entri handoff baru) sehingga request berulang tidak
+     * menggandakan data.
+     */
+    public function isReadyForPurchasing(): bool
+    {
+        return $this->status === 'accepted' && filled($this->po_document_path);
+    }
+
+    /** Status customer PO untuk antrean Purchasing. */
+    public function purchasingStatusLabel(): string
+    {
+        if ($this->status !== 'accepted') {
+            return self::statusLabel($this->status);
+        }
+
+        return $this->isReadyForPurchasing()
+            ? __('PO Received — Ready for Purchasing')
+            : __('Waiting for Customer PO');
     }
 
     public static function statusLabel(string $status): string

@@ -13,6 +13,7 @@ class ProposalItem extends Model
         'quantity',
         'unit',
         'unit_price',
+        'unit_cost',
         'discount',
         'subtotal',
     ];
