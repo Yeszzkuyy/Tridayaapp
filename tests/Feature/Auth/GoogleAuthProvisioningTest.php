@@ -110,7 +110,7 @@ class GoogleAuthProvisioningTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Calon Karyawan');
         $response->assertSee('calon@gmail.com');
-        $response->assertSee(__('Menunggu Persetujuan Admin'));
+        $response->assertSee(__('Waiting for Admin Approval'));
         $response->assertDontSee('PT Tridaya Sinergi Berkelanjutan');
     }
 

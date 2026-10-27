@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Menunggu Persetujuan') }} - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Pending Approval') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -60,7 +60,7 @@
         }
         .shell {
             position: relative;
-            width: min(460px, 100%);
+            width: min(440px, 100%);
             padding: 38px 32px 34px;
             border: 1px solid var(--shell-border);
             border-radius: 28px;
@@ -99,7 +99,7 @@
                         {{ strtoupper(substr($user?->name ?? 'U', 0, 1)) }}
                     </div>
                 @endif
-                <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-slate-950 shadow-md ring-2 ring-slate-900" title="{{ __('Menunggu Permission') }}">
+                <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-slate-950 shadow-md ring-2 ring-slate-900" title="{{ __('Pending Permissions') }}">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
                     </svg>
@@ -107,7 +107,7 @@
             </div>
 
             <h1 class="text-xl font-bold text-white mb-1 tracking-tight">
-                {{ $user?->name ?? __('Pengguna Baru') }}
+                {{ $user?->name ?? __('New User') }}
             </h1>
             <p class="text-xs text-slate-400 font-normal mb-5">
                 {{ $user?->email }}
@@ -116,12 +116,12 @@
             {{-- Status Badge --}}
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-semibold mb-5">
                 <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                <span>{{ __('Menunggu Persetujuan Admin') }}</span>
+                <span>{{ __('Waiting for Admin Approval') }}</span>
             </div>
 
-            {{-- To-the-point explanation --}}
+            {{-- To-the-point explanation (English) --}}
             <p class="text-sm text-slate-300 leading-relaxed max-w-sm mx-auto mb-7 font-normal">
-                {{ __('Akun Anda berhasil terhubung. Untuk mulai mengakses sistem, akun Anda memerlukan permission dan saat ini sedang diproses oleh administrator.') }}
+                {{ __('Your account is connected. To start accessing the system, your account requires permissions and is currently being processed by an administrator.') }}
             </p>
 
             {{-- Action Buttons --}}
@@ -131,7 +131,7 @@
                     <svg class="h-4 w-4 transition-transform group-hover:rotate-180 duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    <span>{{ __('Periksa Akses Sekarang') }}</span>
+                    <span>{{ __('Check Access Status') }}</span>
                 </a>
 
                 <form method="POST" action="{{ route('logout') }}">
@@ -141,7 +141,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        <span>{{ __('Keluar (Sign Out)') }}</span>
+                        <span>{{ __('Sign Out') }}</span>
                     </button>
                 </form>
             </div>
