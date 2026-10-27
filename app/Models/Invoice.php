@@ -22,6 +22,7 @@ class Invoice extends Model
         'amount',
         'paid_amount',
         'status',
+        'idempotency_key',
         'issue_date',
         'due_date',
         'notes',

@@ -25,8 +25,14 @@ class SupplierPaymentController extends Controller
             'payment_date' => 'required|date',
             'payment_method' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:2000',
+            'idempotency_key' => 'nullable|string|max:64',
             'proof_file' => ['nullable', 'file', 'max:5120', SecureFile::paymentProof()],
         ]);
+
+        $key = $validated['idempotency_key'] ?? null;
+        if ($key && SupplierPayment::where('idempotency_key', $key)->exists()) {
+            return back()->with('success', __('This supplier payment has already been recorded.'));
+        }
 
         if ($supplierInvoice->status === 'cancelled') {
             throw ValidationException::withMessages([
@@ -55,6 +61,7 @@ class SupplierPaymentController extends Controller
                 'payment_method' => $validated['payment_method'] ?? null,
                 'proof_file' => $proofPath,
                 'notes' => $validated['notes'] ?? null,
+                'idempotency_key' => $validated['idempotency_key'] ?? null,
                 'created_by' => auth()->id(),
             ]);
 

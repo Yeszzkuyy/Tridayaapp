@@ -19,7 +19,7 @@ class SupplierInvoice extends Model
         'internal_ref_number', 'supplier_invoice_number', 'supplier_id',
         'supplier_purchase_order_id', 'goods_receipt_id', 'project_id',
         'invoice_type', 'amount', 'paid_amount', 'status',
-        'issue_date', 'due_date', 'invoice_file_path', 'notes', 'created_by',
+        'issue_date', 'due_date', 'invoice_file_path', 'notes', 'idempotency_key', 'created_by',
     ];
 
     protected $casts = [

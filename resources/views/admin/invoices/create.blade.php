@@ -11,6 +11,7 @@
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
             <form action="{{ route('admin.invoices.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
+                <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $idempotencyKey) }}">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select

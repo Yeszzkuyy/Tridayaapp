@@ -61,24 +61,61 @@ class AdminService
     public function createInvoice(array $data, ?UploadedFile $file = null): Invoice
     {
         $this->assertProjectBelongsToCustomer($data);
+        $this->assertProposalBelongsToCustomer($data);
 
-        return DB::transaction(function () use ($data, $file) {
-            $data['invoice_number'] = $this->generateInvoiceNumber();
-            $data['created_by'] = auth()->id();
-            $invoice = Invoice::create($data);
+        $key = $data['idempotency_key'] ?? null;
+        if ($key && ($existing = Invoice::where('idempotency_key', $key)->first())) {
+            return $existing;
+        }
 
-            if ($file) {
-                $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
+        $status = $data['status'] ?? 'unpaid';
+        if (! in_array($status, ['unpaid', 'cancelled'], true)) {
+            throw ValidationException::withMessages([
+                'status' => __('Invoice status is derived from recorded payments. Record a payment instead.'),
+            ]);
+        }
+
+        $data['paid_amount'] = 0;
+
+        try {
+            return DB::transaction(function () use ($data, $file) {
+                $data['invoice_number'] = $this->generateInvoiceNumber();
+                $data['created_by'] = auth()->id();
+                $invoice = Invoice::create($data);
+
+                if ($file) {
+                    $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
+                }
+
+                return $invoice;
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($key && ($existing = Invoice::where('idempotency_key', $key)->first())) {
+                return $existing;
             }
 
-            return $invoice;
-        });
+            throw $e;
+        }
     }
 
     public function updateInvoice(Invoice $invoice, array $data, ?UploadedFile $file = null): Invoice
     {
         $this->assertTransactionAccess($invoice);
         $this->assertProjectBelongsToCustomer($data);
+        $this->assertProposalBelongsToCustomer($data);
+
+        $paid = round((float) $invoice->payments()->sum('amount'), 2);
+        $amount = round((float) ($data['amount'] ?? $invoice->amount), 2);
+
+        if ($amount + 0.0001 < $paid) {
+            throw ValidationException::withMessages([
+                'amount' => __('Invoice amount cannot be lower than payments already recorded.'),
+            ]);
+        }
+
+        if (array_key_exists('status', $data)) {
+            $this->assertInvoiceStatusMatchesPayments((string) $data['status'], $paid, $amount);
+        }
 
         return DB::transaction(function () use ($invoice, $data, $file) {
             $invoice->update($data);
@@ -87,16 +124,23 @@ class AdminService
                 $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
             }
 
-            // Perubahan status/amount manual tetap memicu evaluasi closing.
-            $invoice->project?->evaluateCommercialClosing();
+            // Status/paid_amount selalu diturunkan dari payments, bukan input manual.
+            $this->syncInvoiceStatus($invoice->fresh());
 
-            return $invoice;
+            return $invoice->fresh();
         });
     }
 
     public function deleteInvoice(Invoice $invoice): void
     {
         $this->assertTransactionAccess($invoice);
+
+        if ($invoice->payments()->exists()) {
+            throw ValidationException::withMessages([
+                'invoice' => __('An invoice with recorded payments cannot be deleted. Cancel or reverse it without deleting payment history.'),
+            ]);
+        }
+
         DB::transaction(function () use ($invoice) {
             $this->deleteDocuments($invoice);
             $invoice->delete();
@@ -199,6 +243,11 @@ class AdminService
 
     public function createPayment(array $data, ?UploadedFile $proof = null): Payment
     {
+        $key = $data['idempotency_key'] ?? null;
+        if ($key && ($existing = Payment::where('idempotency_key', $key)->first())) {
+            return $existing;
+        }
+
         return DB::transaction(function () use ($data, $proof) {
             $data['created_by'] = auth()->id();
             $payment = Payment::create($data);
@@ -317,6 +366,62 @@ class AdminService
         if (! $project || (int) $project->customer_id !== (int) ($data['customer_id'] ?? null)) {
             throw ValidationException::withMessages([
                 'project_id' => 'Project yang dipilih tidak sesuai dengan customer.',
+            ]);
+        }
+    }
+
+    private function assertProposalBelongsToCustomer(array $data): void
+    {
+        if (empty($data['proposal_id'])) {
+            return;
+        }
+
+        $proposal = Proposal::with('lead')->find($data['proposal_id']);
+        $customerId = $data['customer_id'] ?? null;
+
+        if (! $proposal || ! $customerId || (int) $proposal->lead?->customer_id !== (int) $customerId) {
+            throw ValidationException::withMessages([
+                'proposal_id' => __('The selected quotation does not belong to this customer.'),
+            ]);
+        }
+
+        if (! empty($data['project_id'])) {
+            $project = Project::withTrashed()->find($data['project_id']);
+            if ($project?->proposal_id && (int) $project->proposal_id !== (int) $proposal->id) {
+                throw ValidationException::withMessages([
+                    'proposal_id' => __('The selected quotation does not match this project.'),
+                ]);
+            }
+        }
+    }
+
+    private function assertInvoiceStatusMatchesPayments(string $status, float $paid, float $amount): void
+    {
+        if ($status === 'cancelled') {
+            if ($paid > 0) {
+                throw ValidationException::withMessages([
+                    'status' => __('An invoice with recorded payments cannot be cancelled.'),
+                ]);
+            }
+
+            return;
+        }
+
+        if ($status === 'paid' && $paid + 0.0001 < $amount) {
+            throw ValidationException::withMessages([
+                'status' => __('An invoice can only be marked paid after full payment is recorded.'),
+            ]);
+        }
+
+        if ($status === 'partial' && ($paid <= 0 || $paid >= $amount)) {
+            throw ValidationException::withMessages([
+                'status' => __('Partial status requires a recorded partial payment.'),
+            ]);
+        }
+
+        if ($status === 'unpaid' && $paid > 0) {
+            throw ValidationException::withMessages([
+                'status' => __('An invoice with payments cannot be marked unpaid.'),
             ]);
         }
     }

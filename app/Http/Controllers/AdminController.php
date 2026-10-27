@@ -40,7 +40,8 @@ class AdminController extends Controller
     {
         $customers = Customer::orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
-        $statuses = ['unpaid' => __('Unpaid'), 'partial' => __('Partial'), 'paid' => __('Paid'), 'cancelled' => __('Cancelled')];
+        // Status paid/partial hanya boleh lahir dari payment record.
+        $statuses = ['unpaid' => __('Unpaid'), 'cancelled' => __('Cancelled')];
         $types = collect(Invoice::TYPES)->mapWithKeys(fn ($type) => [$type => Invoice::typeLabel($type)])->all();
         $customerId = $request->integer('customer_id') ?: null;
         $projectId = $request->integer('project_id') ?: null;
@@ -51,6 +52,7 @@ class AdminController extends Controller
         $customerPoNumber = $request->input('customer_po_number');
         $dueDate = $request->filled('due_date') ? $request->input('due_date') : null;
         $paymentTermsSummary = null;
+        $idempotencyKey = (string) \Illuminate\Support\Str::uuid();
 
         $project = $projectId ? Project::with('proposal')->find($projectId) : null;
 
@@ -112,7 +114,7 @@ class AdminController extends Controller
         return view('admin.invoices.create', compact(
             'customers', 'projects', 'statuses', 'types', 'customerId', 'projectId',
             'amount', 'notes', 'proposalId', 'invoiceType', 'customerPoNumber', 'dueDate',
-            'paymentTermsSummary'
+            'paymentTermsSummary', 'idempotencyKey'
         ));
     }
 
@@ -124,6 +126,7 @@ class AdminController extends Controller
             'proposal_id' => 'nullable|exists:proposals,id',
             'customer_po_number' => 'nullable|string|max:100',
             'invoice_type' => 'nullable|in:dp,termin,pelunasan,full',
+            'idempotency_key' => 'nullable|string|max:64',
             'amount' => 'required|numeric|min:0',
             'status' => 'required|in:unpaid,partial,paid,cancelled',
             'issue_date' => 'required|date',
@@ -312,6 +315,7 @@ class AdminController extends Controller
     public function paymentsCreate(Request $request)
     {
         $invoiceId = $request->integer('invoice_id') ?: null;
+        $idempotencyKey = (string) \Illuminate\Support\Str::uuid();
 
         $invoices = Invoice::with('customer')
             ->withSum('payments', 'amount')
@@ -342,7 +346,8 @@ class AdminController extends Controller
             'invoiceId',
             'remaining',
             'defaultAmount',
-            'invoiceOptions'
+            'invoiceOptions',
+            'idempotencyKey'
         ));
     }
 
@@ -350,7 +355,8 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'invoice_id' => 'required|exists:invoices,id',
-            'amount' => 'required|numeric|min:0',
+            'idempotency_key' => 'nullable|string|max:64',
+            'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'payment_method' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:2000',

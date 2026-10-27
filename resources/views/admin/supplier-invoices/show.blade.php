@@ -103,6 +103,7 @@
                         <form id="payment-form" method="POST" action="{{ route('admin.supplier-invoices.payments.store', $supplierInvoice) }}" enctype="multipart/form-data"
                               class="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
                             @csrf
+                            <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $idempotencyKey) }}">
                             <div>
                                 <label class="block text-xs text-slate-500 mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>
                                 <input type="number" step="0.01" min="0.01" max="{{ $supplierInvoice->remainingAmount() }}" name="amount" required
