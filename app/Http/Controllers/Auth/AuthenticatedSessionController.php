@@ -118,6 +118,16 @@ class AuthenticatedSessionController extends Controller
                     'email_verified_at' => now(),
                     'role' => 'guest',
                 ]);
+
+                // Beritahu seluruh Super Admin secara realtime bahwa ada akun baru yang butuh role
+                try {
+                    $superAdmins = \App\Models\User::role('super-admin')->get();
+                    foreach ($superAdmins as $admin) {
+                        $admin->notify(new \App\Notifications\NewUserPendingApprovalNotification($user));
+                    }
+                } catch (\Throwable $notifEx) {
+                    report($notifEx);
+                }
             } else {
                 // Tautkan google_id / google_avatar jika sebelumnya belum tersimpan
                 $updates = [];

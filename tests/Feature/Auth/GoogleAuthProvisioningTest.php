@@ -110,7 +110,8 @@ class GoogleAuthProvisioningTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Calon Karyawan');
         $response->assertSee('calon@gmail.com');
-        $response->assertSee(__('Menunggu Pemberian Role Divisi'));
+        $response->assertSee(__('Menunggu Persetujuan Admin'));
+        $response->assertDontSee('PT Tridaya Sinergi Berkelanjutan');
     }
 
     public function test_approved_user_visiting_pending_page_is_redirected_to_dashboard(): void
@@ -121,5 +122,35 @@ class GoogleAuthProvisioningTest extends TestCase
         $response = $this->actingAs($approvedUser)->get(route('pending.approval'));
 
         $response->assertRedirect(route('dashboard'));
+    }
+
+    public function test_new_google_user_triggers_notification_to_super_admins(): void
+    {
+        $superAdmin = User::factory()->create(['name' => 'Boss Admin']);
+        $superAdmin->assignRole('super-admin');
+
+        $mockGoogleUser = new SocialiteUser();
+        $mockGoogleUser->id = 'google-id-notif';
+        $mockGoogleUser->name = 'Budi Baru';
+        $mockGoogleUser->email = 'budi.baru@gmail.com';
+        $mockGoogleUser->avatar = 'https://lh3.googleusercontent.com/avatar.jpg';
+
+        $mockDriver = Mockery::mock('stdClass');
+        $mockDriver->shouldReceive('user')->once()->andReturn($mockGoogleUser);
+
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($mockDriver);
+
+        $this->get(route('auth.google.callback'));
+
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $superAdmin->id,
+            'type' => \App\Notifications\NewUserPendingApprovalNotification::class,
+        ]);
+
+        $notification = $superAdmin->notifications()->first();
+        $this->assertNotNull($notification);
+        $this->assertEquals('budi.baru@gmail.com', $notification->data['email']);
+        $this->assertStringContainsString('/admin-panel/users/', $notification->data['url']);
+        $this->assertStringContainsString('/edit', $notification->data['url']);
     }
 }
