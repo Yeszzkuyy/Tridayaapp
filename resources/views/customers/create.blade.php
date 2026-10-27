@@ -56,6 +56,54 @@
             @error('address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="billing_address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                    {{ __('Billing Address') }}
+                </label>
+                <textarea id="billing_address" name="billing_address" rows="3"
+                          placeholder="{{ __('Leave empty to use the main address') }}"
+                          class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('billing_address') }}</textarea>
+                @error('billing_address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="shipping_address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                    {{ __('Shipping Address') }}
+                </label>
+                <textarea id="shipping_address" name="shipping_address" rows="3"
+                          placeholder="{{ __('Leave empty to use the main address') }}"
+                          class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('shipping_address') }}</textarea>
+                @error('shipping_address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
+            <div>
+                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Finance PIC') }}</p>
+                <p class="text-xs text-slate-500">{{ __('Contact person for invoices and billing follow-up.') }}</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="finance_pic_name" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Name') }}</label>
+                    <input type="text" id="finance_pic_name" name="finance_pic_name" value="{{ old('finance_pic_name') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('finance_pic_name') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="finance_pic_phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Phone / WhatsApp') }}</label>
+                    <input type="text" id="finance_pic_phone" name="finance_pic_phone" value="{{ old('finance_pic_phone') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('finance_pic_phone') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="finance_pic_email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Email') }}</label>
+                    <input type="email" id="finance_pic_email" name="finance_pic_email" value="{{ old('finance_pic_email') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('finance_pic_email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+        </div>
+
         <div>
             <label for="phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 {{ __('Company Phone No.') }}

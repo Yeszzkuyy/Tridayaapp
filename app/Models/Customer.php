@@ -15,6 +15,11 @@ class Customer extends Model
         'company',
         'pt_group',
         'address',
+        'billing_address',
+        'shipping_address',
+        'finance_pic_name',
+        'finance_pic_phone',
+        'finance_pic_email',
         'phone',
         'whatsapp',
         'email',
@@ -34,6 +39,37 @@ class Customer extends Model
     public function contacts()
     {
         return $this->hasMany(CustomerContact::class);
+    }
+
+    /**
+     * Alamat tagihan Invoice. Bila belum diisi, pakai alamat utama supaya
+     * invoice lama/cepat tetap punya alamat.
+     */
+    public function billingAddress(): ?string
+    {
+        return $this->billing_address ?: $this->address;
+    }
+
+    /**
+     * Alamat pengiriman barang. Fallback ke alamat utama.
+     */
+    public function shippingAddress(): ?string
+    {
+        return $this->shipping_address ?: $this->address;
+    }
+
+    /**
+     * Kontak finance yang ditampilkan Admin saat menagih.
+     */
+    public function financeContact(): ?string
+    {
+        $parts = array_filter([
+            $this->finance_pic_name,
+            $this->finance_pic_phone,
+            $this->finance_pic_email,
+        ]);
+
+        return $parts ? implode(' · ', $parts) : null;
     }
 
     public function documents()
