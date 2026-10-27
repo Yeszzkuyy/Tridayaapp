@@ -655,9 +655,12 @@ Route::middleware('auth')->group(function () {
 
     // ============================================
     // WORK LOG & WHATSAPP RECAP (Yeski & Raafi)
+    // Hanya Super Admin (manage-monitoring) — alat developer.
     // ============================================
-    Route::get('/dev-worklog', [DevWorkLogController::class, 'index'])->name('dev.worklog.index');
-    Route::post('/dev-worklog/generate', [DevWorkLogController::class, 'generate'])->name('dev.worklog.generate');
+    Route::middleware('permission:manage-monitoring')->group(function () {
+        Route::get('/dev-worklog', [DevWorkLogController::class, 'index'])->name('dev.worklog.index');
+        Route::post('/dev-worklog/generate', [DevWorkLogController::class, 'generate'])->name('dev.worklog.generate');
+    });
 });
 require __DIR__.'/auth.php';
 
