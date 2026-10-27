@@ -9,7 +9,7 @@
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-            <form action="{{ route('sales.meetings.store') }}" method="POST" class="space-y-4">
+            <form action="{{ route('sales.meetings.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                 @csrf
 
                 <div>
@@ -87,11 +87,17 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Agenda / Initial Notes') }} <span class="text-red-500">*</span></label>
-                    <textarea name="description" rows="3" required placeholder="{{ __('What will be discussed in this meeting?') }}"
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Summary Meeting') }} <span class="text-red-500">*</span></label>
+                    <textarea name="description" rows="3" required placeholder="{{ __('Summary / agenda of the meeting...') }}"
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('description') }}</textarea>
                     @error('description') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
+
+                @include('sales.meetings._photo-uploader', [
+                    'existingPhotos' => [],
+                    'required' => false,
+                    'maxFiles' => 3,
+                ])
 
                 <div class="flex justify-end gap-2 pt-2">
                     <a href="{{ route('sales.meetings.index') }}"

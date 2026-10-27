@@ -1,9 +1,11 @@
 <x-app-layout>
     @php
         $modeStyles = [
+            'online' => 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
+            'offline' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+            // Nilai lama.
             'office' => 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',
             'field' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-            'online' => 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
         ];
     @endphp
 
@@ -58,7 +60,7 @@
             @endif
 
             <div class="mt-4">
-                <p class="text-xs font-semibold uppercase text-slate-400">{{ __('Agenda / Initial Notes') }}</p>
+                <p class="text-xs font-semibold uppercase text-slate-400">{{ __('Summary Meeting') }}</p>
                 <p class="mt-1 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{{ $meeting->description ?: '-' }}</p>
             </div>
         </div>

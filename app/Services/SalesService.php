@@ -118,7 +118,9 @@ class SalesService
     public function completeMeetingReport(FollowUp $followUp, array $data): FollowUp
     {
         $this->assertFollowUpOwnership($followUp);
-        $photoPaths = [];
+        // Foto bukti bisa sudah diunggah saat meeting dibuat; gabungkan dengan
+        // foto baru (maksimal 3 total).
+        $photoPaths = $followUp->meeting_photos ?? [];
         if (!empty($data['meeting_photos'])) {
             foreach ($data['meeting_photos'] as $file) {
                 if ($file instanceof \Illuminate\Http\UploadedFile) {
@@ -126,6 +128,7 @@ class SalesService
                 }
             }
         }
+        $photoPaths = array_slice($photoPaths, 0, 3);
 
         $followUp->forceFill([
             'completed_at' => now(),

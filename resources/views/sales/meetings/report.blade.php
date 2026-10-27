@@ -51,7 +51,7 @@
                     @endif
                     @if($followUp->description)
                         <div class="mt-2 text-xs bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300">
-                            <span class="font-semibold text-slate-900 dark:text-white">{{ __('Agenda / Initial Notes') }}:</span>
+                            <span class="font-semibold text-slate-900 dark:text-white">{{ __('Summary Meeting') }}:</span>
                             <p class="mt-0.5 whitespace-pre-line">{{ $followUp->description }}</p>
                         </div>
                     @endif
@@ -72,68 +72,12 @@
                 <input type="hidden" name="date" value="{{ $returnDate }}">
             @endif
 
-            {{-- 1. Photo Documentation --}}
-            <div class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-3">
-                    <label class="block text-sm font-semibold text-slate-900 dark:text-white">
-                        {{ __('Photo Documentation') }} <span class="text-rose-500">*</span>
-                    </label>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ __('Min. 1 photo, max. 3 photos (Max 5MB per photo)') }}
-                    </span>
-                </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    {{ __('Upload photos taken during the meeting (e.g. discussion in person, presentation, or signed paper/document).') }}
-                </p>
-
-                <div class="space-y-4" x-data="photoUploader()">
-                    {{-- Dropzone / File Picker --}}
-                    <div class="relative border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-accent-500 dark:hover:border-accent-400 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-900/30"
-                         @click="$refs.fileInput.click()">
-                        <input type="file"
-                               x-ref="fileInput"
-                               name="meeting_photos[]"
-                               accept="image/png,image/jpeg,image/jpg,image/webp"
-                               multiple
-                               class="hidden"
-                               @change="handleFiles($event)">
-                        
-                        <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                            <div class="w-12 h-12 rounded-full bg-accent-100 dark:bg-accent-900/40 text-accent-600 dark:text-accent-300 flex items-center justify-center">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </div>
-                            <div class="text-sm text-slate-700 dark:text-slate-300">
-                                <span class="font-semibold text-accent-600 dark:text-accent-400">{{ __('Click to upload') }}</span> {{ __('or take photo from camera') }}
-                            </div>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">JPG, JPEG, PNG, WEBP (Max 3 files)</p>
-                        </div>
-                    </div>
-
-                    {{-- Image Previews --}}
-                    <div x-show="previews.length > 0" class="grid grid-cols-3 gap-4 pt-2">
-                        <template x-for="(preview, index) in previews" :key="index">
-                            <div class="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-video bg-slate-100 dark:bg-slate-900 shadow-sm">
-                                <img :src="preview" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <span class="text-xs text-white font-medium" x-text="'Foto ' + (index + 1)"></span>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <p x-show="countError" class="text-xs text-rose-600 dark:text-rose-400 font-medium" x-text="countError"></p>
-                </div>
-
-                @error('meeting_photos')
-                    <p class="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium">{{ $message }}</p>
-                @enderror
-                @error('meeting_photos.*')
-                    <p class="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium">{{ $message }}</p>
-                @enderror
-            </div>
+            {{-- 1. Photo Documentation (foto bisa sudah diunggah saat meeting dibuat) --}}
+            @include('sales.meetings._photo-uploader', [
+                'existingPhotos' => $meeting->meeting_photos ?? [],
+                'required' => empty($meeting->meeting_photos),
+                'maxFiles' => max(0, 3 - count($meeting->meeting_photos ?? [])),
+            ])
 
             {{-- 2. Meeting Notes / Minutes of Meeting (MOM) --}}
             <div class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
@@ -235,33 +179,4 @@
         </form>
     </div>
 
-    <script>
-        function photoUploader() {
-            return {
-                previews: [],
-                countError: '',
-                handleFiles(event) {
-                    const files = event.target.files;
-                    this.previews = [];
-                    this.countError = '';
-
-                    if (files.length > 3) {
-                        this.countError = @js(__('Maximum 3 photos allowed.'));
-                        event.target.value = '';
-                        return;
-                    }
-
-                    Array.from(files).forEach(file => {
-                        if (file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                this.previews.push(e.target.result);
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                }
-            }
-        }
-    </script>
 </x-app-layout>

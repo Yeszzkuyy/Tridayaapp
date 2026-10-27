@@ -22,7 +22,7 @@ class FollowUp extends Model
     public const LOG_TYPES = ['whatsapp', 'call', 'email', 'proposal'];
 
     /** Lokasi meeting untuk tracker Meeting (dipisah dari Follow Up). */
-    public const MEETING_MODES = ['office', 'field', 'online'];
+    public const MEETING_MODES = ['online', 'offline'];
 
     /** Meeting outcome options (diisi saat sales complete meeting). */
     public const MEETING_OUTCOMES = [
@@ -120,9 +120,11 @@ class FollowUp extends Model
     public static function meetingModeLabel(?string $mode): string
     {
         return match ($mode) {
+            'online' => __('Online'),
+            'offline' => __('Offline'),
+            // Nilai lama (sebelum disederhanakan) tetap bisa dibaca.
             'office' => __('Office'),
             'field' => __('Field'),
-            'online' => __('Online'),
             default => '-',
         };
     }

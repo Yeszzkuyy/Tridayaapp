@@ -99,6 +99,8 @@ class SalesMeetingController extends Controller
             'location' => 'nullable|string|max:255',
             'description' => 'required|string|max:2000',
             'next_follow_up_date' => 'nullable|date|after_or_equal:follow_up_date',
+            'meeting_photos' => 'nullable|array|max:3',
+            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
@@ -111,9 +113,17 @@ class SalesMeetingController extends Controller
             abort_unless($user->can('manage-sales-leads') || (int) $lead->assigned_to === (int) $user->id, 403);
         }
 
+        $photoPaths = [];
+        if ($request->hasFile('meeting_photos')) {
+            foreach ($request->file('meeting_photos') as $file) {
+                $photoPaths[] = $file->store('meeting-reports', 'public');
+            }
+        }
+
         $meeting = FollowUp::create([
-            ...$validated,
+            ...collect($validated)->except('meeting_photos')->all(),
             'type' => 'meeting',
+            'meeting_photos' => $photoPaths ?: null,
             'created_by' => $user->id,
         ]);
 
@@ -152,8 +162,12 @@ class SalesMeetingController extends Controller
         $this->authorizeMeeting($followUp);
         abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
 
+        $existingPhotos = count($followUp->meeting_photos ?? []);
+        $remainingSlots = max(1, 3 - $existingPhotos);
+        $photoRule = ($existingPhotos === 0 ? 'required' : 'nullable').'|array|max:'.$remainingSlots;
+
         $validated = $request->validate([
-            'meeting_photos' => 'required|array|min:1|max:3',
+            'meeting_photos' => $photoRule,
             'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             'meeting_notes' => 'required|string|min:10',
             'meeting_outcome' => 'required|in:'.implode(',', FollowUp::MEETING_OUTCOMES),

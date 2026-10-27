@@ -54,7 +54,7 @@ class MeetingReportTest extends TestCase
 
         $res->assertOk();
         $res->assertSee('Meeting Report &amp; MOM', false);
-        $res->assertSee('Photo Documentation');
+        $res->assertSee(__('Meeting Proof Photos'));
     }
 
     public function test_non_meeting_type_aborts_when_opening_meeting_report(): void

@@ -1,9 +1,11 @@
 <x-app-layout>
     @php
         $modeStyles = [
+            'online' => 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
+            'offline' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+            // Nilai lama.
             'office' => 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',
             'field' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-            'online' => 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300',
         ];
     @endphp
 
@@ -12,7 +14,17 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Meeting') }}</h1>
             <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Daily meeting tracker — results, proof, and follow-up progress.') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('sales.meetings.create') }}" label="{{ __('New Meeting') }}" title="{{ __('New Meeting') }}" />
+        <a href="{{ route('sales.meetings.create') }}"
+           title="{{ __('New Meeting') }}"
+           class="group relative inline-flex h-10 items-center overflow-hidden rounded-xl bg-accent-600 px-2.5 text-white shadow-sm shadow-accent-500/20 transition-all duration-500 ease-in-out hover:bg-accent-700 hover:px-4 hover:shadow-md hover:shadow-accent-500/30 hover:brightness-105 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+            <svg class="h-5 w-5 shrink-0 transition-transform duration-500 ease-in-out group-hover:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span class="max-w-0 opacity-0 whitespace-nowrap overflow-hidden text-sm font-semibold transition-all duration-500 ease-in-out group-hover:max-w-44 group-hover:opacity-100 group-hover:ml-2">
+                {{ __('New Meeting') }}
+            </span>
+            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+        </a>
     </div>
 
     {{-- KPI --}}
