@@ -18,8 +18,11 @@ class FollowUp extends Model
 
     public const LEGACY_TYPES = ['follow_up', 'meeting'];
 
-    /** Opsi Log Follow Up di detail lead (urutan tampil di form). */
-    public const LOG_TYPES = ['whatsapp', 'call', 'email', 'meeting', 'proposal'];
+    /** Opsi Log Follow Up di detail lead (meeting dipisah ke menu Meeting). */
+    public const LOG_TYPES = ['whatsapp', 'call', 'email', 'proposal'];
+
+    /** Lokasi meeting untuk tracker Meeting (dipisah dari Follow Up). */
+    public const MEETING_MODES = ['office', 'field', 'online'];
 
     /** Meeting outcome options (diisi saat sales complete meeting). */
     public const MEETING_OUTCOMES = [
@@ -39,6 +42,7 @@ class FollowUp extends Model
         'follow_up_date',
         'activity_time',
         'location',
+        'meeting_mode',
         'next_follow_up_date',
         'reminder_sent_at',
         'completed_at',
@@ -111,6 +115,30 @@ class FollowUp extends Model
     {
         return $this->completed_at !== null
             && $this->meeting_notes !== null;
+    }
+
+    public static function meetingModeLabel(?string $mode): string
+    {
+        return match ($mode) {
+            'office' => __('Office'),
+            'field' => __('Field'),
+            'online' => __('Online'),
+            default => '-',
+        };
+    }
+
+    /** Scope: hanya entri Meeting (menu Meeting terpisah dari Follow Up). */
+    public function scopeMeetings($query)
+    {
+        return $query->where('type', 'meeting');
+    }
+
+    /** Scope: Follow Up non-meeting (termasuk data lama bertipe null). */
+    public function scopeNonMeetings($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('type')->orWhere('type', '!=', 'meeting');
+        });
     }
 
     public function customer()

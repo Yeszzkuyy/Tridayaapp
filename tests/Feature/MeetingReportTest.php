@@ -50,7 +50,7 @@ class MeetingReportTest extends TestCase
         $sales = $this->userWithRole('sales');
         $fu = $this->makeMeeting($sales);
 
-        $res = $this->actingAs($sales)->get(route('sales.follow-ups.meeting-report', $fu));
+        $res = $this->actingAs($sales)->get(route('sales.meetings.report', $fu));
 
         $res->assertOk();
         $res->assertSee('Meeting Report &amp; MOM', false);
@@ -62,7 +62,7 @@ class MeetingReportTest extends TestCase
         $sales = $this->userWithRole('sales');
         $fu = $this->makeMeeting($sales, ['type' => 'call']);
 
-        $res = $this->actingAs($sales)->get(route('sales.follow-ups.meeting-report', $fu));
+        $res = $this->actingAs($sales)->get(route('sales.meetings.report', $fu));
 
         $res->assertStatus(422);
     }
@@ -72,7 +72,7 @@ class MeetingReportTest extends TestCase
         $sales = $this->userWithRole('sales');
         $fu = $this->makeMeeting($sales, ['completed_at' => now()]);
 
-        $res = $this->actingAs($sales)->get(route('sales.follow-ups.meeting-report', $fu));
+        $res = $this->actingAs($sales)->get(route('sales.meetings.report', $fu));
 
         $res->assertStatus(422);
     }
@@ -82,7 +82,7 @@ class MeetingReportTest extends TestCase
         $sales = $this->userWithRole('sales');
         $fu = $this->makeMeeting($sales);
 
-        $res = $this->actingAs($sales)->post(route('sales.follow-ups.meeting-report.store', $fu), []);
+        $res = $this->actingAs($sales)->post(route('sales.meetings.report.store', $fu), []);
 
         $res->assertSessionHasErrors(['meeting_photos', 'meeting_notes', 'meeting_outcome']);
     }
@@ -104,7 +104,7 @@ class MeetingReportTest extends TestCase
         $photo1 = UploadedFile::fake()->image('meeting_1.jpg', 600, 400);
         $photo2 = UploadedFile::fake()->image('meeting_2.png', 800, 600);
 
-        $res = $this->actingAs($sales)->post(route('sales.follow-ups.meeting-report.store', $fu), [
+        $res = $this->actingAs($sales)->post(route('sales.meetings.report.store', $fu), [
             'meeting_photos' => [$photo1, $photo2],
             'meeting_notes' => 'Diskusi berjalan lancar. Klien meminta quotation 16 unit kamera beserta switch PoE. Target follow-up minggu depan.',
             'meeting_outcome' => 'need_quotation',

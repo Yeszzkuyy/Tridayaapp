@@ -149,7 +149,7 @@ class FollowUpController extends Controller
                 $params['date'] = substr($request->input('date'), 0, 10);
             }
 
-            return redirect()->route('sales.follow-ups.meeting-report', array_merge([$followUp], $params));
+            return redirect()->route('sales.meetings.report', array_merge([$followUp], $params));
         }
 
         $this->salesService->completeFollowUp($followUp);
@@ -162,59 +162,6 @@ class FollowUpController extends Controller
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
             __('Follow up completed.'), ['redirect' => route('sales.follow-ups.index')]);
-    }
-
-    /**
-     * Show the meeting report form — sales must fill this before completing a meeting.
-     */
-    public function meetingReport(Request $request, FollowUp $followUp)
-    {
-        abort_if($followUp->type !== 'meeting', 422, __('Only meeting type can have a meeting report.'));
-        abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
-
-        $followUp->load(['customer', 'lead.customer', 'creator']);
-
-        return view('sales.follow-ups.meeting-report', [
-            'followUp' => $followUp,
-            'returnTo' => $request->query('return'),
-            'returnDate' => $request->query('date'),
-        ]);
-    }
-
-    /**
-     * Store meeting report (photos + MOM + outcome) and mark as completed.
-     */
-    public function storeMeetingReport(Request $request, FollowUp $followUp)
-    {
-        abort_if($followUp->type !== 'meeting', 422, __('Only meeting type can have a meeting report.'));
-        abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
-
-        $validated = $request->validate([
-            'meeting_photos' => 'required|array|min:1|max:3',
-            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
-            'meeting_notes' => 'required|string|min:10',
-            'meeting_outcome' => 'required|in:'.implode(',', FollowUp::MEETING_OUTCOMES),
-            'meeting_next_action_date' => 'nullable|date|after_or_equal:today',
-        ], [
-            'meeting_photos.required' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.min' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.max' => __('Maximum 3 photos allowed.'),
-            'meeting_photos.*.max' => __('Each photo must be under 5 MB.'),
-            'meeting_notes.required' => __('Meeting notes are required.'),
-            'meeting_notes.min' => __('Meeting notes must be at least 10 characters.'),
-            'meeting_outcome.required' => __('Please select the meeting outcome.'),
-        ]);
-
-        $this->salesService->completeMeetingReport($followUp, $validated);
-
-        // Return to schedule calendar if requested
-        if ($request->input('return') === 'schedule') {
-            return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Meeting report submitted and marked as completed.'));
-        }
-
-        return redirect()->route('sales.follow-ups.index')
-            ->with('success', __('Meeting report submitted and marked as completed.'));
     }
 
     public function reopen(Request $request, FollowUp $followUp)

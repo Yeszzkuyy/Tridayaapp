@@ -97,9 +97,11 @@ class FollowUpFormTest extends TestCase
         $html = $this->actingAs($sales)->get(route('sales.follow-ups.create'))
             ->assertOk()->getContent();
 
-        foreach (['value="whatsapp"', 'value="call"', 'value="email"', 'value="meeting"', 'value="proposal"'] as $option) {
+        foreach (['value="whatsapp"', 'value="call"', 'value="email"', 'value="proposal"'] as $option) {
             $this->assertStringContainsString($option, $html);
         }
+        // Meeting sudah dipisah ke menu Meeting.
+        $this->assertStringNotContainsString('value="meeting"', $html);
         $this->assertStringNotContainsString('value="follow_up"', $html);
     }
 

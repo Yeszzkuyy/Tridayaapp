@@ -1,11 +1,14 @@
 <x-app-layout>
+    @php
+        $followUp = $meeting ?? $followUp;
+    @endphp
     <x-slot name="header">
         <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
                 <nav class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
                     <a href="{{ route('sales.schedules.index') }}" class="hover:text-accent-600 dark:hover:text-accent-400">{{ __('Sales Schedules') }}</a>
                     <span>/</span>
-                    <a href="{{ route('sales.follow-ups.index') }}" class="hover:text-accent-600 dark:hover:text-accent-400">{{ __('Follow Ups') }}</a>
+                    <a href="{{ route('sales.meetings.index') }}" class="hover:text-accent-600 dark:hover:text-accent-400">{{ __('Meeting') }}</a>
                     <span>/</span>
                     <span class="text-slate-800 dark:text-slate-200 font-medium">{{ __('Meeting Report') }}</span>
                 </nav>
@@ -20,7 +23,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <x-icon-button as="a" icon="back" href="{{ $returnTo === 'schedule' ? route('sales.schedules.index', $returnDate ? ['date' => $returnDate] : []) : route('sales.follow-ups.index') }}" title="{{ __('Back') }}" />
+                <x-icon-button as="a" icon="back" href="{{ $returnTo === 'schedule' ? route('sales.schedules.index', $returnDate ? ['date' => $returnDate] : []) : route('sales.meetings.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
     </x-slot>
@@ -46,10 +49,10 @@
                             <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Lead') }}:</span> {{ $followUp->lead->title ?? $followUp->lead->customer?->name }}
                         </p>
                     @endif
-                    @if($followUp->notes)
+                    @if($followUp->description)
                         <div class="mt-2 text-xs bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300">
                             <span class="font-semibold text-slate-900 dark:text-white">{{ __('Agenda / Initial Notes') }}:</span>
-                            <p class="mt-0.5 whitespace-pre-line">{{ $followUp->notes }}</p>
+                            <p class="mt-0.5 whitespace-pre-line">{{ $followUp->description }}</p>
                         </div>
                     @endif
                 </div>
@@ -57,7 +60,7 @@
         </div>
 
         {{-- Form Meeting Report --}}
-        <form action="{{ route('sales.follow-ups.meeting-report.store', $followUp) }}"
+        <form action="{{ route('sales.meetings.report.store', $meeting) }}"
               method="POST"
               enctype="multipart/form-data"
               class="space-y-6">
@@ -213,7 +216,7 @@
 
             {{-- Action Buttons following AGENTS.md §7 --}}
             <div class="flex items-center justify-end gap-3 pt-4">
-                <a href="{{ $returnTo === 'schedule' ? route('sales.schedules.index', $returnDate ? ['date' => $returnDate] : []) : route('sales.follow-ups.index') }}"
+                <a href="{{ $returnTo === 'schedule' ? route('sales.schedules.index', $returnDate ? ['date' => $returnDate] : []) : route('sales.meetings.index') }}"
                    class="group relative overflow-hidden rounded-xl bg-slate-500 hover:bg-slate-600 text-white px-6 py-2.5 text-sm font-medium transition-all duration-300 hover:shadow-lg active:scale-95 text-center">
                     <span class="relative z-10">{{ __('Cancel') }}</span>
                 </a>

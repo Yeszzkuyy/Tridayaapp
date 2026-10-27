@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadTaskNotification;
+use App\Notifications\MeetingReportReminderNotification;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCommentNotification;
@@ -88,6 +89,7 @@ final class NotificationPresenter
             PriceRequestCompletedNotification::class => 'price_request_completed',
             PriceRequestCommentNotification::class => 'price_request_comment',
             ProjectConvertedNotification::class => 'project_converted',
+            MeetingReportReminderNotification::class => 'meeting_report_reminder',
             SurveyCreatedNotification::class => 'survey_created',
             SurveyReportUploadedNotification::class => 'survey_report_uploaded',
             default => self::legacyKind($data),
@@ -230,6 +232,12 @@ final class NotificationPresenter
                 'app' => __('Project'),
                 'title' => __('New project from Sales'),
                 'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'meeting_report_reminder' => [
+                'app' => __('Meeting'),
+                'title' => __('Meeting report pending'),
+                'body' => (string) ($data['customer'] ?? ''),
                 'chips' => [],
             ],
             'survey_created' => [

@@ -53,7 +53,7 @@ class RoleMatrixTest extends TestCase
 
         $this->post(route('leads.store'), [])->assertForbidden();
         $this->get(route('admin.invoices.edit', $this->invoice()))->assertForbidden(); // form create sudah dihapus, edit tetap gerbang manage-admin
-        $this->get('/sales/meetings')->assertNotFound();
+        $this->get('/sales/meetings')->assertOk();
     }
 
     public function test_cross_division_read_only(): void
@@ -66,7 +66,7 @@ class RoleMatrixTest extends TestCase
         // Admin baca sales, tidak bisa tulis.
         $this->actingAs($this->loginAs('admin'));
         $this->get(route('sales.dashboard'))->assertOk();
-        $this->get('/sales/meetings')->assertNotFound();
+        $this->get('/sales/meetings')->assertOk();
 
         // Lead technician baca sales + admin.
         $this->actingAs($this->loginAs('lead-technician'));

@@ -40,8 +40,8 @@ class SalesKpiTargetTest extends TestCase
         $response->assertOk();
         $response->assertViewHas('myKpi');
         $response->assertViewHas('salesLeaderboard');
-        $response->assertSee('KPI Personal Saya');
-        $response->assertSee('Peringkat & Target Bulanan Sales');
+        $response->assertSee(__('KPI Personal Saya'));
+        $response->assertSee(__('Peringkat & Target Bulanan Sales'));
     }
 
     public function test_management_can_access_sales_kpi_page(): void
