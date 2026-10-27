@@ -137,4 +137,70 @@ class CustomerPtTest extends TestCase
         $this->assertDatabaseMissing('customers', ['id' => $mgk->id]);
         $this->assertNotNull(Customer::onlyTrashed()->find($nti->id));
     }
+
+    public function test_sales_cannot_create_customer_in_other_pt()
+    {
+        [$hendri] = $this->setUpUsers();
+
+        $this->actingAs($hendri)->post('/customers', ['name' => 'Baru NTI', 'pt_group' => 'NTI'])
+            ->assertSessionHasErrors('pt_group');
+
+        $this->assertNull(Customer::where('name', 'Baru NTI')->first());
+    }
+
+    public function test_sales_can_create_customer_in_own_pt()
+    {
+        [$hendri] = $this->setUpUsers();
+
+        $this->actingAs($hendri)->post('/customers', ['name' => 'Baru MGK', 'pt_group' => 'MGK'])
+            ->assertRedirect(route('customers.index'));
+
+        $this->assertNotNull(Customer::where('name', 'Baru MGK')->where('pt_group', 'MGK')->first());
+    }
+
+    public function test_cannot_move_customer_to_other_pt()
+    {
+        [$hendri] = $this->setUpUsers();
+        $mgk = $this->customer('PT MGK Pindah', 'MGK');
+
+        $this->actingAs($hendri)->put('/customers/'.$mgk->id, ['name' => 'PT MGK Pindah', 'pt_group' => 'NTI'])
+            ->assertSessionHasErrors('pt_group');
+
+        $this->assertEquals('MGK', $mgk->fresh()->pt_group);
+    }
+
+    public function test_other_pt_detail_hides_write_actions()
+    {
+        [$hendri] = $this->setUpUsers();
+        $mgk = $this->customer('PT MGK PIC', 'MGK');
+        $nti = $this->customer('PT NTI PIC', 'NTI');
+
+        // PT sendiri: tombol tambah PIC & edit tampil.
+        $own = $this->actingAs($hendri)->get('/customers/'.$mgk->id)->assertOk()->getContent();
+        $this->assertStringContainsString(route('customer-contacts.create', $mgk), $own);
+        $this->assertStringContainsString('/customers/'.$mgk->id.'/edit', $own);
+
+        // PT lain: tombol aksi tulis tidak dirender.
+        $other = $this->actingAs($hendri)->get('/customers/'.$nti->id)->assertOk()->getContent();
+        $this->assertStringNotContainsString(route('customer-contacts.create', $nti), $other);
+        $this->assertStringNotContainsString('/customers/'.$nti->id.'/edit', $other);
+    }
+
+    public function test_management_sales_keeps_full_access()
+    {
+        $this->setUpUsers();
+        $mgmt = $this->sales('Mgmt', ['management', 'sales', 'sales-nti']);
+        $mgk = $this->customer('PT MGK Mgmt', 'MGK');
+
+        // Walau punya role sales-nti, management tetap bisa tulis PT lain.
+        $this->actingAs($mgmt)->get('/customers/'.$mgk->id.'/edit')->assertOk();
+        $this->actingAs($mgmt)->put('/customers/'.$mgk->id, ['name' => 'PT MGK Mgmt OK', 'pt_group' => 'MGK'])
+            ->assertRedirect();
+        $this->assertEquals('PT MGK Mgmt OK', $mgk->fresh()->name);
+
+        // Bahkan boleh memindah ke PT apa pun.
+        $this->actingAs($mgmt)->put('/customers/'.$mgk->id, ['name' => 'PT MGK Mgmt OK', 'pt_group' => 'WANI'])
+            ->assertRedirect();
+        $this->assertEquals('WANI', $mgk->fresh()->pt_group);
+    }
 }

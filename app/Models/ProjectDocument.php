@@ -11,16 +11,117 @@ class ProjectDocument extends Model
 
     protected $fillable = [
         'project_id',
+        'customer_id',
+        'doc_type',
         'file_name',
         'file_path',
+        'file_size',
+        'mime_type',
         'notes',
         'uploaded_by',
         'document_category_id',
+        'documentable_type',
+        'documentable_id',
+        'deleted_by',
     ];
+
+    public const DOC_TYPES = ['invoice', 'po', 'payment'];
+
+    /**
+     * doc_type hasil kerja modul (Survey, Sizing, Instalasi). File-nya milik
+     * modul dan hanya dicatat di sini supaya tampil di semua menu dokumen.
+     */
+    public const MODULE_TYPES = ['survey', 'sizing', 'instalasi'];
+
+    /**
+     * Masa simpan dokumen di Trash sebelum dihapus permanen otomatis.
+     * Dihitung dari deleted_at, bukan created_at/updated_at.
+     */
+    public const TRASH_RETENTION_DAYS = 14;
+
+    /** Batas waktu dokumen ini dihapus permanen otomatis. */
+    public function trashDeadline(): ?\Illuminate\Support\Carbon
+    {
+        return $this->deleted_at?->copy()->addDays(self::TRASH_RETENTION_DAYS);
+    }
+
+    /** Sisa hari sebelum dihapus permanen (0 = sudah lewat batas). */
+    public function trashDaysLeft(): int
+    {
+        $deadline = $this->trashDeadline();
+        if (! $deadline) {
+            return 0;
+        }
+
+        return max(0, (int) ceil(now()->diffInHours($deadline, false) / 24));
+    }
+
+    public function getTypeLabelAttribute()
+    {
+        return match ($this->doc_type) {
+            'invoice' => 'INV',
+            'po' => 'PO',
+            'payment' => 'PAY',
+            default => null,
+        };
+    }
+
+    /** Dokumen transaksi (invoice/PO/payment) — punya aturan akses sendiri. */
+    public function isTransactionDocument(): bool
+    {
+        return in_array($this->doc_type, self::DOC_TYPES, true);
+    }
+
+    /**
+     * Dokumen yang filenya dimiliki modul lain (Survey/Sizing/Instalasi).
+     * Mutasi (rename/archive/hapus) dilakukan di menu modulnya supaya file
+     * dan daftar dokumen tidak pernah berbeda.
+     */
+    public function isModuleDocument(): bool
+    {
+        return in_array($this->doc_type, self::MODULE_TYPES, true);
+    }
+
+    /** Label sumber file untuk badge, mis. "Survey". */
+    public function getSourceLabelAttribute(): ?string
+    {
+        return \App\Services\DocumentRegistry::TYPE_LABELS[$this->doc_type] ?? null;
+    }
+
+    /**
+     * Tautan ke record modul pemilik file (halaman survey/sizing/instalasi).
+     */
+    public function sourceUrl(): ?string
+    {
+        if (! $this->isModuleDocument() || ! $this->documentable_id) {
+            return null;
+        }
+
+        return match ($this->doc_type) {
+            'survey' => route('teknisi.surveys.show', $this->documentable_id),
+            'sizing' => route('teknisi.sizing-projects.show', $this->documentable_id),
+            'instalasi' => route('teknisi.instalasis.show', $this->documentable_id),
+            default => null,
+        };
+    }
 
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * Record pemilik file (Invoice / PurchaseOrder / Payment). Null untuk
+     * file yang diunggah langsung dari tab Documents customer.
+     */
+    public function documentable()
+    {
+        return $this->morphTo();
     }
 
     public function category()
@@ -31,6 +132,12 @@ class ProjectDocument extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    /** User yang memindahkan dokumen ini ke Trash. */
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
     public function getFileExtensionAttribute()
     {

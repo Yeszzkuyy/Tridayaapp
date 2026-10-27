@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\Project;
+use App\Models\ProjectDocument;
 use App\Models\User;
+use App\Services\ProjectDocumentCleanup;
+use App\Support\DocumentAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class TrashController extends Controller
 {
     /**
      * My Trash = data milik user (berdasar owner bisnis), bukan berdasar
-     * siapa yang menghapus. deleted_by murni audit trail.
+     * siapa yang menghapus — kecuali dokumen: ikut terlihat oleh user yang
+     * memindahkannya ke Trash (deleted_by) supaya bisa dibatalkan sendiri.
      * Super-admin: seluruh trash + filter per owner.
      */
     public function index(Request $request)
@@ -29,10 +34,51 @@ class TrashController extends Controller
 
         $users = $isSuperAdmin ? $this->ownerFilterUsers() : null;
 
+        $documents = $this->documentsTrashQuery($request, $user)
+            ->with([
+                'project' => fn ($q) => $q->withTrashed(),
+                'customer' => fn ($q) => $q->withTrashed(),
+                'category',
+                'uploader',
+                'deleter',
+            ])
+            ->latest('deleted_at')
+            ->paginate(10, ['*'], 'documents_page')
+            ->withQueryString();
+
         return view('trash.index', compact(
             'customers', 'projects', 'users', 'isSuperAdmin',
-            'customerOwners', 'projectOwners', 'ownerNames'
+            'customerOwners', 'projectOwners', 'ownerNames', 'documents'
         ));
+    }
+
+    /**
+     * Dokumen yang tampil di Trash mengikuti aturan DocumentAccess:
+     * super-admin/management semua, teknisi semua dokumen teknis,
+     * sales sesuai PT/customer + yang dia hapus.
+     */
+    private function documentsTrashQuery(Request $request, $user)
+    {
+        $query = ProjectDocument::onlyTrashed();
+
+        if (! $user->hasRole('super-admin')) {
+            return DocumentAccess::applyTrashVisibility($query, $user);
+        }
+
+        if ($request->filled('user')) {
+            $ownerId = $request->integer('user');
+            $customerIds = ProjectDocument::onlyTrashed()
+                ->whereNotNull('customer_id')
+                ->distinct()
+                ->pluck('customer_id')
+                ->all();
+            $owners = $this->customerOwnerMap($customerIds);
+            $allowed = array_keys(array_filter($owners, fn ($id) => $id === $ownerId));
+
+            $query->whereIn('customer_id', $allowed ?: [0]);
+        }
+
+        return $query;
     }
 
     private function ownTrash(int $userId): array
@@ -82,28 +128,66 @@ class TrashController extends Controller
             ->with('success', __('Project ":name" berhasil direstore', ['name' => $project->project_name]));
     }
 
-    public function destroyCustomer(int $id)
+    public function destroyCustomer(int $id, ProjectDocumentCleanup $cleanup)
     {
         $customer = $this->findTrash(Customer::class, $id, 'forceDelete');
+        $name = $customer->name;
+
+        // Hapus file dokumen dulu supaya tidak ada file menggantung saat
+        // baris customer (dan anak-anaknya) dihapus permanen.
+        $cleanup->purgeForCustomer($customer->id);
         $customer->forceDelete();
 
         return redirect()->route('trash.index')
-            ->with('success', __('Customer ":name" dihapus permanen', ['name' => $customer->name]));
+            ->with('success', __('Customer ":name" dihapus permanen', ['name' => $name]));
     }
 
-    public function destroyProject(int $id)
+    public function destroyProject(int $id, ProjectDocumentCleanup $cleanup)
     {
         $project = $this->findTrash(Project::class, $id, 'forceDelete');
+        $name = $project->name ?? $project->project_name;
+
+        $cleanup->purgeForProject($project->id);
         $project->forceDelete();
 
         return redirect()->route('trash.index')
-            ->with('success', __('Project ":name" dihapus permanen', ['name' => $project->name ?? $project->project_name]));
+            ->with('success', __('Project ":name" dihapus permanen', ['name' => $name]));
+    }
+
+    public function restoreDocument(int $id, ProjectDocumentCleanup $cleanup)
+    {
+        $document = ProjectDocument::onlyTrashed()->findOrFail($id);
+        $name = $document->file_name;
+
+        $this->authorize('restore', $document);
+
+        if (! $cleanup->restore($document)) {
+            return redirect()->route('trash.index')
+                ->withErrors([
+                    'document' => __('Tidak bisa restore: modul sudah punya file lain atau record modulnya sudah tidak ada.'),
+                ]);
+        }
+
+        return redirect()->route('trash.index')
+            ->with('success', __('Dokumen ":name" berhasil direstore', ['name' => $name]));
+    }
+
+    public function destroyDocument(int $id, ProjectDocumentCleanup $cleanup)
+    {
+        $document = ProjectDocument::onlyTrashed()->findOrFail($id);
+        $name = $document->file_name;
+
+        $this->authorize('forceDelete', $document);
+        $cleanup->forceDelete($document);
+
+        return redirect()->route('trash.index')
+            ->with('success', __('Dokumen ":name" dihapus permanen', ['name' => $name]));
     }
 
     /**
      * Empty My Trash: hanya milik owner. Super-admin: global.
      */
-    public function clear()
+    public function clear(ProjectDocumentCleanup $cleanup)
     {
         $user = auth()->user();
 
@@ -115,6 +199,26 @@ class TrashController extends Controller
             $projectIds = $this->ownedProjectIds($user->id);
             $customerIds = $this->ptWritableCustomerIds($user, $customerIds);
             $projectIds = $this->ptWritableProjectIds($user, $projectIds);
+        }
+
+        // Dokumen di Trash yang terlihat user ikut dikosongkan (file fisik
+        // dihapus lewat service, bukan hanya baris DB).
+        $documentIds = $this->documentsTrashQuery(request(), $user)->pluck('id')->all();
+        foreach (array_chunk($documentIds, 100) as $chunk) {
+            ProjectDocument::withTrashed()
+                ->whereIn('id', $chunk)
+                ->get()
+                ->filter(fn (ProjectDocument $document) => Gate::allows('forceDelete', $document))
+                ->each(fn (ProjectDocument $document) => $cleanup->forceDelete($document));
+        }
+
+        // File dokumen milik customer/project yang akan dihapus juga dibersihkan
+        // supaya tidak tertinggal di disk.
+        foreach ($customerIds as $customerId) {
+            $cleanup->purgeForCustomer($customerId);
+        }
+        foreach ($projectIds as $projectId) {
+            $cleanup->purgeForProject($projectId);
         }
 
         // Customer dulu (cascade DB ikut membersihkan anaknya),
@@ -130,7 +234,7 @@ class TrashController extends Controller
         }
 
         return redirect()->route('trash.index')
-            ->with('success', __('Trash berhasil dibersihkan'));
+            ->with('success', __('Trash cleared successfully'));
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\TechnicalRequest;
+use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -14,6 +15,27 @@ class TechnicalWorkCompletedNotification extends Notification
     use Queueable, SendsWebPush;
 
     public function __construct(public TechnicalRequest $request) {}
+
+    /** Tujuan klik notifikasi: teknisi → menu Teknisi, sales → menu Sales. */
+    private function showUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id)
+            : route('sales.technical-requests.show', $this->request->id);
+    }
+
+    /** URL in-app: relatif supaya tetap di domain tempat user login. */
+    private function relativeUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id, false)
+            : route('sales.technical-requests.show', $this->request->id, false);
+    }
+
+    protected function pushUrl(object $notifiable): string
+    {
+        return $this->showUrl($notifiable);
+    }
 
     public function via(object $notifiable): array
     {
@@ -39,7 +61,7 @@ class TechnicalWorkCompletedNotification extends Notification
             'technical_request_id' => $this->request->id,
             'lead_id' => $this->request->lead_id,
             'title' => $this->request->title,
-            'url' => route('sales.technical-requests.show', $this->request->id),
+            'url' => $this->relativeUrl($notifiable),
         ];
     }
 
@@ -49,16 +71,16 @@ class TechnicalWorkCompletedNotification extends Notification
             ->subject('Hasil Teknis Sudah Tersedia')
             ->line('Pekerjaan teknis untuk "' . $this->request->title . '" telah selesai.')
             ->line('Silakan lihat hasilnya dan lanjutkan ke penawaran bila sesuai.')
-            ->action('Lihat Hasil', url(route('sales.technical-requests.show', $this->request->id)))
+            ->action('Lihat Hasil', url($this->showUrl($notifiable)))
             ->line('Terima kasih.');
     }
 
     protected function pushContent(): array
     {
         return [
-            'title' => 'Hasil teknis tersedia',
+            'title' => __('Technical results available'),
             'body' => $this->request->title,
-            'url' => route('sales.technical-requests.show', $this->request->id),
+            'url' => $this->showUrl($notifiable),
         ];
     }
 }

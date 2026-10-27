@@ -36,7 +36,7 @@ trait LocksLeadLink
             if ($ownActive->count() === 1) {
                 $validated['lead_id'] = $ownActive->first();
             } elseif ($ownActive->count() > 1) {
-                abort(422, __('Pilih lead terkait: customer ini punya lebih dari satu lead aktif.'));
+                abort(422, __('Select the related lead: this customer has more than one active lead.'));
             }
         }
     }

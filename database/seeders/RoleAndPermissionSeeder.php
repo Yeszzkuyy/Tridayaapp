@@ -74,6 +74,9 @@ class RoleAndPermissionSeeder extends Seeder
             $mk('sales-'.strtolower($pt), $salesPerms);
         }
         $mk('admin', ['manage-admin', 'view-admin', 'view-sales', ...$common]);
+        // Purchasing: izin awal sama dengan Admin (sesuai keputusan bisnis 2026-10-26).
+        // Belum otomatis ditugaskan ke akun pengguna mana pun.
+        $mk('purchasing', ['manage-admin', 'view-admin', 'view-sales', ...$common]);
         $mk('technician', ['manage-technician', 'view-technician', ...$common]);
 
         // Lead teknisi: koordinasi teknisi + read-only sales & admin

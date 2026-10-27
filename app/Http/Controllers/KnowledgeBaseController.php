@@ -21,6 +21,14 @@ class KnowledgeBaseController extends Controller
 
         $documents = KnowledgeBaseDocument::with(['uploader', 'project'])
             ->when(
+                $request->filled('q'),
+                fn ($query) => $query->whereLike(
+                    'original_name',
+                    '%'.$request->query('q').'%',
+                    false
+                )
+            )
+            ->when(
                 $request->filled('category'),
                 fn ($query) => $query->where('category', $request->query('category'))
             )
@@ -36,7 +44,7 @@ class KnowledgeBaseController extends Controller
             'documents' => $documents,
             'categories' => KnowledgeBaseCategory::cases(),
             'projects' => Project::orderBy('project_name')->limit(200)->get(['id', 'project_name']),
-            'filters' => $request->only(['category', 'status']),
+            'filters' => $request->only(['q', 'category', 'status']),
         ]);
     }
 
@@ -103,7 +111,7 @@ class KnowledgeBaseController extends Controller
                 throw $dbException;
             }
 
-            return back()->with('success', 'Dokumen berhasil diunggah dan sedang di-index.');
+            return back()->with('success', __('Document uploaded successfully and is being indexed.'));
         } catch (Throwable $e) {
             Log::error('Knowledge base upload gagal: '.$e->getMessage(), ['exception' => $e]);
 
@@ -180,7 +188,7 @@ class KnowledgeBaseController extends Controller
 
             $document->delete();
 
-            return back()->with('success', 'Dokumen dihapus dari Knowledge Base.');
+            return back()->with('success', __('Document removed from the Knowledge Base.'));
         } catch (Throwable $e) {
             Log::error('Knowledge base hapus dokumen gagal: '.$e->getMessage(), ['exception' => $e]);
 

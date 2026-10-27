@@ -1,10 +1,10 @@
 <x-app-layout>
 @php
     $statuses = [
-        'draft' => 'Draft',
-        'in_progress' => 'In Progress',
-        'waiting_approval' => 'Waiting Approval',
-        'completed' => 'Completed',
+        'draft' => __('Draft'),
+        'in_progress' => __('In Progress'),
+        'waiting_approval' => __('Waiting Approval'),
+        'completed' => __('Completed'),
     ];
 
     $statusColors = [
@@ -18,14 +18,14 @@
 <div class="px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">Sizing Project</h1>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Sizing Project') }}</h1>
             <x-status-badge color="{{ $statusColors[$sizingProject->status] ?? 'slate' }}">
                 {{ $statuses[$sizingProject->status] ?? $sizingProject->status }}
             </x-status-badge>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizingProject) }}" title="Edit" />
-            <x-icon-button as="a" icon="back" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Kembali') }}" />
+            <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizingProject) }}" title="{{ __('Edit') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('teknisi.sizing-projects.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -38,22 +38,22 @@
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
-                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Project</dt>
+                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Project') }}</dt>
                 <dd class="mt-1 text-sm text-slate-800 dark:text-slate-100">{{ $sizingProject->project->project_name ?? '—' }}</dd>
             </div>
 
             <div>
-                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Customer</dt>
+                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Customer') }}</dt>
                 <dd class="mt-1 text-sm text-slate-800 dark:text-slate-100">{{ $sizingProject->project?->customer?->name ?? '—' }}</dd>
             </div>
 
             <div>
-                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Sales PIC</dt>
+                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Sales PIC') }}</dt>
                 <dd class="mt-1 text-sm text-slate-800 dark:text-slate-100">{{ $sizingProject->sales_pic ?? '—' }}</dd>
             </div>
 
             <div>
-                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Quantity</dt>
+                <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Quantity') }}</dt>
                 <dd class="mt-1 text-sm text-slate-800 dark:text-slate-100">{{ $sizingProject->quantity ?? '—' }}</dd>
             </div>
         </dl>
@@ -61,12 +61,12 @@
         <div class="grid grid-cols-1 gap-4 mt-6">
             @php
                 $sections = [
-                    'Customer Needs' => $sizingProject->customer_needs,
-                    __('Rekomendasi') => $sizingProject->recommendation,
-                    __('Spesifikasi') => $sizingProject->specifications,
-                    __('Topologi') => $sizingProject->topology,
-                    __('Catatan Teknis') => $sizingProject->technical_notes,
-                    'Notes' => $sizingProject->notes,
+                    __('Customer Needs') => $sizingProject->customer_needs,
+                    __('Recommendation') => $sizingProject->recommendation,
+                    __('Specification') => $sizingProject->specifications,
+                    __('Topology') => $sizingProject->topology,
+                    __('Technical Notes') => $sizingProject->technical_notes,
+                    __('Notes') => $sizingProject->notes,
                 ];
             @endphp
 
@@ -78,6 +78,30 @@
                     </dd>
                 </div>
             @endforeach
+        </div>
+
+        {{-- Hasil sizing — file yang sama juga tampil di menu Documents. --}}
+        <div class="mt-6">
+            <dt class="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Attachments') }}</dt>
+            <dd class="mt-2">
+                @if(($sizingProject->documents ?? collect())->isNotEmpty())
+                    <ul class="space-y-2">
+                        @foreach($sizingProject->documents as $doc)
+                            <li class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600">
+                                <span class="min-w-0 truncate text-slate-700 dark:text-slate-200">{{ $doc->file_name }}</span>
+                                <span class="flex shrink-0 items-center gap-1.5">
+                                    <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $doc) }}"
+                                                   target="_blank" title="{{ __('Preview') }}" />
+                                    <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}"
+                                                   title="{{ __('Download') }}" />
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No attachments yet.') }}</p>
+                @endif
+            </dd>
         </div>
     </div>
 </div>

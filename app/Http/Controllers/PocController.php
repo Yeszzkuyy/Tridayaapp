@@ -85,7 +85,7 @@ class PocController extends Controller
         }
 
         return $this->ajaxOrRedirect($request, 'sales.pocs.index',
-            __('POC/Demo berhasil dijadwalkan.'), ['redirect' => route('sales.pocs.index')]);
+            __('POC/Demo scheduled successfully.'), ['redirect' => route('sales.pocs.index')]);
     }
 
     public function show(Poc $poc)
@@ -105,6 +105,11 @@ class PocController extends Controller
 
     public function update(Request $request, Poc $poc)
     {
+        // Ownership check: hanya pembuat record yang boleh mengubah. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($poc->created_by !== null && (int) $poc->created_by === (int) auth()->id(), 403);
+        }
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -124,14 +129,19 @@ class PocController extends Controller
         $poc->update($validated);
 
         return $this->ajaxOrRedirect($request, 'sales.pocs.index',
-            __('POC/Demo berhasil diupdate.'), ['redirect' => route('sales.pocs.index')]);
+            __('POC/Demo updated successfully.'), ['redirect' => route('sales.pocs.index')]);
     }
 
     public function destroy(Request $request, Poc $poc)
     {
+        // Ownership check: hanya pembuat record yang boleh menghapus. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($poc->created_by !== null && (int) $poc->created_by === (int) auth()->id(), 403);
+        }
+
         $poc->delete();
 
-        return $this->ajaxOrRedirect($request, 'sales.pocs.index', __('POC/Demo berhasil dihapus.'));
+        return $this->ajaxOrRedirect($request, 'sales.pocs.index', __('POC/Demo deleted successfully.'));
     }
 
     private function leadOptions(?int $customerId = null)

@@ -25,6 +25,38 @@ class WhatsAppCenterTest extends TestCase
     {
         parent::setUp();
         $this->seed(RoleAndPermissionSeeder::class);
+
+        // Set dummy secrets untuk testing (bukan secret produksi).
+        config([
+            'whatsapp.meta.app_secret' => 'test-meta-secret-123',
+            'whatsapp.meta.verify_token' => 'test-verify-token-123',
+            'whatsapp.green_api.webhook_secret' => 'test-green-api-secret-456',
+        ]);
+    }
+
+    /**
+     * Generate X-Hub-Signature-256 header untuk payload Meta.
+     */
+    private function metaSignature(array $payload): string
+    {
+        $json = json_encode($payload);
+        return 'sha256='.hash_hmac('sha256', $json, config('whatsapp.meta.app_secret'));
+    }
+
+    /**
+     * Generate headers untuk Green API webhook (Bearer auth sesuai dokumentasi resmi).
+     */
+    private function greenApiHeaders(): array
+    {
+        return ['Authorization' => 'Bearer '.config('whatsapp.green_api.webhook_secret')];
+    }
+
+    /**
+     * Generate headers untuk Green API webhook (Basic auth).
+     */
+    private function greenApiHeadersBasic(): array
+    {
+        return ['Authorization' => 'Basic '.config('whatsapp.green_api.webhook_secret')];
     }
 
     private function marketingUser(?int $accountId = null)
@@ -51,7 +83,7 @@ class WhatsAppCenterTest extends TestCase
         ]);
     }
 
-    public function test_webhook_stores_inbound_and_dedupes(): void
+    public function test_webhook_rejects_legacy_payload_without_auth(): void
     {
         $account = $this->makeAccount();
 
@@ -63,14 +95,10 @@ class WhatsAppCenterTest extends TestCase
             'wa_message_id' => 'wa_msg_1',
         ];
 
-        $this->postJson('/api/whatsapp/webhook', $payload)->assertOk();
-        $this->postJson('/api/whatsapp/webhook', $payload)->assertOk();
+        // Legacy payload TANPA auth = ditolak (403).
+        $this->postJson('/api/whatsapp/webhook', $payload)->assertForbidden();
 
-        $this->assertSame(1, WhatsappMessage::count());
-        $this->assertDatabaseHas('whatsapp_messages', [
-            'whatsapp_account_id' => $account->id,
-            'direction' => 'inbound',
-        ]);
+        $this->assertSame(0, WhatsappMessage::count());
     }
 
     public function test_marketing_user_can_reply_and_convert_to_lead(): void
@@ -239,7 +267,7 @@ class WhatsAppCenterTest extends TestCase
         $this->assertTrue($accounts->contains('id', $mine->id));
         $this->assertTrue($accounts->contains('id', $shared->id));
         $this->assertFalse($accounts->contains('id', $other->id));
-        $response->assertSee('Pengaturan Bot');
+        $response->assertSee(__('Pengaturan Bot'));
     }
 
     public function test_user_cannot_access_account_belonging_to_others(): void
@@ -414,7 +442,7 @@ class WhatsAppCenterTest extends TestCase
             'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Minta penawaran']],
         ];
 
-        $this->postJson('/api/whatsapp/webhook', $payload)->assertOk();
+        $this->postJson('/api/whatsapp/webhook', $payload, $this->greenApiHeaders())->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
             'whatsapp_account_id' => $account->id,
@@ -425,7 +453,7 @@ class WhatsAppCenterTest extends TestCase
         ]);
 
         // Duplicate webhook ditolak via idMessage
-        $this->postJson('/api/whatsapp/webhook', $payload)->assertOk();
+        $this->postJson('/api/whatsapp/webhook', $payload, $this->greenApiHeaders())->assertOk();
         $this->assertSame(1, WhatsappMessage::count());
     }
 
@@ -448,7 +476,7 @@ class WhatsAppCenterTest extends TestCase
             'instanceData' => ['idInstance' => 1101],
             'idMessage' => 'g_msg_1',
             'status' => 'delivered',
-        ])->assertOk();
+        ], $this->greenApiHeaders())->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', ['gateway_message_id' => 'g_msg_1', 'status' => 'delivered']);
     }
@@ -462,7 +490,7 @@ class WhatsAppCenterTest extends TestCase
             'typeWebhook' => 'instanceStatus',
             'instanceData' => ['idInstance' => 1101],
             'stateInstance' => 'authorized',
-        ])->assertOk();
+        ], $this->greenApiHeaders())->assertOk();
 
         $this->assertDatabaseHas('whatsapp_accounts', ['id' => $account->id, 'gateway_status' => 'authorized']);
     }
@@ -473,7 +501,7 @@ class WhatsAppCenterTest extends TestCase
         $this->postJson('/api/whatsapp/webhook', [
             'typeWebhook' => 'incomingMessageReceived',
             'instanceData' => ['idInstance' => 9999],
-        ])->assertStatus(422);
+        ], $this->greenApiHeaders())->assertStatus(422);
     }
 
     public function test_super_admin_can_update_gateway_credentials(): void
@@ -582,7 +610,7 @@ class WhatsAppCenterTest extends TestCase
         $account = $this->makeAccount('wa_wani');
         $account->update(['gateway_instance' => 'PHONE_ID_1']);
 
-        $this->postJson('/api/whatsapp/webhook', [
+        $payload = [
             'object' => 'whatsapp_business_account',
             'entry' => [[
                 'changes' => [[
@@ -598,6 +626,10 @@ class WhatsAppCenterTest extends TestCase
                     ],
                 ]],
             ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => $this->metaSignature($payload),
         ])->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
@@ -619,7 +651,7 @@ class WhatsAppCenterTest extends TestCase
             'timestamp' => now()->timestamp,
             'senderData' => ['chatId' => '6281234567891@c.us', 'senderName' => 'Budi'],
             'messageData' => ['typeMessage' => 'extendedTextMessage', 'extendedTextMessageData' => ['text' => 'Pesan dari extendedTextMessage']],
-        ])->assertOk();
+        ], $this->greenApiHeaders())->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
             'whatsapp_account_id' => $account->id,
@@ -696,7 +728,7 @@ class WhatsAppCenterTest extends TestCase
         $account = $this->makeAccount('wa_wani');
         $account->update(['gateway_instance' => 'PHONE_ID_1']);
 
-        $this->postJson('/api/whatsapp/webhook', [
+        $payload = [
             'object' => 'whatsapp_business_account',
             'entry' => [[
                 'changes' => [[
@@ -712,6 +744,10 @@ class WhatsAppCenterTest extends TestCase
                     ],
                 ]],
             ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => $this->metaSignature($payload),
         ])->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
@@ -736,7 +772,7 @@ class WhatsAppCenterTest extends TestCase
             'wa_message_id' => 'META-OUT-1',
         ]);
 
-        $this->postJson('/api/whatsapp/webhook', [
+        $payload = [
             'object' => 'whatsapp_business_account',
             'entry' => [[
                 'changes' => [[
@@ -749,6 +785,10 @@ class WhatsAppCenterTest extends TestCase
                     ],
                 ]],
             ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => $this->metaSignature($payload),
         ])->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
@@ -765,7 +805,7 @@ class WhatsAppCenterTest extends TestCase
         $mgk = $this->makeAccount('wa_mgk', WhatsappAccount::GATEWAY_META);
         $mgk->update(['gateway_instance' => 'PHONE_MGK']);
 
-        $this->postJson('/api/whatsapp/webhook', [
+        $payload = [
             'object' => 'whatsapp_business_account',
             'entry' => [[
                 'changes' => [[
@@ -781,6 +821,10 @@ class WhatsAppCenterTest extends TestCase
                     ],
                 ]],
             ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => $this->metaSignature($payload),
         ])->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
@@ -798,7 +842,7 @@ class WhatsAppCenterTest extends TestCase
         $account = $this->makeAccount('wa_wani');
         $account->update(['gateway_instance' => 'PHONE_WANI']);
 
-        $this->postJson('/api/whatsapp/webhook', [
+        $payload = [
             'object' => 'whatsapp_business_account',
             'entry' => [[
                 'changes' => [[
@@ -814,6 +858,10 @@ class WhatsAppCenterTest extends TestCase
                     ],
                 ]],
             ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => $this->metaSignature($payload),
         ])->assertStatus(422);
     }
 
@@ -831,7 +879,7 @@ class WhatsAppCenterTest extends TestCase
             'gateway_message_id' => 'wamid.OUT.123',
         ]);
 
-        $this->postJson('/api/whatsapp/webhook', [
+        $payload = [
             'object' => 'whatsapp_business_account',
             'entry' => [[
                 'changes' => [[
@@ -844,6 +892,10 @@ class WhatsAppCenterTest extends TestCase
                     ],
                 ]],
             ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => $this->metaSignature($payload),
         ])->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', [
@@ -1351,19 +1403,19 @@ class WhatsAppCenterTest extends TestCase
             ->assertSee('CCTV 8 kamera (Hikvision) untuk gudang');
     }
 
-    public function test_new_inbound_notifies_marketing_users(): void
+    public function test_new_inbound_legacy_payload_rejected(): void
     {
         $account = $this->makeAccount();
         $marketing = $this->marketingUser($account->id);
 
+        // Legacy payload TANPA auth = ditolak (403).
         $this->postJson('/api/whatsapp/webhook', [
             'account_code' => $account->account_code,
             'sender_number' => '6281234567890',
             'message_body' => 'Halo, mau tanya harga CCTV',
-        ])->assertOk();
+        ])->assertForbidden();
 
-        $this->assertSame(1, $marketing->notifications()->count());
-        $this->assertSame('whatsapp', $marketing->notifications()->first()->data['type']);
+        $this->assertSame(0, $marketing->notifications()->count());
     }
 
     public function test_save_contact_formats_name_with_company(): void
@@ -1730,5 +1782,364 @@ class WhatsAppCenterTest extends TestCase
         ], $content)->assertOk();
 
         $this->assertDatabaseHas('whatsapp_messages', ['wa_message_id' => 'META-SIG-OK']);
+    }
+
+    // ============================================================
+    // SECURITY TESTS — K1: Fail-closed behavior
+    // ============================================================
+
+    public function test_meta_webhook_rejects_when_secret_not_configured(): void
+    {
+        // Set secret kosong = fail-closed harus menolak.
+        config(['whatsapp.meta.app_secret' => '']);
+
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'messages' => [[
+                            'id' => 'META-NOSECRET',
+                            'from' => '6281234567890',
+                            'type' => 'text',
+                            'text' => ['body' => 'Test'],
+                            'timestamp' => now()->timestamp,
+                        ]],
+                    ],
+                ]],
+            ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload)->assertForbidden();
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_meta_webhook_rejects_invalid_signature(): void
+    {
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'messages' => [[
+                            'id' => 'META-BADSIG',
+                            'from' => '6281234567890',
+                            'type' => 'text',
+                            'text' => ['body' => 'Test'],
+                            'timestamp' => now()->timestamp,
+                        ]],
+                    ],
+                ]],
+            ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => 'sha256=invalid-signature-here',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_meta_webhook_rejects_missing_signature(): void
+    {
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'messages' => [[
+                            'id' => 'META-NOSIG',
+                            'from' => '6281234567890',
+                            'type' => 'text',
+                            'text' => ['body' => 'Test'],
+                            'timestamp' => now()->timestamp,
+                        ]],
+                    ],
+                ]],
+            ]],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload)->assertForbidden();
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_without_secret(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-NOSEC',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Tanpa Authorization header = ditolak.
+        $this->postJson('/api/whatsapp/webhook', $payload)->assertForbidden();
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_wrong_secret(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-WRONGSEC',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer wrong-secret',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_when_secret_not_configured(): void
+    {
+        // Set secret kosong = fail-closed harus menolak.
+        config(['whatsapp.green_api.webhook_secret' => '']);
+
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-EMPTYSEC',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer any-value',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_webhook_rejects_unknown_payload_format(): void
+    {
+        // Payload yang bukan Meta, Green API, atau legacy = ditolak.
+        $this->postJson('/api/whatsapp/webhook', [
+            'unknown_field' => 'value',
+        ])->assertForbidden();
+    }
+
+    public function test_meta_signature_prevents_status_change_on_invalid_payload(): void
+    {
+        $account = $this->makeAccount('wa_wani');
+        $account->update(['gateway_instance' => 'PHONE_ID_1']);
+
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id,
+            'sender_number' => '6281234567890',
+            'message_body' => 'Test',
+            'direction' => 'outbound',
+            'status' => 'sent',
+            'wa_message_id' => 'META-STATUS-TEST',
+        ]);
+
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [[
+                'changes' => [[
+                    'value' => [
+                        'metadata' => ['phone_number_id' => 'PHONE_ID_1'],
+                        'statuses' => [[
+                            'id' => 'META-STATUS-TEST',
+                            'status' => 'read',
+                        ]],
+                    ],
+                ]],
+            ]],
+        ];
+
+        // Invalid signature = ditolak, status TIDAK berubah.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'X-Hub-Signature-256' => 'sha256=wrong',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'wa_message_id' => 'META-STATUS-TEST',
+            'status' => 'sent', // Status tetap 'sent', bukan 'read'.
+        ]);
+    }
+
+    public function test_green_api_prevents_status_change_on_invalid_secret(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id,
+            'sender_number' => '6281234567890',
+            'message_body' => 'Test',
+            'direction' => 'outbound',
+            'status' => 'sent',
+            'gateway_message_id' => 'GREEN-STATUS-TEST',
+        ]);
+
+        // Wrong secret = ditolak, status TIDAK berubah.
+        $this->postJson('/api/whatsapp/webhook', [
+            'typeWebhook' => 'outgoingMessageStatus',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-STATUS-TEST',
+            'status' => 'delivered',
+        ], ['Authorization' => 'Bearer wrong'])->assertForbidden();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'gateway_message_id' => 'GREEN-STATUS-TEST',
+            'status' => 'sent', // Status tetap 'sent', bukan 'delivered'.
+        ]);
+    }
+
+    // ============================================================
+    // GREEN-API: Authorization header (Bearer/Basic) — sesuai dokumentasi resmi
+    // ============================================================
+
+    public function test_green_api_webhook_accepts_bearer_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BEARER',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Bearer auth works']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer '.config('whatsapp.green_api.webhook_secret'),
+        ])->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'wa_message_id' => 'GREEN-BEARER',
+        ]);
+    }
+
+    public function test_green_api_webhook_accepts_basic_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BASIC',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Basic auth works']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Basic '.config('whatsapp.green_api.webhook_secret'),
+        ])->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'wa_message_id' => 'GREEN-BASIC',
+        ]);
+    }
+
+    public function test_green_api_webhook_rejects_wrong_bearer_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-WRONG-BEARER',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer wrong-token',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_invalid_auth_format(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BAD-FORMAT',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Format salah: bukan Bearer/Basic.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Token abc123',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_empty_auth_header(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-EMPTY-AUTH',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Authorization kosong = ditolak.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => '',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
+    }
+
+    public function test_green_api_webhook_rejects_bearer_without_token(): void
+    {
+        $account = $this->makeAccount();
+        $account->update(['gateway_instance' => '1101']);
+
+        $payload = [
+            'typeWebhook' => 'incomingMessageReceived',
+            'instanceData' => ['idInstance' => 1101],
+            'idMessage' => 'GREEN-BEARER-EMPTY',
+            'timestamp' => now()->timestamp,
+            'senderData' => ['chatId' => '6281234567890@c.us', 'senderName' => 'Test'],
+            'messageData' => ['typeMessage' => 'textMessage', 'textMessageData' => ['textMessage' => 'Test']],
+        ];
+
+        // Bearer tanpa token = ditolak.
+        $this->postJson('/api/whatsapp/webhook', $payload, [
+            'Authorization' => 'Bearer ',
+        ])->assertForbidden();
+
+        $this->assertSame(0, WhatsappMessage::count());
     }
 }

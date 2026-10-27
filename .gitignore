@@ -38,3 +38,10 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+scratch_test.php
+# Artefak TestSprite: tmp/config.json memuat kredensial QA, dan skrip TC*.py
+# ikut menyematkan password login di dalam kodenya. Jangan sampai ter-commit.
+testsprite_tests/
+
+# Agent skills & customizations
+.agents/

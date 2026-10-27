@@ -1,0 +1,4 @@
+[submodule ".opencode/skills/ui-ux-pro-max"]
+	path = .opencode/skills/ui-ux-pro-max
+	url = https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git
+	ignore = all

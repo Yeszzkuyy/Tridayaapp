@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\GoogleAppCredential;
 use App\Models\GoogleCredential;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
@@ -21,6 +22,16 @@ use Illuminate\Support\Facades\Log;
 class GoogleCalendarService
 {
     public const TIMEZONE = 'Asia/Jakarta';
+
+    /** Batas aman halaman saat baca event (pagination) — lebih dari ini = baca dianggap tidak lengkap. */
+    private const MAX_SYNC_PAGES = 20;
+
+    /** Nama partial unique index (google_event_id unik untuk baris aktif). */
+    private const UNIQUE_INDEX_NAME = 'technician_schedules_google_event_id_active_unique';
+
+    /** Timeout transport Google (detik): koneksi & baca/tulis. */
+    public const HTTP_CONNECT_TIMEOUT = 5;
+    public const HTTP_TIMEOUT = 30;
 
 /**
      * Cek apakah Google Calendar API dapat diakses (berdasarkan hasil request, bukan DB).
@@ -57,24 +68,58 @@ class GoogleCalendarService
     }
 
     /**
+     * Validasi struktur konfigurasi kredensial (tanpa menyimpan).
+     * Mengembalikan pesan kesalahan yang aman, atau null bila valid.
+     * Uji koneksi nyata ke Google menyusul di tahap OAuth.
+     */
+    public function validateCredentials(array $creds): ?string
+    {
+        $clientId = trim((string) ($creds['client_id'] ?? ''));
+        $clientSecret = trim((string) ($creds['client_secret'] ?? ''));
+
+        // Client ID & Client Secret harus satu paket.
+        if (($clientId === '') !== ($clientSecret === '')) {
+            return __('Client ID dan Client Secret harus diisi bersama.');
+        }
+
+        $calendarId = trim((string) ($creds['calendar_id'] ?? ''));
+        if ($calendarId !== '' && (str_contains($calendarId, ' ') || strlen($calendarId) > 255)) {
+            return __('Calendar ID tidak valid.');
+        }
+
+        return null;
+    }
+
+    /**
      * Kredensial aplikasi: diprioritaskan dari tabel (di-manage via UI),
      * fallback ke config/env.
      */
     private function appCredentials(): array
     {
-        static $cached = null;
-        if ($cached !== null) {
-            return $cached;
+        // Tanpa cache statis: nilai harus selalu segar (perubahan kredensial
+        // langsung terbaca, termasuk calendar_id kanonis untuk read/write).
+        try {
+            $cred = \App\Models\GoogleAppCredential::current();
+
+            return [
+                'client_id' => $cred->client_id ?: config('services.google-calendar.client_id'),
+                'client_secret' => $cred->client_secret ?: config('services.google-calendar.client_secret'),
+                'calendar_id' => $cred->calendar_id ?: config('services.google-calendar.calendar_id'),
+            ];
+        } catch (\Throwable $e) {
+            // Kredensial tersimpan gagal didekripsi (mis. APP_KEY berubah) →
+            // pakai fallback config + pesan aman (tanpa plaintext/stack trace).
+            try {
+                Log::warning('Kredensial Google gagal didekripsi, memakai nilai config.');
+            } catch (\Throwable) {
+            }
+
+            return [
+                'client_id' => config('services.google-calendar.client_id'),
+                'client_secret' => config('services.google-calendar.client_secret'),
+                'calendar_id' => config('services.google-calendar.calendar_id'),
+            ];
         }
-
-        $cred = \App\Models\GoogleAppCredential::current();
-
-        return $cached = [
-            'client_id' => $cred->client_id ?: config('services.google-calendar.client_id'),
-            'client_secret' => $cred->client_secret ?: config('services.google-calendar.client_secret'),
-            'api_key' => $cred->api_key ?: config('services.google-calendar.api_key'),
-            'calendar_id' => $cred->calendar_id ?: config('services.google-calendar.calendar_id'),
-        ];
     }
 
     /**
@@ -82,12 +127,18 @@ class GoogleCalendarService
      */
     public function upcomingEvents(int $maxResults = 20, ?Carbon $from = null, ?Carbon $to = null): array
     {
-        $app = $this->appCredentials();
+        // Read via OAuth (bukan API key). Jika belum terhubung, hentikan dengan
+        // status jelas — jangan diam-diam kembali memakai API key.
+        if (! $this->hasOAuthConnection()) {
+            throw new \RuntimeException('Google Calendar belum terhubung (OAuth).');
+        }
+
+        $calendarId = $this->canonicalCalendarId();
+        $calendar = $this->calendarService(auth()->user());
 
         $params = [
-            'key' => $app['api_key'],
-            'singleEvents' => 'true',
-            'maxResults' => $maxResults,
+            'singleEvents' => true,
+            'maxResults' => min($maxResults, 250),
             'orderBy' => 'startTime',
         ];
 
@@ -99,42 +150,83 @@ class GoogleCalendarService
             $params['timeMax'] = $to->toRfc3339String();
         }
 
-        $url = 'https://www.googleapis.com/calendar/v3/calendars/'.urlencode($this->appCredentials()['calendar_id']).'/events';
+        // Baca SEMUA halaman (pageToken) sebelum daftar dianggap lengkap.
+        // Bila melebihi batas aman → lempar "tidak lengkap" agar proses hapus
+        // massal dibatalkan (lihat syncFromGoogle).
+        $items = [];
+        $pageToken = null;
+        $pages = 0;
 
-        try {
-            // Timeout + retry: jangan gantung worker bila Google lambat.
-            $response = Http::timeout(10)->retry(1, 200)->get($url, $params);
+        do {
+            $params['pageToken'] = $pageToken;
+            $result = $this->callWithRetry(fn () => $calendar->events->listEvents($calendarId, $params));
+            $items = array_merge($items, $result->getItems() ?? []);
+            $pageToken = $result->getNextPageToken();
+            $pages++;
 
-            $response->throw();
+            if ($pages > self::MAX_SYNC_PAGES) {
+                throw new \RuntimeException('Hasil baca Google tidak lengkap (terlalu banyak halaman).');
+            }
+        } while ($pageToken);
 
-            $items = $response->json('items', []);
+        return collect($items)
+            ->map(function ($item) {
+                $s = $item->getStart();
+                $e = $item->getEnd();
+                $updated = $item->getUpdated();
 
-            Log::debug('Google API response', [
-                'status' => $response->status(),
-                'total_items' => count($items),
-            ]);
+                return [
+                    'id' => $item->getId(),
+                    'title' => $item->getSummary() ?: '(Tanpa judul)',
+                    'start' => $this->parseEventTime(['dateTime' => $s?->getDateTime(), 'date' => $s?->getDate()]),
+                    'end' => $this->parseEventTime(['dateTime' => $e?->getDateTime(), 'date' => $e?->getDate()]),
+                    'location' => $item->getLocation() ?: '',
+                    'description' => $item->getDescription() ?: '',
+                    'updated' => $updated ? Carbon::parse($updated) : null,
+                ];
+            })
+            ->sortBy('start')
+            ->values()
+            ->all();
+    }
 
-            return collect($items)
-                ->map(fn (array $item) => [
-                    'id' => $item['id'] ?? null,
-                    'title' => $item['summary'] ?? '(Tanpa judul)',
-                    'start' => $this->parseEventTime($item['start'] ?? []),
-                    'end' => $this->parseEventTime($item['end'] ?? []),
-                    'location' => $item['location'] ?? '',
-                    'description' => $item['description'] ?? '',
-                    'updated' => isset($item['updated']) ? Carbon::parse($item['updated']) : null,
-                ])
-                ->sortBy('start')
-                ->values()
-                ->take($maxResults)
-                ->all();
-        } catch (\Throwable $e) {
-            Log::error('Gagal mengambil event Google Calendar', [
-                'calendar_id' => $this->appCredentials()['calendar_id'],
-                'message' => $e->getMessage(),
-            ]);
+    /**
+     * Panggil aksi Google dengan retry terbatas + exponential backoff untuk
+     * kegagalan sementara (timeout, rate limit, server error). TIDAK retry
+     * untuk kegagalan autentikasi permanen (invalid_grant/401) atau 4xx.
+     */
+    private function callWithRetry(callable $action, int $attempts = 3)
+    {
+        $delayMs = 150;
 
-            throw $e;
+        for ($i = 0; $i < $attempts; $i++) {
+            try {
+                return $action();
+            } catch (\Throwable $e) {
+                $code = (int) $e->getCode();
+                $msg = strtolower($e->getMessage());
+
+                $auth = $code === 401
+                    || str_contains($msg, 'invalid_grant')
+                    || str_contains($msg, 'invalid_client')
+                    || str_contains($msg, 'invalid_token')
+                    || str_contains($msg, 'unauthorized')
+                    || str_contains($msg, 'mac is invalid');
+
+                $transient = ! $auth && (
+                    $code === 429 || $code === 408 || $code >= 500
+                    || str_contains($msg, 'timeout') || str_contains($msg, 'timed out')
+                    || str_contains($msg, 'curl error') || str_contains($msg, 'could not resolve')
+                    || str_contains($msg, 'connection') || str_contains($msg, 'network')
+                );
+
+                if (! $transient || $i === $attempts - 1) {
+                    throw $e;
+                }
+
+                usleep($delayMs * 1000);
+                $delayMs *= 2; // exponential backoff
+            }
         }
     }
 
@@ -150,7 +242,8 @@ class GoogleCalendarService
             now()->addMonths(2),
         );
 
-        $stats = ['created' => 0, 'updated' => 0, 'restored' => 0, 'skipped' => 0, 'deleted' => 0];
+        $stats = ['created' => 0, 'updated' => 0, 'restored' => 0, 'skipped' => 0, 'deleted' => 0, 'conflicts' => 0];
+        $calendarId = $this->canonicalCalendarId();
         $owner = User::query()
             ->whereHas('permissions', fn ($q) => $q->whereIn('name', ['manage-technician', 'manage-admin']))
             ->orderBy('id')
@@ -180,7 +273,7 @@ class GoogleCalendarService
                 continue;
             }
 
-            $schedule = TechnicianSchedule::withTrashed()->where('google_event_id', $id)->first();
+            $schedule = TechnicianSchedule::withTrashed()->orderBy('id')->where('google_event_id', $id)->first();
 
             // Field milik aplikasi (project, teknisi, status, reminder) TIDAK pernah
             // ditimpa Google — hanya judul/deskripsi/lokasi/jam yang diperebutkan.
@@ -201,15 +294,37 @@ class GoogleCalendarService
                 }
 
                 $schedule->update($shared + [
-                    'google_calendar_id' => $this->appCredentials()['calendar_id'],
+                    'google_calendar_id' => $calendarId,
                     'google_sync_status' => 'synced',
                     'google_sync_error' => null,
                 ]);
 
                 if ($schedule->trashed()) {
-                    $schedule->restore();
-                    $stats['restored']++;
-                    Log::debug('Google sync: jadwal trash direstore', ['id' => $schedule->id, 'google_event_id' => $id]);
+                    try {
+                        // Savepoint: bila restore ditolak unique constraint,
+                        // rollback hanya savepoint ini — transaksi luar tetap
+                        // valid (tidak diracuni) sehingga query berikutnya jalan.
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($schedule) {
+                            $schedule->restore();
+                        });
+                        $stats['restored']++;
+                        Log::debug('Google sync: jadwal trash direstore', ['id' => $schedule->id, 'google_event_id' => $id]);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        if (! $this->isRestoreUniqueConflict($e)) {
+                            throw $e; // QueryException lain → jangan ditelan
+                        }
+
+                        // Konflik: sudah ada baris AKTIF dengan google_event_id sama.
+                        // Jangan buat aktif kedua / jangan hapus apa pun → biarkan
+                        // baris ini tetap terhapus (soft-delete) dan catat konflik.
+                        $stats['conflicts']++;
+                        try {
+                            Log::warning('Restore jadwal ditolak: sudah ada baris aktif dengan google_event_id sama.', [
+                                'google_event_id' => $id,
+                            ]);
+                        } catch (\Throwable) {
+                        }
+                    }
                 }
                 $stats['updated']++;
                 Log::debug('Google sync: UPDATE jadwal', ['id' => $schedule->id, 'google_event_id' => $id]);
@@ -218,7 +333,7 @@ class GoogleCalendarService
                     'user_id' => $owner->id,
                     'status' => 'scheduled',
                     'google_event_id' => $id,
-                    'google_calendar_id' => $this->appCredentials()['calendar_id'],
+                    'google_calendar_id' => $calendarId,
                     'google_sync_status' => 'synced',
                     'google_sync_error' => null,
                 ]);
@@ -229,21 +344,19 @@ class GoogleCalendarService
 
         // Deteksi hapus: event yang dihapus di Google → soft-delete lokal.
         // Hanya yang BER-google_event_id & dalam rentang sync; jadwal lokal
-        // murni (tanpa google_event_id) tidak pernah disentuh. Lewati bila
-        // hasil fetch mentok di maxResults (truncation) — jangan sampai
-        // salah-hapus event yang belum terambil.
-        if (count($events) < $maxResults) {
-            TechnicianSchedule::query()
-                ->whereNotNull('google_event_id')
-                ->whereBetween('start_at', [now()->subDays(30), now()->addMonths(2)])
-                ->whereNotIn('google_event_id', $seenIds)
-                ->get()
-                ->each(function (TechnicianSchedule $schedule) use (&$stats) {
-                    $schedule->delete();
-                    $stats['deleted']++;
-                    Log::debug('Google sync: jadwal dihapus di Google → soft-delete', ['id' => $schedule->id]);
-                });
-        }
+        // murni (tanpa google_event_id) tidak pernah disentuh. `upcomingEvents`
+        // sudah membaca SEMUA halaman (melempar bila tidak lengkap), sehingga
+        // perbandingan $seenIds valid — tidak ada penghapusan dari baca parsial.
+        TechnicianSchedule::query()
+            ->whereNotNull('google_event_id')
+            ->whereBetween('start_at', [now()->subDays(30), now()->addMonths(2)])
+            ->whereNotIn('google_event_id', $seenIds)
+            ->get()
+            ->each(function (TechnicianSchedule $schedule) use (&$stats) {
+                $schedule->delete();
+                $stats['deleted']++;
+                Log::debug('Google sync: jadwal dihapus di Google → soft-delete', ['id' => $schedule->id]);
+            });
 
         Log::info('Google sync: selesai', $stats);
 
@@ -257,7 +370,7 @@ class GoogleCalendarService
      */
     public function pushLocalChanges(): array
     {
-        $out = ['pushed' => 0, 'errors' => 0, 'skipped_no_oauth' => false];
+        $out = ['pushed' => 0, 'errors' => 0, 'skipped_no_oauth' => false, 'auth_error' => false];
 
         if (! $this->hasOAuthConnection()) {
             $out['skipped_no_oauth'] = true;
@@ -278,6 +391,9 @@ class GoogleCalendarService
                 $out['pushed']++;
             } else {
                 $out['errors']++;
+                if ($this->looksLikeAuthError((string) $schedule->google_sync_error)) {
+                    $out['auth_error'] = true;
+                }
             }
         }
 
@@ -290,14 +406,196 @@ class GoogleCalendarService
      */
     public function syncTwoWay(): array
     {
-        $stats = $this->syncFromGoogle();
+        // Lock tunggal untuk SEMUA jalur sync (command, job, tombol manual) —
+        // cegah sinkron berjalan bersamaan yang bisa menghasilkan event duplikat.
+        $lock = Cache::lock('gcal:sync', 300);
 
-        $push = $this->pushLocalChanges();
-        $stats['pushed'] = $push['pushed'];
-        $stats['push_errors'] = $push['errors'];
-        $stats['push_no_oauth'] = $push['skipped_no_oauth'];
+        if (! $lock->get()) {
+            return ['created' => 0, 'updated' => 0, 'deleted' => 0, 'pushed' => 0, 'skipped' => 0, 'locked' => true];
+        }
 
-        return $stats;
+        try {
+            try {
+                $stats = $this->syncFromGoogle();
+            } catch (\Throwable $e) {
+                $c = $this->classifySyncError($e);
+                $this->recordSyncFailure($c['kind'], $c['message']);
+
+                throw $e;
+            }
+
+            $push = $this->pushLocalChanges();
+            $stats['pushed'] = $push['pushed'];
+            $stats['push_errors'] = $push['errors'];
+            $stats['push_no_oauth'] = $push['skipped_no_oauth'];
+
+            if (! empty($push['auth_error'])) {
+                $this->recordSyncFailure('auth', __('Izin Google kedaluwarsa, hubungkan kembali.'));
+            } elseif (! empty($push['errors'])) {
+                $this->recordSyncFailure('sync', __('Sebagian jadwal gagal dikirim ke Google.'));
+            } elseif (! empty($stats['conflicts'])) {
+                // Ada konflik unik saat restore → jangan klaim sinkron sempurna.
+                $this->recordSyncFailure('sync', __('Sebagian jadwal tidak dapat dipulihkan (konflik google_event_id).'));
+            } else {
+                $this->recordSyncSuccess(__(
+                    ':created baru, :updated diperbarui, :deleted dihapus, :pushed dikirim',
+                    [
+                        'created' => $stats['created'] ?? 0,
+                        'updated' => $stats['updated'] ?? 0,
+                        'deleted' => $stats['deleted'] ?? 0,
+                        'pushed' => $stats['pushed'] ?? 0,
+                    ]
+                ));
+            }
+
+            return $stats;
+        } finally {
+            // Lock selalu dilepas, termasuk saat proses gagal.
+            try {
+                $lock->release();
+            } catch (\Throwable) {
+            }
+        }
+    }
+
+    /**
+     * Status koneksi untuk badge (4 state) + info sinkron terakhir.
+     * Berbasis kondisi nyata: adanya token OAuth & hasil sinkron terakhir.
+     */
+    public function connectionStatus(?User $user = null): array
+    {
+        $cred = GoogleAppCredential::current();
+        $oauth = $this->hasOAuthConnection($user);
+        $kind = $cred->last_sync_error_kind;
+
+        if (! $oauth) {
+            $state = 'not_connected';
+        } elseif ($kind === 'auth') {
+            $state = 'needs_reauth';
+        } elseif ($kind !== null) {
+            $state = 'error';
+        } else {
+            $state = 'connected';
+        }
+
+        return [
+            'status' => $state,
+            'connected' => $state === 'connected',
+            'oauth_connected' => $oauth,
+            'last_sync_at' => $cred->last_sync_at
+                ? \Illuminate\Support\Carbon::parse($cred->last_sync_at)->toIso8601String()
+                : null,
+            'last_sync_summary' => $cred->last_sync_summary,
+            'last_sync_error' => $cred->last_sync_error,
+        ];
+    }
+
+    /**
+     * Klasifikasi kegagalan: auth (perlu otorisasi ulang) | network | sync.
+     */
+    private function classifySyncError(\Throwable $e): array
+    {
+        $msg = $e->getMessage();
+        $lower = strtolower($msg);
+        $code = (int) $e->getCode();
+
+        if (
+            str_contains($lower, 'invalid_grant')
+            || str_contains($lower, 'invalid_client')
+            || str_contains($lower, 'invalid_token')
+            || str_contains($lower, 'unauthorized')
+            || str_contains($lower, 'mac is invalid')
+            || str_contains($lower, 'revoked')
+            || $code === 401
+        ) {
+            return ['kind' => 'auth', 'message' => $this->sanitizeError($msg)];
+        }
+
+        if (
+            str_contains($lower, 'curl error')
+            || str_contains($lower, 'timed out')
+            || str_contains($lower, 'timeout')
+            || str_contains($lower, 'could not resolve')
+            || str_contains($lower, 'network')
+            || str_contains($lower, 'failed to connect')
+            || str_contains($lower, 'connection')
+        ) {
+            return ['kind' => 'network', 'message' => $this->sanitizeError($msg)];
+        }
+
+        return ['kind' => 'sync', 'message' => $this->sanitizeError($msg)];
+    }
+
+    /**
+     * Bersihkan pesan error dari nilai yang mirip rahasia (key/token/secret).
+     */
+    private function sanitizeError(string $msg): string
+    {
+        $msg = preg_replace('/\b(key|token|access_token|refresh_token|client_secret|api_key|secret|authorization|bearer)\b[=:\s]*[^\s&"\']*/i', '$1=[REDACTED]', (string) $msg);
+        $msg = preg_replace('/\b[A-Za-z0-9_\-\.]{25,}\b/', '[REDACTED]', (string) $msg);
+
+        return \Illuminate\Support\Str::limit(trim((string) $msg), 160);
+    }
+
+    /**
+     * Catat sinkronisasi berhasil (tanpa rahasia).
+     */
+    private function recordSyncSuccess(string $summary): void
+    {
+        try {
+            GoogleAppCredential::current()->forceFill([
+                'last_sync_at' => now(),
+                'last_sync_summary' => \Illuminate\Support\Str::limit($summary, 255),
+                'last_sync_error' => null,
+                'last_sync_error_kind' => null,
+            ])->save();
+        } catch (\Throwable) {
+        }
+    }
+
+    /**
+     * Catat sinkronisasi gagal — $kind: auth|network|sync. Pesan disanitasi.
+     */
+    private function recordSyncFailure(string $kind, string $message): void
+    {
+        try {
+            GoogleAppCredential::current()->forceFill([
+                'last_sync_at' => now(),
+                'last_sync_summary' => null,
+                'last_sync_error' => $this->sanitizeError($message),
+                'last_sync_error_kind' => $kind,
+            ])->save();
+        } catch (\Throwable) {
+        }
+    }
+
+    private function looksLikeAuthError(string $msg): bool
+    {
+        $m = strtolower($msg);
+
+        return str_contains($m, 'invalid_grant')
+            || str_contains($m, 'kedaluwarsa')
+            || str_contains($m, 'revoked')
+            || str_contains($m, 'hubungkan kembali')
+            || str_contains($m, 'unauthorized');
+    }
+
+    /**
+     * Deteksi spesifik pelanggaran unique pada index google_event_id aktif
+     * (PostgreSQL SQLSTATE 23505 + nama index). TIDAK menelan QueryException lain.
+     */
+    private function isRestoreUniqueConflict(\Illuminate\Database\QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $msg = (string) $e->getMessage();
+
+        // Hanya pelanggaran UNIQUE pada google_event_id — BUKAN semua QueryException.
+        $isUnique = $sqlState === '23505'
+            || stripos($msg, 'unique') !== false;
+        $isOurs = str_contains($msg, self::UNIQUE_INDEX_NAME)
+            || str_contains($msg, 'google_event_id');
+
+        return $isUnique && $isOurs;
     }
 
     private function parseEventTime(array $time): ?Carbon
@@ -323,6 +621,14 @@ class GoogleCalendarService
     public function clientFor(?User $user = null): Client
     {
         $client = new Client;
+        // Timeout transport nyata pada Guzzle yang dipakai Google SDK —
+        // `Http::timeout()` TIDAK berlaku di sini. Connect + read/write timeout
+        // diterapkan pada http client agar listEvents/insert/update/delete
+        // tidak menggantung tanpa batas.
+        $client->setHttpClient(new \GuzzleHttp\Client([
+            'timeout' => self::HTTP_TIMEOUT,
+            'connect_timeout' => self::HTTP_CONNECT_TIMEOUT,
+        ]));
         $client->setApplicationName(config('app.name'));
         $client->setClientId($this->appCredentials()['client_id']);
         $client->setClientSecret($this->appCredentials()['client_secret']);
@@ -366,10 +672,24 @@ class GoogleCalendarService
 
     public function handleCallback(User $user, string $code): void
     {
-        $client = $this->clientFor();
-        $token = $client->fetchAccessTokenWithAuthCode($code);
+        // Tukar authorization code → token via HTTP (memakai Http facade agar
+        // bisa di-fake di tes tanpa jaringan Google nyata). Semantik sama
+        // dengan fetchAccessTokenWithAuthCode, hanya transport yang berbeda.
+        // Connect + read timeout diterapkan pada request ini.
+        $response = Http::asForm()
+            ->connectTimeout(self::HTTP_CONNECT_TIMEOUT)
+            ->timeout(self::HTTP_TIMEOUT)
+            ->post('https://oauth2.googleapis.com/token', [
+            'client_id' => $this->appCredentials()['client_id'],
+            'client_secret' => $this->appCredentials()['client_secret'],
+            'code' => $code,
+            'grant_type' => 'authorization_code',
+            'redirect_uri' => route('teknisi.kalender.callback'),
+        ]);
 
-        if (isset($token['error'])) {
+        $token = $response->json() ?? [];
+
+        if (isset($token['error']) || empty($token['access_token'])) {
             throw new \RuntimeException($token['error_description'] ?? 'Google OAuth gagal.');
         }
 
@@ -499,7 +819,7 @@ class GoogleCalendarService
         if ($schedule->google_event_id && $schedule->google_sync_status !== 'not_connected') {
             try {
                 $calendar = $this->calendarService($schedule->owner);
-                $calendar->events->delete($schedule->google_calendar_id ?? 'primary', $schedule->google_event_id);
+                $calendar->events->delete($schedule->google_calendar_id ?: $this->canonicalCalendarId(), $schedule->google_event_id);
             } catch (\Throwable $e) {
                 // jangan gagalkan hapus lokal karena error google
             }
@@ -539,26 +859,26 @@ class GoogleCalendarService
 
             if ($schedule->google_event_id) {
                 try {
-                    $created = $calendar->events->update(
-                        $schedule->google_calendar_id ?? 'primary',
+                    $created = $this->callWithRetry(fn () => $calendar->events->update(
+                        $schedule->google_calendar_id ?: $this->canonicalCalendarId(),
                         $schedule->google_event_id,
                         $event
-                    );
+                    ));
                 } catch (\Throwable $e) {
                     if ($e->getCode() !== 404) {
                         throw $e;
                     }
                     // event sudah dihapus di Google → buat ulang
                     $schedule->google_event_id = null;
-                    $created = $calendar->events->insert('primary', $event);
+                    $created = $this->callWithRetry(fn () => $calendar->events->insert($this->canonicalCalendarId(), $event));
                 }
             } else {
-                $created = $calendar->events->insert('primary', $event);
+                $created = $this->callWithRetry(fn () => $calendar->events->insert($this->canonicalCalendarId(), $event));
             }
 
             $schedule->forceFill([
                 'google_event_id' => $created->getId(),
-                'google_calendar_id' => 'primary',
+                'google_calendar_id' => $this->canonicalCalendarId(),
                 'google_sync_status' => 'synced',
                 'google_sync_error' => null,
             ])->save();
@@ -596,10 +916,10 @@ class GoogleCalendarService
         $technicianNames = $schedule->technicianList()->pluck('name')->filter()->implode(', ');
 
         $lines = [
-            'Project: '.($schedule->project?->project_name ?? '-'),
-            'Customer: '.($schedule->project?->customer?->company_name ?? '-'),
-            'Teknisi: '.($technicianNames !== '' ? $technicianNames : '-'),
-            'Status: '.(TechnicianSchedule::STATUSES[$schedule->status] ?? $schedule->status),
+            __('Project').': '.($schedule->project?->project_name ?? '-'),
+            __('Customer').': '.($schedule->project?->customer?->company_name ?? '-'),
+            __('Technician').': '.($technicianNames !== '' ? $technicianNames : '-'),
+            __('Status').': '.__(TechnicianSchedule::STATUSES[$schedule->status] ?? $schedule->status),
         ];
 
         if ($schedule->description) {
@@ -633,7 +953,7 @@ class GoogleCalendarService
         return $reminders;
     }
 
-    private function calendarService(User $user): Calendar
+    private function calendarService(?User $user = null): Calendar
     {
         $client = $this->clientFor($user);
 
@@ -648,11 +968,20 @@ class GoogleCalendarService
         }
     }
 
-    private function restoreTokens(Client $client, User $user): void
+    /**
+     * Satu calendar_id kanonis untuk baca maupun tulis (kalender kantor).
+     * Fallback 'primary' hanya bila belum dikonfigurasi.
+     */
+    private function canonicalCalendarId(): string
     {
-        // Fallback: bila user ini belum Connect, pakai token global yang ada
-        // (untuk team dengan satu akun Google bersama).
-        $credential = GoogleCredential::where('user_id', $user->id)->first()
+        return $this->appCredentials()['calendar_id'] ?: 'primary';
+    }
+
+    private function restoreTokens(Client $client, ?User $user): void
+    {
+        // Fallback: bila user ini belum Connect (atau dipanggil dari job/command
+        // tanpa auth), pakai token global yang ada (satu akun Google bersama).
+        $credential = ($user ? GoogleCredential::where('user_id', $user->id)->first() : null)
             ?? GoogleCredential::query()->latest('id')->first();
 
         if (! $credential) {

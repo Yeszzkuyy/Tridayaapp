@@ -17,6 +17,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="google-site-verification" content="oGvxPPGpt9_UBNwgI1WD8_09SgQYH5xjE97G7Ltbvec">
 
     <title>{{ config('app.name', 'Tridaya App') }}</title>
 
@@ -116,24 +117,24 @@
                 'destroy' => url('/notifications/__ID__'),
             ],
             'i18n' => [
-                'title' => __('Notifikasi'),
-                'markAllRead' => __('Tandai semua dibaca'),
-                'clear' => __('Hapus semua'),
-                'clearConfirm' => __('Hapus semua notifikasi?'),
-                'confirm' => __('Ya, hapus'),
-                'cancel' => __('Batal'),
-                'empty' => __('Tidak ada notifikasi'),
-                'emptyHint' => __('Notifikasi baru akan muncul di sini'),
-                'loadMore' => __('Muat lebih banyak'),
-                'loading' => __('Memuat…'),
-                'dismiss' => __('Hapus notifikasi'),
-                'justNow' => __('Baru saja'),
-                'minute' => __('mnt'),
-                'hour' => __('jam'),
-                'day' => __('hari'),
-                'unread' => __('belum dibaca'),
-                'sessionExpired' => __('Sesi berakhir, silakan login ulang.'),
-                'loginAgain' => __('Login ulang'),
+                'title' => __('Notifications'),
+                'markAllRead' => __('Mark all as read'),
+                'clear' => __('Clear all'),
+                'clearConfirm' => __('Clear all notifications?'),
+                'confirm' => __('Yes, clear'),
+                'cancel' => __('Cancel'),
+                'empty' => __('No notifications'),
+                'emptyHint' => __('New notifications will appear here'),
+                'loadMore' => __('Load more'),
+                'loading' => __('Loading…'),
+                'dismiss' => __('Remove notification'),
+                'justNow' => __('Just now'),
+                'minute' => __('min'),
+                'hour' => __('h'),
+                'day' => __('d'),
+                'unread' => __('unread'),
+                'sessionExpired' => __('Session expired, please log in again.'),
+                'loginAgain' => __('Log in again'),
             ],
         ];
 
@@ -189,7 +190,7 @@
 
     @livewireStyles
 
-    @vite(['resources/css/app.css','resources/js/app.js','resources/js/notification-center.jsx'])
+    @vite(['resources/css/app.css','resources/js/app.js','resources/js/notification-center.jsx','resources/js/submit-loader.js'])
 
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -363,7 +364,7 @@
 
     <div id="navigate-progress" aria-hidden="true"></div>
     <button id="sidebarRail" class="sb-rail" type="button" tabindex="-1"
-            aria-label="{{ __('Perkecil sidebar') }}"></button>
+            aria-label="{{ __('Collapse sidebar') }}"></button>
     <div id="sidebarOverlay" class="sidebar-overlay dark:bg-black/60"></div>
 
     <div class="app-wrapper">
@@ -384,7 +385,7 @@
                 @endif
                 @if($errors->any())
                     <x-toast type="error">
-                        <p class="font-semibold mb-1">{{ __('Terdapat kesalahan pada form:') }}</p>
+                        <p class="font-semibold mb-1">{{ __('There were errors in the form:') }}</p>
                         <ul class="list-disc list-inside text-sm">
                             @foreach($errors->all() as $error)
                                 <li>{{ $error }}</li>
@@ -505,7 +506,7 @@
                 root.classList.toggle('sidebar-collapsed',v);
                 try{localStorage.setItem('sidebar-collapsed',v?'1':'0')}catch(e){}
                 var btn=document.getElementById('sidebarCollapseBtn');
-                if(btn){btn.setAttribute('aria-expanded',String(!v));btn.setAttribute('aria-label',v?@json(__('Perluas sidebar')):@json(__('Perkecil sidebar')))}
+                if(btn){btn.setAttribute('aria-expanded',String(!v));btn.setAttribute('aria-label',v?@json(__('Expand sidebar')):@json(__('Collapse sidebar')))}
             syncTitles();
             }
             syncTitles();
@@ -716,6 +717,7 @@
     </script>
     {{-- 3DY AI Chat V2 (pengganti floating lama; file lama dipertahankan tapi tidak di-mount) --}}
     @include('components.ai-chat-v2')
+    @stack('scripts')
     @livewireScripts
 </body>
 </html>

@@ -17,12 +17,18 @@
 <body>
     <h1>{{ $proposal->proposal_number }}</h1>
     <p>{{ $proposal->customer }} • {{ $proposal->proposal_date?->format('d M Y') ?? '-' }}</p>
+    @if($proposal->lead->assignee)
+        <p>{{ __('Sales Owner') }}: {{ $proposal->lead->assignee->name }}</p>
+    @endif
+    @if($proposal->creator)
+        <p>{{ __('Prepared By') }}: {{ $proposal->creator->name }}</p>
+    @endif
     @if($proposal->valid_until)
-        <p>{{ __('Berlaku sampai') }}: {{ $proposal->valid_until->format('d M Y') }}</p>
+        <p>{{ __('Valid until') }}: {{ $proposal->valid_until->format('d M Y') }}</p>
     @endif
     <table>
         <thead>
-            <tr><th>{{ __('Deskripsi') }}</th><th class="num">{{ __('Qty') }}</th><th class="num">{{ __('Harga') }}</th><th class="num">{{ __('Subtotal') }}</th></tr>
+            <tr><th>{{ __('Description') }}</th><th class="num">{{ __('Qty') }}</th><th class="num">{{ __('Price') }}</th><th class="num">{{ __('Subtotal') }}</th></tr>
         </thead>
         <tbody>
             @foreach($proposal->items as $item)
@@ -37,12 +43,12 @@
     </table>
     <div class="totals">
         <p><span>{{ __('Subtotal') }}</span><span>{{ number_format($proposal->subtotal, 0, ',', '.') }}</span></p>
-        <p><span>{{ __('Diskon') }}</span><span>{{ number_format($proposal->discount, 0, ',', '.') }}</span></p>
-        <p><span>{{ __('Pajak') }}</span><span>{{ number_format($proposal->tax, 0, ',', '.') }}</span></p>
+        <p><span>{{ __('Discount') }}</span><span>{{ number_format($proposal->discount, 0, ',', '.') }}</span></p>
+        <p><span>{{ __('Tax') }}</span><span>{{ number_format($proposal->tax, 0, ',', '.') }}</span></p>
         <p><strong>{{ __('Grand Total') }}</strong><strong>Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</strong></p>
     </div>
     @if($proposal->notes)
-        <p>{{ $proposal->notes }}</p>
+        <p><strong>{{ __('Notes') }}:</strong> {{ $proposal->notes }}</p>
     @endif
 </body>
 </html>

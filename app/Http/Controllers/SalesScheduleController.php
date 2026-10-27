@@ -94,16 +94,18 @@ class SalesScheduleController extends Controller
                 $start = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('start'), 0, 10))->toDateString();
                 $end = \Carbon\Carbon::createFromFormat('Y-m-d', substr($request->query('end'), 0, 10))->toDateString();
             } catch (\Throwable) {
-                return response()->json(['message' => __('Rentang tanggal tidak valid.')], 422);
+                return response()->json(['message' => __('Invalid date range.')], 422);
             }
-            $query->whereDate('follow_up_date', '>=', $start)
-                ->whereDate('follow_up_date', '<=', $end);
+            // follow_up_date bertipe date — pakai whereBetween agar index
+            // follow_ups_follow_up_date_index tetap terpakai (whereDate
+            // membungkus kolom dengan cast dan mematikan index).
+            $query->whereBetween('follow_up_date', [$start, $end]);
         } else {
             $date = $request->query('date', today()->toDateString());
             try {
                 $parsed = \Carbon\Carbon::createFromFormat('Y-m-d', substr($date, 0, 10))->toDateString();
             } catch (\Throwable) {
-                return response()->json(['message' => __('Tanggal tidak valid.')], 422);
+                return response()->json(['message' => __('Invalid date.')], 422);
             }
             $query->whereDate('follow_up_date', $parsed);
         }
@@ -141,6 +143,13 @@ class SalesScheduleController extends Controller
                 'pic_phone' => $phone === '' ? null : $phone,
                 'pic_whatsapp' => $wa,
                 'completed' => $fu->completed_at !== null,
+                'meeting_notes' => $fu->meeting_notes,
+                'meeting_outcome' => $fu->meeting_outcome,
+                'meeting_outcome_label' => \App\Models\FollowUp::outcomeLabel($fu->meeting_outcome),
+                'meeting_outcome_badge' => \App\Models\FollowUp::outcomeBadgeClass($fu->meeting_outcome),
+                'meeting_photos' => !empty($fu->meeting_photos) ? array_map(fn($p) => asset('storage/'.$p), $fu->meeting_photos) : [],
+                'meeting_next_action_date' => $fu->meeting_next_action_date?->format('d M Y'),
+                'meeting_report_url' => route('sales.meetings.report', $fu),
                 'url' => $fu->lead_id
                     ? route('leads.show', $fu->lead_id)
                     : route('customers.show', $fu->customer_id),
@@ -178,7 +187,7 @@ class SalesScheduleController extends Controller
         $this->authorize('view', $lead);
 
         $pic = User::findOrFail($validated['assigned_to']);
-        abort_unless($pic->hasAnyRole(['sales', 'inside-sales']), 422, __('PIC harus Sales atau Inside Sales.'));
+        abort_unless($pic->hasAnyRole(['sales', 'inside-sales']), 422, __('The PIC must be Sales or Inside Sales.'));
 
         $schedule = SalesSchedule::create($validated + ['created_by' => auth()->id()]);
 
@@ -189,7 +198,7 @@ class SalesScheduleController extends Controller
         }
 
         return redirect()->route('sales.schedules.show', $schedule)
-            ->with('success', __('Jadwal berhasil dibuat.'));
+            ->with('success', __('Schedule created successfully.'));
     }
 
     public function show(SalesSchedule $schedule)
@@ -249,7 +258,7 @@ class SalesScheduleController extends Controller
         $schedule->update(['status' => 'completed']);
         $this->log($schedule->lead, 'schedule_completed', ['title' => $schedule->title]);
 
-        return back()->with('success', __('Jadwal ditandai selesai.'));
+        return back()->with('success', __('Schedule marked as done.'));
     }
 
     public function cancel(SalesSchedule $schedule)
@@ -260,7 +269,7 @@ class SalesScheduleController extends Controller
         $schedule->update(['status' => 'cancelled']);
         $this->log($schedule->lead, 'schedule_cancelled', ['title' => $schedule->title]);
 
-        return back()->with('success', __('Jadwal dibatalkan.'));
+        return back()->with('success', __('Schedule cancelled.'));
     }
 
     /**
@@ -282,8 +291,9 @@ class SalesScheduleController extends Controller
     }
 
     /**
-     * Dropdown lead untuk modal tambah jadwal. Sales-like hanya
-     * melihat lead miliknya sendiri.
+     * Dropdown lead untuk modal tambah jadwal (label sama dengan form
+     * follow-up: "Lead #id — status — kebutuhan — tgl masuk"). Sales-like
+     * hanya melihat lead miliknya sendiri.
      */
     private function leadItems($user): array
     {
@@ -292,12 +302,11 @@ class SalesScheduleController extends Controller
             $query->where('assigned_to', $user->id);
         }
 
-        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'assigned_to'])
+        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'kebutuhan', 'assigned_to'])
             ->map(fn ($lead) => [
                 'id' => (string) $lead->id,
                 'customer_id' => (string) $lead->customer_id,
-                'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
-                    .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
+                'label' => Lead::salesDropdownLabel($lead),
             ])->all();
     }
 }

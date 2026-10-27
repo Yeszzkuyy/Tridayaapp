@@ -2,8 +2,8 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isSuperAdmin ? 'All Trash' : __('My Trash') }}</h1>
-                <p class="text-slate-500 mt-1">{{ $isSuperAdmin ? __('Seluruh data terhapus dari semua user') : __('Data milikmu yang telah dihapus') }}</p>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isSuperAdmin ? __('All Trash') : __('My Trash') }}</h1>
+                <p class="text-slate-500 mt-1">{{ $isSuperAdmin ? __('All deleted data from every user') : __('Your deleted data') }}</p>
             </div>
 
             <div class="flex items-center gap-3">
@@ -20,31 +20,115 @@
                         </select>
                     </form>
                 @endif
+                @if(auth()->user()->hasRole('super-admin') || auth()->user()->can('manage-technician') || auth()->user()->can('manage-sales'))
                 <form action="{{ route('trash.clear') }}" method="POST"
                       onsubmit="return confirm('{{ __('Permanently delete these items? This action cannot be undone.') }}')">
                     @csrf
                     @method('DELETE')
                     <x-icon-button icon="delete" type="submit" title="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}" />
                 </form>
-                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="Back" />
+                @endif
+                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
-        {{-- Customer Trash --}}
+        {{-- Document Trash --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden mb-6">
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700">
-                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Customer Terhapus') }}</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">
+                    {{ __('Deleted Documents') }}
+                    <span class="ml-2 inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-100">{{ $documents->total() }}</span>
+                </h2>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-300">
+                    {{ __('Documents in Trash are permanently deleted automatically :days days after the deleted date.', ['days' => \App\Models\ProjectDocument::TRASH_RETENTION_DAYS]) }}
+                </p>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Nama Customer') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Email</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Document') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer / Project') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted By') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted At') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Auto-deleted on') }}</th>
+                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
+                        @forelse($documents as $document)
+                            @php($daysLeft = $document->trashDaysLeft())
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                                <td class="px-6 py-4">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-100">{{ $document->file_name }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                        {{ \App\Services\DocumentRegistry::TYPE_LABELS[$document->doc_type] ?? ($document->doc_type ? strtoupper($document->doc_type) : __('Project')) }}
+                                        · {{ $document->category?->name ?? __('Tanpa Kategori') }}
+                                    </p>
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                    {{ $document->customer?->name ?? '-' }}
+                                    @if($document->project)
+                                        <span class="block text-xs text-slate-400">{{ $document->project->project_name }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $document->deleter?->name ?? '-' }}</td>
+                                <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                    {{ $document->deleted_at?->format('d M Y H:i') ?? '-' }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="block text-sm text-slate-600 dark:text-slate-300">
+                                        {{ $document->trashDeadline()?->format('d M Y H:i') ?? '-' }}
+                                    </span>
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $daysLeft <= 3 ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' }}">
+                                        {{ __(':days hari lagi', ['days' => $daysLeft]) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-2 whitespace-nowrap">
+                                        @can('restore', $document)
+                                            <form action="{{ route('trash.restore-document', $document->id) }}" method="POST">
+                                                @csrf
+                                                @method('PATCH')
+                                                <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
+                                            </form>
+                                        @endcan
+                                        @can('forceDelete', $document)
+                                            <x-icon-button icon="delete" type="button" x-data=""
+                                                           title="{{ __('Delete permanently') }}"
+                                                           @click="$dispatch('open-modal', 'confirm-destroy-document-{{ $document->id }}')" />
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-16 text-center text-slate-400">
+                                    {{ __('No deleted documents.') }}
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4">{{ $documents->links() }}</div>
+        </div>
+
+        {{-- Customer Trash --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Deleted Customers') }}</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-slate-50 dark:bg-slate-700">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Email') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Owner') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Oleh') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Pada') }}</th>
-                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted By') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -61,12 +145,12 @@
                                         <form action="{{ route('trash.restore-customer', $customer->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <x-icon-button icon="reset" type="submit" title="Restore" />
+                                            <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $customer)
                                         <x-icon-button icon="delete" type="button" x-data=""
-                                                       title="Delete permanently"
+                                                       title="{{ __('Delete permanently') }}"
                                                        @click="$dispatch('open-modal', 'confirm-destroy-customer-{{ $customer->id }}')" />
                                         @endcan
                                     </div>
@@ -75,7 +159,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-16 text-center text-slate-400">
-                                    {{ __('Tidak ada customer yang terhapus.') }}
+                                    {{ __('No deleted customers.') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -122,18 +206,18 @@
         {{-- Project Trash --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700">
-                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Project Terhapus') }}</h2>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">{{ __('Deleted Projects') }}</h2>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Nama Project') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">Customer</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Project Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Owner') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Oleh') }}</th>
-                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Dihapus Pada') }}</th>
-                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Aksi') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted By') }}</th>
+                            <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Deleted At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
@@ -150,12 +234,12 @@
                                         <form action="{{ route('trash.restore-project', $project->id) }}" method="POST">
                                             @csrf
                                             @method('PATCH')
-                                            <x-icon-button icon="reset" type="submit" title="Restore" />
+                                            <x-icon-button icon="reset" type="submit" title="{{ __('Restore') }}" />
                                         </form>
                                         @endcan
                                         @can('forceDelete', $project)
                                         <x-icon-button icon="delete" type="button" x-data=""
-                                                       title="Delete permanently"
+                                                       title="{{ __('Delete permanently') }}"
                                                        @click="$dispatch('open-modal', 'confirm-destroy-project-{{ $project->id }}')" />
                                         @endcan
                                     </div>
@@ -164,7 +248,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-16 text-center text-slate-400">
-                                    {{ __('Tidak ada project yang terhapus.') }}
+                                    {{ __('No deleted projects.') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -195,6 +279,41 @@
                             <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                         </button>
                         <form action="{{ route('trash.destroy-project', $project->id) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button class="group relative overflow-hidden inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">
+                                <x-icon name="trash" class="w-4 h-4" />
+                                {{ __('Yes, delete permanently') }}
+                                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </x-modal>
+        @endforeach
+
+
+        @foreach($documents as $document)
+            <x-modal name="confirm-destroy-document-{{ $document->id }}" maxWidth="md">
+                <div class="p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                            <x-icon name="trash" class="w-5 h-5 text-red-600" />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Delete permanently?') }}</h3>
+                            <p class="text-sm text-slate-500 mt-1">
+                                {{ __('Document') }} "{{ $document->file_name }}" {{ __('will be deleted') }} <b>{{ __('forever') }}</b>.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <button type="button" @click="$dispatch('close')"
+                                class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
+                            {{ __('Cancel') }}
+                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                        </button>
+                        <form action="{{ route('trash.destroy-document', $document->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
                             <button class="group relative overflow-hidden inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">

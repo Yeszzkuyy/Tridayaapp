@@ -46,7 +46,7 @@ class NotificationCreated implements ShouldBroadcastNow, ShouldRescue
         $user = $this->notification->notifiable;
 
         return [
-            'item' => NotificationPresenter::present($this->notification),
+            'item' => NotificationPresenter::present($this->notification, $user),
             'unread' => $user ? $user->unreadNotifications()->count() : 0,
         ];
     }

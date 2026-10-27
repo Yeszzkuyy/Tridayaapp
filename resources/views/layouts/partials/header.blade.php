@@ -2,8 +2,8 @@
     <div class="flex items-center gap-3">
         {{-- Hamburger, hanya tampil di mobile --}}
         <button id="hamburgerBtn" type="button"
-                class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-all duration-300 hover:scale-105 hover:bg-accent-500/10 hover:text-accent-600 active:scale-95 lg:hidden dark:text-slate-300 dark:hover:bg-accent-400/10 dark:hover:text-accent-400"
-                aria-label="Toggle Sidebar">
+                class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-all duration-300 hover:scale-105 hover:bg-accent-500/10 hover:text-accent-600 active:scale-95 lg:hidden dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white"
+                aria-label="{{ __('Toggle Sidebar') }}">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
@@ -18,12 +18,17 @@
             // [prefix route, [label grup, label sub-menu, ...]]. Prefix terpanjang dicocokkan lebih dulu,
             // supaya mis. 'leads.pipeline' tidak tertelan 'leads'.
             $crumbMap = [
+                ['dev.worklog',                     ['Admin Panel', 'Rekap Progres']],
                 ['manage-sales.activity-log',       ['Management', 'Activity Log']],
+                ['manage-sales.kpi',                ['Management', 'Sales KPI & Target']],
                 ['manage-sales',                    ['Management', 'Manage Sales']],
                 ['manage.marketing',                ['Management', 'Manage Marketing']],
                 ['manage.technical',                ['Management', 'Manage Technical']],
                 ['manage.admin',                    ['Management', 'Manage Admin']],
                 ['teknisi.dashboard',               ['Teknisi', 'Dashboard Teknisi']],
+                ['teknisi.requests',                ['Teknisi', 'Request Sales']],
+                ['teknisi.price-requests',          ['Teknisi', 'Request Sales']],
+                ['teknisi.technical-requests',      ['Teknisi', 'Request Sales']],
                 ['teknisi.jadwal',                  ['Teknisi', 'Jadwal']],
                 ['teknisi.surveys',                 ['Teknisi', 'Survey']],
                 ['teknisi.sizing-projects',         ['Teknisi', 'Sizing Project']],
@@ -31,15 +36,16 @@
                 ['teknisi.instalasis',              ['Teknisi', 'Instalasi']],
                 ['teknisi.documents',               ['Teknisi', 'Document']],
                 ['projects',                        ['Teknisi', 'Project']],
+                ['project-documents',             ['Teknisi', 'Document']],
                 ['marketing.dashboard',             ['Marketing', 'Marketing Dashboard']],
                 ['whatsapp-center',                 ['Marketing', 'WhatsApp Center']],
                 ['sales.dashboard',                 ['Sales', 'Sales Dashboard']],
                 ['sales.my-leads',                  ['Sales', 'My Leads']],
                 ['sales.follow-ups',                ['Sales', 'Follow Up']],
+                ['sales.meetings',                  ['Sales', 'Meeting']],
                 ['sales.schedules',                 ['Sales', 'Schedule']],
-                ['sales.proposals',                 ['Sales', 'Proposal']],
-                ['products',                        ['Sales', 'Products']],
-                ['sales.pocs',                      ['Sales', 'POC/Demo']],
+                ['sales.proposals',                 ['Sales', 'Quotation']],
+                ['sales.requests',                  ['Sales', 'Request']],
                 ['sales.technical-requests',        ['Sales', 'Technical Request']],
                 ['sales',                           ['Sales']],
                 ['leads.pipeline',                  ['Sales', 'Pipeline']],
@@ -85,6 +91,7 @@
                 'Customer' => 'users', 'Monitoring' => 'chart-bar', 'Dashboard' => 'grid',
                 'Trash' => 'trash', 'Knowledge Base' => 'book', 'Product KB' => 'book',
                 'Settings' => 'settings', 'Profile' => 'user', 'AI Assistant' => 'message',
+                'Developer' => 'code',
             ];
 
             $matched = null;
@@ -164,8 +171,21 @@
         {{-- Notification Center — React island (bell + feed).
              Data awal & i18n dipasang di layouts/app.blade.php (window.notifCenter).
              Bell tampil untuk SEMUA role: notifikasi database bisa diterima
-             siapa saja (teknisi, marketing, sales, admin, dll). --}}
-        <div data-notification-center class="relative shrink-0"></div>
+             siapa saja (teknisi, marketing, sales, admin, dll).
+
+             `wire:ignore` = bell tidak ikut diganti saat pindah menu
+             (wire:navigate), jadi selalu tampil di navbar. --}}
+        <div data-notification-center wire:ignore class="relative shrink-0">
+            {{-- Fallback statis: bell sudah tampil sejak render pertama,
+                 sebelum island React selesai dimuat (React menggantinya
+                 saat mount — lihat resources/js/notification-center.jsx). --}}
+            <span data-notif-fallback aria-hidden="true"
+                  class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-accent-600 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400">
+                <svg class="h-5 w-5 notif-bell-icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-4-5.66V5a2 2 0 1 0-4 0v.34A6 6 0 0 0 6 11v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9" />
+                </svg>
+            </span>
+        </div>
 
         <span class="hidden shrink-0 whitespace-nowrap text-[11px] tabular-nums text-slate-400 md:block dark:text-slate-300">{{ now()->translatedFormat('d M Y') }}</span>
 
@@ -180,7 +200,12 @@
         {{-- Dropdown Avatar --}}
         <div class="relative" x-data="{ open: false }">
             {{-- Avatar --}}
-            <button @click="open = !open"
+            <button type="button"
+                    @click="open = !open"
+                    aria-label="{{ __('Account menu') }}"
+                    aria-haspopup="true"
+                    :aria-expanded="open"
+                    title="{{ __('Account menu') }}"
                     class="flex items-center justify-center rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-500/50 active:scale-95 shrink-0">
                 <x-user-avatar :user="auth()->user()" size="w-10 h-10" text="text-sm" :clickable="false" />
             </button>
@@ -202,7 +227,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
-                    {{ __('Profil') }}
+                    {{ __('Profile') }}
                 </a>
 
                 {{-- Setting --}}
@@ -217,6 +242,15 @@
                     {{ __('Setting') }}
                 </a>
 
+                {{-- Rekap Progres (Yeski & Raafi) --}}
+                <a href="{{ route('dev.worklog.index') }}"
+                   class="flex items-center gap-3 px-4 py-2 text-sm text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    {{ __('Rekap Progres') }}
+                </a>
+
                 <hr class="my-1 border-slate-200 dark:border-zinc-800">
 
                 {{-- Logout --}}
@@ -227,7 +261,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
-                        Logout
+                        {{ __('Logout') }}
                     </button>
                 </form>
             </div>

@@ -18,6 +18,7 @@ class SendFollowUpReminders extends Command
         $today = today();
 
         $candidates = FollowUp::with(['customer', 'creator', 'lead.assignee'])
+            ->nonMeetings()
             ->whereNull('reminder_sent_at')
             ->whereNull('completed_at')
             ->whereNotNull('follow_up_date')

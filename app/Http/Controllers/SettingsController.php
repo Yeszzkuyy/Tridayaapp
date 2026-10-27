@@ -46,7 +46,7 @@ class SettingsController extends Controller
         $user->save();
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['ok' => true, 'message' => __('Pengaturan berhasil disimpan.')]);
+            return response()->json(['ok' => true, 'message' => __('Settings saved successfully.')]);
         }
 
         return Redirect::route('settings.edit')->with('status', 'settings-updated');

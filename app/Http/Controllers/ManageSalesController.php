@@ -7,9 +7,11 @@ use App\Models\FollowUp;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\SalesTarget;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
+use App\Services\SalesKpiService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -78,7 +80,7 @@ class ManageSalesController extends Controller
         if (!empty($validated['assigned_to'])) {
             $salesUser = User::find($validated['assigned_to']);
             if (!$salesUser?->hasRole('sales')) {
-                abort(422, __('Target assignment harus user dengan role Sales.'));
+                abort(422, __('Assignment target must be a user with the Sales role.'));
             }
         }
 
@@ -150,16 +152,20 @@ class ManageSalesController extends Controller
 
         return redirect()
             ->route('manage-sales.index')
-            ->with('success', __('Lead di-assign ke') . ' ' . $salesUser->name)
+            ->with('success', __('Lead assigned to') . ' ' . $salesUser->name)
             ->with('success_card', true);
     }
 
-    public function dashboard()
+    public function dashboard(SalesKpiService $salesKpiService)
     {
         $ownLead = fn ($q) => $q->where('assigned_to', auth()->id());
+        // Follow Up tidak menghitung Meeting (menu Meeting terpisah).
         $ownActivity = function ($q) use ($ownLead) {
-            $q->whereHas('lead', $ownLead)
-                ->orWhere(fn ($w) => $w->whereNull('lead_id')->where('created_by', auth()->id()));
+            $q->where(fn ($t) => $t->whereNull('type')->orWhere('type', '!=', 'meeting'))
+                ->where(function ($w) use ($ownLead) {
+                    $w->whereHas('lead', $ownLead)
+                        ->orWhere(fn ($x) => $x->whereNull('lead_id')->where('created_by', auth()->id()));
+                });
         };
         $mine = fn () => Lead::where('assigned_to', auth()->id());
         $kpi = [
@@ -179,6 +185,18 @@ class ManageSalesController extends Controller
                 ->whereNotNull('follow_up_date')
                 ->whereDate('follow_up_date', '>', today())->count(),
         ];
+
+        $meetingBase = \App\Models\FollowUp::query()->meetings()->where(function ($w) {
+            $w->where('created_by', auth()->id())
+                ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', auth()->id()));
+        });
+        $meetingsToday = (clone $meetingBase)->whereDate('follow_up_date', today())->count();
+        $meetingsPending = (clone $meetingBase)->whereNull('completed_at')
+            ->whereDate('follow_up_date', '<=', today())->count();
+
+        // KPI Personal & Leaderboard Tim Sales
+        $myKpi = $salesKpiService->getUserKpi(auth()->user(), now()->month, now()->year);
+        $salesLeaderboard = $salesKpiService->getLeaderboard(now()->month, now()->year);
 
         $dueFollowUps = FollowUp::with('customer')
             ->where($ownActivity)
@@ -246,7 +264,52 @@ class ManageSalesController extends Controller
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
 
-        return view('sales.dashboard', compact('kpi', 'dueFollowUps', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes'));
+        return view('sales.dashboard', compact('kpi', 'myKpi', 'salesLeaderboard', 'dueFollowUps', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes', 'meetingsToday', 'meetingsPending'));
+    }
+
+    public function kpi(Request $request, SalesKpiService $salesKpiService)
+    {
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+
+        $teamSummary = $salesKpiService->getTeamSummary($month, $year);
+        $leaderboard = $salesKpiService->getLeaderboard($month, $year);
+        $salesUsers = User::role('sales')->orderBy('name')->get(['id', 'name', 'email']);
+
+        return view('manage-sales.kpi', compact('teamSummary', 'leaderboard', 'salesUsers', 'month', 'year'));
+    }
+
+    public function updateTarget(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'period_month' => 'required|integer|between:1,12',
+            'period_year' => 'required|integer|min:2020|max:2100',
+            'target_revenue' => 'required|numeric|min:0',
+            'target_deals' => 'required|integer|min:0',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $salesUser = User::findOrFail($validated['user_id']);
+        if (!$salesUser->hasRole('sales')) {
+            abort(422, __('Target can only be set for users with the Sales role.'));
+        }
+
+        SalesTarget::updateOrCreate(
+            [
+                'user_id' => $validated['user_id'],
+                'period_month' => $validated['period_month'],
+                'period_year' => $validated['period_year'],
+            ],
+            [
+                'target_revenue' => $validated['target_revenue'],
+                'target_deals' => $validated['target_deals'],
+                'notes' => $validated['notes'] ?? null,
+                'created_by' => auth()->id(),
+            ]
+        );
+
+        return back()->with('success', __('Sales target for :name updated successfully.', ['name' => $salesUser->name]));
     }
 
     public function myLeads(Request $request)

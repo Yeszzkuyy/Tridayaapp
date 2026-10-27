@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +20,19 @@ class RoleMatrixTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole($role);
         return $user;
+    }
+
+    private function invoice(): Invoice
+    {
+        $customer = Customer::create(['name' => 'PT Matrix', 'pt_group' => 'NTI']);
+
+        return Invoice::create([
+            'customer_id' => $customer->id,
+            'invoice_number' => 'INV-MATRIX-' . uniqid(),
+            'amount' => 1000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
     }
 
     public function test_deleted_hub_roles_are_gone(): void
@@ -37,8 +52,8 @@ class RoleMatrixTest extends TestCase
         }
 
         $this->post(route('leads.store'), [])->assertForbidden();
-        $this->post(route('admin.invoices.store'), [])->assertForbidden();
-        $this->get('/sales/meetings')->assertNotFound();
+        $this->get(route('admin.invoices.edit', $this->invoice()))->assertForbidden(); // form create sudah dihapus, edit tetap gerbang manage-admin
+        $this->get('/sales/meetings')->assertOk();
     }
 
     public function test_cross_division_read_only(): void
@@ -46,12 +61,12 @@ class RoleMatrixTest extends TestCase
         // Sales baca admin, tidak bisa tulis.
         $this->actingAs($this->loginAs('sales'));
         $this->get(route('admin.invoices.index'))->assertOk();
-        $this->post(route('admin.invoices.store'), [])->assertForbidden();
+        $this->get(route('admin.invoices.edit', $this->invoice()))->assertForbidden(); // form create sudah dihapus, edit tetap gerbang manage-admin
 
         // Admin baca sales, tidak bisa tulis.
         $this->actingAs($this->loginAs('admin'));
         $this->get(route('sales.dashboard'))->assertOk();
-        $this->get('/sales/meetings')->assertNotFound();
+        $this->get('/sales/meetings')->assertOk();
 
         // Lead technician baca sales + admin.
         $this->actingAs($this->loginAs('lead-technician'));
@@ -76,7 +91,7 @@ class RoleMatrixTest extends TestCase
 
         $this->actingAs($this->loginAs('prakerin-admin'));
         $this->get(route('admin.invoices.index'))->assertOk();
-        $this->post(route('admin.invoices.store'), [])->assertForbidden();
+        $this->get(route('admin.invoices.edit', $this->invoice()))->assertForbidden(); // form create sudah dihapus, edit tetap gerbang manage-admin
     }
 
     public function test_pure_management_sidebar_shows_only_recap_items(): void

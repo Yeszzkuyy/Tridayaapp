@@ -14,12 +14,12 @@ enum KnowledgeBaseCategory: string
     public function label(): string
     {
         return match ($this) {
-            self::Sop => 'SOP',
-            self::ProjectDocumentation => 'Project Documentation',
-            self::Proposal => 'Proposal',
-            self::TechnicalDocumentation => 'Technical Documentation',
-            self::Reports => 'Reports',
-            self::CompanyKnowledge => 'Company Knowledge',
+            self::Sop => __('SOP'),
+            self::ProjectDocumentation => __('Project Documentation'),
+            self::Proposal => __('Proposal'),
+            self::TechnicalDocumentation => __('Technical Documentation'),
+            self::Reports => __('Reports'),
+            self::CompanyKnowledge => __('Company Knowledge'),
         };
     }
 }

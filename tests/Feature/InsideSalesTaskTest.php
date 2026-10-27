@@ -101,6 +101,24 @@ class InsideSalesTaskTest extends TestCase
         $this->assertSame(2, $task->comments()->count());
     }
 
+    public function test_task_detail_back_link_points_to_request_hub_inside_sales_tab(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $this->actingAs($sales)->post(route('lead-tasks.store'), [
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan penawaran',
+        ])->assertRedirect();
+
+        $task = LeadTask::where('title', 'Buatkan penawaran')->firstOrFail();
+
+        $this->actingAs($sales)
+            ->get(route('lead-tasks.show', $task))
+            ->assertOk()
+            ->assertSee(route('sales.requests.index', ['tab' => 'inside-sales']), false);
+    }
+
     public function test_task_auth_boundaries(): void
     {
         $sales = $this->userWithRole('sales');

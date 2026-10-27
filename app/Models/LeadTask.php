@@ -45,7 +45,7 @@ class LeadTask extends Model
 
     public function comments()
     {
-        return $this->hasMany(LeadTaskComment::class)->latest();
+        return $this->hasMany(LeadTaskComment::class)->orderBy('id', 'asc');
     }
 
     public static function statusLabel(?string $status): string

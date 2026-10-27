@@ -2,8 +2,8 @@
     <div>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Proposal') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Daftar penawaran sales.') }}</p>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Quotations') }}</h1>
+                <p class="text-slate-500 mt-1">{{ __('Sales quotation & pricing list.') }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
@@ -31,10 +31,10 @@
         </div>
 
         <form method="GET" action="{{ route('sales.proposals.index') }}" class="flex flex-wrap items-center gap-2 mb-4">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Cari nomor / customer...') }}"
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search number / customer...') }}"
                    class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
             <select name="status" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                <option value="">{{ __('Semua status') }}</option>
+                <option value="">{{ __('All statuses') }}</option>
                 @foreach($statuses as $st)
                     <option value="{{ $st }}" @selected(request('status') === $st)>{{ \App\Models\Proposal::statusLabel($st) }}</option>
                 @endforeach
@@ -66,7 +66,7 @@
                     <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" />
                 </div>
             @empty
-                <p class="text-slate-500 text-center py-8">{{ __('Belum ada proposal.') }}</p>
+                <p class="text-slate-500 text-center py-8">{{ __('No quotations yet.') }}</p>
             @endforelse
             <div class="mt-4">{{ $proposals->links() }}</div>
         </div>

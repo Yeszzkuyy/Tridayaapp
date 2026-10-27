@@ -52,4 +52,12 @@ class Survey extends Model
     {
         return $this->belongsTo(TechnicalRequest::class);
     }
+
+    /**
+     * Baris dokumen untuk laporan survey (file-nya tetap satu, tidak disalin).
+     */
+    public function documents()
+    {
+        return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
 }

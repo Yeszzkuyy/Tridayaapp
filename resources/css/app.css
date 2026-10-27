@@ -209,8 +209,13 @@ main .bg-white {
 }
 
 @media (hover: hover) {
-    main .bg-white.shadow-sm:hover,
-    main .bg-white.shadow:hover {
+    /* Kartu yang memuat popup fixed (position:fixed) TIDAK boleh terangkat.
+       Reason: transform membuat kartu itu menjadi containing block untuk
+       popup — popup terkunci ke kartu (bukan layar), jadi overlay cuma
+       menutup area kartu lalu melebar begitu hover berakhir, dan halaman
+       di belakang ikut bergeser. Kartu kecil biasa tetap terangkat. */
+    main .bg-white.shadow-sm:not(:has([data-doc-modal])):hover,
+    main .bg-white.shadow:not(:has([data-doc-modal])):hover {
         transform: translateY(-3px);
         box-shadow: var(--shadow-lift);
     }
@@ -528,6 +533,63 @@ tbody tr { transition: background-color 0.2s ease; }
 
 .teknisi-calendar .fc .fc-timegrid-now-indicator-line {
     border-color: rgb(var(--accent-500) / 1);
+}
+
+/* ============================================================
+   Menu aksi kartu dokumen (tombol titik tiga).
+   Pakai class custom, bukan hidden/flex Tailwind — keduanya
+   display dan hasil akhirnya tergantung urutan CSS.
+   ============================================================ */
+.doc-menu {
+    display: none;
+}
+
+.doc-menu.doc-open {
+    display: flex;
+}
+
+/* ============================================================
+   Modal dokumen customer: tampil = .doc-open (display:flex).
+   Sengaja tidak pakai toggle class flex/hidden Tailwind karena
+   keduanya setara display dan hasilnya tergantung urutan CSS —
+   modal jadi tidak pernah tampil.
+   ============================================================ */
+[data-doc-modal].doc-open {
+    display: flex;
+}
+
+/* ============================================================
+   Saat popup dokumen terbuka, hover-lift kartu DIMATIKAN
+   (html.doc-modal-open di-sync oleh doc-thumbs.js).
+   Dua masalah tanpa ini:
+   1. :hover berlaku ke semua parent — kursor di atas popup membuat
+      kartu besar halaman di belakang popup ikut terangkat 3px
+      (halaman "gerak-gerak" saat hover).
+   2. transform pada ancestor menjadikan kartu itu containing block
+      untuk position:fixed — popup terkunci ke kartu (bukan layar)
+      sehingga ikut berpindah tiap hover, tidak pernah statis.
+   ============================================================ */
+html.doc-modal-open main .bg-white.shadow-sm:hover,
+html.doc-modal-open main .bg-white.shadow:hover {
+    transform: none;
+}
+
+/* ============================================================
+   Ikon bell notifikasi — mengikuti tema: hitam di mode terang,
+   putih di mode gelap (brightness(0) invert(1)). drop-shadow
+   tipis hanya pengaman kontras.
+   ============================================================ */
+.notif-bell-icon {
+    filter: brightness(0) drop-shadow(0 1px 1.5px rgba(15, 23, 42, 0.25));
+}
+
+.dark .notif-bell-icon {
+    filter: brightness(0) invert(1) drop-shadow(0 1px 1.5px rgba(15, 23, 42, 0.35));
+}
+
+/* Saat hover tombol jadi accent solid — bell ikut putih biar kontras. */
+.beam-notif:hover .notif-bell-icon {
+    filter: brightness(0) invert(1);
 }
 
 /* ============================================================

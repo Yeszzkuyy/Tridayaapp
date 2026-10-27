@@ -22,34 +22,40 @@
         {{-- Centered month + year flanked by plain arrows --}}
         <div class="flex items-center justify-center gap-1 sm:gap-2 mb-4">
             <button type="button" @click="panMonth(-1)" title="{{ __('Previous month') }}" aria-label="{{ __('Previous month') }}"
-                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <h2 class="min-w-44 sm:min-w-56 text-center text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-slate-800 dark:text-slate-100" x-text="monthLabel"></h2>
             <button type="button" @click="panMonth(1)" title="{{ __('Next month') }}" aria-label="{{ __('Next month') }}"
-                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                    class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
         </div>
 
-        {{-- View switcher --}}
+        {{-- View switcher (rubber segment: pil bergeser animasi, sama seperti filter bulan di Marketing Dashboard) --}}
+        @php
+            $salesViewSegments = [
+                ['value' => 'month', 'label' => __('Month')],
+                ['value' => 'week', 'label' => __('Week')],
+                ['value' => 'day', 'label' => __('Day')],
+            ];
+        @endphp
         <div class="flex justify-center mb-4" id="sales-view-switcher">
-            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800" role="tablist" aria-label="{{ __('Calendar view') }}">
-                <template x-for="v in [{id:'month',label:'{{ __('Month') }}'},{id:'week',label:'{{ __('Week') }}'},{id:'day',label:'{{ __('Day') }}'}]" :key="v.id">
-                    <button type="button" role="tab" :aria-selected="view === v.id" @click="setView(v.id)"
-                            :class="view === v.id
-                                ? 'bg-slate-800 text-white shadow dark:bg-accent-600'
-                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'"
-                            class="rounded-lg px-4 sm:px-6 py-1.5 text-sm font-semibold transition" x-text="v.label"></button>
-                </template>
-            </div>
+            <div id="sales-view-segment"
+                 data-rubber-segment
+                 data-mode="event"
+                 data-event-name="sales:view"
+                 data-label="{{ __('Calendar view') }}"
+                 data-active="month"
+                 data-items='@json($salesViewSegments)'></div>
         </div>
+        @vite('resources/js/rubber-segment.jsx')
 
         {{-- Month view --}}
         <div x-show="view === 'month'" x-transition.opacity>
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-3 sm:p-4 mb-4">
                 <div class="grid grid-cols-7 gap-1 text-center mb-1" id="sales-month-grid">
-                    <template x-for="name in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="name">
+                    <template x-for="name in @js([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')])" :key="name">
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 py-1" x-text="name"></span>
                     </template>
                     <template x-for="cell in monthCells" :key="cell.date">
@@ -89,7 +95,7 @@
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -97,17 +103,17 @@
                             <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-white" x-text="initials(event.customer)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.customer"></p>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.customer"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
                             </div>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'at ' + fmtTime(event.activity_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.activity_time)"></span>
                             </div>
                         </div>
-                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
                             <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop
                                title="{{ __('Open in Google Maps') }}" class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
@@ -125,19 +131,19 @@
                     <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{{ __('Weekly Schedule') }}</h2>
                     <div class="inline-flex items-center gap-0.5 rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                         <button type="button" @click="shiftWeek(-1)" title="{{ __('Previous week') }}" aria-label="{{ __('Previous week') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                         </button>
                         <button type="button" @click="shiftWeek(1)" title="{{ __('Next week') }}" aria-label="{{ __('Next week') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                         </button>
                         <button type="button" @click="goToday()" title="{{ __('Today') }}" aria-label="{{ __('Today') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                         </button>
                         <button x-show="canWrite" type="button" @click="openModal(activeDate)" title="{{ __('Add') }}" aria-label="{{ __('Add') }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                         </button>
                     </div>
@@ -163,11 +169,11 @@
                             <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" x-text="event.description"></button>
                             <div class="flex shrink-0 items-center gap-1">
                                 <a x-show="canWrite && !event.completed" :href="followUpBase + '/' + event.id + '/edit'" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}"
-                                   class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
+                                   class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-accent-500 dark:hover:text-slate-200 dark:hover:text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
                                 </a>
                                 <button type="button" @click="openMenuId = openMenuId === event.id ? null : event.id" title="{{ __('Options') }}" aria-label="{{ __('Options') }}"
-                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-accent-500 dark:hover:text-slate-200 dark:hover:text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
                                 </button>
                             </div>
@@ -236,17 +242,17 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4">
                 <div class="flex items-center justify-center gap-1 mb-3">
                     <button type="button" @click="shiftDay(-1)" title="{{ __('Previous day') }}" aria-label="{{ __('Previous day') }}"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                     </button>
                     <p class="min-w-52 text-center text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200" x-text="dayLabel"></p>
                     <button type="button" @click="shiftDay(1)" title="{{ __('Next day') }}" aria-label="{{ __('Next day') }}"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 active:scale-95 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl bg-slate-800 p-4 transition hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -254,17 +260,17 @@
                             <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent-600 text-sm font-bold text-white" x-text="initials(event.customer)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-100 truncate" x-text="event.customer"></p>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.customer"></p>
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
                             </div>
-                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
+                            <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span x-text="'at ' + fmtTime(event.activity_time)"></span>
+                                <span x-text="'{{ __('pukul') }} ' + fmtTime(event.activity_time)"></span>
                             </div>
                         </div>
-                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-400">
+                        <div class="ml-auto flex shrink-0 items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" /></svg>
                             <a x-show="event.location" :href="locHref(event.location)" target="_blank" rel="noopener" @click.stop
                                title="{{ __('Open in Google Maps') }}" class="max-w-[10rem] truncate hover:underline" x-text="event.location"></a>
@@ -287,11 +293,11 @@
             </div>
         </div>
         <div x-show="loadError && !loading" x-cloak class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-500/10 dark:text-red-300">
-            <span>{{ __('Gagal memuat jadwal.') }}</span>
+            <span>{{ __('Failed to load the schedule.') }}</span>
             <x-icon-button icon="reset" title="{{ __('Retry') }}" @click="loadError = false; fetchEvents(); if (view === 'week') fetchWeek(); else fetchMonth();" />
         </div>
         <div x-show="!loading && !loadError && view !== 'week' && events.length === 0" x-cloak class="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 px-4 py-8 text-center">
-            <p class="text-sm text-slate-500 mb-3">{{ __('Belum ada jadwal kunjungan.') }}</p>
+            <p class="text-sm text-slate-500 mb-3">{{ __('No visit schedules yet.') }}</p>
             @can('manage-sales')
                 <x-icon-button icon="add" title="{{ __('Add') }}" @click="openModal(activeDate)" />
             @endcan
@@ -299,12 +305,18 @@
 
         {{-- Detail drawer --}}
         <div x-show="drawerOpen" x-cloak class="fixed inset-0 z-50" id="sales-drawer" @keydown.escape.window="closeDrawer()">
-            <div class="absolute inset-0 bg-slate-900/40" @click="closeDrawer()"
-                 x-show="drawerOpen" x-transition.opacity></div>
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" @click="closeDrawer()"
+                 x-show="drawerOpen"
+                 x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-250" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
             <aside class="absolute right-0 top-0 flex h-full w-full flex-col bg-white shadow-2xl dark:bg-slate-800 sm:max-w-md sm:border-l sm:border-slate-200 dark:sm:border-slate-600"
                    x-show="drawerOpen"
-                   x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-                   x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+                   x-transition:enter="transform transition ease-out duration-350 sm:duration-400"
+                   x-transition:enter-start="translate-x-full"
+                   x-transition:enter-end="translate-x-0"
+                   x-transition:leave="transform transition ease-in duration-250 sm:duration-300"
+                   x-transition:leave-start="translate-x-0"
+                   x-transition:leave-end="translate-x-full"
                    role="dialog" aria-modal="true" aria-label="{{ __('Schedule detail') }}">
                 <template x-if="selectedEvent">
                     <div class="flex h-full flex-col">
@@ -315,7 +327,7 @@
                                 <span x-show="!selectedEvent.completed" class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">{{ __('Scheduled') }}</span>
                             </div>
                             <button type="button" @click="closeDrawer()" title="{{ __('Close') }}" aria-label="{{ __('Close') }}"
-                                    class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700/60 dark:hover:text-white">
+                                    class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" /></svg>
                             </button>
                         </div>
@@ -327,12 +339,12 @@
                                 <div class="mt-3 flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-700/50">
                                     <div class="min-w-0">
                                         <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="selectedEvent.pic_name"></p>
-                                        <p class="truncate text-xs text-slate-400" x-text="selectedEvent.pic_position || 'PIC'"></p>
+                                        <p class="truncate text-xs text-slate-400" x-text="selectedEvent.pic_position || '{{ __('PIC') }}'"></p>
                                     </div>
                                     <div class="flex shrink-0 items-center gap-1.5">
-                                        <a x-show="selectedEvent.pic_phone" :href="'tel:' + selectedEvent.pic_phone" title="Call" aria-label="Call"
+                                        <a x-show="selectedEvent.pic_phone" :href="'tel:' + selectedEvent.pic_phone" title="{{ __('Call') }}" aria-label="{{ __('Call') }}"
                                            class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700 transition hover:bg-green-200 dark:bg-green-900/50 dark:text-green-200">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.678a2.25 2.25 0 00-.659-1.591l-2.358-2.358a2.25 2.25 0 00-3.182 0l-.51.51a12.034 12.034 0 01-4.746-4.746l.51-.51a2.25 2.25 0 000-3.182L8.172 3.562A2.25 2.25 0 006.58 2.903H4.5A2.25 2.25 0 002.25 5.153v1.598z"/></svg>Call</a>
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.678a2.25 2.25 0 00-.659-1.591l-2.358-2.358a2.25 2.25 0 00-3.182 0l-.51.51a12.034 12.034 0 01-4.746-4.746l.51-.51a2.25 2.25 0 000-3.182L8.172 3.562A2.25 2.25 0 006.58 2.903H4.5A2.25 2.25 0 002.25 5.153v1.598z"/></svg>{{ __('Call') }}</a>
                                         <a x-show="selectedEvent.pic_whatsapp" :href="'https://wa.me/' + selectedEvent.pic_whatsapp" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"
                                            class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200">
                                             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>WA</a>
@@ -349,7 +361,7 @@
                                            class="min-w-0 flex-1 break-words font-medium text-accent-600 hover:underline dark:text-accent-400" x-text="selectedEvent.location"></a>
                                         <a x-show="!isWebUrl(selectedEvent.location)" :href="mapsDirectionsUrl(selectedEvent.location)" target="_blank" rel="noopener"
                                            title="{{ __('Directions') }}" aria-label="{{ __('Directions') }}"
-                                           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
+                                           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-accent-500 dark:hover:text-slate-200 dark:hover:text-white">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.5 11.5 20.5 4l-7.5 16.5-2-6.5-7.5-2.5z" /></svg>
                                         </a>
                                     </div>
@@ -367,6 +379,47 @@
                                 <p class="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200" x-text="selectedEvent.description"></p>
                             </div>
 
+                            {{-- Meeting Report & MOM Display (if completed) --}}
+                            <template x-if="selectedEvent.meeting_notes">
+                                <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/20 space-y-3">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            <span>{{ __('Meeting Report (MOM)') }}</span>
+                                        </div>
+                                        <template x-if="selectedEvent.meeting_outcome_label">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                                                  :class="selectedEvent.meeting_outcome_badge"
+                                                  x-text="selectedEvent.meeting_outcome_label"></span>
+                                        </template>
+                                    </div>
+
+                                    <div class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/40"
+                                         x-text="selectedEvent.meeting_notes"></div>
+
+                                    <template x-if="selectedEvent.meeting_next_action_date">
+                                        <div class="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                            <span class="font-medium text-slate-800 dark:text-slate-200">{{ __('Next Action:') }}</span>
+                                            <span x-text="selectedEvent.meeting_next_action_date"></span>
+                                        </div>
+                                    </template>
+
+                                    {{-- Photo Documentation Thumbnails --}}
+                                    <template x-if="selectedEvent.meeting_photos && selectedEvent.meeting_photos.length > 0">
+                                        <div>
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">{{ __('Documentation Photos') }}</p>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <template x-for="(photoUrl, pIdx) in selectedEvent.meeting_photos" :key="pIdx">
+                                                    <a :href="photoUrl" target="_blank" rel="noopener noreferrer" class="group relative aspect-video rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 block">
+                                                        <img :src="photoUrl" class="w-full h-full object-cover transition-transform group-hover:scale-105" alt="Meeting Doc">
+                                                    </a>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
                             <div class="mt-4 flex items-center justify-between gap-3">
                                 <div class="flex min-w-0 items-center gap-2.5">
                                     <template x-if="selectedEvent.creator_avatar">
@@ -377,7 +430,7 @@
                                     </template>
                                     <div class="min-w-0">
                                         <p class="truncate text-sm font-bold text-slate-700 dark:text-slate-200" x-text="selectedEvent.creator || '-'"></p>
-                                        <p class="truncate text-xs text-slate-400" x-text="selectedEvent.creator_role || 'Sales'"></p>
+                                        <p class="truncate text-xs text-slate-400" x-text="selectedEvent.creator_role || '{{ __('Sales') }}'"></p>
                                     </div>
                                 </div>
                                 <a :href="selectedEvent.url" class="shrink-0 text-sm font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View lead') }} →</a>
@@ -386,7 +439,7 @@
                         <div x-show="canWrite && !selectedEvent.completed" class="flex items-center justify-between gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
                             <div class="relative">
                                 <button type="button" @click="snoozeOpen = !snoozeOpen" title="{{ __('Postpone') }}" aria-label="{{ __('Postpone') }}"
-                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700/60 dark:hover:text-slate-200">
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-accent-500 dark:hover:text-slate-200 dark:hover:text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </button>
                                 <div x-show="snoozeOpen" @click.outside="snoozeOpen = false" x-cloak
@@ -424,9 +477,17 @@
         {{-- Modal tambah jadwal (writers only) --}}
         @can('manage-sales')
         <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" id="sales-add-modal">
-            <div class="absolute inset-0 bg-slate-900/50" @click="isModalOpen = false"
-                 x-show="isModalOpen" x-transition.opacity></div>
-            <div x-show="isModalOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-xs" @click="isModalOpen = false"
+                 x-show="isModalOpen"
+                 x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+            <div x-show="isModalOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-6 sm:translate-y-0 sm:scale-95"
                  class="relative w-full sm:max-w-2xl bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-y-auto" style="max-height:92vh">
                 <div class="pt-3 sm:hidden" aria-hidden="true"><div class="mx-auto h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600"></div></div>
                 <div class="p-6 pt-3 sm:pt-6">
@@ -562,6 +623,10 @@
                 loading: false,
                 loadError: false,
                 fetchSeq: 0,
+                // Cache rentang tanggal yang sudah dimuat (Y-m-d, inklusif)
+                // supaya pindah hari/minggu lampau tidak memanggil API lagi.
+                loadedRanges: [],
+                __booted: false,
                 customerQuery: @json((string) collect($customers)->get((int) old('customer_id'), '')),
                 customerOpen: false,
                 customerActive: -1,
@@ -594,6 +659,11 @@
                 },
 
                 init() {
+                    // Guard: init bisa terpanggil ulang saat morph/navigasi.
+                    // Tanpa guard, request API dan listener jadi dobel.
+                    if (this.__booted) return;
+                    this.__booted = true;
+
                     const urlDate = new URLSearchParams(window.location.search).get('date');
                     if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
                         this.activeDate = urlDate;
@@ -604,8 +674,41 @@
                     this.viewMonth = active.getMonth();
                     this.buildMonth();
                     this.buildWeek();
+                    // Satu request rentang bulanan sudah memuat agenda hari
+                    // terpilih juga — tidak perlu fetchEvents terpisah.
                     this.fetchMonth();
-                    this.fetchEvents();
+                    window.addEventListener('sales:view', (e) => {
+                        if (e?.detail?.value) this.setView(e.detail.value);
+                    });
+                },
+
+                rangeLoaded(start, end) {
+                    return this.loadedRanges.some((range) => range.start <= start && range.end >= end);
+                },
+
+                markRange(start, end) {
+                    this.loadedRanges.push({ start, end });
+                    // Cukup untuk sesi halaman; cegah daftar tumbuh tanpa batas.
+                    if (this.loadedRanges.length > 24) this.loadedRanges.shift();
+                },
+
+                mergeRange(data, start, end) {
+                    const grouped = {};
+                    (Array.isArray(data) ? data : []).forEach((event) => {
+                        (grouped[event.date] = grouped[event.date] || []).push(event);
+                    });
+
+                    // Ganti data lama di rentang ini; cache di luar rentang tetap.
+                    Object.keys(this.monthEvents).forEach((date) => {
+                        if (date >= start && date <= end) delete this.monthEvents[date];
+                    });
+
+                    this.monthEvents = { ...this.monthEvents, ...grouped };
+                    this.markRange(start, end);
+
+                    if (this.activeDate >= start && this.activeDate <= end) {
+                        this.events = this.monthEvents[this.activeDate] || [];
+                    }
                 },
 
                 fmt(date) {
@@ -643,7 +746,7 @@
                 },
 
                 buildWeek() {
-                    const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    const names = @js([__('Mon'), __('Tue'), __('Wed'), __('Thu'), __('Fri'), __('Sat'), __('Sun')]);
                     const todayStr = this.fmt(new Date());
                     const monday = this.mondayOf(new Date(this.activeDate + 'T12:00:00'));
                     this.weekDays = names.map((name, i) => {
@@ -668,9 +771,19 @@
 
                 setView(v) {
                     this.view = v;
-                    if (v === 'week') this.fetchWeek();
-                    else if (v === 'day') this.fetchEvents();
-                    else { this.fetchMonth(); this.fetchEvents(); }
+                    window.dispatchEvent(new CustomEvent('rubber-segment:set', {
+                        detail: { id: 'sales-view-segment', value: v },
+                    }));
+                    if (v === 'week') {
+                        // Agenda hari terpilih sudah ada di cache bulanan.
+                        this.events = this.monthEvents[this.activeDate] || this.events;
+                        this.fetchWeek();
+                    } else if (v === 'day') {
+                        this.fetchEvents();
+                    } else {
+                        this.fetchMonth();
+                        this.fetchEvents();
+                    }
                 },
 
                 panMonth(dir) {
@@ -780,15 +893,27 @@
                 selectDay(date) {
                     this.activeDate = date;
                     const d = new Date(date + 'T12:00:00');
+                    let monthChanged = false;
                     if (d.getFullYear() !== this.viewYear || d.getMonth() !== this.viewMonth) {
                         this.viewYear = d.getFullYear();
                         this.viewMonth = d.getMonth();
+                        monthChanged = true;
                         this.buildMonth();
                         this.fetchMonth();
                     }
                     this.buildWeek();
-                    this.fetchEvents();
-                    if (this.view === 'week') this.fetchWeek();
+
+                    if (this.view === 'week') {
+                        if (monthChanged) {
+                            // fetchMonth sudah mencakup seluruh minggu ini.
+                            this.events = this.monthEvents[date] || [];
+                        } else {
+                            this.events = this.monthEvents[date] || this.events;
+                            this.fetchWeek();
+                        }
+                    } else {
+                        this.fetchEvents();
+                    }
                 },
 
                 createOn(date) {
@@ -823,6 +948,16 @@
 
                 fetchEvents() {
                     const date = this.activeDate;
+
+                    // Tanggal yang sudah tercakup cache tampil instan — ini
+                    // yang membuat jadwal lampau tidak lagi menunggu request.
+                    if (this.rangeLoaded(date, date)) {
+                        this.events = this.monthEvents[date] || [];
+                        this.loading = false;
+                        this.loadError = false;
+                        return;
+                    }
+
                     const seq = ++this.fetchSeq;
                     this.loading = true;
                     this.loadError = false;
@@ -831,7 +966,8 @@
                         .then((data) => {
                             if (seq !== this.fetchSeq) return;
                             this.events = Array.isArray(data) ? data : [];
-                            this.monthEvents[date] = this.events;
+                            this.monthEvents = { ...this.monthEvents, [date]: this.events };
+                            this.markRange(date, date);
                         })
                         .catch(() => {
                             if (seq !== this.fetchSeq) return;
@@ -848,16 +984,20 @@
                     if (!this.monthCells.length) return;
                     const start = this.monthCells[0].date;
                     const end = this.monthCells[this.monthCells.length - 1].date;
+
+                    if (this.rangeLoaded(start, end)) {
+                        if (this.activeDate >= start && this.activeDate <= end) {
+                            this.events = this.monthEvents[this.activeDate] || [];
+                        }
+                        return;
+                    }
+
+                    if (this.events.length === 0) this.loading = true;
                     fetch(this.apiUrl + '?start=' + start + '&end=' + end)
                         .then((r) => r.json())
-                        .then((data) => {
-                            const grouped = {};
-                            (Array.isArray(data) ? data : []).forEach((e) => {
-                                (grouped[e.date] = grouped[e.date] || []).push(e);
-                            });
-                            this.monthEvents = { ...this.monthEvents, ...grouped };
-                        })
-                        .catch(() => {});
+                        .then((data) => this.mergeRange(data, start, end))
+                        .catch(() => {})
+                        .finally(() => { this.loading = false; });
                 },
 
                 fetchWeek() {
@@ -866,15 +1006,15 @@
                     sunday.setDate(sunday.getDate() + 6);
                     const start = this.fmt(monday);
                     const end = this.fmt(sunday);
+
+                    if (this.rangeLoaded(start, end)) {
+                        this.events = this.monthEvents[this.activeDate] || this.events;
+                        return;
+                    }
+
                     fetch(this.apiUrl + '?start=' + start + '&end=' + end)
                         .then((r) => r.json())
-                        .then((data) => {
-                            const grouped = {};
-                            (Array.isArray(data) ? data : []).forEach((e) => {
-                                (grouped[e.date] = grouped[e.date] || []).push(e);
-                            });
-                            this.monthEvents = { ...this.monthEvents, ...grouped };
-                        })
+                        .then((data) => this.mergeRange(data, start, end))
                         .catch(() => {});
                 },
 

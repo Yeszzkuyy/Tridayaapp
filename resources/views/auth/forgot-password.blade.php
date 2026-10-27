@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Forgot Password - {{ config('app.name', 'Tridaya App') }}</title>
+    <title>{{ __('Forgot Password') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -143,7 +143,7 @@
                             x-show="!logoFailed"
                             x-on:error="logoFailed = true"
                             src="{{ asset('images/logo/Logo3dydark-256.webp') }}"
-                            alt="Logo"
+                            alt="{{ __('Logo') }}"
                             class="w-14 h-14 object-contain"
                         >
                         <div
@@ -153,12 +153,12 @@
                         >W</div>
                     </div>
                     <h1 class="text-2xl font-bold">{{ config('app.name', 'Tridaya App') }}</h1>
-                    <p class="text-sm text-white/60 mt-1">Internal Engineer Management System</p>
+                    <p class="text-sm text-white/60 mt-1">{{ __('Internal Engineer Management System') }}</p>
                 </div>
 
                 <div class="text-center mb-6">
-                    <h2 class="text-lg font-semibold">Forgot Password</h2>
-                    <p class="text-sm text-white/50 mt-1">Enter your email to receive a reset link</p>
+                    <h2 class="text-lg font-semibold">{{ __('Forgot Password') }}</h2>
+                    <p class="text-sm text-white/50 mt-1">{{ __('Enter your email to receive a reset link') }}</p>
                 </div>
 
                 <x-auth-session-status class="mb-4 text-center" :status="session('status')" />
@@ -179,7 +179,7 @@
                                 required
                                 autofocus
                                 autocomplete="email"
-                                placeholder="Email address"
+                                placeholder="{{ __('Email address') }}"
                                 class="bg-transparent border-0 focus:ring-0 w-full text-white placeholder-white/35 p-0"
                             >
                         </div>
@@ -193,19 +193,19 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        Send Reset Link
+                        {{ __('Send Reset Link') }}
                     </button>
 
                     <div class="text-center pt-2">
                         <a href="{{ route('login') }}" class="text-sm accent-text hover:opacity-80">
-                            Back to Login
+                            {{ __('Back to Login') }}
                         </a>
                     </div>
                 </form>
             </div>
 
             <p class="text-center text-xs text-white/35 mt-6">
-                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. All rights reserved.
+                &copy; {{ date('Y') }} {{ config('app.name', 'Tridaya App') }}. {{ __('All rights reserved.') }}
             </p>
         </div>
     </div>

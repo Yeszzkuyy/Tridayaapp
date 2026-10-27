@@ -19,7 +19,7 @@ $role = $type === 'error' ? 'alert' : 'status';
      role="{{ $role }}"
      {{ $attributes->merge(['class' => 'rounded-xl border px-5 py-3 mb-4 flex items-start justify-between gap-3 ' . ($styles[$type] ?? $styles['success'])]) }}>
     <div class="min-w-0 flex-1">{{ $slot }}</div>
-    <button type="button" @click="show = false" aria-label="{{ __('Tutup') }}"
+    <button type="button" @click="show = false" aria-label="{{ __('Close') }}"
             class="shrink-0 rounded-lg p-1 opacity-70 transition hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current">
         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

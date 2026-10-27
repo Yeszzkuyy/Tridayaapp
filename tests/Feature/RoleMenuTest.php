@@ -90,7 +90,7 @@ class RoleMenuTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
         $this->actingAs($u)->get('/leads')->assertForbidden();
         $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
-        $this->actingAs($u)->get('/sales/meetings')->assertNotFound();
+        $this->actingAs($u)->get('/sales/meetings')->assertForbidden();
     }
 
     public function test_sales_menu_and_access()
@@ -183,5 +183,15 @@ class RoleMenuTest extends TestCase
         foreach (['view-technician', 'view-sales', 'view-admin', 'view-marketing', 'manage-monitoring', 'apa-aja-yang-tidak-ada'] as $p) {
             $this->assertTrue($u->can($p), $p);
         }
+    }
+
+    public function test_header_account_menu_has_accessible_name()
+    {
+        $u = $this->loginAs('sales');
+        $html = $this->actingAs($u)->get(route('dashboard'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('aria-label="'.e(__('Account menu')).'"', $html);
+        $this->assertStringContainsString('aria-haspopup="true"', $html);
+        $this->assertStringContainsString(':aria-expanded="open"', $html);
     }
 }

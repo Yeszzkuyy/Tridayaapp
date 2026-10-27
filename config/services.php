@@ -39,8 +39,13 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
-        'api_key' => env('GOOGLE_API_KEY'),
         'calendar_id' => env('GOOGLE_CALENDAR_ID'),
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_AUTH_CLIENT_ID', env('GOOGLE_CLIENT_ID')),
+        'client_secret' => env('GOOGLE_AUTH_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET')),
+        'redirect' => env('GOOGLE_AUTH_REDIRECT_URI', env('APP_URL') . '/auth/google/callback'),
     ],
 
     // Google Maps / Places (autocomplete lokasi jadwal sales). Dipakai di sisi
@@ -48,6 +53,10 @@ return [
     'google-maps' => [
         'api_key' => env('GOOGLE_MAPS_API_KEY', env('GOOGLE_API_KEY')),
         'region' => env('GOOGLE_MAPS_REGION', 'id'),
+    ],
+
+    'price_request' => [
+        'pricing_engineer_email' => env('PRICE_ENGINEER_EMAIL', 'amir@tridayaapp.com'),
     ],
 
     /*

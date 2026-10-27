@@ -41,7 +41,7 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
         $this->actingAs($u)->get('/leads')->assertForbidden();
         $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
-        $this->actingAs($u)->get('/sales/meetings')->assertNotFound();
+        $this->actingAs($u)->get('/sales/meetings')->assertForbidden();
         $this->actingAs($u)->get('/monitoring')->assertForbidden();
     }
 
@@ -62,7 +62,7 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/customers')->assertOk();
         $this->actingAs($u)->get('/trash')->assertOk();
 
-        // Sales read-only pada Project: boleh lihat, dilarang mengubah
+        // Sales pada Project: read-only (PRD project workflow).
         $customer = \App\Models\Customer::create(['name' => 'Cust Sales']);
         $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
         $project = \App\Models\Project::create([
@@ -73,9 +73,12 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/projects')->assertOk();
         $this->actingAs($u)->get('/projects/'.$project->id)->assertOk();
         $this->actingAs($u)->post('/projects', [])->assertForbidden();
-        $this->actingAs($u)->put('/projects/'.$project->id, [])->assertForbidden();
+        $this->actingAs($u)->put('/projects/'.$project->id, [
+            'project_name' => 'Proj Sales 2',
+            'work_type_id' => $workType->id,
+        ])->assertForbidden();
         $this->actingAs($u)->delete('/projects/'.$project->id)->assertForbidden();
-        $this->assertNotNull($project->fresh());
+        $this->assertNotSoftDeleted('projects', ['id' => $project->id]);
 
         $this->actingAs($u)->get('/teknisi/dashboard')->assertForbidden();
         // Sales read-only pada Admin: lihat boleh, mutasi 403 ( tested di RoleMatrixTest )

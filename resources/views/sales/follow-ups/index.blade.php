@@ -2,10 +2,21 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Follow Up') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Catat dan pantau semua follow up customer.') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Record and monitor all customer follow ups.') }}</p>
         </div>
         @can('manage-sales')
-            <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create') }}" title="Add Follow Up" />
+            <a href="{{ route('sales.follow-ups.create') }}"
+               wire:navigate.hover
+               title="{{ __('Add Follow Up') }}"
+               class="group relative inline-flex h-10 items-center overflow-hidden rounded-xl bg-accent-600 px-2.5 text-white shadow-sm shadow-accent-500/20 transition-all duration-500 ease-in-out hover:bg-accent-700 hover:px-4 hover:shadow-md hover:shadow-accent-500/30 hover:brightness-105 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+                <svg class="h-5 w-5 shrink-0 transition-transform duration-500 ease-in-out group-hover:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span class="max-w-0 opacity-0 whitespace-nowrap overflow-hidden text-sm font-semibold transition-all duration-500 ease-in-out group-hover:max-w-44 group-hover:opacity-100 group-hover:ml-2">
+                    {{ __('Add Follow Up') }}
+                </span>
+                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+            </a>
         @endcan
     </div>
 
@@ -16,29 +27,29 @@
              tidak pernah hilang dan tombol terkunci selamanya. --}}
         <form method="GET" data-ajax data-ajax-target="#followups-table" data-submit-guarded="ajax" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Cari Customer') }}</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Search Customer') }}</label>
                 <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="{{ __('Nama customer...') }}"
+                       placeholder="{{ __('Customer name...') }}"
                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Status') }}</label>
-                <x-glide-select name="overdue" label="Status"
+                <x-glide-select name="overdue" label="{{ __('Status') }}"
                     :options="[
                         ['value' => 'today', 'label' => __('Hari ini')],
-                        ['value' => 'upcoming', 'label' => __('Mendatang')],
-                        ['value' => '1', 'label' => __('Jatuh tempo')],
+                        ['value' => 'upcoming', 'label' => __('Upcoming')],
+                        ['value' => '1', 'label' => __('Due')],
                     ]"
-                    :value="request('overdue', '')" :empty-label="__('Semua')" id="fu-status-glider" />
+                    :value="request('overdue', '')" :empty-label="__('All')" id="fu-status-glider" />
                 <script>
                     document.getElementById('fu-status-glider')?.querySelector('input[type="hidden"]')
                         ?.addEventListener('change', function () { this.form?.requestSubmit(); });
                 </script>
             </div>
             <div class="flex items-end gap-2">
-                <x-icon-button icon="filter" type="submit" title="Filter" />
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
                 @if(request()->anyFilled(['search', 'overdue']))
-                    <x-icon-button as="a" icon="reset" href="{{ route('sales.follow-ups.index') }}" title="Reset" data-ajax-reset />
+                    <x-icon-button as="a" icon="reset" href="{{ route('sales.follow-ups.index') }}" title="{{ __('Reset') }}" data-ajax-reset />
                 @endif
             </div>
         </form>

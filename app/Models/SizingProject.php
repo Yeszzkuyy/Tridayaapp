@@ -24,4 +24,12 @@ class SizingProject extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    /**
+     * Baris dokumen untuk lampiran hasil sizing.
+     */
+    public function documents()
+    {
+        return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
 }

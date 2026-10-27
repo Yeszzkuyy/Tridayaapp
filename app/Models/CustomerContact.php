@@ -11,6 +11,7 @@ class CustomerContact extends Model
     
     protected $fillable = [
         'customer_id',
+        'created_by',
         'name',
         'position',
         'phone',
@@ -22,5 +23,10 @@ class CustomerContact extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

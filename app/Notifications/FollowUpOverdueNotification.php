@@ -39,7 +39,7 @@ class FollowUpOverdueNotification extends Notification
 
         return [
             'type' => 'followup',
-            'title' => __('Follow up jatuh tempo'),
+            'title' => __('Follow up overdue'),
             'follow_up_id' => $this->followUp->id,
             'customer' => $customer,
             'preview' => Str::limit($this->followUp->description, 80),
@@ -50,7 +50,7 @@ class FollowUpOverdueNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Follow up jatuh tempo'),
+            'title' => __('Follow up overdue'),
             'body' => ($this->followUp->customer?->name ?? '').' — '.Str::limit($this->followUp->description, 80),
             'url' => self::indexUrl(),
         ];

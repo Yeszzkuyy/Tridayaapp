@@ -318,4 +318,34 @@ class LeadPipelineTest extends TestCase
 
         $this->assertSame(3, Lead::count());
     }
+
+    public function test_pipeline_page_uses_english_ui_text(): void
+    {
+        $user = $this->userWithRole('sales');
+        $user->update(['name' => 'Andi Sales']);
+        $this->makeLead(['status' => 'cool', 'assigned_to' => $user->id]);
+
+        $response = $this->actingAs($user)->get(route('leads.pipeline'))->assertOk();
+
+        $response->assertSee('Lead Pipeline');
+        $response->assertSee('Pipeline of Andi Sales', false);
+        $response->assertSee('Show All');
+        $response->assertDontSee('Tampilkan semua');
+        $response->assertDontSee('Pipeline milik');
+
+        $this->actingAs($user)->get(route('leads.pipeline', ['closed' => 'all']))
+            ->assertOk()
+            ->assertSee('This Week')
+            ->assertDontSee('Minggu ini');
+    }
+
+    public function test_pipeline_empty_state_uses_english(): void
+    {
+        $user = $this->userWithRole('sales');
+
+        $this->actingAs($user)->get(route('leads.pipeline'))
+            ->assertOk()
+            ->assertSee('No leads in your pipeline yet.')
+            ->assertDontSee('Belum ada lead di pipeline Anda.');
+    }
 }

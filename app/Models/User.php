@@ -20,6 +20,8 @@ class User extends Authenticatable
         'password',
         'password_changed_at',
         'avatar',
+        'google_id',
+        'google_avatar',
         'cover',
         'preferences',
     ];
@@ -81,11 +83,11 @@ class User extends Authenticatable
         $superAdminExists = \Spatie\Permission\Models\Role::where('name', 'super-admin')->exists();
 
         if ($superAdminExists && $this->hasRole('super-admin') && static::role('super-admin')->count() <= 1) {
-            return __('Tidak bisa menghapus super-admin terakhir (sistem akan terkunci).');
+            return __('Cannot delete the last super-admin (the system will be locked).');
         }
 
         if (str_ends_with((string) $this->email, '@tridayaapp.com')) {
-            return __('Akun karyawan dilindungi — keluarkan dulu dari CompanyUserSeeder bila memang harus dihapus.');
+            return __('Employee accounts are protected — remove them from CompanyUserSeeder first if they really must be deleted.');
         }
 
         return null;

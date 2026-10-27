@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Instalasi;
 use App\Models\Project;
 use App\Rules\SecureFile;
+use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -83,7 +84,7 @@ class InstalasiController extends Controller
 
             if (! $newPath) {
                 return back()->withInput()
-                    ->withErrors(['report_file' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+                    ->withErrors(['report_file' => __('Failed to store the report file. Please try again.')]);
             }
 
             $reportFields = [
@@ -92,10 +93,15 @@ class InstalasiController extends Controller
             ];
         }
 
-        Instalasi::create($validated + $reportFields);
+        $instalasi = Instalasi::create($validated + $reportFields);
+
+        // Laporan instalasi ikut tercatat sebagai dokumen (tanpa menyalin file).
+        if ($instalasi->report_file) {
+            DocumentRegistry::sync($instalasi);
+        }
 
         return redirect()->route('teknisi.instalasis.index')
-            ->with('success', 'Instalasi berhasil ditambahkan.');
+            ->with('success', __('Installation added successfully.'));
     }
 
     public function show(Instalasi $instalasi)
@@ -138,7 +144,7 @@ class InstalasiController extends Controller
 
             if (! $newPath) {
                 return back()->withInput()
-                    ->withErrors(['report_file' => __('Gagal menyimpan file laporan. Silakan coba lagi.')]);
+                    ->withErrors(['report_file' => __('Failed to store the report file. Please try again.')]);
             }
 
             $reportFields = [
@@ -149,17 +155,23 @@ class InstalasiController extends Controller
 
         $instalasi->update($validated + $reportFields);
 
+        // Ganti laporan = dokumen yang sama diperbarui, bukan ditambah.
+        DocumentRegistry::sync($instalasi);
+
         // File lama dibersihkan hanya setelah DB sukses (urutan dijaga manual).
         if ($report && $oldPath && $oldPath !== ($reportFields['report_file'] ?? null)) {
             Storage::disk('private')->delete($oldPath);
         }
 
         return redirect()->route('teknisi.instalasis.show', $instalasi)
-            ->with('success', 'Instalasi berhasil diupdate.');
+            ->with('success', __('Installation updated successfully.'));
     }
 
     public function destroy(Instalasi $instalasi)
     {
+        // Dokumen turunannya ikut dibersihkan supaya tidak menggantung.
+        DocumentRegistry::forget($instalasi);
+
         $instalasi->delete();
 
         if ($instalasi->report_file) {
@@ -167,7 +179,7 @@ class InstalasiController extends Controller
         }
 
         return redirect()->route('teknisi.instalasis.index')
-            ->with('success', 'Instalasi berhasil dihapus.');
+            ->with('success', __('Installation deleted successfully.'));
     }
 
     /**

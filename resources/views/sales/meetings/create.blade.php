@@ -1,0 +1,136 @@
+<x-app-layout>
+    @php($initialLeadOptions = collect($leadItems)->where('customer_id', (string) old('customer_id'))->map(fn ($l) => ['value' => $l['id'], 'label' => $l['label']])->values()->all())
+    <div>
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('New Meeting') }}</h1>
+                <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Schedule a meeting and fill the report (photos + MOM) afterwards.') }}</p>
+            </div>
+            <x-icon-button as="a" icon="back" href="{{ route('sales.meetings.index') }}" title="{{ __('Back') }}" />
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <form action="{{ route('sales.meetings.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4"
+                  x-data="{
+                      customerId: {{ json_encode(old('customer_id')) }},
+                      leads: {{ json_encode($leadItems) }},
+                      str(v) { return (v === null || v === undefined || v === '') ? null : String(v); },
+                      init() { this.customerId = this.str(this.customerId); },
+                      toOpts(list) {
+                          const cid = this.customerId ? String(this.customerId) : null;
+                          return list.filter((x) => String(x.customer_id) === String(cid)).map((x) => ({ value: x.id, label: x.label }));
+                      },
+                      refreshGliders() {
+                          if (typeof window.__glideRemount !== 'function') return;
+                          const mount = document.querySelector('#mtg-lead-glider [data-glide-mount]');
+                          window.__glideRemount(mount, this.toOpts(this.leads));
+                      }
+                  }"
+                  @customer-picked.window="if ($event.detail.field === 'customer_id') { customerId = $event.detail.id; refreshGliders(); }">
+                @csrf
+
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Customer') }} <span class="text-red-500">*</span></label>
+                    @include('sales._customer-picker', [
+                        'name' => 'customer_id',
+                        'options' => $customers,
+                        'selected' => old('customer_id'),
+                        'placeholder' => __('Search customer...'),
+                        'required' => true,
+                        'hint' => __('Choose the customer you met.'),
+                    ])
+                    @error('customer_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Related Lead (optional)') }}</label>
+                        <div x-show="customerId">
+                            <div id="mtg-lead-glider">
+                                <x-glide-select name="lead_id" label="{{ __('Related lead') }}"
+                                    :options="$initialLeadOptions"
+                                    :value="old('lead_id')"
+                                    :empty-label="__('No specific opportunity')"
+                                    :error="$errors->first('lead_id')" />
+                            </div>
+                        </div>
+                        <p x-show="!customerId" class="text-xs text-slate-400">{{ __('Select a customer first.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Only leads that belong to the selected customer are accepted.') }}</p>
+                        @error('lead_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Meeting Mode') }} <span class="text-red-500">*</span></label>
+                        <select name="meeting_mode" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                            <option value="">{{ __('Select mode') }}</option>
+                            @foreach($modes as $mode)
+                                <option value="{{ $mode }}" @selected(old('meeting_mode') === $mode)>{{ \App\Models\FollowUp::meetingModeLabel($mode) }}</option>
+                            @endforeach
+                        </select>
+                        @error('meeting_mode') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Meeting Date') }} <span class="text-red-500">*</span></label>
+                        <input type="date" name="follow_up_date" required value="{{ old('follow_up_date', date('Y-m-d')) }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                        @error('follow_up_date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Time (optional)') }}</label>
+                        <input type="time" name="activity_time" value="{{ old('activity_time') }}"
+                               ondblclick="try { this.showPicker() } catch (e) {}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                        @error('activity_time') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Next Follow-up (optional)') }}</label>
+                        <x-datepicker name="next_follow_up_date" value="{{ old('next_follow_up_date') }}"></x-datepicker>
+                        @error('next_follow_up_date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Location (optional)') }}</label>
+                    <div class="flex items-center gap-2">
+                        <input id="mtg-location" type="text" name="location" maxlength="255" value="{{ old('location') }}"
+                               placeholder="{{ __('Address / meeting point or meeting link') }}"
+                               data-location-autocomplete
+                               class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                        <x-maps-open-button input="mtg-location" />
+                        <x-location-autocomplete />
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
+                    @error('location') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Summary Meeting') }} <span class="text-red-500">*</span></label>
+                    <textarea name="description" rows="3" required placeholder="{{ __('Summary / agenda of the meeting...') }}"
+                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('description') }}</textarea>
+                    @error('description') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                @include('sales.meetings._photo-uploader', [
+                    'existingPhotos' => [],
+                    'required' => false,
+                    'maxFiles' => 3,
+                ])
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <a href="{{ route('sales.meetings.index') }}"
+                       class="group relative overflow-hidden rounded-xl bg-accent-500 px-6 py-2.5 text-center text-sm font-medium text-white transition-all duration-300 hover:bg-accent-600 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                        {{ __('Cancel') }}
+                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                    </a>
+                    <button type="submit"
+                            class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                        {{ __('Save') }}
+                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</x-app-layout>

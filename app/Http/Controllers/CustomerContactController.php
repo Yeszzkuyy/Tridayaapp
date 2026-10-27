@@ -39,11 +39,11 @@ class CustomerContactController extends Controller
             $customer->contacts()->update(['is_primary' => false]);
         }
 
-        $customer->contacts()->create($validated);
+        $customer->contacts()->create($validated + ['created_by' => auth()->id()]);
 
         return redirect()
             ->route('customers.show', $customer)
-            ->with('success', __('PIC berhasil ditambahkan.'));
+            ->with('success', __('PIC added successfully.'));
     }
 
     /**
@@ -84,7 +84,7 @@ class CustomerContactController extends Controller
 
         return redirect()
             ->route('customers.show', $customer)
-            ->with('success', __('PIC berhasil diupdate.'));
+            ->with('success', __('PIC updated successfully.'));
     }
 
     /**
@@ -117,6 +117,6 @@ class CustomerContactController extends Controller
 
         return redirect()
             ->route('customers.show', $customer)
-            ->with('success', __('PIC berhasil dihapus.'));
+            ->with('success', __('PIC deleted successfully.'));
     }
 }

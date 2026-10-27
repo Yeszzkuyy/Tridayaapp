@@ -62,7 +62,7 @@ class LeadTimelineTest extends TestCase
 
         $res = $this->actingAs($user)->get(route('leads.show', $lead));
         $res->assertOk();
-        $res->assertSee('Riwayat Lead');
+        $res->assertSee(__('Riwayat Lead'));
         // locale-proof: label diterjemahkan sesuai locale aktif
         $res->assertSee($lead->activities->first()->actionLabel());
     }
@@ -104,7 +104,7 @@ class LeadTimelineTest extends TestCase
 
         $res = $this->actingAs($user)->get(route('leads.show', $lead));
         $res->assertOk();
-        $res->assertSee('Riwayat Lead');
-        $res->assertSee('Belum ada riwayat untuk lead ini.');
+        $res->assertSee(__('Riwayat Lead'));
+        $res->assertSee(__('Belum ada riwayat untuk lead ini.'));
     }
 }

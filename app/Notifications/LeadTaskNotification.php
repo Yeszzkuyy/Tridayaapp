@@ -3,13 +3,15 @@
 namespace App\Notifications;
 
 use App\Models\LeadTask;
+use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /** Dikirim saat inside sales task dibuat/di-assign atau statusnya berubah. */
-class LeadTaskNotification extends Notification
+class LeadTaskNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 
@@ -42,10 +44,28 @@ class LeadTaskNotification extends Notification
                 default => 'Status task',
             },
             'lead_id' => $this->task->lead_id,
+            'lead_task_id' => $this->task->id,
             'customer' => $this->task->lead?->customer?->name ?? 'Lead task',
             'preview' => $this->task->title,
-            'url' => route('lead-tasks.show', $this->task->id),
+            'url' => $this->databaseUrl($notifiable),
         ];
+    }
+
+    /**
+     * URL relatif (tanpa domain) supaya klik notifikasi tidak berpindah host
+     * dan kehilangan session. Sales/management diarahkan ke menu Request →
+     * Inside Sales dengan diskusi terbuka; inside-sales murni ke task miliknya.
+     */
+    private function databaseUrl(object $notifiable): string
+    {
+        $useRequestHub = $notifiable instanceof User
+            && ($notifiable->can('view-sales')
+                || $notifiable->can('manage-sales')
+                || $notifiable->can('manage-sales-leads'));
+
+        return $useRequestHub
+            ? route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $this->task->id], false)
+            : route('lead-tasks.show', $this->task->id, false);
     }
 
     public function toMail(object $notifiable): MailMessage

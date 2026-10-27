@@ -12,13 +12,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <p class="text-slate-500">{{ __('Lead') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->lead->customer?->name ?? 'Lead #'.$schedule->lead_id }}</span></p>
                 <p class="text-slate-500">{{ __('PIC') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->assignee?->name ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Mulai') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->start_at?->format('d M Y H:i') ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Selesai') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->end_at?->format('d M Y H:i') ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Start') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->start_at?->format('d M Y H:i') ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Completed') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->end_at?->format('d M Y H:i') ?? '-' }}</span></p>
                 <div class="flex items-baseline gap-1.5">
-                    <span class="text-slate-500 shrink-0">{{ __('Lokasi') }}:</span>
+                    <span class="text-slate-500 shrink-0">{{ __('Location') }}:</span>
                     <x-location-link :location="$schedule->location" preview class="font-medium min-w-0 flex-1" />
                 </div>
-                <p class="text-slate-500">{{ __('Dibuat oleh') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->creator?->name ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Created by') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $schedule->creator?->name ?? '-' }}</span></p>
             </div>
             @if($schedule->description)
                 <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $schedule->description }}</p>
@@ -38,7 +38,7 @@
                             </x-icon-button>
                         </form>
                         <form action="{{ route('sales.schedules.cancel', $schedule) }}" method="POST" class="inline"
-                              onsubmit="return confirm('{{ __('Batalkan jadwal ini?') }}')">
+                              onsubmit="return confirm('{{ __('Cancel this schedule?') }}')">
                             @csrf
                             <x-icon-button icon="delete" type="submit" title="{{ __('Cancel') }}" />
                         </form>

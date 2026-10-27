@@ -1,10 +1,10 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Edit Role: {{ $role->name }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Perbarui nama role dan permission') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Edit Role:') }} {{ $role->name }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Update role name and permissions') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="Back" />
+        <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="{{ __('Back') }}" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
@@ -12,17 +12,17 @@
             @csrf @method('PUT')
             
             <div class="mb-6">
-                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Nama Role') }}</label>
+                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Role Name') }}</label>
                 <input type="text" id="name" name="name" required value="{{ $role->name }}"
                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
             </div>
 
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
-                    <label class="block text-sm font-medium text-slate-700">Permissions</label>
+                    <label class="block text-sm font-medium text-slate-700">{{ __('Permissions') }}</label>
                     <div class="flex gap-2">
-                        <x-icon-button id="select-all" icon="leads" label="{{ __('Pilih Semua') }}" title="{{ __('Pilih Semua') }}" />
-                        <x-icon-button id="deselect-all" icon="reset" label="{{ __('Batal Pilih') }}" title="{{ __('Batal Pilih') }}" />
+                        <x-icon-button id="select-all" icon="leads" label="{{ __('Select All') }}" title="{{ __('Select All') }}" />
+                        <x-icon-button id="deselect-all" icon="reset" label="{{ __('Clear Selection') }}" title="{{ __('Clear Selection') }}" />
                     </div>
                 </div>
                 
@@ -48,12 +48,12 @@
             <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                 <a href="{{ route('admin-panel.index') }}"
                    class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
-                    {{ __('Batal') }}
+                    {{ __('Cancel') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </a>
                 <button type="submit"
                         class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                    {{ __('Simpan Perubahan') }}
+                    {{ __('Save Changes') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </button>
             </div>

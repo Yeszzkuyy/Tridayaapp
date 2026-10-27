@@ -41,13 +41,18 @@ class PurchaseOrder extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function documents()
+    {
+        return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {
             'draft' => __('Draft'),
-            'diproses' => __('Diproses'),
-            'selesai' => __('Selesai'),
-            'dibatalkan' => __('Dibatalkan'),
+            'diproses' => __('In Process'),
+            'selesai' => __('Completed'),
+            'dibatalkan' => __('Cancelled'),
             default => ucfirst((string) $this->status),
         };
     }

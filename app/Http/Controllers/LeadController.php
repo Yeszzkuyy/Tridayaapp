@@ -37,8 +37,8 @@ class LeadController extends Controller
             'gov' => 'Gov',
             'principle' => 'Principle',
             'distributor' => 'Distributor',
-            'kontraktor' => __('Kontraktor'),
-            'canvasing' => __('Canvasing'),
+            'kontraktor' => __('Contractor'),
+            'canvasing' => __('Canvassing'),
             'telpon' => __('Telpon'),
             default => __(ucfirst(str_replace('_', ' ', $value))),
         };
@@ -151,7 +151,7 @@ class LeadController extends Controller
         $assignee = User::find($assignedTo);
 
         if (! $assignee?->hasAnyRole(['sales', 'marketing'])) {
-            abort(422, __('Target assignment harus user Sales atau Marketing.'));
+            abort(422, __('The assignment target must be a Sales or Marketing user.'));
         }
     }
 
@@ -508,7 +508,7 @@ class LeadController extends Controller
 
         return redirect()
             ->route('leads.index')
-            ->with('success', __('Lead berhasil ditambahkan'))
+            ->with('success', __('Lead added successfully'))
             ->with('success_card', true);
     }
 
@@ -678,7 +678,7 @@ class LeadController extends Controller
 
         return redirect()
             ->route('leads.index')
-            ->with('success', __('Lead berhasil dihapus'));
+            ->with('success', __('Lead deleted successfully'));
     }
 
     public function saveOutcome(Request $request, Lead $lead)
@@ -703,7 +703,7 @@ class LeadController extends Controller
             $this->logActivity($lead, 'updated', $changes);
         }
 
-        return back()->with('success', __('Hasil lead tersimpan.'));
+        return back()->with('success', __('Lead results saved.'));
     }
 
     public function categorizeAttachment(Request $request, Lead $lead, LeadDocument $document)
@@ -716,7 +716,7 @@ class LeadController extends Controller
         ]);
         $document->update(['category' => $validated['category']]);
 
-        return back()->with('success', __('Kategori dokumen tersimpan.'));
+        return back()->with('success', __('Document category saved.'));
     }
 
     public function convert(Lead $lead)
@@ -736,7 +736,7 @@ class LeadController extends Controller
 
             return redirect()
                 ->route($existing ? 'projects.show' : 'leads.show', $existing ?? $lead)
-                ->with('error', __('Lead sudah dikonversi sebelumnya.'));
+                ->with('error', __('Lead has already been converted.'));
         }
 
         $validated = request()->validate([
@@ -764,7 +764,7 @@ class LeadController extends Controller
 
         return redirect()
             ->route('projects.show', $project)
-            ->with('success', __('Lead berhasil dikonversi ke Project'));
+            ->with('success', __('Lead converted to Project successfully'));
     }
 
     public function activities(Request $request)
@@ -858,7 +858,7 @@ class LeadController extends Controller
             'file' => ['old' => $document->file_name, 'new' => null],
         ]);
 
-        return back()->with('success', __('Lampiran berhasil dihapus'));
+        return back()->with('success', __('Attachment deleted successfully'));
     }
 
     private function saveAttachments(Request $request, Lead $lead): void

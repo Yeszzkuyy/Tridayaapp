@@ -104,6 +104,10 @@ class FollowUpReminderTest extends TestCase
 
         $items = NotificationController::itemsFor($sales);
         $this->assertCount(1, $items);
-        $this->assertSame(FollowUpOverdueNotification::indexUrl(), $items[0]['url']);
+        // Presenter memaksa URL relatif agar klik tidak pindah host/session.
+        $this->assertSame(
+            route('sales.follow-ups.index', ['overdue' => 1], false).'#followups-table',
+            $items[0]['url']
+        );
     }
 }

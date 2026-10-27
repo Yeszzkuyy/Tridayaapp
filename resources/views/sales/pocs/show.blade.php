@@ -7,16 +7,16 @@
             </div>
             <div class="flex gap-2">
                 @can('manage-sales')
-                    <x-icon-button as="a" icon="edit" href="{{ route('sales.pocs.edit', $poc) }}" title="Edit" />
+                    <x-icon-button as="a" icon="edit" href="{{ route('sales.pocs.edit', $poc) }}" title="{{ __('Edit') }}" />
                 @endcan
-                <x-icon-button as="a" icon="back" href="{{ route('sales.pocs.index') }}" title="{{ __('Kembali') }}" />
+                <x-icon-button as="a" icon="back" href="{{ route('sales.pocs.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <dt class="text-xs text-slate-400">Customer</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Customer') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $poc->customer?->name ?? '-' }}</dd>
                 </div>
                 <div>
@@ -24,11 +24,11 @@
                     <dd class="font-medium text-slate-800">{{ \App\Models\Poc::typeLabel($poc->type) }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Tanggal Jadwal') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Schedule Date') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $poc->scheduled_date ? $poc->scheduled_date->format('d M Y') : '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Lokasi') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Location') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $poc->location ?? '-' }}</dd>
                 </div>
                 <div>
@@ -36,17 +36,17 @@
                     <dd class="font-medium text-slate-800">{{ \App\Models\Poc::statusLabel($poc->status) }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Terkait Lead') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Related Lead') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $poc->lead?->customer?->name ?? '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Dicatat oleh') }}</dt>
+                    <dt class="text-xs text-slate-400">{{ __('Recorded by') }}</dt>
                     <dd class="font-medium text-slate-800">{{ $poc->creator?->name ?? '-' }}</dd>
                 </div>
             </dl>
 
             <div>
-                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Catatan Hasil') }}</h3>
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Result Notes') }}</h3>
                 <p class="text-slate-700 whitespace-pre-wrap">{{ $poc->result_notes ?: '-' }}</p>
             </div>
         </div>

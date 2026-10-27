@@ -35,12 +35,10 @@ class FollowUpController extends Controller
             $customerId = $lead->customer_id;
         }
 
-        // Mode form: pertama kali lead di-follow-up = form simpel
-        // (tanpa Related Lead / Lokasi / Next Follow Up). Repeat = form lengkap.
-        $isFirstTime = true;
-        if ($leadId) {
-            $isFirstTime = ! FollowUp::where('lead_id', $leadId)->exists();
-        }
+        // Mode form: form simpel hanya saat datang dari lead yang belum pernah
+        // di-follow-up. Tanpa konteks lead (tombol + halaman Follow Up) atau
+        // lead yang sudah punya follow-up = form lengkap.
+        $isFirstTime = $leadId !== null && ! FollowUp::where('lead_id', $leadId)->exists();
 
         return view('sales.follow-ups.create', [
             'customerOptions' => $this->customerOptions(auth()->user()),
@@ -72,17 +70,17 @@ class FollowUpController extends Controller
         // Form Log Follow Up di detail lead minta balik ke lead-nya.
         if ($request->input('return') === 'lead' && $followUp->lead_id) {
             return redirect()->route('leads.show', $followUp->lead_id)
-                ->with('success', __('Log follow up berhasil dicatat.'));
+                ->with('success', __('Follow up logged successfully.'));
         }
 
         // Modal tambah jadwal di Weekly Strip minta balik ke kalendernya.
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Jadwal kunjungan berhasil ditambah.'));
+                ->with('success', __('Visit schedule added successfully.'));
         }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up berhasil dicatat.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up recorded successfully.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function show(FollowUp $followUp)
@@ -110,6 +108,11 @@ class FollowUpController extends Controller
 
     public function update(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh mengubah. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
@@ -127,40 +130,75 @@ class FollowUpController extends Controller
         $this->salesService->updateFollowUp($followUp, $validated);
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up berhasil diupdate.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up updated successfully.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function destroy(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh menghapus. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $this->salesService->deleteFollowUp($followUp);
 
-        return $this->ajaxOrRedirect($request, 'sales.follow-ups.index', __('Follow up berhasil dihapus.'));
+        return $this->ajaxOrRedirect($request, 'sales.follow-ups.index', __('Follow up deleted successfully.'));
     }
 
+    /**
+     * Legacy complete — for non-meeting types, mark as done directly.
+     * For meeting types, redirect to meeting report form.
+     */
     public function complete(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh menyelesaikan. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
+        // Meeting type: redirect to meeting report form (wajib isi foto + MOM)
+        if ($followUp->type === 'meeting' && !$followUp->hasMeetingReport()) {
+            $params = [];
+            if ($request->input('return') === 'schedule' && $request->filled('date')) {
+                $params['return'] = 'schedule';
+                $params['date'] = substr($request->input('date'), 0, 10);
+            }
+
+            return redirect()->route('sales.meetings.report', array_merge([$followUp], $params));
+        }
+
         $this->salesService->completeFollowUp($followUp);
 
         // Drawer detail di jadwal sales minta balik ke kalendernya.
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Jadwal kunjungan selesai.'));
+                ->with('success', __('Visit schedule completed.'));
         }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up selesai.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up completed.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function reopen(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh reopen. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $this->salesService->reopenFollowUp($followUp);
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up dibuka lagi.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up reopened.'), ['redirect' => route('sales.follow-ups.index')]);
     }
 
     public function snooze(Request $request, FollowUp $followUp)
     {
+        // Ownership check: hanya pembuat record yang boleh menunda. Super Admin bypass.
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort_unless($followUp->created_by !== null && (int) $followUp->created_by === (int) auth()->id(), 403);
+        }
+
         $validated = $request->validate([
             'days' => 'required_without:date|integer|min:1|max:60',
             'date' => 'required_without:days|date|after_or_equal:today',
@@ -173,7 +211,7 @@ class FollowUpController extends Controller
         }
 
         return redirect()->route('sales.follow-ups.index')
-            ->with('success', __('Follow up ditunda.'));
+            ->with('success', __('Follow up postponed.'));
     }
 
     /**
@@ -213,7 +251,7 @@ class FollowUpController extends Controller
     }
 
     /**
-     * Lead untuk dropdown: label unik "Lead #id — status — tgl masuk".
+     * Lead untuk dropdown: label unik "Lead #id — status — kebutuhan — tgl masuk".
      * Sales-like hanya melihat lead miliknya sendiri.
      */
     private function leadItems($user): array
@@ -223,12 +261,11 @@ class FollowUpController extends Controller
             $query->where('assigned_to', $user->id);
         }
 
-        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'assigned_to'])
+        return $query->get(['id', 'customer_id', 'status', 'incoming_date', 'kebutuhan', 'assigned_to'])
             ->map(fn ($lead) => [
                 'id' => (string) $lead->id,
                 'customer_id' => (string) $lead->customer_id,
-                'label' => "Lead #{$lead->id} — ".Lead::salesStatusLabel($lead->status)
-                    .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : ''),
+                'label' => Lead::salesDropdownLabel($lead),
             ])->all();
     }
 
@@ -244,7 +281,7 @@ class FollowUpController extends Controller
         if (!empty($validated['lead_id'])) {
             $lead = Lead::find($validated['lead_id']);
             abort_if(!$lead || (int) $lead->customer_id !== (int) $validated['customer_id'],
-                422, __('Lead yang dipilih bukan milik customer ini.'));
+                422, __('The selected lead does not belong to this customer.'));
         }
     }
 }

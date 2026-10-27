@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
-use App\Notifications\SurveyCreatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -38,10 +37,11 @@ class TechnicalRequestController extends Controller
                 'customer_id' => $technicalRequest->lead?->customer_id,
                 'sales_user_id' => $technicalRequest->lead?->assigned_to
                     ?? $technicalRequest->requested_by,
-                'sales_request' => $technicalRequest->requirement
+                'sales_request' => $technicalRequest->purpose
+                    ?: $technicalRequest->requirement
                     ?: $technicalRequest->problem_description,
                 'survey_date' => $technicalRequest->target_date,
-                'location' => $technicalRequest->lead?->customer?->address,
+                'location' => $technicalRequest->location ?: $technicalRequest->lead?->customer?->address,
                 'status' => 'scheduled',
             ]
         );
@@ -55,6 +55,15 @@ class TechnicalRequestController extends Controller
         return $survey;
     }
 
+    /** Kirim notifikasi ke sales peminta — lewati bila dia sendiri yang beraksi. */
+    private function notifyRequester(TechnicalRequest $technicalRequest, $notification): void
+    {
+        $requester = $technicalRequest->requester;
+        if ($requester && (int) $requester->id !== (int) auth()->id()) {
+            $requester->notify($notification);
+        }
+    }
+
     private function log(Lead $lead, string $action, array $changes = []): void
     {
         LeadActivity::create([
@@ -65,13 +74,25 @@ class TechnicalRequestController extends Controller
         ]);
     }
 
+    /**
+     * Koordinator teknis: Lead Technician dan Super Admin. Sengaja TIDAK
+     * memakai permission manage-technician karena role technician juga
+     * memegang permission itu — kalau dipakai, semua teknisi bisa melihat
+     * dan mengubah request milik teknisi lain.
+     */
+    private function isTechnicalCoordinator(): bool
+    {
+        return auth()->user()?->hasAnyRole(['lead-technician', 'super-admin']) ?? false;
+    }
+
     private function authorizeView(TechnicalRequest $request): void
     {
         $user = auth()->user();
 
-        // Alur teknisi + requester sendiri: tanpa LeadPolicy view agar
-        // Lead Teknisi bisa memonitor dan teknisi bisa mengerjakan.
-        if ($user->can('manage-technician')
+        // Koordinator teknis boleh memonitor semua request. Teknisi biasa
+        // hanya boleh membuka request yang ditugaskan kepadanya atau yang ia
+        // buat sendiri.
+        if ($this->isTechnicalCoordinator()
             || (int) $request->assigned_technician_id === (int) $user->id
             || (int) $request->requested_by === (int) $user->id) {
             return;
@@ -86,10 +107,27 @@ class TechnicalRequestController extends Controller
 
     public function create(Request $request)
     {
-        $lead = Lead::findOrFail($request->get('lead_id'));
-        $this->authorize('view', $lead);
+        $lead = $request->filled('lead_id') ? Lead::findOrFail($request->get('lead_id')) : null;
+        if ($lead) {
+            $this->authorize('view', $lead);
+        }
 
-        return view('sales.technical-requests.create', compact('lead'));
+        // Tanpa lead bawaan: tampilkan pemilih lead (sales biasa hanya miliknya).
+        $leads = null;
+        if (!$lead) {
+            $leadsQuery = Lead::with('customer')->latest()->limit(100);
+            $user = $request->user();
+            if ($user && $user->hasRole('sales') && !$user->can('manage-marketing') && !$user->can('manage-sales-leads')) {
+                $leadsQuery->where('assigned_to', $user->id);
+            }
+            $leads = $leadsQuery->get();
+        }
+
+        $backUrl = $lead
+            ? route('leads.show', $lead)
+            : route('sales.requests.index', ['tab' => 'engineer']);
+
+        return view('sales.technical-requests.create', compact('lead', 'leads', 'backUrl'));
     }
 
     public function store(Request $request)
@@ -98,11 +136,12 @@ class TechnicalRequestController extends Controller
             'lead_id' => 'required|exists:leads,id',
             'request_type' => 'required|in:' . implode(',', TechnicalRequest::TYPES),
             'title' => 'required|string|max:255',
-            'requirement' => 'nullable|string',
-            'problem_description' => 'nullable|string',
-            'scope' => 'nullable|string',
-            'priority' => 'required|in:' . implode(',', TechnicalRequest::PRIORITIES),
+            'purpose' => 'nullable|string|max:2000',
+            'location' => 'nullable|string|max:255',
+            'pic_contact_name' => 'nullable|string|max:150',
+            'pic_contact_phone' => 'nullable|string|max:40',
             'target_date' => 'nullable|date|after_or_equal:today',
+            'target_time' => 'nullable|date_format:H:i',
             'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx',
             'notes' => 'nullable|string',
         ]);
@@ -110,8 +149,14 @@ class TechnicalRequestController extends Controller
         $lead = Lead::findOrFail($validated['lead_id']);
         $this->authorize('view', $lead);
 
+        // Priority tidak lagi diisi sales; default normal. PIC hanya untuk Instalasi.
+        $isInstallation = $validated['request_type'] === 'installation';
+
         $technicalRequest = TechnicalRequest::create([
             ...collect($validated)->except('attachment')->all(),
+            'priority' => 'normal',
+            'pic_contact_name' => $isInstallation ? ($validated['pic_contact_name'] ?? null) : null,
+            'pic_contact_phone' => $isInstallation ? ($validated['pic_contact_phone'] ?? null) : null,
             'requested_by' => auth()->id(),
             'status' => 'waiting_lead',
         ]);
@@ -128,13 +173,16 @@ class TechnicalRequestController extends Controller
         $this->log($lead, 'tech_request_created', ['title' => $technicalRequest->title]);
         $this->log($lead, 'tech_request_sent_to_lead', ['title' => $technicalRequest->title]);
 
+        // Jangan notifikasi pembuat request sendiri (mis. super-admin / multi-role
+        // yang juga memegang role lead-technician).
         Notification::send(
-            User::role('lead-technician')->get(),
+            User::role('lead-technician')->where('id', '!=', $technicalRequest->requested_by)->get(),
             new TechnicalRequestCreatedNotification($technicalRequest)
         );
 
         return redirect()->route('sales.technical-requests.show', $technicalRequest)
-            ->with('success', __('Technical request dikirim ke Lead Teknisi.'));
+            ->with('success', __('Technical request sent to the Lead Technician.'))
+            ->with('success_card', true);
     }
 
     public function show(TechnicalRequest $technicalRequest)
@@ -142,7 +190,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->load(['lead.customer', 'requester', 'technician']);
         $this->authorizeView($technicalRequest);
 
-        $technicians = auth()->user()->can('manage-technician')
+        $technicians = $this->isTechnicalCoordinator()
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
             : collect();
 
@@ -151,7 +199,7 @@ class TechnicalRequestController extends Controller
 
     public function review(Request $request, TechnicalRequest $technicalRequest)
     {
-        abort_unless(auth()->user()->can('manage-technician'), 403);
+        abort_unless($this->isTechnicalCoordinator(), 403);
         $this->authorizeView($technicalRequest);
         abort_unless($technicalRequest->status === 'waiting_lead', 422);
 
@@ -159,21 +207,21 @@ class TechnicalRequestController extends Controller
 
         $technicalRequest->update(['status' => $validated['decision']]);
         $this->log($technicalRequest->lead, 'tech_request_' . $validated['decision'], ['title' => $technicalRequest->title]);
-        $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, $validated['decision']));
+        $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, $validated['decision']));
 
-        return back()->with('success', __('Request telah di-' . $validated['decision'] . '.'));
+        return back()->with('success', __('Request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
     }
 
     public function assign(Request $request, TechnicalRequest $technicalRequest)
     {
-        abort_unless(auth()->user()->can('manage-technician'), 403);
+        abort_unless($this->isTechnicalCoordinator(), 403);
         $this->authorizeView($technicalRequest);
         abort_unless(in_array($technicalRequest->status, ['accepted', 'assigned']), 422);
 
         $validated = $request->validate(['technician_id' => 'required|exists:users,id']);
 
         $technician = User::findOrFail($validated['technician_id']);
-        abort_unless($technician->hasRole('technician'), 422, __('Hanya user role Teknisi yang bisa di-assign.'));
+        abort_unless($technician->hasRole('technician'), 422, __('Only users with the Technician role can be assigned.'));
 
         $technicalRequest->update([
             'assigned_technician_id' => $technician->id,
@@ -182,18 +230,17 @@ class TechnicalRequestController extends Controller
 
         // Request tipe survey: buatkan Survey untuk dikerjakan teknisi.
         // Idempoten — request yang sama diproses ulang tetap satu survey.
-        $survey = $this->ensureSurvey($technicalRequest);
-        if ($survey?->wasRecentlyCreated) {
-            $technicalRequest->requester?->notify(new SurveyCreatedNotification($survey));
-        }
+        // Notifikasi ke sales cukup satu (di bawah, 'assigned'); survey adalah
+        // artefak internal tim teknisi, jadi tidak dibuatkan notifikasi sendiri.
+        $this->ensureSurvey($technicalRequest);
 
         $this->log($technicalRequest->lead, 'technician_assigned', [
             'title' => $technicalRequest->title,
             'technician' => $technician->name,
         ]);
-        $technicalRequest->requester?->notify(new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
+        $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
 
-        return back()->with('success', __('Teknisi berhasil di-assign.'));
+        return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
     }
 
     public function progress(Request $request, TechnicalRequest $technicalRequest)
@@ -208,7 +255,7 @@ class TechnicalRequestController extends Controller
             'notes' => $validated['notes'] ?? $technicalRequest->notes,
         ]);
 
-        return back()->with('success', __('Progress diperbarui.'));
+        return back()->with('success', __('Progress updated.'))->with('success_card', true);
     }
 
     public function result(Request $request, TechnicalRequest $technicalRequest)
@@ -222,7 +269,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->update(['technical_result' => $validated['technical_result']]);
         $this->log($technicalRequest->lead, 'technical_result_submitted', ['title' => $technicalRequest->title]);
 
-        return back()->with('success', __('Hasil teknis tersimpan.'));
+        return back()->with('success', __('Technical results saved.'))->with('success_card', true);
     }
 
     public function complete(TechnicalRequest $technicalRequest)
@@ -230,12 +277,12 @@ class TechnicalRequestController extends Controller
         $user = auth()->user();
         abort_unless(
             (int) $technicalRequest->assigned_technician_id === (int) $user->id
-                || $user->can('manage-technician'),
+                || $this->isTechnicalCoordinator(),
             403
         );
         $this->authorizeView($technicalRequest);
         abort_unless(in_array($technicalRequest->status, ['assigned', 'in_progress']), 422);
-        abort_unless(filled($technicalRequest->technical_result), 422, __('Isi hasil teknis dulu sebelum menyelesaikan.'));
+        abort_unless(filled($technicalRequest->technical_result), 422, __('Fill in the technical results before completing.'));
 
         // Konsistensi status: request tipe survey TIDAK boleh selesai sebelum
         // Survey-nya punya laporan — jangan sampai request menyatakan selesai
@@ -246,7 +293,7 @@ class TechnicalRequestController extends Controller
             abort_unless(
                 $survey?->hasReport(),
                 422,
-                __('Survey belum memiliki laporan. Unggah laporan survey dulu sebelum menyelesaikan request ini.')
+                __('The survey has no report yet. Upload the survey report before completing this request.')
             );
         }
 
@@ -257,9 +304,9 @@ class TechnicalRequestController extends Controller
         $survey?->update(['status' => Survey::STATUS_COMPLETED]);
 
         $this->log($technicalRequest->lead, 'tech_request_completed', ['title' => $technicalRequest->title]);
-        $technicalRequest->requester?->notify(new TechnicalWorkCompletedNotification($technicalRequest));
+        $this->notifyRequester($technicalRequest, new TechnicalWorkCompletedNotification($technicalRequest));
 
-        return back()->with('success', __('Technical request selesai.'));
+        return back()->with('success', __('Technical request completed.'))->with('success_card', true);
     }
 
     public function cancel(TechnicalRequest $technicalRequest)
@@ -276,7 +323,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest->update(['status' => 'cancelled']);
         $this->log($technicalRequest->lead, 'tech_request_cancelled', ['title' => $technicalRequest->title]);
 
-        return back()->with('success', __('Technical request dibatalkan.'));
+        return back()->with('success', __('Technical request canceled.'))->with('success_card', true);
     }
 
     public function downloadAttachment(TechnicalRequest $technicalRequest)
@@ -291,8 +338,10 @@ class TechnicalRequestController extends Controller
     {
         $this->authorizeView($technicalRequest);
         // Sales (termasuk requester) dilarang menyentuh progres/hasil teknis.
+        // Super-admin boleh mengambil alih semua aksi karena memegang sistem.
         abort_unless(
-            (int) $technicalRequest->assigned_technician_id === (int) auth()->id(),
+            (int) $technicalRequest->assigned_technician_id === (int) auth()->id()
+                || (auth()->user()?->hasRole('super-admin') ?? false),
             403
         );
     }

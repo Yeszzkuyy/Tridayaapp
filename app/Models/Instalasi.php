@@ -32,4 +32,12 @@ class Instalasi extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    /**
+     * Baris dokumen untuk laporan instalasi (file-nya tetap satu).
+     */
+    public function documents()
+    {
+        return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
 }

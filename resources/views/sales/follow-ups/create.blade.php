@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">{{ __('Add Follow Up') }}</h1>
                 <p class="text-slate-500 mt-1">{{ __('Log a follow-up with a customer.') }}</p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('sales.follow-ups.index') }}" title="Back" />
+            <x-icon-button as="a" icon="back" href="{{ route('sales.follow-ups.index') }}" title="{{ __('Back') }}" />
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">

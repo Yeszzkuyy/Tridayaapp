@@ -1,0 +1,336 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Customer;
+use App\Models\Lead;
+use App\Models\TechnicalRequest;
+use App\Models\User;
+use App\Notifications\TechnicalRequestCreatedNotification;
+use App\Notifications\TechnicalRequestReviewedNotification;
+use App\Notifications\SurveyCreatedNotification;
+use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+/**
+ * Form Request Engineering/Price: Purpose (pengganti Problem Description),
+ * Location (alamat / link Maps), dan Target Time. Kolom lama tidak dipakai
+ * lagi di form, tapi data lama tetap tampil di halaman detail.
+ */
+class TechnicalRequestFormTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private bool $seeded = false;
+
+    private function userWithRole(string $role): User
+    {
+        if (! $this->seeded) {
+            $this->seed(RoleAndPermissionSeeder::class);
+            $this->seeded = true;
+        }
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        return $user;
+    }
+
+    private function makeLead(User $sales, string $address = 'Jl. Customer 1'): Lead
+    {
+        return Lead::create([
+            'customer_id' => Customer::create(['name' => 'PT Form '.uniqid(), 'address' => $address])->id,
+            'assigned_to' => $sales->id,
+            'status' => 'warm',
+        ]);
+    }
+
+    private function makeRequest(User $sales, Lead $lead, array $overrides = []): TechnicalRequest
+    {
+        return TechnicalRequest::create(array_merge([
+            'lead_id' => $lead->id,
+            'requested_by' => $sales->id,
+            'request_type' => 'survey',
+            'title' => 'Survey Lokasi',
+            'priority' => 'normal',
+            'status' => 'accepted',
+        ], $overrides));
+    }
+
+    public function test_form_has_no_priority_and_offers_pic_for_installation(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.technical-requests.create', ['lead_id' => $lead->id]))
+            ->assertOk()->getContent();
+
+        // Priority tidak lagi ditanyakan.
+        $this->assertStringNotContainsString('name="priority"', $html);
+        // PIC Contact tersedia (ditampilkan hanya untuk tipe Instalasi).
+        $this->assertStringContainsString('name="pic_contact_name"', $html);
+        $this->assertStringContainsString('name="pic_contact_phone"', $html);
+        $this->assertStringContainsString("type === 'installation'", $html);
+    }
+
+    public function test_store_keeps_pic_only_for_installation_type(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'installation',
+            'title' => 'Instalasi CCTV',
+            'purpose' => 'Pasang 8 titik',
+            'pic_contact_name' => 'Budi',
+            'pic_contact_phone' => '08123456789',
+        ])->assertRedirect();
+
+        $request = TechnicalRequest::where('title', 'Instalasi CCTV')->firstOrFail();
+        $this->assertSame('Budi', $request->pic_contact_name);
+        $this->assertSame('08123456789', $request->pic_contact_phone);
+        $this->assertSame('normal', $request->priority);
+
+        $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'survey',
+            'title' => 'Survey tanpa PIC',
+            'pic_contact_name' => 'Tidak Dipakai',
+            'pic_contact_phone' => '0800',
+        ])->assertRedirect();
+
+        $survey = TechnicalRequest::where('title', 'Survey tanpa PIC')->firstOrFail();
+        $this->assertNull($survey->pic_contact_name);
+        $this->assertNull($survey->pic_contact_phone);
+    }
+
+    public function test_engineer_created_notification_opens_teknisi_menu_for_lead_technician(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'waiting_lead']);
+
+        $leadTech->notify(new TechnicalRequestCreatedNotification($request));
+        $items = collect(\App\Http\Controllers\NotificationController::itemsFor($leadTech))->keyBy('type');
+
+        $this->assertSame(
+            route('teknisi.technical-requests.show', $request, false),
+            $items['technical_request_created']['url']
+        );
+    }
+
+    public function test_teknisi_detail_route_for_engineer_renders(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, [
+            'status' => 'waiting_lead',
+            'purpose' => 'Check access requirements',
+        ]);
+
+        $html = $this->actingAs($leadTech)
+            ->get(route('teknisi.technical-requests.show', $request))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString(__('Request details'), $html);
+        $this->assertStringContainsString(__('Work details'), $html);
+        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(strtoupper(substr($sales->name, 0, 1)), $html);
+        $this->assertStringContainsString(__('Not assigned yet'), $html);
+        $this->assertStringContainsString('Check access requirements', $html);
+    }
+
+    public function test_engineer_creator_is_not_notified_about_own_request(): void
+    {
+        Notification::fake();
+
+        $admin = $this->userWithRole('super-admin');
+        $admin->assignRole('lead-technician');
+        $otherTech = $this->userWithRole('lead-technician');
+        $lead = $this->makeLead($admin);
+
+        $this->actingAs($admin)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'survey',
+            'title' => 'Survey Sendiri',
+        ])->assertRedirect();
+
+        Notification::assertNotSentTo($admin, TechnicalRequestCreatedNotification::class);
+        Notification::assertSentTo($otherTech, TechnicalRequestCreatedNotification::class);
+    }
+
+    public function test_responder_is_not_notified_for_own_action_on_engineer_request(): void
+    {
+        Notification::fake();
+
+        $admin = $this->userWithRole('super-admin');
+        $lead = $this->makeLead($admin);
+        $request = $this->makeRequest($admin, $lead, [
+            'request_type' => 'consultation',
+            'status' => 'in_progress',
+            'technical_result' => 'Sudah selesai.',
+        ]);
+
+        $this->actingAs($admin)->post(route('sales.technical-requests.complete', $request))
+            ->assertRedirect();
+
+        Notification::assertNotSentTo($admin, \App\Notifications\TechnicalWorkCompletedNotification::class);
+    }
+
+    public function test_assign_sends_single_forward_notification_and_no_survey_duplicate(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'accepted']);
+
+        $this->actingAs($leadTech)->post(route('sales.technical-requests.assign', $request), [
+            'technician_id' => $tech->id,
+        ])->assertRedirect();
+
+        // Satu aksi assign → tepat satu notifikasi "Forwarded to technician".
+        $sent = Notification::sent($sales, TechnicalRequestReviewedNotification::class);
+        $this->assertCount(1, $sent);
+        $this->assertSame('assigned', $sent->first()->decision);
+        Notification::assertNotSentTo($sales, SurveyCreatedNotification::class);
+
+        // Survey tetap dibuat untuk tim teknisi.
+        $this->assertNotNull($request->fresh()->survey);
+    }
+
+    public function test_form_uses_purpose_location_and_time_and_drops_legacy_fields(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.technical-requests.create', ['lead_id' => $lead->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('name="purpose"', $html);
+        $this->assertStringContainsString('name="location"', $html);
+        $this->assertStringContainsString('name="target_time"', $html);
+        $this->assertStringContainsString('id="tr-location"', $html);
+        $this->assertStringContainsString('data-location-autocomplete', $html);
+
+        $this->assertStringNotContainsString('name="requirement"', $html);
+        $this->assertStringNotContainsString('name="problem_description"', $html);
+        $this->assertStringNotContainsString('name="scope"', $html);
+    }
+
+    public function test_store_persists_purpose_location_and_time(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'survey',
+            'title' => 'Survey Lokasi',
+            'priority' => 'normal',
+            'purpose' => 'Customer minta survey CCTV',
+            'location' => 'Jl. Merdeka No. 1',
+            'target_date' => now()->addDay()->toDateString(),
+            'target_time' => '14:30',
+        ])->assertRedirect();
+
+        $request = TechnicalRequest::where('title', 'Survey Lokasi')->firstOrFail();
+        $this->assertSame('Customer minta survey CCTV', $request->purpose);
+        $this->assertSame('Jl. Merdeka No. 1', $request->location);
+        $this->assertSame('14:30', substr((string) $request->target_time, 0, 5));
+    }
+
+    public function test_survey_inherits_purpose_and_request_location(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, [
+            'purpose' => 'Butuh hitung titik CCTV',
+            'location' => 'Gudang Blok C',
+        ]);
+
+        $this->actingAs($leadTech)->post(
+            route('sales.technical-requests.assign', $request),
+            ['technician_id' => $tech->id]
+        )->assertRedirect();
+
+        $survey = $request->fresh()->survey;
+        $this->assertNotNull($survey);
+        $this->assertSame('Butuh hitung titik CCTV', $survey->sales_request);
+        $this->assertSame('Gudang Blok C', $survey->location);
+    }
+
+    public function test_survey_falls_back_to_customer_address_when_location_empty(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales, 'Jl. Customer 1');
+        $request = $this->makeRequest($sales, $lead, ['purpose' => 'Konsultasi jaringan']);
+
+        $this->actingAs($leadTech)->post(
+            route('sales.technical-requests.assign', $request),
+            ['technician_id' => $tech->id]
+        )->assertRedirect();
+
+        $survey = $request->fresh()->survey;
+        $this->assertSame('Konsultasi jaringan', $survey->sales_request);
+        $this->assertSame('Jl. Customer 1', $survey->location);
+    }
+
+    public function test_legacy_request_fields_still_visible_on_detail(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, [
+            'status' => 'waiting_lead',
+            'requirement' => 'Butuh internet stabil',
+            'problem_description' => 'Sering putus',
+            'scope' => 'Lantai 1-2',
+        ]);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.technical-requests.show', $request))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Requirement', $html);
+        $this->assertStringContainsString('Butuh internet stabil', $html);
+        $this->assertStringContainsString('Sering putus', $html);
+        $this->assertStringContainsString('Lantai 1-2', $html);
+    }
+
+    public function test_detail_shows_purpose_location_and_target(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, [
+            'status' => 'waiting_lead',
+            'purpose' => 'Pasang CCTV 8 titik',
+            'location' => 'Gudang Blok C',
+            'target_date' => '2026-11-02',
+            'target_time' => '09:15',
+        ]);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.technical-requests.show', $request))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('Pasang CCTV 8 titik', $html);
+        $this->assertStringContainsString('Gudang Blok C', $html);
+        $this->assertStringContainsString('09:15', $html);
+    }
+}

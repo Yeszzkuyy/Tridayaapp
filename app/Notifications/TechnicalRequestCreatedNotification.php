@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\TechnicalRequest;
+use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -14,6 +15,27 @@ class TechnicalRequestCreatedNotification extends Notification
     use Queueable, SendsWebPush;
 
     public function __construct(public TechnicalRequest $request) {}
+
+    /** Tujuan klik notifikasi: teknisi → menu Teknisi, sales → menu Sales. */
+    private function showUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id)
+            : route('sales.technical-requests.show', $this->request->id);
+    }
+
+    /** URL in-app: relatif supaya tetap di domain tempat user login. */
+    private function relativeUrl(object $notifiable): string
+    {
+        return $notifiable instanceof User && $notifiable->can('manage-technician')
+            ? route('teknisi.technical-requests.show', $this->request->id, false)
+            : route('sales.technical-requests.show', $this->request->id, false);
+    }
+
+    protected function pushUrl(object $notifiable): string
+    {
+        return $this->showUrl($notifiable);
+    }
 
     public function via(object $notifiable): array
     {
@@ -39,8 +61,9 @@ class TechnicalRequestCreatedNotification extends Notification
             'technical_request_id' => $this->request->id,
             'lead_id' => $this->request->lead_id,
             'title' => $this->request->title,
+            'type_label' => TechnicalRequest::typeLabel($this->request->request_type),
             'priority' => $this->request->priority,
-            'url' => route('sales.technical-requests.show', $this->request->id),
+            'url' => $this->relativeUrl($notifiable),
         ];
     }
 
@@ -50,16 +73,16 @@ class TechnicalRequestCreatedNotification extends Notification
             ->subject('Technical Request Baru Perlu Direview')
             ->line('Lead: ' . ($this->request->lead->customer?->name ?? '#'.$this->request->lead_id))
             ->line('Request: ' . $this->request->title . ' (' . TechnicalRequest::typeLabel($this->request->request_type) . ')')
-            ->action('Review Request', url(route('sales.technical-requests.show', $this->request->id)))
+            ->action('Review Request', url($this->showUrl($notifiable)))
             ->line('Terima kasih.');
     }
 
     protected function pushContent(): array
     {
         return [
-            'title' => 'Technical Request baru',
+            'title' => __('New Technical Request'),
             'body' => $this->request->title,
-            'url' => route('sales.technical-requests.show', $this->request->id),
+            'url' => $this->showUrl($notifiable),
         ];
     }
 }

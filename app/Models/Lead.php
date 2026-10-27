@@ -16,12 +16,12 @@ class Lead extends Model
     public static function lostReasonLabel(?string $reason): string
     {
         return match ($reason) {
-            'price' => __('Harga'),
-            'competitor' => __('Kompetitor'),
+            'price' => __('Price'),
+            'competitor' => __('Competitor'),
             'budget' => __('Budget'),
-            'requirement_changed' => __('Kebutuhan berubah'),
-            'no_response' => __('Tidak ada respon'),
-            'other' => __('Lainnya'),
+            'requirement_changed' => __('Requirements changed'),
+            'no_response' => __('No response'),
+            'other' => __('Others'),
             default => '-',
         };
     }
@@ -32,7 +32,39 @@ class Lead extends Model
      */
     public static function salesStatusLabel(?string $status): string
     {
-        return $status === 'cool' ? __('New') : ucfirst((string) $status);
+        return match ($status) {
+            'cool' => __('New'),
+            'warm' => __('Warm'),
+            'hot' => __('Hot'),
+            default => ucfirst((string) $status),
+        };
+    }
+
+    /**
+     * Ringkas kolom `kebutuhan` untuk label dropdown: rata jadi satu baris,
+     * dipotong di batas $limit karakter. Kosong → string kosong.
+     */
+    public static function kebutuhanLabel(?string $kebutuhan, int $limit = 50): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', (string) $kebutuhan));
+        if ($text === '') {
+            return '';
+        }
+
+        return mb_strlen($text) > $limit ? mb_substr($text, 0, $limit).'…' : $text;
+    }
+
+    /**
+     * Label dropdown lead (form follow-up & modal jadwal):
+     * "Lead #id — status — kebutuhan — tgl masuk" (bagian kosong dilewati).
+     */
+    public static function salesDropdownLabel(Lead $lead): string
+    {
+        $need = self::kebutuhanLabel($lead->kebutuhan);
+
+        return "Lead #{$lead->id} — ".self::salesStatusLabel($lead->status)
+            .($need !== '' ? ' — '.$need : '')
+            .($lead->incoming_date ? ' — '.$lead->incoming_date->format('d M Y') : '');
     }
 
     /**

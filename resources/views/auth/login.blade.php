@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sign in - {{ config('app.name', 'Tridaya App') }}</title>
+    <meta name="google-site-verification" content="oGvxPPGpt9_UBNwgI1WD8_09SgQYH5xjE97G7Ltbvec">
+    <title>{{ __('Sign in') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
@@ -81,26 +82,60 @@
             text-rendering: optimizeLegibility;
         }
 
-        /* ===== Background only: parallax ===== */
-        .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
-        .layer { position: absolute; inset: -9%; transition: transform .6s cubic-bezier(.2, .7, .2, 1); will-change: transform; }
-        .aurora {
-            background:
-                radial-gradient(38% 34% at 15% 18%, var(--aurora-1), transparent 70%),
-                radial-gradient(34% 30% at 88% 12%, var(--aurora-2), transparent 70%),
-                radial-gradient(46% 38% at 55% 104%, var(--aurora-3), transparent 70%);
-        }
-        .aurora::after {
-            content: "";
+        /* ===== Lightweight Ambient Mesh Background (Zero WebGL lag, 60 FPS) ===== */
+        .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #070a14; }
+        .orb {
             position: absolute;
-            inset: 0;
-            background: radial-gradient(30% 24% at 72% 58%, var(--aurora-4), transparent 70%);
-            animation: drift 20s ease-in-out infinite alternate;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: .42;
+            will-change: transform;
+            pointer-events: none;
         }
-        @keyframes drift { to { transform: translate3d(-6%, 5%, 0) scale(1.15); } }
-        #galaxy { position: absolute; inset: 0; }
-        #galaxy canvas { display: block; width: 100% !important; height: 100% !important; }
-        .vig { position: absolute; inset: 0; background: radial-gradient(transparent 55%, var(--vig)); pointer-events: none; }
+        .orb-1 {
+            top: -10%; left: 8%;
+            width: 520px; height: 520px;
+            background: radial-gradient(circle, #2563eb, #1d4ed8);
+            animation: orb-drift-1 18s ease-in-out infinite alternate;
+        }
+        .orb-2 {
+            bottom: -15%; right: 4%;
+            width: 560px; height: 560px;
+            background: radial-gradient(circle, #0284c7, #0f766e);
+            animation: orb-drift-2 22s ease-in-out infinite alternate;
+        }
+        .orb-3 {
+            top: 38%; right: 28%;
+            width: 440px; height: 440px;
+            background: radial-gradient(circle, #4f46e5, #1e1b4b);
+            opacity: .32;
+            animation: orb-drift-3 16s ease-in-out infinite alternate;
+        }
+        @keyframes orb-drift-1 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(70px, 50px, 0) scale(1.1); }
+        }
+        @keyframes orb-drift-2 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(-60px, -45px, 0) scale(1.08); }
+        }
+        @keyframes orb-drift-3 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(35px, -35px, 0) scale(1.12); }
+        }
+        .grid-pattern {
+            position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 26px 26px;
+            -webkit-mask: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.85) 30%, transparent 80%);
+            mask: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.85) 30%, transparent 80%);
+            pointer-events: none;
+        }
+        .vig {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.65) 100%);
+            pointer-events: none;
+        }
 
         /* ===== Card ===== */
         .stage { position: relative; z-index: 1; display: grid; max-height: 100dvh; min-height: 100dvh; padding: 20px; overflow-y: auto; place-items: center; }
@@ -303,6 +338,70 @@
         .sub.typing::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #60a5fa; vertical-align: -.12em; animation: blink .6s steps(1) infinite; }
         @keyframes blink { 50% { opacity: 0; } }
 
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 22px 0 16px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--field-border);
+            opacity: .6;
+        }
+        .divider span {
+            padding: 0 14px;
+            letter-spacing: -.01em;
+        }
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            height: 54px;
+            border: 1px solid var(--field-border);
+            border-radius: 8px;
+            background: var(--field);
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: -.02em;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
+        }
+        .btn-google::before {
+            content: "";
+            position: absolute;
+            top: 0; bottom: 0; left: -80%;
+            width: 60%;
+            background: linear-gradient(100deg, transparent, rgb(255 255 255 / .15), transparent);
+            transform: skewX(-20deg);
+            transition: left .7s;
+        }
+        .btn-google:hover {
+            background: rgb(255 255 255 / .06);
+            border-color: rgba(66, 133, 244, .7);
+            box-shadow: 0 8px 24px -8px rgba(66, 133, 244, .4);
+            transform: translateY(-1px);
+        }
+        .btn-google:hover::before {
+            left: 130%;
+        }
+        .btn-google:active {
+            transform: scale(.99);
+        }
+        .google-svg {
+            flex-shrink: 0;
+        }
+
         @media (max-width: 1023px) {
             .panel { padding: 40px 24px 20px 36px; }
             .brand { padding: 36px 32px 0; }
@@ -332,9 +431,12 @@
 </head>
 <body>
     <div class="bg" aria-hidden="true">
-        <div class="layer aurora" data-d="10"></div>
-        <div class="layer"><div id="galaxy"></div></div>
-        <div class="vig"></div><div class="glowline"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="grid-pattern"></div>
+        <div class="vig"></div>
+        <div class="glowline"></div>
     </div>
 
     <main class="stage">
@@ -353,7 +455,7 @@
                     </picture>
                     <i aria-hidden="true"></i><b>3DY App</b>
                 </div>
-                <h2 id="visual-title">Connecting people, projects, and operations.</h2>
+                <h2 id="visual-title">{{ __('Connecting people, projects, and operations.') }}</h2>
                 <picture>
                     <source srcset="{{ asset('images/Login-Page/finaldesign-cut.webp') }}" type="image/webp">
                     <img
@@ -371,8 +473,8 @@
             </aside>
 
             <div class="panel">
-                <h1 id="login-title">Welcome back</h1>
-                <p class="sub">Sign in to your 3DY account</p>
+                <h1 id="login-title">{{ __('Welcome back') }}</h1>
+                <p class="sub">{{ __('Sign in to your 3DY account') }}</p>
 
                 <x-auth-session-status
                     class="status"
@@ -392,7 +494,7 @@
                     @csrf
 
                     <div class="field" style="--i:1">
-                        <label class="t" for="email">Email</label>
+                        <label class="t" for="email">{{ __('Email') }}</label>
                         <div class="box{{ $errors->has('email') ? ' bad' : '' }}">
                             <input
                                 id="email"
@@ -413,7 +515,7 @@
                     </div>
 
                     <div x-data="{ showPassword: false, capsLock: false }" class="field" style="--i:2">
-                        <label class="t" for="password">Password</label>
+                        <label class="t" for="password">{{ __('Password') }}</label>
                         <div class="box{{ $errors->has('password') ? ' bad' : '' }}">
                             <input
                                 id="password"
@@ -429,7 +531,7 @@
                             <button
                                 type="button"
                                 x-on:click="showPassword = !showPassword"
-                                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                                :aria-label="showPassword ? '{{ __('Hide password') }}' : '{{ __('Show password') }}'"
                                 :aria-pressed="showPassword"
                                 aria-controls="password"
                                 class="eye"
@@ -438,7 +540,7 @@
                                 <svg x-show="showPassword" x-cloak viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4M6.5 6.7C3.7 8.5 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1M9.9 9.9a3 3 0 004.2 4.2"/></svg>
                             </button>
                         </div>
-                        <p id="caps-lock-warning" x-show="capsLock" x-cloak role="alert" class="caps">Caps Lock is on</p>
+                        <p id="caps-lock-warning" x-show="capsLock" x-cloak role="alert" class="caps">{{ __('Caps Lock is on') }}</p>
                         <div id="password-error" aria-live="polite">
                             <x-input-error :messages="$errors->get('password')" class="msg" />
                         </div>
@@ -447,10 +549,10 @@
                     <div class="row" style="--i:3">
                         <label class="chk" for="remember">
                             <input id="remember" type="checkbox" name="remember" value="1" @checked(old('remember'))>
-                            <span class="cb" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.6L10 3.5"/></svg></span>Remember me
+                            <span class="cb" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.6L10 3.5"/></svg></span>{{ __('Remember me') }}
                         </label>
                         @if (Route::has('password.request'))
-                            <a class="login-link" href="{{ route('password.request') }}">Forgot password?</a>
+                            <a class="login-link" href="{{ route('password.request') }}">{{ __('Forgot password?') }}</a>
                         @endif
                     </div>
 
@@ -462,10 +564,29 @@
                         x-bind:aria-busy="isSubmitting"
                         x-bind:class="{ 'loading': isSubmitting }"
                     >
-                        <span class="lab" x-show="!isSubmitting">Sign in</span>
+                        <span class="lab" x-show="!isSubmitting">{{ __('Sign in') }}</span>
                         <span class="spn" x-show="isSubmitting" x-cloak aria-hidden="true"><i></i></span>
                     </button>
                 </form>
+
+                <div class="divider" style="--i:5">
+                    <span>{{ __('or continue with') }}</span>
+                </div>
+
+                <a
+                    href="{{ route('auth.google', [], false) }}"
+                    class="btn-google"
+                    style="--i:5.5"
+                    title="{{ __('Sign in with Google') }}"
+                >
+                    <svg class="google-svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    <span>{{ __('Sign in with Google') }}</span>
+                </a>
 
             </div>
         </section>
@@ -474,20 +595,6 @@
     <script>
         (() => {
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            const finePointer = window.matchMedia('(hover: hover)').matches;
-
-            /* Parallax applies to the background layers only */
-            const layers = [...document.querySelectorAll('.layer[data-d]')];
-            const move = (nx, ny) => {
-                if (reduce || !finePointer) return;
-                layers.forEach((l) => {
-                    const d = +l.dataset.d;
-                    l.style.transform = `translate3d(${-nx * d}px,${-ny * d}px,0)`;
-                });
-            };
-            window.addEventListener('pointermove', (e) => {
-                move((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
-            });
 
             /* Text reveal on every load */
             if (!reduce) {

@@ -33,6 +33,7 @@ class LeadTaskChat extends Component
         ]);
 
         $this->reset('body');
+        $this->dispatch('chat-updated');
 
         // Beri tahu lawan bicara (creator/assignee, kecuali pengirim sendiri).
         foreach ([$this->task->creator, $this->task->assignee] as $recipient) {
@@ -44,7 +45,7 @@ class LeadTaskChat extends Component
 
     public function render()
     {
-        $comments = $this->task->comments()->with('user')->oldest()->get();
+        $comments = $this->task->comments()->reorder()->orderBy('id', 'asc')->with('user')->get();
 
         return view('livewire.lead-task-chat', compact('comments'));
     }

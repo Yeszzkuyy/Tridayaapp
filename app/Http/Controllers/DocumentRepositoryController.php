@@ -10,7 +10,14 @@ class DocumentRepositoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ProjectDocument::with(['project.customer', 'category', 'uploader'])->latest();
+        $query = ProjectDocument::with(['project.customer', 'category', 'uploader'])
+            // Dokumen transaksi (invoice/po/payment) dikelola di modul admin;
+            // repository ini khusus dokumen teknis proyek + hasil modul.
+            ->where(function ($q) {
+                $q->whereNull('doc_type')
+                    ->orWhereNotIn('doc_type', ProjectDocument::DOC_TYPES);
+            })
+            ->latest();
 
         if ($request->filled('project_id')) {
             $query->where('project_id', $request->project_id);

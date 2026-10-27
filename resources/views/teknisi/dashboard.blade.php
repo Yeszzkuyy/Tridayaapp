@@ -2,33 +2,33 @@
     @php
         $dashboardCards = [
             [
-                'label' => __('Total Teknisi'),
+                'label' => __('Total Technicians'),
                 'value' => $technicians->count(),
-                'description' => __('Seluruh teknisi terdaftar'),
+                'description' => __('All registered technicians'),
                 'icon' => 'users',
                 'iconClass' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
                 'washClass' => 'bg-blue-500/5 dark:bg-blue-400/10',
             ],
             [
-                'label' => __('Teknisi Aktif'),
+                'label' => __('Active Technicians'),
                 'value' => count($activeTechnicians),
-                'description' => __('Punya project berjalan'),
+                'description' => __('Have ongoing projects'),
                 'icon' => 'activity',
                 'iconClass' => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
                 'washClass' => 'bg-emerald-500/5 dark:bg-emerald-400/10',
             ],
             [
-                'label' => __('Project Selesai'),
+                'label' => __('Completed Projects'),
                 'value' => $doneProjects,
-                'description' => __('Status project Done'),
+                'description' => __('Projects with Done status'),
                 'icon' => 'check-circle',
                 'iconClass' => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-300',
                 'washClass' => 'bg-green-500/5 dark:bg-green-400/10',
             ],
             [
-                'label' => __('Project Berjalan'),
+                'label' => __('Ongoing Projects'),
                 'value' => $runningProjects->count(),
-                'description' => __('Open dan On Progress'),
+                'description' => __('Open and On Progress'),
                 'icon' => 'tools',
                 'iconClass' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300',
                 'washClass' => 'bg-indigo-500/5 dark:bg-indigo-400/10',
@@ -54,7 +54,7 @@
             'color' => $statusBarColors[$s['name']] ?? '#64748b',
         ])->values();
         if ($othersCount > 0) {
-            $donutData->push(['label' => __('Lainnya'), 'value' => $othersCount, 'color' => '#64748b']);
+            $donutData->push(['label' => __('Others'), 'value' => $othersCount, 'color' => '#64748b']);
         }
 
         $doneCount = $statusCounts->firstWhere('name', 'Done')['count'] ?? 0;
@@ -62,7 +62,7 @@
         $pct = fn ($n) => $totalShown > 0 ? round($n / $totalShown * 100) : 0;
     @endphp
 
-    <div class="max-w-[1400px] mx-auto space-y-6">
+    <div class="w-full space-y-6">
         {{-- Overview header --}}
         <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7 dark:border-slate-700 dark:bg-slate-800" data-reveal>
             <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-500/5 dark:bg-blue-400/10"></div>
@@ -75,13 +75,13 @@
                             {{ $now->translatedFormat('l, d F Y') }}
                         </p>
                         <span class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block dark:bg-slate-600"></span>
-                        <span class="text-xs font-medium text-slate-400">{{ __('Ringkasan pekerjaan teknisi') }}</span>
+                        <span class="text-xs font-medium text-slate-400">{{ __('Technician work summary') }}</span>
                     </div>
                     <h1 class="mt-3 max-w-3xl text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
-                        {{ __('Selamat datang kembali,') }} {{ auth()->user()->name }}
+                        {{ __('Welcome back,') }} {{ auth()->user()->name }}
                     </h1>
                     <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                        {{ __('Pantau status project, aktivitas, dan kesibukan teknisi di divisi teknis.') }}
+                        {{ __('Monitor project status, activity, and technician workload in the technical division.') }}
                     </p>
                 </div>
 
@@ -91,11 +91,11 @@
                             <x-icon name="tools" class="h-5 w-5" />
                         </span>
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Dashboard teknisi') }}</p>
-                            <p class="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Overview Divisi Teknis') }}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Technician dashboard') }}</p>
+                            <p class="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Technical Division Overview') }}</p>
                         </div>
                     </div>
-                    <x-icon-button as="a" href="{{ route('teknisi.jadwal') }}" label="{{ __('Buka Jadwal') }}" title="{{ __('Buka Jadwal') }}">
+                    <x-icon-button as="a" href="{{ route('teknisi.jadwal') }}" label="{{ __('Open Schedule') }}" title="{{ __('Open Schedule') }}">
                         <x-icon name="calendar" class="h-4 w-4" />
                     </x-icon-button>
                 </div>
@@ -107,10 +107,10 @@
             <section class="lg:col-span-12" aria-labelledby="dashboard-summary-heading" data-reveal data-reveal-delay="1">
                 <div class="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
                     <div>
-                        <h2 id="dashboard-summary-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Ringkasan utama') }}</h2>
-                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Angka terbaru dari data operasional teknisi.') }}</p>
+                        <h2 id="dashboard-summary-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Key summary') }}</h2>
+                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Latest figures from technician operational data.') }}</p>
                     </div>
-                    <span class="text-xs font-semibold text-slate-400">{{ count($dashboardCards) }} {{ __('indikator') }}</span>
+                    <span class="text-xs font-semibold text-slate-400">{{ count($dashboardCards) }} {{ __('indicators') }}</span>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -136,8 +136,8 @@
             {{-- Progress Pekerjaan (bento: donut + legenda berpersentase) --}}
             <section class="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="2" aria-labelledby="progress-heading">
                 <div class="border-b border-slate-100 pb-4 dark:border-slate-700">
-                    <h2 id="progress-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Progress Pekerjaan') }}</h2>
-                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Distribusi project berdasarkan status.') }}</p>
+                    <h2 id="progress-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Work Progress') }}</h2>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Project distribution by status.') }}</p>
                 </div>
 
                 <div class="mt-6 flex flex-col items-center gap-6" x-data="{
@@ -167,7 +167,7 @@
                             </div>
                             <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-10">
                                 <div x-show="!activeSeg()" class="flex flex-col items-center justify-center">
-                                    <span class="text-xs font-medium text-slate-400 dark:text-slate-500">{{ __('Selesai') }}</span>
+                                    <span class="text-xs font-medium text-slate-400 dark:text-slate-500">{{ __('Completed') }}</span>
                                     <span class="text-3xl font-bold text-slate-800 tabular-nums dark:text-slate-100"
                                           x-data="counter({{ $donePct }})" x-init="start()" x-text="display + '%'">0%</span>
                                 </div>
@@ -179,7 +179,7 @@
                             </div>
                         </div>
                     @else
-                        <x-empty-state label="{{ __('data status project') }}" />
+                        <x-empty-state label="{{ __('project status data') }}" />
                     @endif
 
                     {{-- Legenda interaktif (hover menyorot segmen, klik mengunci sorotan) --}}
@@ -200,7 +200,7 @@
                     </div>
 
                     <div class="w-full border-t border-slate-100 pt-4 dark:border-slate-700">
-                        <p class="text-sm text-slate-500">{{ __('Total Project:') }} <span class="font-bold text-slate-800 dark:text-slate-200">{{ $totalShown }}</span></p>
+                        <p class="text-sm text-slate-500">{{ __('Total Projects:') }} <span class="font-bold text-slate-800 dark:text-slate-200">{{ $totalShown }}</span></p>
                     </div>
                 </div>
             </section>
@@ -210,10 +210,10 @@
                 <div class="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
                     <div>
                         <h2 id="recent-projects-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Project Terbaru') }}</h2>
-                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Project yang baru ditambahkan.') }}</p>
+                        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Recently added projects.') }}</p>
                     </div>
                     <a href="{{ route('projects.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition hover:text-accent-700">
-                        {{ __('Lihat Semua') }} <x-icon name="chevron-right" class="h-4 w-4" />
+                        {{ __('View All') }} <x-icon name="chevron-right" class="h-4 w-4" />
                     </a>
                 </div>
 
@@ -224,7 +224,7 @@
                             <p class="mt-0.5 text-xs text-slate-500">{{ $project->customer?->name ?? '-' }}</p>
                         </div>
                         <div class="shrink-0 px-2 text-xs text-slate-500">
-                            {{ __('Teknisi:') }} {{ $project->pic_engineer ?: ($project->support_technicians ?: '-') }}
+                            {{ __('Technician:') }} {{ $project->pic_engineer ?: ($project->support_technicians ?: '-') }}
                         </div>
                         <x-status-badge :color="($project->status ? ($statusBadgeColors[$project->status->name] ?? 'slate') : 'slate')">
                             {{ $project->status?->name ?? '-' }}
@@ -234,15 +234,15 @@
                         </div>
                     </article>
                 @empty
-                    <x-empty-state label="project" />
+                    <x-empty-state label="{{ __('projects') }}" />
                 @endforelse
             </section>
 
             {{-- Teknisi Aktif (bento: kolom lebar) --}}
             <section class="lg:col-span-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="4" aria-labelledby="active-technicians-heading">
                 <div class="border-b border-slate-100 pb-4 dark:border-slate-700">
-                    <h2 id="active-technicians-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Teknisi Aktif') }}</h2>
-                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Teknisi yang sedang menangani project berjalan.') }}</p>
+                    <h2 id="active-technicians-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Active Technicians') }}</h2>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Technicians currently handling ongoing projects.') }}</p>
                 </div>
 
                 <div class="mt-2">
@@ -254,7 +254,7 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $technician->name }}</p>
-                                <p class="mt-0.5 text-xs text-slate-500">{{ $projectsByTechnician[$technician->id]->count() }} {{ __('project berjalan') }}</p>
+                                <p class="mt-0.5 text-xs text-slate-500">{{ $projectsByTechnician[$technician->id]->count() }} {{ __('ongoing projects') }}</p>
                                 <div class="mt-1 flex flex-col gap-0.5">
                                     @foreach($projectsByTechnician[$technician->id] as $project)
                                         <a href="{{ route('projects.show', $project) }}"
@@ -264,10 +264,10 @@
                                     @endforeach
                                 </div>
                             </div>
-                            <x-status-badge color="green">{{ __('Aktif') }}</x-status-badge>
+                            <x-status-badge color="green">{{ __('Active') }}</x-status-badge>
                         </article>
                     @empty
-                        <x-empty-state label="{{ __('teknisi aktif') }}" description="{{ __('Teknisi dianggap aktif saat memiliki project yang sedang berjalan.') }}" />
+                        <x-empty-state label="{{ __('active technicians') }}" description="{{ __('A technician is considered active when they have an ongoing project.') }}" />
                     @endforelse
 
                     @if($idleTechnicians->isNotEmpty() && $activeTechnicians->isNotEmpty())
@@ -279,9 +279,9 @@
                             <x-user-avatar :user="$technician" size="w-10 h-10" text="text-sm" />
                             <div class="min-w-0 flex-1">
                                 <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $technician->name }}</p>
-                                <p class="mt-0.5 text-xs text-slate-500">{{ __('Tidak ada project berjalan') }}</p>
+                                <p class="mt-0.5 text-xs text-slate-500">{{ __('No ongoing projects') }}</p>
                             </div>
-                            <x-status-badge color="slate">Idle</x-status-badge>
+                            <x-status-badge color="slate">{{ __('Idle') }}</x-status-badge>
                         </article>
                     @empty
                     @endforelse
@@ -291,8 +291,8 @@
             {{-- Aktivitas Terbaru (bento: kolom sempit) --}}
             <section class="lg:col-span-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="5" aria-labelledby="recent-activities-heading">
                 <div class="border-b border-slate-100 pb-4 dark:border-slate-700">
-                    <h2 id="recent-activities-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Aktivitas Terbaru') }}</h2>
-                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Perubahan terakhir pada project.') }}</p>
+                    <h2 id="recent-activities-heading" class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ __('Recent Activity') }}</h2>
+                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('Latest changes on projects.') }}</p>
                 </div>
 
                 <div class="mt-2">
@@ -301,8 +301,8 @@
                             <x-user-avatar :user="$activity->user" size="w-10 h-10" text="text-sm" />
                             <div class="min-w-0 flex-1">
                                 <p class="text-sm leading-snug text-slate-700 dark:text-slate-200">
-                                    <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $activity->user?->name ?? 'System' }}</span>
-                                    {{ $activity->title ?? __('Aktivitas') }}
+                                    <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $activity->user?->name ?? __('System') }}</span>
+                                    {{ $activity->title ?? __('Activity') }}
                                 </p>
                                 <p class="mt-0.5 text-xs text-slate-500">
                                     @if($activity->project)
@@ -313,7 +313,7 @@
                             </div>
                         </article>
                     @empty
-                        <x-empty-state label="{{ __('aktivitas') }}" />
+                        <x-empty-state label="{{ __('activity') }}" />
                     @endforelse
                 </div>
             </section>

@@ -6,13 +6,15 @@ use App\Models\FollowUp;
 use App\Models\Customer;
 use App\Models\LeadActivity;
 use Carbon\Carbon;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 class SalesService
 {
     public function getFollowUps(array $filters = [])
     {
-        $query = FollowUp::with(['customer', 'creator', 'lead']);
+        $query = FollowUp::with(['customer', 'creator', 'lead'])
+            ->nonMeetings();
 
         if (!empty($filters['search'])) {
             $query->whereHas('customer', function ($q) use ($filters) {
@@ -69,27 +71,87 @@ class SalesService
         });
     }
 
+    /**
+     * Pastikan user yang login adalah pemilik record FollowUp (created_by).
+     * Super Admin bypass via Gate::before.
+     * Sales dan sales-<pt> hanya boleh aksi pada record miliknya sendiri.
+     * Kesamaan PT saja TIDAK cukup — harus pembuat record.
+     */
+    private function assertFollowUpOwnership(FollowUp $followUp): void
+    {
+        $user = auth()->user();
+
+        // Super Admin bypass.
+        if ($user && $user->hasRole('super-admin')) {
+            return;
+        }
+
+        // Non-pemilik (termasuk created_by null) = ditolak.
+        abort_unless(
+            $followUp->created_by !== null && (int) $followUp->created_by === (int) $user->id,
+            403
+        );
+    }
+
     public function updateFollowUp(FollowUp $followUp, array $data): FollowUp
     {
+        $this->assertFollowUpOwnership($followUp);
         $followUp->update($data);
         return $followUp;
     }
 
     public function deleteFollowUp(FollowUp $followUp): void
     {
+        $this->assertFollowUpOwnership($followUp);
         $followUp->delete();
     }
 
     public function completeFollowUp(FollowUp $followUp): FollowUp
     {
+        $this->assertFollowUpOwnership($followUp);
         $followUp->forceFill(['completed_at' => now()])->save();
         $this->logFollowUpActivity($followUp, 'followup_completed');
 
         return $followUp;
     }
 
+    public function completeMeetingReport(FollowUp $followUp, array $data): FollowUp
+    {
+        $this->assertFollowUpOwnership($followUp);
+        // Foto bukti bisa sudah diunggah saat meeting dibuat; gabungkan dengan
+        // foto baru (maksimal 3 total).
+        $photoPaths = $followUp->meeting_photos ?? [];
+        if (!empty($data['meeting_photos'])) {
+            foreach ($data['meeting_photos'] as $file) {
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    $photoPaths[] = $file->store('meeting-reports', 'public');
+                }
+            }
+        }
+        $photoPaths = array_slice($photoPaths, 0, 3);
+
+        $followUp->forceFill([
+            'completed_at' => now(),
+            'meeting_photos' => $photoPaths,
+            'meeting_notes' => $data['meeting_notes'] ?? null,
+            'meeting_outcome' => $data['meeting_outcome'] ?? null,
+            'meeting_next_action_date' => !empty($data['meeting_next_action_date']) ? \Carbon\Carbon::parse($data['meeting_next_action_date']) : null,
+        ])->save();
+
+        $this->logFollowUpActivity($followUp, 'meeting_report_submitted', [
+            'outcome' => $data['meeting_outcome'] ?? null,
+            'photos_count' => count($photoPaths),
+            'next_action_date' => $data['meeting_next_action_date'] ?? null,
+        ]);
+
+        return $followUp;
+    }
+
+    
+
     public function reopenFollowUp(FollowUp $followUp): FollowUp
     {
+        $this->assertFollowUpOwnership($followUp);
         $followUp->forceFill(['completed_at' => null])->save();
 
         return $followUp;
@@ -97,6 +159,7 @@ class SalesService
 
     public function snoozeFollowUp(FollowUp $followUp, int $days): FollowUp
     {
+        $this->assertFollowUpOwnership($followUp);
         $base = $followUp->follow_up_date && $followUp->follow_up_date->isFuture()
             ? $followUp->follow_up_date
             : today();
@@ -112,6 +175,7 @@ class SalesService
 
     public function rescheduleFollowUp(FollowUp $followUp, Carbon $date): FollowUp
     {
+        $this->assertFollowUpOwnership($followUp);
         $followUp->forceFill([
             'follow_up_date' => $date->copy()->startOfDay(),
             'reminder_sent_at' => null, // Ingatkan lagi setelah dijadwal ulang.

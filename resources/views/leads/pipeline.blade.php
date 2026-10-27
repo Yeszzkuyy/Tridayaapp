@@ -1,23 +1,57 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">Pipeline Lead</h1>
-            <p class="text-slate-500 mt-1">{{ __('Pipeline milik :name — lead baru masuk di kolom New, geser ke Cool/Warm/Hot untuk menindaklanjuti', ['name' => auth()->user()->name]) }}</p>
+            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead Pipeline') }}</h1>
+            <p class="text-slate-500 mt-1">{{ __('Pipeline of :name — new leads land in the New column, drag to Cool/Warm/Hot to follow up', ['name' => auth()->user()->name]) }}</p>
         </div>
-        <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="filter" href="{{ ($showAllClosed ?? false) ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']) }}"
-                           label="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}"
-                           title="{{ ($showAllClosed ?? false) ? __('Minggu ini') : __('Tampilkan semua') }}" />
-            @if(auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing'))
-                <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}"
-                               label="{{ __('Tabel Lead') }}" title="{{ __('Tabel Lead') }}" />
-            @else
-                <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}"
-                               label="{{ __('My Leads') }}" title="{{ __('My Leads') }}" />
-            @endif
+        <div class="flex items-center gap-2.5">
+            @php
+                $isAllClosed = $showAllClosed ?? false;
+                $filterUrl = $isAllClosed ? route('leads.pipeline') : route('leads.pipeline', ['closed' => 'all']);
+                $filterLabel = $isAllClosed ? __('This Week') : __('Show All');
+                $canManageMarketing = auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing');
+                $tableUrl = $canManageMarketing ? route('leads.index') : route('sales.my-leads');
+                $tableLabel = $canManageMarketing ? __('Lead Table') : __('My Leads');
+            @endphp
+
+            {{-- 1. Filter Toggle (Show All / This Week) --}}
+            <a href="{{ $filterUrl }}"
+               wire:navigate.hover
+               title="{{ $filterLabel }}"
+               class="group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl border px-4 text-sm font-semibold transition-all duration-300 hover:shadow-md hover:shadow-indigo-500/20 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 {{ $isAllClosed
+                   ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-500/25 hover:bg-indigo-700'
+                   : 'border-indigo-200/90 bg-indigo-50/90 text-indigo-700 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:border-indigo-800/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:border-indigo-500 dark:hover:bg-indigo-600 dark:hover:text-white' }}">
+                <svg class="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:scale-110 {{ $isAllClosed ? 'text-white' : 'text-indigo-600 dark:text-indigo-300 group-hover:text-white' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3z" />
+                </svg>
+                <span>{{ $filterLabel }}</span>
+                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+            </a>
+
+            {{-- 2. View Switcher (Lead Table / My Leads) --}}
+            <a href="{{ $tableUrl }}"
+               wire:navigate.hover
+               title="{{ $tableLabel }}"
+               class="group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl border border-sky-200/90 bg-sky-50/90 px-4 text-sm font-semibold text-sky-700 shadow-sm transition-all duration-300 hover:border-sky-600 hover:bg-sky-600 hover:text-white hover:shadow-md hover:shadow-sky-500/20 active:scale-95 dark:border-sky-800/80 dark:bg-sky-950/60 dark:text-sky-300 dark:hover:border-sky-500 dark:hover:bg-sky-600 dark:hover:text-white shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
+                <svg class="h-4 w-4 shrink-0 text-sky-600 transition-transform duration-300 group-hover:scale-110 group-hover:text-white dark:text-sky-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+                </svg>
+                <span>{{ $tableLabel }}</span>
+                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+            </a>
+
+            {{-- 3. Primary CTA: Add Lead --}}
             @can('manage-marketing')
-                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}"
-                               label="{{ __('Tambah Lead') }}" title="{{ __('Tambah Lead') }}" />
+                <a href="{{ route('leads.create') }}"
+                   wire:navigate.hover
+                   title="{{ __('Add Lead') }}"
+                   class="group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-5 text-sm font-semibold text-white shadow-sm shadow-accent-500/30 transition-all duration-300 hover:bg-accent-700 hover:shadow-md hover:shadow-accent-500/40 hover:brightness-105 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
+                    <svg class="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span class="tracking-wide">{{ __('Add Lead') }}</span>
+                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                </a>
             @endcan
         </div>
     </div>
@@ -64,7 +98,7 @@
                         </span>
                         <span class="text-sm font-semibold text-slate-500" data-count>{{ $columnLeads->count() }}</span>
                         @if(in_array($status, ['won', 'lost'], true) && !($showAllClosed ?? false))
-                            <span class="ml-1 text-[11px] text-slate-400">{{ __('minggu ini') }}</span>
+                            <span class="ml-1 text-[11px] text-slate-400">{{ __('this week') }}</span>
                         @endif
                     </div>
                     <div class="kanban-list p-3 space-y-3 min-h-24" data-status="{{ $status }}">
@@ -78,12 +112,42 @@
     </div>
     @else
         <div class="rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 px-5 py-12 text-center">
-            <p class="text-sm font-medium text-slate-500">{{ __('Belum ada lead di pipeline Anda.') }}</p>
-            <p class="mt-1 text-xs text-slate-400">{{ __('Lead baru dari Management akan muncul di sini.') }}</p>
+            <p class="text-sm font-medium text-slate-500">{{ __('No leads in your pipeline yet.') }}</p>
+            <p class="mt-1 text-xs text-slate-400">{{ __('New leads from Management will appear here.') }}</p>
         </div>
     @endif
 
     @if(auth()->user()->can('manage-marketing') || auth()->user()->can('manage-sales'))
+    <style>
+        .kanban-card {
+            cursor: grab;
+            transition: transform 180ms cubic-bezier(0.2, 0, 0, 1), box-shadow 180ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        .kanban-ghost {
+            opacity: 0.55 !important;
+            border: 2px dashed rgb(var(--accent-500, 59 130 246)) !important;
+            background-color: rgb(var(--accent-500, 59 130 246) / 0.08) !important;
+            border-radius: 0.75rem !important;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06) !important;
+        }
+        .dark .kanban-ghost {
+            background-color: rgb(var(--accent-500, 99 102 241) / 0.15) !important;
+            border-color: rgb(var(--accent-500, 99 102 241) / 0.6) !important;
+        }
+        .kanban-chosen {
+            cursor: grabbing !important;
+            transform: scale(1.025) rotate(-0.5deg) !important;
+            box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.15), 0 8px 12px -6px rgba(0, 0, 0, 0.1) !important;
+        }
+        .kanban-drag, .kanban-fallback {
+            cursor: grabbing !important;
+            opacity: 0.96 !important;
+            transform: rotate(1.5deg) scale(1.03) !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.18), 0 10px 10px -5px rgba(0, 0, 0, 0.1) !important;
+            pointer-events: none !important;
+            z-index: 9999 !important;
+        }
+    </style>
     <script>
     function initPipelineDnD(retry) {
         var board = document.querySelector('.kanban-board[data-editable]');
@@ -112,8 +176,14 @@
             var isNewSource = list.hasAttribute('data-new-source');
             new Sortable(list, {
                 group: isNewSource ? { name: 'leads', pull: true, put: false } : 'leads',
-                animation: 150,
-                ghostClass: 'opacity-40',
+                animation: 250,
+                easing: 'cubic-bezier(0.2, 0, 0, 1)',
+                ghostClass: 'kanban-ghost',
+                chosenClass: 'kanban-chosen',
+                dragClass: 'kanban-drag',
+                forceFallback: true,
+                fallbackClass: 'kanban-fallback',
+                fallbackTolerance: 4,
                 draggable: salesOnly ? '.kanban-card[data-mine="1"]' : '.kanban-card',
                 onEnd: function (evt) {
                     var leadId = evt.item.dataset.leadId;
@@ -156,7 +226,7 @@
                 document.body.appendChild(saveBtn);
             }
 
-            saveBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> {{ __('Simpan Perubahan') }} (' + count + ')';
+            saveBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg> {{ __('Save Changes') }} (' + count + ')';
         }
 
         function savePendingChanges() {
@@ -165,7 +235,7 @@
             var saveBtn = document.getElementById('pipeline-save-btn');
             if (saveBtn) {
                 saveBtn.disabled = true;
-                saveBtn.innerHTML = '<svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> {{ __('Menyimpan...') }}';
+                saveBtn.innerHTML = '<svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> {{ __('Saving...') }}';
             }
 
             var changes = Array.from(pendingChanges.entries()).map(function (entry) {
@@ -190,7 +260,7 @@
                 // (khususnya yang keluar dari kolom New).
                 window.location.reload();
             }).catch(function () {
-                alert('{{ __('Gagal menyimpan perubahan. Silakan coba lagi.') }}');
+                alert('{{ __('Failed to save changes. Please try again.') }}');
                 if (saveBtn) {
                     saveBtn.disabled = false;
                     updateSaveButton();

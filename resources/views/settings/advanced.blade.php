@@ -3,10 +3,10 @@
         {{-- Header --}}
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Pengaturan Lanjutan') }}</h1>
-                <p class="mt-1 text-slate-500">{{ __('Keamanan akun Anda') }}</p>
+                <h1 class="text-3xl font-bold text-slate-800">{{ __('Advanced Settings') }}</h1>
+                <p class="mt-1 text-slate-500">{{ __('Your account security') }}</p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('settings.edit') }}" title="{{ __('Kembali') }}" />
+            <x-icon-button as="a" icon="back" href="{{ route('settings.edit') }}" title="{{ __('Back') }}" />
         </div>
 
         <x-profile-tabs />
@@ -18,7 +18,7 @@
                     <x-icon name="settings" class="h-6 w-6" />
                 </span>
                 <h2 class="mt-4 text-lg font-bold text-slate-800 dark:text-white">{{ __('Konfirmasi Password') }}</h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Masukkan password Anda untuk membuka area ini.') }}</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Enter your password to unlock this area.') }}</p>
 
                 <form method="POST" action="{{ route('settings.advanced.confirm') }}" class="mt-6 space-y-4 text-left">
                     @csrf
@@ -29,7 +29,7 @@
                     </div>
                     <button type="submit"
                             class="group relative overflow-hidden w-full px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                        {{ __('Buka') }}
+                        {{ __('Unlock') }}
                         <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                     </button>
                 </form>

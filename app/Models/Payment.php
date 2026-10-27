@@ -33,4 +33,9 @@ class Payment extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function documents()
+    {
+        return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
 }

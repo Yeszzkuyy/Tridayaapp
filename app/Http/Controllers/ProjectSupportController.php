@@ -124,6 +124,6 @@ class ProjectSupportController extends Controller
     
         return redirect()
             ->route('projects.show', $project)
-            ->with('success', 'Support engineer berhasil dihapus');
+            ->with('success', __('Support engineer deleted successfully'));
     }
 }
