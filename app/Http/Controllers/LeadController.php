@@ -730,6 +730,29 @@ class LeadController extends Controller
 
         abort_unless($allowed, 403);
 
+        // Satu pintu: quotation accepted adalah sumber data proyek (item,
+        // nilai, PO, deadline). Jangan biarkan Lead membuat project kosong.
+        $acceptedProposal = $lead->proposals()->where('status', 'accepted')->latest()->first();
+
+        if ($acceptedProposal) {
+            if ($acceptedProposal->project) {
+                return redirect()
+                    ->route('projects.show', $acceptedProposal->project)
+                    ->with('error', __('This lead already has an accepted quotation and a project.'));
+            }
+
+            return redirect()
+                ->route('sales.proposals.show', $acceptedProposal)
+                ->with('error', __('This lead has an accepted quotation. Convert to a project from the quotation page.'));
+        }
+
+        // Admin/teknisi tetap boleh membuat project non-quotation.
+        if (! $user->can('manage-admin') && ! $user->can('manage-technician')) {
+            return redirect()
+                ->route('leads.show', $lead)
+                ->with('error', __('Create and accept a quotation, then upload the customer PO before converting to a project.'));
+        }
+
         // Idempoten: lead yang sudah won/lost tidak boleh di-convert ulang.
         if (in_array($lead->status, ['won', 'lost'], true)) {
             $existing = Project::where('customer_id', $lead->customer_id)->latest()->first();

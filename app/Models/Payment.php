@@ -16,6 +16,7 @@ class Payment extends Model
         'payment_method',
         'proof_file',
         'notes',
+        'idempotency_key',
         'created_by',
     ];
 

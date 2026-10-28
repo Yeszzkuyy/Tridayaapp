@@ -50,52 +50,114 @@
 
             <div>
                 <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">{{ __('Delivery Items') }}</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
-                        <thead>
-                            <tr>
-                                <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Product (optional)') }}</th>
-                                <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Item Name') }}</th>
-                                <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
-                                <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Unit') }}</th>
-                                <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Serial Numbers') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                            @for($i = 0; $i < 4; $i++)
+
+                @if($hasProcurementItems)
+                    @if($poItems->isEmpty())
+                        <div class="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-200">
+                            {{ __('All received goods for this project have been delivered. Record another receipt first if more goods arrive.') }}
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
+                                <thead>
+                                    <tr>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Received Item') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Available') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Serial Numbers') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                                    @for($i = 0; $i < 4; $i++)
+                                        <tr>
+                                            <td class="px-2 py-2">
+                                                <select name="items[{{ $i }}][supplier_purchase_order_item_id]"
+                                                        class="w-80 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                    <option value="">{{ __('-- select received item --') }}</option>
+                                                    @foreach($poItems as $poItem)
+                                                        <option value="{{ $poItem->id }}" @selected((string) old("items.{$i}.supplier_purchase_order_item_id") === (string) $poItem->id)>
+                                                            {{ $poItem->item_name }}
+                                                            @if($poItem->part_number) · {{ $poItem->part_number }} @endif
+                                                            · {{ __('Available') }} {{ number_format($poItem->quantityAvailable(), 2) }} {{ $poItem->unit }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td class="px-2 py-2 text-xs text-slate-500 dark:text-slate-400">
+                                                @php $oldItem = $poItems->firstWhere('id', (int) old("items.{$i}.supplier_purchase_order_item_id")); @endphp
+                                                @if($oldItem)
+                                                    {{ number_format($oldItem->quantityAvailable(), 2) }} {{ $oldItem->unit }}
+                                                @else
+                                                    —
+                                                @endif
+                                            </td>
+                                            <td class="px-2 py-2">
+                                                <input type="number" step="0.01" min="0.01" name="items[{{ $i }}][quantity]" value="{{ old("items.{$i}.quantity") }}"
+                                                       class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                            </td>
+                                            <td class="px-2 py-2">
+                                                <input type="text" name="items[{{ $i }}][serial_numbers_text]" value="{{ old("items.{$i}.serial_numbers_text") }}"
+                                                       placeholder="{{ __('Comma separated') }}"
+                                                       class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                            </td>
+                                        </tr>
+                                    @endfor
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Choose only goods that have been received; quantity cannot exceed available stock.') }}</p>
+                    @endif
+                @else
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm mb-3 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-200">
+                        {{ __('This project has no Supplier PO. Delivery is recorded manually for legacy projects.') }}
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
+                            <thead>
                                 <tr>
-                                    <td class="px-2 py-2">
-                                        <select name="items[{{ $i }}][product_id]"
-                                                class="w-48 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                                            <option value="">{{ __('-- none --') }}</option>
-                                            @foreach($products as $product)
-                                                <option value="{{ $product->id }}" @selected(old("items.{$i}.product_id") == $product->id)>{{ $product->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    <td class="px-2 py-2">
-                                        <input type="text" name="items[{{ $i }}][item_name]" value="{{ old("items.{$i}.item_name") }}" maxlength="255"
-                                               class="w-52 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                                    </td>
-                                    <td class="px-2 py-2">
-                                        <input type="number" step="0.01" min="0" name="items[{{ $i }}][quantity]" value="{{ old("items.{$i}.quantity") }}"
-                                               class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                                    </td>
-                                    <td class="px-2 py-2">
-                                        <input type="text" name="items[{{ $i }}][unit]" value="{{ old("items.{$i}.unit", 'pcs') }}" maxlength="16"
-                                               class="w-20 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                                    </td>
-                                    <td class="px-2 py-2">
-                                        <input type="text" name="items[{{ $i }}][serial_numbers_text]" value="{{ old("items.{$i}.serial_numbers_text") }}"
-                                               placeholder="{{ __('Comma separated') }}"
-                                               class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                                    </td>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Product (optional)') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Item Name') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Unit') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Serial Numbers') }}</th>
                                 </tr>
-                            @endfor
-                        </tbody>
-                    </table>
-                </div>
-                <p class="mt-1 text-xs text-slate-400">{{ __('Fill at least one row. Empty rows are ignored.') }}</p>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                                @for($i = 0; $i < 4; $i++)
+                                    <tr>
+                                        <td class="px-2 py-2">
+                                            <select name="items[{{ $i }}][product_id]"
+                                                    class="w-48 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                <option value="">{{ __('-- none --') }}</option>
+                                                @foreach($products as $product)
+                                                    <option value="{{ $product->id }}" @selected(old("items.{$i}.product_id") == $product->id)>{{ $product->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <input type="text" name="items[{{ $i }}][item_name]" value="{{ old("items.{$i}.item_name") }}" maxlength="255"
+                                                   class="w-52 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <input type="number" step="0.01" min="0" name="items[{{ $i }}][quantity]" value="{{ old("items.{$i}.quantity") }}"
+                                                   class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <input type="text" name="items[{{ $i }}][unit]" value="{{ old("items.{$i}.unit", 'pcs') }}" maxlength="16"
+                                                   class="w-20 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                        </td>
+                                        <td class="px-2 py-2">
+                                            <input type="text" name="items[{{ $i }}][serial_numbers_text]" value="{{ old("items.{$i}.serial_numbers_text") }}"
+                                                   placeholder="{{ __('Comma separated') }}"
+                                                   class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                        </td>
+                                    </tr>
+                                @endfor
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Fill at least one row. Empty rows are ignored.') }}</p>
+                @endif
             </div>
 
             <div>

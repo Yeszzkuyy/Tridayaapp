@@ -11,6 +11,7 @@
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
             <form action="{{ route('admin.invoices.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
+                <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $idempotencyKey) }}">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
@@ -36,6 +37,22 @@
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <input type="hidden" name="proposal_id" value="{{ old('proposal_id', $proposalId ?? null) }}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer PO Number') }}</label>
+                        <input type="text" name="customer_po_number" maxlength="100" value="{{ old('customer_po_number', $customerPoNumber ?? '') }}"
+                               placeholder="{{ __('e.g. PO/2026/001') }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                        @error('customer_po_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs text-slate-500 dark:text-slate-400 self-end">
+                        @if(!empty($paymentTermsSummary))
+                            {{ __('Payment Terms') }}: <span class="font-medium text-slate-700 dark:text-slate-200">{{ $paymentTermsSummary }}</span>
+                        @else
+                            {{ __('Payment terms are taken from the quotation.') }}
+                        @endif
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Invoice Type') }} <span class="text-red-500">*</span></label>
@@ -74,7 +91,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Due Date') }}</label>
-                        <x-datepicker name="due_date" value="{{ old('due_date') }}"></x-datepicker>
+                        <x-datepicker name="due_date" value="{{ old('due_date', $dueDate ?? null) }}"></x-datepicker>
                         @error('due_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>

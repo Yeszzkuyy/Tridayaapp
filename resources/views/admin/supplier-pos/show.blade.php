@@ -44,6 +44,8 @@
                             <th class="py-2 pr-2">{{ __('Part Number') }}</th>
                             <th class="py-2 pr-2 text-right">{{ __('Qty Ordered') }}</th>
                             <th class="py-2 pr-2 text-right">{{ __('Qty Received') }}</th>
+                            <th class="py-2 pr-2 text-right">{{ __('Qty Delivered') }}</th>
+                            <th class="py-2 pr-2 text-right">{{ __('Available') }}</th>
                             <th class="py-2 pr-2">{{ __('Unit') }}</th>
                             <th class="py-2 pr-2 text-right">{{ __('Unit Price') }}</th>
                             <th class="py-2 text-right">{{ __('Subtotal') }}</th>
@@ -64,6 +66,8 @@
                                 <td class="py-2 pr-2 text-slate-600 dark:text-slate-300">{{ $item->part_number ?? '-' }}</td>
                                 <td class="py-2 pr-2 text-right text-slate-600 dark:text-slate-300">{{ number_format($item->quantity_ordered, 2, ',', '.') }}</td>
                                 <td class="py-2 pr-2 text-right text-slate-600 dark:text-slate-300">{{ number_format($item->quantity_received, 2, ',', '.') }}</td>
+                                <td class="py-2 pr-2 text-right text-slate-600 dark:text-slate-300">{{ number_format($item->quantity_delivered, 2, ',', '.') }}</td>
+                                <td class="py-2 pr-2 text-right font-medium {{ $item->quantityAvailable() > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400' }}">{{ number_format($item->quantityAvailable(), 2, ',', '.') }}</td>
                                 <td class="py-2 pr-2 text-slate-600 dark:text-slate-300">{{ $item->unit }}</td>
                                 <td class="py-2 pr-2 text-right text-slate-600 dark:text-slate-300">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
                                 <td class="py-2 text-right font-medium text-slate-800 dark:text-slate-100">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
@@ -77,6 +81,7 @@
                 <p class="text-xs text-slate-500">
                     {{ __('Received') }} {{ number_format($quantitySummary['received'], 2, ',', '.') }}
                     / {{ number_format($quantitySummary['ordered'], 2, ',', '.') }}
+                    · {{ __('Delivered') }} {{ number_format($quantitySummary['delivered'], 2, ',', '.') }}
                     — {{ __('partial receipts are handled in the goods receipt stage.') }}
                 </p>
                 <div class="w-full md:w-64 text-sm space-y-1">

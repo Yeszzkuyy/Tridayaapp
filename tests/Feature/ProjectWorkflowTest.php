@@ -96,6 +96,11 @@ class ProjectWorkflowTest extends TestCase
         $leadTech = $this->userWithRoles(['lead-technician']);
         $lead = $this->makeLead($sales);
         $proposal = $this->makeProposal($lead, $sales);
+        $proposal->update([
+            'po_document_path' => 'proposals/test/po/test.pdf',
+            'po_number' => 'PO-TEST-2',
+            'payment_scheme' => 'full',
+        ]);
         $workType = WorkType::create(['name' => 'Instalasi CCTV']);
         $pendingId = ProjectStatus::where('name', 'Pending')->value('id');
 

@@ -105,13 +105,16 @@
                         $totalContacts = $customer->contacts->count();
                         $infoFields = [
                             ['icon' => 'building', 'label' => __('Name'), 'value' => $customer->name],
-                            ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group ?? '-'],
+                            ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group],
                             ['icon' => 'user', 'label' => __('PIC'), 'value' => $customer->contacts->first()?->name ?: $customer->contact_person],
                             ['icon' => 'map-pin', 'label' => __('Address'), 'value' => $customer->address],
+                            ['icon' => 'map-pin', 'label' => __('Billing Address'), 'value' => $customer->billingAddress()],
+                            ['icon' => 'map-pin', 'label' => __('Shipping Address'), 'value' => $customer->shippingAddress()],
                             ['icon' => 'phone', 'label' => __('Telepon'), 'value' => \App\Support\PhoneFormatter::format($customer->phone)],
                             ['icon' => 'chat', 'label' => __('Company WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Company'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('PIC WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->contacts->first()?->whatsapp), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
                             ['icon' => 'mail', 'label' => __('Email'), 'value' => $customer->email],
+                            ['icon' => 'user', 'label' => __('Finance PIC'), 'value' => $customer->financeContact()],
                             ['icon' => 'file-text', 'label' => __('NPWP'), 'value' => $customer->npwp],
                         ];
                         $stats = [
@@ -132,7 +135,7 @@
                                         <x-icon name="{{ $field['icon'] }}" class="w-4 h-4 mt-1 text-indigo-400 shrink-0" />
                                         <div class="min-w-0">
                                             <p class="text-xs text-slate-400">{{ $field['label'] }}</p>
-                                            <p class="flex flex-wrap items-center gap-2 font-medium text-slate-800 dark:text-slate-100">{{ $field['value'] ?? '-' }}@if(!empty($field['badge']))<x-status-badge :color="$field['badgeColor'] ?? 'slate'">{{ $field['badge'] }}</x-status-badge>@endif</p>
+                                            <p class="flex flex-wrap items-center gap-2 font-medium text-slate-800 dark:text-slate-100 {{ empty($field['value']) ? 'text-slate-400 italic' : '' }}">{{ $field['value'] ?: __('Not set yet') }}@if(!empty($field['badge']))<x-status-badge :color="$field['badgeColor'] ?? 'slate'">{{ $field['badge'] }}</x-status-badge>@endif</p>
                                         </div>
                                     </div>
                                 @endforeach

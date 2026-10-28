@@ -167,6 +167,11 @@ class ProposalModuleTest extends TestCase
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
         $proposal = $this->makeProposal($lead, 'accepted', $sales->id);
+        $proposal->update([
+            'po_document_path' => 'proposals/test/po/test.pdf',
+            'po_number' => 'PO-TEST-3',
+            'payment_scheme' => 'full',
+        ]);
         $workType = WorkType::create(['name' => 'Instalasi']);
 
         $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
@@ -184,6 +189,92 @@ class ProposalModuleTest extends TestCase
         $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
             'work_type_id' => $workType->id,
         ])->assertStatus(422);
+    }
+
+    public function test_payment_terms_are_saved_and_shown_on_customer_preview(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+            'lead_id' => $lead->id,
+            'proposal_date' => now()->toDateString(),
+            'payment_scheme' => 'dp',
+            'dp_percent' => 30,
+            'payment_terms' => 'DP 30% setelah PO, pelunasan setelah BAST',
+            'delivery_terms' => 'Ready stock 3-5 hari kerja',
+            'items' => [[
+                'description' => 'Kamera CCTV',
+                'quantity' => 1,
+                'unit' => 'unit',
+                'unit_price' => 1000000,
+                'discount' => 0,
+            ]],
+        ])->assertRedirect();
+
+        $proposal = Proposal::latest('id')->firstOrFail();
+
+        $this->assertSame('dp', $proposal->payment_scheme);
+        $this->assertEquals(30, (float) $proposal->dp_percent);
+        $this->assertSame('DP 30% setelah PO, pelunasan setelah BAST', $proposal->payment_terms);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.preview', $proposal))
+            ->assertOk()
+            ->assertSee('DP 30% setelah PO, pelunasan setelah BAST')
+            ->assertSee('Ready stock 3-5 hari kerja');
+    }
+
+    public function test_convert_requires_customer_po_number_and_payment_terms_and_copies_deadline(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $proposal = $this->makeProposal($lead, 'accepted', $sales->id);
+        $workType = WorkType::create(['name' => 'Instalasi']);
+
+        // Belum ada file PO.
+        $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
+            'work_type_id' => $workType->id,
+        ])->assertStatus(422);
+
+        // File PO ada, tapi nomor PO belum.
+        $proposal->update(['po_document_path' => 'proposals/test/po/test.pdf']);
+        $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
+            'work_type_id' => $workType->id,
+        ])->assertStatus(422);
+
+        // Nomor PO ada, tapi cara bayar belum.
+        $proposal->update(['po_number' => 'PO-CUST-1']);
+        $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
+            'work_type_id' => $workType->id,
+        ])->assertStatus(422);
+
+        // Lengkap: convert berhasil dan deadline ikut ke project.
+        $deadline = now()->addDays(10)->toDateString();
+        $proposal->update([
+            'payment_scheme' => 'dp',
+            'dp_percent' => 30,
+            'delivery_deadline' => $deadline,
+        ]);
+
+        $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
+            'work_type_id' => $workType->id,
+        ])->assertRedirect();
+
+        $project = Project::where('proposal_id', $proposal->id)->firstOrFail();
+        $this->assertSame($deadline, $project->delivery_deadline?->toDateString());
+    }
+
+    public function test_lead_convert_redirects_to_accepted_proposal(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $proposal = $this->makeProposal($lead, 'accepted', $sales->id);
+
+        $this->actingAs($sales)
+            ->patch(route('leads.convert', $lead), [])
+            ->assertRedirect(route('sales.proposals.show', $proposal))
+            ->assertSessionHas('error');
     }
 
     public function test_create_without_lead_shows_lead_picker(): void

@@ -26,6 +26,10 @@
     @if($proposal->valid_until)
         <p>{{ __('Valid until') }}: {{ $proposal->valid_until->format('d M Y') }}</p>
     @endif
+    <p><strong>{{ __('Payment Terms') }}:</strong> {{ $proposal->paymentTermsSummary() }}</p>
+    @if($proposal->delivery_terms)
+        <p><strong>{{ __('Delivery Terms') }}:</strong> {{ $proposal->delivery_terms }}</p>
+    @endif
     <table>
         <thead>
             <tr><th>{{ __('Description') }}</th><th class="num">{{ __('Qty') }}</th><th class="num">{{ __('Price') }}</th><th class="num">{{ __('Subtotal') }}</th></tr>

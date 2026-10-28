@@ -58,14 +58,26 @@
                                 @forelse($user->roles as $role)
                                     <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1 mb-1">{{ __(\Illuminate\Support\Str::headline($role->name)) }}</span>
                                 @empty
-                                    <span class="text-slate-400 text-sm">-</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        {{ __('Pending Role') }}
+                                    </span>
                                 @endforelse
                             </td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium
-                                    {{ $user->trashed() ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800' }}">
-                                    {{ $user->trashed() ? __('Nonaktif') : __('Active') }}
-                                </span>
+                                @if($user->trashed())
+                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        {{ __('Nonaktif') }}
+                                    </span>
+                                @elseif($user->roles->isEmpty())
+                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                        {{ __('Menunggu Role') }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        {{ __('Active') }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">

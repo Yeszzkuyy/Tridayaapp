@@ -67,7 +67,11 @@
                                 <p class="text-xs text-slate-500">{{ $proposal->po_date?->format('d M Y') ?? __('Not filled') }}</p>
                             </td>
                             <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
-                                {{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not filled') }}
+                                <p>{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</p>
+                                <p class="text-xs text-slate-500">{{ $proposal->paymentTermsSummary() }}</p>
+                                @if($proposal->handoffWarnings())
+                                    <p class="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">{{ __(':count field(s) incomplete', ['count' => count($proposal->handoffWarnings())]) }}</p>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-xs">
                                 <p class="text-xs">{{ $proposal->items->count() }} {{ __('item(s)') }}</p>

@@ -16,9 +16,9 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @php
-                $canConvert = auth()->user()?->can('manage-marketing')
-                    || ((int) $lead->assigned_to === (int) auth()->id() && auth()->user()?->can('manage-sales'))
-                    || auth()->user()?->can('manage-technician')
+                // Satu pintu: Sales wajib convert dari quotation accepted.
+                // Admin/teknisi tetap punya jalur legacy untuk project non-quotation.
+                $canConvert = auth()->user()?->can('manage-technician')
                     || auth()->user()?->can('manage-admin');
             @endphp
             @if($canConvert && !in_array($lead->status, ['won', 'lost']))

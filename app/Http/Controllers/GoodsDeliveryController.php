@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GoodsDelivery;
 use App\Models\Project;
+use App\Models\SupplierPurchaseOrder;
 use App\Models\SupplierPurchaseOrderItem;
 use App\Services\ProcurementService;
 use Illuminate\Http\Request;
@@ -51,16 +52,31 @@ class GoodsDeliveryController extends Controller
             ? $projects->firstWhere('id', $request->integer('project_id'))
             : null;
 
+        $hasProcurementItems = $selectedProject
+            ? SupplierPurchaseOrderItem::query()
+                ->whereHas('purchaseOrder', fn ($q) => $q
+                    ->where('project_id', $selectedProject->id)
+                    ->where('status', '!=', 'cancelled'))
+                ->exists()
+            : false;
+
+        $poItems = $selectedProject
+            ? SupplierPurchaseOrderItem::with(['purchaseOrder', 'product'])
+                ->whereHas('purchaseOrder', fn ($q) => $q
+                    ->where('project_id', $selectedProject->id)
+                    ->whereIn('status', ['ordered', 'partially_received', 'received']))
+                ->whereColumn('quantity_received', '>', 'quantity_delivered')
+                ->orderBy('item_name')
+                ->get()
+            : collect();
+
         return view('admin.goods-deliveries.create', [
             'projects' => $projects,
             'selectedProjectId' => $request->integer('project_id') ?: null,
             'selectedProject' => $selectedProject,
             'products' => \App\Models\Product::orderBy('name')->get(['id', 'name', 'part_number', 'unit']),
-            'poItems' => SupplierPurchaseOrderItem::with('purchaseOrder')
-                ->whereHas('purchaseOrder', fn ($q) => $q->whereIn('status', ['ordered', 'partially_received', 'received']))
-                ->where('quantity_received', '>', 0)
-                ->orderBy('item_name')
-                ->get(),
+            'poItems' => $poItems,
+            'hasProcurementItems' => $hasProcurementItems,
         ]);
     }
 
@@ -82,7 +98,9 @@ class GoodsDeliveryController extends Controller
         ]);
 
         $rows = collect($validated['items'])
-            ->filter(fn ($item) => trim((string) ($item['item_name'] ?? '')) !== '' || (float) ($item['quantity'] ?? 0) > 0)
+            ->filter(fn ($item) => trim((string) ($item['item_name'] ?? '')) !== ''
+                || trim((string) ($item['supplier_purchase_order_item_id'] ?? '')) !== ''
+                || (float) ($item['quantity'] ?? 0) > 0)
             ->values();
 
         if ($rows->isEmpty()) {
@@ -91,17 +109,16 @@ class GoodsDeliveryController extends Controller
             ]);
         }
 
-        foreach ($rows as $index => $row) {
-            if (trim((string) ($row['item_name'] ?? '')) === '' || (float) ($row['quantity'] ?? 0) <= 0) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.quantity" => __('Each delivery item needs a name and a quantity greater than zero.'),
-                ]);
-            }
-        }
-
         $project = Project::findOrFail($validated['project_id']);
+        $projectHasProcurement = SupplierPurchaseOrderItem::query()
+            ->whereHas('purchaseOrder', fn ($q) => $q
+                ->where('project_id', $project->id)
+                ->where('status', '!=', 'cancelled'))
+            ->exists();
 
-        $delivery = DB::transaction(function () use ($validated, $rows, $project) {
+        $delivery = DB::transaction(function () use ($validated, $rows, $project, $projectHasProcurement) {
+            $prepared = $this->prepareDeliveryRows($project, $rows, $projectHasProcurement);
+
             $delivery = GoodsDelivery::create([
                 'delivery_number' => $this->procurement->generateDeliveryNumber(),
                 'project_id' => $project->id,
@@ -113,17 +130,26 @@ class GoodsDeliveryController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            foreach ($rows as $item) {
+            foreach ($prepared as $item) {
                 $delivery->items()->create([
-                    'product_id' => $item['product_id'] ?? null,
-                    'supplier_purchase_order_item_id' => $item['supplier_purchase_order_item_id'] ?? null,
+                    'product_id' => $item['product_id'],
+                    'supplier_purchase_order_item_id' => $item['supplier_purchase_order_item_id'],
                     'item_name' => $item['item_name'],
-                    'part_number' => $item['part_number'] ?? null,
-                    'unit' => $item['unit'] ?? 'pcs',
-                    'quantity' => round((float) $item['quantity'], 2),
-                    'serial_numbers' => $this->parseSerials($item['serial_numbers_text'] ?? null) ?: null,
+                    'part_number' => $item['part_number'],
+                    'unit' => $item['unit'],
+                    'quantity' => $item['quantity'],
+                    'serial_numbers' => $item['serials'] ?: null,
                 ]);
             }
+
+            $orderIds = collect($prepared)
+                ->pluck('supplier_purchase_order_id')
+                ->filter()
+                ->unique()
+                ->values();
+
+            SupplierPurchaseOrder::whereIn('id', $orderIds)->get()
+                ->each(fn (SupplierPurchaseOrder $order) => $this->procurement->recalculatePurchaseOrderDeliveries($order));
 
             return $delivery;
         });
@@ -158,6 +184,181 @@ class GoodsDeliveryController extends Controller
         }
 
         return back()->with('success', __('Delivery status updated.'));
+    }
+
+    /**
+     * Siapkan baris delivery. Untuk project yang memiliki Supplier PO,
+     * semua baris wajib terhubung ke item PO dan tidak boleh melebihi
+     * kuantitas yang sudah diterima dan belum dikirim. Project legacy
+     * tanpa Supplier PO tetap memakai input manual agar kompatibel.
+     */
+    private function prepareDeliveryRows(Project $project, $rows, bool $projectHasProcurement): array
+    {
+        $poItems = collect();
+
+        if ($projectHasProcurement) {
+            $ids = $rows->pluck('supplier_purchase_order_item_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            $poItems = SupplierPurchaseOrderItem::with(['purchaseOrder', 'product'])
+                ->whereIn('id', $ids)
+                ->whereHas('purchaseOrder', fn ($q) => $q
+                    ->where('project_id', $project->id)
+                    ->where('status', '!=', 'cancelled'))
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+        }
+
+        $requested = [];
+        $seenSerials = [];
+        $prepared = [];
+
+        foreach ($rows as $index => $row) {
+            $quantity = round((float) ($row['quantity'] ?? 0), 2);
+
+            if ($quantity <= 0) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.quantity" => __('Each delivery item needs a quantity greater than zero.'),
+                ]);
+            }
+
+            $poItemId = (int) ($row['supplier_purchase_order_item_id'] ?? 0);
+
+            if ($projectHasProcurement) {
+                $poItem = $poItems->get($poItemId);
+
+                if (! $poItem) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.supplier_purchase_order_item_id" => __('Choose goods received from this project Supplier PO.'),
+                    ]);
+                }
+
+                if (! in_array($poItem->purchaseOrder->status, ['ordered', 'partially_received', 'received'], true)) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.supplier_purchase_order_item_id" => __('The selected Supplier PO is not active.'),
+                    ]);
+                }
+
+                $alreadyRequested = (float) ($requested[$poItem->id] ?? 0);
+                $available = max(0, (float) $poItem->quantity_received - (float) $poItem->quantity_delivered);
+
+                if ($alreadyRequested + $quantity > $available + 0.0001) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.quantity" => __('Delivery quantity exceeds available stock (:available) for :item.', [
+                            'available' => number_format(max(0, $available - $alreadyRequested), 2),
+                            'item' => $poItem->item_name,
+                        ]),
+                    ]);
+                }
+
+                $serials = $this->parseSerials($row['serial_numbers_text'] ?? null);
+                $this->assertDeliverySerials($poItem, $quantity, $serials, $index, $seenSerials);
+
+                $requested[$poItem->id] = $alreadyRequested + $quantity;
+
+                $prepared[] = [
+                    'supplier_purchase_order_id' => $poItem->supplier_purchase_order_id,
+                    'supplier_purchase_order_item_id' => $poItem->id,
+                    'product_id' => $poItem->product_id,
+                    'item_name' => $poItem->item_name,
+                    'part_number' => $poItem->part_number,
+                    'unit' => $poItem->unit ?: 'pcs',
+                    'quantity' => $quantity,
+                    'serials' => $serials,
+                ];
+
+                continue;
+            }
+
+            $itemName = trim((string) ($row['item_name'] ?? ''));
+
+            if ($itemName === '') {
+                throw ValidationException::withMessages([
+                    "items.{$index}.item_name" => __('Each delivery item needs a name.'),
+                ]);
+            }
+
+            $prepared[] = [
+                'supplier_purchase_order_id' => null,
+                'supplier_purchase_order_item_id' => null,
+                'product_id' => $row['product_id'] ?? null,
+                'item_name' => $itemName,
+                'part_number' => $row['part_number'] ?? null,
+                'unit' => $row['unit'] ?? 'pcs',
+                'quantity' => $quantity,
+                'serials' => $this->parseSerials($row['serial_numbers_text'] ?? null),
+            ];
+        }
+
+        if ($prepared === []) {
+            throw ValidationException::withMessages([
+                'items' => __('Add at least one delivery item.'),
+            ]);
+        }
+
+        return $prepared;
+    }
+
+    private function assertDeliverySerials(
+        SupplierPurchaseOrderItem $poItem,
+        float $quantity,
+        array $serials,
+        int $index,
+        array &$seenSerials
+    ): void {
+        $product = $poItem->product;
+
+        if (! $product?->has_serial_number) {
+            return;
+        }
+
+        $key = "items.{$index}.serial_numbers_text";
+
+        if (floor($quantity) !== $quantity) {
+            throw ValidationException::withMessages([
+                $key => __('Serialized items must be delivered in whole units.'),
+            ]);
+        }
+
+        if (count($serials) !== (int) $quantity) {
+            throw ValidationException::withMessages([
+                $key => __('Enter exactly :count serial numbers for :item.', [
+                    'count' => (int) $quantity,
+                    'item' => $product->name,
+                ]),
+            ]);
+        }
+
+        $received = $this->procurement->receivedSerialNumbers($poItem);
+        $delivered = $this->procurement->deliveredSerialNumbers($poItem);
+
+        foreach ($serials as $serial) {
+            $normalized = mb_strtoupper(trim((string) $serial));
+
+            if (! in_array($normalized, $received, true)) {
+                throw ValidationException::withMessages([
+                    $key => __('Serial number has not been received for this item: :serial', ['serial' => $serial]),
+                ]);
+            }
+
+            if (in_array($normalized, $delivered, true)) {
+                throw ValidationException::withMessages([
+                    $key => __('Serial number has already been delivered: :serial', ['serial' => $serial]),
+                ]);
+            }
+
+            if (isset($seenSerials[$poItem->id][$normalized])) {
+                throw ValidationException::withMessages([
+                    $key => __('Duplicate serial number in this delivery: :serial', ['serial' => $serial]),
+                ]);
+            }
+
+            $seenSerials[$poItem->id][$normalized] = true;
+        }
     }
 
     private function parseSerials(?string $text): array

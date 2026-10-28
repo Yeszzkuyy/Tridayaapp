@@ -15,6 +15,54 @@
         </div>
     </div>
 
+    <div x-data="{ scheme: '{{ old('payment_scheme', $proposal->payment_scheme ?? '') }}' }" class="space-y-4 rounded-xl border border-slate-200 dark:border-slate-600 p-4">
+        <div>
+            <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Payment Terms') }}</h3>
+            <p class="text-xs text-slate-500">{{ __('Admin Finance uses this to decide whether to invoice a DP or the full amount.') }}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Payment Scheme') }}</label>
+                <select name="payment_scheme" x-model="scheme"
+                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                    <option value="">{{ __('Not set yet') }}</option>
+                    <option value="full">{{ __('Full Payment 100%') }}</option>
+                    <option value="dp">{{ __('Down Payment + Settlement') }}</option>
+                    <option value="tempo">{{ __('Tempo / Net Days') }}</option>
+                </select>
+                @error('payment_scheme') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div x-show="scheme === 'dp'" x-cloak>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('DP Percentage') }} <span class="text-red-500">*</span></label>
+                <input type="number" name="dp_percent" min="1" max="99" step="0.01" value="{{ old('dp_percent', $proposal->dp_percent ?? '') }}"
+                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                @error('dp_percent') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div x-show="scheme === 'tempo'" x-cloak>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Term Days') }} <span class="text-red-500">*</span></label>
+                <input type="number" name="term_days" min="1" max="365" step="1" value="{{ old('term_days', $proposal->term_days ?? '') }}"
+                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                @error('term_days') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Payment Terms Note') }}</label>
+                <input type="text" name="payment_terms" maxlength="255" value="{{ old('payment_terms', $proposal->payment_terms ?? '') }}"
+                        placeholder="{{ __('e.g. DP 30% after PO, 70% after BAST') }}"
+                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                @error('payment_terms') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Delivery Terms') }}</label>
+                <input type="text" name="delivery_terms" maxlength="255" value="{{ old('delivery_terms', $proposal->delivery_terms ?? '') }}"
+                        placeholder="{{ __('e.g. Ready stock 3-5 working days') }}"
+                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                @error('delivery_terms') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+        </div>
+    </div>
+
     <div>
         <div class="flex items-center justify-between mb-2">
             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} <span class="text-red-500">*</span></label>

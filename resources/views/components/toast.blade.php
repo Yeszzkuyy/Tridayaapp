@@ -3,6 +3,7 @@
 @php
 $styles = [
     'success' => 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400',
+    'warning' => 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300',
     'error' => 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400',
 ];
 $role = $type === 'error' ? 'alert' : 'status';

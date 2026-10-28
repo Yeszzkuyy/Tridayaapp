@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\SetSecurityHeaders::class,
+            \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
 
         // Percayai proxy (nginx/ngrok) agar Laravel melihat skema https asli

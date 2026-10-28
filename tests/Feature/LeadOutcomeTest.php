@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Project;
 use App\Models\ProjectStatus;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -42,11 +43,13 @@ class LeadOutcomeTest extends TestCase
     public function test_convert_stores_closing_note_and_time(): void
     {
         $user = $this->marketingUser();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
         $lead = $this->makeLead();
         $status = ProjectStatus::create(['name' => 'Open', 'sort_order' => 1]);
         $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
 
-        $this->actingAs($user)->patch(route('leads.convert', $lead), [
+        $this->actingAs($admin)->patch(route('leads.convert', $lead), [
             'project_name' => 'Project Deal',
             'project_status_id' => $status->id,
             'work_type_id' => $workType->id,
@@ -62,6 +65,26 @@ class LeadOutcomeTest extends TestCase
         $res = $this->actingAs($user)->get(route('leads.show', $lead));
         $res->assertOk();
         $res->assertSee('Deal 10 titik fiber.');
+    }
+
+    public function test_sales_cannot_convert_lead_without_accepted_quotation(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $sales->id]);
+        $status = ProjectStatus::create(['name' => 'Open', 'sort_order' => 1]);
+        $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
+
+        $this->actingAs($sales)->patch(route('leads.convert', $lead), [
+            'project_name' => 'Project Kosong',
+            'project_status_id' => $status->id,
+            'work_type_id' => $workType->id,
+        ])->assertRedirect(route('leads.show', $lead))
+            ->assertSessionHas('error');
+
+        $this->assertSame(0, Project::count());
+        $this->assertSame('hot', $lead->fresh()->status);
     }
 
     public function test_lost_reason_saved_via_detail_and_cleared_on_reopen(): void

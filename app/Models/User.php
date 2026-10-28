@@ -59,6 +59,22 @@ class User extends Authenticatable
      * true bila user sudah pernah mengganti password bawaannya sendiri
      * (via form password / reset). null = masih password awal → belum aman.
      */
+    /**
+     * URL foto avatar (mengutamakan upload lokal, fallback ke foto Google).
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+
+        if ($this->google_avatar) {
+            return $this->google_avatar;
+        }
+
+        return null;
+    }
+
     public function hasSecurePassword(): bool
     {
         return $this->password_changed_at !== null;

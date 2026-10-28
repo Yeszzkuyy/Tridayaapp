@@ -52,6 +52,8 @@ class SupplierInvoiceController extends Controller
             ->latest('issue_date')
             ->get();
 
+        $idempotencyKey = (string) \Illuminate\Support\Str::uuid();
+
         $selectedOrder = $request->integer('supplier_purchase_order_id')
             ? $orders->firstWhere('id', $request->integer('supplier_purchase_order_id'))
             : null;
@@ -69,6 +71,7 @@ class SupplierInvoiceController extends Controller
             'selectedOrder' => $selectedOrder,
             'selectedReceiptId' => $request->integer('goods_receipt_id') ?: null,
             'types' => SupplierInvoice::TYPES,
+            'idempotencyKey' => $idempotencyKey,
         ]);
     }
 
@@ -79,12 +82,19 @@ class SupplierInvoiceController extends Controller
             'goods_receipt_id' => 'nullable|exists:goods_receipts,id',
             'supplier_invoice_number' => 'required|string|max:100',
             'invoice_type' => 'required|in:dp,partial,full',
+            'idempotency_key' => 'nullable|string|max:64',
             'amount' => 'required|numeric|min:0.01|max:999999999999',
             'issue_date' => 'required|date',
             'due_date' => 'nullable|date|after_or_equal:issue_date',
             'notes' => 'nullable|string|max:2000',
             'file' => ['nullable', 'file', 'max:20480', SecureFile::documents()],
         ]);
+
+        $key = $validated['idempotency_key'] ?? null;
+        if ($key && ($existing = SupplierInvoice::where('idempotency_key', $key)->first())) {
+            return redirect()->route('admin.supplier-invoices.show', $existing)
+                ->with('success', __('This supplier invoice has already been recorded.'));
+        }
 
         $order = SupplierPurchaseOrder::findOrFail($validated['supplier_purchase_order_id']);
         abort_unless(in_array($order->status, ['ordered', 'partially_received', 'received'], true), 422,
@@ -132,6 +142,7 @@ class SupplierInvoiceController extends Controller
                 'due_date' => $validated['due_date'] ?? null,
                 'invoice_file_path' => $filePath,
                 'notes' => $validated['notes'] ?? null,
+                'idempotency_key' => $validated['idempotency_key'] ?? null,
                 'created_by' => auth()->id(),
             ]);
         });
@@ -147,7 +158,9 @@ class SupplierInvoiceController extends Controller
             'payments.creator', 'creator',
         ])->loadSum('payments', 'amount');
 
-        return view('admin.supplier-invoices.show', compact('supplierInvoice'));
+        $idempotencyKey = (string) \Illuminate\Support\Str::uuid();
+
+        return view('admin.supplier-invoices.show', compact('supplierInvoice', 'idempotencyKey'));
     }
 
     public function cancel(SupplierInvoice $supplierInvoice)

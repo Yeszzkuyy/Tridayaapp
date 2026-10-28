@@ -57,6 +57,47 @@
                         <span class="text-xs text-slate-400">· {{ __('Remaining') }} Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</span>
                     </dd>
                 </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Customer PO Number') }}</dt>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer_po_number ?: __('Not set yet') }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Quotation') }}</dt>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                        @if($invoice->proposal)
+                            <a href="{{ route('sales.proposals.show', $invoice->proposal) }}" class="text-accent-600 dark:text-accent-400 hover:underline">{{ $invoice->proposal->proposal_number }}</a>
+                        @else
+                            <span class="text-slate-400 italic">{{ __('No quotation linked') }}</span>
+                        @endif
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Payment Terms') }}</dt>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->proposal?->paymentTermsSummary() ?: __('Not set yet') }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Billing Address') }}</dt>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->customer?->billingAddress() ?: __('Not set yet') }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Finance PIC') }}</dt>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                        {{ $invoice->customer?->financeContact() ?: __('Not set yet') }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('NPWP') }}</dt>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                        @if($invoice->customer?->npwp)
+                            {{ $invoice->customer->npwp }}
+                            @if($invoice->customer->npwp_document_path)
+                                <a href="{{ route('customers.npwp', $invoice->customer) }}" target="_blank" class="ml-1 text-xs text-indigo-600 hover:underline">{{ __('Download') }}</a>
+                            @endif
+                        @else
+                            <span class="text-slate-400 italic">{{ __('Not set yet') }}</span>
+                        @endif
+                    </dd>
+                </div>
             </dl>
             @if($invoice->notes)
                 <div class="mt-6">

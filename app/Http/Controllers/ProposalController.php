@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GoodsReceipt;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Project;
@@ -9,6 +10,8 @@ use App\Models\Product;
 use App\Models\ProjectStatus;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
+use App\Models\SupplierInvoice;
+use App\Models\SupplierPurchaseOrder;
 use App\Models\WorkType;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
@@ -128,6 +131,18 @@ class ProposalController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0|max:999999999999',
             'items.*.unit_cost' => 'nullable|numeric|min:0|max:999999999999',
             'items.*.discount' => 'nullable|numeric|min:0|max:999999999999',
+        ];
+    }
+
+    /** Aturan syarat bayar & estimasi pengiriman. */
+    private function paymentRules(bool $required = false): array
+    {
+        return [
+            'payment_scheme' => ($required ? 'required' : 'nullable').'|in:'.implode(',', Proposal::PAYMENT_SCHEMES),
+            'dp_percent' => 'nullable|required_if:payment_scheme,dp|numeric|min:1|max:99',
+            'term_days' => 'nullable|required_if:payment_scheme,tempo|integer|min:1|max:365',
+            'payment_terms' => 'nullable|string|max:255',
+            'delivery_terms' => 'nullable|string|max:255',
         ];
     }
 
@@ -304,7 +319,7 @@ class ProposalController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
-        ], $this->itemRules()));
+        ], $this->paymentRules(), $this->itemRules()));
 
         $canManageCost = Gate::allows('updateCost', Proposal::class);
         $this->assertNoCostTampering($validated['items'], $canManageCost);
@@ -325,6 +340,11 @@ class ProposalController extends Controller
                     'tax' => $validated['tax'] ?? 0,
                     'notes' => $validated['notes'] ?? null,
                     'internal_notes' => $validated['internal_notes'] ?? null,
+                    'payment_scheme' => $validated['payment_scheme'] ?? null,
+                    'dp_percent' => $validated['dp_percent'] ?? null,
+                    'term_days' => $validated['term_days'] ?? null,
+                    'payment_terms' => $validated['payment_terms'] ?? null,
+                    'delivery_terms' => $validated['delivery_terms'] ?? null,
                     'status' => 'draft',
                 ]);
 
@@ -381,7 +401,7 @@ class ProposalController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
-        ], $this->itemRules()));
+        ], $this->paymentRules(), $this->itemRules()));
 
         $canManageCost = Gate::allows('updateCost', Proposal::class);
         $this->assertNoCostTampering($validated['items'], $canManageCost);
@@ -394,6 +414,11 @@ class ProposalController extends Controller
                 'tax' => $validated['tax'] ?? 0,
                 'notes' => $validated['notes'] ?? null,
                 'internal_notes' => $validated['internal_notes'] ?? null,
+                'payment_scheme' => $validated['payment_scheme'] ?? null,
+                'dp_percent' => $validated['dp_percent'] ?? null,
+                'term_days' => $validated['term_days'] ?? null,
+                'payment_terms' => $validated['payment_terms'] ?? null,
+                'delivery_terms' => $validated['delivery_terms'] ?? null,
             ]);
             $this->persistItems($proposal, $validated['items'], $canManageCost);
         });
@@ -549,7 +574,7 @@ class ProposalController extends Controller
         $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'accepted', 422);
 
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             // File wajib bila belum ada PO tersimpan; bila sudah ada, boleh
             // hanya memperbarui nomor/tanggal PO & info pengiriman.
             'po_file' => [
@@ -562,13 +587,18 @@ class ProposalController extends Controller
             'po_date' => 'nullable|date',
             'delivery_deadline' => 'nullable|date',
             'delivery_address' => 'nullable|string|max:255',
-        ]);
+        ], $this->paymentRules()));
 
         $payload = [
             'po_number' => $validated['po_number'] ?? $proposal->po_number,
             'po_date' => $validated['po_date'] ?? $proposal->po_date,
             'delivery_deadline' => $validated['delivery_deadline'] ?? $proposal->delivery_deadline,
             'delivery_address' => $validated['delivery_address'] ?? $proposal->delivery_address,
+            'payment_scheme' => $validated['payment_scheme'] ?? $proposal->payment_scheme,
+            'dp_percent' => $validated['dp_percent'] ?? $proposal->dp_percent,
+            'term_days' => $validated['term_days'] ?? $proposal->term_days,
+            'payment_terms' => $validated['payment_terms'] ?? $proposal->payment_terms,
+            'delivery_terms' => $validated['delivery_terms'] ?? $proposal->delivery_terms,
         ];
 
         if ($request->hasFile('po_file')) {
@@ -609,6 +639,11 @@ class ProposalController extends Controller
         abort_unless($proposal->status === 'accepted', 422);
         abort_if($proposal->project()->exists(), 422, __('This proposal has already been converted.'));
 
+        // Handoff wajib lengkap: tanpa PO & cara bayar, Admin akan mengetik ulang.
+        abort_unless(filled($proposal->po_document_path), 422, __('Upload the customer PO before converting to a project.'));
+        abort_unless(filled($proposal->po_number), 422, __('Fill in the customer PO number before converting to a project.'));
+        abort_unless(filled($proposal->payment_scheme), 422, __('Fill in the payment terms before converting to a project.'));
+
         $validated = $request->validate([
             'work_type_id' => 'required|exists:work_types,id',
             'start_date' => 'nullable|date',
@@ -634,9 +669,25 @@ class ProposalController extends Controller
                 'quotation_number' => $proposal->proposal_number,
                 'proposal_id' => $proposal->id,
                 'start_date' => $validated['start_date'] ?? null,
+                'delivery_deadline' => $proposal->delivery_deadline,
                 'description' => $description,
                 'progress' => 0,
             ]);
+
+            // Purchasing boleh membuat Supplier PO sebelum project lahir.
+            // Saat project dibuat, tautkan dokumen procurement yang masih
+            // yatim agar filter project/PT dan laporan tidak kehilangan data.
+            SupplierPurchaseOrder::where('proposal_id', $proposal->id)
+                ->whereNull('project_id')
+                ->update(['project_id' => $project->id]);
+
+            GoodsReceipt::whereNull('project_id')
+                ->whereHas('purchaseOrder', fn ($q) => $q->where('proposal_id', $proposal->id))
+                ->update(['project_id' => $project->id]);
+
+            SupplierInvoice::whereNull('project_id')
+                ->whereHas('purchaseOrder', fn ($q) => $q->where('proposal_id', $proposal->id))
+                ->update(['project_id' => $project->id]);
 
             $this->log($lead, 'proposal_converted', [
                 'number' => $proposal->proposal_number,
@@ -653,7 +704,16 @@ class ProposalController extends Controller
             new ProjectConvertedNotification($project)
         );
 
-        return redirect()->route('projects.show', $project)
+        $redirect = redirect()->route('projects.show', $project)
             ->with('success', __('Project created from proposal successfully.'));
+
+        if (blank($proposal->delivery_deadline)) {
+            $redirect->with(
+                'warning',
+                __('Project created, but the delivery deadline is still empty. Please complete it in the quotation.')
+            );
+        }
+
+        return $redirect;
     }
 }

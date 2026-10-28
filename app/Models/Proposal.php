@@ -13,6 +13,8 @@ class Proposal extends Model
         'draft', 'pending_technical', 'ready', 'sent', 'viewed', 'revision', 'accepted', 'rejected', 'expired', 'cancelled',
     ];
 
+    public const PAYMENT_SCHEMES = ['full', 'dp', 'tempo'];
+
     protected $fillable = [
         'lead_id',
         'proposal_number',
@@ -31,6 +33,11 @@ class Proposal extends Model
         'po_date',
         'delivery_deadline',
         'delivery_address',
+        'payment_scheme',
+        'dp_percent',
+        'term_days',
+        'payment_terms',
+        'delivery_terms',
         'total_cost',
         'gross_profit',
         'gross_margin',
@@ -44,6 +51,8 @@ class Proposal extends Model
         'valid_until' => 'date',
         'po_date' => 'date',
         'delivery_deadline' => 'date',
+        'dp_percent' => 'float',
+        'term_days' => 'integer',
         'sent_at' => 'datetime',
     ];
 
@@ -156,6 +165,75 @@ class Proposal extends Model
         return $this->isReadyForPurchasing()
             ? __('PO Received — Ready for Purchasing')
             : __('Waiting for Customer PO');
+    }
+
+    /** Label skema pembayaran untuk form/daftar. */
+    public static function paymentSchemeLabel(?string $scheme): string
+    {
+        return match ($scheme) {
+            'full' => __('Full Payment 100%'),
+            'dp' => __('Down Payment + Settlement'),
+            'tempo' => __('Tempo / Net Days'),
+            default => __('Not set yet'),
+        };
+    }
+
+    /**
+     * Ringkasan syarat bayar yang ditampilkan ke pelanggan & Admin.
+     * `payment_terms` (teks bebas) selalu menang bila diisi Sales.
+     */
+    public function paymentTermsSummary(): string
+    {
+        if (filled($this->payment_terms)) {
+            return $this->payment_terms;
+        }
+
+        return match ($this->payment_scheme) {
+            'full' => __('Full payment 100%'),
+            'dp' => $this->dp_percent !== null
+                ? __('DP :dp% + settlement :rest%', [
+                    'dp' => self::formatPercent((float) $this->dp_percent),
+                    'rest' => self::formatPercent(100 - (float) $this->dp_percent),
+                ])
+                : __('Down payment + settlement'),
+            'tempo' => $this->term_days
+                ? __('Net :days days', ['days' => $this->term_days])
+                : __('Tempo'),
+            default => __('Not set yet'),
+        };
+    }
+
+    /** Nominal DP yang diharapkan (null bila bukan skema DP). */
+    public function expectedDpAmount(): ?float
+    {
+        if ($this->payment_scheme !== 'dp' || $this->dp_percent === null) {
+            return null;
+        }
+
+        return round((float) $this->grand_total * (float) $this->dp_percent / 100, 2);
+    }
+
+    /** Field handoff yang masih kosong (untuk peringatan di UI Admin). */
+    public function handoffWarnings(): array
+    {
+        $warnings = [];
+
+        if (blank($this->po_number)) {
+            $warnings[] = __('Customer PO number is missing.');
+        }
+        if (blank($this->delivery_deadline)) {
+            $warnings[] = __('Delivery deadline is missing.');
+        }
+        if (blank($this->payment_scheme)) {
+            $warnings[] = __('Payment terms are missing.');
+        }
+
+        return $warnings;
+    }
+
+    private static function formatPercent(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, ',', '.'), '0'), ',');
     }
 
     public static function statusLabel(string $status): string

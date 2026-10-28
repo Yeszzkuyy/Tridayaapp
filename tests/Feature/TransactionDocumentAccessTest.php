@@ -81,7 +81,7 @@ class TransactionDocumentAccessTest extends TestCase
             ->put(route('admin.invoices.update', $invoice), [
                 'customer_id' => $customer->id,
                 'amount' => 999999,
-                'status' => 'paid',
+                'status' => 'unpaid',
                 'issue_date' => now()->toDateString(),
             ])
             ->assertRedirect();
@@ -132,7 +132,7 @@ class TransactionDocumentAccessTest extends TestCase
             ->put(route('admin.invoices.update', $invoice), [
                 'customer_id' => $customer->id,
                 'amount' => 2000000,
-                'status' => 'paid',
+                'status' => 'unpaid',
                 'issue_date' => now()->toDateString(),
             ])
             ->assertRedirect();
@@ -490,7 +490,7 @@ class TransactionDocumentAccessTest extends TestCase
             ->put(route('admin.invoices.update', $invoice), [
                 'customer_id' => $customer->id,
                 'amount' => 999999,
-                'status' => 'paid',
+                'status' => 'unpaid',
                 'issue_date' => now()->toDateString(),
             ])
             ->assertForbidden();

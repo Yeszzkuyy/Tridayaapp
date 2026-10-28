@@ -21,6 +21,7 @@
              @searchable-select:changed.window="pick($event.detail.id)">
             <form action="{{ route('admin.payments.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
+                <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $idempotencyKey) }}">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Invoice') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
