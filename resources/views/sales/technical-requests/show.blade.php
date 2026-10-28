@@ -18,8 +18,8 @@
         $leadLabel = $technicalRequest->lead?->customer?->name ?? __('Lead').' #'.$technicalRequest->lead_id;
         $customer = $technicalRequest->lead?->customer;
         $displayLocation = $technicalRequest->location ?: $customer?->address;
-        $displayPicName = $technicalRequest->pic_contact_name ?: $customer?->contact_person;
-        $displayPicPhone = $technicalRequest->pic_contact_phone ?: ($customer?->whatsapp ?: $customer?->phone);
+        $displayPicName = $technicalRequest->pic_contact_name ?: $customer?->picName();
+        $displayPicPhone = $technicalRequest->pic_contact_phone ?: $customer?->picWhatsapp();
         $attachmentName = $technicalRequest->attachment_path
             ? preg_replace('/^\d+_/', '', basename($technicalRequest->attachment_path))
             : null;

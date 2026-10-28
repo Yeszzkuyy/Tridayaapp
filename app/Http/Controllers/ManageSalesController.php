@@ -343,8 +343,8 @@ class ManageSalesController extends Controller
                         fputcsv($handle, [
                             $safe($lead->customer?->name ?? '-'),
                             $safe($lead->pt_group ?? '-'),
-                            $safe($lead->customer?->contact_person ?? '-'),
-                            $safe($lead->customer?->phone ?? $lead->customer?->whatsapp ?? '-'),
+                            $safe($lead->customer?->picName() ?? '-'),
+                            $safe($lead->customer?->picPhone() ?? '-'),
                             $safe(ucfirst($lead->status)),
                             $safe($lead->kebutuhan ?? '-'),
                             $safe($lead->solusi ?? '-'),

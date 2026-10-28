@@ -24,7 +24,7 @@
             </div>
             <div>
                 <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('PIC') }}</div>
-                <div class="text-sm text-slate-700 mt-1">{{ $lead->customer->contact_person ?? '-' }}</div>
+                <div class="text-sm text-slate-700 mt-1">{{ $lead->customer->picName() ?? '-' }}</div>
             </div>
             <div>
                 <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Entry Date') }}</div>

@@ -54,7 +54,7 @@
                         <td class="px-6 py-4">
                             <div class="flex items-center justify-end gap-2">
                                 @php
-                                    $fuWaMessage = 'Halo ' . ($fu->customer?->contact_person ?: ($fu->customer?->name ?? ''))
+                                    $fuWaMessage = 'Halo ' . ($fu->customer?->picName() ?: ($fu->customer?->name ?? ''))
                                         . ', izin follow up "' . Str::limit($fu->description, 60) . '".';
                                     $fuWaLink = $fu->customer?->waLink($fuWaMessage);
                                     $fuMailLink = $fu->customer?->email
