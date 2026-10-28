@@ -33,7 +33,7 @@ class Instalasi extends Model
 
     public function isTechnicallyComplete(): bool
     {
-        return $this->status === 'completed' && filled($this->completed_at);
+        return $this->status === 'completed';
     }
 
     public function hasReport(): bool

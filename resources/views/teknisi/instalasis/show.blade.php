@@ -56,7 +56,7 @@
                 <p class="text-xs text-slate-400">{{ __('Job Status') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->job_status ?? '-' }}</p>
             </div>
-            @if($instalasi->isTechnicallyComplete())
+            @if($instalasi->completed_at)
                 <div>
                     <p class="text-xs text-slate-400">{{ __('Technically Complete') }}</p>
                     <p class="font-medium text-green-600 dark:text-green-400">{{ $instalasi->completed_at->format('d M Y H:i') }}</p>
