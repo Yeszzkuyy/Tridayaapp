@@ -351,7 +351,9 @@ class LeadController extends Controller
     {
         $this->authorize('create', Lead::class);
 
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::with('contacts:id,customer_id,name,is_primary')
+            ->orderBy('name')
+            ->get(['id', 'name', 'contact_person']);
         $partners = Partner::orderBy('name')->get(['id', 'name', 'type']);
         $segments = self::SEGMENTS;
         $sources = self::SOURCES;
@@ -420,6 +422,83 @@ class LeadController extends Controller
         ], fn ($v) => filled($v));
     }
 
+    /**
+     * Atribut customer yang boleh diisi dari form Lead.
+     *
+     * Hanya nilai terisi yang dikembalikan: form Lead tidak boleh menghapus
+     * data customer yang sudah ada (non-destruktif).
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function customerAttributes(array $validated): array
+    {
+        return array_filter([
+            'name' => $validated['customer_name'] ?? null,
+            'company' => $validated['customer_company'] ?? null,
+            'address' => $validated['customer_address'] ?? null,
+            'phone' => $validated['customer_phone'] ?? null,
+            'whatsapp' => $validated['customer_whatsapp'] ?? null,
+            'email' => $validated['customer_email'] ?? null,
+            'pt_group' => $validated['pt_group'] ?? null,
+            'whatsapp_account_id' => $validated['whatsapp_account_id'] ?? null,
+        ], fn ($value) => filled($value));
+    }
+
+    /**
+     * Data PIC dari form Lead. Email tidak ikut: field email di form Lead
+     * adalah email perusahaan, bukan email pribadi PIC.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, string>
+     */
+    private function picAttributes(array $validated): array
+    {
+        return array_filter([
+            'name' => $validated['customer_contact_person'] ?? null,
+            'phone' => $validated['customer_phone'] ?? null,
+            'whatsapp' => $validated['customer_whatsapp'] ?? null,
+        ], fn ($value) => filled($value));
+    }
+
+    /**
+     * Sinkronkan data customer + PIC dari form Lead.
+     *
+     * Non-destruktif: field yang dikosongkan di form tidak menghapus data
+     * customer. Nomor WA/telepon PIC hanya diisi bila PIC belum punya nomor,
+     * supaya nomor kantor tidak menimpa nomor pribadi PIC.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncCustomerFromLead(Customer $customer, array $validated): void
+    {
+        $attributes = $this->customerAttributes($validated);
+
+        // WA account hanya diisi kalau customer belum terhubung ke account lain.
+        if (filled($customer->whatsapp_account_id)) {
+            unset($attributes['whatsapp_account_id']);
+        }
+
+        // Form Lead hanya punya satu kolom nama perusahaan; company mengikuti
+        // nama supaya tampilan konsisten.
+        if (isset($attributes['name']) && ! isset($attributes['company'])) {
+            $attributes['company'] = $attributes['name'];
+        }
+
+        if ($attributes) {
+            $customer->fill($attributes);
+            if ($customer->isDirty()) {
+                $customer->saveQuietly();
+            }
+        }
+
+        $pic = $this->picAttributes($validated);
+
+        if ($pic) {
+            $customer->syncPrimaryContact($pic, onlyMissing: true);
+        }
+    }
+
     public function store(Request $request)
     {
         $this->authorize('create', Lead::class);
@@ -455,23 +534,15 @@ class LeadController extends Controller
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
         if ($validated['customer_mode'] === 'new') {
-            $validated['customer_id'] = Customer::create([
+            $customer = Customer::create($this->customerAttributes($validated) + [
                 'name' => $validated['customer_name'],
                 'company' => $validated['customer_company'] ?? $validated['customer_name'],
-                'pt_group' => $validated['pt_group'],
-                'email' => $validated['customer_email'] ?? null,
-                'phone' => $validated['customer_phone'] ?? null,
-                'whatsapp' => $validated['customer_whatsapp'] ?? null,
-                'address' => $validated['customer_address'] ?? null,
-                'contact_person' => $validated['customer_contact_person'] ?? null,
-            ])->id;
+            ]);
+            $customer->syncPrimaryContact($this->picAttributes($validated) + ['created_by' => auth()->id()]);
+            $validated['customer_id'] = $customer->id;
         } else {
             $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
-            $customerSync = ['pt_group' => $validated['pt_group']];
-            if (!empty($validated['customer_contact_person'])) {
-                $customerSync['contact_person'] = $validated['customer_contact_person'];
-            }
-            $customer->update($customerSync);
+            $this->syncCustomerFromLead($customer, $validated);
         }
 
         unset(
@@ -553,7 +624,9 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
 
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::with('contacts:id,customer_id,name,is_primary')
+            ->orderBy('name')
+            ->get(['id', 'name', 'contact_person']);
         $partners = Partner::orderBy('name')->get(['id', 'name', 'type']);
         $segments = self::SEGMENTS;
         $sources = self::SOURCES;
@@ -596,38 +669,22 @@ class LeadController extends Controller
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
         if ($validated['customer_mode'] === 'new') {
-            $validated['customer_id'] = Customer::create([
+            $customer = Customer::create($this->customerAttributes($validated) + [
                 'name' => $validated['customer_name'],
                 'company' => $validated['customer_company'] ?? $validated['customer_name'],
-                'pt_group' => $validated['pt_group'],
-                'email' => $validated['customer_email'] ?? null,
-                'phone' => $validated['customer_phone'] ?? null,
-                'whatsapp' => $validated['customer_whatsapp'] ?? null,
-                'address' => $validated['customer_address'] ?? null,
-                'contact_person' => $validated['customer_contact_person'] ?? null,
-            ])->id;
+            ]);
+            $customer->syncPrimaryContact($this->picAttributes($validated) + ['created_by' => auth()->id()]);
+            $validated['customer_id'] = $customer->id;
         } else {
-            $customerData = array_filter([
-                'name' => $validated['customer_name'] ?? null,
-                'contact_person' => $validated['customer_contact_person'] ?? null,
-                'address' => $validated['customer_address'] ?? null,
-                'phone' => $validated['customer_phone'] ?? null,
-                'whatsapp' => $validated['customer_whatsapp'] ?? null,
-                'email' => $validated['customer_email'] ?? null,
-                'pt_group' => $validated['pt_group'] ?? null,
-            ], fn ($value) => $value !== null);
+            $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
 
-            if ($customerData) {
-                $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
-
-                // Pindah lead ke customer lain = butuh hak tulis customer.
-                // Touch-up customer yang sama tetap boleh (alur marketing).
-                if ((int) $customer->id !== (int) $lead->customer_id) {
-                    $this->authorize('update', $customer);
-                }
-
-                $customer->update($customerData);
+            // Pindah lead ke customer lain = butuh hak tulis customer.
+            // Touch-up customer yang sama tetap boleh (alur marketing).
+            if ((int) $customer->id !== (int) $lead->customer_id) {
+                $this->authorize('update', $customer);
             }
+
+            $this->syncCustomerFromLead($customer, $validated);
         }
 
         unset(
@@ -1115,7 +1172,7 @@ class LeadController extends Controller
             $now = now();
             $leadsBatch = [];
 
-            \Illuminate\Support\Facades\DB::transaction(function () use ($parsed, &$customerIds, &$leadsBatch, &$results, $usersById, $usersByNameLower, $now) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($parsed, &$customerIds, &$leadsBatch, &$results, $usersById, $usersByNameLower, $wantedNames, $now) {
                 // Customer baru: bulk insert sekaligus, bukan firstOrCreate per baris.
                 $newNames = collect($parsed)->pluck('company')->unique()->reject(fn ($n) => isset($customerIds[$n]))->values();
                 if ($newNames->isNotEmpty()) {
@@ -1125,6 +1182,36 @@ class LeadController extends Controller
                         ['created_at' => $now, 'updated_at' => $now]
                     ))->all());
                     $customerIds += Customer::whereIn('name', $newNames->all())->pluck('id', 'name')->all();
+                }
+
+                // Lengkapi data customer (baru maupun lama) + buat baris PIC.
+                // Non-destruktif: hanya field kosong yang diisi dari file.
+                $customersByName = Customer::whereIn('name', $wantedNames)->get()->keyBy('name');
+
+                foreach ($parsed as $item) {
+                    $customer = $customersByName[$item['company']] ?? null;
+                    if (! $customer) {
+                        continue;
+                    }
+
+                    $attrs = $item['customer_attrs'];
+                    $picName = $attrs['contact_person'] ?? null;
+                    unset($attrs['contact_person'], $attrs['name'], $attrs['company']);
+
+                    $fill = [];
+                    foreach ($attrs as $key => $value) {
+                        if (filled($value) && blank($customer->{$key})) {
+                            $fill[$key] = $value;
+                        }
+                    }
+
+                    if ($fill) {
+                        $customer->forceFill($fill)->saveQuietly();
+                    }
+
+                    if (filled($picName)) {
+                        $customer->syncPrimaryContact(['name' => $picName], onlyMissing: true);
+                    }
                 }
 
                 foreach ($parsed as $item) {

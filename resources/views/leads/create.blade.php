@@ -138,7 +138,7 @@
                     </label>
                     <x-searchable-select
                         name="customer_id"
-                        :options="$customers->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->contact_person ? ' - '.$c->contact_person : '')])->all()"
+                        :options="$customers->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->picName() ? ' - '.$c->picName() : '')])->all()"
                         :selected="old('customer_id')"
                         placeholder="{{ __('Type the customer name to search...') }}"
                     />

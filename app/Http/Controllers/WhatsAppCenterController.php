@@ -293,13 +293,14 @@ class WhatsAppCenterController extends Controller
             $customer->update([
                 'name' => $dbName,
                 'company' => $company !== '' ? $company : $customer->company,
-                'contact_person' => $contactName,
                 'whatsapp' => $number,
                 'whatsapp_account_id' => $customer->whatsapp_account_id ?? $account->id,
                 'address' => filled($validated['address'] ?? null) ? $validated['address'] : $customer->address,
                 'notes' => $validated['notes'] ?? $customer->notes,
             ]);
         }
+
+        $this->syncWhatsappContact($customer, $contactName, $number);
 
         return response()->json($this->contactPayload($customer->fresh()));
     }
@@ -435,6 +436,14 @@ class WhatsAppCenterController extends Controller
         $number = $this->normalizeNumber($sender);
         $customer = $this->findCustomer($number);
 
+        // Nama profil WhatsApp pengirim lebih tepat jadi PIC daripada nama
+        // perusahaan yang diisi di form konversi.
+        $senderName = trim((string) WhatsappMessage::where('whatsapp_account_id', $account->id)
+            ->where('sender_number', $sender)
+            ->whereNotNull('sender_name')
+            ->latest('id')
+            ->value('sender_name'));
+
         if ($customer && $customer->whatsapp_account_id && (int) $customer->whatsapp_account_id !== (int) $account->id) {
             abort(403, 'Kontak ini milik company lain.');
         }
@@ -445,7 +454,7 @@ class WhatsAppCenterController extends Controller
                 'company' => $validated['customer_name'],
                 'whatsapp' => $number,
                 'whatsapp_account_id' => $account->id,
-                'contact_person' => $validated['customer_name'],
+                'contact_person' => $senderName !== '' ? $senderName : null,
                 'address' => $validated['customer_address'] ?? null,
             ]);
         } else {
@@ -459,6 +468,14 @@ class WhatsAppCenterController extends Controller
             if ($updates) {
                 $customer->update($updates);
             }
+        }
+
+        if ($senderName !== '') {
+            $customer->syncPrimaryContact([
+                'name' => $senderName,
+                'whatsapp' => $number,
+                'created_by' => auth()->id(),
+            ], onlyMissing: true);
         }
 
         $ptGroup = strtoupper(substr($account->account_code, 3));
@@ -1035,12 +1052,54 @@ class WhatsAppCenterController extends Controller
         return [
             'id' => $customer->id,
             'name' => $customer->name,
-            'contact_person' => $customer->contact_person,
+            'contact_person' => $customer->picName(),
             'company' => $customer->company,
-            'whatsapp' => $customer->whatsapp ?? $customer->phone,
+            'whatsapp' => $customer->picWhatsapp() ?? $customer->whatsapp ?? $customer->phone,
             'address' => $customer->address,
             'notes' => $customer->notes,
             'url' => route('customers.show', $customer),
         ];
+    }
+
+    /**
+     * Simpan nama/nomor kontak WhatsApp ke PIC customer.
+     *
+     * Nomor yang sudah terdaftar di salah satu PIC akan memperbarui PIC itu;
+     * nomor baru hanya menjadi primary bila customer belum punya PIC, supaya
+     * PIC utama yang sudah ada tidak tertimpa nama staf lain.
+     */
+    private function syncWhatsappContact(Customer $customer, string $name, string $number): void
+    {
+        $digits = preg_replace('/\D/', '', $number);
+
+        $existing = $customer->contacts()->get()->first(
+            fn ($contact) => preg_replace('/\D/', '', (string) ($contact->whatsapp ?: $contact->phone)) === $digits
+        );
+
+        if ($existing) {
+            $existing->fill(array_filter([
+                'name' => $name,
+                'whatsapp' => $number,
+            ], fn ($value) => filled($value)));
+
+            if ($existing->isDirty()) {
+                $existing->save();
+            }
+        } elseif (! $customer->primaryPic()) {
+            $customer->syncPrimaryContact([
+                'name' => $name,
+                'whatsapp' => $number,
+                'created_by' => auth()->id(),
+            ]);
+        } else {
+            $customer->contacts()->create([
+                'name' => $name,
+                'whatsapp' => $number,
+                'is_primary' => false,
+                'created_by' => auth()->id(),
+            ]);
+        }
+
+        $customer->syncContactMirror();
     }
 }
