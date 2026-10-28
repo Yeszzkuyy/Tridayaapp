@@ -546,6 +546,7 @@ Route::middleware('auth')->group(function () {
 
         // Tahap 5 — daftar BAST & closing.
         Route::get('/bast', [BastController::class, 'index'])->name('bast.index');
+        Route::get('/bast/{project}/document', [BastController::class, 'document'])->name('bast.document');
     });
 
     // ============================================

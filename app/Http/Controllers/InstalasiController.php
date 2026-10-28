@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Instalasi;
 use App\Models\Project;
+use App\Models\User;
+use App\Notifications\InstallationCompletedNotification;
 use App\Rules\SecureFile;
 use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -74,6 +77,19 @@ class InstalasiController extends Controller
         $report = $request->file('report_file');
         unset($validated['report_file']);
 
+        // "Selesai secara teknis" wajib punya bukti: file laporan instalasi.
+        // Tanpa itu Admin tidak bisa memeriksa kelengkapan sebelum membuat BAST.
+        if ($validated['status'] === 'completed' && ! $report) {
+            return back()->withInput()->withErrors([
+                'report_file' => __('Upload the installation report before completing.'),
+            ]);
+        }
+
+        if ($validated['status'] === 'completed') {
+            $validated['completed_at'] = now();
+            $validated['completed_by'] = auth()->id();
+        }
+
         $reportFields = [];
         if ($report) {
             $newPath = $report->storeAs(
@@ -98,6 +114,10 @@ class InstalasiController extends Controller
         // Laporan instalasi ikut tercatat sebagai dokumen (tanpa menyalin file).
         if ($instalasi->report_file) {
             DocumentRegistry::sync($instalasi);
+        }
+
+        if ($instalasi->status === 'completed') {
+            $this->notifyInstallationCompleted($instalasi);
         }
 
         return redirect()->route('teknisi.instalasis.index')
@@ -133,6 +153,23 @@ class InstalasiController extends Controller
         $report = $request->file('report_file');
         unset($validated['report_file']);
 
+        $wasComplete = $instalasi->status === 'completed';
+
+        if ($validated['status'] === 'completed'
+            && ! $report
+            && ! $instalasi->hasReport()) {
+            return back()->withInput()->withErrors([
+                'report_file' => __('Upload the installation report before completing.'),
+            ]);
+        }
+
+        $validated['completed_at'] = $validated['status'] === 'completed'
+            ? ($instalasi->completed_at ?? now())
+            : null;
+        $validated['completed_by'] = $validated['status'] === 'completed'
+            ? ($instalasi->completed_by ?? auth()->id())
+            : null;
+
         $oldPath = $instalasi->report_file;
         $reportFields = [];
         if ($report) {
@@ -158,6 +195,10 @@ class InstalasiController extends Controller
         // Ganti laporan = dokumen yang sama diperbarui, bukan ditambah.
         DocumentRegistry::sync($instalasi);
 
+        if (! $wasComplete && $instalasi->status === 'completed') {
+            $this->notifyInstallationCompleted($instalasi->fresh());
+        }
+
         // File lama dibersihkan hanya setelah DB sukses (urutan dijaga manual).
         if ($report && $oldPath && $oldPath !== ($reportFields['report_file'] ?? null)) {
             Storage::disk('private')->delete($oldPath);
@@ -180,6 +221,19 @@ class InstalasiController extends Controller
 
         return redirect()->route('teknisi.instalasis.index')
             ->with('success', __('Installation deleted successfully.'));
+    }
+
+    /**
+     * Beri tahu Admin & Finance bahwa pekerjaan instalasi sudah selesai
+     * secara teknis dan siap diperiksa untuk pembuatan BAST.
+     */
+    private function notifyInstallationCompleted(Instalasi $instalasi): void
+    {
+        $recipients = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['admin', 'finance']))->get();
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new InstallationCompletedNotification($instalasi));
+        }
     }
 
     /**

@@ -56,7 +56,7 @@
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Status') }} <span class="text-red-500">*</span></label>
                     <select name="status" required class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
                         <option value="">{{ __('Select Status') }}</option>
-                        @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Completed'), 'cancelled' => __('Cancelled')] as $val => $lbl)
+                        @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Technically Complete'), 'cancelled' => __('Cancelled')] as $val => $lbl)
                             <option value="{{ $val }}" {{ old('status') === $val ? 'selected' : '' }}>{{ $lbl }}</option>
                         @endforeach
                     </select>
