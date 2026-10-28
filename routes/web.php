@@ -385,6 +385,8 @@ Route::middleware('auth')->group(function () {
         // Tugas Saya: hanya request yang ditugaskan ke teknisi yang login.
         Route::get('/tugas-saya', [TechnicianTaskController::class, 'index'])->name('tasks.index');
         Route::get('/tugas-saya/{technicalRequest}', [TechnicianTaskController::class, 'show'])->name('tasks.show');
+        // Field Work: satu daftar untuk Instalasi + Survey, terlihat semua role teknisi.
+        Route::get('/field-work', [\App\Http\Controllers\FieldWorkController::class, 'index'])->name('field-work.index');
         // Detail request dalam konteks Teknisi: notifikasi sales→teknisi mendarat
         // di menu Teknisi (sidebar Teknisi aktif), bukan di menu Sales.
         Route::get('/price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');

@@ -245,13 +245,13 @@
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
                                          <span>{{ __('Jadwal') }}</span>
                                      </a>
-                                     @unless($tekRecap)
-                                     <a wire:navigate.hover href="{{ route('teknisi.surveys.index') }}"
-                                       aria-current="{{ request()->routeIs('teknisi.surveys*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.surveys*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" aria-hidden="true"></span>
-                                        <span>{{ __('Survey') }}</span>
+                                     <a wire:navigate.hover href="{{ route('teknisi.field-work.index') }}"
+                                       aria-current="{{ request()->routeIs(['teknisi.field-work*', 'teknisi.surveys*', 'teknisi.instalasis*']) ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs(['teknisi.field-work*', 'teknisi.surveys*', 'teknisi.instalasis*']) ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                                        <span>{{ __('Field Work') }}</span>
                                     </a>
+                                    @unless($tekRecap)
                                     <a wire:navigate.hover href="{{ route('teknisi.sizing-projects.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.sizing-projects*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.sizing-projects*') ? $navActive : $navInactive }}">
@@ -259,12 +259,6 @@
                                         <span>{{ __('Sizing Project') }}</span>
                                     </a>
                                      @endunless
-                                     <a wire:navigate.hover href="{{ route('teknisi.instalasis.index') }}"
-                                       aria-current="{{ request()->routeIs('teknisi.instalasis*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.instalasis*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                                         <span>{{ __('Installation') }}</span>
-                                     </a>
                                      @unless($tekRecap)
                                      <a wire:navigate.hover href="{{ route('teknisi.documents.index') }}"
                                        aria-current="{{ request()->routeIs('teknisi.documents*') ? 'page' : 'false' }}"
