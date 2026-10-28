@@ -102,7 +102,7 @@ class RoleMatrixTest extends TestCase
             ->getContent();
 
         foreach ([
-            '/teknisi/dashboard', '/projects', '/teknisi/jadwal', '/teknisi/instalasis',
+            '/teknisi/dashboard', '/projects', '/teknisi/jadwal', '/teknisi/field-work',
             '/marketing/dashboard', '/leads', '/partners',
             '/sales/dashboard',
         ] as $link) {

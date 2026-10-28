@@ -29,6 +29,11 @@ class Project extends Model
         'bast_number',
         'bast_date',
         'bast_document_id',
+        'bast_signed_3dy_name',
+        'bast_signed_3dy_at',
+        'bast_signed_customer_name',
+        'bast_signed_customer_at',
+        'bast_ready_at',
         'delivery_deadline',
         'commercial_closed_at',
         'start_date',
@@ -43,6 +48,9 @@ class Project extends Model
         'progress' => 'integer',
         'requires_installation' => 'boolean',
         'bast_date' => 'date',
+        'bast_signed_3dy_at' => 'datetime',
+        'bast_signed_customer_at' => 'datetime',
+        'bast_ready_at' => 'datetime',
         'delivery_deadline' => 'date',
         'commercial_closed_at' => 'datetime',
     ];
@@ -164,6 +172,33 @@ class Project extends Model
     public function bastDocument()
     {
         return $this->belongsTo(ProjectDocument::class, 'bast_document_id');
+    }
+
+    /**
+     * BAST dianggap siap untuk Finance bila dokumennya sudah tersimpan dan
+     * sudah ditandatangani kedua pihak (3DY + pelanggan).
+     */
+    public function isBastReady(): bool
+    {
+        return filled($this->bast_document_id)
+            && filled($this->bast_signed_3dy_at)
+            && filled($this->bast_signed_customer_at);
+    }
+
+    /**
+     * Sinkronkan penanda "siap Finance" setelah form BAST disimpan.
+     * Timestamp pertama kali siap dipertahankan; bila syarat tidak lagi
+     * terpenuhi (mis. dokumen/tanda tangan dihapus), penanda dikosongkan.
+     */
+    public function refreshBastReady(): bool
+    {
+        $ready = $this->isBastReady();
+
+        $this->forceFill([
+            'bast_ready_at' => $ready ? ($this->bast_ready_at ?? now()) : null,
+        ])->save();
+
+        return $ready;
     }
 
     /**
