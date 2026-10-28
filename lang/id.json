@@ -4360,5 +4360,15 @@
     "Finance": "Finance",
     "Not started": "Belum dimulai",
     "Not required": "Tidak diperlukan",
-    "Delivery pending": "Pengiriman tertunda"
+    "Delivery pending": "Pengiriman tertunda",
+    "Each photo must be under :mb MB.": "Setiap foto maksimal :mb MB.",
+    "Maximum :n photos allowed.": "Maksimal :n foto.",
+    "Min. 1 photo, max. :n photos (Max :mb MB per photo)": "Min. 1 foto, maks. :n foto (maks. :mb MB per foto)",
+    "Photo limit reached. Delete a photo first if you want to replace it.": "Batas foto sudah tercapai. Hapus satu foto dulu kalau ingin menggantinya.",
+    "Processing photos…": "Memproses foto…",
+    "Some photos are still larger than :mb MB after compression.": "Beberapa foto masih lebih besar dari :mb MB setelah dikompres.",
+    "This photo could not be processed. Please try another one.": "Foto ini tidak bisa diproses. Coba foto lain.",
+    "Too many photos selected. Maximum :n photos.": "Foto yang dipilih terlalu banyak. Maksimal :n foto.",
+    "Uploaded photos": "Foto terunggah",
+    "You can pick photos several times; new picks are added.": "Bisa pilih foto beberapa kali; pilihan baru otomatis ditambahkan."
 }

@@ -76,7 +76,7 @@
             @include('sales.meetings._photo-uploader', [
                 'existingPhotos' => $meeting->meeting_photos ?? [],
                 'required' => empty($meeting->meeting_photos),
-                'maxFiles' => max(0, 3 - count($meeting->meeting_photos ?? [])),
+                'maxFiles' => max(0, \App\Models\FollowUp::MAX_MEETING_PHOTOS - count($meeting->meeting_photos ?? [])),
             ])
 
             {{-- 2. Meeting Notes / Minutes of Meeting (MOM) --}}

@@ -99,8 +99,8 @@ class SalesMeetingController extends Controller
             'location' => 'nullable|string|max:255',
             'description' => 'required|string|max:2000',
             'next_follow_up_date' => 'nullable|date|after_or_equal:follow_up_date',
-            'meeting_photos' => 'nullable|array|max:3',
-            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'meeting_photos' => 'nullable|array|max:'.FollowUp::MAX_MEETING_PHOTOS,
+            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:'.FollowUp::MEETING_PHOTO_MAX_KB,
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
@@ -163,20 +163,20 @@ class SalesMeetingController extends Controller
         abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
 
         $existingPhotos = count($followUp->meeting_photos ?? []);
-        $remainingSlots = max(1, 3 - $existingPhotos);
+        $remainingSlots = max(0, FollowUp::MAX_MEETING_PHOTOS - $existingPhotos);
         $photoRule = ($existingPhotos === 0 ? 'required' : 'nullable').'|array|max:'.$remainingSlots;
 
         $validated = $request->validate([
             'meeting_photos' => $photoRule,
-            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:'.FollowUp::MEETING_PHOTO_MAX_KB,
             'meeting_notes' => 'required|string|min:10',
             'meeting_outcome' => 'required|in:'.implode(',', FollowUp::MEETING_OUTCOMES),
             'meeting_next_action_date' => 'nullable|date|after_or_equal:today',
         ], [
             'meeting_photos.required' => __('Please upload at least 1 photo as meeting documentation.'),
             'meeting_photos.min' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.max' => __('Maximum 3 photos allowed.'),
-            'meeting_photos.*.max' => __('Each photo must be under 5 MB.'),
+            'meeting_photos.max' => __('Maximum :n photos allowed.', ['n' => FollowUp::MAX_MEETING_PHOTOS]),
+            'meeting_photos.*.max' => __('Each photo must be under :mb MB.', ['mb' => intdiv(FollowUp::MEETING_PHOTO_MAX_KB, 1024)]),
             'meeting_notes.required' => __('Meeting notes are required.'),
             'meeting_notes.min' => __('Meeting notes must be at least 10 characters.'),
             'meeting_outcome.required' => __('Please select the meeting outcome.'),
