@@ -34,28 +34,28 @@ class FieldWorkController extends Controller
             'date_to' => (string) $request->query('date_to', ''),
         ];
 
-        $rows = collect();
-
-        if ($tab !== 'survey') {
-            $rows = $rows->merge($this->installationRows($filters));
-        }
-
-        if ($tab !== 'installation') {
-            $rows = $rows->merge($this->surveyRows($filters));
-        }
-
-        $rows = $rows->sortByDesc('date_sort')->values();
+        $allRows = $this->installationRows($filters)
+            ->merge($this->surveyRows($filters));
 
         $tabCounts = [
-            'all' => $rows->count(),
-            'installation' => $rows->where('type', 'installation')->count(),
-            'survey' => $rows->where('type', 'survey')->count(),
+            'all' => $allRows->count(),
+            'installation' => $allRows->where('type', 'installation')->count(),
+            'survey' => $allRows->where('type', 'survey')->count(),
         ];
+
+        $rows = match ($tab) {
+            'installation' => $allRows->where('type', 'installation'),
+            'survey' => $allRows->where('type', 'survey'),
+            default => $allRows,
+        };
+
+        $rows = $rows->sortByDesc('date_sort')->values();
 
         $stats = [
             'total' => $rows->count(),
             'active' => $rows->whereIn('status_key', ['planned', 'in_progress', 'waiting'])->count(),
             'done_month' => $rows->filter(fn ($row) => $row['status_key'] === 'done'
+                && filled($row['date'])
                 && Carbon::parse($row['date'])->isSameMonth(now()))->count(),
             'installation' => $tabCounts['installation'],
             'survey' => $tabCounts['survey'],
