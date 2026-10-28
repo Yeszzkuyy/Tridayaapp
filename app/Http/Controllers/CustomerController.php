@@ -50,6 +50,24 @@ class CustomerController extends Controller
     }
 
     /**
+     * Ambil field PIC dari form customer. PIC disimpan di customer_contacts,
+     * bukan di kolom customer, jadi dipisah sebelum Customer::create/update.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, string|null>
+     */
+    private function picData(array $validated): array
+    {
+        return array_filter([
+            'name' => $validated['pic_name'] ?? $validated['contact_person'] ?? null,
+            'position' => $validated['pic_position'] ?? null,
+            'phone' => $validated['pic_phone'] ?? null,
+            'whatsapp' => $validated['pic_whatsapp'] ?? null,
+            'email' => $validated['pic_email'] ?? null,
+        ], fn ($value) => filled($value));
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -69,6 +87,11 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
+            'pic_name' => 'nullable|string|max:255',
+            'pic_position' => 'nullable|string|max:255',
+            'pic_phone' => 'nullable|string|max:50',
+            'pic_whatsapp' => 'nullable|string|max:50',
+            'pic_email' => 'nullable|email|max:255',
             'company' => 'nullable|string|max:255',
             'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
@@ -86,10 +109,15 @@ class CustomerController extends Controller
             'status' => 'nullable|in:lead,deal,instalasi,selesai',
         ]);
 
+        $picData = $this->picData($validated);
+        unset($validated['pic_name'], $validated['pic_position'], $validated['pic_phone'], $validated['pic_whatsapp'], $validated['pic_email']);
+
         // Form customer hanya punya satu kolom nama; company = name supaya tampilan Lead/Monitoring konsisten
         $validated['company'] ??= $validated['name'];
 
         $customer = Customer::create($validated);
+
+        $customer->syncPrimaryContact($picData);
 
         if ($request->hasFile('npwp_document')) {
             $file = $request->file('npwp_document');
@@ -294,6 +322,11 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
+            'pic_name' => 'nullable|string|max:255',
+            'pic_position' => 'nullable|string|max:255',
+            'pic_phone' => 'nullable|string|max:50',
+            'pic_whatsapp' => 'nullable|string|max:50',
+            'pic_email' => 'nullable|email|max:255',
             'company' => 'nullable|string|max:255',
             'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
@@ -311,6 +344,9 @@ class CustomerController extends Controller
             'status' => 'nullable|in:lead,deal,instalasi,selesai',
         ]);
 
+        $picData = $this->picData($validated);
+        unset($validated['pic_name'], $validated['pic_position'], $validated['pic_phone'], $validated['pic_whatsapp'], $validated['pic_email']);
+
         $validated['company'] ??= $validated['name'];
 
         if ($request->hasFile('npwp_document')) {
@@ -323,6 +359,7 @@ class CustomerController extends Controller
         }
 
         $customer->update($validated);
+        $customer->syncPrimaryContact($picData);
 
         return redirect()
             ->route('customers.index')

@@ -40,6 +40,7 @@ class CustomerContactController extends Controller
         }
 
         $customer->contacts()->create($validated + ['created_by' => auth()->id()]);
+        $customer->syncContactMirror();
 
         return redirect()
             ->route('customers.show', $customer)
@@ -81,6 +82,7 @@ class CustomerContactController extends Controller
         }
 
         $customerContact->update($validated);
+        $customer->syncContactMirror();
 
         return redirect()
             ->route('customers.show', $customer)
@@ -102,6 +104,8 @@ class CustomerContactController extends Controller
             $customerContact->update(['is_primary' => false]);
         }
 
+        $customer->syncContactMirror();
+
         return redirect()->route('customers.show', $customer);
     }
 
@@ -113,7 +117,17 @@ class CustomerContactController extends Controller
         $this->authorize('update', $customerContact->customer);
 
         $customer = $customerContact->customer;
+        $wasPrimary = (bool) $customerContact->is_primary;
         $customerContact->delete();
+
+        // Primary dihapus: promosikan PIC lain yang masih ada supaya customer
+        // tidak kehilangan penunjuk PIC sama sekali.
+        if ($wasPrimary) {
+            $next = $customer->contacts()->latest('id')->first();
+            $next?->update(['is_primary' => true]);
+        }
+
+        $customer->syncContactMirror();
 
         return redirect()
             ->route('customers.show', $customer)

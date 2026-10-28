@@ -89,6 +89,57 @@
                         </div>
                     </div>
 
+                    {{-- PIC utama --}}
+                    @php
+                        $pic = $customer->primaryPic();
+                        $picValues = [
+                            'name' => old('pic_name', $pic?->name ?: $customer->contact_person),
+                            'position' => old('pic_position', $pic?->position),
+                            'phone' => old('pic_phone', $pic?->phone),
+                            'whatsapp' => old('pic_whatsapp', $pic?->whatsapp),
+                            'email' => old('pic_email', $pic?->email),
+                        ];
+                    @endphp
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('PIC') }}</p>
+                            <p class="text-xs text-slate-500">{{ __('Primary') }}</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="pic_name" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Name') }}</label>
+                                <input type="text" id="pic_name" name="pic_name" value="{{ $picValues['name'] }}"
+                                       placeholder="{{ __('Person / PIC name') }}"
+                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @error('pic_name') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="pic_position" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Position') }}</label>
+                                <input type="text" id="pic_position" name="pic_position" value="{{ $picValues['position'] }}"
+                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @error('pic_position') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="pic_phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Phone') }}</label>
+                                <input type="text" id="pic_phone" name="pic_phone" value="{{ $picValues['phone'] }}"
+                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @error('pic_phone') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="pic_whatsapp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('WhatsApp') }}</label>
+                                <input type="text" id="pic_whatsapp" name="pic_whatsapp" value="{{ $picValues['whatsapp'] }}"
+                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @error('pic_whatsapp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="pic_email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Email') }}</label>
+                                <input type="email" id="pic_email" name="pic_email" value="{{ $picValues['email'] }}"
+                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @error('pic_email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Finance PIC --}}
                     <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
                         <div>

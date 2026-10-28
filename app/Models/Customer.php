@@ -42,6 +42,110 @@ class Customer extends Model
     }
 
     /**
+     * PIC utama customer. `contact_person` (kolom lama) hanya dipakai sebagai
+     * cadangan untuk data yang belum punya baris di customer_contacts.
+     */
+    public function primaryPic(): ?CustomerContact
+    {
+        if ($this->relationLoaded('contacts')) {
+            return $this->contacts->firstWhere('is_primary', true);
+        }
+
+        // Model yang belum tersimpan (mis. dipakai di unit test) tidak punya
+        // baris contact untuk dibaca.
+        if (! $this->exists) {
+            return null;
+        }
+
+        return $this->contacts()->where('is_primary', true)->latest('id')->first();
+    }
+
+    public function picName(): ?string
+    {
+        return $this->primaryPic()?->name ?: $this->contact_person;
+    }
+
+    public function picPhone(): ?string
+    {
+        return $this->primaryPic()?->phone ?: $this->phone;
+    }
+
+    /**
+     * Nomor WhatsApp untuk menghubungi PIC: WA PIC -> telp PIC -> WA customer.
+     */
+    public function picWhatsapp(): ?string
+    {
+        $contact = $this->primaryPic();
+
+        return $contact?->whatsapp ?: ($contact?->phone ?: $this->whatsapp);
+    }
+
+    /**
+     * Sinkronkan data PIC ke customer_contacts (primary) sekaligus mengisi
+     * kolom `contact_person` sebagai mirror.
+     *
+     * Non-destruktif: nilai null/string kosong tidak dikirim, jadi data yang
+     * sudah ada tidak terhapus saat form dikirim dengan field kosong.
+     * `$onlyMissing` dipakai saat data berasal dari form Lead: nama PIC tetap
+     * diperbarui, tapi telp/WA/email lama milik PIC tidak ditimpa nomor
+     * customer.
+     *
+     * @param  array{name?: string|null, position?: string|null, phone?: string|null, whatsapp?: string|null, email?: string|null, created_by?: int|null}  $attributes
+     */
+    public function syncPrimaryContact(array $attributes, bool $onlyMissing = false): ?CustomerContact
+    {
+        $attributes = array_filter($attributes, fn ($value) => filled($value));
+
+        if (blank($attributes['name'] ?? null)) {
+            return $this->primaryPic();
+        }
+
+        $contact = $this->primaryPic();
+
+        if ($contact) {
+            if ($onlyMissing) {
+                $attributes = array_filter(
+                    $attributes,
+                    fn ($value, $key) => $key === 'name' || blank($contact->{$key}),
+                    ARRAY_FILTER_USE_BOTH
+                );
+            }
+
+            $contact->fill($attributes);
+            if ($contact->isDirty()) {
+                $contact->save();
+            }
+        } else {
+            $contact = $this->contacts()->create([
+                'name' => $attributes['name'],
+                'position' => $attributes['position'] ?? null,
+                'phone' => $attributes['phone'] ?? null,
+                'whatsapp' => $attributes['whatsapp'] ?? null,
+                'email' => $attributes['email'] ?? null,
+                'is_primary' => true,
+                'created_by' => $attributes['created_by'] ?? auth()->id(),
+            ]);
+        }
+
+        $this->syncContactMirror();
+
+        return $contact;
+    }
+
+    /**
+     * Salin nama PIC primary ke kolom `contact_person`. Tidak pernah
+     * mengosongkan kolom supaya data lama tetap aman.
+     */
+    public function syncContactMirror(): void
+    {
+        $name = $this->primaryPic()?->name;
+
+        if (filled($name) && $name !== $this->contact_person) {
+            $this->forceFill(['contact_person' => $name])->saveQuietly();
+        }
+    }
+
+    /**
      * Alamat tagihan Invoice. Bila belum diisi, pakai alamat utama supaya
      * invoice lama/cepat tetap punya alamat.
      */
@@ -125,9 +229,9 @@ class Customer extends Model
         return $this->belongsTo(WhatsappAccount::class);
     }
 
-    public function waLink(string $text = ''): ?string
+    public function waLink(string $text = '', ?string $number = null): ?string
     {
-        $number = $this->whatsapp ?: $this->phone;
+        $number = $number ?: ($this->picWhatsapp() ?: $this->whatsapp ?: $this->phone);
         $digits = preg_replace('/\D/', '', $number ?? '');
 
         if (!$digits) {

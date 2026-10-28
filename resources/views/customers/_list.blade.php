@@ -13,8 +13,8 @@
         <tbody class="divide-y divide-slate-200/70 dark:divide-slate-700/50">
             @forelse($customers as $customer)
                 @php
-                    $primaryContact = $customer->contacts->first();
-                    $picName = $primaryContact?->name ?: $customer->contact_person;
+                    $primaryContact = $customer->primaryPic();
+                    $picName = $customer->picName();
                     $picWhatsapp = $primaryContact?->whatsapp;
                     $picEmail = $primaryContact?->email;
                 @endphp
