@@ -125,7 +125,7 @@
                                     <p class="mt-1 text-xs text-slate-400">
                                         {{ $meeting->activity_time ? substr((string) $meeting->activity_time, 0, 5).' • ' : '' }}
                                         {{ __('by :name', ['name' => $meeting->creator?->name ?? '-']) }}
-                                        @if($meeting->hasMeetingReport()) • {{ count($meeting->meeting_photos ?? []) }} {{ __('photos') }} @endif
+                                        @if(!empty($meeting->meeting_photos)) • {{ count($meeting->meeting_photos) }} {{ __('photos') }} @endif
                                     </p>
                                 </div>
                                 <div class="flex shrink-0 gap-2">

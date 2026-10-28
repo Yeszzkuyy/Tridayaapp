@@ -189,6 +189,23 @@ class SalesMeetingTrackerTest extends TestCase
         $this->assertSame('meeting-reports/foto-lama-1.jpg', $meeting->meeting_photos[0]);
     }
 
+    public function test_detail_page_shows_photos_before_report_submitted(): void
+    {
+        Storage::fake('public');
+
+        $sales = $this->userWithRoles(['sales']);
+        $meeting = $this->makeMeeting($sales, [
+            'meeting_photos' => ['meeting-reports/bukti-1.jpg', 'meeting-reports/bukti-2.jpg'],
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.meetings.show', $meeting))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString(__('Meeting Proof Photos'), $html);
+        $this->assertStringContainsString('meeting-reports/bukti-1.jpg', $html);
+        $this->assertStringContainsString('meeting-reports/bukti-2.jpg', $html);
+    }
+
     public function test_meeting_reminder_command_notifies_creator_once(): void
     {
         Notification::fake();
