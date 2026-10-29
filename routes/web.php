@@ -164,6 +164,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/customers/{customer}/npwp', [CustomerController::class, 'downloadNpwp'])->name('customers.npwp');
     });
 
+    // Document Center lintas modul. Semua role punya view-customer, tetapi
+    // isi hasil dibatasi per sumber sesuai izin endpoint aslinya.
+    Route::middleware('permission:view-customer')->group(function () {
+        Route::get('/documents', [\App\Http\Controllers\DocumentCenterController::class, 'index'])->name('documents.index');
+    });
+
     // ============================================
     // SALES — Meeting (dipisah dari Follow Up)
     // ============================================
