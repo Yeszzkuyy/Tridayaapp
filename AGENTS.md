@@ -23,6 +23,7 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/home/raafi/3dyapp-i18n` | `feature/i18n-english` | i18n (konsistensi bahasa semua menu) + tampilan settings |
 | `/home/raafi/3dyapp-price` | `feature/sales-price-sync` | Price Request sales+teknisi satu tabel (sementara, hapus setelah merge) |
 | `/home/raafi/3dyapp-panel` | `feature/div-panel` | Admin Panel (invoice, PO, payment) |
+| `/home/raafi/3dyapp-contacts` | `feature/cus-contact-source` | Satu sumber kontak customer (PIC) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
