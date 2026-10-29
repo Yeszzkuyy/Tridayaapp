@@ -116,6 +116,12 @@
                                     <a href="{{ route('lead-tasks.show', $task) }}" class="hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
                                         {{ $task->title }}
                                     </a>
+                                    @if(($task->attachments_count ?? 0) > 0)
+                                        <span class="ml-1 inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+                                              title="{{ __('Quotation attachment') }}">
+                                            📎 {{ $task->attachments_count }}
+                                        </span>
+                                    @endif
                                     @if($task->description)
                                         <p class="text-xs text-slate-400 line-clamp-1 mt-0.5 font-normal">{{ $task->description }}</p>
                                     @endif

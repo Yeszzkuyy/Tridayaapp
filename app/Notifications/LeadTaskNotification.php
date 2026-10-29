@@ -41,6 +41,8 @@ class LeadTaskNotification extends Notification implements ShouldQueue
             'title' => match ($this->event) {
                 'created' => 'Task baru',
                 'comment' => 'Komentar baru',
+                'quotation' => 'Quotation baru',
+                'accepted' => 'Quotation diterima',
                 default => 'Status task',
             },
             'lead_id' => $this->task->lead_id,
@@ -74,6 +76,8 @@ class LeadTaskNotification extends Notification implements ShouldQueue
             ->subject(match ($this->event) {
                 'created' => 'Inside Sales Task Baru',
                 'comment' => 'Komentar Baru di Task',
+                'quotation' => 'File Quotation Baru',
+                'accepted' => 'Quotation Diterima',
                 default => 'Status Task Berubah',
             })
             ->line('Task: ' . $this->task->title)
@@ -88,6 +92,8 @@ class LeadTaskNotification extends Notification implements ShouldQueue
             'title' => match ($this->event) {
                 'created' => 'Inside sales task baru',
                 'comment' => 'Komentar baru di task',
+                'quotation' => 'File quotation baru',
+                'accepted' => 'Quotation diterima',
                 default => 'Status task berubah',
             },
             'body' => $this->task->title,

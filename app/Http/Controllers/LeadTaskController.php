@@ -48,7 +48,7 @@ class LeadTaskController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->latest();
+        $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->withCount('attachments')->latest();
 
         // Management melihat semua. Selain itu scope digabung dengan OR:
         // multi-role (sales + inside-sales) harus melihat task yang di-assign
@@ -138,7 +138,7 @@ class LeadTaskController extends Controller
 
     public function show(LeadTask $leadTask)
     {
-        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user']);
+        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader']);
         $this->authorizeTaskView($leadTask);
 
         return view('lead-tasks.show', ['task' => $leadTask]);
@@ -225,5 +225,165 @@ class LeadTaskController extends Controller
         return redirect()
             ->route('lead-tasks.show', $leadTask)
             ->with('success', __('Comment sent.'));
+    }
+
+    /**
+     * Upload file quotation baru dari Inside Sales. File lama TIDAK ditimpa —
+     * setiap upload jadi versi baru supaya revisi tetap bisa diunduh.
+     */
+    public function storeAttachment(Request $request, LeadTask $leadTask)
+    {
+        $this->authorizeTaskManage($leadTask);
+
+        $request->validate([
+            'attachment' => ['required', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
+        ], [
+            'attachment.required' => __('Please choose a file to upload.'),
+            'attachment.max' => __('The file must be under 10 MB.'),
+        ]);
+
+        $file = $request->file('attachment');
+        $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
+        $path = $file->storeAs(
+            'lead-tasks/'.$leadTask->id,
+            \Illuminate\Support\Str::uuid().'_'.$safeName,
+            'private'
+        );
+
+        $leadTask->attachments()->create([
+            'file_path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'mime' => $file->getClientMimeType(),
+            'size' => $file->getSize() ?: 0,
+            'uploaded_by' => auth()->id(),
+        ]);
+
+        // Beri tahu peminta (pembuat task) kalau yang upload bukan dia sendiri.
+        $requester = $leadTask->creator;
+        if ($requester && (int) $requester->id !== (int) auth()->id()) {
+            $requester->notify(new \App\Notifications\LeadTaskNotification($leadTask, 'quotation'));
+        }
+
+        return redirect()
+            ->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Quotation file uploaded.'));
+    }
+
+    /**
+     * Terima file quotation Inside Sales → otomatis buat Quotation (proposal)
+     * draft yang tertaut ke lead/customer task, lalu file dipasang sebagai
+     * lampiran quotation tersebut. Akses menu Quotation mengikuti lead
+     * (pemilik lead + management), sama seperti quotation lain.
+     */
+    public function acceptAttachment(Request $request, LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
+    {
+        abort_unless((int) $attachment->lead_task_id === (int) $leadTask->id, 404);
+
+        $user = $request->user();
+        $lead = $leadTask->lead;
+
+        // Hanya peminta (pembuat task), pemilik lead, atau management —
+        // bukan semua role sales.
+        $canAccept = $user && (
+            (int) $leadTask->created_by === (int) $user->id
+            || (int) ($lead?->assigned_to ?? 0) === (int) $user->id
+            || $user->can('manage-sales-leads')
+        );
+
+        abort_unless($canAccept, 403);
+
+        // Sales per PT hanya boleh menerima quotation pada PT-nya sendiri.
+        abort_unless(
+            \App\Support\PtAccess::canWritePt($user, $lead?->customer?->pt_group),
+            403
+        );
+
+        abort_if($attachment->accepted_at !== null, 422, __('This quotation file has already been accepted.'));
+
+        $proposal = \Illuminate\Support\Facades\DB::transaction(function () use ($attachment, $leadTask, $lead) {
+            $proposal = \App\Models\Proposal::create([
+                'lead_id' => $leadTask->lead_id,
+                'proposal_number' => $this->generateProposalNumber(),
+                'created_by' => auth()->id(),
+                'proposal_date' => now()->toDateString(),
+                'customer' => $lead?->customer?->name ?? '-',
+                'status' => 'draft',
+                'internal_notes' => __('Created automatically from Inside Sales quotation file :file (task #:task).', [
+                    'file' => $attachment->original_name,
+                    'task' => $leadTask->id,
+                ]),
+            ]);
+
+            // File ikut dipasang sebagai lampiran quotation (tanpa mengisi
+            // form item — quotation berbasis file).
+            \App\Models\ProposalAttachment::create([
+                'proposal_id' => $proposal->id,
+                'file_path' => $attachment->file_path,
+                'original_name' => $attachment->original_name,
+                'mime' => $attachment->mime,
+                'size' => $attachment->size,
+                'uploaded_by' => $attachment->uploaded_by,
+            ]);
+
+            $attachment->update([
+                'proposal_id' => $proposal->id,
+                'accepted_by' => auth()->id(),
+                'accepted_at' => now(),
+            ]);
+
+            return $proposal;
+        });
+
+        // Kabari Inside Sales bahwa file-nya sudah diterima.
+        $assignee = $leadTask->assignee;
+        if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
+            $assignee->notify(new \App\Notifications\LeadTaskNotification($leadTask, 'accepted'));
+        }
+
+        return redirect()
+            ->route('sales.proposals.show', $proposal)
+            ->with('success', __('Quotation created from the accepted file.'));
+    }
+
+    /** Nomor quotation berurutan per bulan, format sama seperti menu Quotation. */
+    private function generateProposalNumber(): string
+    {
+        $prefix = 'Q/'.now()->format('Y/m').'/';
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $sequence = \App\Models\Proposal::where('proposal_number', 'like', $prefix.'%')->count() + 1 + $attempt;
+            $number = $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+
+            if (! \App\Models\Proposal::where('proposal_number', $number)->exists()) {
+                return $number;
+            }
+        }
+
+        return $prefix.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+    }
+
+    public function downloadAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
+    {
+        $this->authorizeTaskView($leadTask);
+
+        abort_unless((int) $attachment->lead_task_id === (int) $leadTask->id, 404);
+        abort_unless(\Illuminate\Support\Facades\Storage::disk('private')->exists($attachment->file_path), 404, __('File not found.'));
+
+        return \Illuminate\Support\Facades\Storage::disk('private')
+            ->download($attachment->file_path, $attachment->original_name);
+    }
+
+    public function destroyAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
+    {
+        $this->authorizeTaskManage($leadTask);
+
+        abort_unless((int) $attachment->lead_task_id === (int) $leadTask->id, 404);
+
+        \Illuminate\Support\Facades\Storage::disk('private')->delete($attachment->file_path);
+        $attachment->delete();
+
+        return redirect()
+            ->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Quotation file deleted.'));
     }
 }

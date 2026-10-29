@@ -77,7 +77,7 @@ class SalesRequestHubController extends Controller
      */
     private function tasksFor($user)
     {
-        $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->latest();
+        $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->withCount('attachments')->latest();
 
         if (! $user) {
             return $query->whereRaw('1 = 0');
