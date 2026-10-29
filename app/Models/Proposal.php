@@ -87,6 +87,11 @@ class Proposal extends Model
         return $this->hasMany(SupplierPurchaseOrder::class);
     }
 
+    public function priceRequest()
+    {
+        return $this->hasOne(PriceRequest::class);
+    }
+
     public function recalculate(): void
     {
         $items = $this->items()->get();

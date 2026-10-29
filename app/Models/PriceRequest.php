@@ -22,6 +22,7 @@ class PriceRequest extends Model
 
     protected $fillable = [
         'customer_id',
+        'proposal_id',
         'requested_by',
         'quotation_path',
         'notes',
@@ -39,6 +40,11 @@ class PriceRequest extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function proposal()
+    {
+        return $this->belongsTo(Proposal::class);
     }
 
     public function requester()

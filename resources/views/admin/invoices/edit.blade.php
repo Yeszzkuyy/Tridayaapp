@@ -42,7 +42,9 @@
                         @error('customer_po_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-2 text-xs text-slate-500 self-end">
-                        @if($invoice->proposal)
+                        @if($invoice->payment_terms)
+                            {{ __('Payment Terms') }}: <span class="font-medium text-slate-700">{{ $invoice->payment_terms }}</span>
+                        @elseif($invoice->proposal)
                             {{ __('Payment Terms') }}: <span class="font-medium text-slate-700">{{ $invoice->proposal->paymentTermsSummary() }}</span>
                         @else
                             {{ __('Payment terms are taken from the quotation.') }}

@@ -46,7 +46,7 @@
                                 </td>
                                 <td class="px-5 py-4 text-right">
                                     <x-icon-button as="a" icon="add"
-                                                   href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}"
+                                                   href="{{ route('sales.proposals.create', array_filter(['lead_id' => $lead->id, 'price_request_id' => $priceRequest->id ?? null])) }}"
                                                    label="{{ __('Create Quotation') }}"
                                                    title="{{ __('Create Quotation') }}" />
                                 </td>

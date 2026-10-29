@@ -222,7 +222,9 @@ class ProposalModuleTest extends TestCase
             ->get(route('sales.proposals.preview', $proposal))
             ->assertOk()
             ->assertSee('DP 30% setelah PO, pelunasan setelah BAST')
-            ->assertSee('Ready stock 3-5 hari kerja');
+            ->assertSee('Ready stock 3-5 hari kerja')
+            ->assertSee('3DY GROUP')
+            ->assertSee(__('Print / Save as PDF'));
     }
 
     public function test_convert_requires_customer_po_number_and_payment_terms_and_copies_deadline(): void
@@ -336,6 +338,7 @@ class ProposalModuleTest extends TestCase
     {
         Storage::fake('private');
         $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
         $customer = Customer::create(['name' => 'PT NPWP']);
 
         $this->actingAs($sales)->put(route('customers.update', $customer), [
@@ -349,7 +352,7 @@ class ProposalModuleTest extends TestCase
         $this->assertSame('01.234.567.8-901.234', $fresh->npwp);
         $this->assertNotNull($fresh->npwp_document_path);
 
-        $this->actingAs($sales)->get(route('customers.npwp', $customer))->assertOk();
+        $this->actingAs($admin)->get(route('customers.npwp', $customer))->assertOk();
     }
 
     public function test_index_kpi_renders(): void

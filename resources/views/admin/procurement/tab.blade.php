@@ -204,5 +204,74 @@
                 @endforelse
             </div>
         </div>
+
+        {{-- Receipts waiting verification --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Receipts Waiting Verification') }} ({{ $kpi['pending_receipts_count'] ?? 0 }})</h3>
+                <a href="{{ route('admin.goods-receipts.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                @forelse($procurement['pending_receipts'] as $receipt)
+                    <div class="px-5 py-3 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $receipt->receipt_number }}</a>
+                            <p class="text-xs text-slate-500 truncate">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
+                        </div>
+                        <x-icon-button as="a" icon="view" href="{{ route('admin.goods-receipts.show', $receipt) }}" title="{{ __('View receipt') }}" />
+                    </div>
+                @empty
+                    <p class="px-5 py-6 text-sm text-slate-400">{{ __('No receipts waiting verification.') }}</p>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Received goods not fully delivered --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Received Goods Not Fully Delivered') }} ({{ $kpi['outstanding_deliveries_count'] ?? 0 }})</h3>
+                <a href="{{ route('admin.goods-deliveries.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                @forelse($procurement['outstanding_delivery_items'] as $item)
+                    <div class="px-5 py-3 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{{ $item->item_name }}</p>
+                            <p class="text-xs text-slate-500 truncate">
+                                {{ $item->purchaseOrder?->po_number }} ·
+                                {{ $item->purchaseOrder?->project?->project_name ?? __('No project') }} ·
+                                {{ __('Remaining') }} {{ number_format((float) $item->quantity_received - (float) $item->quantity_delivered, 2) }} {{ $item->unit }}
+                            </p>
+                        </div>
+                        @can('manage-admin')
+                            <x-icon-button as="a" icon="add" href="{{ route('admin.goods-deliveries.create', ['project_id' => $item->purchaseOrder?->project_id]) }}" title="{{ __('Create Delivery') }}" />
+                        @endcan
+                    </div>
+                @empty
+                    <p class="px-5 py-6 text-sm text-slate-400">{{ __('All received goods have been delivered.') }}</p>
+                @endforelse
+            </div>
+        </div>
+
+        {{-- Projects ready to close --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Projects Ready to Close') }} ({{ $kpi['ready_to_close_count'] ?? 0 }})</h3>
+                <a href="{{ route('admin.bast.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                @forelse($procurement['ready_to_close_projects'] as $project)
+                    <div class="px-5 py-3 flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <a href="{{ route('projects.show', $project) }}" class="text-sm font-medium text-slate-800 dark:text-slate-100 hover:underline">{{ $project->project_name }}</a>
+                            <p class="text-xs text-slate-500 truncate">{{ $project->customer?->name }}</p>
+                        </div>
+                        <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('View project') }}" />
+                    </div>
+                @empty
+                    <p class="px-5 py-6 text-sm text-slate-400">{{ __('No projects are ready to close.') }}</p>
+                @endforelse
+            </div>
+        </div>
     </div>
 </div>

@@ -45,6 +45,20 @@
             <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
         </div>
 
+        @if($priceRequest->proposal)
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                {{ __('Quotation linked') }}:
+                <a href="{{ route('sales.proposals.show', $priceRequest->proposal) }}" class="font-semibold underline">{{ $priceRequest->proposal->proposal_number }}</a>
+            </div>
+        @elseif(! in_array($priceRequest->status, ['rejected', 'cancelled'], true)
+            && auth()->id() === $priceRequest->requested_by
+            && (auth()->user()?->can('manage-sales') || auth()->user()?->can('manage-inside-sales')))
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+                <span>{{ __('Turn this price request into a linked quotation without retyping the customer.') }}</span>
+                <x-icon-button as="a" icon="add" href="{{ route('sales.proposals.create', ['price_request_id' => $priceRequest->id]) }}" label="{{ __('Create Quotation') }}" title="{{ __('Create Quotation') }}" />
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 items-start gap-4 xl:grid-cols-5">
             <div class="space-y-4 xl:col-span-3">
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="price-request-details-heading">

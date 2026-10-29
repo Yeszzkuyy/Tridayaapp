@@ -13,7 +13,7 @@ class SettingsTest extends TestCase
 
     public function test_settings_page_is_displayed(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->get(route('settings.edit'))
@@ -23,7 +23,7 @@ class SettingsTest extends TestCase
 
     public function test_user_can_update_preferences(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->patch(route('settings.update'), [
@@ -45,7 +45,7 @@ class SettingsTest extends TestCase
 
     public function test_autosave_returns_json_and_persists_toggles(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         // Checkbox off = key absent (seperti FormData browser) → tersimpan false.
         $this->actingAs($user)
@@ -66,7 +66,7 @@ class SettingsTest extends TestCase
 
     public function test_preferences_are_validated(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->patch(route('settings.update'), [
@@ -78,7 +78,7 @@ class SettingsTest extends TestCase
 
     public function test_user_can_update_accent_preference(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->patch(route('settings.update'), [
@@ -96,7 +96,7 @@ class SettingsTest extends TestCase
 
     public function test_accent_preference_is_validated(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->patch(route('settings.update'), [
@@ -109,7 +109,7 @@ class SettingsTest extends TestCase
 
     public function test_appearance_endpoint_syncs_theme_and_accent(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->postJson(route('settings.appearance'), [
@@ -126,7 +126,7 @@ class SettingsTest extends TestCase
 
     public function test_appearance_endpoint_validates_input(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->postJson(route('settings.appearance'), [
@@ -139,7 +139,7 @@ class SettingsTest extends TestCase
 
     public function test_advanced_settings_shows_inline_lock_without_redirect(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->get(route('settings.advanced'))
@@ -150,7 +150,7 @@ class SettingsTest extends TestCase
 
     public function test_advanced_settings_rejects_wrong_password_inline(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->post(route('settings.advanced.confirm'), ['password' => 'salah'])
@@ -164,7 +164,7 @@ class SettingsTest extends TestCase
 
     public function test_advanced_settings_unlocks_with_correct_password_for_single_visit(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->post(route('settings.advanced.confirm'), ['password' => 'password'])
@@ -187,7 +187,7 @@ class SettingsTest extends TestCase
 
     public function test_account_info_can_be_updated_from_advanced(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => now()->getTimestamp()])
@@ -209,7 +209,7 @@ class SettingsTest extends TestCase
         // Regresi: morph wire:navigate menghapus class 'dark' client bila HTML
         // server tidak memuatnya — semua menu SPA balik light. Server wajib
         // me-render class dark agar morph mempertahankannya.
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
         $user->preferences = array_merge($user->preferences ?? [], ['theme' => 'dark']);
         $user->save();
 
@@ -224,7 +224,7 @@ class SettingsTest extends TestCase
 
     public function test_layout_omits_dark_class_when_theme_is_light(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
         $user->preferences = array_merge($user->preferences ?? [], ['theme' => 'light']);
         $user->save();
 
@@ -239,7 +239,7 @@ class SettingsTest extends TestCase
 
     public function test_locale_preference_switches_app_language(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
         $user->preferences = ['locale' => 'en'];
         $user->save();
 

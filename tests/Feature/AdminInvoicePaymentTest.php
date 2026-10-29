@@ -70,9 +70,8 @@ class AdminInvoicePaymentTest extends TestCase
             ->assertSee($invoice->invoice_number, false);
     }
 
-    public function test_admin_membuat_po_dengan_nomor_otomatis_dan_file_terintegrasi(): void
+    public function test_legacy_customer_po_creation_is_read_only(): void
     {
-        Storage::fake('private');
         $this->actingAs($this->admin());
         $customer = $this->customer('PT PO');
 
@@ -82,22 +81,9 @@ class AdminInvoicePaymentTest extends TestCase
             'amount' => 2500000,
             'status' => 'draft',
             'issue_date' => now()->toDateString(),
-            'file' => UploadedFile::fake()->create('po.pdf', 100, 'application/pdf'),
-        ])->assertRedirect();
+        ])->assertForbidden();
 
-        $po = PurchaseOrder::firstOrFail();
-        $this->assertSame('PO-'.now()->year.'-0001', $po->po_number);
-
-        $document = ProjectDocument::where('documentable_type', PurchaseOrder::class)
-            ->where('documentable_id', $po->id)
-            ->firstOrFail();
-
-        $this->assertSame('po', $document->doc_type);
-
-        $this->get(route('customers.show', $customer))
-            ->assertOk()
-            ->assertSee('po.pdf', false)
-            ->assertSee($po->po_number, false);
+        $this->assertDatabaseCount('purchase_orders', 0);
     }
 
     public function test_payment_boleh_dicicil_dan_status_invoice_mengikuti_total(): void

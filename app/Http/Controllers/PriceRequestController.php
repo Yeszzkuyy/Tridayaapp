@@ -93,7 +93,7 @@ class PriceRequestController extends Controller
     public function show(Request $request, PriceRequest $priceRequest)
     {
         $this->authorize('view', $priceRequest);
-        $priceRequest->load(['customer', 'requester.roles', 'assignee', 'replies.uploader', 'replies.acceptedBy']);
+        $priceRequest->load(['customer', 'proposal', 'requester.roles', 'assignee', 'replies.uploader', 'replies.acceptedBy']);
 
         $technicians = ($request->user()->hasRole('lead-technician') || $request->user()->hasRole('super-admin'))
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])

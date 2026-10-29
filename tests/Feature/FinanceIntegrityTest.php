@@ -7,6 +7,11 @@ use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Payment;
 use App\Models\Proposal;
+use App\Models\PurchaseOrder;
+use App\Models\Supplier;
+use App\Models\SupplierInvoice;
+use App\Models\SupplierPayment;
+use App\Models\SupplierPurchaseOrder;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -165,5 +170,77 @@ class FinanceIntegrityTest extends TestCase
         ])->assertSessionHasErrors('proposal_id');
 
         $this->assertSame(0, Invoice::count());
+    }
+
+    public function test_supplier_invoice_and_payment_are_idempotent(): void
+    {
+        $this->actingAs($this->admin());
+        $customer = $this->customer();
+        $supplier = Supplier::create(['name' => 'PT Supplier Finance', 'is_active' => true]);
+        $order = SupplierPurchaseOrder::create([
+            'po_number' => 'SPO-FIN-'.uniqid(),
+            'supplier_id' => $supplier->id,
+            'issue_date' => now()->toDateString(),
+            'status' => 'ordered',
+        ]);
+
+        $invoicePayload = [
+            'supplier_purchase_order_id' => $order->id,
+            'supplier_invoice_number' => 'SUP-FIN-1',
+            'invoice_type' => 'full',
+            'amount' => 1000,
+            'issue_date' => now()->toDateString(),
+            'idempotency_key' => 'supplier-invoice-key-1',
+        ];
+
+        $this->post(route('admin.supplier-invoices.store'), $invoicePayload)->assertRedirect();
+        $this->post(route('admin.supplier-invoices.store'), $invoicePayload)->assertRedirect();
+
+        $this->assertSame(1, SupplierInvoice::count());
+        $invoice = SupplierInvoice::firstOrFail();
+
+        $paymentPayload = [
+            'amount' => 400,
+            'payment_date' => now()->toDateString(),
+            'idempotency_key' => 'supplier-payment-key-1',
+        ];
+
+        $this->post(route('admin.supplier-invoices.payments.store', $invoice), $paymentPayload)->assertRedirect();
+        $this->post(route('admin.supplier-invoices.payments.store', $invoice), $paymentPayload)->assertRedirect();
+
+        $this->assertSame(1, SupplierPayment::count());
+        $this->assertSame('partial', $invoice->fresh()->status);
+        $this->assertSame(400.0, (float) $invoice->fresh()->paid_amount);
+    }
+
+    public function test_legacy_customer_po_update_and_delete_are_read_only(): void
+    {
+        $this->actingAs($this->admin());
+        $customer = $this->customer();
+
+        $po = app(\App\Services\AdminService::class)->createPurchaseOrder([
+            'customer_id' => $customer->id,
+            'items' => 'Legacy item',
+            'amount' => 1000,
+            'status' => 'draft',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $this->put(route('admin.pos.update', $po), [
+            'customer_id' => $customer->id,
+            'items' => 'Changed',
+            'amount' => 999,
+            'status' => 'selesai',
+            'issue_date' => now()->toDateString(),
+        ])->assertForbidden();
+
+        $this->delete(route('admin.pos.destroy', $po))->assertForbidden();
+
+        $this->assertDatabaseHas('purchase_orders', [
+            'id' => $po->id,
+            'items' => 'Legacy item',
+            'amount' => 1000,
+            'deleted_at' => null,
+        ]);
     }
 }

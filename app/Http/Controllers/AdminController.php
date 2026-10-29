@@ -243,6 +243,8 @@ class AdminController extends Controller
 
     public function posStore(Request $request)
     {
+        abort(403, __('Legacy Customer PO is read-only. Use the Quotation handoff for new Customer PO.'));
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
@@ -278,6 +280,8 @@ class AdminController extends Controller
 
     public function posUpdate(Request $request, PurchaseOrder $purchaseOrder)
     {
+        abort(403, __('Legacy Customer PO is read-only. Use the Quotation handoff for new Customer PO.'));
+
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
@@ -297,10 +301,7 @@ class AdminController extends Controller
 
     public function posDestroy(PurchaseOrder $purchaseOrder)
     {
-        $this->adminService->deletePurchaseOrder($purchaseOrder);
-
-        return redirect()->route('admin.pos.index')
-            ->with('success', __('Purchase Order deleted successfully.'));
+        abort(403, __('Legacy Customer PO is read-only. Use the Quotation handoff for new Customer PO.'));
     }
 
     // ========== PAYMENT ==========
@@ -396,11 +397,9 @@ class AdminController extends Controller
 
     public function paymentsProof(Payment $payment)
     {
-        // Authorization: hanya Admin (manage-admin), Sales (view-admin), dan Super Admin
-        $user = auth()->user();
-        if (! $user || (! $user->can('view-admin') && ! $user->can('manage-admin') && ! $user->hasRole('super-admin'))) {
-            abort(403, __('Akses ditolak.'));
-        }
+        // Bukti transfer memuat rekening customer — hanya role yang punya
+        // izin khusus proof (Admin/Finance/Management/CEO/Super Admin).
+        abort_unless(auth()->user()?->can('view-payment-proofs'), 403, __('Akses ditolak.'));
 
         if (! $payment->proof_file) {
             abort(404, __('Proof file not found.'));

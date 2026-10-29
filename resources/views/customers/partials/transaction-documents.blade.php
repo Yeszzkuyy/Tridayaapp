@@ -165,7 +165,8 @@ Props:
             @endif
         </div>
 
-        {{-- Payment --}}
+        {{-- Payment — bukti transfer hanya untuk role finance/management. --}}
+        @can('view-payment-proofs')
         <div class="mt-6">
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Payment') }}</span>
@@ -229,5 +230,6 @@ Props:
                 </div>
             @endif
         </div>
+        @endcan
     </div>
 </div>

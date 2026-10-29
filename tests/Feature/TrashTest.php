@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\WorkType;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TrashTest extends TestCase
@@ -105,6 +106,7 @@ class TrashTest extends TestCase
     {
         $this->seed(RoleAndPermissionSeeder::class);
         $user = User::factory()->create();
+        $user->assignRole(Role::create(['name' => 'without-trash', 'guard_name' => 'web']));
 
         $this->actingAs($user)->get(route('trash.index'))->assertForbidden();
     }

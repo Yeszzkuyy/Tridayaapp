@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Project;
 use App\Models\Product;
+use App\Models\PriceRequest;
 use App\Models\ProjectStatus;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
@@ -275,11 +276,22 @@ class ProposalController extends Controller
 
     public function create(Request $request)
     {
+        $priceRequest = null;
+        if ($request->filled('price_request_id')) {
+            $priceRequest = PriceRequest::with('customer')->findOrFail($request->integer('price_request_id'));
+            $this->authorize('view', $priceRequest);
+            abort_if($priceRequest->proposal_id, 422, __('This price request already has a quotation.'));
+        }
+
         // Tanpa lead: tampilkan pemilih lead dulu (mis. dari tombol + di
         // daftar proposal), bukan 404.
         if (! $request->filled('lead_id')) {
             $user = $request->user();
             $query = Lead::with('customer')->latest();
+
+            if ($priceRequest) {
+                $query->where('customer_id', $priceRequest->customer_id);
+            }
 
             if (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
                 $query->where('assigned_to', $user->id);
@@ -297,16 +309,20 @@ class ProposalController extends Controller
 
             $leads = $query->limit(100)->get();
 
-            return view('sales.proposals.select-lead', compact('leads', 'q'));
+            return view('sales.proposals.select-lead', compact('leads', 'q', 'priceRequest'));
         }
 
         $lead = Lead::with('customer')->findOrFail($request->get('lead_id'));
         $this->authorize('view', $lead);
 
+        if ($priceRequest) {
+            abort_unless((int) $priceRequest->customer_id === (int) $lead->customer_id, 422, __('The selected lead does not match the price request customer.'));
+        }
+
         $completedTech = $lead->technicalRequests()->where('status', 'completed')->latest()->first();
         $prefillNotes = $lead->kebutuhan;
 
-        return view('sales.proposals.create', compact('lead', 'completedTech', 'prefillNotes'));
+        return view('sales.proposals.create', compact('lead', 'completedTech', 'prefillNotes', 'priceRequest'));
     }
 
     public function store(Request $request)
@@ -319,6 +335,7 @@ class ProposalController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
+            'price_request_id' => 'nullable|exists:price_requests,id',
         ], $this->paymentRules(), $this->itemRules()));
 
         $canManageCost = Gate::allows('updateCost', Proposal::class);
@@ -327,8 +344,20 @@ class ProposalController extends Controller
         $lead = Lead::with('customer')->findOrFail($validated['lead_id']);
         $this->authorize('view', $lead);
 
+        $priceRequest = null;
+        if (! empty($validated['price_request_id'])) {
+            $priceRequest = PriceRequest::findOrFail($validated['price_request_id']);
+            $this->authorize('view', $priceRequest);
+            abort_if($priceRequest->proposal_id, 422, __('This price request already has a quotation.'));
+            abort_unless(
+                (int) $priceRequest->customer_id === (int) $lead->customer_id,
+                422,
+                __('The selected lead does not match the price request customer.')
+            );
+        }
+
         try {
-            $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost) {
+            $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost, $priceRequest) {
                 $proposal = Proposal::create([
                     'lead_id' => $lead->id,
                     'proposal_number' => $this->generateNumber(),
@@ -350,6 +379,10 @@ class ProposalController extends Controller
 
                 $this->persistItems($proposal, $validated['items'], $canManageCost);
 
+                if ($priceRequest) {
+                    $priceRequest->update(['proposal_id' => $proposal->id]);
+                }
+
                 return $proposal;
             });
         } catch (QueryException $e) {
@@ -364,7 +397,7 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest']);
         $this->authorizeView($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project

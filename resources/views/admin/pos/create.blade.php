@@ -8,6 +8,11 @@
             <x-icon-button as="a" icon="back" href="{{ route('admin.pos.index') }}" title="{{ __('Back') }}" />
         </div>
 
+        <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            <strong>{{ __('Legacy Customer PO') }}</strong> — {{ __('Legacy Customer PO is read-only. Use the Quotation handoff for new Customer PO.') }}
+            <a href="{{ route('admin.purchasing.index') }}" class="font-semibold underline">{{ __('Open Quotation Handoff') }}</a>
+        </div>
+
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
             <form action="{{ route('admin.pos.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf

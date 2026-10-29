@@ -14,12 +14,14 @@
                 <div><dt class="text-xs text-slate-400">{{ __('Invoice Remaining') }}</dt><dd class="font-medium text-slate-800">Rp {{ number_format($payment->invoice->remainingAmount(), 0, ',', '.') }}</dd></div>
                 <div><dt class="text-xs text-slate-400">{{ __('Created by') }}</dt><dd class="font-medium text-slate-800">{{ $payment->creator?->name ?? '-' }}</dd></div>
             </dl>
-            @if($payment->proof_file)
-            <div class="mt-6">
-                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Transfer Proof') }}</h3>
-                <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" label="{{ __('View Transfer Proof') }}" title="{{ __('View Transfer Proof') }}" />
-            </div>
-            @endif
+            @can('view-payment-proofs')
+                @if($payment->proof_file)
+                <div class="mt-6">
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Transfer Proof') }}</h3>
+                    <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" label="{{ __('View Transfer Proof') }}" title="{{ __('View Transfer Proof') }}" />
+                </div>
+                @endif
+            @endcan
             @if($payment->notes)
             <div class="mt-4">
                 <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Notes') }}</h3>

@@ -17,8 +17,17 @@
         @endif
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
+            @if($priceRequest ?? null)
+                <div class="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+                    {{ __('This quotation will be linked to Price Request #:id.', ['id' => $priceRequest->id]) }}
+                    <a href="{{ route('sales.price-requests.show', $priceRequest) }}" class="font-semibold underline">{{ __('Open price request') }}</a>
+                </div>
+            @endif
             <form action="{{ route('sales.proposals.store') }}" method="POST" class="space-y-4">
                 @csrf
+                @if($priceRequest ?? null)
+                    <input type="hidden" name="price_request_id" value="{{ $priceRequest->id }}">
+                @endif
                 @include('sales.proposals._form')
                 <div class="flex justify-end gap-2 pt-2">
                     <a href="{{ route('leads.show', $lead) }}"

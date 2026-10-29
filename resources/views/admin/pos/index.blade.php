@@ -2,9 +2,14 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Purchase Order Management') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage purchase orders for customers.') }}</p>
+            <p class="text-slate-500 mt-1">{{ __('Legacy customer purchase orders are kept for historical reference.') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" label="{{ __('Create PO') }}" title="{{ __('Create PO') }}" />
+        <x-icon-button as="a" icon="back" href="{{ route('admin.purchasing.index') }}" label="{{ __('Open Quotation Handoff') }}" title="{{ __('Open Quotation Handoff') }}" />
+    </div>
+
+    <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <strong>{{ __('Legacy Customer PO') }}</strong> — {{ __('New Customer PO is uploaded from the Quotation handoff. This page is kept for historical records and should not be used for new transactions.') }}
+        <a href="{{ route('admin.purchasing.index') }}" class="font-semibold underline">{{ __('Open Quotation Handoff') }}</a>
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -37,13 +42,6 @@
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="{{ __('PO Detail') }}" />
-                                    @can('manage-admin')
-                                        <x-icon-button as="a" icon="edit" href="{{ route('admin.pos.edit', $po) }}" title="{{ __('Edit PO') }}" />
-                                        <form action="{{ route('admin.pos.destroy', $po) }}" method="POST" onsubmit="return confirm('{{ __('Delete this PO?') }}')" class="inline">
-                                            @csrf @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete PO') }}" />
-                                        </form>
-                                    @endcan
                                 </div>
                             </td>
                         </tr>

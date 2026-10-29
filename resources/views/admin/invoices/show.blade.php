@@ -73,11 +73,11 @@
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Payment Terms') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->proposal?->paymentTermsSummary() ?: __('Not set yet') }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->payment_terms ?: ($invoice->proposal?->paymentTermsSummary() ?: __('Not set yet')) }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Billing Address') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->customer?->billingAddress() ?: __('Not set yet') }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->billing_address ?: ($invoice->customer?->billingAddress() ?: __('Not set yet')) }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Finance PIC') }}</dt>

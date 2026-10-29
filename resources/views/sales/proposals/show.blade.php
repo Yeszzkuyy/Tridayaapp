@@ -21,6 +21,11 @@
                 <p class="text-slate-500">{{ __('Valid Until') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->valid_until?->format('d M Y') ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Sales Owner') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->lead->assignee?->name ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Prepared By') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->creator?->name ?? '-' }}</span></p>
+                @if($proposal->priceRequest)
+                    <p class="text-slate-500">{{ __('Price Request') }}:
+                        <a href="{{ route('sales.price-requests.show', $proposal->priceRequest) }}" class="font-medium text-accent-600 dark:text-accent-400 hover:underline">#{{ $proposal->priceRequest->id }}</a>
+                    </p>
+                @endif
             </div>
 
             <div class="overflow-x-auto">

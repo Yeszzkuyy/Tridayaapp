@@ -57,6 +57,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @can('view-customer-finance')
             <div>
                 <label for="billing_address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                     {{ __('Billing Address') }}
@@ -66,6 +67,7 @@
                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('billing_address') }}</textarea>
                 @error('billing_address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+            @endcan
             <div>
                 <label for="shipping_address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                     {{ __('Shipping Address') }}
@@ -77,6 +79,7 @@
             </div>
         </div>
 
+        @can('view-customer-finance')
         <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
             <div>
                 <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Finance PIC') }}</p>
@@ -103,6 +106,7 @@
                 </div>
             </div>
         </div>
+        @endcan
 
         <div>
             <label for="phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
@@ -134,6 +138,7 @@
             @error('email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
+        @can('view-customer-finance')
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label for="npwp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
@@ -152,6 +157,7 @@
                 @error('npwp_document') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
+        @endcan
 
         <div>
             <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">

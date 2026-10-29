@@ -525,9 +525,9 @@ class ProcurementFlowTest extends TestCase
             $this->actingAs($admin)->get($url)->assertOk();
         }
 
-        // Sales punya view-admin (read-only): boleh lihat, tidak boleh tulis.
-        $this->actingAs($sales)->get(route('admin.goods-receipts.index'))->assertOk();
-        $this->actingAs($sales)->get(route('admin.supplier-invoices.index'))->assertOk();
+        // Sales tidak memiliki permission area procurement/AP.
+        $this->actingAs($sales)->get(route('admin.goods-receipts.index'))->assertForbidden();
+        $this->actingAs($sales)->get(route('admin.supplier-invoices.index'))->assertForbidden();
         $this->actingAs($sales)->post(route('admin.goods-receipts.store'), $this->receiptPayload($order, 1, 'X1'))->assertForbidden();
 
         // Marketing tidak punya view-admin/manage-admin: tertutup total.

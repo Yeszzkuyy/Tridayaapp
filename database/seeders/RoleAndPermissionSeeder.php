@@ -51,6 +51,17 @@ class RoleAndPermissionSeeder extends Seeder
         // Inside Sales: mengerjakan task permintaan dari sales (bukan manage divisi)
         $permissions[] = 'manage-inside-sales';
 
+        // Permission baca admin yang dipisah per area sensitif.
+        // Jangan memakai view-admin untuk halaman-halaman ini.
+        $permissions = array_merge($permissions, [
+            'view-admin-hub',
+            'view-supplier-pos',
+            'view-supplier-invoices',
+            'view-payment-proofs',
+            'view-goods-receipts',
+            'view-customer-finance',
+        ]);
+
         foreach ($permissions as $name) {
             Permission::create(['name' => $name, 'guard_name' => 'web']);
         }
@@ -73,17 +84,41 @@ class RoleAndPermissionSeeder extends Seeder
         foreach (Lead::PT_GROUPS as $pt) {
             $mk('sales-'.strtolower($pt), $salesPerms);
         }
-        $mk('admin', ['manage-admin', 'view-admin', 'view-sales', ...$common]);
-        // Purchasing: izin awal sama dengan Admin (sesuai keputusan bisnis 2026-10-26).
-        // Belum otomatis ditugaskan ke akun pengguna mana pun.
-        $mk('purchasing', ['manage-admin', 'view-admin', 'view-sales', ...$common]);
+        $mk('admin', [
+            'manage-admin', 'view-admin', 'view-sales',
+            'view-admin-hub', 'view-supplier-pos', 'view-supplier-invoices',
+            'view-payment-proofs', 'view-goods-receipts', 'view-customer-finance',
+            ...$common,
+        ]);
+        // Purchasing: operasional supplier/PO/receipt/AP. Bukti transfer customer
+        // bukan bagian fungsi purchasing.
+        $mk('purchasing', [
+            'manage-admin', 'view-admin', 'view-sales',
+            'view-admin-hub', 'view-supplier-pos', 'view-supplier-invoices',
+            'view-goods-receipts', 'view-customer-finance',
+            ...$common,
+        ]);
+        // Finance: AP, bukti pembayaran customer, dan dashboard. Read-only
+        // terhadap dokumen procurement; tidak mendapat manage-admin.
+        $mk('finance', [
+            'view-admin',
+            'view-admin-hub', 'view-supplier-pos', 'view-supplier-invoices',
+            'view-payment-proofs', 'view-goods-receipts', 'view-customer-finance',
+            ...$common,
+        ]);
         $mk('technician', ['manage-technician', 'view-technician', ...$common]);
 
         // Lead teknisi: koordinasi teknisi + read-only sales & admin
         $mk('lead-technician', ['manage-technician', 'view-technician', 'monitor-technical', 'view-sales', 'view-admin', ...$common]);
 
         // Management tunggal: kelola menu management + view-only recap semua divisi
-        $mk('management', ['manage-sales-leads', 'view-marketing', 'view-sales', 'view-technician', 'view-admin', 'view-monitoring', 'monitor-marketing', ...$common]);
+        $mk('management', [
+            'manage-sales-leads', 'view-marketing', 'view-sales', 'view-technician',
+            'view-admin', 'view-monitoring', 'monitor-marketing',
+            'view-admin-hub', 'view-supplier-pos', 'view-supplier-invoices',
+            'view-payment-proofs', 'view-goods-receipts', 'view-customer-finance',
+            ...$common,
+        ]);
 
         // Lead marketing: kerja marketing + read-only teknisi (dok. instalasi)
         $mk('lead-marketing', ['manage-marketing', 'view-marketing', 'monitor-marketing', 'view-technician', ...$common]);
@@ -96,7 +131,13 @@ class RoleAndPermissionSeeder extends Seeder
         $mk('prakerin-admin', ['view-admin', ...$common]);
 
         // CEO: semua view, tanpa manage (read-only; enforcement menyusul)
-        $mk('ceo', ['view-marketing', 'view-sales', 'view-admin', 'view-technician', 'view-monitoring', ...$common]);
+        $mk('ceo', [
+            'view-marketing', 'view-sales', 'view-admin', 'view-technician',
+            'view-monitoring',
+            'view-admin-hub', 'view-supplier-pos', 'view-supplier-invoices',
+            'view-payment-proofs', 'view-goods-receipts', 'view-customer-finance',
+            ...$common,
+        ]);
 
         $mk('super-admin', Permission::pluck('name')->all());
 

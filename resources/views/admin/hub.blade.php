@@ -127,7 +127,7 @@
 
             {{-- Tab 2 Content: Finance --}}
             <div x-show="activeTab === 'finance'" x-cloak>
-                @include('admin.partials.tab-finance')
+                @include('admin.procurement.tab-finance')
             </div>
 
             {{-- Tab 3 Content: Documents --}}

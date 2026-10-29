@@ -345,7 +345,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project}/documents', [ProjectDocumentController::class, 'store'])->name('project-documents.store');
     });
 
-    Route::middleware('permission:view-technician|manage-technician|view-sales|manage-sales')->group(function () {
+    Route::middleware('permission:view-technician|manage-technician|view-sales|manage-sales|view-admin|manage-admin')->group(function () {
         Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
         Route::get('/projects/{project}/documents', [ProjectDocumentController::class, 'index'])->name('project-documents.index');
@@ -510,12 +510,16 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:view-admin|manage-admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/hub', [AdminController::class, 'hub'])->name('hub');
+        Route::get('/hub', [AdminController::class, 'hub'])
+            ->middleware('permission:view-admin-hub|manage-admin')
+            ->name('hub');
         Route::get('/invoices', [AdminController::class, 'invoicesIndex'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [AdminController::class, 'invoicesShow'])->name('invoices.show');
         Route::get('/pos', [AdminController::class, 'posIndex'])->name('pos.index');
         Route::get('/pos/{purchaseOrder}', [AdminController::class, 'posShow'])->name('pos.show');
-        Route::get('/payments/{payment}/proof', [AdminController::class, 'paymentsProof'])->name('payments.proof');
+        Route::get('/payments/{payment}/proof', [AdminController::class, 'paymentsProof'])
+            ->middleware('permission:view-payment-proofs')
+            ->name('payments.proof');
         Route::get('/payments', [AdminController::class, 'paymentsIndex'])->name('payments.index');
         Route::get('/payments/{payment}', [AdminController::class, 'paymentsShow'])->name('payments.show');
 
@@ -527,24 +531,45 @@ Route::middleware('auth')->group(function () {
         Route::get('/purchasing', [\App\Http\Controllers\PurchasingHandoffController::class, 'index'])->name('purchasing.index');
         Route::get('/purchasing/{proposal}', [\App\Http\Controllers\PurchasingHandoffController::class, 'show'])->name('purchasing.show');
 
-        // Master pemasok + Supplier PO — baca saja untuk view-only
-        // (management/CEO/sales read-only).
-        Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
-        Route::get('/supplier-pos', [SupplierPurchaseOrderController::class, 'index'])->name('supplier-pos.index');
-        Route::get('/supplier-pos/{supplierPurchaseOrder}', [SupplierPurchaseOrderController::class, 'show'])->name('supplier-pos.show');
+        // Master pemasok + Supplier PO — baca saja untuk view-only.
+        // Master pemasok berisi kontak/termin pemasok, jadi ikut izin
+        // Supplier PO (bukan view-admin umum yang juga dipegang Sales).
+        Route::get('/suppliers', [SupplierController::class, 'index'])
+            ->middleware('permission:view-supplier-pos|manage-admin')
+            ->name('suppliers.index');
+        Route::get('/supplier-pos', [SupplierPurchaseOrderController::class, 'index'])
+            ->middleware('permission:view-supplier-pos|manage-admin')
+            ->name('supplier-pos.index');
+        Route::get('/supplier-pos/{supplierPurchaseOrder}', [SupplierPurchaseOrderController::class, 'show'])
+            ->middleware('permission:view-supplier-pos|manage-admin')
+            ->name('supplier-pos.show');
 
         // Tahap 3 — baca dokumen terima barang & surat jalan.
-        Route::get('/goods-receipts', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
-        Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
-        Route::get('/goods-receipts/{goodsReceipt}/attachment', [GoodsReceiptController::class, 'attachment'])->name('goods-receipts.attachment');
+        Route::get('/goods-receipts', [GoodsReceiptController::class, 'index'])
+            ->middleware('permission:view-goods-receipts|manage-admin')
+            ->name('goods-receipts.index');
+        Route::get('/goods-receipts/{goodsReceipt}', [GoodsReceiptController::class, 'show'])
+            ->middleware('permission:view-goods-receipts|manage-admin')
+            ->name('goods-receipts.show');
+        Route::get('/goods-receipts/{goodsReceipt}/attachment', [GoodsReceiptController::class, 'attachment'])
+            ->middleware('permission:view-goods-receipts|manage-admin')
+            ->name('goods-receipts.attachment');
         Route::get('/goods-deliveries', [GoodsDeliveryController::class, 'index'])->name('goods-deliveries.index');
         Route::get('/goods-deliveries/{goodsDelivery}', [GoodsDeliveryController::class, 'show'])->name('goods-deliveries.show');
 
         // Tahap 4 — baca invoice supplier & bukti pembayaran.
-        Route::get('/supplier-invoices', [SupplierInvoiceController::class, 'index'])->name('supplier-invoices.index');
-        Route::get('/supplier-invoices/{supplierInvoice}', [SupplierInvoiceController::class, 'show'])->name('supplier-invoices.show');
-        Route::get('/supplier-invoices/{supplierInvoice}/file', [SupplierInvoiceController::class, 'file'])->name('supplier-invoices.file');
-        Route::get('/supplier-payments/{supplierPayment}/proof', [SupplierPaymentController::class, 'proof'])->name('supplier-payments.proof');
+        Route::get('/supplier-invoices', [SupplierInvoiceController::class, 'index'])
+            ->middleware('permission:view-supplier-invoices|manage-admin')
+            ->name('supplier-invoices.index');
+        Route::get('/supplier-invoices/{supplierInvoice}', [SupplierInvoiceController::class, 'show'])
+            ->middleware('permission:view-supplier-invoices|manage-admin')
+            ->name('supplier-invoices.show');
+        Route::get('/supplier-invoices/{supplierInvoice}/file', [SupplierInvoiceController::class, 'file'])
+            ->middleware('permission:view-supplier-invoices|manage-admin')
+            ->name('supplier-invoices.file');
+        Route::get('/supplier-payments/{supplierPayment}/proof', [SupplierPaymentController::class, 'proof'])
+            ->middleware('permission:view-supplier-invoices|manage-admin')
+            ->name('supplier-payments.proof');
 
         // Tahap 5 — daftar BAST & closing.
         Route::get('/bast', [BastController::class, 'index'])->name('bast.index');
@@ -661,7 +686,9 @@ Route::middleware('auth')->group(function () {
     // MANAGEMENT — sub-modul baru & Admin Hub
     // ============================================
     Route::middleware('permission:view-admin|manage-admin|manage-sales-leads')->prefix('manage')->name('manage.')->group(function () {
-        Route::get('admin', [AdminController::class, 'hub'])->name('admin.index');
+        Route::get('admin', [AdminController::class, 'hub'])
+            ->middleware('permission:view-admin-hub|manage-admin|manage-sales-leads')
+            ->name('admin.index');
     });
 
     Route::middleware('permission:manage-sales-leads')->prefix('manage')->name('manage.')->group(function () {

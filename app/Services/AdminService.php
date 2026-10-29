@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
 use App\Models\GoodsReceipt;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -12,10 +13,12 @@ use App\Models\PurchaseOrder;
 use App\Models\RequestHarga;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPurchaseOrder;
+use App\Models\SupplierPurchaseOrderItem;
 use App\Rules\SecureFile;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -62,6 +65,7 @@ class AdminService
     {
         $this->assertProjectBelongsToCustomer($data);
         $this->assertProposalBelongsToCustomer($data);
+        $data = $this->withInvoiceSnapshot($data);
 
         $key = $data['idempotency_key'] ?? null;
         if ($key && ($existing = Invoice::where('idempotency_key', $key)->first())) {
@@ -96,6 +100,29 @@ class AdminService
 
             throw $e;
         }
+    }
+
+    /**
+     * Salin billing address dan syarat bayar ke invoice pada saat terbit.
+     * Snapshot ini yang dipakai cetak invoice, bukan data customer/quotation
+     * yang bisa berubah belakangan.
+     */
+    private function withInvoiceSnapshot(array $data): array
+    {
+        // Guard sampai migration snapshot benar-benar dijalankan di server.
+        if (Schema::hasColumn('invoices', 'billing_address')
+            && blank($data['billing_address'] ?? null)
+            && ! empty($data['customer_id'])) {
+            $data['billing_address'] = Customer::find($data['customer_id'])?->billingAddress();
+        }
+
+        if (Schema::hasColumn('invoices', 'payment_terms')
+            && blank($data['payment_terms'] ?? null)
+            && ! empty($data['proposal_id'])) {
+            $data['payment_terms'] = Proposal::find($data['proposal_id'])?->paymentTermsSummary();
+        }
+
+        return $data;
     }
 
     public function updateInvoice(Invoice $invoice, array $data, ?UploadedFile $file = null): Invoice
@@ -590,6 +617,52 @@ class AdminService
             ->limit(10)
             ->get();
 
+        // 9. Receipt draft yang belum diverifikasi.
+        $pendingReceiptQuery = GoodsReceipt::with(['purchaseOrder.supplier', 'project.customer'])
+            ->where('status', 'draft');
+        if ($ptGroup) {
+            $pendingReceiptQuery->whereHas('project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $pendingReceiptCount = (clone $pendingReceiptQuery)->count();
+        $pendingReceipts = (clone $pendingReceiptQuery)->latest('received_date')->limit(10)->get();
+
+        // 10. Barang sudah diterima tetapi belum dialokasikan seluruhnya ke surat jalan.
+        $outstandingDeliveryQuery = SupplierPurchaseOrderItem::with([
+            'purchaseOrder.supplier',
+            'purchaseOrder.project.customer',
+        ])
+            ->whereColumn('quantity_received', '>', 'quantity_delivered')
+            ->whereHas('purchaseOrder', fn ($q) => $q->whereIn('status', ['ordered', 'partially_received', 'received']));
+        if ($ptGroup) {
+            $outstandingDeliveryQuery->whereHas('purchaseOrder.project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $outstandingDeliveryCount = (clone $outstandingDeliveryQuery)->count();
+        $outstandingDeliveryItems = (clone $outstandingDeliveryQuery)->latest('id')->limit(10)->get();
+
+        // 11. Project yang seluruh syarat closing-nya sudah terpenuhi tetapi
+        // belum tercatat closed (mis. BAST/payment baru saja diubah).
+        $readyToCloseQuery = Project::with(['customer', 'proposal'])
+            ->whereNull('commercial_closed_at')
+            ->whereHas('goodsDeliveries')
+            ->whereDoesntHave('goodsDeliveries', fn ($q) => $q->where('status', '!=', 'delivered'))
+            ->whereHas('invoices')
+            ->whereDoesntHave('invoices', fn ($q) => $q->whereNotIn('status', ['paid', 'cancelled']))
+            ->where(function ($q) {
+                $q->where('requires_installation', false)
+                    ->orWhere(function ($installed) {
+                        $installed->whereNotNull('bast_number')
+                            ->where(function ($progress) {
+                                $progress->where('progress', '>=', 100)
+                                    ->orWhereHas('status', fn ($s) => $s->where('name', 'Done'));
+                            });
+                    });
+            });
+        if ($ptGroup) {
+            $readyToCloseQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $readyToCloseCount = (clone $readyToCloseQuery)->count();
+        $readyToCloseProjects = (clone $readyToCloseQuery)->latest()->limit(10)->get();
+
         return [
             'ptGroup' => $ptGroup,
             'kpi' => [
@@ -608,6 +681,9 @@ class AdminService
                 'bast_pending_count' => $bastPendingCount,
                 'commercial_closed_count' => $commercialClosedCount,
                 'deadline_risk_count' => $deadlineRiskCount,
+                'pending_receipts_count' => $pendingReceiptCount,
+                'outstanding_deliveries_count' => $outstandingDeliveryCount,
+                'ready_to_close_count' => $readyToCloseCount,
             ],
             'purchasing' => [
                 'request_hargas' => $recentRequestHargas,
@@ -628,6 +704,9 @@ class AdminService
                 'supplier_invoices' => $recentSupplierInvoices,
                 'bast_projects' => $bastPendingProjects,
                 'deadline_projects' => $deadlineRiskProjects,
+                'pending_receipts' => $pendingReceipts,
+                'outstanding_delivery_items' => $outstandingDeliveryItems,
+                'ready_to_close_projects' => $readyToCloseProjects,
             ],
         ];
     }

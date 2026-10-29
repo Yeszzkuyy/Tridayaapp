@@ -11,6 +11,7 @@ use App\Models\WorkType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TrashPerUserTest extends TestCase
@@ -196,6 +197,7 @@ class TrashPerUserTest extends TestCase
     {
         Artisan::call('db:seed', ['--class' => 'RoleAndPermissionSeeder']);
         $guest = User::factory()->create();
+        $guest->assignRole(Role::create(['name' => 'without-trash', 'guard_name' => 'web']));
 
         $this->actingAs($guest)->get('/trash')->assertForbidden();
         $this->actingAs($guest)->patch('/trash/customers/1/restore')->assertForbidden();

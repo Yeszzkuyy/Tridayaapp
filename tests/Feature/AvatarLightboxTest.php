@@ -17,6 +17,7 @@ class AvatarLightboxTest extends TestCase
         $admin = User::factory()->create(['avatar' => 'avatars/test.jpg']);
         $other = User::factory()->create();
         $admin->assignRole('super-admin');
+        $other->assignRole('sales');
 
         $res = $this->actingAs($admin)->get('/admin-panel');
         $res->assertOk();

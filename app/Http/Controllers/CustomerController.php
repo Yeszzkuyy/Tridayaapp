@@ -275,6 +275,7 @@ class CustomerController extends Controller
     public function downloadNpwp(Customer $customer)
     {
         $this->authorize('view', $customer);
+        abort_unless(auth()->user()?->can('view-customer-finance'), 403);
         abort_if(! $customer->npwp_document_path, 404);
 
         return \App\Rules\SecureFile::fileResponse(

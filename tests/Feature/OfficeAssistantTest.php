@@ -17,7 +17,7 @@ class OfficeAssistantTest extends TestCase
 
     private function actingUser(): User
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
         $this->actingAs($user);
 
         return $user;
@@ -102,11 +102,11 @@ class OfficeAssistantTest extends TestCase
         config()->set('ai.providers.openrouter.key', 'test-key');
         OfficeAssistant::fake(['Balasan test']);
 
-        $owner = $this->actingAs(User::factory()->create());
+        $owner = $this->actingAs($this->makeUserWithRole());
         $conversationId = $this->postJson(route('ai.assistant.send'), ['message' => 'Milik user A'])
             ->json('conversation_id');
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($this->makeUserWithRole())
             ->postJson(route('ai.assistant.send'), [
                 'message' => 'Coba akses',
                 'conversation_id' => $conversationId,
@@ -179,14 +179,14 @@ class OfficeAssistantTest extends TestCase
 
     public function test_conversation_actions_are_scoped_to_the_owner(): void
     {
-        $owner = User::factory()->create();
+        $owner = $this->makeUserWithRole();
         $conversation = Conversation::create([
             'id' => '00000000-0000-0000-0000-000000000004',
             'user_id' => $owner->id,
             'title' => 'Private Chat',
         ]);
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($this->makeUserWithRole())
             ->getJson(route('ai.assistant.conversations.show', $conversation))
             ->assertNotFound();
     }

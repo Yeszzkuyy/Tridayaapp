@@ -502,8 +502,8 @@ class SupplierPurchasingTest extends TestCase
         $proposal = $this->makeEligibleProposal();
         $supplier = $this->makeSupplier();
 
-        // Sales punya view-admin (read-only) — boleh melihat, tidak boleh menulis.
-        $this->actingAs($sales)->get(route('admin.supplier-pos.index'))->assertOk();
+        // Sales tidak memiliki permission Supplier PO.
+        $this->actingAs($sales)->get(route('admin.supplier-pos.index'))->assertForbidden();
         $this->actingAs($sales)->post(route('admin.supplier-pos.store'), $this->poPayload(
             $proposal,
             $supplier,

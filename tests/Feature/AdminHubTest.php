@@ -49,8 +49,8 @@ class AdminHubTest extends TestCase
 
     public function test_unauthorized_roles_cannot_access_admin_hub(): void
     {
-        // marketing and technician do not have view-admin or manage-admin
-        foreach (['marketing', 'technician'] as $role) {
+        // Sales tetap bisa membaca quotation sendiri, tetapi bukan Admin Hub.
+        foreach (['sales', 'marketing', 'technician'] as $role) {
             $user = $this->loginAs($role);
             $this->actingAs($user)
                 ->get(route('manage.admin.index'))

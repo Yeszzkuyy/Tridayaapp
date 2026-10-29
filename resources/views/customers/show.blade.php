@@ -103,6 +103,10 @@
                         $doneProjects = $customer->projects->where('project_status_id', 5)->count();
                         $activeProjects = $customer->projects->where('project_status_id', '!=', 5)->where('project_status_id', '!=', 6)->count();
                         $totalContacts = $customer->contacts->count();
+                        // Data finance (billing/PIC finance/NPWP) hanya untuk
+                        // Admin/Finance/Purchasing/Management/CEO. Sales tetap
+                        // melihat customer & quotation, tanpa data penagihan.
+                        $canSeeFinance = auth()->user()?->can('view-customer-finance') ?? false;
                         $infoFields = [
                             ['icon' => 'building', 'label' => __('Name'), 'value' => $customer->name],
                             ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group],
@@ -117,6 +121,19 @@
                             ['icon' => 'user', 'label' => __('Finance PIC'), 'value' => $customer->financeContact()],
                             ['icon' => 'file-text', 'label' => __('NPWP'), 'value' => $customer->npwp],
                         ];
+
+                        if (! $canSeeFinance) {
+                            $hiddenFinanceLabels = [
+                                __('Billing Address'),
+                                __('Finance PIC'),
+                                __('NPWP'),
+                            ];
+                            $infoFields = array_values(array_filter(
+                                $infoFields,
+                                fn (array $field) => ! in_array($field['label'], $hiddenFinanceLabels, true)
+                            ));
+                        }
+
                         $stats = [
                             ['icon' => 'folder', 'label' => __('Total Projects'), 'value' => $totalProjects, 'chip' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'],
                             ['icon' => 'check-circle', 'label' => __('Completed Projects'), 'value' => $doneProjects, 'chip' => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'],
@@ -140,7 +157,7 @@
                                     </div>
                                 @endforeach
                             </div>
-                            @if($customer->npwp_document_path)
+                            @if($canSeeFinance && $customer->npwp_document_path)
                                 <a href="{{ route('customers.npwp', $customer) }}" target="_blank" rel="noopener" class="mt-3 inline-flex max-w-full items-center gap-1.5 text-sm text-indigo-600 hover:underline">
                                     <x-icon name="file-text" class="h-4 w-4 shrink-0" /><span class="truncate">{{ $customer->npwpDisplayName() }}</span>
                                 </a>

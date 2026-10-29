@@ -44,6 +44,13 @@ class ProjectDocumentPolicy
         // Dokumen hasil modul (survey/sizing/instalasi) mengikuti aturan
         // project/customer seperti dokumen biasa.
         if ($document->isTransactionDocument()) {
+            // Bukti pembayaran customer berisi rekening/nominal transfer.
+            // Sales dan Purchasing tidak boleh mengunduhnya lewat route
+            // dokumen umum, meskipun punya akses baca Admin.
+            if ($document->doc_type === 'payment') {
+                return $user->hasPermissionTo('view-payment-proofs');
+            }
+
             return $user->hasAnyPermission(['view-admin', 'manage-admin']);
         }
 

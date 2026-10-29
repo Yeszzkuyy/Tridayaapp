@@ -11,10 +11,22 @@
         td.num, th.num { text-align: right; }
         .totals { width: 16rem; margin-left: auto; font-size: .9rem; }
         .totals p { display: flex; justify-content: space-between; margin: .2rem 0; }
-        @media print { body { margin: 0; } }
+        .letterhead { border-bottom: 3px solid #0f766e; padding-bottom: .8rem; margin-bottom: 1.2rem; }
+        .letterhead h2 { margin: 0; font-size: 1.35rem; letter-spacing: .04em; }
+        .letterhead p { margin: .25rem 0 0; color: #475569; font-size: .85rem; }
+        .print-actions { text-align: right; margin-bottom: 1rem; }
+        .print-actions button { background: #0f766e; color: #fff; border: 0; border-radius: .5rem; padding: .55rem .9rem; cursor: pointer; }
+        @media print { body { margin: 0; } .print-actions { display: none; } }
     </style>
 </head>
 <body>
+    <div class="print-actions">
+        <button type="button" onclick="window.print()">{{ __('Print / Save as PDF') }}</button>
+    </div>
+    <div class="letterhead">
+        <h2>3DY GROUP</h2>
+        <p>{{ __('Quotation') }}</p>
+    </div>
     <h1>{{ $proposal->proposal_number }}</h1>
     <p>{{ $proposal->customer }} • {{ $proposal->proposal_date?->format('d M Y') ?? '-' }}</p>
     @if($proposal->lead->assignee)
