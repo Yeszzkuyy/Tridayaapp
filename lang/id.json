@@ -4520,5 +4520,9 @@
     "Choose a document type before linking a transaction.": "Pilih jenis dokumen sebelum menautkan transaksi.",
     "The selected transaction does not belong to this customer.": "Transaksi yang dipilih bukan milik customer ini.",
     "Related Payment": "Pembayaran Terkait",
-    "Choose payment": "Pilih pembayaran"
+    "Choose payment": "Pilih pembayaran",
+    "files": "berkas",
+    "Transactions": "Transaksi",
+    "Upload a document to get started.": "Unggah dokumen untuk memulai.",
+    "Create quotation": "Buat quotation"
 }

@@ -4520,5 +4520,9 @@
     "Choose a document type before linking a transaction.": "Choose a document type before linking a transaction.",
     "The selected transaction does not belong to this customer.": "The selected transaction does not belong to this customer.",
     "Related Payment": "Related Payment",
-    "Choose payment": "Choose payment"
+    "Choose payment": "Choose payment",
+    "files": "files",
+    "Transactions": "Transactions",
+    "Upload a document to get started.": "Upload a document to get started.",
+    "Create quotation": "Create quotation"
 }
