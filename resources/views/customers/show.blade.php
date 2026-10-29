@@ -42,7 +42,7 @@
         {{-- Tabs --}}
         <div x-data="{
                 tab: '{{ session('doc_uploaded') || $errors->has('file') || request()->filled('documents_q') || request()->filled('documents_category') || request()->filled('documents_page') ? 'documents' : 'overview' }}',
-                docView: 'all',
+                docView: '{{ session('doc_uploaded') ? 'module' : 'all' }}',
                 panelOpen: false,
                 doc: null,
                 moveIndicator(btn) {
@@ -519,6 +519,16 @@
                                         <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
                                     @endcan
                                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        <div x-show="formType === ''">
+                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Category') }}</label>
+                                            <select name="document_category_id" :disabled="formType !== ''"
+                                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                <option value="">{{ __('Tanpa Kategori') }}</option>
+                                                @foreach(($documentCategories ?? []) as $categoryId => $categoryName)
+                                                    <option value="{{ $categoryId }}" @selected((string) old('document_category_id') === (string) $categoryId)>{{ $categoryName }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                         @if($customer->projects->isNotEmpty())
                                             <div id="doc-project-field" x-show="formType === ''">
                                                 <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>

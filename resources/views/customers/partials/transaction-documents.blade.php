@@ -76,12 +76,6 @@ Props:
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No invoices') }}</p>
                     <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
-                    @if($canUploadDocs ?? false)
-                        <div class="mt-3 flex justify-center">
-                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                           data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
-                        </div>
-                    @endif
                     <a href="{{ route('admin.invoices.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Invoice') }} →
@@ -151,12 +145,6 @@ Props:
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No purchase orders') }}</p>
                     <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
-                    @if($canUploadDocs ?? false)
-                        <div class="mt-3 flex justify-center">
-                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                           data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
-                        </div>
-                    @endif
                     <a href="{{ route('admin.pos.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Purchase Order') }} →
@@ -217,12 +205,6 @@ Props:
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No payments') }}</p>
                     <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
-                    @if($canUploadDocs ?? false)
-                        <div class="mt-3 flex justify-center">
-                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                           data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
-                        </div>
-                    @endif
                     <a href="{{ route('admin.payments.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Payment') }} →

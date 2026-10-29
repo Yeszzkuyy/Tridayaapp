@@ -135,12 +135,6 @@ Props:
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     {{ __('Dokumen proyek akan muncul di sini setelah proyek tersedia.') }}
                 </p>
-                @if($canUploadDocs)
-                    <div class="mt-4 flex justify-center">
-                        <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
-                                       data-doc-upload-open />
-                    </div>
-                @endif
             </div>
         @endforelse
     </div>

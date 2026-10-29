@@ -196,7 +196,8 @@ class ProjectDocumentController extends Controller
         return redirect()
             ->back()
             ->with('success', __('Document uploaded successfully.'))
-            ->with('doc_uploaded', true);
+            ->with('doc_uploaded', true)
+            ->with('doc_category_id', $validated['document_category_id'] ?? null);
     }
 
     /**

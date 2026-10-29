@@ -5,6 +5,31 @@ Props:
 --}}
 @props(['generalDocuments', 'canUploadDocs' => false])
 
+@php
+    // Kelompokkan per kategori supaya file hasil upload langsung terlihat
+    // di kelompok kategorinya. "Tanpa Kategori" ditaruh paling bawah.
+    $sections = $generalDocuments
+        ->whereNotNull('document_category_id')
+        ->groupBy('document_category_id')
+        ->map(fn ($docs) => [
+            'id' => (int) $docs->first()->document_category_id,
+            'name' => $docs->first()->category?->name ?? __('Tanpa Kategori'),
+            'docs' => $docs,
+        ])
+        ->sortBy('name')
+        ->values();
+
+    $uncategorized = $generalDocuments->whereNull('document_category_id');
+
+    if ($uncategorized->isNotEmpty()) {
+        $sections->push([
+            'id' => 0,
+            'name' => __('Tanpa Kategori'),
+            'docs' => $uncategorized,
+        ]);
+    }
+@endphp
+
 <section class="space-y-4">
     {{-- Header: judul + jumlah di kiri, pencarian & filter di kanan. --}}
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -38,8 +63,10 @@ Props:
                     <select id="gen-doc-category" aria-label="{{ __('Filter kategori') }}"
                             class="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-9 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-indigo-900">
                         <option value="">{{ __('Semua kategori') }}</option>
-                        @foreach($generalDocuments->pluck('category')->filter()->unique('id')->sortBy('name') as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->name }} ({{ $generalDocuments->where('document_category_id', $cat->id)->count() }})</option>
+                        @foreach($sections as $section)
+                            <option value="{{ $section['id'] === 0 ? 'none' : $section['id'] }}" @selected((string) session('doc_category_id') === (string) $section['id'])>
+                                {{ $section['name'] }} ({{ $section['docs']->count() }})
+                            </option>
                         @endforeach
                     </select>
                     <x-icon name="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -49,28 +76,43 @@ Props:
     </div>
 
     @if($generalDocuments->isNotEmpty())
-        <div id="gen-doc-grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @foreach($generalDocuments as $doc)
-                @php
-                    // Dokumen milik modul (survey/sizing/instalasi) hanya
-                    // dikelola dari menu modulnya — di sini read-only.
-                    $isModuleDoc = $doc->isModuleDocument();
-                    $metaLine = collect([
-                        $isModuleDoc ? $doc->source_label : ($doc->category?->name ?? __('Umum')),
-                        'v' . (int) ($doc->version ?? 1),
-                    ])->filter()->implode(' · ');
-                @endphp
+        <div id="gen-doc-sections" class="space-y-6">
+            @foreach($sections as $section)
+                <div data-doc-section>
+                    <div class="mb-3 flex items-center gap-2">
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            {{ $section['name'] }}
+                        </h3>
+                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold leading-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            {{ $section['docs']->count() }}
+                        </span>
+                    </div>
 
-                <div class="gen-doc-card"
-                     data-doc-name="{{ mb_strtolower($doc->file_name) }}"
-                     data-doc-cat="{{ $doc->document_category_id ?? '' }}">
-                    @include('customers.doc-card', [
-                        'doc' => $doc,
-                        'canManage' => $canUploadDocs && ! $isModuleDoc,
-                        'badgeText' => $isModuleDoc ? $doc->source_label : null,
-                        'badgeClass' => $isModuleDoc ? 'bg-indigo-600' : null,
-                        'metaLine' => $metaLine,
-                    ])
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach($section['docs'] as $doc)
+                            @php
+                                // Dokumen milik modul (survey/sizing/instalasi) hanya
+                                // dikelola dari menu modulnya — di sini read-only.
+                                $isModuleDoc = $doc->isModuleDocument();
+                                $metaLine = collect([
+                                    $isModuleDoc ? $doc->source_label : ($doc->category?->name ?? __('Tanpa Kategori')),
+                                    'v' . (int) ($doc->version ?? 1),
+                                ])->filter()->implode(' · ');
+                            @endphp
+
+                            <div class="gen-doc-card"
+                                 data-doc-name="{{ mb_strtolower($doc->file_name) }}"
+                                 data-doc-cat="{{ $doc->document_category_id ?: 'none' }}">
+                                @include('customers.doc-card', [
+                                    'doc' => $doc,
+                                    'canManage' => $canUploadDocs && ! $isModuleDoc,
+                                    'badgeText' => $isModuleDoc ? $doc->source_label : null,
+                                    'badgeClass' => $isModuleDoc ? 'bg-indigo-600' : null,
+                                    'metaLine' => $metaLine,
+                                ])
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @endforeach
         </div>
@@ -85,7 +127,7 @@ Props:
             </p>
         </div>
     @else
-        {{-- Empty state: ikon lembut, penjelasan singkat, satu aksi upload. --}}
+        {{-- Empty state: tombol upload ada di header halaman (satu pintu). --}}
         <div class="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center dark:border-slate-700">
             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
                 <x-icon name="file-text" class="h-5 w-5 text-slate-400 dark:text-slate-500" />
@@ -96,32 +138,32 @@ Props:
             <p class="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
                 {{ __('Dokumen legalitas seperti NIB atau NPWP akan muncul di sini setelah diunggah.') }}
             </p>
-            @if($canUploadDocs)
-                <div class="mt-5 flex justify-center">
-                    <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
-                                   data-doc-upload-open />
-                </div>
-            @endif
         </div>
     @endif
 </section>
 
-{{-- Pencarian & filter kategori dokumen umum (client-side). --}}
+{{-- Pencarian & filter kategori dokumen umum (client-side, per section). --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const search = document.getElementById('gen-doc-search');
         const categoryFilter = document.getElementById('gen-doc-category');
-        const grid = document.getElementById('gen-doc-grid');
+        const container = document.getElementById('gen-doc-sections');
         const noResults = document.getElementById('gen-doc-no-results');
 
-        if (!search || !grid) return;
+        if (!search || !container) return;
+
+        // Bila baru upload, filter langsung diarahkan ke kategori file itu.
+        const uploadedCategory = @json((string) session('doc_category_id') ?? '');
+        if (uploadedCategory && categoryFilter) {
+            categoryFilter.value = uploadedCategory === '0' ? 'none' : uploadedCategory;
+        }
 
         function apply() {
             const q = (search.value || '').trim().toLowerCase();
             const cat = categoryFilter?.value || '';
             let visible = 0;
 
-            grid.querySelectorAll('.gen-doc-card').forEach((card) => {
+            container.querySelectorAll('.gen-doc-card').forEach((card) => {
                 const matchName = !q || (card.dataset.docName || '').includes(q);
                 const matchCat = !cat || (card.dataset.docCat || '') === cat;
                 const show = matchName && matchCat;
@@ -129,10 +171,17 @@ Props:
                 if (show) visible += 1;
             });
 
+            // Section tanpa file terlihat ikut disembunyikan.
+            container.querySelectorAll('[data-doc-section]').forEach((section) => {
+                const hasVisible = section.querySelectorAll('.gen-doc-card:not(.hidden)').length > 0;
+                section.classList.toggle('hidden', !hasVisible);
+            });
+
             noResults?.classList.toggle('hidden', visible > 0);
         }
 
         search.addEventListener('input', apply);
         categoryFilter?.addEventListener('change', apply);
+        apply();
     });
 </script>
