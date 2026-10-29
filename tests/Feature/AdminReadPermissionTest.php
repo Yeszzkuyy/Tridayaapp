@@ -277,10 +277,11 @@ class AdminReadPermissionTest extends TestCase
 
         // Finance tetap bisa membuka data penagihan; file NPWP tidak ada
         // pada fixture sehingga controller mengembalikan 404 (bukan 403).
+        // Billing & shipping address sudah dihapus dari ringkasan customer
+        // (commit style(cus/customers) e69ee835), jadi tidak dicek lagi.
         $this->actingAs($finance)
             ->get(route('customers.show', $customer))
             ->assertOk()
-            ->assertSee('Jl. Rahasia Finance 123')
             ->assertSee('Ibu Finance Rahasia')
             ->assertSee('99.999.999.9-999.999')
             ->assertSee(__('File Payment'));
