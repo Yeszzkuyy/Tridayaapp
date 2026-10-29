@@ -1,9 +1,9 @@
 @php
     $subcategoryLabels = [
-        'general' => __('General Document'),
-        'invoice' => __('Customer Invoice'),
-        'po' => __('Legacy Customer PO'),
-        'payment' => __('Payment Proof'),
+        'general' => __('General'),
+        'invoice' => __('Invoice'),
+        'po' => __('PO'),
+        'payment' => __('Payment'),
         'survey' => __('Survey Report'),
         'sizing' => __('Sizing'),
         'instalasi' => __('Installation Report'),

@@ -4520,5 +4520,7 @@
     "Choose a document type before linking a transaction.": "Pilih jenis dokumen sebelum menautkan transaksi.",
     "The selected transaction does not belong to this customer.": "Transaksi yang dipilih bukan milik customer ini.",
     "Related Payment": "Pembayaran Terkait",
-    "Choose payment": "Pilih pembayaran"
+    "Choose payment": "Pilih pembayaran",
+    "Choose a payment that belongs to the same customer.": "Pilih pembayaran milik customer yang sama.",
+    "This file is the primary payment proof. Manage it from the Payment page.": "File ini adalah bukti pembayaran utama. Kelola dari halaman Payment."
 }

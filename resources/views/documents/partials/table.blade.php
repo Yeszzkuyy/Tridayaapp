@@ -41,6 +41,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                                 ? $doc->refId : null,
                             'invoices' => $links['invoice'] ?? [],
                             'purchase_orders' => $links['po'] ?? [],
+                            'payments' => $links['payment'] ?? [],
                         ];
                     }
 

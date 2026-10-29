@@ -4520,5 +4520,7 @@
     "Choose a document type before linking a transaction.": "Choose a document type before linking a transaction.",
     "The selected transaction does not belong to this customer.": "The selected transaction does not belong to this customer.",
     "Related Payment": "Related Payment",
-    "Choose payment": "Choose payment"
+    "Choose payment": "Choose payment",
+    "Choose a payment that belongs to the same customer.": "Choose a payment that belongs to the same customer.",
+    "This file is the primary payment proof. Manage it from the Payment page.": "This file is the primary payment proof. Manage it from the Payment page."
 }

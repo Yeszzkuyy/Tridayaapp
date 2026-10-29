@@ -62,14 +62,20 @@ class DocumentCenterController extends Controller
             __('Documents owned by Survey/Sizing/Installation or BAST cannot change type.')
         );
 
-        abort_if(
-            $document->doc_type === 'payment',
-            422,
-            __('Payment proofs are managed from the Payment page.')
-        );
+        // Bukti transfer utama (payments.proof_file menunjuk file ini) tidak
+        // boleh dilepas dari halaman Payment. Dokumen payment tambahan boleh.
+        if ($document->doc_type === 'payment') {
+            $payment = $document->documentable;
+
+            abort_if(
+                $payment instanceof \App\Models\Payment && $payment->proof_file === $document->file_path,
+                422,
+                __('This file is the primary payment proof. Manage it from the Payment page.')
+            );
+        }
 
         $validated = $request->validate([
-            'doc_type' => ['required', Rule::in(['general', 'invoice', 'po'])],
+            'doc_type' => ['required', Rule::in(['general', 'invoice', 'po', 'payment'])],
             'transaction_id' => ['nullable', 'integer'],
             'document_category_id' => ['nullable', 'exists:document_categories,id'],
         ]);
@@ -140,7 +146,7 @@ class DocumentCenterController extends Controller
      * Record transaksi tujuan untuk dokumen invoice/PO.
      * Wajib milik customer yang sama supaya akses & tautan sumber konsisten.
      */
-    private function resolveDocumentable(ProjectDocument $document, string $target, int $transactionId): Invoice|PurchaseOrder|null
+    private function resolveDocumentable(ProjectDocument $document, string $target, int $transactionId): Invoice|PurchaseOrder|\App\Models\Payment|null
     {
         if ($target === 'general') {
             return null;
@@ -173,24 +179,39 @@ class DocumentCenterController extends Controller
             return $invoice;
         }
 
-        $purchaseOrder = PurchaseOrder::query()
+        if ($target === 'po') {
+            $purchaseOrder = PurchaseOrder::query()
+                ->whereKey($transactionId)
+                ->where('customer_id', $document->customer_id)
+                ->first();
+
+            if (! $purchaseOrder) {
+                throw ValidationException::withMessages([
+                    'transaction_id' => __('Choose a purchase order that belongs to the same customer.'),
+                ]);
+            }
+
+            return $purchaseOrder;
+        }
+
+        $payment = \App\Models\Payment::query()
             ->whereKey($transactionId)
-            ->where('customer_id', $document->customer_id)
+            ->whereHas('invoice', fn ($query) => $query->where('customer_id', $document->customer_id))
             ->first();
 
-        if (! $purchaseOrder) {
+        if (! $payment) {
             throw ValidationException::withMessages([
-                'transaction_id' => __('Choose a purchase order that belongs to the same customer.'),
+                'transaction_id' => __('Choose a payment that belongs to the same customer.'),
             ]);
         }
 
-        return $purchaseOrder;
+        return $payment;
     }
 
     /**
      * Opsi invoice/PO untuk customer pada halaman ini saja (bukan seluruh DB).
      *
-     * @return array<int, array{invoice: array<int, array{id:int,label:string}>, po: array<int, array{id:int,label:string}>}>
+     * @return array<int, array{invoice?: array<int, array{id:int,label:string}>, po?: array<int, array{id:int,label:string}>, payment?: array<int, array{id:int,label:string}>}>
      */
     private function linkOptions(LengthAwarePaginator $results): array
     {
@@ -228,6 +249,23 @@ class DocumentCenterController extends Controller
                 $map[$order->customer_id]['po'][] = [
                     'id' => $order->id,
                     'label' => $order->po_number.' · '.$order->issue_date?->format('d M Y'),
+                ];
+            });
+
+        \App\Models\Payment::query()
+            ->whereHas('invoice', fn ($query) => $query->whereIn('customer_id', $customerIds))
+            ->with('invoice:id,invoice_number,customer_id')
+            ->orderByDesc('payment_date')
+            ->get(['id', 'invoice_id', 'payment_date'])
+            ->each(function (\App\Models\Payment $payment) use (&$map) {
+                $customerId = $payment->invoice?->customer_id;
+                if (! $customerId) {
+                    return;
+                }
+
+                $map[$customerId]['payment'][] = [
+                    'id' => $payment->id,
+                    'label' => ($payment->invoice?->invoice_number ?? '-').' · '.$payment->payment_date?->format('d M Y'),
                 ];
             });
 
