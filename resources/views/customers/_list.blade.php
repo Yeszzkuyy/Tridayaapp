@@ -13,10 +13,9 @@
         <tbody class="divide-y divide-slate-200/70 dark:divide-slate-700/50">
             @forelse($customers as $customer)
                 @php
-                    $primaryContact = $customer->contacts->first();
-                    $picName = $primaryContact?->name ?: $customer->contact_person;
-                    $picWhatsapp = $primaryContact?->whatsapp;
-                    $picEmail = $primaryContact?->email;
+                    $picName = $customer->picName();
+                    $picWhatsapp = $customer->picWhatsapp();
+                    $picEmail = $customer->picEmail();
                 @endphp
                 <tr class="group transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-white/5">
                     <td class="px-5 py-4 sm:px-6">

@@ -19,7 +19,7 @@ class ManageSalesController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Lead::with(['customer', 'assignee', 'partner'])
+        $query = Lead::with(['customer.contacts', 'assignee', 'partner'])
             ->withCount(['followUps'])
             ->withMax('followUps as last_follow_up_at', 'follow_up_date')
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
@@ -59,7 +59,7 @@ class ManageSalesController extends Controller
 
     public function edit(Lead $lead)
     {
-        $lead->load(['customer', 'assignee']);
+        $lead->load(['customer.contacts', 'assignee']);
 
         $salesUsers = User::role('sales')->orderBy('name')->get(['id', 'name']);
 
@@ -334,7 +334,7 @@ class ManageSalesController extends Controller
             fwrite($handle, "\xEF\xBB\xBF"); // BOM agar Excel baca UTF-8.
             fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Follow Up', 'Follow Up Terakhir']);
             $this->myLeadsQuery($request)
-                ->with(['customer'])
+                ->with(['customer.contacts'])
                 ->withMax('followUps as last_follow_up_at', 'follow_up_date')
                 ->chunk(1000, function ($leads) use ($handle) {
                     foreach ($leads as $lead) {
@@ -343,7 +343,7 @@ class ManageSalesController extends Controller
                         fputcsv($handle, [
                             $safe($lead->customer?->name ?? '-'),
                             $safe($lead->pt_group ?? '-'),
-                            $safe($lead->customer?->contact_person ?? '-'),
+                            $safe($lead->customer?->picName() ?? '-'),
                             $safe($lead->customer?->phone ?? $lead->customer?->whatsapp ?? '-'),
                             $safe(ucfirst($lead->status)),
                             $safe($lead->kebutuhan ?? '-'),
@@ -361,7 +361,7 @@ class ManageSalesController extends Controller
 
     private function myLeadsQuery(Request $request)
     {
-        $query = Lead::with(['customer', 'partner'])
+        $query = Lead::with(['customer.contacts', 'partner'])
             ->withCount(['followUps'])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
             ->where('assigned_to', auth()->id())

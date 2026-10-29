@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Services\CustomerContactService;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
+    public function __construct(private CustomerContactService $contacts) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -89,7 +92,19 @@ class CustomerController extends Controller
         // Form customer hanya punya satu kolom nama; company = name supaya tampilan Lead/Monitoring konsisten
         $validated['company'] ??= $validated['name'];
 
+        // PIC di form diterjemahkan menjadi satu kontak primary (input eksplisit
+        // pengguna), bukan lagi kolom legacy yang berdiri sendiri.
+        $contactPerson = $validated['contact_person'] ?? null;
+        unset($validated['contact_person']);
+
         $customer = Customer::create($validated);
+
+        if (filled($contactPerson)) {
+            $this->contacts->create($customer, [
+                'name' => $contactPerson,
+                'is_primary' => true,
+            ]);
+        }
 
         if ($request->hasFile('npwp_document')) {
             $file = $request->file('npwp_document');
@@ -360,6 +375,11 @@ class CustomerController extends Controller
 
         $validated['company'] ??= $validated['name'];
 
+        // `contact_person` bukan lagi sumber tulis independen: arahkan ke
+        // kontak primary supaya halaman Lead/Manage Sales tidak basi.
+        $contactPerson = $validated['contact_person'] ?? null;
+        unset($validated['contact_person']);
+
         if ($request->hasFile('npwp_document')) {
             if ($customer->npwp_document_path) {
                 Storage::disk('private')->delete($customer->npwp_document_path);
@@ -370,6 +390,23 @@ class CustomerController extends Controller
         }
 
         $customer->update($validated);
+
+        $primary = $this->contacts->primary($customer);
+
+        if ($primary) {
+            // PIC utama diubah eksplisit dari form customer -> ikut ubah kontak.
+            if (filled($contactPerson) && $contactPerson !== $primary->name) {
+                $this->contacts->update($primary, ['name' => $contactPerson]);
+            } else {
+                $this->contacts->syncPicCache($customer);
+            }
+        } elseif (filled($contactPerson) && $contactPerson !== $customer->contact_person) {
+            // Customer lama tanpa kontak: angkat PIC yang diisi menjadi primary.
+            $this->contacts->create($customer, [
+                'name' => $contactPerson,
+                'is_primary' => true,
+            ]);
+        }
 
         return redirect()
             ->route('customers.index')

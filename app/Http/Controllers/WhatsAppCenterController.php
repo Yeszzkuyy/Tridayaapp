@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\CustomerContact;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\User;
@@ -12,6 +13,7 @@ use App\Models\WhatsappConversationPreference;
 use App\Models\WhatsappMessage;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\WhatsappInboundNotification;
+use App\Services\CustomerContactService;
 use App\Services\WhatsappBot;
 use App\Services\WhatsappGateway;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +27,11 @@ class WhatsAppCenterController extends Controller
     public function __construct(
         private readonly WhatsappGateway $gateway,
         private readonly WhatsappBot $bot,
+        private readonly CustomerContactService $contacts,
     ) {}
+
+    /** Cache peta nomor → customer untuk satu request. */
+    private ?array $numberIndex = null;
 
     public function index()
     {
@@ -114,15 +120,8 @@ class WhatsAppCenterController extends Controller
         $unreads = $this->senderUnreads($account);
 
         // Kandidat customer sekali per request (bukan per pengirim).
-        $byNumber = [];
-        foreach (Customer::whereNotNull('whatsapp')->orWhereNotNull('phone')->get(['id', 'whatsapp', 'phone']) as $candidate) {
-            foreach ([$candidate->whatsapp, $candidate->phone] as $number) {
-                $normalized = $this->normalizeNumber((string) $number);
-                if ($normalized !== '' && ! isset($byNumber[$normalized])) {
-                    $byNumber[$normalized] = $candidate->id;
-                }
-            }
-        }
+        // Nomor bisa berasal dari customer maupun customer_contacts.
+        $byNumber = $this->customerNumberIndex();
         $senders = $lasts->map(fn ($m) => $this->normalizeNumber((string) $m->sender_number))->filter()->unique()->values();
         $matchedIds = $senders->map(fn ($n) => $byNumber[$n] ?? null)->filter()->unique()->values()->all();
         $customersById = Customer::whereIn('id', $matchedIds)->get()->keyBy('id');
@@ -240,7 +239,8 @@ class WhatsAppCenterController extends Controller
             })
             ->when($term !== '', function ($query) use ($term) {
                 $query->where(function ($query) use ($term) {
-                    $query->whereLike(['name', 'company', 'whatsapp', 'phone', 'email'], $term);
+                    $query->whereLike(['name', 'company', 'whatsapp', 'phone', 'email'], $term)
+                        ->orWhereHas('contacts', fn ($contact) => $contact->whereLike(['name', 'whatsapp', 'phone', 'email'], $term));
                 });
             })
             ->where(function ($query) {
@@ -282,7 +282,6 @@ class WhatsAppCenterController extends Controller
             $customer = Customer::create([
                 'name' => $dbName,
                 'company' => $company !== '' ? $company : $contactName,
-                'contact_person' => $contactName,
                 'whatsapp' => $number,
                 'whatsapp_account_id' => $account->id,
                 'address' => $validated['address'] ?? null,
@@ -290,16 +289,41 @@ class WhatsAppCenterController extends Controller
             ]);
         } else {
             $dbName = $company !== '' ? $company : ($customer->company ?: $contactName);
+
+            // Nomor perusahaan lain tidak ditimpa nomor PIC; nomor yang sama
+            // tetap dinormalisasi (08xx -> 62xx).
+            $waForUpdate = $customer->whatsapp;
+            if (blank($waForUpdate) || $this->normalizeNumber((string) $waForUpdate) === $number) {
+                $waForUpdate = $number;
+            }
+
             $customer->update([
                 'name' => $dbName,
                 'company' => $company !== '' ? $company : $customer->company,
-                'contact_person' => $contactName,
-                'whatsapp' => $number,
+                'whatsapp' => $waForUpdate,
                 'whatsapp_account_id' => $customer->whatsapp_account_id ?? $account->id,
                 'address' => filled($validated['address'] ?? null) ? $validated['address'] : $customer->address,
-                'notes' => $validated['notes'] ?? $customer->notes,
+                'notes' => filled($validated['notes'] ?? null) ? $validated['notes'] : $customer->notes,
             ]);
         }
+
+        // Nomor ini dicatat sebagai kontak. Primary hanya untuk customer yang
+        // benar-benar baru; customer lama tidak boleh kehilangan PIC utamanya.
+        $existingContact = $customer->contacts()
+            ->where(fn ($query) => $query->where('whatsapp', $number)->orWhere('phone', $number))
+            ->first();
+
+        if (! $existingContact) {
+            $isFirstContact = ! $customer->contacts()->exists();
+
+            $this->contacts->create($customer, [
+                'name' => $contactName,
+                'whatsapp' => $number,
+                'is_primary' => $isFirstContact,
+            ]);
+        }
+
+        $this->numberIndex = null;
 
         return response()->json($this->contactPayload($customer->fresh()));
     }
@@ -445,9 +469,17 @@ class WhatsAppCenterController extends Controller
                 'company' => $validated['customer_name'],
                 'whatsapp' => $number,
                 'whatsapp_account_id' => $account->id,
-                'contact_person' => $validated['customer_name'],
                 'address' => $validated['customer_address'] ?? null,
             ]);
+
+            // Nama yang diketik pengguna = kontak primary customer baru.
+            $this->contacts->create($customer, [
+                'name' => $validated['customer_name'],
+                'whatsapp' => $number,
+                'is_primary' => true,
+            ]);
+
+            $this->numberIndex = null;
         } else {
             $updates = [];
             if (! $customer->whatsapp_account_id) {
@@ -954,17 +986,66 @@ class WhatsAppCenterController extends Controller
             ->sum();
     }
 
+    /**
+     * Peta nomor ternormalisasi → customer_id untuk satu request.
+     *
+     * Nomor dicari di data perusahaan (customers.whatsapp/phone) DAN di
+     * kontak orang (customer_contacts.whatsapp/phone), supaya PIC sekunder
+     * tetap dikenali. Nomor yang dipakai lebih dari satu customer sengaja
+     * TIDAK dipetakan (ambigu) — lebih baik tidak tertaut daripada salah.
+     *
+     * @return array<string,int>
+     */
+    private function customerNumberIndex(): array
+    {
+        if ($this->numberIndex !== null) {
+            return $this->numberIndex;
+        }
+
+        $map = [];
+        $ambiguous = [];
+
+        $register = function (?string $number, int $customerId) use (&$map, &$ambiguous): void {
+            $normalized = $this->normalizeNumber((string) $number);
+
+            if ($normalized === '' || isset($ambiguous[$normalized])) {
+                return;
+            }
+
+            if (isset($map[$normalized]) && $map[$normalized] !== $customerId) {
+                unset($map[$normalized]);
+                $ambiguous[$normalized] = true;
+
+                return;
+            }
+
+            $map[$normalized] = $customerId;
+        };
+
+        foreach (Customer::whereNotNull('whatsapp')->orWhereNotNull('phone')->get(['id', 'whatsapp', 'phone']) as $customer) {
+            $register($customer->whatsapp, $customer->id);
+            $register($customer->phone, $customer->id);
+        }
+
+        foreach (CustomerContact::whereNotNull('whatsapp')->orWhereNotNull('phone')->get(['id', 'customer_id', 'whatsapp', 'phone']) as $contact) {
+            $register($contact->whatsapp, $contact->customer_id);
+            $register($contact->phone, $contact->customer_id);
+        }
+
+        return $this->numberIndex = $map;
+    }
+
     private function findCustomer(string $number): ?Customer
     {
         $normalized = $this->normalizeNumber($number);
 
-        if (! $normalized) {
+        if ($normalized === '') {
             return null;
         }
 
-        return Customer::whereNotNull('whatsapp')->orWhereNotNull('phone')->get()
-            ->first(fn ($c) => $this->normalizeNumber($c->whatsapp ?? '') === $normalized
-                || $this->normalizeNumber($c->phone ?? '') === $normalized);
+        $customerId = $this->customerNumberIndex()[$normalized] ?? null;
+
+        return $customerId ? Customer::find($customerId) : null;
     }
 
     /**
@@ -1018,11 +1099,27 @@ class WhatsAppCenterController extends Controller
 
     private function foreignOwnedSenderNumbers(WhatsappAccount $account): array
     {
-        return Customer::whereNotNull('whatsapp_account_id')
+        $companyNumbers = Customer::whereNotNull('whatsapp_account_id')
             ->where('whatsapp_account_id', '!=', $account->id)
             ->get(['whatsapp', 'phone'])
-            ->flatMap(fn ($c) => [$this->normalizeNumber($c->whatsapp ?? ''), $this->normalizeNumber($c->phone ?? '')])
-            ->filter()->unique()->values()->all();
+            ->flatMap(fn ($c) => [$this->normalizeNumber($c->whatsapp ?? ''), $this->normalizeNumber($c->phone ?? '')]);
+
+        $contactNumbers = CustomerContact::whereHas(
+            'customer',
+            fn ($query) => $query->whereNotNull('whatsapp_account_id')
+                ->where('whatsapp_account_id', '!=', $account->id)
+        )
+            ->get(['whatsapp', 'phone'])
+            ->flatMap(fn ($contact) => [
+                $this->normalizeNumber($contact->whatsapp ?? ''),
+                $this->normalizeNumber($contact->phone ?? ''),
+            ]);
+
+        return $companyNumbers->merge($contactNumbers)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function normalizeNumber(string $number): string
@@ -1035,7 +1132,7 @@ class WhatsAppCenterController extends Controller
         return [
             'id' => $customer->id,
             'name' => $customer->name,
-            'contact_person' => $customer->contact_person,
+            'contact_person' => $customer->picName(),
             'company' => $customer->company,
             'whatsapp' => $customer->whatsapp ?? $customer->phone,
             'address' => $customer->address,
