@@ -102,6 +102,16 @@
                         <x-icon name="users" class="h-5 w-5 shrink-0" />
                         <span>{{ __('Customer') }}</span>
                     </a>
+                    {{-- Document Center: pencarian dokumen lintas modul.
+                         Semua role punya view-customer; isinya dibatasi per sumber. --}}
+                    @can('view-customer')
+                        <a wire:navigate.hover href="{{ route('documents.index') }}"
+                           aria-current="{{ request()->routeIs('documents.*') ? 'page' : 'false' }}"
+                           class="{{ $navLink }} {{ request()->routeIs('documents.*') ? $navActive : $navInactive }}">
+                            <x-icon name="folder" class="h-5 w-5 shrink-0" />
+                            <span>{{ __('Documents') }}</span>
+                        </a>
+                    @endcan
                     {{-- Monitoring lintas divisi: management, ceo, super-admin (via Gate::before) --}}
                     @can('view-monitoring')
                         <a wire:navigate.hover href="{{ route('monitoring.index') }}"

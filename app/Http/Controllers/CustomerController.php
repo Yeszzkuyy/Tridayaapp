@@ -123,7 +123,7 @@ class CustomerController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Customer $customer)
+    public function show(Customer $customer, Request $request, \App\Services\DocumentCenterService $documentCenter)
     {
         $this->authorize('view', $customer);
 
@@ -146,6 +146,19 @@ class CustomerController extends Controller
             }
         ]);
 
+        // Tab Dokumen: satu daftar terpadu khusus customer ini. Sumbernya
+        // sama dengan menu Dokumen global, jadi file tidak disalin/diduplikasi.
+        $documentFilters = [
+            'q' => filled($request->query('documents_q')) ? trim((string) $request->query('documents_q')) : null,
+            'category' => in_array($request->query('documents_category'), \App\Services\DocumentCenterService::CATEGORIES, true)
+                ? $request->query('documents_category') : null,
+            'subcategory' => in_array($request->query('documents_subcategory'), \App\Services\DocumentCenterService::SUBCATEGORIES, true)
+                ? $request->query('documents_subcategory') : null,
+            'customer_id' => $customer->id,
+            'sort' => in_array($request->query('documents_sort'), \App\Services\DocumentCenterService::SORTS, true)
+                ? $request->query('documents_sort') : 'newest',
+        ];
+
         return view('customers.show', [
             'customer' => $customer,
             'timeline' => $this->buildTimeline($customer),
@@ -157,6 +170,8 @@ class CustomerController extends Controller
                 ->with('invoice')
                 ->latest('payment_date')
                 ->get(),
+            'customerDocuments' => $documentCenter->paginate($request->user(), $documentFilters, 'documents_page'),
+            'customerDocumentFilters' => $documentFilters,
         ]);
     }
 

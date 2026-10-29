@@ -41,7 +41,10 @@
 
         {{-- Tabs --}}
         <div x-data="{
-                tab: '{{ session('doc_uploaded') || $errors->has('file') ? 'documents' : 'overview' }}',
+                tab: '{{ session('doc_uploaded') || $errors->has('file') || request()->filled('documents_q') || request()->filled('documents_category') || request()->filled('documents_page') ? 'documents' : 'overview' }}',
+                docView: 'all',
+                panelOpen: false,
+                doc: null,
                 moveIndicator(btn) {
                     if (!btn) return;
                     const i = this.$refs.indicator;
@@ -293,6 +296,29 @@
                         $generalDocuments = $documents->whereNull('project_id');
                     @endphp
 
+                    {{-- Sub-tab: daftar terpadu vs tampilan per modul --}}
+                    <div class="mb-6 inline-flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700">
+                        <button type="button" @click="docView = 'all'"
+                                :class="docView === 'all' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-slate-100'"
+                                class="rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            {{ __('All Documents') }}
+                        </button>
+                        <button type="button" @click="docView = 'module'"
+                                :class="docView === 'module' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-slate-100'"
+                                class="rounded-xl px-4 py-2 text-sm font-medium transition-colors">
+                            {{ __('By Module') }}
+                        </button>
+                    </div>
+
+                    <div x-show="docView === 'all'">
+                        @include('customers.partials.all-documents', [
+                            'customer' => $customer,
+                            'customerDocuments' => $customerDocuments,
+                            'customerDocumentFilters' => $customerDocumentFilters,
+                            'canUploadDocs' => $canUploadDocs,
+                        ])
+                    </div>
+
                     {{-- Breadcrumb + judul halaman Documents --}}
                     <nav aria-label="Breadcrumb" class="mb-4">
                         <ol class="flex flex-wrap items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
@@ -325,7 +351,7 @@
                         @endif
                     </div>
 
-                    <div class="space-y-8">
+                    <div x-show="docView === 'module'" class="space-y-8">
                         {{-- Section 1: Project Documents (kelompokkan per project) --}}
                         @include('customers.partials.project-documents', [
                             'projectDocuments' => $projectDocuments,
@@ -350,7 +376,7 @@
                         ->latest('proposal_date')
                         ->get();
                 @endphp
-                <div x-show="tab === 'documents'" x-transition class="space-y-6">
+                <div x-show="tab === 'documents' && docView === 'module'" x-transition class="space-y-6">
                     {{-- Section Quotation / Penawaran Harga (Mirroring dari Sales) --}}
                     <div class="border-t border-slate-200 dark:border-slate-600 pt-6">
                         <div class="flex items-center justify-between mb-4">
@@ -579,6 +605,9 @@
                     </div>
                 </div>
                 @endcan
+
+                {{-- Panel detail dokumen (dipakai tabel All Documents) --}}
+                @include('documents.partials.detail-panel')
 
                 {{-- TAB 10: ACTIVITY --}}
                 <div x-show="tab === 'activity'" x-transition>
