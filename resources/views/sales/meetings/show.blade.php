@@ -65,6 +65,36 @@
             </div>
         </div>
 
+        {{-- Foto bukti tampil sejak meeting dibuat, tidak menunggu laporan selesai. --}}
+        @if(!empty($meeting->meeting_photos))
+            @php
+                $meetingPhotos = is_array($meeting->meeting_photos) ? $meeting->meeting_photos : [];
+                $photoCount = count($meetingPhotos);
+                $photoLimit = \App\Models\FollowUp::MAX_MEETING_PHOTOS;
+            @endphp
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Meeting Proof Photos') }}</h2>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $photoCount }}/{{ $photoLimit }} {{ __('photos') }}</span>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    @foreach($meetingPhotos as $index => $photo)
+                        <a href="{{ asset('storage/'.$photo) }}" target="_blank" rel="noopener noreferrer"
+                           class="group relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm dark:border-slate-700">
+                            <img src="{{ asset('storage/'.$photo) }}" alt="{{ __('Meeting documentation') }} {{ $index + 1 }}"
+                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                            <span class="absolute bottom-1 right-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">{{ $index + 1 }}</span>
+                        </a>
+                    @endforeach
+                </div>
+
+                @if(! $meeting->completed_at)
+                    <p class="mt-3 text-xs text-slate-400">{{ __('These photos were uploaded when the meeting was created.') }}</p>
+                @endif
+            </div>
+        @endif
+
         @if($meeting->hasMeetingReport())
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                 <div class="flex flex-wrap items-center justify-between gap-2">
@@ -77,18 +107,6 @@
                 </div>
 
                 <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-800 dark:text-slate-200">{{ $meeting->meeting_notes }}</p>
-
-                @if(!empty($meeting->meeting_photos))
-                    <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        @foreach($meeting->meeting_photos as $photo)
-                            <a href="{{ asset('storage/'.$photo) }}" target="_blank" rel="noopener noreferrer"
-                               class="group relative aspect-video overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm dark:border-slate-700">
-                                <img src="{{ asset('storage/'.$photo) }}" alt="{{ __('Meeting documentation') }}"
-                                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
-                            </a>
-                        @endforeach
-                    </div>
-                @endif
 
                 @if($meeting->completed_at)
                     <p class="mt-4 text-xs text-slate-400">{{ __('Reported at :time', ['time' => $meeting->completed_at->setTimezone('Asia/Jakarta')->format('d M Y H:i')]) }}</p>

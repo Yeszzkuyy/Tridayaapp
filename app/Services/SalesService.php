@@ -119,7 +119,7 @@ class SalesService
     {
         $this->assertFollowUpOwnership($followUp);
         // Foto bukti bisa sudah diunggah saat meeting dibuat; gabungkan dengan
-        // foto baru (maksimal 3 total).
+        // foto baru (dibatasi FollowUp::MAX_MEETING_PHOTOS).
         $photoPaths = $followUp->meeting_photos ?? [];
         if (!empty($data['meeting_photos'])) {
             foreach ($data['meeting_photos'] as $file) {
@@ -128,7 +128,7 @@ class SalesService
                 }
             }
         }
-        $photoPaths = array_slice($photoPaths, 0, 3);
+        $photoPaths = array_slice($photoPaths, 0, FollowUp::MAX_MEETING_PHOTOS);
 
         $followUp->forceFill([
             'completed_at' => now(),

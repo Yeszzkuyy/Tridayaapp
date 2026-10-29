@@ -118,10 +118,97 @@ class SalesMeetingTrackerTest extends TestCase
         Storage::disk('public')->assertExists($meeting->meeting_photos[0]);
     }
 
+    public function test_create_meeting_accepts_five_photos(): void
+    {
+        Storage::fake('public');
+
+        $sales = $this->userWithRoles(['sales']);
+        $customer = $this->makeCustomer();
+
+        $photos = collect(range(1, FollowUp::MAX_MEETING_PHOTOS))
+            ->map(fn (int $i) => UploadedFile::fake()->image("bukti-{$i}.jpg", 400, 300))
+            ->all();
+
+        $this->actingAs($sales)->post(route('sales.meetings.store'), [
+            'customer_id' => $customer->id,
+            'follow_up_date' => today()->toDateString(),
+            'activity_time' => '14:30',
+            'meeting_mode' => 'offline',
+            'location' => 'Kantor customer',
+            'description' => 'Meeting dengan 5 foto bukti',
+            'meeting_photos' => $photos,
+        ])->assertSessionHasNoErrors();
+
+        $meeting = FollowUp::where('type', 'meeting')->firstOrFail();
+        $this->assertCount(FollowUp::MAX_MEETING_PHOTOS, $meeting->meeting_photos);
+    }
+
+    public function test_create_meeting_rejects_more_than_five_photos(): void
+    {
+        Storage::fake('public');
+
+        $sales = $this->userWithRoles(['sales']);
+        $customer = $this->makeCustomer();
+
+        $photos = collect(range(1, FollowUp::MAX_MEETING_PHOTOS + 1))
+            ->map(fn (int $i) => UploadedFile::fake()->image("bukti-{$i}.jpg", 400, 300))
+            ->all();
+
+        $this->actingAs($sales)->post(route('sales.meetings.store'), [
+            'customer_id' => $customer->id,
+            'follow_up_date' => today()->toDateString(),
+            'meeting_mode' => 'offline',
+            'description' => 'Meeting dengan foto kebanyakan',
+            'meeting_photos' => $photos,
+        ])->assertSessionHasErrors('meeting_photos');
+
+        $this->assertSame(0, FollowUp::where('type', 'meeting')->count());
+    }
+
+    public function test_report_adds_photos_until_limit(): void
+    {
+        Storage::fake('public');
+
+        $sales = $this->userWithRoles(['sales']);
+        $meeting = $this->makeMeeting($sales, [
+            'meeting_photos' => ['meeting-reports/foto-lama-1.jpg', 'meeting-reports/foto-lama-2.jpg'],
+        ]);
+
+        $newPhotos = collect(range(1, 3))
+            ->map(fn (int $i) => UploadedFile::fake()->image("tambahan-{$i}.jpg", 400, 300))
+            ->all();
+
+        $this->actingAs($sales)->post(route('sales.meetings.report.store', $meeting), [
+            'meeting_photos' => $newPhotos,
+            'meeting_notes' => 'Diskusi lanjutan, foto bukti ditambahkan setelah meeting.',
+            'meeting_outcome' => 'follow_up',
+        ])->assertSessionHasNoErrors();
+
+        $meeting->refresh();
+        $this->assertCount(FollowUp::MAX_MEETING_PHOTOS, $meeting->meeting_photos);
+        $this->assertSame('meeting-reports/foto-lama-1.jpg', $meeting->meeting_photos[0]);
+    }
+
+    public function test_detail_page_shows_photos_before_report_submitted(): void
+    {
+        Storage::fake('public');
+
+        $sales = $this->userWithRoles(['sales']);
+        $meeting = $this->makeMeeting($sales, [
+            'meeting_photos' => ['meeting-reports/bukti-1.jpg', 'meeting-reports/bukti-2.jpg'],
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.meetings.show', $meeting))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString(__('Meeting Proof Photos'), $html);
+        $this->assertStringContainsString('meeting-reports/bukti-1.jpg', $html);
+        $this->assertStringContainsString('meeting-reports/bukti-2.jpg', $html);
+    }
+
     public function test_meeting_reminder_command_notifies_creator_once(): void
     {
         Notification::fake();
-
         $sales = $this->userWithRoles(['sales']);
         $meeting = $this->makeMeeting($sales, [
             'follow_up_date' => today()->subDay()->toDateString(),

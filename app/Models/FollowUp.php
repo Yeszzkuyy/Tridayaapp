@@ -24,6 +24,15 @@ class FollowUp extends Model
     /** Lokasi meeting untuk tracker Meeting (dipisah dari Follow Up). */
     public const MEETING_MODES = ['online', 'offline'];
 
+    /**
+     * Batas jumlah foto bukti meeting per meeting (foto saat buat meeting
+     * dan foto tambahan saat laporan digabung, totalnya tidak lebih dari ini).
+     */
+    public const MAX_MEETING_PHOTOS = 5;
+
+    /** Ukuran maksimal satu foto bukti meeting dalam KB. */
+    public const MEETING_PHOTO_MAX_KB = 1024;
+
     /** Meeting outcome options (diisi saat sales complete meeting). */
     public const MEETING_OUTCOMES = [
         'prospect',
