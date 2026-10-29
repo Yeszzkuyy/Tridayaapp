@@ -385,4 +385,49 @@ class ProposalModuleTest extends TestCase
             ->assertSee(__('Upload PO'))
             ->assertSee(__('Convert to Project'));
     }
+
+    public function test_create_quotation_by_uploading_file_without_items(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $this->actingAs($sales)->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertOk()
+            ->assertSee('quotation_file', false);
+
+        $response = $this->actingAs($sales)->post(route('sales.proposals.store'), [
+            'lead_id' => $lead->id,
+            'proposal_date' => now()->toDateString(),
+            'valid_until' => now()->addDays(14)->toDateString(),
+            'notes' => 'Quotation dari sales',
+            'quotation_file' => UploadedFile::fake()->create('quotation-sales.pdf', 140, 'application/pdf'),
+        ]);
+
+        $proposal = Proposal::latest('id')->firstOrFail();
+
+        $response->assertRedirect(route('sales.proposals.show', $proposal));
+        $this->assertSame('draft', $proposal->status);
+        $this->assertCount(0, $proposal->items()->get());
+
+        $attachment = $proposal->attachments()->firstOrFail();
+        $this->assertSame('quotation-sales.pdf', $attachment->original_name);
+        Storage::disk('private')->assertExists($attachment->file_path);
+
+        $this->actingAs($sales)->get(route('sales.proposals.show', $proposal))
+            ->assertOk()
+            ->assertSee('quotation-sales.pdf');
+    }
+
+    public function test_create_quotation_requires_file_or_item(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+            'lead_id' => $lead->id,
+            'proposal_date' => now()->toDateString(),
+        ])->assertStatus(422);
+    }
 }

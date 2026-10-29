@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\GoodsReceipt;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\ProposalAttachment;
 use App\Models\Project;
 use App\Models\Product;
 use App\Models\PriceRequest;
@@ -51,6 +52,44 @@ class ProposalController extends Controller
      *   tidak membuka quotation ke semua role yang punya view-admin).
      * Marketing, teknisi, inside sales/sales non-pemilik: 403.
      */
+    /**
+     * Unduh file quotation yang di-accept dari Inside Sales (lampiran proposal).
+     */
+    /** Simpan file quotation yang diunggah ke lampiran proposal. */
+    private function storeQuotationFile(Request $request, Proposal $proposal): void
+    {
+        if (! $request->hasFile('quotation_file')) {
+            return;
+        }
+
+        $file = $request->file('quotation_file');
+        $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
+        $path = $file->storeAs(
+            'quotations/'.$proposal->id,
+            \Illuminate\Support\Str::uuid().'_'.$safeName,
+            'private'
+        );
+
+        $proposal->attachments()->create([
+            'file_path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'mime' => $file->getClientMimeType(),
+            'size' => $file->getSize() ?: 0,
+            'uploaded_by' => auth()->id(),
+        ]);
+    }
+
+    public function downloadAttachment(Proposal $proposal, ProposalAttachment $attachment)
+    {
+        $this->authorizeView($proposal);
+
+        abort_unless((int) $attachment->proposal_id === (int) $proposal->id, 404);
+        abort_unless(\Illuminate\Support\Facades\Storage::disk('private')->exists($attachment->file_path), 404, __('File not found.'));
+
+        return \Illuminate\Support\Facades\Storage::disk('private')
+            ->download($attachment->file_path, $attachment->original_name);
+    }
+
     private function authorizeView(Proposal $proposal): void
     {
         $user = auth()->user();
@@ -124,7 +163,7 @@ class ProposalController extends Controller
     private function itemRules(): array
     {
         return [
-            'items' => 'required|array|min:1|max:50',
+            'items' => 'nullable|array|max:50',
             'items.*.product_id' => 'nullable|exists:products,id',
             'items.*.description' => 'required|string|max:255',
             'items.*.quantity' => 'required|numeric|min:0.01|max:999999',
@@ -336,10 +375,16 @@ class ProposalController extends Controller
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'price_request_id' => 'nullable|exists:price_requests,id',
+            'quotation_file' => ['nullable', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
         ], $this->paymentRules(), $this->itemRules()));
 
+        $items = $validated['items'] ?? [];
+
+        abort_if(empty($items) && ! $request->hasFile('quotation_file'), 422,
+            __('Please upload the quotation file or fill at least one item.'));
+
         $canManageCost = Gate::allows('updateCost', Proposal::class);
-        $this->assertNoCostTampering($validated['items'], $canManageCost);
+        $this->assertNoCostTampering($items, $canManageCost);
 
         $lead = Lead::with('customer')->findOrFail($validated['lead_id']);
         $this->authorize('view', $lead);
@@ -357,7 +402,7 @@ class ProposalController extends Controller
         }
 
         try {
-            $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost, $priceRequest) {
+            $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost, $priceRequest, $items) {
                 $proposal = Proposal::create([
                     'lead_id' => $lead->id,
                     'proposal_number' => $this->generateNumber(),
@@ -377,7 +422,9 @@ class ProposalController extends Controller
                     'status' => 'draft',
                 ]);
 
-                $this->persistItems($proposal, $validated['items'], $canManageCost);
+                if ($items !== []) {
+                    $this->persistItems($proposal, $items, $canManageCost);
+                }
 
                 if ($priceRequest) {
                     $priceRequest->update(['proposal_id' => $proposal->id]);
@@ -389,6 +436,8 @@ class ProposalController extends Controller
             return back()->withInput()->withErrors(['proposal_number' => __('Failed to generate the proposal number, please try again.')]);
         }
 
+        $this->storeQuotationFile($request, $proposal);
+
         $this->log($lead, 'proposal_created', ['number' => $proposal->proposal_number]);
 
         return redirect()->route('sales.proposals.show', $proposal)
@@ -397,7 +446,7 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest', 'attachments']);
         $this->authorizeView($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
@@ -434,12 +483,14 @@ class ProposalController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
+            'quotation_file' => ['nullable', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
         ], $this->paymentRules(), $this->itemRules()));
 
         $canManageCost = Gate::allows('updateCost', Proposal::class);
-        $this->assertNoCostTampering($validated['items'], $canManageCost);
+        $items = $validated['items'] ?? [];
+        $this->assertNoCostTampering($items, $canManageCost);
 
-        DB::transaction(function () use ($proposal, $validated, $canManageCost) {
+        DB::transaction(function () use ($proposal, $validated, $canManageCost, $items) {
             $proposal->update([
                 'proposal_date' => $validated['proposal_date'],
                 'valid_until' => $validated['valid_until'] ?? null,
@@ -453,8 +504,12 @@ class ProposalController extends Controller
                 'payment_terms' => $validated['payment_terms'] ?? null,
                 'delivery_terms' => $validated['delivery_terms'] ?? null,
             ]);
-            $this->persistItems($proposal, $validated['items'], $canManageCost);
+            if ($items !== []) {
+                $this->persistItems($proposal, $items, $canManageCost);
+            }
         });
+
+        $this->storeQuotationFile($request, $proposal);
 
         return redirect()->route('sales.proposals.show', $proposal)
             ->with('success', __('Proposal updated successfully.'));

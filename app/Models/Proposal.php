@@ -76,6 +76,15 @@ class Proposal extends Model
         return $this->hasMany(ProposalItem::class);
     }
 
+    /**
+     * File quotation dari Inside Sales yang di-accept menjadi quotation ini
+     * (dipakai untuk menampilkan lampiran di halaman detail quotation).
+     */
+    public function attachments()
+    {
+        return $this->hasMany(ProposalAttachment::class)->orderBy('id');
+    }
+
     public function project()
     {
         return $this->hasOne(Project::class);

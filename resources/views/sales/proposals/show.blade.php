@@ -97,6 +97,26 @@
                 </div>
             @endif
 
+            @if($proposal->attachments->isNotEmpty())
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Quotation File') }}</p>
+                    <ul class="mt-2 space-y-2">
+                        @foreach($proposal->attachments as $file)
+                            <li class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{{ $file->original_name }}</p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ $file->humanSize() }} · {{ $file->uploader?->name ?? __('System') }}
+                                        · {{ $file->created_at?->translatedFormat('d M Y H:i') }}
+                                    </p>
+                                </div>
+                                <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" title="{{ __('Download') }}" />
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="flex flex-wrap gap-2 pt-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
                 @if($isOwner && in_array($proposal->status, ['draft', 'revision']))
