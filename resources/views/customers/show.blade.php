@@ -116,8 +116,6 @@
                             ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group],
                             ['icon' => 'user', 'label' => __('PIC'), 'value' => $customer->picName()],
                             ['icon' => 'map-pin', 'label' => __('Address'), 'value' => $customer->address],
-                            ['icon' => 'map-pin', 'label' => __('Billing Address'), 'value' => $customer->billingAddress()],
-                            ['icon' => 'map-pin', 'label' => __('Shipping Address'), 'value' => $customer->shippingAddress()],
                             ['icon' => 'phone', 'label' => __('Telepon'), 'value' => \App\Support\PhoneFormatter::format($customer->phone)],
                             ['icon' => 'chat', 'label' => __('Company WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Company'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('PIC WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->picWhatsapp()), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
@@ -128,7 +126,6 @@
 
                         if (! $canSeeFinance) {
                             $hiddenFinanceLabels = [
-                                __('Billing Address'),
                                 __('Finance PIC'),
                                 __('NPWP'),
                             ];
