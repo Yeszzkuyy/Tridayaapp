@@ -354,7 +354,8 @@ class FollowUpFormTest extends TestCase
             ->assertOk()->getContent();
 
         $this->assertStringContainsString('Related Lead (optional)', $html);
-        $this->assertStringContainsString('Location (optional)', $html);
+        // Lokasi follow-up sengaja dihapus dari form (tidak terpakai).
+        $this->assertStringNotContainsString('Location (optional)', $html);
         $this->assertStringContainsString('Next Follow-up (optional)', $html);
         $this->assertStringNotContainsString('x-ref="firstTimeLead"', $html);
     }

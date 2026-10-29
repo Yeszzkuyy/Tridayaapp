@@ -91,22 +91,8 @@
         @error('activity_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
 
-    {{-- Lokasi & Next Follow Up: hanya untuk repeat (first-time tetap simpel). --}}
+    {{-- Next Follow Up: hanya untuk repeat (first-time tetap simpel). --}}
     @if(!($isFirstTime ?? false))
-    <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Location (optional)') }}</label>
-        <div class="flex items-center gap-2">
-            <input id="fu-location" type="text" name="location" maxlength="150" value="{{ old('location', $followUp?->location) }}"
-                   placeholder="{{ __('Address / meeting point or meeting link') }}"
-                   data-location-autocomplete
-                   class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-            <x-maps-open-button input="fu-location" />
-            <x-location-autocomplete />
-        </div>
-        <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
-        @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-    </div>
-
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Next Follow-up (optional)') }}</label>
         <x-datepicker name="next_follow_up_date" value="{{ old('next_follow_up_date', isset($followUp) && $followUp->next_follow_up_date ? $followUp->next_follow_up_date->format('Y-m-d') : '') }}"></x-datepicker>
