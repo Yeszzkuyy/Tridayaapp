@@ -388,6 +388,28 @@ class ManageSalesController extends Controller
 
     public function activityLog(Request $request)
     {
+        return view('manage-sales.activity-log', array_merge($this->activityLogData($request), [
+            'customerNames' => Customer::pluck('name', 'id'),
+            'userNames' => User::pluck('name', 'id'),
+            'managementUsers' => User::permission('manage-sales-leads')->orderBy('name')->get(['id', 'name']),
+        ]));
+    }
+
+    /**
+     * Endpoint poll daftar Activity Log: hanya potongan daftar (tanpa layout),
+     * supaya aktivitas baru muncul tanpa reload halaman.
+     */
+    public function activityLogFeed(Request $request)
+    {
+        return response()->view('manage-sales.partials.activity-log-body', array_merge($this->activityLogData($request), [
+            'customerNames' => Customer::pluck('name', 'id'),
+            'userNames' => User::pluck('name', 'id'),
+        ]));
+    }
+
+    /** Query + grouping dipakai halaman Activity Log dan endpoint poll-nya. */
+    private function activityLogData(Request $request): array
+    {
         $managementIds = User::permission('manage-sales-leads')->pluck('id');
 
         $activities = LeadActivity::with(['lead.customer', 'user.roles'])
@@ -399,16 +421,15 @@ class ManageSalesController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $filterUser = $request->filled('user') ? User::find($request->user) : null;
-
         $grouped = $activities->getCollection()
             ->groupBy(fn ($a) => $a->created_at->toDateString())
             ->sortKeysDesc();
 
-        return view('manage-sales.activity-log', compact('activities', 'filterUser', 'grouped'))
-            ->with('customerNames', Customer::pluck('name', 'id'))
-            ->with('userNames', User::pluck('name', 'id'))
-            ->with('managementUsers', User::permission('manage-sales-leads')->orderBy('name')->get(['id', 'name']));
+        return [
+            'activities' => $activities,
+            'filterUser' => $request->filled('user') ? User::find($request->user) : null,
+            'grouped' => $grouped,
+        ];
     }
 
     private function trackAssignment(Lead $lead, ?int $assignedTo): void

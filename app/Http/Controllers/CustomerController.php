@@ -146,6 +146,19 @@ class CustomerController extends Controller
     }
 
     /**
+     * Endpoint poll tab Activity: hanya potongan timeline (tanpa layout),
+     * dipakai halaman detail supaya aktivitas baru muncul tanpa reload.
+     */
+    public function timeline(Customer $customer)
+    {
+        $this->authorize('view', $customer);
+
+        return response()->view('customers.partials.timeline', [
+            'timeline' => $this->buildTimeline($customer),
+        ]);
+    }
+
+    /**
      * Dokumen tab "Documents": dokumen project-project customer + dokumen
      * umum (tanpa project). File invoice/PO/payment (doc_type) tidak ikut
      * di sini — mereka punya section sendiri.
@@ -207,6 +220,10 @@ class CustomerController extends Controller
             ->take(50)
             ->get()
             ->map(fn ($a) => [
+                // logged_at = kapan dicatat (label "x menit lalu" + urutan),
+                // event_at  = kapan kejadiannya (jadwal/aktivitas).
+                'logged_at' => $a->created_at,
+                'event_at' => $a->activity_date ?? $a->created_at,
                 'date' => $a->activity_date ?? $a->created_at,
                 'type' => 'project',
                 'user' => $a->user,
@@ -220,7 +237,9 @@ class CustomerController extends Controller
             ->take(50)
             ->get()
             ->map(fn ($fu) => [
-                'date' => $fu->follow_up_date ?? $fu->created_at,
+                'logged_at' => $fu->created_at,
+                'event_at' => $this->followUpEventAt($fu),
+                'date' => $this->followUpEventAt($fu),
                 'type' => 'followup',
                 'user' => $fu->creator,
                 'title' => \App\Models\FollowUp::typeLabel($fu->type),
@@ -234,6 +253,8 @@ class CustomerController extends Controller
             ->take(50)
             ->get()
             ->map(fn ($m) => [
+                'logged_at' => $m->created_at,
+                'event_at' => $m->start_at ?? $m->created_at,
                 'date' => $m->start_at ?? $m->created_at,
                 'type' => 'meeting',
                 'user' => $m->creator,
@@ -242,13 +263,38 @@ class CustomerController extends Controller
                 'context' => $m->start_at?->format('d M Y H:i'),
             ]);
 
+        // Urutkan dari yang paling baru dicatat, supaya aktivitas yang baru
+        // diinput selalu di atas (jadwal yang masih jauh tidak loncat ke atas).
         return $items
             ->concat($projectActivities)
             ->concat($followUps)
             ->concat($meetings)
-            ->sortByDesc('date')
+            ->sortByDesc(fn (array $item) => $item['logged_at']?->getTimestamp() ?? 0)
             ->values()
             ->take(50);
+    }
+
+    /**
+     * Waktu kejadian follow-up: tanggal + jam aktivitas. Kolom follow_up_date
+     * hanya menyimpan tanggal (jam 00:00), jadi jamnya ditempel dari
+     * activity_time agar label waktu tidak salah hitung beberapa jam.
+     */
+    private function followUpEventAt(\App\Models\FollowUp $followUp): ?\Carbon\CarbonInterface
+    {
+        $date = $followUp->follow_up_date?->copy();
+
+        if (! $date) {
+            return $followUp->created_at;
+        }
+
+        $time = substr((string) $followUp->activity_time, 0, 5);
+
+        if (substr_count($time, ':') === 1) {
+            [$hour, $minute] = array_map('intval', explode(':', $time));
+            $date->setTime($hour, $minute);
+        }
+
+        return $date;
     }
 
     /**

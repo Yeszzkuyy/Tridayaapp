@@ -280,6 +280,26 @@ class ManageSalesTest extends TestCase
             ->assertSee('6281998880921');
     }
 
+    public function test_activity_log_feed_endpoint_returns_partial(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = $this->makeLead();
+
+        LeadActivity::create([
+            'lead_id' => $lead->id,
+            'user_id' => $management->id,
+            'action' => 'created',
+            'changes' => ['source' => 'whatsapp'],
+        ]);
+
+        $response = $this->actingAs($management)
+            ->get(route('manage-sales.activity-log.feed'))
+            ->assertOk();
+
+        $response->assertSee($management->name);
+        $this->assertStringNotContainsString('<html', $response->getContent());
+    }
+
     public function test_sales_cannot_open_activity_log(): void
     {
         $this->actingAs($this->loginAs('sales'))

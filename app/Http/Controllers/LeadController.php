@@ -522,18 +522,7 @@ class LeadController extends Controller
         $workTypes = WorkType::orderBy('name')->get(['id', 'name']);
 
         // Riwayat follow-up milik lead ini, terbaru dulu.
-        // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
-        $canOpenDetail = auth()->user()?->can('manage-sales');
-        $timeline = $lead->followUps->map(fn ($f) => [
-            'type' => 'follow-up',
-            'date' => $f->follow_up_date ?? $f->created_at,
-            'time' => $f->activity_time,
-            'location' => $f->location,
-            'title' => FollowUp::typeLabel($f->type),
-            'summary' => $f->description,
-            'by' => $f->creator?->name,
-            'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
-        ])->sortByDesc('date')->values();
+        $timeline = $this->buildFollowUpTimeline($lead);
 
         // Sales flow: jadwal (upcoming/past), technical request, proposal milik lead ini.
         $upcomingSchedules = $lead->salesSchedules
@@ -547,6 +536,43 @@ class LeadController extends Controller
         $proposalsList = $lead->proposals->sortByDesc('created_at')->values();
 
         return view('leads.show', compact('lead', 'documents', 'projectStatuses', 'workTypes', 'timeline', 'upcomingSchedules', 'pastSchedules', 'techRequests', 'activeTechRequest', 'proposalsList'));
+    }
+
+    /**
+     * Endpoint poll daftar "Log Follow Up": hanya potongan daftar (tanpa
+     * layout), dipakai halaman detail lead supaya catatan baru muncul
+     * tanpa reload.
+     */
+    public function timeline(Lead $lead)
+    {
+        $this->authorize('view', $lead);
+
+        $lead->load('followUps.creator');
+
+        return response()->view('leads.partials.timeline', [
+            'timeline' => $this->buildFollowUpTimeline($lead),
+        ]);
+    }
+
+    /**
+     * Riwayat follow-up lead (terbaru dulu) — dipakai halaman detail dan
+     * endpoint poll-nya.
+     */
+    private function buildFollowUpTimeline(Lead $lead): \Illuminate\Support\Collection
+    {
+        // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
+        $canOpenDetail = auth()->user()?->can('manage-sales');
+
+        return $lead->followUps->map(fn ($f) => [
+            'type' => 'follow-up',
+            'date' => $f->follow_up_date ?? $f->created_at,
+            'time' => $f->activity_time,
+            'location' => $f->location,
+            'title' => FollowUp::typeLabel($f->type),
+            'summary' => $f->description,
+            'by' => $f->creator?->name,
+            'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
+        ])->sortByDesc('date')->values();
     }
 
     public function edit(Lead $lead)

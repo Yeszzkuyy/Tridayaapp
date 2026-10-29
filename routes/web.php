@@ -160,6 +160,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-sales|manage-sales|view-customer')->group(function () {
         Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
         Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::get('/customers/{customer}/timeline', [CustomerController::class, 'timeline'])->name('customers.timeline');
         Route::get('/customers/{customer}/npwp', [CustomerController::class, 'downloadNpwp'])->name('customers.npwp');
     });
 
@@ -274,6 +275,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::get('proposals/{proposal}/attachments/{attachment}', [ProposalController::class, 'downloadAttachment'])->name('proposals.attachments.download');
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
     });
 
@@ -644,6 +646,11 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:view-marketing|manage-marketing|view-sales|manage-sales|manage-technician|manage-admin|manage-inside-sales')
         ->name('leads.show');
 
+    // Endpoint poll daftar Log Follow Up (tanpa layout) untuk halaman detail lead.
+    Route::get('/leads/{lead}/timeline', [LeadController::class, 'timeline'])
+        ->middleware('permission:view-marketing|manage-marketing|view-sales|manage-sales|manage-technician|manage-admin|manage-inside-sales')
+        ->name('leads.timeline');
+
     // ============================================
     // WHATSAPP CENTER MARKETING (inbox 4 WA Company)
     // ============================================
@@ -677,6 +684,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/kpi', [ManageSalesController::class, 'kpi'])->name('kpi');
         Route::post('/targets', [ManageSalesController::class, 'updateTarget'])->name('targets.update');
         Route::get('/activity-log', [ManageSalesController::class, 'activityLog'])->name('activity-log');
+        Route::get('/activity-log/feed', [ManageSalesController::class, 'activityLogFeed'])->name('activity-log.feed');
         Route::get('/{lead}/edit', [ManageSalesController::class, 'edit'])->name('edit');
         Route::put('/{lead}', [ManageSalesController::class, 'update'])->name('update');
         Route::post('/{lead}/assign', [ManageSalesController::class, 'assign'])->name('assign');
@@ -714,6 +722,12 @@ Route::middleware('auth')->group(function () {
             Route::put('/{leadTask}', [LeadTaskController::class, 'update'])->name('update');
             Route::delete('/{leadTask}', [LeadTaskController::class, 'destroy'])->name('destroy');
             Route::post('/{leadTask}/comments', [LeadTaskController::class, 'storeComment'])->name('comments.store');
+
+            // Lampiran quotation (riwayat versi, disimpan di disk privat).
+            Route::post('/{leadTask}/attachments', [LeadTaskController::class, 'storeAttachment'])->name('attachments.store');
+            Route::get('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'downloadAttachment'])->name('attachments.download');
+            Route::delete('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'destroyAttachment'])->name('attachments.destroy');
+            Route::post('/{leadTask}/attachments/{attachment}/accept', [LeadTaskController::class, 'acceptAttachment'])->name('attachments.accept');
         });
 
     // ============================================

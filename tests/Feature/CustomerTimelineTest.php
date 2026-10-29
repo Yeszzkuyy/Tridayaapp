@@ -147,6 +147,89 @@ class CustomerTimelineTest extends TestCase
         $this->assertStringNotContainsString(__('Invoice created'), $activitySeg);
     }
 
+    public function test_label_waktu_timeline_pakai_waktu_dicatat_bukan_jadwal(): void
+    {
+        $sales = $this->sales();
+        $this->actingAs($sales);
+
+        $customer = Customer::create(['name' => 'PT Waktu', 'pt_group' => 'NTI']);
+
+        $followUp = FollowUp::create([
+            'customer_id' => $customer->id,
+            'description' => 'Telepon pagi',
+            'type' => 'call',
+            'follow_up_date' => now()->toDateString(),
+            'activity_time' => '08:00',
+            'created_by' => $sales->id,
+        ]);
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+        $activitySeg = substr($html, (int) strpos($html, 'Activity Timeline'));
+
+        // Label relatif memakai waktu dicatat (created_at), bukan tengah malam
+        // dari follow_up_date — dulu muncul "x hours ago" untuk data baru.
+        $this->assertStringContainsString('datetime="'.$followUp->created_at->toIso8601String().'"', $activitySeg);
+
+        // Jam kejadian tetap tampil apa adanya.
+        $this->assertStringContainsString('08:00 WIB', $activitySeg);
+    }
+
+    public function test_timeline_urut_waktu_input_bukan_jadwal(): void
+    {
+        $sales = $this->sales();
+        $this->actingAs($sales);
+
+        $customer = Customer::create(['name' => 'PT Urut', 'pt_group' => 'NTI']);
+
+        $lama = FollowUp::create([
+            'customer_id' => $customer->id,
+            'description' => 'Dicatat lebih dulu jadwal bulan depan',
+            'type' => 'call',
+            'follow_up_date' => now()->addMonth()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
+        $lama->forceFill(['created_at' => now()->subDay()])->save();
+
+        $baru = FollowUp::create([
+            'customer_id' => $customer->id,
+            'description' => 'Dicatat paling baru jadwal minggu depan',
+            'type' => 'call',
+            'follow_up_date' => now()->addWeek()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
+        $baru->forceFill(['created_at' => now()])->save();
+
+        $html = $this->get(route('customers.show', $customer))->assertOk()->getContent();
+        $activitySeg = substr($html, (int) strpos($html, 'Activity Timeline'));
+
+        $posBaru = strpos($activitySeg, 'Dicatat paling baru');
+        $posLama = strpos($activitySeg, 'Dicatat lebih dulu');
+
+        $this->assertNotFalse($posBaru);
+        $this->assertNotFalse($posLama);
+        $this->assertLessThan($posLama, $posBaru, 'Aktivitas yang paling baru dicatat harus tampil di atas.');
+    }
+
+    public function test_endpoint_timeline_poll_mengembalikan_potongan_daftar(): void
+    {
+        $sales = $this->sales();
+        $this->actingAs($sales);
+
+        $customer = Customer::create(['name' => 'PT Polling', 'pt_group' => 'NTI']);
+        FollowUp::create([
+            'customer_id' => $customer->id,
+            'description' => 'Aktivitas untuk polling',
+            'type' => 'call',
+            'follow_up_date' => now()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
+
+        $response = $this->get(route('customers.timeline', $customer))->assertOk();
+
+        $response->assertSee('Aktivitas untuk polling');
+        $this->assertStringNotContainsString('<html', $response->getContent(), 'Endpoint poll harus mengembalikan potongan, bukan halaman penuh.');
+    }
+
     public function test_tab_tidak_bersarang_di_dalam_tab_lain(): void
     {
         $sales = $this->sales();

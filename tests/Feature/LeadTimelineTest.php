@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\User;
@@ -65,6 +66,26 @@ class LeadTimelineTest extends TestCase
         $res->assertSee(__('Riwayat Lead'));
         // locale-proof: label diterjemahkan sesuai locale aktif
         $res->assertSee($lead->activities->first()->actionLabel());
+    }
+
+    public function test_endpoint_timeline_lead_mengembalikan_potongan_daftar(): void
+    {
+        $user = $this->marketingUser();
+        $lead = $this->makeLead();
+
+        FollowUp::create([
+            'lead_id' => $lead->id,
+            'customer_id' => $lead->customer_id,
+            'description' => 'Catatan polling lead',
+            'type' => 'call',
+            'follow_up_date' => now()->toDateString(),
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('leads.timeline', $lead))->assertOk();
+
+        $response->assertSee('Catatan polling lead');
+        $this->assertStringNotContainsString('<html', $response->getContent());
     }
 
     public function test_followup_with_lead_logs_activity(): void
