@@ -109,7 +109,7 @@
                       aria-label="{{ __('Message') }}"
                       placeholder="{{ __('Type a message...') }}"
                       class="max-h-28 min-h-10 flex-1 resize-none overflow-y-auto rounded-xl border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
-            <x-icon-button type="submit" icon="mail" title="{{ __('Send message') }}" wire:loading.attr="disabled" wire:target="send" />
+            <x-icon-button type="submit" icon="send" title="{{ __('Send message') }}" wire:loading.attr="disabled" wire:target="send" />
         </div>
         <p class="mt-1 px-1 text-[11px] text-slate-400 dark:text-slate-500">{{ __('Enter to send, Shift+Enter for a new line') }}</p>
         @error('body')
