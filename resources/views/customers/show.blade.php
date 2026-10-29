@@ -297,18 +297,29 @@
                         $generalDocuments = $documents->whereNull('project_id');
                     @endphp
 
-                    {{-- Sub-tab: daftar terpadu vs tampilan per modul --}}
-                    <div class="mb-6 inline-flex flex-wrap gap-1 rounded-2xl bg-slate-100 p-1.5 dark:bg-slate-700">
-                        <button type="button" @click="docView = 'all'"
-                                :class="docView === 'all' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-slate-100'"
-                                class="rounded-xl px-4 py-2 text-sm font-medium transition-colors">
-                            {{ __('All Documents') }}
-                        </button>
-                        <button type="button" @click="docView = 'module'"
-                                :class="docView === 'module' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-slate-100'"
-                                class="rounded-xl px-4 py-2 text-sm font-medium transition-colors">
-                            {{ __('By Module') }}
-                        </button>
+                    {{-- Header: judul, switch tampilan, satu tombol upload. --}}
+                    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('Documents') }}</h2>
+                            <div class="inline-flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-700">
+                                <button type="button" @click="docView = 'all'"
+                                        :class="docView === 'all' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'"
+                                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
+                                    {{ __('All Documents') }}
+                                </button>
+                                <button type="button" @click="docView = 'module'"
+                                        :class="docView === 'module' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'"
+                                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
+                                    {{ __('By Module') }}
+                                </button>
+                            </div>
+                        </div>
+                        @if($canUploadAnyDoc)
+                            <div class="shrink-0">
+                                <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
+                                               data-doc-upload-open />
+                            </div>
+                        @endif
                     </div>
 
                     <div x-show="docView === 'all'">
@@ -321,38 +332,6 @@
                             'documentLinkOptions' => $documentLinkOptions,
                             'canReclassifyDocs' => $canReclassifyDocs,
                         ])
-                    </div>
-
-                    {{-- Breadcrumb + judul halaman Documents --}}
-                    <nav aria-label="Breadcrumb" class="mb-4">
-                        <ol class="flex flex-wrap items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-                            <li>
-                                <a href="{{ route('customers.index') }}"
-                                   class="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{{ __('Customer') }}</a>
-                            </li>
-                            <li aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</li>
-                            <li>
-                                <a href="{{ route('customers.show', $customer) }}"
-                                   class="max-w-[12rem] truncate transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{{ $customer->name }}</a>
-                            </li>
-                            <li aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</li>
-                            <li class="font-medium text-slate-700 dark:text-slate-200" aria-current="page">{{ __('Documents') }}</li>
-                        </ol>
-                    </nav>
-
-                    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 class="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{{ __('Documents') }}</h2>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                {{ __('Semua dokumen pelanggan: proyek, umum, dan transaksi.') }}
-                            </p>
-                        </div>
-                        @if($canUploadAnyDoc)
-                            <div class="shrink-0">
-                                <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
-                                               data-doc-upload-open />
-                            </div>
-                        @endif
                     </div>
 
                     <div x-show="docView === 'module'" class="space-y-8">
@@ -383,57 +362,43 @@
                 <div x-show="tab === 'documents' && docView === 'module'" x-transition class="space-y-6">
                     {{-- Section Quotation / Penawaran Harga (Mirroring dari Sales) --}}
                     <div class="border-t border-slate-200 dark:border-slate-600 pt-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Quotation / Penawaran Harga') }}</h3>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen penawaran harga resmi dari divisi Sales yang terhubung dengan customer ini.') }}</p>
-                            </div>
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation') }}</h3>
                             <a href="{{ route('sales.proposals.index') }}"
-                               class="text-sm font-medium text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                                {{ __('Lihat Semua Quotation') }} →
+                               class="text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                                {{ __('View all') }}
                             </a>
                         </div>
 
                         @if($custQuotations->isNotEmpty())
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
                                 @foreach($custQuotations as $quo)
-                                    <div class="group relative block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                        <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                            <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                            </svg>
-                                            <span class="absolute left-2 top-2 rounded bg-indigo-600 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">QUO</span>
-                                            <div class="absolute right-2 top-2 flex items-center gap-1">
-                                                <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $quo) }}" target="_blank" title="{{ __('Preview PDF') }}" />
-                                            </div>
-                                        </div>
-                                        <div class="p-3">
-                                            <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                                <a href="{{ route('sales.proposals.show', $quo) }}" class="truncate hover:text-accent-600 dark:hover:text-accent-400">
-                                                    {{ $quo->proposal_number }}
-                                                </a>
-                                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
-                                                    {{ \App\Models\Proposal::statusLabel($quo->status) }}
-                                                </span>
-                                            </p>
-                                            <p class="mt-0.5 font-mono text-sm text-slate-700 dark:text-slate-200 font-medium">Rp {{ number_format($quo->grand_total, 0, ',', '.') }}</p>
-                                            <p class="mt-0.5 truncate text-xs text-slate-400">
-                                                {{ $quo->proposal_date?->format('d M Y') ?? '-' }}
-                                                @if($quo->valid_until)
-                                                    · {{ __('Valid s/d') }} {{ $quo->valid_until->format('d M Y') }}
-                                                @endif
+                                    <div class="flex items-center gap-3 px-3 py-2.5">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                                            <x-icon name="file-text" class="h-4 w-4" />
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <a href="{{ route('sales.proposals.show', $quo) }}"
+                                               class="truncate font-mono text-sm font-semibold text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">
+                                                {{ $quo->proposal_number }}
+                                            </a>
+                                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                                {{ $quo->proposal_date?->format('d M Y') ?? '-' }} · Rp {{ number_format($quo->grand_total, 0, ',', '.') }}
                                             </p>
                                         </div>
+                                        <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
+                                            {{ \App\Models\Proposal::statusLabel($quo->status) }}
+                                        </span>
+                                        <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $quo) }}" target="_blank" title="{{ __('Preview PDF') }}" />
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 text-center">
-                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Belum ada quotation / penawaran untuk customer ini.') }}</p>
+                            <div class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-slate-700">
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No quotations yet.') }}</p>
                                 <a href="{{ route('sales.proposals.create') }}"
-                                   class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                                    {{ __('Buat Quotation Baru') }} →
+                                   class="mt-1 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                                    {{ __('Create quotation') }}
                                 </a>
                             </div>
                         @endif

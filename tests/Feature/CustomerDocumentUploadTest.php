@@ -393,9 +393,7 @@ class CustomerDocumentUploadTest extends TestCase
         // Kosong = benar-benar kosong (tak ada file DAN tak ada data).
         $this->assertStringContainsString('No invoices', $html);
         $this->assertStringContainsString('No payments', $html);
-        // Empty state tidak buntu: masih ada ajakan unggah, tapi tombolnya
-        // hanya satu di header (tanpa tombol per section).
-        $this->assertStringContainsString('Upload the file so it appears here.', $html);
+        // Empty state tidak buntu: tombol upload tetap ada di header.
         $this->assertStringContainsString('data-doc-upload-open', $html);
         $this->assertStringNotContainsString('data-doc-type=', $html);
     }

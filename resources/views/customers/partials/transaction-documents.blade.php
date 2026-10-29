@@ -10,9 +10,8 @@ Props:
 
 <div class="space-y-6">
     <div class="border-t border-slate-200 pt-6 dark:border-slate-700">
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ __('Transaction Documents') }}</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen transaksi dikelola di modul asal. Tidak disalin ke Customer Documents.') }}</p>
+        <div class="mb-3">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{ __('Transactions') }}</h3>
         </div>
 
         {{-- Invoice --}}
@@ -38,8 +37,8 @@ Props:
                         @endphp
                         <a href="{{ route('admin.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -58,8 +57,8 @@ Props:
                     @foreach(($typedDocs->get('invoice', collect())) as $doc)
                         <a href="{{ route('project-documents.download', $doc) }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -75,7 +74,6 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No invoices') }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
                     <a href="{{ route('admin.invoices.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Invoice') }} →
@@ -107,8 +105,8 @@ Props:
                         @endphp
                         <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -127,8 +125,8 @@ Props:
                     @foreach(($typedDocs->get('po', collect())) as $doc)
                         <a href="{{ route('project-documents.download', $doc) }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -144,7 +142,6 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No purchase orders') }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
                     <a href="{{ route('admin.pos.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Purchase Order') }} →
@@ -169,8 +166,8 @@ Props:
                     @foreach($custPayments as $pm)
                         <a href="{{ route('admin.payments.show', $pm) }}" title="{{ $pm->invoice->invoice_number }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 14l6-6m-5.5.5h.01m4.99 1H15a5 5 0 015 5v7H5v-7a5 5 0 015-5h2.5z"/>
                                 </svg>
@@ -187,8 +184,8 @@ Props:
                     @foreach(($typedDocs->get('payment', collect())) as $doc)
                         <a href="{{ route('project-documents.download', $doc) }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -204,7 +201,6 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No payments') }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
                     <a href="{{ route('admin.payments.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Payment') }} →

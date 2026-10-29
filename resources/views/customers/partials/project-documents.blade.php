@@ -12,18 +12,13 @@ Props:
 @endphp
 
 <section class="space-y-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
-                {{ __('Project Documents') }}
-            </h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ __('Laporan pekerjaan berdasarkan proyek') }}
-            </p>
-        </div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-white">
+            {{ __('Projects') }}
+        </h3>
 
         @if($projects->isNotEmpty())
-            <label class="relative w-full sm:w-72">
+            <label class="relative w-full sm:w-64">
                 <span class="sr-only">{{ __('Cari proyek') }}</span>
                 <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input id="proj-doc-search" type="search" placeholder="{{ __('Cari proyek...') }}"
@@ -39,74 +34,48 @@ Props:
                 $projectDocs = $groupedByProject->get($project->id, collect());
                 $docCount = $projectDocs->count();
                 $canOpenProject = auth()->user()->can('view', $project);
-                $categoryCounts = $projectDocs
-                    ->groupBy(fn ($doc) => $doc->category?->name ?: __('Tanpa Kategori'))
-                    ->map->count()
-                    ->sortKeys();
             @endphp
 
-            <article class="proj-doc-card rounded-xl border border-slate-200 bg-white p-5 transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-700"
+            <article class="proj-doc-card rounded-xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:hover:border-indigo-700"
                      data-proj-name="{{ mb_strtolower($project->project_name ?? '') }}"
                      data-proj-code="{{ mb_strtolower($project->project_code ?? '') }}">
                 @if($canOpenProject)
                     <a href="{{ route('project-documents.index', $project) }}"
-                       class="group flex items-start gap-3">
+                       class="group flex items-center gap-3">
                 @else
-                    <div class="flex items-start gap-3">
+                    <div class="flex items-center gap-3">
                 @endif
-                    <span class="shrink-0 rounded-lg bg-indigo-50 p-3 dark:bg-indigo-950">
-                        <x-icon name="folder" class="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    <span class="shrink-0 rounded-lg bg-indigo-50 p-2.5 dark:bg-indigo-950">
+                        <x-icon name="folder" class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     </span>
 
                     <span class="min-w-0 flex-1">
-                        <span class="flex items-start justify-between gap-2">
-                            <span class="truncate font-semibold text-slate-900 transition-colors @if($canOpenProject) group-hover:text-indigo-600 dark:group-hover:text-indigo-400 @endif dark:text-white">
-                                {{ $project->project_name }}
-                            </span>
-                            @if($canOpenProject)
-                                <x-icon name="chevron-right" class="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500 dark:text-slate-600" />
-                            @endif
+                        <span class="block truncate font-semibold text-slate-900 transition-colors @if($canOpenProject) group-hover:text-indigo-600 dark:group-hover:text-indigo-400 @endif dark:text-white">
+                            {{ $project->project_name }}
                         </span>
-                        <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-                            <span class="truncate">{{ $project->project_code ?: __('Tanpa kode') }}</span>
-                            <span aria-hidden="true">·</span>
-                            <span>{{ $docCount }} {{ __('dokumen') }}</span>
+                        <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                            {{ $docCount }} {{ __('files') }}
                         </span>
                     </span>
+
+                    @if($canOpenProject)
+                        <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500 dark:text-slate-600" />
+                    @endif
                 @if($canOpenProject)
                     </a>
                 @else
                     </div>
                 @endif
 
-                <div class="mt-4 space-y-2">
-                    @forelse ($categoryCounts as $categoryName => $fileCount)
-                        <div class="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800">
-                            <span class="min-w-0 truncate text-sm text-slate-700 dark:text-slate-200">
-                                {{ $categoryName }}
-                            </span>
-                            <span class="shrink-0 text-sm text-slate-500 dark:text-slate-400">
-                                {{ $fileCount }} {{ __('file') }}
-                            </span>
-                        </div>
-                    @empty
-                        <p class="rounded-lg bg-slate-50 p-3 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                            {{ __('Belum ada dokumen untuk proyek ini.') }}
-                        </p>
-                    @endforelse
-                </div>
-
-                {{-- Pratinjau file proyek — thumbnail per jenis file, sama
-                     dengan yang tampil di halaman detail dokumen proyek. --}}
+                {{-- Pratinjau file proyek - thumbnail per jenis file. --}}
                 @if($projectDocs->isNotEmpty())
-                    <div class="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-3">
+                    <div class="mt-3 grid grid-cols-2 gap-3 xl:grid-cols-3">
                         @foreach($projectDocs->take(4) as $doc)
                             @php
                                 $isModuleDoc = $doc->isModuleDocument();
-                                $metaLine = collect([
-                                    $isModuleDoc ? $doc->source_label : ($doc->category?->name ?? __('Tanpa Kategori')),
-                                    'v' . (int) ($doc->version ?? 1),
-                                ])->filter()->implode(' · ');
+                                $metaLine = $isModuleDoc
+                                    ? $doc->source_label
+                                    : ($doc->version > 1 ? 'v' . $doc->version : null);
                             @endphp
 
                             @include('customers.doc-card', [
@@ -122,18 +91,15 @@ Props:
                     @if($docCount > 4 && $canOpenProject)
                         <a href="{{ route('project-documents.index', $project) }}"
                            class="mt-3 inline-block text-sm font-medium text-indigo-600 transition-colors hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
-                            {{ __('Lihat semua') }} {{ $docCount }} {{ __('dokumen') }} →
+                            {{ __('View all') }} ({{ $docCount }})
                         </a>
                     @endif
                 @endif
             </article>
         @empty
-            <div class="col-span-full rounded-xl border border-dashed border-slate-300 p-10 text-center dark:border-slate-700">
-                <p class="font-medium text-slate-700 dark:text-slate-200">
+            <div class="col-span-full rounded-xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-700">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
                     {{ __('Belum ada proyek') }}
-                </p>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {{ __('Dokumen proyek akan muncul di sini setelah proyek tersedia.') }}
                 </p>
             </div>
         @endforelse

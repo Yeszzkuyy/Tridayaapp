@@ -33,20 +33,15 @@ Props:
 <section class="space-y-4">
     {{-- Header: judul + jumlah di kiri, pencarian & filter di kanan. --}}
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div class="min-w-0">
-            <div class="flex items-center gap-2">
-                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
-                    {{ __('General Documents') }}
-                </h2>
-                @if($generalDocuments->isNotEmpty())
-                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold leading-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                        {{ $generalDocuments->count() }}
-                    </span>
-                @endif
-            </div>
-            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                {{ __('Dokumen legalitas & dokumen umum customer, tidak terikat proyek.') }}
-            </p>
+        <div class="flex items-center gap-2">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white">
+                {{ __('General') }}
+            </h3>
+            @if($generalDocuments->isNotEmpty())
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold leading-4 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    {{ $generalDocuments->count() }}
+                </span>
+            @endif
         </div>
 
         @if($generalDocuments->isNotEmpty())
@@ -94,10 +89,9 @@ Props:
                                 // Dokumen milik modul (survey/sizing/instalasi) hanya
                                 // dikelola dari menu modulnya — di sini read-only.
                                 $isModuleDoc = $doc->isModuleDocument();
-                                $metaLine = collect([
-                                    $isModuleDoc ? $doc->source_label : ($doc->category?->name ?? __('Tanpa Kategori')),
-                                    'v' . (int) ($doc->version ?? 1),
-                                ])->filter()->implode(' · ');
+                                $metaLine = $isModuleDoc
+                                    ? $doc->source_label
+                                    : ($doc->version > 1 ? 'v' . $doc->version : null);
                             @endphp
 
                             <div class="gen-doc-card"
@@ -128,15 +122,12 @@ Props:
         </div>
     @else
         {{-- Empty state: tombol upload ada di header halaman (satu pintu). --}}
-        <div class="rounded-2xl border border-dashed border-slate-200 px-6 py-12 text-center dark:border-slate-700">
-            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+        <div class="rounded-2xl border border-dashed border-slate-200 px-6 py-10 text-center dark:border-slate-700">
+            <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
                 <x-icon name="file-text" class="h-5 w-5 text-slate-400 dark:text-slate-500" />
             </div>
-            <p class="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
                 {{ __('Belum ada dokumen umum') }}
-            </p>
-            <p class="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-                {{ __('Dokumen legalitas seperti NIB atau NPWP akan muncul di sini setelah diunggah.') }}
             </p>
         </div>
     @endif

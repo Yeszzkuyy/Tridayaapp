@@ -17,7 +17,9 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
             <tr>
                 <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Document') }}</th>
                 <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Category') }}</th>
-                <th class="hidden px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 md:table-cell">{{ __('Customer') }}</th>
+                @unless($hideCustomerColumn ?? false)
+                    <th class="hidden px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 md:table-cell">{{ __('Customer') }}</th>
+                @endunless
                 <th class="hidden px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 lg:table-cell">{{ __('Project / Transaction') }}</th>
                 <th class="hidden px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 xl:table-cell">{{ __('Document Date') }}</th>
                 <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Uploaded') }}</th>
@@ -75,10 +77,11 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                     <td class="px-4 py-4">
                         <x-status-badge :color="$categoryColors[$doc->category] ?? 'slate'">{{ $doc->categoryLabel() }}</x-status-badge>
                     </td>
-                    <td class="hidden px-4 py-4 text-sm text-slate-600 dark:text-slate-300 md:table-cell">
-                        {{ $doc->customerName ?: '-' }}
-                    </td>
-                    <td class="hidden px-4 py-4 text-sm text-slate-600 dark:text-slate-300 lg:table-cell">
+                    @unless($hideCustomerColumn ?? false)
+                        <td class="hidden px-4 py-4 text-sm text-slate-600 dark:text-slate-300 md:table-cell">
+                            {{ $doc->customerName ?: '-' }}
+                        </td>
+                    @endunless                    <td class="hidden px-4 py-4 text-sm text-slate-600 dark:text-slate-300 lg:table-cell">
                         <span class="block max-w-[14rem] truncate">
                             {{ $doc->projectName ?: ($doc->number ?: '-') }}
                         </span>

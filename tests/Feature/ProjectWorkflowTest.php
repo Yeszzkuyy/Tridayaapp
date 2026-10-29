@@ -252,7 +252,7 @@ class ProjectWorkflowTest extends TestCase
         $html = $this->actingAs($sales)->get(route('customers.show', $customer))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString(__('Project Documents'), $html);
-        $this->assertStringContainsString(__('Customer Documents'), $html);
+        $this->assertStringContainsString(__('Projects'), $html);
+        $this->assertStringContainsString('survey.pdf', $html);
     }
 }
