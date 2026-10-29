@@ -20,6 +20,10 @@ class CustomerContact extends Model
         'is_primary',
     ];
 
+    protected $casts = [
+        'is_primary' => 'boolean',
+    ];
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);

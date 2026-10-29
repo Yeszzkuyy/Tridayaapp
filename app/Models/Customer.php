@@ -41,6 +41,65 @@ class Customer extends Model
         return $this->hasMany(CustomerContact::class);
     }
 
+    /** Kontak primary aktif; null bila customer belum punya kontak utama. */
+    public function primaryContact(): ?CustomerContact
+    {
+        if ($this->relationLoaded('contacts')) {
+            return $this->contacts->firstWhere('is_primary', true);
+        }
+
+        return $this->contacts()->where('is_primary', true)->orderByDesc('id')->first();
+    }
+
+    /** Sudah punya data kontak orang (bukan cuma kolom legacy)? */
+    public function hasContacts(): bool
+    {
+        return $this->relationLoaded('contacts')
+            ? $this->contacts->isNotEmpty()
+            : $this->contacts()->exists();
+    }
+
+    /**
+     * Nama PIC default.
+     *
+     * Sumber utama tabel `customer_contacts`; kolom legacy hanya dipakai
+     * bila customer memang belum punya kontak sama sekali.
+     */
+    public function picName(): ?string
+    {
+        $primary = $this->primaryContact();
+
+        if ($primary) {
+            return $primary->name;
+        }
+
+        return $this->hasContacts() ? null : $this->contact_person;
+    }
+
+    /** WhatsApp PIC default (bukan nomor perusahaan). */
+    public function picWhatsapp(): ?string
+    {
+        return $this->primaryContact()?->whatsapp;
+    }
+
+    /** Telepon PIC default (bukan nomor perusahaan). */
+    public function picPhone(): ?string
+    {
+        return $this->primaryContact()?->phone;
+    }
+
+    /** Email PIC default (bukan email perusahaan). */
+    public function picEmail(): ?string
+    {
+        return $this->primaryContact()?->email;
+    }
+
+    /** Jabatan PIC default, bila diisi. */
+    public function picPosition(): ?string
+    {
+        return $this->primaryContact()?->position;
+    }
+
     /**
      * Alamat tagihan Invoice. Bila belum diisi, pakai alamat utama supaya
      * invoice lama/cepat tetap punya alamat.
@@ -127,20 +186,41 @@ class Customer extends Model
 
     public function waLink(string $text = ''): ?string
     {
-        $number = $this->whatsapp ?: $this->phone;
+        $digits = self::waNumber($this->whatsapp ?: $this->phone);
+
+        if (! $digits) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $digits . ($text ? '?text=' . rawurlencode($text) : '');
+    }
+
+    /** Tautan WhatsApp untuk PIC default (bukan nomor perusahaan). */
+    public function picWhatsappLink(): ?string
+    {
+        $digits = self::waNumber($this->picWhatsapp());
+
+        return $digits ? 'https://wa.me/' . $digits : null;
+    }
+
+    /** Normalisasi nomor WA ke format internasional tanpa simbol. */
+    public static function waNumber(?string $number): ?string
+    {
         $digits = preg_replace('/\D/', '', $number ?? '');
 
-        if (!$digits) {
+        if (! $digits) {
             return null;
         }
 
         if (str_starts_with($digits, '0')) {
-            $digits = '62' . substr($digits, 1);
-        } elseif (str_starts_with($digits, '8')) {
-            $digits = '62' . $digits;
+            return '62' . substr($digits, 1);
         }
 
-        return 'https://wa.me/' . $digits . ($text ? '?text=' . rawurlencode($text) : '');
+        if (str_starts_with($digits, '8')) {
+            return '62' . $digits;
+        }
+
+        return $digits;
     }
 
     /**
