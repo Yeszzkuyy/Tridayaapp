@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Tolak pesan commit yang melanggar AGENTS.md §9 (satu commit = satu paket).
+# Dipasang lewat: scripts/setup-hooks.sh  (git config core.hooksPath .githooks)
+
+set -uo pipefail
+
+MSG_FILE="${1:-}"
+[ -z "$MSG_FILE" ] || [ ! -f "$MSG_FILE" ] && exit 0
+
+SUBJECT="$(head -n 1 "$MSG_FILE" | sed 's/[[:space:]]*$//')"
+BODY="$(tail -n +2 "$MSG_FILE" | grep -v '^#' | grep -v '^[[:space:]]*$' || true)"
+
+TIPE='feat|fix|style|test|chore|docs|perf|refactor|revert|wip'
+DIVISI='mkt|tek|user|mon|cus|dash|mng|sec|sales|auth|trash|panel|i18n|sys'
+
+fail() {
+  {
+    echo "✗ commit ditolak: $1"
+    echo "  Aturan : AGENTS.md §9 (satu commit = satu paket perubahan)"
+    echo "  Bypass : git commit --no-verify  (hanya keadaan mendesak)"
+  } >&2
+  exit 1
+}
+
+# commit merge yang dibuat git sendiri
+case "$SUBJECT" in
+  "Merge "*|merge:*) exit 0 ;;
+esac
+
+# 1. format wajib
+if ! [[ "$SUBJECT" =~ ^($TIPE)\(($DIVISI)(/[a-z0-9-]+)?\):[[:space:]]+[^[:space:]].*$ ]]; then
+  fail "format harus '<tipe>(<divisi>/<menu>): <ringkasan>'
+         contoh: feat(sales/meeting): form Add Meeting dengan mode Online/Offline"
+fi
+
+TIPE_MSG="${BASH_REMATCH[1]}"
+
+# 2. ringkasan generik
+LOWER="$(printf '%s' "$SUBJECT" | tr '[:upper:]' '[:lower:]')"
+case "$LOWER" in
+  *"): update"*|*"): fix bug"*|*"): tes"*|*"): asdasd"*|*"): wip"*|*"): perbaiki"*|*"): revisi"*)
+    fail "ringkasan terlalu generik — jelaskan paket perubahannya, bukan 'update/revisi/perbaiki'."
+    ;;
+esac
+
+# 3. wip dilarang di main
+BRANCH="$(git symbolic-ref --short -q HEAD 2>/dev/null || echo unknown)"
+if [ "$TIPE_MSG" = "wip" ] && [ "$BRANCH" = "main" ]; then
+  fail "commit wip(...) dilarang di branch main. Kerjakan di branch feature/<divisi>-<topik>."
+fi
+
+# 4. body wajib untuk feat/fix/style
+if [[ "$TIPE_MSG" =~ ^(feat|fix|style)$ ]] && [ -z "$BODY" ]; then
+  fail "tipe '$TIPE_MSG' wajib punya body: apa yang berubah, kenapa, dan baris 'Diverifikasi: ...'."
+fi
+
+exit 0

@@ -58,9 +58,17 @@ fitur (di worktree divisi)  →  merge ke main  →  semua worktree git pull
 - Jangan cherry-pick antar branch divisi — kalau butuh perubahan bersama,
   merge `main` ke branch-mu
 
-## 3. Commit kecil tapi sering
+## 3. Checkpoint WIP, commit final satu paket
 
-Commit + push = backup. Pesan commit menjelaskan fiturnya.
+Commit + push = backup, tapi backup-nya berupa **branch**, bukan tumpukan
+commit kecil di `main`.
+
+- Selama perubahan masih bolak-balik ("belum pas" → ubah → cek ulang), simpan
+  progres dengan `wip(<divisi>/<menu>): ...`.
+- Begitu perubahan sudah sesuai maksud user (user sudah cek dan bilang sesuai),
+  **squash** semua `wip` jadi **satu commit paket** dengan penjelasan utuh
+  (`scripts/squash-wip.sh`). Aturan lengkap di §9.
+- `main` hanya boleh berisi commit paket — `wip(...)` dilarang masuk `main`.
 
 ## 4. Pindah branch hanya dengan tree bersih
 
@@ -207,7 +215,7 @@ Format commit: `<tipe>(<divisi>/<menu>): <perubahan singkat>`
 
 | Bagian | Pilihan |
 |---|---|
-| `<tipe>` | `feat` (fitur baru), `fix` (perbaikan), `style` (tampilan), `test`, `chore`, `docs` |
+| `<tipe>` | `feat` (fitur baru), `fix` (perbaikan), `style` (tampilan), `test`, `chore`, `docs`, `wip` (checkpoint, **dilarang di `main`**) |
 | `<divisi>` | `mkt \| tek \| user \| mon \| cus \| dash \| mng \| sec \| sales \| auth \| trash \| panel \| i18n \| sys` |
 | `<menu>` | nama menu huruf kecil, misal `leads`, `jadwal`, `avatar`, `monitoring`. Boleh dikosongkan untuk `i18n`/`sys` |
 
@@ -223,9 +231,60 @@ chore(sys): rotate laravel.log + hapus .bak lama
 
 Larangan commit:
 
-- Tanpa scope: `update`, `fix bug`, `wip`, `tes`, `asdasd`
+- Tanpa scope: `update`, `fix bug`, `wip` (tanpa scope), `tes`, `asdasd`
 - Satu commit campur 2 divisi — pecah jadi 2 commit
 - Satu commit > 15 file tanpa alasan — pecah per menu
+
+### Satu commit = satu paket perubahan
+
+**Definisi paket:** satu perubahan yang dirasakan user, dalam satu menu.
+Bukan satu file, bukan satu baris, dan bukan satu iterasi.
+
+**Kapan commit:** hanya setelah (a) kamu cek sendiri di UI/test, dan (b) user
+bilang sudah sesuai. Sebelum itu → `wip(...)`.
+
+**Body wajib untuk `feat`, `fix`, `style`** (2–5 baris): apa yang berubah,
+kenapa/maksud user, dan cara verifikasinya.
+
+```text
+feat(sales/meeting): form Add Meeting dengan mode Online/Offline + foto bukti
+
+- Form Add Meeting punya pilihan mode Online/Offline yang tersimpan dan tampil
+  di detail meeting.
+- Foto bukti bisa diunggah sampai 5 foto, bertahap, maksimal 1MB per foto.
+- Diverifikasi: Meeting > Add Meeting, simpan 3 foto + mode Online, detail
+  meeting menampilkan keduanya dengan benar.
+```
+
+`chore`, `docs`, `test` boleh judul saja.
+
+**Larangan commit paket:**
+
+- Commit lanjutan berjudul "sesuaikan", "revisi", "lanjutan", "perbaiki typo",
+  atau "update" untuk perubahan yang masih satu paket — squash ke commit paketnya.
+- Commit sebelum user menyatakan perubahan sudah sesuai.
+- `wip(...)` di branch `main`.
+- Satu commit paket > 15 file; pecah per sub-fitur (tetap satu tema per commit).
+
+**Definition of Done sebelum commit:**
+
+1. Perubahan sesuai permintaan user (sudah dicek ulang, bukan asumsi).
+2. Tidak ada `dd()`, `dump()`, `console.log`, atau kode mati/komentar eksperimen.
+3. `php artisan test` (atau test terkait) lulus bila menyentuh logika.
+4. `npm run build` dari `/var/www/3dyapp` bila menambah kelas Tailwind baru.
+5. Tidak ada file sisa: `.bak`, screenshot debug, `backups/`, file log.
+6. Pesan commit pakai format di atas + body penjelasan.
+
+**Alur squash:**
+
+```bash
+git log --oneline main..HEAD          # lihat tumpukan wip
+scripts/squash-wip.sh -m "feat(sales/meeting): ..."
+```
+
+Hook `.githooks/commit-msg` menegakkan format, body wajib, dan larangan `wip`
+di `main`. Aktifkan sekali dengan `scripts/setup-hooks.sh`. Bypass darurat:
+`git commit --no-verify` (hanya untuk keadaan mendesak).
 
 Nama branch: `feature/<divisi>-<topik-singkat>` (contoh:
 `feature/mkt-filter-lead`, `feature/tek-jadwal-inggris`).

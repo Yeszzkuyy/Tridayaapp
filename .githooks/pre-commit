@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Tolak commit berisi kredensial, file sisa, dan log (AGENTS.md §6 & §10).
+# Dipasang lewat: scripts/setup-hooks.sh  (git config core.hooksPath .githooks)
+
+set -uo pipefail
+
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -z "$STAGED" ] && exit 0
+
+BLOCKED="$(printf '%s\n' "$STAGED" \
+  | grep -E '(^|/)\.env($|\.)|(^|/)backups/|\.(bak|orig|rej)$|\.log$' \
+  | grep -v '\.env\.example$' || true)"
+
+[ -z "$BLOCKED" ] && exit 0
+
+{
+  echo "✗ commit ditolak: file berikut tidak boleh masuk repo (AGENTS.md §6/§10):"
+  printf '%s\n' "$BLOCKED" | sed 's/^/    - /'
+  echo "  Hapus dari staging: git restore --staged <file>"
+} >&2
+exit 1
