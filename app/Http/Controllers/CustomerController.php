@@ -159,19 +159,51 @@ class CustomerController extends Controller
                 ? $request->query('documents_sort') : 'newest',
         ];
 
+        $custInvoices = $customer->invoices()->latest('issue_date')->get();
+        $custPos = $customer->purchaseOrders()->latest('issue_date')->get();
+        $custPayments = \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
+            ->with('invoice')
+            ->latest('payment_date')
+            ->get();
+
+        // Opsi transaksi untuk modal "Ubah jenis dokumen" (khusus manage-admin).
+        $canReclassifyDocs = $request->user()->can('manage-admin');
+        $documentLinkOptions = [];
+
+        if ($canReclassifyDocs) {
+            $documentLinkOptions[$customer->id] = [
+                'invoice' => $custInvoices
+                    ->where('status', '!=', 'cancelled')
+                    ->map(fn ($invoice) => [
+                        'id' => $invoice->id,
+                        'label' => $invoice->invoice_number.' · '.$invoice->issue_date?->format('d M Y'),
+                    ])
+                    ->values()
+                    ->all(),
+                'po' => $custPos
+                    ->where('status', '!=', 'dibatalkan')
+                    ->map(fn ($order) => [
+                        'id' => $order->id,
+                        'label' => $order->po_number.' · '.$order->issue_date?->format('d M Y'),
+                    ])
+                    ->values()
+                    ->all(),
+            ];
+        }
+
         return view('customers.show', [
             'customer' => $customer,
             'timeline' => $this->buildTimeline($customer),
             'documents' => $this->generalDocuments($customer),
             'typedDocs' => $this->typedDocuments($customer),
-            'custInvoices' => $customer->invoices()->latest('issue_date')->get(),
-            'custPos' => $customer->purchaseOrders()->latest('issue_date')->get(),
-            'custPayments' => \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
-                ->with('invoice')
-                ->latest('payment_date')
-                ->get(),
+            'custInvoices' => $custInvoices,
+            'custPos' => $custPos,
+            'custPayments' => $custPayments,
             'customerDocuments' => $documentCenter->paginate($request->user(), $documentFilters, 'documents_page'),
             'customerDocumentFilters' => $documentFilters,
+            'documentCategories' => \App\Models\DocumentCategory::orderBy('name')->pluck('name', 'id')->all(),
+            'documentLinkOptions' => $documentLinkOptions,
+            'canReclassifyDocs' => $canReclassifyDocs,
         ]);
     }
 

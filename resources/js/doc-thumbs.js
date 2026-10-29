@@ -588,7 +588,11 @@ function initDocModals() {
 
             // Tombol dari bagian Invoice/PO/Payment membawa jenisnya sendiri.
             const type = btn.dataset.docType || '';
-            if (typeInput) typeInput.value = type;
+            if (typeInput) {
+                typeInput.value = type;
+                // x-model pada select admin butuh event change agar state Alpine ikut.
+                typeInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
             if (targetEl) {
                 const section = btn.dataset.docSection || '';
                 targetEl.textContent = section;

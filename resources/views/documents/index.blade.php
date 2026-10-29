@@ -89,6 +89,10 @@
                 'emptyHint' => ! $hasAnySource
                     ? __('Ask an administrator if you need access to a module document.')
                     : ($hasFilters ? __('Try a different keyword or clear the filters.') : __('Documents uploaded from Customer, Project, Quotation, Purchasing, or Finance will appear here.')),
+                'documentCategories' => $documentCategories,
+                'documentLinkOptions' => $documentLinkOptions,
+                'canReclassifyDocs' => $canReclassifyDocs,
+                'canEditDocCategory' => $canEditDocCategory,
             ])
 
             @if($documents->hasPages())

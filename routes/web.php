@@ -153,7 +153,7 @@ Route::middleware('auth')->group(function () {
 
     // Upload file langsung ke customer (boleh tanpa project).
     // Izin rinci dicek di controller: teknisi ATAU pengedit customer.
-    Route::middleware('permission:manage-technician|manage-sales')->group(function () {
+    Route::middleware('permission:manage-technician|manage-sales|manage-admin')->group(function () {
         Route::post('/customers/{customer}/documents', [ProjectDocumentController::class, 'storeForCustomer'])->name('customer-documents.store');
     });
 
@@ -168,6 +168,16 @@ Route::middleware('auth')->group(function () {
     // isi hasil dibatasi per sumber sesuai izin endpoint aslinya.
     Route::middleware('permission:view-customer')->group(function () {
         Route::get('/documents', [\App\Http\Controllers\DocumentCenterController::class, 'index'])->name('documents.index');
+
+        // Ubah label kategori (metadata) — tetap dijaga policy update dokumen.
+        Route::patch('/documents/{document}/category', [\App\Http\Controllers\DocumentCenterController::class, 'updateCategory'])
+            ->name('documents.update-category');
+
+        // Ubah jenis dokumen (general/invoice/PO) — menentukan batas akses,
+        // jadi hanya manage-admin.
+        Route::patch('/documents/{document}/type', [\App\Http\Controllers\DocumentCenterController::class, 'updateType'])
+            ->middleware('permission:manage-admin')
+            ->name('documents.update-type');
     });
 
     // ============================================

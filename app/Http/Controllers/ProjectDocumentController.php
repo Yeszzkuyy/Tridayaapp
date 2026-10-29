@@ -117,7 +117,9 @@ class ProjectDocumentController extends Controller
 
     public function storeForCustomer(Request $request, \App\Models\Customer $customer)
     {
-        $canUpload = auth()->user()->can('manage-technician') || auth()->user()->can('update', $customer);
+        $canUpload = auth()->user()->can('manage-technician')
+            || auth()->user()->can('manage-admin')
+            || auth()->user()->can('update', $customer);
         abort_unless($canUpload, 403);
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:20480', \App\Rules\SecureFile::documents()],
@@ -125,6 +127,7 @@ class ProjectDocumentController extends Controller
             'document_category_id' => 'nullable|exists:document_categories,id',
             'notes' => 'nullable|string|max:500',
             'doc_type' => 'nullable|in:' . implode(',', \App\Models\ProjectDocument::DOC_TYPES),
+            'transaction_id' => 'nullable|integer',
         ]);
 
         if ($validated['doc_type'] ?? null) {
@@ -149,6 +152,16 @@ class ProjectDocumentController extends Controller
             }
         }
 
+        // Bila admin memilih jenis transaksi, tautkan ke record aslinya supaya
+        // nomor, sumber, dan aturan aksesnya konsisten (bukan dokumen "invoice"
+        // tanpa transaksi). Divalidasi SEBELUM file disimpan agar tidak ada
+        // file yatim saat transaksi tidak valid.
+        $documentable = $this->resolveUploadDocumentable(
+            $customer,
+            $validated['doc_type'] ?? null,
+            (int) ($validated['transaction_id'] ?? 0)
+        );
+
         $file = $request->file('file');
         $originalName = \App\Rules\SecureFile::sanitizeName($file->getClientOriginalName());
         $path = $file->storeAs(
@@ -161,6 +174,8 @@ class ProjectDocumentController extends Controller
             'project_id' => $project?->id,
             'customer_id' => $customer->id,
             'doc_type' => $validated['doc_type'] ?? null,
+            'documentable_type' => $documentable?->getMorphClass(),
+            'documentable_id' => $documentable?->getKey(),
             'title' => $originalName,
             'file_name' => $originalName,
             'file_path' => $path,
@@ -182,6 +197,47 @@ class ProjectDocumentController extends Controller
             ->back()
             ->with('success', __('Document uploaded successfully.'))
             ->with('doc_uploaded', true);
+    }
+
+    /**
+     * Validasi record transaksi opsional saat upload dokumen berjenis.
+     * Harus milik customer yang sama; null bila tidak memilih transaksi.
+     */
+    private function resolveUploadDocumentable(\App\Models\Customer $customer, ?string $docType, int $transactionId): ?object
+    {
+        if ($transactionId <= 0) {
+            return null;
+        }
+
+        if (! $docType) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'transaction_id' => __('Choose a document type before linking a transaction.'),
+            ]);
+        }
+
+        $documentable = match ($docType) {
+            'invoice' => \App\Models\Invoice::query()
+                ->whereKey($transactionId)
+                ->where('customer_id', $customer->id)
+                ->first(),
+            'po' => \App\Models\PurchaseOrder::query()
+                ->whereKey($transactionId)
+                ->where('customer_id', $customer->id)
+                ->first(),
+            'payment' => \App\Models\Payment::query()
+                ->whereKey($transactionId)
+                ->whereHas('invoice', fn ($query) => $query->where('customer_id', $customer->id))
+                ->first(),
+            default => null,
+        };
+
+        if (! $documentable) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'transaction_id' => __('The selected transaction does not belong to this customer.'),
+            ]);
+        }
+
+        return $documentable;
     }
 
     /**

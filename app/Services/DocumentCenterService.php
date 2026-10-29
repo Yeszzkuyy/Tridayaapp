@@ -182,6 +182,8 @@ class DocumentCenterService
                 'docs.file_path',
                 'docs.ref_type',
                 'docs.ref_id',
+                'docs.raw_type',
+                'docs.raw_category_id',
                 'dc.name as customer_name',
                 'dp.project_name',
                 'dp.project_code',
@@ -238,6 +240,8 @@ class DocumentCenterService
             'pd.file_path as file_path',
             'pd.documentable_type as ref_type',
             'pd.documentable_id as ref_id',
+            'pd.doc_type as raw_type',
+            'pd.document_category_id as raw_category_id',
         ]);
     }
 
@@ -273,6 +277,8 @@ class DocumentCenterService
             'pa.file_path as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
         ]);
     }
 
@@ -308,6 +314,8 @@ class DocumentCenterService
             'pr.po_document_path as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
         ]);
     }
 
@@ -336,6 +344,8 @@ class DocumentCenterService
                 'si.invoice_file_path as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
             ]);
     }
 
@@ -366,6 +376,8 @@ class DocumentCenterService
                 'sp.proof_file as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
             ]);
     }
 
@@ -394,6 +406,8 @@ class DocumentCenterService
                 'gr.attachment_path as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
             ]);
     }
 
@@ -424,6 +438,8 @@ class DocumentCenterService
                 'ld.file_path as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
             ]);
     }
 
@@ -450,6 +466,8 @@ class DocumentCenterService
                 'c.npwp_document_path as file_path',
                 DB::raw('NULL as ref_type'),
                 DB::raw('NULL as ref_id'),
+                DB::raw('NULL as raw_type'),
+                DB::raw('NULL as raw_category_id'),
             ]);
     }
 
@@ -561,6 +579,8 @@ class DocumentCenterService
             status: $row->status !== null ? (string) $row->status : null,
             refType: $row->ref_type !== null ? (string) $row->ref_type : null,
             refId: $row->ref_id !== null ? (int) $row->ref_id : null,
+            rawType: $row->raw_type !== null ? (string) $row->raw_type : null,
+            rawCategoryId: $row->raw_category_id !== null ? (int) $row->raw_category_id : null,
             available: $available,
             canPreview: $canPreview,
             previewUrl: $available ? $this->previewUrl($row) : null,

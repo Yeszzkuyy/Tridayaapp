@@ -290,6 +290,7 @@
                 <div x-show="tab === 'documents'" x-transition>
                     @php
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
+                        $canUploadAnyDoc = $canUploadDocs || auth()->user()->can('manage-admin');
                         // Split dokumen berdasarkan jenis: project & general
                         // (dokumen transaksi sudah dipisah di controller).
                         $projectDocuments = $documents->whereNotNull('project_id');
@@ -316,6 +317,9 @@
                             'customerDocuments' => $customerDocuments,
                             'customerDocumentFilters' => $customerDocumentFilters,
                             'canUploadDocs' => $canUploadDocs,
+                            'documentCategories' => $documentCategories,
+                            'documentLinkOptions' => $documentLinkOptions,
+                            'canReclassifyDocs' => $canReclassifyDocs,
                         ])
                     </div>
 
@@ -343,7 +347,7 @@
                                 {{ __('Semua dokumen pelanggan: proyek, umum, dan transaksi.') }}
                             </p>
                         </div>
-                        @if($canUploadDocs)
+                        @if($canUploadAnyDoc)
                             <div class="shrink-0">
                                 <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
                                                data-doc-upload-open />
@@ -446,7 +450,7 @@
                 @endcanany
 
                     {{-- Modul popup dokumen (dipakai oleh doc-thumbs.js) --}}
-                    @if($canUploadDocs)
+                    @if($canUploadAnyDoc)
                         {{-- Popup upload --}}
                         <div id="doc-upload-modal" class="fixed inset-0 z-[90] {{ $errors->has('file') ? 'doc-open' : 'hidden' }} items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
                             <div class="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
@@ -461,12 +465,62 @@
                                     </button>
                                 </div>
                                 <form action="{{ route('customer-documents.store', $customer) }}" method="POST" enctype="multipart/form-data"
-                                      x-data="{ dragging: false, fileName: '' }">
+                                      x-data="{ dragging: false, fileName: '', formType: '{{ auth()->user()->can('manage-admin') ? old('doc_type', '') : '' }}' }">
                                     @csrf
-                                    <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
+                                    @can('manage-admin')
+                                        <div class="mb-3">
+                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Document type') }}</label>
+                                            <select name="doc_type" id="doc-doc-type" x-model="formType"
+                                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                <option value="">{{ __('General Document') }}</option>
+                                                <option value="invoice">{{ __('Customer Invoice') }}</option>
+                                                <option value="po">{{ __('Legacy Customer PO') }}</option>
+                                                <option value="payment">{{ __('Payment Proof') }}</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2" x-show="formType !== ''" x-cloak>
+                                            <div x-show="formType === 'invoice'">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Invoice') }}</label>
+                                                <select name="transaction_id" :disabled="formType !== 'invoice'"
+                                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                    <option value="">{{ __('Choose invoice') }}</option>
+                                                    @foreach($custInvoices as $invoice)
+                                                        @if($invoice->status !== 'cancelled')
+                                                            <option value="{{ $invoice->id }}">{{ $invoice->invoice_number }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div x-show="formType === 'po'">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Purchase Order') }}</label>
+                                                <select name="transaction_id" :disabled="formType !== 'po'"
+                                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                    <option value="">{{ __('Choose purchase order') }}</option>
+                                                    @foreach($custPos as $order)
+                                                        @if($order->status !== 'dibatalkan')
+                                                            <option value="{{ $order->id }}">{{ $order->po_number }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div x-show="formType === 'payment'">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Payment') }}</label>
+                                                <select name="transaction_id" :disabled="formType !== 'payment'"
+                                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                    <option value="">{{ __('Choose payment') }}</option>
+                                                    @foreach($custPayments as $payment)
+                                                        <option value="{{ $payment->id }}">{{ $payment->invoice?->invoice_number }} · {{ $payment->payment_date?->format('d M Y') }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
+                                    @endcan
                                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                                         @if($customer->projects->isNotEmpty())
-                                            <div id="doc-project-field">
+                                            <div id="doc-project-field" x-show="formType === ''">
                                                 <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
                                                 <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                                     <option value="">{{ __('General') }}</option>
