@@ -40,7 +40,7 @@
         @forelse($comments as $comment)
             @if($comment->type === \App\Models\PriceRequestComment::TYPE_SYSTEM)
                 <div class="flex justify-center py-1">
-                    <p class="max-w-[90%] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                    <p class="max-w-[90%] whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                         {{ $comment->body }}
                         <time class="ml-1 tabular-nums" datetime="{{ $comment->created_at?->toIso8601String() }}">{{ $comment->created_at?->timezone('Asia/Jakarta')->format('H:i') }}</time>
                     </p>
@@ -101,11 +101,17 @@
         <label for="price-request-chat-body" class="sr-only">{{ __('Message') }}</label>
         <div class="flex items-end gap-2">
             <textarea id="price-request-chat-body" wire:model="body" rows="1" maxlength="2000"
+                      x-data
+                      x-init="$el.style.height = 'auto'"
+                      x-on:input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 112) + 'px'"
+                      x-on:keydown.enter="if (! $event.shiftKey && ! $event.isComposing) { $event.preventDefault(); if ($el.value.trim() !== '') { $el.closest('form').requestSubmit(); } }"
+                      x-on:price-request-chat-updated.window="$nextTick(() => { $el.style.height = 'auto'; })"
                       aria-label="{{ __('Message') }}"
                       placeholder="{{ __('Type a message...') }}"
-                      class="max-h-28 min-h-10 flex-1 resize-y rounded-xl border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
+                      class="max-h-28 min-h-10 flex-1 resize-none overflow-y-auto rounded-xl border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
             <x-icon-button type="submit" icon="mail" title="{{ __('Send message') }}" wire:loading.attr="disabled" wire:target="send" />
         </div>
+        <p class="mt-1 px-1 text-[11px] text-slate-400 dark:text-slate-500">{{ __('Enter to send, Shift+Enter for a new line') }}</p>
         @error('body')
             <p class="mt-2 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
         @enderror

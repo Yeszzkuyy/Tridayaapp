@@ -728,4 +728,34 @@ class PriceRequestTest extends TestCase
 
         Notification::assertNotSentTo($admin, PriceRequestCompletedNotification::class);
     }
+
+    public function test_price_request_chat_renders_enter_hint_and_preserves_line_breaks(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(__('Enter to send, Shift+Enter for a new line'), $html);
+        $this->assertStringContainsString('x-on:keydown.enter', $html);
+        $this->assertStringContainsString('resize-none', $html);
+
+        PriceRequestComment::create([
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => "Baris pertama\nBaris kedua",
+            'type' => PriceRequestComment::TYPE_MESSAGE,
+        ]);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString("Baris pertama\nBaris kedua", $html);
+        $this->assertStringContainsString('whitespace-pre-wrap', $html);
+    }
 }
