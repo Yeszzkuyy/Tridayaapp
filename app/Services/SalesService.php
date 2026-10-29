@@ -13,7 +13,7 @@ class SalesService
 {
     public function getFollowUps(array $filters = [])
     {
-        $query = FollowUp::with(['customer', 'creator', 'lead'])
+        $query = FollowUp::with(['customer.contacts', 'creator', 'lead'])
             ->nonMeetings();
 
         if (!empty($filters['search'])) {
