@@ -25,6 +25,7 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/home/raafi/3dyapp-panel` | `feature/div-panel` | Admin Panel (invoice, PO, payment) |
 | `/home/raafi/3dyapp-contacts` | `feature/cus-contact-source` | Satu sumber kontak customer (PIC) |
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
+| `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
