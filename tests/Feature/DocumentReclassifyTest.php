@@ -227,11 +227,45 @@ class DocumentReclassifyTest extends TestCase
         $this->assertNull($document->documentable_id);
     }
 
-    public function test_payment_document_cannot_be_reclassified(): void
+    public function test_admin_can_classify_general_document_as_payment(): void
     {
         $admin = $this->user('admin');
         $customer = $this->customer();
-        $document = $this->paymentDocument($customer);
+        $payment = $this->payment($customer);
+        $document = $this->document($customer);
+
+        $this->actingAs($admin)
+            ->patch(route('documents.update-type', $document), [
+                'doc_type' => 'payment',
+                'transaction_id' => $payment->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $document->refresh();
+        $this->assertSame('payment', $document->doc_type);
+        $this->assertSame(Payment::class, $document->documentable_type);
+        $this->assertSame($payment->id, $document->documentable_id);
+
+        // Bukti transfer utama tidak ikut diubah saat menautkan dokumen tambahan.
+        $this->assertSame('payments/rc.jpg', $payment->fresh()->proof_file);
+    }
+
+    public function test_primary_payment_proof_cannot_be_moved_out(): void
+    {
+        $admin = $this->user('admin');
+        $customer = $this->customer();
+        $payment = $this->payment($customer);
+
+        // File utama payment: payments.proof_file menunjuk path yang sama.
+        $document = $this->document($customer, [
+            'doc_type' => 'payment',
+            'documentable_type' => Payment::class,
+            'documentable_id' => $payment->id,
+            'file_path' => 'payments/rc.jpg',
+            'file_name' => 'bukti-utama.jpg',
+        ]);
+        $payment->update(['proof_file' => 'payments/rc.jpg']);
 
         $this->actingAs($admin)
             ->patch(route('documents.update-type', $document), ['doc_type' => 'general'])
@@ -240,20 +274,23 @@ class DocumentReclassifyTest extends TestCase
         $this->assertSame('payment', $document->fresh()->doc_type);
     }
 
-    public function test_cannot_classify_document_as_payment(): void
+    public function test_additional_payment_document_can_move_to_general(): void
     {
         $admin = $this->user('admin');
         $customer = $this->customer();
-        $document = $this->document($customer);
+        $document = $this->paymentDocument($customer);
 
         $this->actingAs($admin)
-            ->patch(route('documents.update-type', $document), [
-                'doc_type' => 'payment',
-                'transaction_id' => $this->payment($customer)->id,
-            ])
-            ->assertSessionHasErrors('doc_type');
+            ->patch(route('documents.update-type', $document), ['doc_type' => 'general'])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
-        $this->assertNull($document->fresh()->doc_type);
+        $document->refresh();
+        $this->assertNull($document->doc_type);
+        $this->assertNull($document->documentable_type);
+
+        // Bukti transfer utama tetap utuh.
+        $this->assertSame('payments/rc.jpg', Payment::first()->proof_file);
     }
 
     public function test_module_and_bast_documents_cannot_be_reclassified(): void
@@ -422,6 +459,7 @@ class DocumentReclassifyTest extends TestCase
         $this->invoice($mine, 'INV-OPTION-1');
         $this->invoice($mine, 'INV-CANCELLED', 'cancelled');
         $this->purchaseOrder($mine, 'PO-OPTION-1');
+        $this->payment($mine);
         $this->invoice($other, 'INV-OTHER-OPTION');
 
         $this->document($mine);
@@ -431,10 +469,12 @@ class DocumentReclassifyTest extends TestCase
 
         $invoiceLabels = array_column($options['invoice'] ?? [], 'label');
         $poLabels = array_column($options['po'] ?? [], 'label');
+        $paymentLabels = array_column($options['payment'] ?? [], 'label');
 
         $this->assertTrue(collect($invoiceLabels)->contains(fn ($label) => str_contains($label, 'INV-OPTION-1')));
         $this->assertFalse(collect($invoiceLabels)->contains(fn ($label) => str_contains($label, 'INV-CANCELLED')));
         $this->assertFalse(collect($invoiceLabels)->contains(fn ($label) => str_contains($label, 'INV-OTHER-OPTION')));
         $this->assertTrue(collect($poLabels)->contains(fn ($label) => str_contains($label, 'PO-OPTION-1')));
+        $this->assertNotEmpty($paymentLabels);
     }
 }

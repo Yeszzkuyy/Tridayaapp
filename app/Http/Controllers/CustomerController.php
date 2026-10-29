@@ -188,6 +188,13 @@ class CustomerController extends Controller
                     ])
                     ->values()
                     ->all(),
+                'payment' => $custPayments
+                    ->map(fn ($payment) => [
+                        'id' => $payment->id,
+                        'label' => ($payment->invoice?->invoice_number ?? '-').' · '.$payment->payment_date?->format('d M Y'),
+                    ])
+                    ->values()
+                    ->all(),
             ];
         }
 

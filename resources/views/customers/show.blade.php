@@ -434,10 +434,10 @@
                                             <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Document type') }}</label>
                                             <select name="doc_type" id="doc-doc-type" x-model="formType"
                                                     class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                                <option value="">{{ __('General Document') }}</option>
-                                                <option value="invoice">{{ __('Customer Invoice') }}</option>
-                                                <option value="po">{{ __('Legacy Customer PO') }}</option>
-                                                <option value="payment">{{ __('Payment Proof') }}</option>
+                                                <option value="">{{ __('General') }}</option>
+                                                <option value="invoice">{{ __('Invoice') }}</option>
+                                                <option value="po">{{ __('PO') }}</option>
+                                                <option value="payment">{{ __('Payment') }}</option>
                                             </select>
                                         </div>
 

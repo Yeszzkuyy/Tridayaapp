@@ -82,9 +82,10 @@
                         <select name="doc_type" x-model="doc.manage.doc_type"
                                 @change="doc.manage.transaction_id = null"
                                 class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
-                            <option value="general">{{ __('General Document') }}</option>
-                            <option value="invoice">{{ __('Customer Invoice') }}</option>
-                            <option value="po">{{ __('Legacy Customer PO') }}</option>
+                            <option value="general">{{ __('General') }}</option>
+                            <option value="invoice">{{ __('Invoice') }}</option>
+                            <option value="po">{{ __('PO') }}</option>
+                            <option value="payment">{{ __('Payment') }}</option>
                         </select>
                     </div>
 
@@ -105,6 +106,17 @@
                                 class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
                             <option value="">{{ __('Choose purchase order') }}</option>
                             <template x-for="opt in doc.manage.purchase_orders" :key="opt.id">
+                                <option :value="opt.id" x-text="opt.label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div x-show="doc.manage.doc_type === 'payment'">
+                        <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Related Payment') }}</label>
+                        <select name="transaction_id" x-model="doc.manage.transaction_id" :disabled="doc.manage.doc_type !== 'payment'"
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
+                            <option value="">{{ __('Choose payment') }}</option>
+                            <template x-for="opt in doc.manage.payments" :key="opt.id">
                                 <option :value="opt.id" x-text="opt.label"></option>
                             </template>
                         </select>

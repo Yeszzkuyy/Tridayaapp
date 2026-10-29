@@ -4524,5 +4524,7 @@
     "files": "files",
     "Transactions": "Transactions",
     "Upload a document to get started.": "Upload a document to get started.",
-    "Create quotation": "Create quotation"
+    "Create quotation": "Create quotation",
+    "Choose a payment that belongs to the same customer.": "Choose a payment that belongs to the same customer.",
+    "This file is the primary payment proof. Manage it from the Payment page.": "This file is the primary payment proof. Manage it from the Payment page."
 }

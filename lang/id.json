@@ -4524,5 +4524,7 @@
     "files": "berkas",
     "Transactions": "Transaksi",
     "Upload a document to get started.": "Unggah dokumen untuk memulai.",
-    "Create quotation": "Buat quotation"
+    "Create quotation": "Buat quotation",
+    "Choose a payment that belongs to the same customer.": "Pilih pembayaran milik customer yang sama.",
+    "This file is the primary payment proof. Manage it from the Payment page.": "File ini adalah bukti pembayaran utama. Kelola dari halaman Payment."
 }
