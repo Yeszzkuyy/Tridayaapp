@@ -28,6 +28,33 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
             @forelse($documents as $doc)
+                @php
+                    $panel = $doc->toPanel();
+                    $panel['manage'] = null;
+
+                    if (($canReclassifyDocs ?? false) && $doc->isReclassifiable()) {
+                        $links = ($documentLinkOptions ?? [])[$doc->customerId] ?? [];
+                        $panel['manage'] = [
+                            'id' => $doc->sourceId,
+                            'doc_type' => $doc->rawType ?: 'general',
+                            'transaction_id' => in_array($doc->refType, [\App\Models\Invoice::class, \App\Models\PurchaseOrder::class], true)
+                                ? $doc->refId : null,
+                            'invoices' => $links['invoice'] ?? [],
+                            'purchase_orders' => $links['po'] ?? [],
+                        ];
+                    }
+
+                    $isModuleOrBast = in_array($doc->rawType, ['survey', 'sizing', 'instalasi', 'bast'], true);
+                    $panel['category_manage'] = ($doc->source === 'project' && (
+                        ($canReclassifyDocs ?? false)
+                        || (($canEditDocCategory ?? false) && ! $isModuleOrBast)
+                    )) ? [
+                        'id' => $doc->sourceId,
+                        'category_id' => $doc->rawCategoryId !== null ? (string) $doc->rawCategoryId : '',
+                    ] : null;
+
+                    $panel['categories'] = $documentCategories ?? [];
+                @endphp
                 <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
                     <td class="px-4 py-4">
                         <div class="flex min-w-0 items-start gap-3">
@@ -36,7 +63,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                             </span>
                             <div class="min-w-0">
                                 <button type="button"
-                                        @click='doc = {{ Illuminate\Support\Js::from($doc->toPanel()) }}; panelOpen = true'
+                                        @click='doc = {{ Illuminate\Support\Js::from($panel) }}; panelOpen = true'
                                         class="block max-w-[14rem] truncate text-left text-sm font-medium text-slate-800 transition hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-300 lg:max-w-xs"
                                         title="{{ $doc->name }}">
                                     {{ $doc->name }}
@@ -80,7 +107,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                                 <x-icon-button as="a" icon="download" href="{{ $doc->downloadUrl }}" title="{{ __('Download') }}" />
                             @endif
                             <x-icon-button icon="more" title="{{ __('Details') }}"
-                                           @click='doc = {{ Illuminate\Support\Js::from($doc->toPanel()) }}; panelOpen = true' />
+                                           @click='doc = {{ Illuminate\Support\Js::from($panel) }}; panelOpen = true' />
                         </div>
                     </td>
                 </tr>

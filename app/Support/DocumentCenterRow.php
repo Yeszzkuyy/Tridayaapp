@@ -35,6 +35,8 @@ class DocumentCenterRow
         public readonly ?string $status,
         public readonly ?string $refType,
         public readonly ?int $refId,
+        public readonly ?string $rawType,
+        public readonly ?int $rawCategoryId,
         public readonly bool $available,
         public readonly bool $canPreview,
         public readonly ?string $previewUrl,
@@ -157,16 +159,26 @@ class DocumentCenterRow
         }
     }
 
+    /** Hanya dokumen registry project yang boleh diubah jenisnya. */
+    public function isReclassifiable(): bool
+    {
+        return $this->source === 'project'
+            && in_array($this->rawType, [null, 'invoice', 'po'], true);
+    }
+
     /** Data untuk panel detail (Alpine). */
     public function toPanel(): array
     {
         return [
             'uid' => $this->uid(),
+            'source' => $this->source,
+            'source_id' => $this->sourceId,
             'name' => $this->name,
             'category' => $this->categoryLabel(),
             'subcategory' => $this->subcategoryLabel(),
-            'source' => $this->sourceLabel(),
+            'source_label' => $this->sourceLabel(),
             'customer' => $this->customerName,
+            'customer_id' => $this->customerId,
             'project' => $this->projectName,
             'number' => $this->number,
             'ref_number' => $this->refNumber,
@@ -180,6 +192,11 @@ class DocumentCenterRow
             'download_url' => $this->downloadUrl,
             'source_url' => $this->sourceUrl,
             'file_ext' => $this->extension(),
+            'raw_type' => $this->rawType,
+            'raw_category_id' => $this->rawCategoryId,
+            'reclassifiable' => $this->isReclassifiable(),
+            'ref_type' => $this->refType,
+            'ref_id' => $this->refId,
         ];
     }
 

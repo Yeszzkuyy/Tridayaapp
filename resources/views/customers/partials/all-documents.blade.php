@@ -69,6 +69,10 @@
             'emptyHint' => $hasCustomerDocFilters
                 ? __('Try a different keyword or clear the filters.')
                 : __('Upload a general document or add files from the related project, quotation, or transaction.'),
+            'documentCategories' => $documentCategories ?? [],
+            'documentLinkOptions' => $documentLinkOptions ?? [],
+            'canReclassifyDocs' => $canReclassifyDocs ?? false,
+            'canEditDocCategory' => $canEditDocCategory ?? ($canUploadDocs ?? false),
         ])
 
         @if($customerDocuments->hasPages())

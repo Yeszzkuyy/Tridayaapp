@@ -29,7 +29,7 @@
                 </div>
                 <div class="flex items-start justify-between gap-3">
                     <dt class="text-slate-500 dark:text-slate-400">{{ __('Source') }}</dt>
-                    <dd class="text-right font-medium text-slate-800 dark:text-slate-100" x-text="doc?.source"></dd>
+                    <dd class="text-right font-medium text-slate-800 dark:text-slate-100" x-text="doc?.source_label"></dd>
                 </div>
                 <div class="flex items-start justify-between gap-3">
                     <dt class="text-slate-500 dark:text-slate-400">{{ __('Customer') }}</dt>
@@ -64,6 +64,95 @@
                     <dd class="text-right font-medium text-slate-800 dark:text-slate-100" x-text="doc?.status"></dd>
                 </div>
             </dl>
+
+
+            {{-- Ubah jenis dokumen (general/invoice/PO). Hanya manage-admin,
+                 hanya untuk dokumen registry project yang bukan modul/BAST. --}}
+            @if($canReclassifyDocs ?? false)
+            <template x-if="doc?.manage">
+                <form method="POST" :action="'{{ url('/documents') }}/' + doc.manage.id + '/type'"
+                      class="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                    @csrf
+                    @method('PATCH')
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Change document type') }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Document type controls who can access this file.') }}</p>
+
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Document type') }}</label>
+                        <select name="doc_type" x-model="doc.manage.doc_type"
+                                @change="doc.manage.transaction_id = null"
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
+                            <option value="general">{{ __('General Document') }}</option>
+                            <option value="invoice">{{ __('Customer Invoice') }}</option>
+                            <option value="po">{{ __('Legacy Customer PO') }}</option>
+                        </select>
+                    </div>
+
+                    <div x-show="doc.manage.doc_type === 'invoice'">
+                        <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Related Invoice') }}</label>
+                        <select name="transaction_id" x-model="doc.manage.transaction_id" :disabled="doc.manage.doc_type !== 'invoice'"
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
+                            <option value="">{{ __('Choose invoice') }}</option>
+                            <template x-for="opt in doc.manage.invoices" :key="opt.id">
+                                <option :value="opt.id" x-text="opt.label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div x-show="doc.manage.doc_type === 'po'">
+                        <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Related Purchase Order') }}</label>
+                        <select name="transaction_id" x-model="doc.manage.transaction_id" :disabled="doc.manage.doc_type !== 'po'"
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
+                            <option value="">{{ __('Choose purchase order') }}</option>
+                            <template x-for="opt in doc.manage.purchase_orders" :key="opt.id">
+                                <option :value="opt.id" x-text="opt.label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <p x-show="doc.manage.doc_type !== 'general'" class="text-xs text-amber-600 dark:text-amber-400">
+                        {{ __('The transaction must belong to the same customer.') }}
+                    </p>
+
+                    <div class="flex justify-end">
+                        <button type="submit"
+                                class="group relative overflow-hidden rounded-xl bg-accent-600 px-5 py-2 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                            {{ __('Save') }}
+                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+            </template>
+            @endif
+
+            {{-- Ubah label kategori (metadata, tidak mengubah akses). --}}
+            @if(($canReclassifyDocs ?? false) || ($canUploadDocs ?? false) || ($canEditDocCategory ?? false))
+            <template x-if="doc?.category_manage">
+                <form method="POST" :action="'{{ url('/documents') }}/' + doc.category_manage.id + '/category'"
+                      class="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                    @csrf
+                    @method('PATCH')
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Change category label') }}</p>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Category') }}</label>
+                        <select name="document_category_id" x-model="doc.category_manage.category_id"
+                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
+                            <option value="">{{ __('No category') }}</option>
+                            @foreach(($documentCategories ?? []) as $categoryId => $categoryName)
+                                <option value="{{ $categoryId }}">{{ $categoryName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit"
+                                class="group relative overflow-hidden rounded-xl bg-accent-600 px-5 py-2 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                            {{ __('Save') }}
+                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+            </template>
+            @endif
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 p-5 dark:border-slate-700">
