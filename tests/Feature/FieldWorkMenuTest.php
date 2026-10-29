@@ -126,6 +126,42 @@ class FieldWorkMenuTest extends TestCase
             ->assertDontSee('Add Installation');
     }
 
+    public function test_menu_still_works_when_only_surveys_exist(): void
+    {
+        $technician = $this->userWithRole('technician');
+        $project = $this->makeProject();
+
+        Survey::create([
+            'title' => 'Survey Tanpa Instalasi',
+            'customer_id' => $project->customer_id,
+            'project_id' => $project->id,
+            'sales_user_id' => $technician->id,
+            'status' => 'scheduled',
+        ]);
+
+        $this->actingAs($technician)
+            ->get(route('teknisi.field-work.index'))
+            ->assertOk()
+            ->assertSee('Survey Tanpa Instalasi');
+    }
+
+    public function test_menu_still_works_when_only_installations_exist(): void
+    {
+        $technician = $this->userWithRole('technician');
+        $project = $this->makeProject();
+
+        Instalasi::create([
+            'project_id' => $project->id,
+            'location' => 'Surabaya',
+            'status' => 'on_progress',
+        ]);
+
+        $this->actingAs($technician)
+            ->get(route('teknisi.field-work.index'))
+            ->assertOk()
+            ->assertSee('Surabaya');
+    }
+
     public function test_sales_cannot_open_the_technician_field_work_menu(): void
     {
         $sales = $this->userWithRole('sales');

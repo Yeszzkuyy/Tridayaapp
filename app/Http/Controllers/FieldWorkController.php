@@ -104,7 +104,7 @@ class FieldWorkController extends Controller
         $this->applyStatusFilter($query, $filters['status'], 'installation');
         $this->applyDateFilter($query, $filters, 'schedule_date');
 
-        return $query->latest('id')->get()->map(function (Instalasi $instalasi) {
+        return Collection::make($query->latest('id')->get()->map(function (Instalasi $instalasi) {
             [$statusKey, $statusLabel] = $this->normalizeStatus('installation', $instalasi->status);
             $date = $instalasi->schedule_date ?? $instalasi->created_at;
 
@@ -124,7 +124,7 @@ class FieldWorkController extends Controller
                 'status_label' => $statusLabel,
                 'url' => route('teknisi.instalasis.show', $instalasi->id),
             ];
-        });
+        }));
     }
 
     /** @return Collection<int, array<string, mixed>> */
@@ -150,7 +150,7 @@ class FieldWorkController extends Controller
         $this->applyStatusFilter($query, $filters['status'], 'survey');
         $this->applyDateFilter($query, $filters, 'survey_date');
 
-        return $query->latest('id')->get()->map(function (Survey $survey) {
+        return Collection::make($query->latest('id')->get()->map(function (Survey $survey) {
             [$statusKey, $statusLabel] = $this->normalizeStatus('survey', $survey->status);
             $date = $survey->survey_date ?? $survey->created_at;
 
@@ -170,7 +170,7 @@ class FieldWorkController extends Controller
                 'status_label' => $statusLabel,
                 'url' => route('teknisi.surveys.show', $survey->id),
             ];
-        });
+        }));
     }
 
     /**
