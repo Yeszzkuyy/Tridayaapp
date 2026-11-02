@@ -10,7 +10,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <x-icon-button as="a" icon="back" href="{{ route('leads.show', $proposal->lead) }}" title="{{ __('Back') }}" />
+                <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
