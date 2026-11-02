@@ -105,16 +105,23 @@ sudo -u www-data php artisan view:clear
 
 ## 7. Tombol (konvensi UI)
 
-Semua tombol aksi non-utama memakai gaya **putih + border tipis, berwarna
-saat hover** (acuan: komponen `x-icon-button`). Peta aksi:
+Semua tombol di aplikasi ini wajib konsisten dalam bentuk, sudut lengkung (**wajib `rounded-xl`**),
+ukuran, feedback interaktif, dan warna agar tidak ada tombol yang terasa belang.
 
-| Aksi | Pola standar |
-|---|---|
-| Simpan / Submit utama (Save) | `group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 text-sm font-medium` + shine + `hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110` (acuan persis: `customers/create.blade.php`) |
-| Batal (Cancel, di form/modal) | pola sama, `bg-accent-500 hover:bg-accent-600` + `text-center` |
-| Aksi (view/edit/delete/add/filter/back/...) | `<x-icon-button>` — idle putih + border + **ikon berwarna per aksi**, hover fill warna aksi + ikon putih + shine + scale |
-| Hapus / destructive | `<x-icon-button icon="delete">` — idle putih + ikon merah, hover background merah solid + ikon putih |
-| Konfirmasi hapus (tombol teks di modal) | putih + `border-red-200 text-red-600`, hover background merah solid + teks putih + shine |
+### Peta Aksi Standar:
+
+| Aksi | Pola standar / Komponen | Detail Style |
+|---|---|---|
+| Simpan / Submit utama (Save) | `<x-primary-button>` | `group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 text-sm font-medium` + shine + `hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95` |
+| Batal (Cancel, di form/modal) | `<x-secondary-button>` | `group relative overflow-hidden rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-6 py-2.5 text-sm font-medium text-center active:scale-95` + shine |
+| Aksi tabel/baris/filter/navigasi | `<x-icon-button>` | `rounded-xl` — idle putih + border tipis + **ikon berwarna per aksi**, hover fill warna aksi solid + ikon putih + shine + `hover:scale-110 active:scale-95` |
+| Hapus / destructive (icon-only) | `<x-icon-button icon="delete">` | `rounded-xl` — idle putih + ikon merah, hover background merah solid + ikon putih |
+| Konfirmasi hapus (tombol teks modal) | `<x-danger-button>` | `rounded-xl border border-red-200 text-red-600`, hover background merah solid + teks putih + shine + `active:scale-95` |
+
+**Aturan Bentuk, Radius & Ukuran (Wajib Seragam):**
+- **Sudut Lengkung Wajib `rounded-xl`:** Seluruh tombol (`primary-button`, `secondary-button`, `danger-button`, `icon-button`, `add-button`) wajib menggunakan `rounded-xl` (12px). Dilarang keras mencampur `rounded-lg` atau `rounded-md`.
+- **Tinggi Elemen:** Tombol teks standar (`primary`, `secondary`, `danger`) memakai `px-6 py-2.5 text-sm font-medium` (tinggi ~40px). Tombol icon-only standar (`<x-icon-button>`) memakai `h-10 w-10` (`size="md"`), dan tombol icon dengan teks (`label="..."`) memakai `h-10 px-4 text-sm font-medium gap-2`. Seluruhnya sejajar 1:1 dengan tinggi field input form (`h-10`).
+- **Feedback Interaktif:** Seluruh tombol wajib memiliki respon sentuhan instan `active:scale-95` dan transisi halus `transition-all duration-300` ditambah efek kilau (*shine effect*).
 
 **Warna per ikon** (tiap ikon punya identitas warna sendiri — biar tombol
 berjajar tidak menyatu/monoton) — otomatis dari `icon=` di `x-icon-button`:
@@ -182,6 +189,38 @@ tombol menyatu dengan background.
 
 Setiap menambah **kelas Tailwind baru**: jalankan ulang `npm run build` setelah
 merge ke main, kalau tidak kelasnya tidak akan ter-compile.
+
+## 7.1 Standar Desain UI & Aturan Anti-AI-Slop
+
+Semua halaman (dashboard, form, list/tabel, detail) wajib mengikuti standar visual berikut
+agar pengalaman pengguna terasa rapi, simpel, interaktif, dan profesional (bebas dari template AI kosong):
+
+1. **Prinsip Utama: Rapi, Padat Informasi, dan Fungsional**
+   - Halaman harus menyajikan data operasional riil dengan hierarki jelas, bukan ruang kosong berbalut hiasan.
+   - Gunakan pembagian layout proporsional (misal: layout 2 kolom 70:30 untuk dashboard dan monitoring, bukan membentang 1 baris panjang yang membuang whitespace).
+
+2. **Daftar Larangan Keras (Anti-AI-Slop):**
+   - **DILARANG** menambahkan hiasan blob warna-warni mengambang di pojok card (`pointer-events-none rounded-full bg-.../5`) atau efek mouse-parallax tanpa fungsi bisnis.
+   - **DILARANG** membuat fake loading/skeleton buatan yang sengaja menunda halaman (`setTimeout 2000-3000ms`). Loading state hanya boleh muncul bila ada data asinkron riil.
+   - **DILARANG** memasang animasi angka berputar (*rolling counter*) pada metrik statis harian.
+   - **DILARANG** memakai tipografi serba kapital kaku berjarak renggang (`uppercase tracking-[0.18em] text-[11px]`) untuk judul card/section.
+   - **DILARANG** menggunakan kode warna HEX acak untuk dark mode (seperti `dark:bg-[#232b3e]`, `dark:border-[#334070]`). Selalu gunakan token Tailwind slate konsisten: `dark:bg-slate-800`, `dark:border-slate-700`, `dark:text-slate-100`.
+
+3. **Interaktivitas Standar (Subtle, Tactile & Responsive):**
+   - **Clickable Cards:** Kartu ringkasan angka/KPI yang memiliki halaman detail wajib dibungkus tag `<a>` dengan efek terangkat halus:
+     `transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-accent-400`
+   - **Table Rows:** Seluruh baris tabel wajib memiliki hover feedback:
+     `hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors`
+   - **Interactive Feedback:** Setiap tombol dan tautan aksi wajib memiliki efek sentuh `active:scale-95` atau `active:scale-[0.98]`.
+
+4. **Hierarki Tipografi & Sudut Lengkung (Design Tokens):**
+   - **Font:** *Plus Jakarta Sans* (`font-sans`).
+   - **Page Title (H1):** `text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100`
+   - **Section / Card Heading:** `text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200` (normal title case).
+   - **Secondary / Muted Label:** `text-xs font-medium text-slate-500 dark:text-slate-400`
+   - **Data / Angka Besar:** `text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums`
+   - **Radius Kontainer Utama (Card, Modal, Box):** Wajib `rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800`.
+   - **Radius Elemen Interaktif (Button, Input, Dropdown, Badge):** Wajib `rounded-xl` (kecuali badge pill yang memakai `rounded-full`).
 
 ## 8. Database Safety Rules
 
