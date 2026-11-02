@@ -434,6 +434,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/surveys/{survey}/report/download', [\App\Http\Controllers\SurveyController::class, 'downloadReport'])->name('surveys.report.download');
     });
 
+    // Hasil pekerjaan lintas role (read-only): survey + instalasi.
+    Route::middleware('permission:view-technician|manage-technician|view-sales|view-admin|manage-admin')
+        ->prefix('teknisi')->name('teknisi.')
+        ->group(function () {
+            Route::get('/work-results', [\App\Http\Controllers\WorkResultController::class, 'index'])->name('work-results.index');
+        });
+
     Route::middleware('permission:manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::post('/surveys', [\App\Http\Controllers\SurveyController::class, 'store'])->name('surveys.store');
         Route::post('/surveys/{survey}/report', [\App\Http\Controllers\SurveyController::class, 'uploadReport'])->name('surveys.report.upload');
