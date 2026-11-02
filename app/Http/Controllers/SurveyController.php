@@ -244,9 +244,17 @@ class SurveyController extends Controller
             'report' => [
                 'required',
                 'file',
-                'mimes:pdf',
                 'max:5120',
-                new SecureFile(['pdf'], ['application/pdf']),
+                new SecureFile(
+                    ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
+                    [
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'application/vnd.ms-excel',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    ]
+                ),
             ],
             'report_survey_id' => 'nullable|integer',
         ]);
@@ -254,11 +262,15 @@ class SurveyController extends Controller
         $file = $request->file('report');
         $oldPath = $survey->report_file;
 
-        // Nama file dibuat server-side (uuid) dengan ekstensi PDF tetap;
-        // nama/ekstensi dari user tidak dipercaya.
+        // Nama file dibuat server-side (uuid); ekstensi diverifikasi SecureFile::documents().
+        $extension = strtolower($file->guessExtension() ?? '');
+        if (! in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx'], true)) {
+            $extension = 'dat';
+        }
+
         $newPath = $file->storeAs(
             'surveys/'.$survey->id.'/reports',
-            Str::uuid()->toString().'.pdf',
+            Str::uuid()->toString().'.'.$extension,
             'private'
         );
 
@@ -352,8 +364,13 @@ class SurveyController extends Controller
      */
     private function reportFileName(Survey $survey): string
     {
-        return $survey->report_file_name
-            ?: 'Survey-Report-'.$survey->id.'.pdf';
+        if ($survey->report_file_name) {
+            return $survey->report_file_name;
+        }
+
+        $extension = strtolower(pathinfo((string) $survey->report_file, PATHINFO_EXTENSION)) ?: 'pdf';
+
+        return 'Survey-Report-'.$survey->id.'.'.$extension;
     }
 
     /**
@@ -366,7 +383,13 @@ class SurveyController extends Controller
     {
         abort_unless($user !== null, 401);
 
-        if ($user->can('view-technician')) {
+        if (
+            $user->can('view-technician')
+            || $user->can('manage-technician')
+            || $user->can('manage-admin')
+            || $user->can('manage-sales-leads')
+            || $user->hasRole('ceo')
+        ) {
             return;
         }
 

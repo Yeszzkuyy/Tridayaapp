@@ -6,10 +6,12 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Survey;
 use App\Models\TechnicalRequest;
+use App\Models\TechnicianSchedule;
 use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
+use App\Notifications\TechnicianAssignedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -185,6 +187,56 @@ class TechnicalRequestController extends Controller
             ->with('success_card', true);
     }
 
+    /**
+     * Buat jadwal teknisi dari request (idempoten) dan tolak bila bentrok.
+     */
+    private function ensureScheduleFromRequest(TechnicalRequest $technicalRequest, User $technician): ?TechnicianSchedule
+    {
+        if (! $technicalRequest->target_date) {
+            return null;
+        }
+
+        $existing = TechnicianSchedule::where('technical_request_id', $technicalRequest->id)->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $start = $technicalRequest->target_time
+            ? \Illuminate\Support\Carbon::parse($technicalRequest->target_date->format('Y-m-d').' '.$technicalRequest->target_time)
+            : $technicalRequest->target_date->copy()->setTime(9, 0);
+        $end = $start->copy()->addHours(2);
+
+        $conflict = TechnicianSchedule::query()
+            ->whereHas('technicians', fn ($query) => $query->where('users.id', $technician->id))
+            ->where('status', '!=', 'cancelled')
+            ->where('start_at', '<', $end)
+            ->where('end_at', '>', $start)
+            ->orderBy('start_at')
+            ->first();
+
+        if ($conflict) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'technician_id' => __(':name already has :title at :time. Choose another technician or date.', [
+                    'name' => $technician->name,
+                    'title' => $conflict->title,
+                    'time' => $conflict->start_at->format('d M Y H:i'),
+                ]),
+            ]);
+        }
+
+        return app(\App\Services\GoogleCalendarService::class)->createSchedule(\Illuminate\Support\Facades\Auth::user(), [
+            'technical_request_id' => $technicalRequest->id,
+            'title' => $technicalRequest->title,
+            'description' => $technicalRequest->purpose ?: $technicalRequest->problem_description,
+            'location' => $technicalRequest->location,
+            'start_at' => $start,
+            'end_at' => $end,
+            'status' => 'scheduled',
+            'technician_ids' => [$technician->id],
+        ]);
+    }
+
     public function show(TechnicalRequest $technicalRequest)
     {
         $technicalRequest->load(['lead.customer', 'requester', 'technician']);
@@ -238,6 +290,16 @@ class TechnicalRequestController extends Controller
             'title' => $technicalRequest->title,
             'technician' => $technician->name,
         ]);
+
+        // Request dengan tanggal target langsung dibuatkan jadwal. Bila
+        // jadwal bentrok, assign ditolak dengan pesan yang jelas.
+        $schedule = $this->ensureScheduleFromRequest($technicalRequest, $technician);
+
+        if (! $schedule && (int) $technician->id !== (int) auth()->id()) {
+            // Tanpa jadwal (target date kosong): tetap beri tahu teknisi.
+            $technician->notify(new TechnicianAssignedNotification($technicalRequest->fresh()));
+        }
+
         $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
 
         return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
