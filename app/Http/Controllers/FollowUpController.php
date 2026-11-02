@@ -79,8 +79,22 @@ class FollowUpController extends Controller
                 ->with('success', __('Visit schedule added successfully.'));
         }
 
-        return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up recorded successfully.'), ['redirect' => route('sales.follow-ups.index')]);
+        $message = __('Follow up recorded successfully.');
+
+        if ($request->wantsJson() || $request->ajax()) {
+            session()->flash('success', $message);
+            session()->flash('success_card', true);
+
+            return response()->json([
+                'ok' => true,
+                'message' => $message,
+                'redirect' => route('sales.follow-ups.index'),
+            ]);
+        }
+
+        return redirect()->route('sales.follow-ups.index')
+            ->with('success', $message)
+            ->with('success_card', true);
     }
 
     public function show(FollowUp $followUp)
