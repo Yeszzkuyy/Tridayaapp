@@ -155,7 +155,7 @@ class CustomerContactSourceTest extends TestCase
         $this->assertSame('Pak Budi', $customer->contact_person);
     }
 
-    public function test_editing_lead_does_not_overwrite_customer_primary_contact(): void
+    public function test_editing_lead_keeps_primary_but_saves_lead_pic_as_extra_contact(): void
     {
         $user = $this->userWithRole('marketing');
         $customer = $this->makeCustomer(['contact_person' => 'PIC Lama']);
@@ -167,6 +167,7 @@ class CustomerContactSourceTest extends TestCase
             'customer_id' => $customer->id,
             'customer_name' => 'PT Kontak',
             'customer_contact_person' => 'Orang Lain',
+            'customer_whatsapp' => '08123456789',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Butuh CCTV',
@@ -176,7 +177,13 @@ class CustomerContactSourceTest extends TestCase
         $this->assertSame('Bu Sari', $primary->fresh()->name);
         $this->assertTrue($primary->fresh()->is_primary);
         $this->assertSame('Bu Sari', $customer->fresh()->contact_person);
-        $this->assertSame(1, $customer->contacts()->count());
+        $this->assertSame(2, $customer->contacts()->count());
+
+        // PIC dari lead tetap tersimpan dan terbaca, walau bukan primary.
+        $leadPic = $customer->contacts()->where('name', 'Orang Lain')->first();
+        $this->assertNotNull($leadPic);
+        $this->assertFalse((bool) $leadPic->is_primary);
+        $this->assertSame('08123456789', $leadPic->whatsapp);
     }
 
     public function test_lead_detail_shows_primary_contact_not_stale_legacy_value(): void
