@@ -51,10 +51,12 @@ class CustomerContactService
     }
 
     /**
-     * Simpan PIC dari form lead sebagai kontak primary customer.
+     * Simpan PIC dari form lead sebagai kontak customer.
      *
-     * Dipakai saat lead memilih customer yang sudah ada: PIC yang diisi Sales
-     * ikut tersimpan (bukan diabaikan), tanpa membuat kontak ganda.
+     * - Customer belum punya kontak: PIC lead menjadi primary.
+     * - Sudah ada kontak dengan nama sama: nomornya dilengkapi.
+     * - Nama berbeda: PIC lead tetap disimpan sebagai kontak tambahan,
+     *   TIDAK menimpa primary yang sudah dipilih user.
      */
     public function syncPrimaryFromLead(Customer $customer, array $data): ?CustomerContact
     {
@@ -64,29 +66,27 @@ class CustomerContactService
             return $this->primary($customer);
         }
 
-        $primary = $this->primary($customer);
-
-        if ($primary) {
-            // Nama berbeda = PIC lain yang dikelola di tab Contacts; jangan
-            // ditimpa dari form lead. Nama sama = lengkapi nomornya saja.
-            if (mb_strtolower(trim((string) $primary->name)) !== mb_strtolower($name)) {
-                return $primary;
-            }
-
-            return $this->update($primary, [
-                'name' => $name,
-                'phone' => $data['phone'] ?? $primary->phone,
-                'whatsapp' => $data['whatsapp'] ?? $primary->whatsapp,
-                'email' => $data['email'] ?? $primary->email,
-            ]);
-        }
-
-        return $this->create($customer, [
+        $payload = [
             'name' => $name,
             'phone' => $data['phone'] ?? null,
             'whatsapp' => $data['whatsapp'] ?? null,
             'email' => $data['email'] ?? null,
-            'is_primary' => true,
+        ];
+
+        $existing = $customer->contacts()
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->orderByDesc('is_primary')
+            ->first();
+
+        if ($existing) {
+            return $this->update($existing, array_filter(
+                $payload,
+                fn ($value) => $value !== null
+            ));
+        }
+
+        return $this->create($customer, $payload + [
+            'is_primary' => $this->primary($customer) === null,
         ]);
     }
 
