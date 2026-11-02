@@ -102,6 +102,7 @@ class Lead extends Model
         'solusi',
         'progress_notes',
         'notes',
+        'location',
         'incoming_date',
         'assigned_to',
         'acknowledged_at',

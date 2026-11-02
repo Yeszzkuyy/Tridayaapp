@@ -181,6 +181,59 @@ class Proposal extends Model
             : __('Waiting for Customer PO');
     }
 
+    /**
+     * Tahap handoff Sales → Admin, dipakai komponen `x-handoff-status` agar
+     * Sales dan Admin membaca tahap yang sama.
+     *
+     * Null bila quotation belum accepted (belum masuk alur handoff).
+     */
+    public function handoffStage(): ?string
+    {
+        if ($this->status !== 'accepted') {
+            return null;
+        }
+
+        $project = $this->project;
+
+        if (! $project) {
+            if (blank($this->po_document_path)) {
+                return 'waiting_po';
+            }
+
+            // Supplier PO menandakan Admin/Purchasing sudah mulai bekerja.
+            return $this->supplierPurchaseOrders()->exists() ? 'in_purchasing' : 'po_received';
+        }
+
+        if ($project->bast_signed_customer_at) {
+            return 'closed';
+        }
+
+        if ($project->bast_ready_at) {
+            return 'bast';
+        }
+
+        return 'project_created';
+    }
+
+    /** Urutan tahap handoff (key => label) untuk komponen status. */
+    public static function handoffStages(): array
+    {
+        return [
+            'waiting_po' => __('Waiting for Customer PO'),
+            'po_received' => __('PO Received'),
+            'in_purchasing' => __('In Purchasing'),
+            'project_created' => __('Project Created'),
+            'bast' => __('BAST'),
+            'closed' => __('Closed'),
+        ];
+    }
+
+    /** Label satu tahap handoff. */
+    public static function handoffStageLabel(string $stage): string
+    {
+        return self::handoffStages()[$stage] ?? $stage;
+    }
+
     /** Label skema pembayaran untuk form/daftar. */
     public static function paymentSchemeLabel(?string $scheme): string
     {

@@ -78,12 +78,7 @@
                                 <p class="truncate">{{ $proposal->items->take(3)->map(fn ($item) => $item->quantity . '× ' . $item->description)->implode(', ') }}{{ $proposal->items->count() > 3 ? ' …' : '' }}</p>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                                    {{ $proposal->purchasingStatusLabel() }}
-                                </span>
-                                @if($proposal->project)
-                                    <span class="mt-1 block text-xs text-slate-400">{{ __('Project created') }}</span>
-                                @endif
+                                <x-handoff-status :proposal="$proposal" class="justify-center" />
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">

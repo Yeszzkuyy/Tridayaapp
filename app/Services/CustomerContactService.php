@@ -51,6 +51,46 @@ class CustomerContactService
     }
 
     /**
+     * Simpan PIC dari form lead sebagai kontak primary customer.
+     *
+     * Dipakai saat lead memilih customer yang sudah ada: PIC yang diisi Sales
+     * ikut tersimpan (bukan diabaikan), tanpa membuat kontak ganda.
+     */
+    public function syncPrimaryFromLead(Customer $customer, array $data): ?CustomerContact
+    {
+        $name = trim((string) ($data['name'] ?? ''));
+
+        if ($name === '') {
+            return $this->primary($customer);
+        }
+
+        $primary = $this->primary($customer);
+
+        if ($primary) {
+            // Nama berbeda = PIC lain yang dikelola di tab Contacts; jangan
+            // ditimpa dari form lead. Nama sama = lengkapi nomornya saja.
+            if (mb_strtolower(trim((string) $primary->name)) !== mb_strtolower($name)) {
+                return $primary;
+            }
+
+            return $this->update($primary, [
+                'name' => $name,
+                'phone' => $data['phone'] ?? $primary->phone,
+                'whatsapp' => $data['whatsapp'] ?? $primary->whatsapp,
+                'email' => $data['email'] ?? $primary->email,
+            ]);
+        }
+
+        return $this->create($customer, [
+            'name' => $name,
+            'phone' => $data['phone'] ?? null,
+            'whatsapp' => $data['whatsapp'] ?? null,
+            'email' => $data['email'] ?? null,
+            'is_primary' => true,
+        ]);
+    }
+
+    /**
      * @param  array<string,mixed>  $data
      */
     public function update(CustomerContact $contact, array $data): CustomerContact

@@ -10,6 +10,27 @@
         </div>
     </div>
 
+    @php($newLeadCount = $leads->getCollection()->whereNull('acknowledged_at')->count())
+    <div x-data="{ tips: localStorage.getItem('sales_followup_tips') !== 'off' }" x-show="tips" x-cloak
+         class="mb-4 rounded-2xl border border-accent-200 bg-accent-50/60 p-4 dark:border-accent-700 dark:bg-accent-900/20">
+        <div class="flex items-start gap-3">
+            <x-icon name="bolt" class="h-5 w-5 shrink-0 text-accent-600 dark:text-accent-400" />
+            <div class="min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-200">
+                <p class="font-semibold">{{ __('How to follow up a lead') }}</p>
+                <p class="mt-1">{{ __('Open the lead, note what the customer said, then press the follow up button to record it. Every recorded follow up shows in the timeline and is visible to Management.') }}</p>
+                @if($newLeadCount > 0)
+                    <p class="mt-1 font-medium text-accent-700 dark:text-accent-300">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
+                @endif
+            </div>
+            <button type="button" @click="localStorage.setItem('sales_followup_tips', 'off'); tips = false"
+                    class="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                    title="{{ __('Dismiss') }}">
+                <span class="sr-only">{{ __('Dismiss') }}</span>
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600">
         <div class="p-5 border-b dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-t-2xl">
             <form method="GET" action="{{ route('sales.my-leads') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

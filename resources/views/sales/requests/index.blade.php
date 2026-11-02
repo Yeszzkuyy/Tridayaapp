@@ -112,8 +112,8 @@
                     <tbody>
                         @forelse($tasks as $task)
                             <tr class="group rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800 dark:hover:border-slate-600">
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl font-medium text-slate-800 dark:text-slate-100">
-                                    <a href="{{ route('lead-tasks.show', $task) }}" class="hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
+                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl font-medium text-slate-800 dark:text-slate-100 max-w-[320px]">
+                                    <a href="{{ route('lead-tasks.show', $task) }}" class="block truncate hover:text-accent-600 dark:hover:text-accent-400 transition-colors" title="{{ $task->title }}">
                                         {{ $task->title }}
                                     </a>
                                     @if(($task->attachments_count ?? 0) > 0)
@@ -123,7 +123,7 @@
                                         </span>
                                     @endif
                                     @if($task->description)
-                                        <p class="text-xs text-slate-400 line-clamp-1 mt-0.5 font-normal">{{ $task->description }}</p>
+                                        <p class="text-xs text-slate-400 line-clamp-1 mt-0.5 font-normal break-words" title="{{ $task->description }}">{{ $task->description }}</p>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-sm text-slate-600 dark:text-slate-300">
@@ -268,8 +268,8 @@
                     <tbody>
                         @forelse($engineerRequests as $req)
                             <tr class="group rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800 dark:hover:border-slate-600">
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl font-medium text-slate-800 dark:text-slate-100">
-                                    <a href="{{ route('sales.technical-requests.show', $req) }}" class="hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
+                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl font-medium text-slate-800 dark:text-slate-100 max-w-[320px]">
+                                    <a href="{{ route('sales.technical-requests.show', $req) }}" class="block truncate hover:text-accent-600 dark:hover:text-accent-400 transition-colors" title="{{ $req->title }}">
                                         {{ $req->title }}
                                     </a>
                                     <p class="text-xs text-slate-400 font-normal mt-0.5">{{ __('Lead') }}: {{ $req->lead?->customer?->name ?? '#'.$req->lead_id }}</p>
