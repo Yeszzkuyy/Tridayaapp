@@ -45,6 +45,29 @@
             <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
         </div>
 
+        @php
+            $nextStep = match ($priceRequest->status) {
+                'waiting_lead' => __('Assign a pricing engineer so the calculation can start.'),
+                'accepted' => __('Accepted. Waiting for the engineer to start the calculation.'),
+                'assigned' => __('Engineer assigned. Waiting for the calculation file.'),
+                'in_progress' => __('The engineer is preparing the calculation.'),
+                'waiting_sales_review' => __('Calculation uploaded. Review it, then accept the price or request a revision.'),
+                'revision' => __('Revision requested. The engineer needs to upload the new calculation.'),
+                'completed' => __('Completed. You can create or update the linked quotation.'),
+                'rejected' => __('Rejected. This request is closed.'),
+                'cancelled' => __('Cancelled. This request is closed.'),
+                default => __('Check the details below.'),
+            };
+        @endphp
+        <div class="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                <span class="text-slate-500 dark:text-slate-400">{{ __('Current status') }}:</span>
+                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusColors[$priceRequest->status] ?? 'bg-slate-200 text-slate-700' }}">{{ \App\Models\PriceRequest::statusLabel($priceRequest->status) }}</span>
+                <span class="text-slate-400" aria-hidden="true">→</span>
+                <span class="font-medium text-slate-700 dark:text-slate-200">{{ $nextStep }}</span>
+            </div>
+        </div>
+
         @if($priceRequest->proposal)
             <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
                 {{ __('Quotation linked') }}:
