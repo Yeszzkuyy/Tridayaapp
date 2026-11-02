@@ -8,6 +8,7 @@
                     <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($proposal->status) }}">{{ \App\Models\Proposal::statusLabel($proposal->status) }}</span> •
                     Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}
                 </p>
+                <x-handoff-status :proposal="$proposal" class="mt-2" />
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.index') }}" title="{{ __('Back') }}" />
@@ -298,6 +299,32 @@
             @endif
 
             @if($isOwner && $proposal->status === 'accepted' && !$proposal->project)
+                @php
+                    $handoffItems = [
+                        ['label' => __('Customer PO document'), 'done' => filled($proposal->po_document_path)],
+                        ['label' => __('Customer PO number'), 'done' => filled($proposal->po_number)],
+                        ['label' => __('Payment terms'), 'done' => filled($proposal->payment_scheme)],
+                        ['label' => __('Delivery deadline'), 'done' => filled($proposal->delivery_deadline)],
+                    ];
+                    $handoffComplete = collect($handoffItems)->every(fn ($item) => $item['done']);
+                @endphp
+                <div class="mt-3 rounded-xl border border-slate-200 p-3 dark:border-slate-600">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Handoff checklist') }}</p>
+                    <ul class="mt-2 space-y-1 text-sm">
+                        @foreach($handoffItems as $item)
+                            <li class="flex items-center gap-2 {{ $item['done'] ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-300' }}">
+                                @if($item['done'])
+                                    <x-icon name="check-circle" class="h-4 w-4 shrink-0" />
+                                @else
+                                    <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-slate-300 dark:bg-slate-500"></span>
+                                @endif
+                                {{ $item['label'] }}
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-2 text-xs text-slate-400">{{ __('All items must be complete before converting to a project.') }}</p>
+                </div>
+
                 <div id="convert-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
                     <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
                         <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Convert to Project') }}</h2>
@@ -335,7 +362,14 @@
                                     {{ __('Cancel') }}
                                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                 </button>
-                                <x-icon-button type="submit" icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}" />
+                                @if($handoffComplete)
+                                    <x-icon-button type="submit" icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}" />
+                                @else
+                                    <span class="inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+                                          title="{{ __('Complete the handoff checklist first.') }}">
+                                        {{ __('Convert to Project') }}
+                                    </span>
+                                @endif
                             </div>
                         </form>
                     </div>

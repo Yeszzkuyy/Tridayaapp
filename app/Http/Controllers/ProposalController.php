@@ -17,6 +17,7 @@ use App\Models\SupplierPurchaseOrder;
 use App\Models\WorkType;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
+use App\Notifications\PurchasingHandoffNotification;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -98,6 +99,7 @@ class ProposalController extends Controller
             $this->isOwner($proposal)
             || $user->can('manage-sales-leads')
             || $user->can('manage-admin')
+            || $user->can('manage-technician')
             || $user->hasRole('ceo'),
             403
         );
@@ -705,7 +707,23 @@ class ProposalController extends Controller
 
         $proposal->update($payload);
 
+        $this->notifyAdminHandoff($proposal->fresh(), PurchasingHandoffNotification::STAGE_PO_RECEIVED);
+
         return back()->with('success', __('PO document uploaded successfully.'));
+    }
+
+    /** Beri tahu Admin/Purchasing bahwa quotation sudah masuk alur handoff. */
+    private function notifyAdminHandoff(Proposal $proposal, string $stage): void
+    {
+        $recipients = User::permission('view-admin-hub')
+            ->where('id', '!=', auth()->id())
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        Notification::send($recipients, new PurchasingHandoffNotification($proposal, $stage));
     }
 
     public function downloadPo(Proposal $proposal)
@@ -790,6 +808,11 @@ class ProposalController extends Controller
         Notification::send(
             User::role('lead-technician')->where('id', '!=', auth()->id())->get(),
             new ProjectConvertedNotification($project)
+        );
+
+        $this->notifyAdminHandoff(
+            $proposal->fresh(),
+            PurchasingHandoffNotification::STAGE_PROJECT_CREATED
         );
 
         $redirect = redirect()->route('projects.show', $project)
