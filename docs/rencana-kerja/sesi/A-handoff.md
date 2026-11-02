@@ -63,7 +63,7 @@
 1. `Proposal::isReadyForPurchasing()` = `status === 'accepted'` **dan** `po_document_path` terisi.
 2. `convertToProject()` sudah memblokir tanpa file PO, nomor PO, dan `payment_scheme` — jangan dilonggarkan, cukup diperjelas.
 3. `ProposalController::authorizeView()` saat ini: owner / `manage-sales-leads` / `manage-admin` / CEO. `lead-technician` kena 403.
-4. `Customer::picWhatsapp()` hanya membaca kontak primary — sumber masalah CUS-1.
+4. `LeadController::store` membuat kontak PIC hanya dengan `name` (tanpa `whatsapp`/`phone`) dan mengabaikan PIC pada mode customer existing — sumber masalah CUS-1. `feature/div-marketing` **tidak di-merge**; perbaiki langsung di `main`.
 5. Penerima notifikasi Admin memakai `view-admin-hub` / `manage-admin` (§12), bukan role baru.
 
 ## Definition of Done (per item)

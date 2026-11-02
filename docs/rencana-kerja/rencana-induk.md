@@ -51,6 +51,8 @@ Audit menemukan 21 poin yang membuat sistem belum nyaman dipakai harian. Dari pe
 
 Dua sesi harus berangkat dari **satu titik `main` yang sama dan bersih**. Tanpa ini, pembagian file tidak ada artinya.
 
+> **Status per 2 November 2026:** nomor 1, 4, 5, 6, 7 sudah selesai. Nomor 2 sudah diputuskan (`feature/div-marketing` tidak di-merge). Nomor 3 (`feature/div-teknisi`) masih menunggu keputusan user.
+
 | No | Langkah | Kenapa |
 |---|---|---|
 | 1 | Commit atau stash semua WIP di `main` (13 file modified + 5 untracked) | `resources/views/leads/*` dan `layouts/app.blade.php` sedang berubah; keduanya target sesi A/B |
@@ -61,42 +63,34 @@ Dua sesi harus berangkat dari **satu titik `main` yang sama dan bersih**. Tanpa 
 | 6 | Tambahkan kedua worktree ke tabel `AGENTS.md` §1 | Wajib menurut §11.5 — **sudah ditambahkan di commit ini** |
 | 7 | Ganti brief lama di `docs/rencana-kerja/sesi/` | Sudah diganti: `A-handoff.md` dan `B-notif-teknisi.md` |
 
-### 2.1 Rapikan worktree dulu (§10)
+### 2.1 Rapikan worktree dulu (§10) — **sudah dikerjakan**
+
+Hasil pemeriksaan:
+
+| Worktree | Temuan | Tindakan |
+|---|---|---|
+| `/var/www/3dyapp-ai` | `feature/ai-assistant` ahead 0, sudah ancestor `main`; satu-satunya file kotor `bubble-check.png` | worktree dihapus (branch disimpan) |
+| `/home/yeski/3dyapp-photo` | `feature/sales-meeting-photos` ahead 3, tapi fitur foto bukti meeting sudah ada di `main` (`f02d2d33`); worktree bersih | worktree dihapus (branch disimpan) |
+
+Hasilnya: **7 worktree non-main** → tambah 2 worktree baru = 9 (batas §10 terpenuhi).
+
+### 2.2 Worktree sesi — **sudah dibuat**
+
+| Sesi | Folder | Branch |
+|---|---|---|
+| A | `/home/yeski/3dyapp-handoff` | `feature/handoff-admin` |
+| B | `/home/yeski/3dyapp-notif-tek` | `feature/notif-teknisi` |
+
+Sudah dilengkapi: symlink `.env`, symlink `public/build` ke `public/build` main, dan `composer install`.
+
+Kalau perlu dibuat ulang dari nol:
 
 ```bash
-git worktree list
-git log --oneline main..feature/ai-assistant | wc -l    # hasil: 0 → aman dihapus
-git log --oneline main..feature/sales-meeting-photos    # hasil: 3 commit, putuskan dulu
-```
-
-Rekomendasi:
-- `feature/ai-assistant` — ahead 0, tidak ada commit yang hilang → hapus worktree-nya, branch boleh disimpan.
-- `feature/sales-meeting-photos` — ahead 3; cek isinya, merge kalau relevan, baru hapus.
-- `feature/div-teknisi` — **jangan dihapus**, tapi bersihkan WIP-nya (prasyarat nomor 3).
-
-```bash
-git worktree remove /var/www/3dyapp-ai
-git worktree prune
-```
-
-### 2.2 Membuat worktree
-
-```bash
-cd /var/www/3dyapp
-git checkout main && git pull
-
-# Sesi A
+cd /var/www/3dyapp && git checkout main && git pull
 git worktree add /home/yeski/3dyapp-handoff -b feature/handoff-admin main
+git worktree add /home/yeski/3dyapp-notif-tek -b feature/notif-teknisi main
 ln -sf /var/www/3dyapp/.env /home/yeski/3dyapp-handoff/.env
 ln -s /var/www/3dyapp/public/build /home/yeski/3dyapp-handoff/public/build
-cd /home/yeski/3dyapp-handoff && composer install
-
-# Sesi B
-cd /var/www/3dyapp
-git worktree add /home/yeski/3dyapp-notif-tek -b feature/notif-teknisi main
-ln -sf /var/www/3dyapp/.env /home/yeski/3dyapp-notif-tek/.env
-ln -s /var/www/3dyapp/public/build /home/yeski/3dyapp-notif-tek/public/build
-cd /home/yeski/3dyapp-notif-tek && composer install
 ```
 
 Catatan: `/var/www` sekarang hanya bisa ditulis root, jadi worktree baru ditaruh di `/home/yeski/` sesuai catatan §1.
@@ -258,14 +252,18 @@ Catatan: `/var/www` sekarang hanya bisa ditulis root, jadi worktree baru ditaruh
 
 ### A7 · CUS-1 — Sinkron PIC customer
 - **Masalah:** PIC sudah diinput, tapi kartu "PIC WhatsApp" kosong dan "Total PICs" tidak bertambah.
-- **Akar masalah:** `Customer::picWhatsapp()` hanya membaca `primaryContact()->whatsapp`; PIC dari lead tidak masuk `customer_contacts`; hitungan total memakai sumber lama.
+- **Keputusan (2 Nov):** `feature/div-marketing` **tidak di-merge**. Implementasinya tumpang tindih dengan `CustomerContactService` yang sudah ada di `main`. Perbaikan dilakukan langsung di `main`.
+- **Akar masalah (hasil cek kode):** tiga titik bocor.
+  1. `LeadController::store` (~baris 475) — saat customer baru dibuat, `CustomerContactService::create()` hanya dikirim `name` + `is_primary`; `whatsapp` dan `phone` tidak ikut → kartu PIC WhatsApp kosong.
+  2. `LeadController::store` (~baris 487) — pada mode "customer existing", PIC dari lead diabaikan bila customer sudah punya kontak (`! hasContacts`), jadi tidak pernah update → Total PIC tidak bertambah.
+  3. `Customer::picWhatsapp()` hanya membaca `primaryContact()?->whatsapp`, tanpa fallback ke kolom lama customer (`whatsapp`), jadi hasilnya null saat kontak tidak punya WA.
 - **Perbaikan:**
-  1. Saat lead dibuat/diubah, sinkronkan `customer_contact_person` / `customer_whatsapp` menjadi kontak **primary** di `customer_contacts` (upsert, jangan duplikat).
-  2. Fallback di model: kalau belum ada kontak primary, pakai kolom legacy customer.
-  3. `Total PICs` dihitung dari kontak aktif (bukan kolom tunggal).
-  4. Hormati guard "satu primary per customer" (migrasi 2026-10-29).
-- **File:** `app/Models/Customer.php`, `app/Http/Controllers/CustomerController.php`, `resources/views/customers/show.blade.php`
-- **Verifikasi:** input PIC di lead → buka customer → nama & WhatsApp muncul, Total PIC bertambah; edit PIC → tidak dobel.
+  1. Kirim `whatsapp`, `phone`, `email` ke `CustomerContactService::create()` dari field lead.
+  2. Pada mode customer existing, sinkronkan PIC lead menjadi kontak primary (tambah/update), dengan tetap menjaga guard "satu primary per customer".
+  3. Tambahkan fallback di `picWhatsapp()` (dan `picPhone()` bila perlu): WA kontak → telp kontak → WA customer.
+  4. `Total PICs` sudah dihitung dari `$customer->contacts->count()`; pastikan kontak benar-benar dibuat/di-update pada kedua mode.
+- **File:** `app/Http/Controllers/LeadController.php`, `app/Models/Customer.php`, `app/Services/CustomerContactService.php`, `resources/views/customers/show.blade.php`
+- **Verifikasi:** input PIC di lead baru → buka customer → nama & WhatsApp muncul, Total PIC bertambah. Tambah lead kedua untuk customer yang sama dengan PIC berbeda → PIC ikut ter-update (tidak dobel), Total PIC menyesuaikan.
 
 ### A8 · TEK-1 — Access denied notifikasi proposal
 - **Masalah:** Amir klik notifikasi Proposal Update → 403.
