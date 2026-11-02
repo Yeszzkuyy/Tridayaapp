@@ -172,9 +172,9 @@
                                           x-data="counter({{ $donePct }})" x-init="start()" x-text="display + '%'">0%</span>
                                 </div>
                                 <div x-show="activeSeg()" class="flex flex-col items-center justify-center">
-                                    <span class="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-full" x-text="activeSeg().label"></span>
-                                    <span class="mt-0.5 text-3xl font-bold text-slate-800 tabular-nums dark:text-slate-100" x-text="activeSeg().value"></span>
-                                    <span class="text-sm font-medium text-slate-400" x-text="total ? '[' + Math.round(activeSeg().value / total * 100) + '%]' : ''"></span>
+                                    <span class="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-full" x-text="activeSeg() ? activeSeg().label : ''"></span>
+                                    <span class="mt-0.5 text-3xl font-bold text-slate-800 tabular-nums dark:text-slate-100" x-text="activeSeg() ? activeSeg().value : ''"></span>
+                                    <span class="text-sm font-medium text-slate-400" x-text="activeSeg() && total ? '[' + Math.round(activeSeg().value / total * 100) + '%]' : ''"></span>
                                 </div>
                             </div>
                         </div>
