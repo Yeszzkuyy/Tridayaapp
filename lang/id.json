@@ -4527,5 +4527,10 @@
     "Create quotation": "Buat quotation",
     "Choose a payment that belongs to the same customer.": "Pilih pembayaran milik customer yang sama.",
     "This file is the primary payment proof. Manage it from the Payment page.": "File ini adalah bukti pembayaran utama. Kelola dari halaman Payment.",
-    "Enter to send, Shift+Enter for a new line": "Enter untuk kirim, Shift+Enter untuk baris baru"
+    "Enter to send, Shift+Enter for a new line": "Enter untuk kirim, Shift+Enter untuk baris baru",
+    "Failed to save theme preference. Please try again.": "Gagal menyimpan preferensi tema. Silakan coba lagi.",
+    "Address opens in Google Maps.": "Alamat dibuka di Google Maps.",
+    "Request Rejected": "Permintaan Ditolak",
+    "This request could not be processed.": "Permintaan ini tidak dapat diproses.",
+    "Your access is fine — the data or status does not allow this action.": "Akses Anda tidak bermasalah — data atau statusnya yang tidak memungkinkan aksi ini."
 }

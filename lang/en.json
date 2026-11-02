@@ -4527,5 +4527,10 @@
     "Create quotation": "Create quotation",
     "Choose a payment that belongs to the same customer.": "Choose a payment that belongs to the same customer.",
     "This file is the primary payment proof. Manage it from the Payment page.": "This file is the primary payment proof. Manage it from the Payment page.",
-    "Enter to send, Shift+Enter for a new line": "Enter to send, Shift+Enter for a new line"
+    "Enter to send, Shift+Enter for a new line": "Enter to send, Shift+Enter for a new line",
+    "Failed to save theme preference. Please try again.": "Failed to save theme preference. Please try again.",
+    "Address opens in Google Maps.": "Address opens in Google Maps.",
+    "Request Rejected": "Request Rejected",
+    "This request could not be processed.": "This request could not be processed.",
+    "Your access is fine — the data or status does not allow this action.": "Your access is fine — the data or status does not allow this action."
 }
