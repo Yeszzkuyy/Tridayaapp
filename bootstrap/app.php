@@ -55,6 +55,23 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return null;
         });
+
+        // Catat penolakan aturan bisnis (abort(422, '...')) agar pemicunya bisa
+        // dilacak dari log. ValidationException tidak lewat jalur ini, jadi log
+        // tidak dibanjiri error validasi form biasa.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, \Illuminate\Http\Request $request) {
+            if ($e->getStatusCode() !== 422) {
+                return null;
+            }
+
+            \Illuminate\Support\Facades\Log::warning('422 ditolak: '.$e->getMessage(), [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'user_id' => $request->user()?->id,
+            ]);
+
+            return null;
+        });
     })
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
         // Polling pesan masuk & status WhatsApp (Green API) — untuk localhost tanpa webhook publik

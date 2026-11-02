@@ -917,7 +917,8 @@
                         }
                         if (r.status === 422) {
                             const data = await r.json().catch(() => ({}));
-                            this.saveError = Object.values(data.errors || {}).flat().join(' ');
+                            // abort(422, '...') hanya membawa `message`, bukan `errors`.
+                            this.saveError = Object.values(data.errors || {}).flat().join(' ') || data.message || '';
                             return;
                         }
                         // Pesan spesifik dari server (mis. penolakan izin).
