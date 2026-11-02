@@ -282,6 +282,16 @@
 </div>
                         @endcan
 
+                        {{-- Hasil Pekerjaan: read-only untuk Sales/Admin tanpa akses teknisi --}}
+                        @if(!auth()->user()->can('view-technician') && (auth()->user()->can('view-sales') || auth()->user()->can('view-admin')))
+                            <a wire:navigate.hover href="{{ route('teknisi.work-results.index') }}"
+                               aria-current="{{ request()->routeIs('teknisi.work-results*') ? 'page' : 'false' }}"
+                               class="sb-head {{ $navLink }} group w-full {{ request()->routeIs('teknisi.work-results*') ? $navActive.' sb-active' : $navInactive }}">
+                                <x-icon name="file-text" class="h-5 w-5 shrink-0" />
+                                <span>{{ __('Work Results') }}</span>
+                            </a>
+                        @endif
+
                         {{-- Marketing --}}
                         @can('view-marketing')
                             <div x-data="{ open: {{ $marketingActive ? 'true' : 'false' }} }" class="sb-group"{{ $marketingActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="marketing">

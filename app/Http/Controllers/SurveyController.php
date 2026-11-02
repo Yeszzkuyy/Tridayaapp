@@ -383,7 +383,13 @@ class SurveyController extends Controller
     {
         abort_unless($user !== null, 401);
 
-        if ($user->can('view-technician')) {
+        if (
+            $user->can('view-technician')
+            || $user->can('manage-technician')
+            || $user->can('view-admin')
+            || $user->can('manage-admin')
+            || $user->hasRole('ceo')
+        ) {
             return;
         }
 
