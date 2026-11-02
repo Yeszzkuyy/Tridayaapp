@@ -94,11 +94,11 @@ $sizeClass = $sizes[$size] ?? $sizes['md'];
 
 $ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2';
 
-$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-lg border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
+$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-xl border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
 
 // Label: tombol jadi lebih lebar (ikon + teks) dengan gap, bukan kotak icon-only.
 if ($label) {
-    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-lg border px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
+    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
 }
 
 $paths = [
