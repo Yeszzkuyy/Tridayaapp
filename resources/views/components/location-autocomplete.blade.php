@@ -142,7 +142,7 @@
 
     // Input sudah ada di DOM saat script ini dirender (server-side) → langsung
     // ikat; DOMContentLoaded jadi jaring pengaman bila komponen dirender di head.
-    const __bindAll = () => document.querySelectorAll('input[data-location-autocomplete]')
+    const __bindAll = () => document.querySelectorAll('input[data-location-autocomplete], textarea[data-location-autocomplete]')
         .forEach(window.__initLocationAutocomplete);
     __bindAll();
     document.addEventListener('DOMContentLoaded', __bindAll);

@@ -82,9 +82,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label for="customer_address" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
-                        <textarea name="customer_address" id="customer_address" rows="2"
-                                  placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
-                                  class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address', $lead->customer->address) }}</textarea>
+                        <div class="flex items-start gap-2">
+                            <textarea name="customer_address" id="customer_address" rows="2"
+                                      placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
+                                      data-location-autocomplete
+                                      class="w-full flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address', $lead->customer->address) }}</textarea>
+                            <x-maps-open-button input="customer_address" />
+                            <x-location-autocomplete />
+                        </div>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps.') }}</p>
                     </div>
                     <div>
                         <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">

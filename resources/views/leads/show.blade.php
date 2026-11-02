@@ -558,7 +558,9 @@
                     </div>
                     <div>
                         <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Address') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->address ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                            <x-location-link :location="$lead->customer?->address" />
+                        </dd>
                     </div>
                 </dl>
             </section>
