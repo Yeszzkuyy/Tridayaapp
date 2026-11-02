@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $proposal->proposal_number }}</h1>
             <p class="text-slate-500 mt-1">
                 {{ $proposal->customer }} •
-                <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ $proposal->purchasingStatusLabel() }}</span>
+                <x-handoff-status :proposal="$proposal" class="inline-flex align-middle" />
             </p>
         </div>
         <div class="flex items-center gap-2">
