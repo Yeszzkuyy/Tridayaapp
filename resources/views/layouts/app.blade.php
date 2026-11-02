@@ -28,32 +28,33 @@
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|exo-2:500,600,700,800&display=swap" rel="stylesheet" />
 
     <script>
-        // Sumber kebenaran: localStorage (ditulis tiap ganti tema) fallback ke
-        // data-mode server. Dijalankan saat full load DAN tiap livewire:navigated
-        // (navigasi SPA tidak me-reload <head>, morph justru bisa menghapus
-        // class 'dark' client karena respons server tak memuatnya untuk mode system).
+        // Sumber kebenaran: preferensi server (users.preferences) yang dirender
+        // ke atribut <html>. localStorage TIDAK lagi dibaca — dulu nilainya
+        // global per browser (tidak per akun, tidak dibersihkan saat logout)
+        // sehingga tema milik sesi/akun lain menimpa pilihan yang tersimpan.
+        // Dijalankan saat full load DAN tiap livewire:navigated (navigasi SPA
+        // tidak me-reload <head>, morph bisa menghapus class 'dark' client
+        // karena respons server tak memuatnya untuk mode system).
+        window.__appearanceSaveFailed = @json(__('Failed to save theme preference. Please try again.'));
         window.__applyAppearance = function () {
             var root = document.documentElement;
-            var pref = root.getAttribute('data-mode') || @json($themePref);
-            var stored = null;
-            try { stored = localStorage.getItem('appearance-mode'); } catch (e) {}
-            var mode = stored || pref || 'system';
-            // Migrasi dari key lama 'dark-mode' bila belum pakai appearance-mode
-            if (!stored) {
-                var legacy = null;
-                try { legacy = localStorage.getItem('dark-mode'); } catch (e) {}
-                if (legacy === 'true') mode = 'dark';
-                else if (legacy === 'false') mode = 'light';
-            }
-            var accent = @json($accentPref);
-            try { accent = localStorage.getItem('appearance-accent') || accent; } catch (e) {}
-            var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme:dark)').matches);
+            var mode = root.getAttribute('data-mode') || @json($themePref) || 'system';
+            var accent = root.getAttribute('data-theme') || @json($accentPref) || 'ocean';
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var dark = mode === 'dark' || (mode === 'system' && prefersDark);
             root.classList.toggle('dark', dark);
             root.setAttribute('data-mode', mode);
             root.setAttribute('data-theme', accent);
             window.__appearanceMode = mode;
             window.__appearanceAccent = accent;
         };
+        // Bersihkan kunci tema versi lama (global per browser) sekali saat load
+        // supaya nilai usang tak lagi dipakai kode lain di kemudian hari.
+        try {
+            ['appearance-mode', 'appearance-accent', 'dark-mode'].forEach(function (key) {
+                localStorage.removeItem(key);
+            });
+        } catch (e) {}
         window.__applyAppearance();
         // Sinkron saat skema OS berubah (mode system) tanpa reload.
         try {
@@ -76,9 +77,9 @@
         document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); setTimeout(__appearanceSelfHeal, 120); });
         setTimeout(__appearanceSelfHeal, 300);
         // wire:navigate: Livewire menyalin atribut <html> dari hasil render server
-        // (replaceHtmlAttributes) — data-theme/class bisa beda dengan localStorage,
-        // sehingga halaman baru sempat ter-paint dengan tema salah (frame putih di
-        // border kartu + aksen ungu) sampai livewire:navigated memulihkannya.
+        // (replaceHtmlAttributes) — class 'dark' bisa hilang karena respons server
+        // tak memuatnya untuk mode system, sehingga halaman baru sempat ter-paint
+        // dengan tema salah sampai livewire:navigated memulihkannya.
         // Hook onSwap dipanggil SETELAH body baru terpasang tapi SEBELUM paint
         // pertama, jadi koreksi temanya tak pernah terlihat mata.
         document.addEventListener('livewire:navigating', function (e) {

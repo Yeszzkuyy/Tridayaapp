@@ -222,6 +222,29 @@ class SettingsTest extends TestCase
         $this->assertMatchesRegularExpression('/<html[^>]*class="dark"/', $html);
     }
 
+    public function test_layout_renders_saved_accent_and_never_reads_localstorage(): void
+    {
+        // Regresi: tema dulu ditimpa nilai localStorage global per browser
+        // (tidak per akun, tidak dibersihkan saat logout) sehingga user bisa
+        // melihat tema milik sesi lain walau preferensinya tersimpan benar.
+        // Sekarang atribut <html> dari server adalah satu-satunya acuan.
+        $user = $this->makeUserWithRole();
+        $user->preferences = array_merge($user->preferences ?? [], [
+            'theme' => 'dark',
+            'accent' => 'terracotta',
+        ]);
+        $user->save();
+
+        $html = $this->actingAs($user)
+            ->get(route('settings.edit'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/<html[^>]*data-theme="terracotta"/', $html);
+        $this->assertStringNotContainsString("localStorage.getItem('appearance-mode')", $html);
+        $this->assertStringNotContainsString("localStorage.getItem('appearance-accent')", $html);
+    }
+
     public function test_layout_omits_dark_class_when_theme_is_light(): void
     {
         $user = $this->makeUserWithRole();

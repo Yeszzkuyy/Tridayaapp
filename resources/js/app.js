@@ -4,6 +4,7 @@ import AlpineBundle from 'alpinejs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { mountLoginGalaxy } from './galaxy.js';
+import { applyAppearanceDom } from './appearance.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -18,17 +19,17 @@ window.DOMPurify = DOMPurify;
 /* ============================================================
    Appearance — mode (light/dark/system) × accent (theme)
    Token CSS di resources/css/themes/accent/*.css
+   Preferensi disimpan di server; sengaja TIDAK menulis localStorage
+   agar tema tidak tertimpa nilai lama/akun lain di browser yang sama.
    ============================================================ */
 function applyAppearance(mode, accent) {
-    const root = document.documentElement;
-    const dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    root.classList.toggle('dark', dark);
-    root.setAttribute('data-mode', mode);
-    root.setAttribute('data-theme', accent);
-    try {
-        localStorage.setItem('appearance-mode', mode);
-        localStorage.setItem('appearance-accent', accent);
-    } catch (e) {}
+    applyAppearanceDom(document.documentElement, {
+        mode,
+        accent,
+        prefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    });
+    window.__appearanceMode = mode;
+    window.__appearanceAccent = accent;
     window.dispatchEvent(new CustomEvent('appearance:change'));
 }
 
@@ -41,7 +42,7 @@ function persistAppearance(mode, accent, attempt = 1) {
     }).then((res) => {
         // fetch() tidak melempar error untuk status 4xx/5xx — tanpa cek ini
         // kegagalan simpan (mis. 419 token kedaluwarsa) berjalan diam-diam dan
-        // nilai DB vs localStorage nyimpang → kilatan tema salah saat navigasi.
+        // tema kembali ke pilihan lama saat halaman dimuat ulang.
         if (!res.ok) throw new Error('HTTP ' + res.status);
     }).catch((err) => {
         if (attempt < 2) {
@@ -49,6 +50,9 @@ function persistAppearance(mode, accent, attempt = 1) {
             return;
         }
         console.warn('[appearance] gagal menyimpan preferensi tema ke server:', err);
+        if (typeof window.toast === 'function') {
+            window.toast(window.__appearanceSaveFailed || 'Failed to save theme preference. Please try again.', false);
+        }
     });
 }
 
@@ -296,12 +300,16 @@ window.toast = function (message, ok = true, action = null) {
 
 function ajaxShowErrors(form, errors) {
     form.querySelector('[data-ajax-errors]')?.remove();
+
+    const messages = Object.values(errors || {}).flat().filter(Boolean);
+    if (!messages.length) return;
+
     const box = document.createElement('div');
     box.setAttribute('data-ajax-errors', '');
     box.className = 'rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 px-5 py-3 mb-4';
     const ul = document.createElement('ul');
     ul.className = 'list-disc list-inside text-sm space-y-1';
-    Object.values(errors || {}).flat().forEach((msg) => {
+    messages.forEach((msg) => {
         const li = document.createElement('li');
         li.textContent = msg;
         ul.appendChild(li);
@@ -367,7 +375,15 @@ document.addEventListener('submit', async (e) => {
 
         const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers });
         if (res.status === 422) {
-            ajaxShowErrors(form, (await res.json()).errors);
+            // 422 bisa datang dari validasi (ada `errors`) atau dari
+            // abort(422, '...') yang hanya membawa `message`. Jangan tampilkan
+            // kotak error kosong; sampaikan alasannya sebagai toast.
+            const body = await res.json().catch(() => ({}));
+            if (body.errors && Object.keys(body.errors).length) {
+                ajaxShowErrors(form, body.errors);
+            } else if (window.toast) {
+                window.toast(body.message || 'Request rejected. Please check the data.', false);
+            }
             done();
             return;
         }
