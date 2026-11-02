@@ -58,7 +58,6 @@
                             <div class="skel-line h-5 w-36"></div>
                             <div class="skel-line mt-2 h-4 w-56 max-w-full"></div>
                         </div>
-                        <div class="skel-line h-4 w-20 shrink-0"></div>
                     </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <div class="skel-block p-5 sm:p-6">
@@ -224,8 +223,6 @@
                         <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent-600 dark:text-accent-300">
                             {{ \Carbon\Carbon::now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}
                         </p>
-                        <span class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block dark:bg-[#6e789e]"></span>
-                        <span class="text-xs font-medium text-slate-400">{{ __('Operational summary') }}</span>
                     </div>
                     <h1 class="mt-3 max-w-3xl text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl dark:text-[#f2f6ff]">
                         {{ __('Welcome back,') }} {{ auth()->user()->name }}
@@ -254,7 +251,6 @@
                     <h2 id="dashboard-summary-heading" class="text-lg font-bold text-slate-900 dark:text-[#f2f6ff]">{{ __('Key summary') }}</h2>
                     <p class="mt-0.5 text-sm text-slate-500 dark:text-[#a6b1d4]">{{ __('Latest figures from available operational data.') }}</p>
                 </div>
-                <span class="text-xs font-semibold text-slate-400">{{ count($dashboardCards) }} {{ __('indicators') }}</span>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -263,7 +259,7 @@
                         <div class="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full {{ $card['washClass'] }} transition-transform duration-500 group-hover:scale-125"></div>
                         <div class="relative flex items-start justify-between gap-4">
                             <div class="min-w-0">
-                                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ $card['label'] }}</p>
+                                <p class="text-sm font-semibold text-slate-600 dark:text-[#a6b1d4]">{{ $card['label'] }}</p>
                                 <p class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-[#f2f6ff]"
                                    x-data="counter({{ $card['value'] }})" x-init="start()" x-text="display">{{ $card['value'] }}</p>
                                 <p class="mt-1 text-xs font-medium text-slate-500 dark:text-[#a6b1d4]">{{ $card['description'] }}</p>
