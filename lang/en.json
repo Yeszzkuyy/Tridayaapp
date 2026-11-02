@@ -4562,5 +4562,17 @@
     "Open Purchasing Queue": "Open Purchasing Queue",
     "Thank you.": "Thank you.",
     "PO Received": "PO Received",
-    "In Purchasing": "In Purchasing"
+    "In Purchasing": "In Purchasing",
+    "Choose file (PDF, Word, Excel, max 5 MB)": "Choose file (PDF, Word, Excel, max 5 MB)",
+    "PDF, Word, or Excel document, maximum 5 MB.": "PDF, Word, or Excel document, maximum 5 MB.",
+    "Work Results": "Work Results",
+    "Survey and installation results you can read without technician access.": "Survey and installation results you can read without technician access.",
+    "Search survey title": "Search survey title",
+    "Survey Results": "Survey Results",
+    "No survey results yet.": "No survey results yet.",
+    "Installation Results": "Installation Results",
+    "No installation results yet.": "No installation results yet.",
+    "You are assigned to :title": "You are assigned to :title",
+    "Open Request": "Open Request",
+    ":name already has :title at :time. Choose another technician or date.": ":name already has :title at :time. Choose another technician or date."
 }

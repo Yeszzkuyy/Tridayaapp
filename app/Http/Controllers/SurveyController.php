@@ -386,8 +386,8 @@ class SurveyController extends Controller
         if (
             $user->can('view-technician')
             || $user->can('manage-technician')
-            || $user->can('view-admin')
             || $user->can('manage-admin')
+            || $user->can('manage-sales-leads')
             || $user->hasRole('ceo')
         ) {
             return;
