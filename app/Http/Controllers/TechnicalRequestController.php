@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
+use App\Notifications\TechnicianAssignedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -238,6 +239,12 @@ class TechnicalRequestController extends Controller
             'title' => $technicalRequest->title,
             'technician' => $technician->name,
         ]);
+
+        // Teknisi yang ditunjuk harus tahu dia jadi PIC request ini.
+        if ((int) $technician->id !== (int) auth()->id()) {
+            $technician->notify(new TechnicianAssignedNotification($technicalRequest->fresh()));
+        }
+
         $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
 
         return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
