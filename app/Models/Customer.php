@@ -69,29 +69,29 @@ class Customer extends Model
     {
         $primary = $this->primaryContact();
 
-        if ($primary) {
-            return $primary->name;
-        }
-
-        return $this->hasContacts() ? null : $this->contact_person;
+        return $primary?->name ?: $this->contact_person;
     }
 
     /** WhatsApp PIC default (bukan nomor perusahaan). */
     public function picWhatsapp(): ?string
     {
-        return $this->primaryContact()?->whatsapp;
+        $primary = $this->primaryContact();
+
+        // Kontak dulu; kalau kontak belum punya nomor, pakai nomor customer
+        // supaya kartu PIC tidak kosong padahal nomornya ada.
+        return $primary?->whatsapp ?: ($primary?->phone ?: $this->whatsapp);
     }
 
     /** Telepon PIC default (bukan nomor perusahaan). */
     public function picPhone(): ?string
     {
-        return $this->primaryContact()?->phone;
+        return $this->primaryContact()?->phone ?: $this->phone;
     }
 
     /** Email PIC default (bukan email perusahaan). */
     public function picEmail(): ?string
     {
-        return $this->primaryContact()?->email;
+        return $this->primaryContact()?->email ?: $this->email;
     }
 
     /** Jabatan PIC default, bila diisi. */

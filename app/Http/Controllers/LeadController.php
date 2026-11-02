@@ -475,6 +475,9 @@ class LeadController extends Controller
             if (filled($validated['customer_contact_person'] ?? null)) {
                 $this->contacts->create($customer, [
                     'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
                     'is_primary' => true,
                 ]);
             }
@@ -484,9 +487,15 @@ class LeadController extends Controller
             $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
             $customerSync = ['pt_group' => $validated['pt_group']];
 
-            // Jangan timpa PIC customer yang sudah punya data kontak.
-            if (!empty($validated['customer_contact_person']) && ! $this->contacts->hasContacts($customer)) {
-                $customerSync['contact_person'] = $validated['customer_contact_person'];
+            // PIC dari form lead ikut masuk ke kontak customer supaya
+            // halaman Customer dan tracking memakai data yang sama.
+            if (filled($validated['customer_contact_person'] ?? null)) {
+                $this->contacts->syncPrimaryFromLead($customer, [
+                    'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
+                ]);
             }
 
             $customer->update($customerSync);
@@ -654,6 +663,9 @@ class LeadController extends Controller
             if (filled($validated['customer_contact_person'] ?? null)) {
                 $this->contacts->create($customer, [
                     'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
                     'is_primary' => true,
                 ]);
             }
@@ -671,11 +683,15 @@ class LeadController extends Controller
                 'pt_group' => $validated['pt_group'] ?? null,
             ], fn ($value) => $value !== null);
 
-            // PIC dari form lead tidak boleh menimpa kontak customer yang
-            // sudah dikelola di tab Contacts. Kolom legacy hanya diisi
-            // selama customer belum punya kontak sama sekali.
-            if (filled($validated['customer_contact_person'] ?? null) && ! $this->contacts->hasContacts($customer)) {
-                $customerData['contact_person'] = $validated['customer_contact_person'];
+            // PIC dari form lead ikut masuk ke kontak customer supaya
+            // halaman Customer dan tracking memakai data yang sama.
+            if (filled($validated['customer_contact_person'] ?? null)) {
+                $this->contacts->syncPrimaryFromLead($customer, [
+                    'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
+                ]);
             }
 
             if ($customerData) {
