@@ -4562,5 +4562,17 @@
     "Open Purchasing Queue": "Buka Antrean Purchasing",
     "Thank you.": "Terima kasih.",
     "PO Received": "PO Diterima",
-    "In Purchasing": "Dalam Purchasing"
+    "In Purchasing": "Dalam Purchasing",
+    "Choose file (PDF, Word, Excel, max 5 MB)": "Pilih file (PDF, Word, Excel, maks 5 MB)",
+    "PDF, Word, or Excel document, maximum 5 MB.": "Dokumen PDF, Word, atau Excel, maksimal 5 MB.",
+    "Work Results": "Hasil Pekerjaan",
+    "Survey and installation results you can read without technician access.": "Hasil survey dan instalasi yang bisa dibaca tanpa akses teknisi.",
+    "Search survey title": "Cari judul survey",
+    "Survey Results": "Hasil Survey",
+    "No survey results yet.": "Belum ada hasil survey.",
+    "Installation Results": "Hasil Instalasi",
+    "No installation results yet.": "Belum ada hasil instalasi.",
+    "You are assigned to :title": "Kamu ditugaskan ke :title",
+    "Open Request": "Buka Request",
+    ":name already has :title at :time. Choose another technician or date.": ":name sudah punya jadwal :title pada :time. Pilih teknisi atau tanggal lain."
 }

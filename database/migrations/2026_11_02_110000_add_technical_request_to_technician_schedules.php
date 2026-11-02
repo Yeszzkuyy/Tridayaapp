@@ -9,18 +9,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('technician_schedules', function (Blueprint $table) {
-            $table->foreignId('technical_request_id')
+            // Tanpa foreign key: ALTER + FK memaksa SQLite membangun ulang
+            // tabel dan menghapus partial index google_event_id.
+            $table->unsignedBigInteger('technical_request_id')
                 ->nullable()
                 ->after('project_id')
-                ->constrained('technical_requests')
-                ->nullOnDelete();
+                ->index();
         });
     }
 
     public function down(): void
     {
         Schema::table('technician_schedules', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('technical_request_id');
+            $table->dropIndex(['technical_request_id']);
+            $table->dropColumn('technical_request_id');
         });
     }
 };
