@@ -111,6 +111,9 @@
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
             <span>{{ $lead->source ? \App\Http\Controllers\LeadController::label($lead->source) : '-' }} • {{ $lead->incoming_date ? $lead->incoming_date->format('d M Y') : '-' }}</span>
+            @if($lead->location)
+                <span>{{ __('Location') }}: {{ $lead->location }}</span>
+            @endif
             <span>{{ __('Sales') }}: {{ $lead->assignee?->name ?? '-' }}</span>
         </div>
         <div class="mt-4 flex items-center gap-3 rounded-xl bg-accent-500/10 dark:bg-accent-400/10 p-3">
