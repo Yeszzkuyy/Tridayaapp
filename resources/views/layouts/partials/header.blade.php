@@ -87,11 +87,11 @@
                 'preview' => 'Preview', 'convert' => 'Convert', 'export' => 'Export',
             ];
             $groupIconMap = [
-                'Management' => 'briefcase', 'Teknisi' => 'tools', 'Marketing' => 'chart-bar',
-                'Sales' => 'calendar', 'Admin' => 'folder', 'Admin Panel' => 'settings',
-                'Customer' => 'users', 'Monitoring' => 'chart-bar', 'Dashboard' => 'grid',
+                'Management' => 'briefcase', 'Teknisi' => 'tools', 'Marketing' => 'megaphone',
+                'Sales' => 'calendar', 'Admin' => 'receipt', 'Admin Panel' => 'settings',
+                'Customer' => 'users', 'Monitoring' => 'activity', 'Dashboard' => 'grid',
                 'Documents' => 'folder',
-                'Trash' => 'trash', 'Knowledge Base' => 'book', 'Product KB' => 'book',
+                'Trash' => 'trash', 'Knowledge Base' => 'book', 'Product KB' => 'cube',
                 'Settings' => 'settings', 'Profile' => 'user', 'AI Assistant' => 'message',
                 'Developer' => 'code',
             ];
@@ -147,24 +147,26 @@
             }
             $lastCrumb = count($crumbs) - 1;
         @endphp
-        <span class="app-header-badge hidden shrink-0 items-center gap-1.5 rounded-full bg-accent-500/10 px-3 py-1.5 text-xs font-semibold text-accent-700 sm:inline-flex dark:bg-accent-400/10 dark:text-accent-300">
+        <span class="app-header-badge {{ count($crumbs) <= 1 ? 'inline-flex' : 'hidden sm:inline-flex' }} shrink-0 items-center gap-1.5 rounded-full bg-accent-500/10 px-3 py-1.5 text-xs font-semibold text-accent-700 dark:bg-accent-400/10 dark:text-accent-300">
             <x-icon :name="$sectionIcon" class="h-3.5 w-3.5" />
             {{ $sectionLabel }}
         </span>
-        <nav aria-label="Breadcrumb" class="min-w-0">
-            <ol class="flex min-w-0 items-center gap-1.5 text-sm">
-                @foreach($crumbs as $i => $crumb)
-                    @if($i > 0)
-                        <svg class="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                    @endif
-                    @if($crumb['url'] && $i !== $lastCrumb)
-                        <a wire:navigate.hover href="{{ $crumb['url'] }}" class="truncate text-slate-500 transition hover:text-accent-600 dark:text-slate-400 dark:hover:text-accent-400">{{ $crumb['label'] }}</a>
-                    @else
-                        <span @if($i === $lastCrumb) aria-current="page" @endif class="{{ $i === $lastCrumb ? 'truncate font-bold text-slate-800 dark:text-slate-100' : 'truncate text-slate-500 dark:text-slate-400' }}">{{ $crumb['label'] }}</span>
-                    @endif
-                @endforeach
-            </ol>
-        </nav>
+        @if(count($crumbs) > 1)
+            <nav aria-label="Breadcrumb" class="min-w-0">
+                <ol class="flex min-w-0 items-center gap-1.5 text-sm">
+                    @foreach($crumbs as $i => $crumb)
+                        @if($i > 0)
+                            <svg class="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        @endif
+                        @if($crumb['url'] && $i !== $lastCrumb)
+                            <a wire:navigate.hover href="{{ $crumb['url'] }}" class="truncate text-slate-500 transition hover:text-accent-600 dark:text-slate-400 dark:hover:text-accent-400">{{ $crumb['label'] }}</a>
+                        @else
+                            <span @if($i === $lastCrumb) aria-current="page" @endif class="{{ $i === $lastCrumb ? 'truncate font-bold text-slate-800 dark:text-slate-100' : 'truncate text-slate-500 dark:text-slate-400' }}">{{ $crumb['label'] }}</span>
+                        @endif
+                    @endforeach
+                </ol>
+            </nav>
+        @endif
     </div>
     <!-- ...sisanya tetap sama... -->
 

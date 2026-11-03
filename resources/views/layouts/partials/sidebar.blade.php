@@ -117,7 +117,7 @@
                         <a wire:navigate.hover href="{{ route('monitoring.index') }}"
                            aria-current="{{ $monitoringActive ? 'page' : 'false' }}"
                            class="{{ $navLink }} {{ $monitoringActive ? $navActive : $navInactive }}">
-                            <x-icon name="chart-bar" class="h-5 w-5 shrink-0" />
+                            <x-icon name="activity" class="h-5 w-5 shrink-0" />
                             <span>{{ __('Monitoring') }}</span>
                         </a>
                     @endcan
@@ -298,7 +298,7 @@
                                 <div class="sb-head {{ $navLink }} group w-full {{ $marketingActive ? $navActive.' sb-active' : $navInactive }}">
                                     <a wire:navigate.hover href="{{ route('marketing.dashboard') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
-                                        <x-icon name="chart-bar" class="h-5 w-5 shrink-0" />
+                                        <x-icon name="megaphone" class="h-5 w-5 shrink-0" />
                                         <span>{{ __('Marketing') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
@@ -400,7 +400,7 @@
                                 <div class="sb-head {{ $navLink }} group w-full {{ $adminActive ? $navActive.' sb-active' : $navInactive }}">
                                     <a wire:navigate.hover href="{{ route('admin.invoices.index') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
-                                        <x-icon name="folder" class="h-5 w-5 shrink-0" />
+                                        <x-icon name="receipt" class="h-5 w-5 shrink-0" />
                                         <span>{{ __('Admin') }}</span>
                                     </a>
                                     <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
@@ -513,7 +513,7 @@
                             <a wire:navigate.hover href="{{ route('product-knowledge.index') }}"
                                aria-current="{{ request()->routeIs('product-knowledge*') ? 'page' : 'false' }}"
                                class="{{ $navLink }} {{ request()->routeIs('product-knowledge*') ? $navActive : $navInactive }}">
-                                <x-icon name="book" class="h-5 w-5 shrink-0" />
+                                <x-icon name="cube" class="h-5 w-5 shrink-0" />
                                 <span>{{ __('Product KB') }}</span>
                             </a>
                         @endcan
