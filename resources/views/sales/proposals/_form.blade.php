@@ -1,3 +1,4 @@
+@php $itemsRequired = $itemsRequired ?? true; @endphp
 <div class="space-y-4">
     <input type="hidden" name="lead_id" value="{{ $lead->id ?? $proposal->lead_id }}">
 
@@ -65,7 +66,7 @@
 
     <div>
         <div class="flex items-center justify-between mb-2">
-            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} <span class="text-red-500">*</span></label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} @if($itemsRequired)<span class="text-red-500">*</span>@endif</label>
             <x-icon-button icon="add" label="{{ __('Item') }}" title="{{ __('Item') }}" type="button" onclick="proposalAddRow()" />
         </div>
         <div class="relative mb-2">
@@ -74,17 +75,22 @@
             <div id="proposal-catalog-results" class="absolute z-10 w-full mt-1 hidden max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600"></div>
         </div>
         <div id="proposal-items" class="space-y-2">
-            @php $rows = old('items', isset($proposal) ? $proposal->items->map(fn ($i) => ['product_id' => $i->product_id, 'description' => $i->description, 'quantity' => $i->quantity, 'unit' => $i->unit, 'unit_price' => $i->unit_price, 'unit_cost' => $i->unit_cost, 'discount' => $i->discount])->all() : [['product_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'unit_cost' => null, 'discount' => 0]]); @endphp
+            @php
+                $rows = old('items', isset($proposal) ? $proposal->items->map(fn ($i) => ['product_id' => $i->product_id, 'description' => $i->description, 'quantity' => $i->quantity, 'unit' => $i->unit, 'unit_price' => $i->unit_price, 'unit_cost' => $i->unit_cost, 'discount' => $i->discount])->all() : []);
+                if (empty($rows)) {
+                    $rows = [['product_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'unit_cost' => null, 'discount' => 0]];
+                }
+            @endphp
             @foreach($rows as $i => $row)
                 <div class="proposal-row grid grid-cols-12 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                     <input type="hidden" name="items[{{ $i }}][product_id]" value="{{ $row['product_id'] }}">
-                    <input type="text" name="items[{{ $i }}][description]" required value="{{ $row['description'] }}" placeholder="{{ __('Description') }}"
+                    <input type="text" name="items[{{ $i }}][description]" @if($itemsRequired) required @endif value="{{ $row['description'] }}" placeholder="{{ __('Description') }}"
                             class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <input type="number" name="items[{{ $i }}][quantity]" required min="0.01" step="0.01" value="{{ $row['quantity'] }}" placeholder="{{ __('Qty') }}"
                             class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <input type="text" name="items[{{ $i }}][unit]" value="{{ $row['unit'] }}" placeholder="{{ __('Unit') }}"
                             class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                    <input type="number" name="items[{{ $i }}][unit_price]" required min="0" step="0.01" value="{{ $row['unit_price'] }}" placeholder="{{ __('Price') }}"
+                    <input type="number" name="items[{{ $i }}][unit_price]" @if($itemsRequired) required @endif min="0" step="0.01" value="{{ $row['unit_price'] }}" placeholder="{{ __('Price') }}"
                             class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     @can('updateCost', \App\Models\Proposal::class)
                         <input type="number" name="items[{{ $i }}][unit_cost]" min="0" step="0.01" value="{{ old('items.'.$i.'.unit_cost', $row['unit_cost']) }}" placeholder="{{ __('Cost Price (Rp)') }}"
@@ -143,15 +149,16 @@
 <script>
 let proposalRowIdx = {{ count($rows) }};
 const proposalFmt = new Intl.NumberFormat('id-ID');
+const proposalItemsRequired = {{ $itemsRequired ? 'true' : 'false' }};
 
 function proposalRowHtml(i, prefill) {
     prefill = prefill || {};
     const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
     return '<input type="hidden" name="items[' + i + '][product_id]" value="' + (prefill.product_id || '') + '">' +
-        '<input type="text" name="items[' + i + '][description]" required value="' + esc(prefill.description) + '" placeholder="{{ __('Description') }}" class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
+        '<input type="text" name="items[' + i + '][description]"' + (proposalItemsRequired ? ' required' : '') + ' value="' + esc(prefill.description) + '" placeholder="{{ __('Description') }}" class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="number" name="items[' + i + '][quantity]" required min="0.01" step="0.01" value="' + (prefill.quantity || 1) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="text" name="items[' + i + '][unit]" value="' + esc(prefill.unit || 'pcs') + '" class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
-        '<input type="number" name="items[' + i + '][unit_price]" required min="0" step="0.01" value="' + (prefill.unit_price || 0) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
+        '<input type="number" name="items[' + i + '][unit_price]"' + (proposalItemsRequired ? ' required' : '') + ' min="0" step="0.01" value="' + (prefill.unit_price || 0) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         @can('updateCost', \App\Models\Proposal::class)
         '<input type="number" name="items[' + i + '][unit_cost]" min="0" step="0.01" value="' + (prefill.unit_cost ?? '') + '" placeholder="{{ __('Cost Price (Rp)') }}" class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">' +
         @endcan

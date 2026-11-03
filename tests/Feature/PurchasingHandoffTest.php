@@ -248,7 +248,7 @@ class PurchasingHandoffTest extends TestCase
         $proposal = $this->makeProposal($this->makeLead($sales->id), 'accepted', $sales->id);
         $this->uploadPo($proposal, $sales);
 
-        foreach (['management', 'ceo', 'purchasing', 'super-admin'] as $role) {
+        foreach (['management', 'ceo', 'purchasing', 'finance', 'super-admin'] as $role) {
             $user = $this->userWithRole($role);
 
             // Baca boleh.

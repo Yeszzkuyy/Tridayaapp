@@ -146,6 +146,54 @@ class ProposalModuleTest extends TestCase
         $this->assertSame('draft', $proposal->fresh()->status);
     }
 
+    public function test_zero_value_quotation_cannot_be_ready_sent_or_accepted(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $proposal = Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/2026/10/EMPTY-'.uniqid(),
+            'created_by' => $sales->id,
+            'proposal_date' => now()->toDateString(),
+            'customer' => $lead->customer->name,
+            'status' => 'draft',
+        ]);
+
+        // Draft kosong tidak boleh ditandai ready.
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.ready', $proposal))
+            ->assertSessionHasErrors('quotation');
+        $this->assertSame('draft', $proposal->fresh()->status);
+
+        // Status ready lama (data historis) juga tidak boleh dikirim.
+        $proposal->update(['status' => 'ready']);
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.send', $proposal))
+            ->assertSessionHasErrors('quotation');
+        $this->assertSame('ready', $proposal->fresh()->status);
+
+        // Status sent lama juga tidak boleh diterima customer.
+        $proposal->update(['status' => 'sent']);
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.respond', $proposal), ['decision' => 'accepted'])
+            ->assertSessionHasErrors('quotation');
+        $this->assertSame('sent', $proposal->fresh()->status);
+    }
+
+    public function test_admin_can_browse_all_quotations(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $lead = $this->makeLead($sales->id);
+        $proposal = $this->makeProposal($lead, 'draft', $sales->id);
+
+        $this->actingAs($admin)
+            ->get(route('sales.proposals.index'))
+            ->assertOk()
+            ->assertSee($proposal->proposal_number);
+    }
+
     public function test_accept_syncs_lead_won(): void
     {
         $sales = $this->userWithRole('sales');
@@ -384,6 +432,60 @@ class ProposalModuleTest extends TestCase
             ->assertOk()
             ->assertSee(__('Upload PO'))
             ->assertSee(__('Convert to Project'));
+    }
+
+    public function test_create_quotation_form_has_structured_item_and_price_fields(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('name="items[0][description]"', $html);
+        $this->assertStringContainsString('name="items[0][unit_price]"', $html);
+        $this->assertStringContainsString('name="quotation_file"', $html);
+    }
+
+    public function test_zero_value_ready_quotation_can_be_edited_then_sent(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $proposal = Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/2026/10/READY-'.uniqid(),
+            'created_by' => $sales->id,
+            'proposal_date' => now()->toDateString(),
+            'customer' => $lead->customer->name,
+            'status' => 'ready',
+        ]);
+
+        // Quotation ready bernilai 0 tetap bisa dikoreksi lewat Edit.
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.edit', $proposal))
+            ->assertOk();
+
+        $this->actingAs($sales)->put(route('sales.proposals.update', $proposal), [
+            'proposal_date' => now()->toDateString(),
+            'items' => [[
+                'description' => 'Paket quotation',
+                'quantity' => 1,
+                'unit' => 'paket',
+                'unit_price' => 1500000,
+                'discount' => 0,
+            ]],
+        ])->assertRedirect();
+
+        $proposal->refresh();
+        $this->assertSame(1500000.0, (float) $proposal->grand_total);
+
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.send', $proposal))
+            ->assertRedirect();
+        $this->assertSame('sent', $proposal->fresh()->status);
     }
 
     public function test_create_quotation_by_uploading_file_without_items(): void

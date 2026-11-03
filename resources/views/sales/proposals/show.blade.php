@@ -126,7 +126,7 @@
 
             <div class="flex flex-wrap gap-2 pt-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
-                @if($isOwner && in_array($proposal->status, ['draft', 'revision']))
+                @if($isOwner && (in_array($proposal->status, ['draft', 'revision'], true) || ($proposal->status === 'ready' && (float) $proposal->grand_total <= 0)))
                     <x-icon-button as="a" icon="edit" href="{{ route('sales.proposals.edit', $proposal) }}" label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
                 @endif
                 @if($isOwner && $proposal->status === 'draft')

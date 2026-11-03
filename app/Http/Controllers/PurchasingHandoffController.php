@@ -47,6 +47,7 @@ class PurchasingHandoffController extends Controller
         // mencegah data pipeline sales lain terbuka lewat antrean ini.
         $fullAccess = $user->can('manage-admin')
             || $user->can('manage-sales-leads')
+            || $user->can('view-admin-hub')
             || $user->hasRole('ceo');
 
         if (! $fullAccess) {
@@ -85,6 +86,7 @@ class PurchasingHandoffController extends Controller
         $user = $request->user();
         $fullAccess = $user->can('manage-admin')
             || $user->can('manage-sales-leads')
+            || $user->can('view-admin-hub')
             || $user->hasRole('ceo');
 
         if (! $fullAccess) {

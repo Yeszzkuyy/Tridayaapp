@@ -17,7 +17,7 @@
 
             @can('manage-admin')
                 <div class="flex flex-wrap items-center gap-2.5">
-                    <a href="{{ route('admin.pos.create') }}"
+                    <a href="{{ route('admin.supplier-pos.create') }}"
                        class="group relative overflow-hidden rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-4 py-2 text-xs font-semibold shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 inline-flex items-center gap-1.5">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

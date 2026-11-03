@@ -39,6 +39,11 @@ class AdminHubTest extends TestCase
             ->assertSee(__('2. Finance & Penagihan'))
             ->assertSee(__('3. Kelengkapan Dokumen Proyek'));
 
+        $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee(route('admin.hub'), false);
+
         // Management role (manage-sales-leads, view-admin)
         $management = $this->loginAs('management');
         $this->actingAs($management)

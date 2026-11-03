@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ProposalController extends Controller
 {
@@ -37,6 +38,40 @@ class ProposalController extends Controller
             'action' => $action,
             'changes' => $changes,
         ]);
+    }
+
+    /**
+     * Quotation tanpa item/nilai tidak boleh masuk tahap siap kirim atau
+     * diterima customer. Ini menjaga agar Admin tidak menerima deal Rp 0.
+     */
+    private function assertQuotationHasBillableContent(Proposal $proposal): void
+    {
+        $proposal->loadMissing('items');
+
+        if ($proposal->items->isEmpty() || (float) $proposal->grand_total <= 0) {
+            throw ValidationException::withMessages([
+                'quotation' => __('Quotation must have at least one item and a total greater than 0 before it can be sent or accepted.'),
+            ]);
+        }
+    }
+
+    /**
+     * Buang baris item kosong dari form. Baris kosong tetap dikirim browser
+     * saat Sales hanya melampirkan file, jadi jangan sampai dianggap item.
+     */
+    private function normalizedItems(mixed $items): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->filter(function ($item) {
+                if (! is_array($item)) {
+                    return false;
+                }
+
+                return filled($item['description'] ?? null)
+                    || (float) ($item['unit_price'] ?? 0) > 0;
+            })
+            ->values()
+            ->all();
     }
 
     private function isOwner(Proposal $proposal): bool
@@ -127,7 +162,9 @@ class ProposalController extends Controller
             return;
         }
 
-        abort_unless(in_array($proposal->status, ['draft', 'revision']), 422);
+        $canFixZeroReady = $proposal->status === 'ready' && (float) $proposal->grand_total <= 0;
+
+        abort_unless(in_array($proposal->status, ['draft', 'revision'], true) || $canFixZeroReady, 422);
     }
 
     /** Aksi tim teknis/admin: owner tidak wajib, cukup permission teknis. */
@@ -305,7 +342,7 @@ class ProposalController extends Controller
 
         $query = Proposal::query();
 
-        if (! $user->can('manage-sales-leads')) {
+        if (! $user->can('manage-sales-leads') && ! $user->can('manage-admin')) {
             $query->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id)
                     ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
@@ -368,6 +405,8 @@ class ProposalController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['items' => $this->normalizedItems($request->input('items'))]);
+
         $validated = $request->validate(array_merge([
             'lead_id' => 'required|exists:leads,id',
             'proposal_date' => 'required|date',
@@ -477,6 +516,7 @@ class ProposalController extends Controller
     public function update(Request $request, Proposal $proposal)
     {
         $this->authorizeEdit($proposal);
+        $request->merge(['items' => $this->normalizedItems($request->input('items'))]);
 
         $validated = $request->validate(array_merge([
             'proposal_date' => 'required|date',
@@ -521,6 +561,7 @@ class ProposalController extends Controller
     {
         $this->authorizeEdit($proposal);
         abort_unless($proposal->status === 'draft', 422);
+        $this->assertQuotationHasBillableContent($proposal);
 
         $proposal->update(['status' => 'ready']);
 
@@ -564,6 +605,7 @@ class ProposalController extends Controller
     {
         $this->authorizeTechnical($proposal);
         abort_unless($proposal->status === 'pending_technical', 422);
+        $this->assertQuotationHasBillableContent($proposal);
 
         $proposal->update(['status' => 'ready']);
         $this->log($proposal->lead, 'proposal_ready', ['number' => $proposal->proposal_number]);
@@ -580,6 +622,7 @@ class ProposalController extends Controller
     {
         $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'ready', 422);
+        $this->assertQuotationHasBillableContent($proposal);
 
         $proposal->update([
             'status' => 'sent',
@@ -667,6 +710,10 @@ class ProposalController extends Controller
         abort_unless(in_array($proposal->status, ['sent', 'viewed', 'revision', 'ready']), 422);
 
         $validated = $request->validate(['decision' => 'required|in:accepted,rejected']);
+
+        if ($validated['decision'] === 'accepted') {
+            $this->assertQuotationHasBillableContent($proposal);
+        }
 
         DB::transaction(function () use ($proposal, $validated) {
             $proposal->update(['status' => $validated['decision']]);
@@ -787,6 +834,7 @@ class ProposalController extends Controller
         $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'accepted', 422);
         abort_if($proposal->project()->exists(), 422, __('This proposal has already been converted.'));
+        $this->assertQuotationHasBillableContent($proposal);
 
         // Handoff wajib lengkap: tanpa PO & cara bayar, Admin akan mengetik ulang.
         abort_unless(filled($proposal->po_document_path), 422, __('Upload the customer PO before converting to a project.'));

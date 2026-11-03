@@ -61,7 +61,7 @@ class ProjectWorkflowTest extends TestCase
 
     private function makeProposal(Lead $lead, User $creator, string $status = 'accepted'): Proposal
     {
-        return Proposal::create([
+        $proposal = Proposal::create([
             'lead_id' => $lead->id,
             'proposal_number' => 'Q/2026/10/'.uniqid(),
             'created_by' => $creator->id,
@@ -69,6 +69,17 @@ class ProjectWorkflowTest extends TestCase
             'customer' => $lead->customer->name,
             'status' => $status,
         ]);
+        $proposal->items()->create([
+            'description' => 'Paket instalasi',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 1000000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+        $proposal->recalculate();
+
+        return $proposal->fresh();
     }
 
     private function makeProject(User $sales, User $tech, array $overrides = []): Project

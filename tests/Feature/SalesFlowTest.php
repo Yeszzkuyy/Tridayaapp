@@ -330,6 +330,15 @@ class SalesFlowTest extends TestCase
             'lead_id' => $lead->id, 'proposal_number' => 'Q/2026/10/0001', 'created_by' => $sales->id,
             'proposal_date' => now(), 'customer' => 'PT X', 'status' => 'draft',
         ]);
+        $proposal->items()->create([
+            'description' => 'Paket CCTV',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 1000000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+        $proposal->recalculate();
 
         $this->actingAs($sales)->post(route('sales.proposals.ready', $proposal))->assertRedirect();
         $this->actingAs($sales)->post(route('sales.proposals.send', $proposal))->assertRedirect();

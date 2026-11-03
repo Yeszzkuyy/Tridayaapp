@@ -49,6 +49,15 @@ class ProcurementProjectLinkTest extends TestCase
             'po_document_path' => 'proposals/link/po.pdf',
             'payment_scheme' => 'full',
         ]);
+        $proposal->items()->create([
+            'description' => 'Paket perangkat',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 1000000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+        $proposal->recalculate();
 
         $supplier = Supplier::create([
             'code' => 'SUP-LINK',

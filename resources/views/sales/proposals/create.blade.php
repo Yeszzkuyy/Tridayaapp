@@ -25,43 +25,26 @@
 
             <form action="{{ route('sales.proposals.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
                 @csrf
-                <input type="hidden" name="lead_id" value="{{ $lead->id }}">
                 @if($priceRequest ?? null)
                     <input type="hidden" name="price_request_id" value="{{ $priceRequest->id }}">
                 @endif
 
-                <div>
+                @include('sales.proposals._form', [
+                    'lead' => $lead,
+                    'proposal' => null,
+                    'itemsRequired' => false,
+                ])
+
+                <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-600">
                     <label for="quotation_file" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                        {{ __('Quotation File') }} <span class="text-red-500">*</span>
+                        {{ __('Quotation File') }}
+                        <span class="text-xs font-normal text-slate-400">({{ __('optional if items are filled') }})</span>
                     </label>
-                    <input id="quotation_file" type="file" name="quotation_file" required
+                    <input id="quotation_file" type="file" name="quotation_file"
                            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the quotation file (PDF/Word/Excel/image, max 10MB).') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the official quotation file (PDF/Word/Excel/image, max 10MB).') }}</p>
                     @error('quotation_file') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                        <label for="proposal_date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Date') }} <span class="text-red-500">*</span></label>
-                        <input id="proposal_date" type="date" name="proposal_date" required
-                               value="{{ old('proposal_date', now()->format('Y-m-d')) }}"
-                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                        @error('proposal_date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label for="valid_until" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Valid Until') }}</label>
-                        <input id="valid_until" type="date" name="valid_until" value="{{ old('valid_until') }}"
-                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                        @error('valid_until') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-
-                <div>
-                    <label for="notes" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Notes') }}</label>
-                    <textarea id="notes" name="notes" rows="3"
-                              class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('notes', $prefillNotes ?? '') }}</textarea>
-                    @error('notes') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2">
