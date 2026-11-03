@@ -4,8 +4,7 @@
             <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent-600 dark:text-accent-300">
                 {{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}
             </p>
-            <h1 class="mt-2 text-3xl font-bold text-slate-800">{{ __('Sales Dashboard') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Halo, :name. Ringkasan performa lead Anda.', ['name' => auth()->user()->name]) }}</p>
+            <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Sales Dashboard') }}</h1>
         </div>
         <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}" title="{{ __('My Leads') }}" />
     </div>
@@ -71,9 +70,6 @@
                                 {{ $myKpi['overall_pct'] }}% Capaian
                             </span>
                         </div>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {{ __('Tracking progres target pribadi Anda untuk periode :month :year (Hanya Anda yang melihat)', ['month' => \Carbon\Carbon::create(null, $myKpi['period_month'], 1)->locale(app()->getLocale())->translatedFormat('F'), 'year' => $myKpi['period_year']]) }}
-                        </p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
@@ -224,12 +220,7 @@
     @if(isset($salesLeaderboard) && $salesLeaderboard->isNotEmpty())
         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6" data-reveal>
             <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-                <div>
-                    <h2 class="font-bold text-slate-800 dark:text-white text-lg">{{ __('Peringkat & Target Bulanan Sales') }}</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {{ __('Papan peringkat performa sales bulan :month :year berdasarkan capaian target omset dan closing deal.', ['month' => now()->locale(app()->getLocale())->translatedFormat('F'), 'year' => now()->year]) }}
-                    </p>
-                </div>
+                <h2 class="font-bold text-slate-800 dark:text-white text-lg">{{ __('Peringkat & Target Bulanan Sales') }}</h2>
                 <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                     {{ $salesLeaderboard->count() }} Anggota Tim
                 </span>
@@ -307,11 +298,8 @@
     @endif
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
-        <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
-            <div>
-                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('My Schedule') }}</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Summary of your sales agenda.') }}</p>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('My Schedule') }}</h2>
             <a href="{{ route('sales.schedules.index') }}" class="text-sm font-medium text-accent-600 hover:text-accent-500">{{ __('View agenda') }}</a>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -335,11 +323,8 @@
 
     {{-- Meeting tracker (dipisah dari Follow Up) --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
-        <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
-            <div>
-                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Meeting') }}</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Daily meeting tracker summary.') }}</p>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Meeting') }}</h2>
             <a href="{{ route('sales.meetings.index') }}" class="text-sm font-medium text-accent-600 hover:text-accent-500">{{ __('Open tracker') }}</a>
         </div>
         <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -360,11 +345,8 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6" data-reveal>
-        <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
-            <div>
-                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Income Bulan Ini') }}</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Total invoice bulan :month per PT/company.', ['month' => now()->translatedFormat('F Y')]) }}</p>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Income Bulan Ini') }}</h2>
             <p class="text-xl font-extrabold text-slate-800 tabular-nums dark:text-white">Rp {{ number_format($incomeTotal ?? 0, 0, ',', '.') }}</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -415,8 +397,7 @@
     @endif
 
     <div class="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6" data-reveal>
-        <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-1">{{ __('My Lead Status') }}</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">{{ __('Click a status to view those leads in My Leads.') }}</p>
+        <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('My Lead Status') }}</h2>
         @if(($funnelTotal ?? 0) > 0)
             <div class="relative w-full max-w-[280px] mx-auto">
                 <x-donut-chart :data="$donutSales" :size="260" :strokeWidth="34" :scroll="true" />

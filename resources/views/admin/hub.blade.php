@@ -13,9 +13,6 @@
                         {{ __('Admin Command Center') }}
                     </h1>
                 </div>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {{ __('Modular Hub: Koordinasi Purchasing pengadaan barang, Finance & penagihan klien, serta verifikasi berkas proyek.') }}
-                </p>
             </div>
 
             @can('manage-admin')

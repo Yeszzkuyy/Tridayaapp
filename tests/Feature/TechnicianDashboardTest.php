@@ -122,4 +122,37 @@ class TechnicianDashboardTest extends TestCase
             ->assertSee(__('Teknisi Aktif'))
             ->assertSee(__('Belum ada') . ' ' . __('teknisi aktif'));
     }
+
+    public function test_technician_dashboard_removes_filler_text_fixes_grammar_and_deduplicates_activity(): void
+    {
+        $user = $this->authorizedUser();
+
+        $naufal = User::factory()->create(['name' => 'Naufal']);
+        $naufal->assignRole('technician');
+
+        $open = ProjectStatus::create(['name' => 'Open', 'color' => 'blue', 'sort_order' => 1]);
+
+        $this->actingAs($user);
+        $project = $this->projectWith('Upgrade Core Switch', $open->id);
+
+        // Simulate duplicate legacy log entry for the same project creation
+        ProjectActivity::create([
+            'project_id' => $project->id,
+            'user_id' => $naufal->id,
+            'activity_date' => now(),
+            'title' => 'Project Dibuat',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('teknisi.dashboard'))
+            ->assertOk()
+            ->assertSee('1 ' . __('ongoing project'))
+            ->assertDontSee('1 ' . __('ongoing projects'))
+            ->assertSee('1 ' . __('Recent Activities'))
+            ->assertSee(__('Created a project'))
+            ->assertDontSee('Project Dibuat')
+            ->assertDontSee('Latest figures from technician operational data.')
+            ->assertDontSee('Technical Division Overview')
+            ->assertDontSee('Project distribution by status.');
+    }
 }

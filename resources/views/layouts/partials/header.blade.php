@@ -9,11 +9,10 @@
             </svg>
         </button>
 
-        {{-- Breadcrumb dinamis: label mengikuti locale & menampilkan menu (grup + sub-menu) sesuai route --}}
+        {{-- Breadcrumb dinamis: label mengikuti locale & menampilkan menu (grup + sub-menu) tanpa duplikasi kata --}}
         @php
             $currentRoute = request()->route()?->getName() ?? '';
-            $dashboardUrl = \Illuminate\Support\Facades\Route::has('dashboard') ? route('dashboard') : url('/');
-            $crumbs = [['label' => __('Dashboard'), 'url' => $dashboardUrl]];
+            $crumbs = [];
 
             // [prefix route, [label grup, label sub-menu, ...]]. Prefix terpanjang dicocokkan lebih dulu,
             // supaya mis. 'leads.pipeline' tidak tertelan 'leads'.
@@ -25,7 +24,7 @@
                 ['manage.marketing',                ['Management', 'Manage Marketing']],
                 ['manage.technical',                ['Management', 'Manage Technical']],
                 ['manage.admin',                    ['Management', 'Manage Admin']],
-                ['teknisi.dashboard',               ['Teknisi', 'Dashboard Teknisi']],
+                ['teknisi.dashboard',               ['Teknisi', 'Dashboard']],
                 ['teknisi.requests',                ['Teknisi', 'Request Sales']],
                 ['teknisi.price-requests',          ['Teknisi', 'Request Sales']],
                 ['teknisi.technical-requests',      ['Teknisi', 'Request Sales']],
@@ -36,10 +35,10 @@
                 ['teknisi.instalasis',              ['Teknisi', 'Instalasi']],
                 ['teknisi.documents',               ['Teknisi', 'Document']],
                 ['projects',                        ['Teknisi', 'Project']],
-                ['project-documents',             ['Teknisi', 'Document']],
-                ['marketing.dashboard',             ['Marketing', 'Marketing Dashboard']],
+                ['project-documents',               ['Teknisi', 'Document']],
+                ['marketing.dashboard',             ['Marketing', 'Dashboard']],
                 ['whatsapp-center',                 ['Marketing', 'WhatsApp Center']],
-                ['sales.dashboard',                 ['Sales', 'Sales Dashboard']],
+                ['sales.dashboard',                 ['Sales', 'Dashboard']],
                 ['sales.my-leads',                  ['Sales', 'My Leads']],
                 ['sales.follow-ups',                ['Sales', 'Follow Up']],
                 ['sales.meetings',                  ['Sales', 'Meeting']],
@@ -103,7 +102,9 @@
 
             if ($matched !== null) {
                 [$prefix, $labels] = $matched;
-                foreach ($labels as $label) {
+                // Label pertama sudah dirender pada badge grup (.app-header-badge),
+                // sehingga crumbs hanya memuat sub-menu setelahnya agar tidak duplikat.
+                foreach (array_slice($labels, 1) as $label) {
                     $crumbs[] = ['label' => __($label), 'url' => null];
                 }
                 $rest = ltrim(substr($currentRoute, strlen($prefix)), '.');
@@ -113,10 +114,10 @@
                     $crumbs[] = ['label' => __($action), 'url' => null];
                     $hasActionCrumb = true;
                 }
-                if ($hasActionCrumb) {
+                if ($hasActionCrumb && count($crumbs) >= 2) {
                     $indexRoute = $prefix.'.index';
                     $indexPos = count($crumbs) - 2;
-                    if ($indexPos >= 1 && \Illuminate\Support\Facades\Route::has($indexRoute)) {
+                    if (\Illuminate\Support\Facades\Route::has($indexRoute)) {
                         $crumbs[$indexPos]['url'] = route($indexRoute);
                     }
                 }
@@ -127,12 +128,7 @@
                 $routeParts = explode('.', $currentRoute);
                 $section = $routeParts[0] ?? 'dashboard';
                 if ($section !== 'dashboard') {
-                    $sectionIndex = $section.'.index';
                     $sectionLabel = ucwords(str_replace(['-', '_'], ' ', $section));
-                    $crumbs[] = [
-                        'label' => $sectionLabel,
-                        'url' => \Illuminate\Support\Facades\Route::has($sectionIndex) ? route($sectionIndex) : null,
-                    ];
                     $action = end($routeParts);
                     if ($action !== '' && $action !== 'index' && $action !== $section) {
                         $crumbs[] = [
@@ -147,17 +143,15 @@
             }
             $lastCrumb = count($crumbs) - 1;
         @endphp
-        <span class="app-header-badge {{ count($crumbs) <= 1 ? 'inline-flex' : 'hidden sm:inline-flex' }} shrink-0 items-center gap-1.5 rounded-full bg-accent-500/10 px-3 py-1.5 text-xs font-semibold text-accent-700 dark:bg-accent-400/10 dark:text-accent-300">
+        <span class="app-header-badge inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent-500/10 px-3 py-1.5 text-xs font-semibold text-accent-700 dark:bg-accent-400/10 dark:text-accent-300">
             <x-icon :name="$sectionIcon" class="h-3.5 w-3.5" />
             {{ $sectionLabel }}
         </span>
-        @if(count($crumbs) > 1)
+        @if(count($crumbs) > 0)
             <nav aria-label="Breadcrumb" class="min-w-0">
                 <ol class="flex min-w-0 items-center gap-1.5 text-sm">
                     @foreach($crumbs as $i => $crumb)
-                        @if($i > 0)
-                            <svg class="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        @endif
+                        <span class="shrink-0 text-xs font-medium text-slate-300 dark:text-slate-600" aria-hidden="true">/</span>
                         @if($crumb['url'] && $i !== $lastCrumb)
                             <a wire:navigate.hover href="{{ $crumb['url'] }}" class="truncate text-slate-500 transition hover:text-accent-600 dark:text-slate-400 dark:hover:text-accent-400">{{ $crumb['label'] }}</a>
                         @else

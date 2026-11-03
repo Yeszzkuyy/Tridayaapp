@@ -20,9 +20,9 @@
     @endphp
 
     <div class="w-full space-y-6">
-        {{-- Town Hall Overview Header --}}
-        <section class="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-6 dark:border-slate-700 dark:bg-slate-800" data-reveal>
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        {{-- Town Hall Overview Header (compact, tanpa filler text & kotak statis) --}}
+        <section class="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5 dark:border-slate-700 dark:bg-slate-800" data-reveal>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2.5">
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-accent-500/10 px-3 py-1 text-xs font-semibold text-accent-700 dark:bg-accent-400/15 dark:text-accent-300">
@@ -30,38 +30,16 @@
                             {{ ($now ?? \Carbon\Carbon::now('Asia/Jakarta'))->locale(app()->getLocale())->translatedFormat('l, d F Y') }}
                         </span>
                     </div>
-                    <h1 class="mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+                    <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                         {{ __('Welcome back,') }} {{ $user?->name }}
                     </h1>
-                    <p class="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                        {{ __('Monitor customer growth, active project progress, your daily agenda, and internal knowledge updates in one place.') }}
-                    </p>
-                </div>
-
-                <div class="flex shrink-0 flex-wrap items-center gap-3">
-                    <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-600 text-white shadow-sm">
-                            <x-icon name="grid" class="h-5 w-5" />
-                        </span>
-                        <div>
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('General Dashboard') }}</p>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('3DY Group Overview') }}</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>
 
-        {{-- Key Summary (4 Clickable Cards) --}}
-        <section aria-labelledby="dashboard-summary-heading" data-reveal data-reveal-delay="1">
-            <div class="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
-                <div>
-                    <h2 id="dashboard-summary-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">{{ __('Key Summary') }}</h2>
-                    <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Real-time operational overview across customers, projects, and documentation.') }}</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {{-- Key Summary (4 Clickable Cards langsung di bawah Welcome Banner) --}}
+        <section aria-label="{{ __('Key Summary') }}" data-reveal data-reveal-delay="1">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {{-- Card 1: Total Customers --}}
                 <a wire:navigate.hover href="{{ route('customers.index') }}"
                    class="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md active:scale-[0.98] sm:p-6 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-accent-500">
@@ -179,19 +157,14 @@
             <div class="space-y-6 lg:col-span-7">
                 {{-- Widget 1: My Agenda & Tasks Today --}}
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="2" aria-labelledby="my-agenda-heading">
-                    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 id="my-agenda-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
-                                    {{ __('My Agenda & Tasks Today') }}
-                                </h2>
-                                <span class="rounded-full bg-accent-500/10 px-2.5 py-0.5 text-xs font-semibold text-accent-700 tabular-nums dark:bg-accent-400/15 dark:text-accent-300">
-                                    {{ ($agendaItems ?? collect())->count() }}
-                                </span>
-                            </div>
-                            <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {{ $agendaMeta['subtitle'] ?? __('Your scheduled activities and active tasks for today.') }}
-                            </p>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-700">
+                        <div class="flex items-center gap-2">
+                            <h2 id="my-agenda-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+                                {{ __('My Agenda & Tasks Today') }}
+                            </h2>
+                            <span class="rounded-full bg-accent-500/10 px-2.5 py-0.5 text-xs font-semibold text-accent-700 tabular-nums dark:bg-accent-400/15 dark:text-accent-300">
+                                {{ ($agendaItems ?? collect())->count() }}
+                            </span>
                         </div>
 
                         @if(!empty($agendaMeta['action_url']))
@@ -249,15 +222,10 @@
 
                 {{-- Widget 2: Recent Activity --}}
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="3" aria-labelledby="recent-activities-heading">
-                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-                        <div>
-                            <h2 id="recent-activities-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
-                                {{ __('Recent Activity') }}
-                            </h2>
-                            <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {{ __('Latest changes recorded on projects.') }}
-                            </p>
-                        </div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-700">
+                        <h2 id="recent-activities-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+                            {{ __('Recent Activity') }}
+                        </h2>
                         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 tabular-nums dark:bg-slate-700 dark:text-slate-300">
                             {{ $activities->count() }} {{ __('Recent Activities') }}
                         </span>
@@ -316,15 +284,10 @@
             <div class="space-y-6 lg:col-span-5">
                 {{-- Widget 3: Project Status Breakdown --}}
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="2" aria-labelledby="project-status-heading">
-                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-                        <div>
-                            <h2 id="project-status-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
-                                {{ __('Project Status Breakdown') }}
-                            </h2>
-                            <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {{ __('Distribution of projects by current stage.') }}
-                            </p>
-                        </div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-700">
+                        <h2 id="project-status-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+                            {{ __('Project Status Breakdown') }}
+                        </h2>
                         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 tabular-nums dark:bg-slate-700 dark:text-slate-300">
                             {{ number_format($totalProjects ?? 0) }} {{ __('Projects') }}
                         </span>
@@ -373,15 +336,10 @@
 
                 {{-- Widget 4: Company Board & Latest KB --}}
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800" data-reveal data-reveal-delay="3" aria-labelledby="company-board-heading">
-                    <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-                        <div>
-                            <h2 id="company-board-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
-                                {{ __('Company Board & Latest KB') }}
-                            </h2>
-                            <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {{ __('Latest SOPs, internal guides, and product knowledge.') }}
-                            </p>
-                        </div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5 dark:border-slate-700">
+                        <h2 id="company-board-heading" class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-100">
+                            {{ __('Company Board & Latest KB') }}
+                        </h2>
 
                         <a href="{{ $user?->can('manage-admin') ? route('knowledge-base.index') : route('ai.assistant.index') }}"
                            class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-accent-400 hover:text-accent-600 active:scale-95 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:border-accent-500 dark:hover:text-accent-400">
