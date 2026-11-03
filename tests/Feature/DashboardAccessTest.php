@@ -113,6 +113,58 @@ class DashboardAccessTest extends TestCase
             ->assertSee('1 Recent Activities')
             ->assertSee('Created a project')
             ->assertDontSee('Project Dibuat')
+            ->assertDontSee('Company Town Hall & Daily Productivity')
             ->assertSee('Synology DiskStation DS425+');
+    }
+
+    public function test_sales_and_inside_sales_with_leads_follow_ups_and_tasks_can_render_dashboard(): void
+    {
+        $user = $this->userWithRole('sales');
+        $user->assignRole('inside-sales');
+        $this->actingAs($user);
+
+        $customer = \App\Models\Customer::create(['name' => 'PT Maju Bersama']);
+        $lead = \App\Models\Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'status' => 'warm',
+            'kebutuhan' => 'Pengadaan Firewall',
+            'assigned_to' => $user->id,
+        ]);
+
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Konfirmasi jadwal presentasi',
+            'type' => 'call',
+            'follow_up_date' => now()->toDateString(),
+            'created_by' => $user->id,
+        ]);
+
+        \App\Models\SalesSchedule::create([
+            'lead_id' => $lead->id,
+            'assigned_to' => $user->id,
+            'created_by' => $user->id,
+            'title' => 'Demo Solusi',
+            'type' => 'presentation',
+            'start_at' => now()->addHour(),
+            'end_at' => now()->addHours(2),
+            'status' => 'scheduled',
+        ]);
+
+        \App\Models\LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Siapkan BOQ Firewall',
+            'assigned_to' => $user->id,
+            'created_by' => $user->id,
+            'status' => 'in_progress',
+            'priority' => 'high',
+        ]);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Konfirmasi jadwal presentasi')
+            ->assertSee('Demo Solusi')
+            ->assertSee('Siapkan BOQ Firewall');
     }
 }

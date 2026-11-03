@@ -29,8 +29,6 @@
                             <x-icon name="calendar" class="h-3.5 w-3.5" />
                             {{ ($now ?? \Carbon\Carbon::now('Asia/Jakarta'))->locale(app()->getLocale())->translatedFormat('l, d F Y') }}
                         </span>
-                        <span class="text-xs font-medium text-slate-400 dark:text-slate-500">·</span>
-                        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Company Town Hall & Daily Productivity') }}</span>
                     </div>
                     <h1 class="mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
                         {{ __('Welcome back,') }} {{ $user?->name }}

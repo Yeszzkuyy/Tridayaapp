@@ -314,7 +314,7 @@ class DashboardController extends Controller
 
         // B. Sales: Sales Schedule, Follow Up & Meeting
         if ($user->can('view-sales') && $items->count() < 5) {
-            $salesSchedules = SalesSchedule::with(['lead:id,company_name,customer_id', 'lead.customer:id,name'])
+            $salesSchedules = SalesSchedule::with(['lead:id,customer_id,kebutuhan', 'lead.customer:id,name'])
                 ->whereIn('status', ['scheduled', 'rescheduled'])
                 ->where('start_at', '>=', $todayStart)
                 ->where(function ($q) use ($user) {
@@ -329,7 +329,7 @@ class DashboardController extends Controller
                 $isToday = $sched->start_at && $sched->start_at->between($todayStart, $todayEnd);
                 $items->push([
                     'title' => $sched->title ?: SalesSchedule::typeLabel((string) $sched->type),
-                    'subtitle' => $sched->lead?->customer?->name ?: ($sched->lead?->company_name ?: ($sched->location ?? __('Sales Agenda'))),
+                    'subtitle' => $sched->lead?->customer?->name ?: ($sched->lead?->kebutuhan ?: ($sched->location ?? __('Sales Agenda'))),
                     'type_label' => SalesSchedule::typeLabel((string) $sched->type),
                     'badge_color' => 'indigo',
                     'status_label' => SalesSchedule::statusLabel((string) $sched->status),
@@ -340,7 +340,7 @@ class DashboardController extends Controller
                 ]);
             }
 
-            $followUps = FollowUp::with(['customer:id,name', 'lead:id,company_name'])
+            $followUps = FollowUp::with(['customer:id,name', 'lead:id,customer_id,kebutuhan', 'lead.customer:id,name'])
                 ->whereNull('completed_at')
                 ->where(function ($q) use ($user) {
                     $q->where('created_by', $user->id)
@@ -359,7 +359,7 @@ class DashboardController extends Controller
                 $targetDate = $fu->next_follow_up_date ?? $fu->follow_up_date;
                 $items->push([
                     'title' => $fu->description ?: FollowUp::typeLabel($fu->type),
-                    'subtitle' => $fu->customer?->name ?: ($fu->lead?->company_name ?? __('Customer Follow-up')),
+                    'subtitle' => $fu->customer?->name ?: ($fu->lead?->customer?->name ?: ($fu->lead?->kebutuhan ?? __('Customer Follow-up'))),
                     'type_label' => $isMeeting ? __('Meeting') : __('Follow Up'),
                     'badge_color' => $isMeeting ? 'rose' : 'amber',
                     'status_label' => $targetDate && $targetDate->isToday() ? __('Today') : __('Pending'),
@@ -373,7 +373,7 @@ class DashboardController extends Controller
 
         // C. Inside Sales: Lead Tasks
         if ($user->can('manage-inside-sales') && $items->count() < 5) {
-            $leadTasks = LeadTask::with(['lead:id,company_name,customer_id', 'lead.customer:id,name'])
+            $leadTasks = LeadTask::with(['lead:id,customer_id,kebutuhan', 'lead.customer:id,name'])
                 ->where('assigned_to', $user->id)
                 ->where('status', '!=', 'done')
                 ->orderByRaw('CASE WHEN due_date IS NULL THEN 1 ELSE 0 END, due_date ASC')
@@ -383,7 +383,7 @@ class DashboardController extends Controller
             foreach ($leadTasks as $task) {
                 $items->push([
                     'title' => $task->title ?: __('Task #:id', ['id' => $task->id]),
-                    'subtitle' => $task->lead?->customer?->name ?: ($task->lead?->company_name ?? __('Inside Sales Task')),
+                    'subtitle' => $task->lead?->customer?->name ?: ($task->lead?->kebutuhan ?? __('Inside Sales Task')),
                     'type_label' => __('Inside Sales'),
                     'badge_color' => 'amber',
                     'status_label' => LeadTask::statusLabel($task->status),
