@@ -207,12 +207,8 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-left">
-                                @if($lead->kebutuhan)
-                                    <span class="text-sm text-slate-700 whitespace-normal break-words max-w-[220px] inline-block align-middle">{{ $lead->kebutuhan }}</span>
-                                @else
-                                    <span class="text-slate-400">-</span>
-                                @endif
+                            <td class="px-6 py-4 text-left max-w-[260px]">
+                                <x-requirement-cell :text="$lead->kebutuhan" />
                             </td>
                             <td class="px-6 py-4 text-center">
                                 @if($lead->incoming_date)
