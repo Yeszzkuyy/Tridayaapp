@@ -78,7 +78,7 @@
                      class="h-9 sm:h-11 w-auto aspect-square object-contain transition-transform duration-300 group-hover:scale-[1.03]">
             </picture>
             <div class="sidebar-hide min-w-0">
-                <h1 class="truncate font-display text-4xl font-bold leading-none text-accent-300">3DY App</h1>
+                <h1 class="truncate font-outfit text-4xl font-extrabold tracking-tight leading-none text-accent-300">3DY App</h1>
             </div>
         </a>
     </div>

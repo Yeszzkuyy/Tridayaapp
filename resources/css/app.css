@@ -191,7 +191,16 @@ html {
 
 ::selection { background: rgb(var(--accent-600) / 0.18); }
 
-body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.025em;
+}
 
 button, a, [type="submit"] { -webkit-tap-highlight-color: transparent; }
 
@@ -299,7 +308,7 @@ tbody tr { transition: background-color 0.2s ease; }
 .sidebar nav .sb-head.sb-active:hover { color: var(--nav-active-text); }
 .sidebar nav p { color: var(--nav-muted); }
 .sidebar .border-white\/10 { border-color: var(--sidebar-border-soft); }
-.sidebar .sidebar-logo h1 { color: var(--sidebar-logo-text); font-family: "Times New Roman", Times, serif; }
+.sidebar .sidebar-logo h1 { color: var(--sidebar-logo-text); font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-weight: 800; letter-spacing: -0.025em; }
 .sidebar .sidebar-logo p { color: var(--nav-muted); }
 .sidebar .sidebar-logo { border-color: var(--sidebar-border-soft); }
 .sidebar .sidebar-user { border-color: var(--sidebar-border-soft); background: var(--sidebar-panel-bg); }
@@ -361,6 +370,53 @@ tbody tr { transition: background-color 0.2s ease; }
         transform: translate(var(--px, 0px), var(--py, 0px));
         transition: transform 0.35s var(--ease-out);
         will-change: transform;
+    }
+
+    /* ============================================================
+       Dashboard Micro-Animations & Interactions
+       ============================================================ */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes progressExpand {
+        from { width: 0%; }
+        to { width: var(--target-width, 100%); }
+    }
+
+    .animate-progress-fill {
+        animation: progressExpand 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes waveHand {
+        0% { transform: rotate(0deg); }
+        15% { transform: rotate(14deg); }
+        30% { transform: rotate(-10deg); }
+        45% { transform: rotate(14deg); }
+        60% { transform: rotate(-6deg); }
+        75% { transform: rotate(10deg); }
+        100% { transform: rotate(0deg); }
+    }
+
+    .animate-wave {
+        display: inline-block;
+        transform-origin: 70% 70%;
+        animation: waveHand 1s ease-in-out 1;
+    }
+
+    .animate-wave:hover {
+        animation: waveHand 1s ease-in-out 1;
     }
 }
 
