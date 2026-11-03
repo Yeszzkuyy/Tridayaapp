@@ -64,8 +64,12 @@ class TechnicianDashboardController extends Controller
 
         $activities = ProjectActivity::with(['project', 'user'])
             ->latest('activity_date')
+            ->latest('id')
+            ->take(25)
+            ->get()
+            ->unique(fn (ProjectActivity $activity) => $activity->dedupKey())
             ->take(5)
-            ->get();
+            ->values();
 
         return view('teknisi.dashboard', compact(
             'technicians',

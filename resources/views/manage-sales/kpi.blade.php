@@ -32,10 +32,7 @@
                 <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent-600 dark:text-accent-300">
                     {{ __('Management Evaluation') }}
                 </p>
-                <h1 class="mt-1 text-3xl font-bold text-slate-800 dark:text-white">{{ __('Sales KPI & Target Performance') }}</h1>
-                <p class="text-slate-500 dark:text-slate-400 mt-1">
-                    {{ __('Evaluasi pencapaian target bulanan, omset, dan closing project per anggota tim sales.') }}
-                </p>
+                <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">{{ __('Sales KPI & Target Performance') }}</h1>
             </div>
 
             <div class="flex items-center gap-3">

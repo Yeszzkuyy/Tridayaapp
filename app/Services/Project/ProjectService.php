@@ -54,13 +54,8 @@ class ProjectService
                 'progress'           => $data['progress'] ?? 0,
             ]);
 
-            ProjectActivity::create([
-                'project_id'    => $project->id,
-                'user_id'       => Auth::id(),
-                'activity_date' => now(),
-                'title'         => __('Project Created'),
-                'description'   => __('New project created successfully.'),
-            ]);
+            // Catatan: ProjectActivity dibuat otomatis oleh ProjectObserver::created()
+            // agar tidak tercatat ganda saat ProjectService::create() dipanggil.
 
             return $project;
         });

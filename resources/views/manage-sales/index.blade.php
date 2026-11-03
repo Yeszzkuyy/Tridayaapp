@@ -3,10 +3,7 @@
         <x-status-card :message="session('success')" />
     @endif
     <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Manage Sales') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Leads from marketing — fill in the solution, follow-up progress, and assign to Sales') }}</p>
-        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Manage Sales') }}</h1>
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">

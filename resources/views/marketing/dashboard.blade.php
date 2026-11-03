@@ -1,9 +1,6 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Dashboard Marketing') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Lead and pipeline performance summary') }}</p>
-        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Dashboard Marketing') }}</h1>
         <x-icon-button as="a" icon="leads" href="{{ route('leads.index') }}" title="{{ __('View Leads') }}" />
     </div>
 
@@ -212,8 +209,7 @@
     x-on:donut-select.window="select($event.detail.key)"
     >
         <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('Lead Pipeline by Status') }}</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 -mt-2 mb-4">{{ __('Click a segment to view lead details for that status.') }}</p>
-        <div class="relative w-full max-w-[320px] mx-auto">
+        <div class="relative w-full max-w-[260px] mx-auto">
             <div id="status-donut-chart" class="w-full">
                 <x-donut-chart :data="$donutMarketing" :size="280" :strokeWidth="34" :scroll="true" />
             </div>
