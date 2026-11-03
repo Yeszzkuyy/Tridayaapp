@@ -1,4 +1,6 @@
 <x-app-layout>
+    @include('partials.lynk-dashboard-motion')
+
     @php
         $user = auth()->user();
         $canViewProjects = $user && $user->canAny([
@@ -48,8 +50,9 @@
 
         $allStatuses = collect($projectStatusBreakdown ?? []);
         $nonZeroStatuses = $allStatuses->filter(fn ($s) => ($s['count'] ?? 0) > 0)->values();
+        // Tampilkan seluruh status yang memiliki proyek (count > 0) agar genap 100% tanpa celah
         $legendStatuses = $nonZeroStatuses->isNotEmpty()
-            ? $nonZeroStatuses->take(5)
+            ? $nonZeroStatuses
             : $allStatuses->take(5);
 
         $donutChartData = $nonZeroStatuses->map(fn ($s) => [
@@ -61,8 +64,8 @@
     @endphp
 
     <div class="w-full space-y-6">
-        {{-- 1. Open Header Style (Tanpa Kotak Pembungkus) --}}
-        <div class="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" data-reveal>
+        {{-- 1. Open Header Style (delay 0ms) --}}
+        <div class="lynk-enter flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
                 {{ __('Welcome back,') }} {{ $user?->name }} <span aria-hidden="true">👋</span>
             </h1>
@@ -73,20 +76,22 @@
             </div>
         </div>
 
-        {{-- 2. 4 Kartu KPI dengan Icon Kiri, Trend Text Bersih & Mini Sparkline SVG --}}
-        <section aria-label="{{ __('Key Summary') }}" data-reveal data-reveal-delay="1">
+        {{-- 2. 4 Kartu KPI dengan Multi-Wave Sparkline SVG & Count-Up (delay 100ms, 180ms, 260ms, 340ms) --}}
+        <section aria-label="{{ __('Key Summary') }}">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {{-- Card 1: Total Customers (Violet / Indigo) --}}
                 <a wire:navigate.hover href="{{ route('customers.index') }}"
-                   class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/50 hover:shadow-md active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-violet-500/40">
+                   style="--d: 100ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-violet-500/40">
                     <div>
                         <div class="flex items-center gap-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 transition-transform duration-300 group-hover:scale-105 dark:bg-violet-500/15 dark:text-violet-300">
                                 <x-icon name="users" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
                                 <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total Customers') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white">
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($customerCount ?? 0) }}" data-countup-delay="120">
                                     {{ number_format($customerCount ?? 0) }}
                                 </p>
                             </div>
@@ -104,30 +109,32 @@
                     </div>
 
                     <div class="mt-3 -mx-5 -mb-5 pt-1">
-                        <svg viewBox="0 0 240 46" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-customers" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.28" />
+                                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.32" />
                                     <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path d="M0,38 C36,36 58,20 94,24 C130,28 156,10 192,14 C214,16 228,6 240,8 L240,46 L0,46 Z" fill="url(#spark-customers)" />
-                            <path d="M0,38 C36,36 58,20 94,24 C130,28 156,10 192,14 C214,16 228,6 240,8" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4 L240,52 L0,52 Z" fill="url(#spark-customers)" />
+                            <path class="lynk-spark-line" pathLength="100" d="M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
 
                 {{-- Card 2: Total / Completed Projects (Emerald / Teal) --}}
                 <a wire:navigate.hover href="{{ $projectsIndexUrl }}"
-                   class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-400/50 hover:shadow-md active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-emerald-500/40">
+                   style="--d: 180ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-emerald-500/40">
                     <div>
                         <div class="flex items-center gap-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 transition-transform duration-300 group-hover:scale-105 dark:bg-emerald-500/15 dark:text-emerald-300">
                                 <x-icon name="check-circle" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
                                 <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total / Completed Projects') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white">
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($totalProjects ?? 0) }}" data-countup-delay="200">
                                     {{ number_format($totalProjects ?? 0) }}
                                 </p>
                             </div>
@@ -145,30 +152,32 @@
                     </div>
 
                     <div class="mt-3 -mx-5 -mb-5 pt-1">
-                        <svg viewBox="0 0 240 46" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-projects" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.28" />
+                                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.32" />
                                     <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path d="M0,36 C42,34 66,28 102,22 C138,16 164,24 198,12 C216,7 228,9 240,6 L240,46 L0,46 Z" fill="url(#spark-projects)" />
-                            <path d="M0,36 C42,34 66,28 102,22 C138,16 164,24 198,12 C216,7 228,9 240,6" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4 L240,52 L0,52 Z" fill="url(#spark-projects)" />
+                            <path class="lynk-spark-line" pathLength="100" d="M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
 
                 {{-- Card 3: Active Projects (Amber / Yellow) --}}
                 <a wire:navigate.hover href="{{ $projectsIndexUrl }}"
-                   class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-400/50 hover:shadow-md active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-amber-500/40">
+                   style="--d: 260ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-amber-500/40">
                     <div>
                         <div class="flex items-center gap-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 transition-transform duration-300 group-hover:scale-105 dark:bg-amber-500/15 dark:text-amber-300">
                                 <x-icon name="activity" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
                                 <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Active Projects') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white">
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($activeProjects ?? 0) }}" data-countup-delay="280">
                                     {{ number_format($activeProjects ?? 0) }}
                                 </p>
                             </div>
@@ -182,30 +191,32 @@
                     </div>
 
                     <div class="mt-3 -mx-5 -mb-5 pt-1">
-                        <svg viewBox="0 0 240 46" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-active" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.28" />
+                                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.32" />
                                     <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path d="M0,34 C34,26 68,32 104,18 C140,8 172,22 204,14 C220,10 230,12 240,9 L240,46 L0,46 Z" fill="url(#spark-active)" />
-                            <path d="M0,34 C34,26 68,32 104,18 C140,8 172,22 204,14 C220,10 230,12 240,9" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5 L240,52 L0,52 Z" fill="url(#spark-active)" />
+                            <path class="lynk-spark-line" pathLength="100" d="M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
 
                 {{-- Card 4: Total Documents & KB (Pink / Rose) --}}
                 <a wire:navigate.hover href="{{ route('documents.index') }}"
-                   class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-pink-400/50 hover:shadow-md active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-pink-500/40">
+                   style="--d: 340ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-pink-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-pink-500/40">
                     <div>
                         <div class="flex items-center gap-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600 transition-transform duration-300 group-hover:scale-105 dark:bg-pink-500/15 dark:text-pink-300">
                                 <x-icon name="book" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
                                 <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total Documents & KB') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white">
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($totalDocsAndKb ?? ($documentCount ?? 0)) }}" data-countup-delay="360">
                                     {{ number_format($totalDocsAndKb ?? ($documentCount ?? 0)) }}
                                 </p>
                             </div>
@@ -219,25 +230,27 @@
                     </div>
 
                     <div class="mt-3 -mx-5 -mb-5 pt-1">
-                        <svg viewBox="0 0 240 46" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-docs" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#ec4899" stop-opacity="0.28" />
+                                    <stop offset="0%" stop-color="#ec4899" stop-opacity="0.32" />
                                     <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path d="M0,38 C40,32 76,34 112,22 C148,12 174,18 206,10 C222,7 232,8 240,5 L240,46 L0,46 Z" fill="url(#spark-docs)" />
-                            <path d="M0,38 C40,32 76,34 112,22 C148,12 174,18 206,10 C222,7 232,8 240,5" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4 L240,52 L0,52 Z" fill="url(#spark-docs)" />
+                            <path class="lynk-spark-line" pathLength="100" d="M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4" fill="none" stroke="#ec4899" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
             </div>
         </section>
 
-        {{-- 3. Baris Tengah: My Agenda & Tasks Today (7) & Project Status Breakdown Donut (5) --}}
+        {{-- 3. Baris Tengah: My Agenda & Tasks Today (420ms) & Project Status Breakdown Donut (500ms) --}}
         <div class="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             {{-- Kiri (lg:col-span-7): My Agenda & Tasks Today --}}
-            <section class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-7 dark:border-slate-800/60 dark:bg-slate-800/90" data-reveal data-reveal-delay="2" aria-labelledby="my-agenda-heading">
+            <section style="--d: 420ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-7 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="my-agenda-heading">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3">
                         <div class="flex items-center gap-2.5">
@@ -283,9 +296,9 @@
                                 </div>
 
                                 <div class="flex shrink-0 items-center gap-3">
-                                    {{-- Visual mini progress bar --}}
+                                    {{-- Visual mini progress bar (animasi 1000ms) --}}
                                     <div class="hidden w-16 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-slate-700/70" title="{{ $prog }}%">
-                                        <div class="h-1.5 rounded-full {{ $theme['bar'] }}" style="width: {{ $prog }}%"></div>
+                                        <div class="lynk-progress-bar h-1.5 rounded-full {{ $theme['bar'] }}" style="--target-w: {{ $prog }}%; --d: 420ms"></div>
                                     </div>
                                     <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $theme['pill'] }}">
                                         {{ $item['status_label'] }}
@@ -304,8 +317,10 @@
                 </div>
             </section>
 
-            {{-- Kanan (lg:col-span-5): Project Status Breakdown (Side-by-Side Donut Chart & Legend) --}}
-            <section class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5 dark:border-slate-800/60 dark:bg-slate-800/90" data-reveal data-reveal-delay="2" aria-labelledby="project-status-heading">
+            {{-- Kanan (lg:col-span-5): Project Status Breakdown (Side-by-Side Donut Chart & Legend 100% Akurat) --}}
+            <section style="--d: 500ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="project-status-heading">
                 <div class="flex items-center justify-between gap-3 pb-3">
                     <h2 id="project-status-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
                         {{ __('Project Status Breakdown') }}
@@ -331,7 +346,8 @@
                                 </svg>
                             @endif
                             <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-                                <span class="text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white">
+                                <span class="text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                      data-countup="{{ (int) ($totalProjects ?? 0) }}" data-countup-delay="520">
                                     {{ number_format($totalProjects ?? 0) }}
                                 </span>
                                 <span class="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-400">
@@ -340,8 +356,8 @@
                             </div>
                         </div>
 
-                        {{-- Sisi Kanan: Daftar Legend Vertikal --}}
-                        <div class="w-full flex-1 space-y-2.5">
+                        {{-- Sisi Kanan: Daftar Legend Vertikal (Seluruh Status Aktif = 100%) --}}
+                        <div class="w-full flex-1 space-y-2">
                             @foreach($legendStatuses as $statusItem)
                                 <div class="flex items-center justify-between gap-2 text-xs">
                                     <span class="flex min-w-0 items-center gap-2.5 font-medium text-slate-600 dark:text-slate-300">
@@ -349,8 +365,8 @@
                                         <span class="truncate">{{ __($statusItem['name']) }}</span>
                                     </span>
                                     <span class="shrink-0 font-bold text-slate-800 tabular-nums dark:text-slate-100">
-                                        {{ number_format($statusItem['count']) }}
-                                        <span class="ml-0.5 font-normal text-slate-400">({{ round($statusItem['percentage']) }}%)</span>
+                                        <span data-countup="{{ (int) $statusItem['count'] }}" data-countup-delay="540">{{ number_format($statusItem['count']) }}</span>
+                                        <span class="ml-0.5 font-normal text-slate-400">(<span data-countup="{{ round($statusItem['percentage']) }}" data-countup-suffix="%" data-countup-delay="540">{{ round($statusItem['percentage']) }}%</span>)</span>
                                     </span>
                                 </div>
                             @endforeach
@@ -364,10 +380,12 @@
             </section>
         </div>
 
-        {{-- 4. Baris Bawah: Recent Activity (6) & Company Board & Latest KB (6) --}}
+        {{-- 4. Baris Bawah: Recent Activity (580ms) & Company Board & Latest KB (660ms) --}}
         <div class="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             {{-- Kiri (lg:col-span-6): Recent Activity --}}
-            <section class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-6 dark:border-slate-800/60 dark:bg-slate-800/90" data-reveal data-reveal-delay="3" aria-labelledby="recent-activities-heading">
+            <section style="--d: 580ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-6 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="recent-activities-heading">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3">
                         <h2 id="recent-activities-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
@@ -428,7 +446,9 @@
             </section>
 
             {{-- Kanan (lg:col-span-6): Company Board & Latest KB --}}
-            <section class="flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-6 dark:border-slate-800/60 dark:bg-slate-800/90" data-reveal data-reveal-delay="3" aria-labelledby="company-board-heading">
+            <section style="--d: 660ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-6 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="company-board-heading">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3">
                         <h2 id="company-board-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">

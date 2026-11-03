@@ -1,37 +1,109 @@
-<x-app-layout>
+    <x-app-layout>
+    @include('partials.lynk-dashboard-motion')
+
     @if(session('success') && session('success_card'))
         <x-status-card :message="session('success')" />
     @endif
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Manage Sales') }}</h1>
+    <div class="lynk-enter flex flex-col gap-3 pt-1 mb-6 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Manage Sales') }}</h1>
+        <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
+            <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
+            <span>{{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
+        </div>
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Total Leads') }}</p>
-            <p class="mt-1 text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $stats['total'] ?? 0 }}</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Not assigned yet') }}</p>
-            <p class="mt-1 text-3xl font-bold {{ ($stats['unassigned'] ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-100' }}">{{ $stats['unassigned'] ?? 0 }}</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Won This Month') }}</p>
-            <p class="mt-1 text-3xl font-bold text-green-700 dark:text-green-300">{{ $stats['won_month'] ?? 0 }}</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Lost This Month') }}</p>
-            <p class="mt-1 text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $stats['lost_month'] ?? 0 }}</p>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Overdue Follow Ups') }}</p>
-            <p class="mt-1 text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $stats['overdue'] ?? 0 }}</p>
+    @php
+        $mgmtSalesCards = [
+            [
+                'label' => __('Total Leads'),
+                'value' => (int) ($stats['total'] ?? 0),
+                'icon' => 'users',
+                'iconBg' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+                'color' => '#8b5cf6',
+                'gradId' => 'mng-spark-1',
+                'line' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4',
+                'area' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4 L240,52 L0,52 Z',
+            ],
+            [
+                'label' => __('Not assigned yet'),
+                'value' => (int) ($stats['unassigned'] ?? 0),
+                'icon' => 'bolt',
+                'iconBg' => 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300',
+                'color' => '#f43f5e',
+                'gradId' => 'mng-spark-2',
+                'line' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4',
+                'area' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4 L240,52 L0,52 Z',
+            ],
+            [
+                'label' => __('Won This Month'),
+                'value' => (int) ($stats['won_month'] ?? 0),
+                'icon' => 'check-circle',
+                'iconBg' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+                'color' => '#10b981',
+                'gradId' => 'mng-spark-3',
+                'line' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5',
+                'area' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5 L240,52 L0,52 Z',
+            ],
+            [
+                'label' => __('Lost This Month'),
+                'value' => (int) ($stats['lost_month'] ?? 0),
+                'icon' => 'activity',
+                'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+                'color' => '#f59e0b',
+                'gradId' => 'mng-spark-4',
+                'line' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4',
+                'area' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4 L240,52 L0,52 Z',
+            ],
+        ];
+    @endphp
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        @foreach($mgmtSalesCards as $idx => $mc)
+            @php $dMs = 100 + ($idx * 80); @endphp
+            <div style="--d: {{ $dMs }}ms"
+                 class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/60 dark:bg-slate-800/90">
+                <div class="flex items-center gap-3.5">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 {{ $mc['iconBg'] }}">
+                        <x-icon name="{{ $mc['icon'] }}" class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ $mc['label'] }}</p>
+                        <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white"
+                           data-countup="{{ $mc['value'] }}" data-countup-delay="{{ $dMs + 20 }}">{{ number_format($mc['value']) }}</p>
+                    </div>
+                </div>
+                <div class="mt-3 -mx-5 -mb-5 pt-1">
+                    <svg viewBox="0 0 240 52" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="{{ $mc['gradId'] }}" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="{{ $mc['color'] }}" stop-opacity="0.32" />
+                                <stop offset="100%" stop-color="{{ $mc['color'] }}" stop-opacity="0.0" />
+                            </linearGradient>
+                        </defs>
+                        <path class="lynk-spark-area" d="{{ $mc['area'] }}" fill="url(#{{ $mc['gradId'] }})" />
+                        <path class="lynk-spark-line" pathLength="100" d="{{ $mc['line'] }}" fill="none" stroke="{{ $mc['color'] }}" stroke-width="2.2" stroke-linecap="round" />
+                    </svg>
+                </div>
+            </div>
+        @endforeach
+
+        <div style="--d: 420ms" class="lynk-enter lynk-kpi-card rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/60 dark:bg-slate-800/90">
+            <div class="flex items-center gap-3.5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300">
+                    <x-icon name="phone" class="h-5 w-5" />
+                </span>
+                <div class="min-w-0">
+                    <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Overdue Follow Ups') }}</p>
+                    <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white"
+                       data-countup="{{ (int) ($stats['overdue'] ?? 0) }}" data-countup-delay="440">{{ $stats['overdue'] ?? 0 }}</p>
+                </div>
+            </div>
             @if(($bySales ?? collect())->isNotEmpty())
-                <div class="mt-2 space-y-1 border-t border-slate-100 dark:border-slate-700 pt-2">
+                <div class="mt-3 space-y-1 pt-2">
                     @foreach($bySales as $row)
                         <p class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                             <span class="truncate">{{ $row->assignee?->name ?? '-' }}</span>
-                            <span class="font-bold text-slate-700 dark:text-slate-200">{{ $row->total }}</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{{ $row->total }}</span>
                         </p>
                     @endforeach
                 </div>

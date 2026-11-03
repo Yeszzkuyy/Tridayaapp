@@ -1,4 +1,6 @@
 <x-app-layout>
+    @include('partials.lynk-dashboard-motion')
+
     @if(session('success'))
         <div class="mb-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-emerald-800 dark:text-emerald-200 flex items-center justify-between">
             <div class="flex items-center gap-3">
