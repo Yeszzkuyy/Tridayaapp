@@ -185,8 +185,6 @@
             </span>
         </div>
 
-        <span class="hidden shrink-0 whitespace-nowrap text-[11px] tabular-nums text-slate-400 md:block dark:text-slate-300">{{ now()->translatedFormat('d M Y') }}</span>
-
         <span class="hidden h-8 w-px shrink-0 bg-slate-200/80 md:block dark:bg-zinc-700/80" aria-hidden="true"></span>
 
         <div class="hidden shrink-0 items-center whitespace-nowrap md:flex">

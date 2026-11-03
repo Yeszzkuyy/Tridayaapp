@@ -1,12 +1,18 @@
 <x-app-layout>
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent-600 dark:text-accent-300">
-                {{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}
-            </p>
-            <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Sales Dashboard') }}</h1>
+    @include('partials.lynk-dashboard-motion')
+
+    {{-- 1. Open Header Style --}}
+    <div class="lynk-enter flex flex-col gap-3 pt-1 mb-6 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {{ __('Sales Dashboard') }}
+        </h1>
+        <div class="flex flex-wrap items-center gap-2.5">
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
+                <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
+                <span>{{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
+            </div>
+            <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}" title="{{ __('My Leads') }}" />
         </div>
-        <x-icon-button as="a" icon="leads" href="{{ route('sales.my-leads') }}" title="{{ __('My Leads') }}" />
     </div>
 
     {{-- Banner Notifikasi Motivasi / Congratulation Dinamis --}}
@@ -148,72 +154,116 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-        <a href="{{ route('sales.my-leads', ['active' => 1]) }}"
-           class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
-            <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-blue-500/5"></div>
-            <div class="relative flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Active Leads') }}</p>
-                    <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $kpi['active'] ?? 0 }}</p>
+    @php
+        $uid = auth()->id();
+        $activeSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::where('assigned_to', $uid)->whereNotIn('status', ['won', 'lost']),
+            'created_at'
+        );
+        $wonSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::where('assigned_to', $uid)->where('status', 'won'),
+            'updated_at'
+        );
+        $fuSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\FollowUp::where('created_by', $uid),
+            'created_at'
+        );
+
+        $salesKpiCards = [
+            [
+                'label' => __('Active Leads'),
+                'value' => (int) ($kpi['active'] ?? 0),
+                'url' => route('sales.my-leads', ['active' => 1]),
+                'icon' => 'briefcase',
+                'ambient' => 'bg-violet-500/15 dark:bg-violet-500/20',
+                'iconBg' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+                'borderHover' => 'hover:border-violet-400/50 dark:hover:border-violet-500/40',
+                'color' => '#8b5cf6',
+                'gradId' => 'sales-spark-1',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($activeSeries, (int) ($kpi['active'] ?? 0)),
+            ],
+            [
+                'label' => __('Won This Month'),
+                'value' => (int) ($kpi['won_month'] ?? 0),
+                'url' => route('sales.my-leads', ['won_month' => 1]),
+                'icon' => 'check-circle',
+                'ambient' => 'bg-emerald-500/15 dark:bg-emerald-500/20',
+                'iconBg' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+                'borderHover' => 'hover:border-emerald-400/50 dark:hover:border-emerald-500/40',
+                'color' => '#10b981',
+                'gradId' => 'sales-spark-2',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($wonSeries, (int) ($kpi['won_month'] ?? 0)),
+            ],
+            [
+                'label' => __('Overdue Follow Ups'),
+                'value' => (int) ($kpi['overdue'] ?? 0),
+                'url' => route('sales.follow-ups.index', ['overdue' => 1]),
+                'icon' => 'phone',
+                'ambient' => 'bg-rose-500/15 dark:bg-rose-500/20',
+                'iconBg' => 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300',
+                'borderHover' => 'hover:border-rose-400/50 dark:hover:border-rose-500/40',
+                'color' => '#f43f5e',
+                'gradId' => 'sales-spark-3',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['overdue'] ?? 0)),
+            ],
+            [
+                'label' => __('Follow Up Hari Ini'),
+                'value' => (int) ($kpi['followups_today'] ?? 0),
+                'url' => route('sales.follow-ups.index', ['overdue' => 'today']),
+                'icon' => 'chat',
+                'ambient' => 'bg-amber-500/15 dark:bg-amber-500/20',
+                'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+                'borderHover' => 'hover:border-amber-400/50 dark:hover:border-amber-500/40',
+                'color' => '#f59e0b',
+                'gradId' => 'sales-spark-4',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['followups_today'] ?? 0)),
+            ],
+            [
+                'label' => __('Upcoming Follow Ups'),
+                'value' => (int) ($kpi['followups_upcoming'] ?? 0),
+                'url' => route('sales.follow-ups.index', ['overdue' => 'upcoming']),
+                'icon' => 'activity',
+                'ambient' => 'bg-pink-500/15 dark:bg-pink-500/20',
+                'iconBg' => 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',
+                'borderHover' => 'hover:border-pink-400/50 dark:hover:border-pink-500/40',
+                'color' => '#ec4899',
+                'gradId' => 'sales-spark-5',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['followups_upcoming'] ?? 0)),
+            ],
+        ];
+    @endphp
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+        @foreach($salesKpiCards as $idx => $sc)
+            @php $dMs = 100 + ($idx * 80); @endphp
+            <a href="{{ $sc['url'] }}"
+               style="--d: {{ $dMs }}ms"
+               class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 {{ $sc['borderHover'] }}">
+                <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-500 group-hover:opacity-100 {{ $sc['ambient'] }}"></span>
+                <div class="relative z-10 flex items-center gap-3.5">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 {{ $sc['iconBg'] }}">
+                        <x-icon name="{{ $sc['icon'] }}" class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ $sc['label'] }}</p>
+                        <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white"
+                           data-countup="{{ $sc['value'] }}" data-countup-delay="{{ $dMs + 20 }}">{{ number_format($sc['value']) }}</p>
+                    </div>
                 </div>
-                <span class="shrink-0 p-2.5 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
-                    <x-icon name="briefcase" class="h-5 w-5" />
-                </span>
-            </div>
-        </a>
-        <a href="{{ route('sales.my-leads', ['won_month' => 1]) }}"
-           class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
-            <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-green-500/5"></div>
-            <div class="relative flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Won This Month') }}</p>
-                    <p class="text-2xl font-extrabold text-green-700 dark:text-green-300 mt-1.5">{{ $kpi['won_month'] ?? 0 }}</p>
+                <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
+                    <svg viewBox="0 0 240 52" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="{{ $sc['gradId'] }}" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="{{ $sc['color'] }}" stop-opacity="{{ $sc['spark']['is_flat'] ? '0.10' : '0.32' }}" />
+                                <stop offset="100%" stop-color="{{ $sc['color'] }}" stop-opacity="0.0" />
+                            </linearGradient>
+                        </defs>
+                        <path class="lynk-spark-area" d="{{ $sc['spark']['area'] }}" fill="url(#{{ $sc['gradId'] }})" />
+                        <path class="lynk-spark-line" pathLength="100" d="{{ $sc['spark']['line'] }}" fill="none" stroke="{{ $sc['color'] }}" stroke-width="2.2" stroke-linecap="round" />
+                    </svg>
                 </div>
-                <span class="shrink-0 p-2.5 rounded-xl bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-300">
-                    <x-icon name="check-circle" class="h-5 w-5" />
-                </span>
-            </div>
-        </a>
-        <a href="{{ route('sales.follow-ups.index', ['overdue' => 1]) }}"
-           class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
-            <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-red-500/5"></div>
-            <div class="relative flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Overdue Follow Ups') }}</p>
-                    <p class="mt-1.5 text-2xl font-extrabold {{ ($kpi['overdue'] ?? 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-white' }}">{{ $kpi['overdue'] ?? 0 }}</p>
-                </div>
-                <span class="shrink-0 p-2.5 rounded-xl bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">
-                    <x-icon name="phone" class="h-5 w-5" />
-                </span>
-            </div>
-        </a>
-        <a href="{{ route('sales.follow-ups.index', ['overdue' => 'today']) }}"
-           class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
-            <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-yellow-500/5"></div>
-            <div class="relative flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Follow Up Hari Ini') }}</p>
-                    <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $kpi['followups_today'] ?? 0 }}</p>
-                </div>
-                <span class="shrink-0 p-2.5 rounded-xl bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-300">
-                    <x-icon name="chat" class="h-5 w-5" />
-                </span>
-            </div>
-        </a>
-        <a href="{{ route('sales.follow-ups.index', ['overdue' => 'upcoming']) }}"
-           class="relative h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5 hover:shadow transition">
-            <div class="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-purple-500/5"></div>
-            <div class="relative flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Upcoming Follow Ups') }}</p>
-                    <p class="text-2xl font-extrabold text-slate-800 dark:text-white mt-1.5">{{ $kpi['followups_upcoming'] ?? 0 }}</p>
-                </div>
-                <span class="shrink-0 p-2.5 rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300">
-                    <x-icon name="activity" class="h-5 w-5" />
-                </span>
-            </div>
-        </a>
+            </a>
+        @endforeach
     </div>
 
     {{-- Peringkat Tim & Target Bulanan Sales --}}
@@ -396,32 +446,35 @@
         </div>
     @endif
 
-    <div class="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6" data-reveal>
-        <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-4">{{ __('My Lead Status') }}</h2>
+    <div style="--d: 580ms" class="lynk-enter w-full rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
+        <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">{{ __('My Lead Status') }}</h2>
         @if(($funnelTotal ?? 0) > 0)
-            <div class="relative w-full max-w-[280px] mx-auto">
-                <x-donut-chart :data="$donutSales" :size="260" :strokeWidth="34" :scroll="true" />
-                <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-10">
-                    <span class="text-xs font-medium text-slate-400 dark:text-slate-500">{{ __('Total Leads') }}</span>
-                    <span class="mt-0.5 text-3xl font-bold text-slate-800 tabular-nums dark:text-slate-100">{{ $funnelTotal }}</span>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6 max-w-xl mx-auto">
+                <div class="relative w-44 shrink-0">
+                    <x-donut-chart :data="$donutSales" :size="176" :strokeWidth="24" :scroll="true" />
+                    <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                        <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums dark:text-white" data-countup="{{ $funnelTotal }}" data-countup-delay="600">{{ $funnelTotal }}</span>
+                        <span class="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-400">{{ __('Total Leads') }}</span>
+                    </div>
+                </div>
+                <div class="w-full flex-1 space-y-2">
+                    @foreach($donutSales as $seg)
+                        <a href="{{ route('sales.my-leads', ['status' => $seg['key']]) }}"
+                           class="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs transition hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
+                            <span class="flex min-w-0 items-center gap-2.5">
+                                <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $seg['color'] }}"></span>
+                                <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $seg['label'] }}</span>
+                            </span>
+                            <span class="shrink-0 font-bold text-slate-800 tabular-nums dark:text-slate-100">
+                                <span data-countup="{{ (int) $seg['value'] }}" data-countup-delay="620">{{ $seg['value'] }}</span>
+                                <span class="font-normal text-slate-400">({{ $funnelTotal > 0 ? round($seg['value'] / $funnelTotal * 100) : 0 }}%)</span>
+                            </span>
+                        </a>
+                    @endforeach
                 </div>
             </div>
-            <div class="mt-4 grid grid-cols-1 gap-1 sm:grid-cols-2">
-                @foreach($donutSales as $seg)
-                    <a href="{{ route('sales.my-leads', ['status' => $seg['key']]) }}"
-                       class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
-                        <span class="flex min-w-0 items-center gap-2.5">
-                            <span class="h-3 w-3 shrink-0 rounded-full" style="background-color: {{ $seg['color'] }}"></span>
-                            <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $seg['label'] }}</span>
-                        </span>
-                        <span class="shrink-0 font-semibold text-slate-700 tabular-nums dark:text-slate-200">{{ $seg['value'] }}
-                            <span class="font-medium text-slate-400">· {{ $funnelTotal > 0 ? round($seg['value'] / $funnelTotal * 100) : 0 }}%</span>
-                        </span>
-                    </a>
-                @endforeach
-            </div>
         @else
-            <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 px-5 py-8 text-center">
+            <div class="rounded-xl bg-slate-50/70 dark:bg-slate-900/30 px-5 py-8 text-center">
                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('No leads assigned to you yet.') }}</p>
             </div>
         @endif

@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\ProjectActivity;
 use App\Models\ProjectStatus;
 use App\Models\User;
+use App\Support\SparklineBuilder;
 use Illuminate\Support\Carbon;
 
 class TechnicianDashboardController extends Controller
@@ -71,6 +72,40 @@ class TechnicianDashboardController extends Controller
             ->take(5)
             ->values();
 
+        $kpiSparklines = [
+            'technicians' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(User::role('technician'), 'created_at', 6, $now),
+                $technicians->count()
+            ),
+            'active_technicians' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->whereIn('name', self::ACTIVE_STATUSES)),
+                    'updated_at',
+                    6,
+                    $now
+                ),
+                count($activeTechnicians)
+            ),
+            'completed_projects' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->where('name', 'Done')),
+                    'updated_at',
+                    6,
+                    $now
+                ),
+                $doneProjects
+            ),
+            'ongoing_projects' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->whereIn('name', self::ACTIVE_STATUSES)),
+                    'created_at',
+                    6,
+                    $now
+                ),
+                $runningProjects->count()
+            ),
+        ];
+
         return view('teknisi.dashboard', compact(
             'technicians',
             'runningProjects',
@@ -84,6 +119,7 @@ class TechnicianDashboardController extends Controller
             'statusBarColors',
             'recentProjects',
             'activities',
+            'kpiSparklines',
             'now',
         ));
     }

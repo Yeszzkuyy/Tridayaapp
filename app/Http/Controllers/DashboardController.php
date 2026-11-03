@@ -20,6 +20,7 @@ use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Support\SparklineBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -27,46 +28,55 @@ class DashboardController extends Controller
 {
     private const STATUS_STYLES = [
         'Open' => [
-            'bar' => 'bg-blue-500',
-            'dot' => 'bg-blue-500',
-            'badge' => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30',
+            'hex' => '#6366f1',
+            'bar' => 'bg-indigo-500',
+            'dot' => 'bg-indigo-500',
+            'badge' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30',
         ],
         'On Progress' => [
+            'hex' => '#f59e0b',
             'bar' => 'bg-amber-500',
             'dot' => 'bg-amber-500',
             'badge' => 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
         ],
         'Pending' => [
+            'hex' => '#f97316',
             'bar' => 'bg-orange-500',
             'dot' => 'bg-orange-500',
             'badge' => 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30',
         ],
         'Hold' => [
+            'hex' => '#f43f5e',
             'bar' => 'bg-rose-500',
             'dot' => 'bg-rose-500',
             'badge' => 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30',
         ],
         'Done' => [
+            'hex' => '#10b981',
             'bar' => 'bg-emerald-500',
             'dot' => 'bg-emerald-500',
             'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
         ],
         'Completed' => [
+            'hex' => '#10b981',
             'bar' => 'bg-emerald-500',
             'dot' => 'bg-emerald-500',
             'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
         ],
         'Warranty' => [
+            'hex' => '#06b6d4',
             'bar' => 'bg-cyan-500',
             'dot' => 'bg-cyan-500',
             'badge' => 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border-cyan-500/30',
         ],
         'Maintenance' => [
+            'hex' => '#8b5cf6',
             'bar' => 'bg-violet-500',
             'dot' => 'bg-violet-500',
             'badge' => 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-500/15 dark:text-violet-300 dark:border-violet-500/30',
         ],
         'Cancelled' => [
+            'hex' => '#64748b',
             'bar' => 'bg-slate-400',
             'dot' => 'bg-slate-400',
             'badge' => 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
@@ -127,12 +137,13 @@ class DashboardController extends Controller
         $totalDocsAndKb = $documentCount + $kbTotalCount;
         $userCount = (int) User::count();
 
-        // 3. Distribusi Project Status untuk Progress Bar
+        // 3. Distribusi Project Status untuk Donut Chart & Legend
         $statusTotalBase = max($totalProjects, (int) $rawStatuses->sum('projects_count'));
         $projectStatusBreakdown = $rawStatuses->map(function (ProjectStatus $status) use ($statusTotalBase) {
             $count = (int) $status->projects_count;
             $pct = $statusTotalBase > 0 ? round(($count / $statusTotalBase) * 100, 1) : 0.0;
             $style = self::STATUS_STYLES[$status->name] ?? [
+                'hex' => '#6366f1',
                 'bar' => 'bg-indigo-500',
                 'dot' => 'bg-indigo-500',
                 'badge' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30',
@@ -143,6 +154,7 @@ class DashboardController extends Controller
                 'name' => $status->name,
                 'count' => $count,
                 'percentage' => $pct,
+                'hex_color' => $style['hex'],
                 'bar_class' => $style['bar'],
                 'dot_class' => $style['dot'],
                 'badge_class' => $style['badge'],
@@ -155,7 +167,50 @@ class DashboardController extends Controller
         // 5. Company Board / Knowledge Base Highlights (3-4 item terbaru)
         $kbHighlights = $this->buildKnowledgeHighlights($user);
 
-        // 6. Recent Activity (Eager loaded & deduplicated)
+        // 6. Real-Time 6-Month Historical Sparklines (Flat line jika nilai 0 / datar)
+        $docSeries = SparklineBuilder::monthlyCounts(ProjectDocument::query(), 'created_at', 6, $now);
+        $prodSeries = SparklineBuilder::monthlyCounts(
+            Product::where('status', '!=', Product::STATUS_REJECTED),
+            'created_at',
+            6,
+            $now
+        );
+        $kbDocSeries = SparklineBuilder::monthlyCounts(KnowledgeBaseDocument::query(), 'created_at', 6, $now);
+        $combinedDocsKbSeries = [];
+        for ($i = 0; $i < 6; $i++) {
+            $combinedDocsKbSeries[] = ($docSeries[$i] ?? 0) + ($prodSeries[$i] ?? 0) + ($kbDocSeries[$i] ?? 0);
+        }
+
+        $kpiSparklines = [
+            'customers' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(Customer::query(), 'created_at', 6, $now),
+                $customerCount
+            ),
+            'completed_projects' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->whereIn('name', ['Done', 'Completed'])),
+                    'updated_at',
+                    6,
+                    $now
+                ),
+                $completedProjectsTotal
+            ),
+            'active_projects' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->whereIn('name', [
+                        ProjectStatusEnum::Open->value,
+                        ProjectStatusEnum::OnProgress->value,
+                    ])),
+                    'created_at',
+                    6,
+                    $now
+                ),
+                $activeProjects
+            ),
+            'docs_kb' => SparklineBuilder::fromSeries($combinedDocsKbSeries, $totalDocsAndKb),
+        ];
+
+        // 7. Recent Activity (Eager loaded & deduplicated)
         $activities = ProjectActivity::with([
             'project:id,project_name,customer_id',
             'project.customer:id,name',
@@ -188,6 +243,7 @@ class DashboardController extends Controller
             'agendaItems',
             'agendaMeta',
             'kbHighlights',
+            'kpiSparklines',
             'activities',
             'now',
         ));
@@ -229,6 +285,7 @@ class DashboardController extends Controller
                 ->get();
 
             foreach ($schedules as $schedule) {
+                $dt = $schedule->start_at ? $schedule->start_at->setTimezone('Asia/Jakarta') : $now;
                 $isToday = $schedule->start_at && $schedule->start_at->between($todayStart, $todayEnd);
                 $items->push([
                     'title' => $schedule->title ?: __('Technical Schedule'),
@@ -238,8 +295,11 @@ class DashboardController extends Controller
                     'badge_color' => 'violet',
                     'status_label' => $schedule->status === 'on_progress' ? __('On Progress') : __('Scheduled'),
                     'time_label' => $schedule->start_at
-                        ? ($isToday ? $schedule->start_at->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : $schedule->start_at->setTimezone('Asia/Jakarta')->format('d M, H:i'))
+                        ? ($isToday ? $dt->format('H:i').' WIB' : $dt->format('d M, H:i'))
                         : __('Today'),
+                    'day' => $dt->format('d'),
+                    'month' => strtoupper($dt->format('M')),
+                    'progress' => $schedule->status === 'on_progress' ? 65 : 25,
                     'url' => route('teknisi.jadwal'),
                 ]);
             }
@@ -258,6 +318,7 @@ class DashboardController extends Controller
                 ->get();
 
             foreach ($techRequests as $req) {
+                $dt = $req->scheduled_at ? Carbon::parse($req->scheduled_at)->setTimezone('Asia/Jakarta') : ($req->created_at ?? $now);
                 $items->push([
                     'title' => $req->title ?: __('Technical Request #:id', ['id' => $req->id]),
                     'subtitle' => $req->lead?->customer?->name ?: ($req->location ?: __('Technical Support')),
@@ -265,13 +326,16 @@ class DashboardController extends Controller
                     'badge_color' => 'cyan',
                     'status_label' => ucfirst(str_replace('_', ' ', (string) $req->status)),
                     'time_label' => $req->scheduled_at
-                        ? Carbon::parse($req->scheduled_at)->setTimezone('Asia/Jakarta')->format('d M Y')
+                        ? $dt->format('d M Y')
                         : __('Active'),
+                    'day' => $dt->format('d'),
+                    'month' => strtoupper($dt->format('M')),
+                    'progress' => $req->status === 'on_progress' ? 60 : ($req->status === 'scheduled' ? 35 : 15),
                     'url' => route('teknisi.technical-requests.show', $req),
                 ]);
             }
 
-            if ($items->count() < 5 && $userNameLower !== '') {
+            if ($items->count() < 4 && $userNameLower !== '') {
                 $surveys = Survey::with(['customer:id,name', 'project:id,project_name'])
                     ->whereIn('status', ['draft', 'scheduled', 'on_survey'])
                     ->whereRaw('LOWER(pic) LIKE ?', ['%'.$userNameLower.'%'])
@@ -280,6 +344,7 @@ class DashboardController extends Controller
                     ->get();
 
                 foreach ($surveys as $survey) {
+                    $dt = $survey->survey_date ?? ($survey->created_at ?? $now);
                     $items->push([
                         'title' => $survey->title ?: __('Site Survey #:id', ['id' => $survey->id]),
                         'subtitle' => $survey->customer?->name ?: ($survey->project?->project_name ?: ($survey->location ?? '-')),
@@ -287,6 +352,9 @@ class DashboardController extends Controller
                         'badge_color' => 'emerald',
                         'status_label' => $survey->status === 'on_survey' ? __('In Progress') : __('Scheduled'),
                         'time_label' => $survey->survey_date ? $survey->survey_date->format('d M Y') : __('Active'),
+                        'day' => $dt->format('d'),
+                        'month' => strtoupper($dt->format('M')),
+                        'progress' => $survey->status === 'on_survey' ? 65 : 30,
                         'url' => route('teknisi.surveys.show', $survey),
                     ]);
                 }
@@ -299,6 +367,7 @@ class DashboardController extends Controller
                     ->get();
 
                 foreach ($instalasis as $instalasi) {
+                    $dt = $instalasi->schedule_date ?? ($instalasi->created_at ?? $now);
                     $items->push([
                         'title' => $instalasi->project?->project_name ?: __('Installation #:id', ['id' => $instalasi->id]),
                         'subtitle' => $instalasi->project?->customer?->name ?: ($instalasi->location ?? '-'),
@@ -306,6 +375,9 @@ class DashboardController extends Controller
                         'badge_color' => 'blue',
                         'status_label' => $instalasi->status === 'on_progress' ? __('On Progress') : __('Scheduled'),
                         'time_label' => $instalasi->schedule_date ? $instalasi->schedule_date->format('d M Y') : __('Active'),
+                        'day' => $dt->format('d'),
+                        'month' => strtoupper($dt->format('M')),
+                        'progress' => $instalasi->status === 'on_progress' ? 70 : 30,
                         'url' => route('teknisi.instalasis.show', $instalasi),
                     ]);
                 }
@@ -313,7 +385,7 @@ class DashboardController extends Controller
         }
 
         // B. Sales: Sales Schedule, Follow Up & Meeting
-        if ($user->can('view-sales') && $items->count() < 5) {
+        if ($user->can('view-sales') && $items->count() < 4) {
             $salesSchedules = SalesSchedule::with(['lead:id,customer_id,kebutuhan', 'lead.customer:id,name'])
                 ->whereIn('status', ['scheduled', 'rescheduled'])
                 ->where('start_at', '>=', $todayStart)
@@ -326,6 +398,7 @@ class DashboardController extends Controller
                 ->get();
 
             foreach ($salesSchedules as $sched) {
+                $dt = $sched->start_at ? $sched->start_at->setTimezone('Asia/Jakarta') : $now;
                 $isToday = $sched->start_at && $sched->start_at->between($todayStart, $todayEnd);
                 $items->push([
                     'title' => $sched->title ?: SalesSchedule::typeLabel((string) $sched->type),
@@ -334,8 +407,11 @@ class DashboardController extends Controller
                     'badge_color' => 'indigo',
                     'status_label' => SalesSchedule::statusLabel((string) $sched->status),
                     'time_label' => $sched->start_at
-                        ? ($isToday ? $sched->start_at->setTimezone('Asia/Jakarta')->format('H:i').' WIB' : $sched->start_at->setTimezone('Asia/Jakarta')->format('d M, H:i'))
+                        ? ($isToday ? $dt->format('H:i').' WIB' : $dt->format('d M, H:i'))
                         : __('Scheduled'),
+                    'day' => $dt->format('d'),
+                    'month' => strtoupper($dt->format('M')),
+                    'progress' => $isToday ? 60 : 35,
                     'url' => route('sales.schedules.index'),
                 ]);
             }
@@ -356,23 +432,26 @@ class DashboardController extends Controller
 
             foreach ($followUps as $fu) {
                 $isMeeting = $fu->type === 'meeting';
-                $targetDate = $fu->next_follow_up_date ?? $fu->follow_up_date;
+                $targetDate = $fu->next_follow_up_date ?? $fu->follow_up_date ?? $now;
                 $items->push([
                     'title' => $fu->description ?: FollowUp::typeLabel($fu->type),
                     'subtitle' => $fu->customer?->name ?: ($fu->lead?->customer?->name ?: ($fu->lead?->kebutuhan ?? __('Customer Follow-up'))),
                     'type_label' => $isMeeting ? __('Meeting') : __('Follow Up'),
                     'badge_color' => $isMeeting ? 'rose' : 'amber',
-                    'status_label' => $targetDate && $targetDate->isToday() ? __('Today') : __('Pending'),
+                    'status_label' => $targetDate->isToday() ? __('Today') : __('Pending'),
                     'time_label' => $fu->activity_time
                         ? substr((string) $fu->activity_time, 0, 5).' WIB'
-                        : ($targetDate ? $targetDate->format('d M Y') : __('Today')),
+                        : $targetDate->format('d M Y'),
+                    'day' => $targetDate->format('d'),
+                    'month' => strtoupper($targetDate->format('M')),
+                    'progress' => $targetDate->isToday() ? 55 : 40,
                     'url' => $isMeeting ? route('sales.meetings.index') : route('sales.follow-ups.index'),
                 ]);
             }
         }
 
         // C. Inside Sales: Lead Tasks
-        if ($user->can('manage-inside-sales') && $items->count() < 5) {
+        if ($user->can('manage-inside-sales') && $items->count() < 4) {
             $leadTasks = LeadTask::with(['lead:id,customer_id,kebutuhan', 'lead.customer:id,name'])
                 ->where('assigned_to', $user->id)
                 ->where('status', '!=', 'done')
@@ -381,6 +460,7 @@ class DashboardController extends Controller
                 ->get();
 
             foreach ($leadTasks as $task) {
+                $dt = $task->due_date ?? ($task->created_at ?? $now);
                 $items->push([
                     'title' => $task->title ?: __('Task #:id', ['id' => $task->id]),
                     'subtitle' => $task->lead?->customer?->name ?: ($task->lead?->kebutuhan ?? __('Inside Sales Task')),
@@ -388,13 +468,16 @@ class DashboardController extends Controller
                     'badge_color' => 'amber',
                     'status_label' => LeadTask::statusLabel($task->status),
                     'time_label' => $task->due_date ? __('Due :date', ['date' => $task->due_date->format('d M')]) : __('Active'),
+                    'day' => $dt->format('d'),
+                    'month' => strtoupper($dt->format('M')),
+                    'progress' => $task->status === 'review' ? 80 : ($task->status === 'in_progress' ? 55 : 25),
                     'url' => route('lead-tasks.show', $task),
                 ]);
             }
         }
 
-        // D. Project Tasks atau Active Projects yang melibatkan user (atau proyek aktif kantor jika masih < 5)
-        if ($items->count() < 5) {
+        // D. Project Tasks atau Active Projects yang melibatkan user (atau proyek aktif kantor jika masih < 4)
+        if ($items->count() < 4) {
             $projectTasks = ProjectTask::with(['project:id,project_name,customer_id', 'project.customer:id,name'])
                 ->where('assigned_to', $user->id)
                 ->whereNotIn('status', ['done', 'completed', 'Done', 'Completed'])
@@ -403,6 +486,7 @@ class DashboardController extends Controller
                 ->get();
 
             foreach ($projectTasks as $pt) {
+                $dt = $pt->due_date ?? ($pt->created_at ?? $now);
                 $items->push([
                     'title' => $pt->task_name ?: __('Project Task'),
                     'subtitle' => $pt->project?->project_name ?: ($pt->project?->customer?->name ?? '-'),
@@ -410,6 +494,9 @@ class DashboardController extends Controller
                     'badge_color' => 'blue',
                     'status_label' => ucfirst((string) ($pt->status ?: 'Open')),
                     'time_label' => $pt->due_date ? __('Due :date', ['date' => $pt->due_date->format('d M')]) : __('Active'),
+                    'day' => $dt->format('d'),
+                    'month' => strtoupper($dt->format('M')),
+                    'progress' => 50,
                     'url' => $pt->project_id && $user->canAny(['view-technician', 'manage-technician', 'view-sales', 'manage-sales', 'view-admin', 'manage-admin'])
                         ? route('projects.show', $pt->project_id)
                         : route('customers.index'),
@@ -417,7 +504,7 @@ class DashboardController extends Controller
             }
         }
 
-        if ($items->count() < 5) {
+        if ($items->count() < 4) {
             $canOpenProject = $user->canAny(['view-technician', 'manage-technician', 'view-sales', 'manage-sales', 'view-admin', 'manage-admin']);
             $activeProjectQuery = Project::with(['customer:id,name', 'status:id,name'])
                 ->whereHas('status', fn ($q) => $q->whereIn('name', [
@@ -435,26 +522,34 @@ class DashboardController extends Controller
                     }
                 })
                 ->latest('updated_at')
-                ->take(5 - $items->count())
+                ->take(4 - $items->count())
                 ->get();
 
             if ($userProjects->isEmpty() && $items->isEmpty()) {
                 $userProjects = $activeProjectQuery
                     ->latest('updated_at')
-                    ->take(5)
+                    ->take(4)
                     ->get();
             }
 
             foreach ($userProjects as $proj) {
+                $dt = $proj->start_date ?? ($proj->updated_at ?? ($proj->created_at ?? $now));
+                $isOnProgress = $proj->status?->name === 'On Progress';
+                $rawProgress = (int) ($proj->progress ?? 0);
+                $computedProgress = $rawProgress > 0 ? min(100, $rawProgress) : ($isOnProgress ? 60 : 25);
+
                 $items->push([
                     'title' => $proj->project_name ?: __('Project #:id', ['id' => $proj->id]),
                     'subtitle' => $proj->customer?->name ?: ($proj->pic_engineer ? __('PIC: :name', ['name' => $proj->pic_engineer]) : __('Active Project')),
                     'type_label' => __('Project'),
-                    'badge_color' => $proj->status?->name === 'On Progress' ? 'amber' : 'blue',
+                    'badge_color' => $isOnProgress ? 'amber' : 'blue',
                     'status_label' => $proj->status?->name ?? __('Active'),
                     'time_label' => $proj->delivery_deadline
                         ? __('Due :date', ['date' => $proj->delivery_deadline->format('d M')])
                         : ($proj->updated_at ? $proj->updated_at->setTimezone('Asia/Jakarta')->format('d M Y') : __('Ongoing')),
+                    'day' => $dt->format('d'),
+                    'month' => strtoupper($dt->format('M')),
+                    'progress' => $computedProgress,
                     'url' => $canOpenProject ? route('projects.show', $proj) : route('customers.index'),
                 ]);
             }
@@ -488,7 +583,7 @@ class DashboardController extends Controller
             ];
         }
 
-        return [$items->take(5)->values(), $meta];
+        return [$items->take(4)->values(), $meta];
     }
 
     /**
