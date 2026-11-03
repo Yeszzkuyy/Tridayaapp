@@ -61,6 +61,11 @@
             'color' => $s['hex_color'] ?? '#6366f1',
             'key' => $s['name'],
         ])->values();
+
+        $sparkCustomers = $kpiSparklines['customers'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
+        $sparkCompleted = $kpiSparklines['completed_projects'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
+        $sparkActive = $kpiSparklines['active_projects'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
+        $sparkDocs = $kpiSparklines['docs_kb'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
     @endphp
 
     <div class="w-full space-y-6">
@@ -76,14 +81,15 @@
             </div>
         </div>
 
-        {{-- 2. 4 Kartu KPI dengan Multi-Wave Sparkline SVG & Count-Up (delay 100ms, 180ms, 260ms, 340ms) --}}
+        {{-- 2. 4 Kartu KPI dengan Data-Driven Sparkline SVG, Ambient Light & Count-Up 1.8s --}}
         <section aria-label="{{ __('Key Summary') }}">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {{-- Card 1: Total Customers (Violet / Indigo) --}}
                 <a wire:navigate.hover href="{{ route('customers.index') }}"
                    style="--d: 100ms"
                    class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-violet-500/40">
-                    <div>
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-violet-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-violet-500/20"></span>
+                    <div class="relative z-10">
                         <div class="flex items-center gap-3.5">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 transition-transform duration-300 group-hover:scale-105 dark:bg-violet-500/15 dark:text-violet-300">
                                 <x-icon name="users" class="h-5 w-5" />
@@ -108,34 +114,35 @@
                         </p>
                     </div>
 
-                    <div class="mt-3 -mx-5 -mb-5 pt-1">
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                         <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-customers" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.32" />
+                                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="{{ $sparkCustomers['is_flat'] ? '0.10' : '0.32' }}" />
                                     <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path class="lynk-spark-area" d="M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4 L240,52 L0,52 Z" fill="url(#spark-customers)" />
-                            <path class="lynk-spark-line" pathLength="100" d="M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="{{ $sparkCustomers['area'] }}" fill="url(#spark-customers)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkCustomers['line'] }}" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
 
-                {{-- Card 2: Total / Completed Projects (Emerald / Teal) --}}
+                {{-- Card 2: Completed Projects (Emerald / Teal) --}}
                 <a wire:navigate.hover href="{{ $projectsIndexUrl }}"
                    style="--d: 180ms"
                    class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-emerald-500/40">
-                    <div>
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-emerald-500/20"></span>
+                    <div class="relative z-10">
                         <div class="flex items-center gap-3.5">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 transition-transform duration-300 group-hover:scale-105 dark:bg-emerald-500/15 dark:text-emerald-300">
                                 <x-icon name="check-circle" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total / Completed Projects') }}</p>
+                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Completed Projects') }}</p>
                                 <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
-                                   data-countup="{{ (int) ($totalProjects ?? 0) }}" data-countup-delay="200">
-                                    {{ number_format($totalProjects ?? 0) }}
+                                   data-countup="{{ (int) ($completedProjectsTotal ?? 0) }}" data-countup-delay="200">
+                                    {{ number_format($completedProjectsTotal ?? 0) }}
                                 </p>
                             </div>
                         </div>
@@ -145,22 +152,22 @@
                                 <svg class="mr-0.5 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M5.22 14.78a.75.75 0 0 0 1.06 0l7.22-7.22v5.69a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75h-7.5a.75.75 0 0 0 0 1.5h5.69l-7.22 7.22a.75.75 0 0 0 0 1.06Z" clip-rule="evenodd" />
                                 </svg>
-                                {{ number_format($completedProjectsTotal ?? 0) }} {{ __('Done') }}
+                                +{{ number_format($completedProjectsThisMonth ?? 0) }} {{ __('BAST this month') }}
                             </span>
-                            <span>· +{{ number_format($completedProjectsThisMonth ?? 0) }} {{ __('BAST this month') }}</span>
+                            <span>· {{ number_format($totalProjects ?? 0) }} {{ __('total') }}</span>
                         </p>
                     </div>
 
-                    <div class="mt-3 -mx-5 -mb-5 pt-1">
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                         <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-projects" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.32" />
+                                    <stop offset="0%" stop-color="#10b981" stop-opacity="{{ $sparkCompleted['is_flat'] ? '0.10' : '0.32' }}" />
                                     <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path class="lynk-spark-area" d="M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4 L240,52 L0,52 Z" fill="url(#spark-projects)" />
-                            <path class="lynk-spark-line" pathLength="100" d="M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="{{ $sparkCompleted['area'] }}" fill="url(#spark-projects)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkCompleted['line'] }}" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
@@ -169,7 +176,8 @@
                 <a wire:navigate.hover href="{{ $projectsIndexUrl }}"
                    style="--d: 260ms"
                    class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-amber-500/40">
-                    <div>
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-amber-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-amber-500/20"></span>
+                    <div class="relative z-10">
                         <div class="flex items-center gap-3.5">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 transition-transform duration-300 group-hover:scale-105 dark:bg-amber-500/15 dark:text-amber-300">
                                 <x-icon name="activity" class="h-5 w-5" />
@@ -190,16 +198,16 @@
                         </p>
                     </div>
 
-                    <div class="mt-3 -mx-5 -mb-5 pt-1">
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                         <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-active" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.32" />
+                                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="{{ $sparkActive['is_flat'] ? '0.10' : '0.32' }}" />
                                     <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path class="lynk-spark-area" d="M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5 L240,52 L0,52 Z" fill="url(#spark-active)" />
-                            <path class="lynk-spark-line" pathLength="100" d="M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="{{ $sparkActive['area'] }}" fill="url(#spark-active)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkActive['line'] }}" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>
@@ -208,7 +216,8 @@
                 <a wire:navigate.hover href="{{ route('documents.index') }}"
                    style="--d: 340ms"
                    class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-pink-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-pink-500/40">
-                    <div>
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-pink-500/20"></span>
+                    <div class="relative z-10">
                         <div class="flex items-center gap-3.5">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600 transition-transform duration-300 group-hover:scale-105 dark:bg-pink-500/15 dark:text-pink-300">
                                 <x-icon name="book" class="h-5 w-5" />
@@ -229,16 +238,16 @@
                         </p>
                     </div>
 
-                    <div class="mt-3 -mx-5 -mb-5 pt-1">
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                         <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="spark-docs" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#ec4899" stop-opacity="0.32" />
+                                    <stop offset="0%" stop-color="#ec4899" stop-opacity="{{ $sparkDocs['is_flat'] ? '0.10' : '0.32' }}" />
                                     <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0" />
                                 </linearGradient>
                             </defs>
-                            <path class="lynk-spark-area" d="M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4 L240,52 L0,52 Z" fill="url(#spark-docs)" />
-                            <path class="lynk-spark-line" pathLength="100" d="M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4" fill="none" stroke="#ec4899" stroke-width="2.2" stroke-linecap="round" />
+                            <path class="lynk-spark-area" d="{{ $sparkDocs['area'] }}" fill="url(#spark-docs)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkDocs['line'] }}" fill="none" stroke="#ec4899" stroke-width="2.2" stroke-linecap="round" />
                         </svg>
                     </div>
                 </a>

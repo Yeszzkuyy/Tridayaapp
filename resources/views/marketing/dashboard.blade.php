@@ -78,6 +78,16 @@
     </div>
 
     @php
+        $trendTotals = collect($trend ?? [])->pluck('total')->map(fn ($v) => (int) $v)->all();
+        $mktActiveSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::whereNotIn('status', ['won', 'lost']),
+            'created_at'
+        );
+        $mktWonSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::where('status', 'won'),
+            'updated_at'
+        );
+
         $mktKpiCards = [
             [
                 'label' => __('Leads This Month'),
@@ -86,12 +96,12 @@
                 'sub' => ($stats['this_month'] >= $stats['last_month'] ? '▲ ' : '▼ ') . __('last month:') . ' ' . $stats['last_month'],
                 'subClass' => $stats['this_month'] >= $stats['last_month'] ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400',
                 'icon' => 'calendar',
+                'ambient' => 'bg-violet-500/15 dark:bg-violet-500/20',
                 'iconBg' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
                 'borderHover' => 'hover:border-violet-400/50 dark:hover:border-violet-500/40',
                 'color' => '#8b5cf6',
                 'gradId' => 'mkt-spark-1',
-                'line' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4',
-                'area' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($trendTotals, (int) ($stats['this_month'] ?? 0)),
             ],
             [
                 'label' => __('Total Leads'),
@@ -100,12 +110,12 @@
                 'sub' => __('All recorded leads'),
                 'subClass' => 'text-slate-500 dark:text-slate-400',
                 'icon' => 'users',
+                'ambient' => 'bg-indigo-500/15 dark:bg-indigo-500/20',
                 'iconBg' => 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
                 'borderHover' => 'hover:border-indigo-400/50 dark:hover:border-indigo-500/40',
                 'color' => '#6366f1',
                 'gradId' => 'mkt-spark-2',
-                'line' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4',
-                'area' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($trendTotals, (int) ($stats['total'] ?? 0)),
             ],
             [
                 'label' => __('Active Leads'),
@@ -114,12 +124,12 @@
                 'sub' => __('In pipeline'),
                 'subClass' => 'text-amber-600 dark:text-amber-400',
                 'icon' => 'bolt',
+                'ambient' => 'bg-amber-500/15 dark:bg-amber-500/20',
                 'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
                 'borderHover' => 'hover:border-amber-400/50 dark:hover:border-amber-500/40',
                 'color' => '#f59e0b',
                 'gradId' => 'mkt-spark-3',
-                'line' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5',
-                'area' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($mktActiveSeries, (int) ($stats['active'] ?? 0)),
             ],
             [
                 'label' => __('Won'),
@@ -128,12 +138,12 @@
                 'sub' => __('Lost:') . ' ' . $stats['lost'],
                 'subClass' => 'text-rose-500 dark:text-rose-400',
                 'icon' => 'check-circle',
+                'ambient' => 'bg-emerald-500/15 dark:bg-emerald-500/20',
                 'iconBg' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
                 'borderHover' => 'hover:border-emerald-400/50 dark:hover:border-emerald-500/40',
                 'color' => '#10b981',
                 'gradId' => 'mkt-spark-4',
-                'line' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4',
-                'area' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($mktWonSeries, (int) ($stats['won'] ?? 0)),
             ],
             [
                 'label' => __('Conversion Rate'),
@@ -142,12 +152,12 @@
                 'sub' => __('won ÷ (won + lost)'),
                 'subClass' => 'text-slate-400',
                 'icon' => 'chart-bar',
+                'ambient' => 'bg-pink-500/15 dark:bg-pink-500/20',
                 'iconBg' => 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',
                 'borderHover' => 'hover:border-pink-400/50 dark:hover:border-pink-500/40',
                 'color' => '#ec4899',
                 'gradId' => 'mkt-spark-5',
-                'line' => 'M0,44 C26,38 48,18 76,24 C104,30 128,14 158,20 C188,26 208,10 240,5',
-                'area' => 'M0,44 C26,38 48,18 76,24 C104,30 128,14 158,20 C188,26 208,10 240,5 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($mktWonSeries, (int) ($stats['conversion'] ?? 0)),
             ],
         ];
     @endphp
@@ -157,7 +167,8 @@
             @php $dMs = 100 + ($idx * 80); @endphp
             <div style="--d: {{ $dMs }}ms"
                  class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/60 dark:bg-slate-800/90 {{ $mc['borderHover'] }}">
-                <div>
+                <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-500 group-hover:opacity-100 {{ $mc['ambient'] }}"></span>
+                <div class="relative z-10">
                     <div class="flex items-center gap-3.5">
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 {{ $mc['iconBg'] }}">
                             <x-icon name="{{ $mc['icon'] }}" class="h-5 w-5" />
@@ -170,16 +181,16 @@
                     </div>
                     <p class="mt-3 text-xs font-medium {{ $mc['subClass'] }}">{{ $mc['sub'] }}</p>
                 </div>
-                <div class="mt-3 -mx-5 -mb-5 pt-1">
+                <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                     <svg viewBox="0 0 240 52" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                         <defs>
                             <linearGradient id="{{ $mc['gradId'] }}" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="{{ $mc['color'] }}" stop-opacity="0.32" />
+                                <stop offset="0%" stop-color="{{ $mc['color'] }}" stop-opacity="{{ $mc['spark']['is_flat'] ? '0.10' : '0.32' }}" />
                                 <stop offset="100%" stop-color="{{ $mc['color'] }}" stop-opacity="0.0" />
                             </linearGradient>
                         </defs>
-                        <path class="lynk-spark-area" d="{{ $mc['area'] }}" fill="url(#{{ $mc['gradId'] }})" />
-                        <path class="lynk-spark-line" pathLength="100" d="{{ $mc['line'] }}" fill="none" stroke="{{ $mc['color'] }}" stroke-width="2.2" stroke-linecap="round" />
+                        <path class="lynk-spark-area" d="{{ $mc['spark']['area'] }}" fill="url(#{{ $mc['gradId'] }})" />
+                        <path class="lynk-spark-line" pathLength="100" d="{{ $mc['spark']['line'] }}" fill="none" stroke="{{ $mc['color'] }}" stroke-width="2.2" stroke-linecap="round" />
                     </svg>
                 </div>
             </div>

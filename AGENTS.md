@@ -190,37 +190,39 @@ tombol menyatu dengan background.
 Setiap menambah **kelas Tailwind baru**: jalankan ulang `npm run build` setelah
 merge ke main, kalau tidak kelasnya tidak akan ter-compile.
 
-## 7.1 Standar Desain UI & Aturan Anti-AI-Slop
+## 7.1 Standar Desain UI/UX ("Lynk Dashboard Style") & Aturan Anti-Filler
 
-Semua halaman (dashboard, form, list/tabel, detail) wajib mengikuti standar visual berikut
-agar pengalaman pengguna terasa rapi, simpel, interaktif, dan profesional (bebas dari template AI kosong):
+Seluruh halaman (terutama Dashboard, Monitoring, KPI, dan List/Detail) wajib mengikuti standar bahasa desain **"Lynk Dashboard Style"** agar tampilan aplikasi konsisten, modern, luwes, kaya grafis fungsional, dan bebas dari teks sampah (*filler text*):
 
-1. **Prinsip Utama: Rapi, Padat Informasi, dan Fungsional**
-   - Halaman harus menyajikan data operasional riil dengan hierarki jelas, bukan ruang kosong berbalut hiasan.
-   - Gunakan pembagian layout proporsional (misal: layout 2 kolom 70:30 untuk dashboard dan monitoring, bukan membentang 1 baris panjang yang membuang whitespace).
+1. **Aturan Global "No Filler Text" & Open Header Style:**
+   - **DILARANG** menulis sub-judul dekoratif/basa-basi di bawah judul halaman atau di bawah judul kartu (seperti *"Latest figures from..."*, *"Monitor project status..."*, *"4 indicators"*, *"Summary of your agenda"*).
+   - **Open Header Style:** Jangan membungkus sapaan halaman (`"Welcome back, [Name] 👋"`) atau judul utama halaman di dalam kotak/card ber-border. Biarkan menyatu langsung dengan background halaman di sisi kiri, dan letakkan pill tanggal (`rounded-full border px-4 py-2 text-xs font-semibold`) serta tombol aksi utama di sisi kanan sejajar dengan judul.
+   - **Topbar Breadcrumb:** Dilarang menduplikasi nama grup/halaman di topbar (gunakan format ringkas `[Icon Grup] / Sub-menu`, dan jangan tampilkan tanggal ganda di topbar kanan).
 
-2. **Daftar Larangan Keras (Anti-AI-Slop):**
-   - **DILARANG** menambahkan hiasan blob warna-warni mengambang di pojok card (`pointer-events-none rounded-full bg-.../5`) atau efek mouse-parallax tanpa fungsi bisnis.
-   - **DILARANG** membuat fake loading/skeleton buatan yang sengaja menunda halaman (`setTimeout 2000-3000ms`). Loading state hanya boleh muncul bila ada data asinkron riil.
-   - **DILARANG** memasang animasi angka berputar (*rolling counter*) pada metrik statis harian.
-   - **DILARANG** memakai tipografi serba kapital kaku berjarak renggang (`uppercase tracking-[0.18em] text-[11px]`) untuk judul card/section.
-   - **DILARANG** menggunakan kode warna HEX acak untuk dark mode (seperti `dark:bg-[#232b3e]`, `dark:border-[#334070]`). Selalu gunakan token Tailwind slate konsisten: `dark:bg-slate-800`, `dark:border-slate-700`, `dark:text-slate-100`.
+2. **Anatomi Standar Kartu KPI (Lynk KPI Card):**
+   - **Bagian Atas:** Letakkan **Icon Box** (`h-11 w-11 rounded-xl` dengan warna translucent lembut) di **sebelah kiri**, berdampingan langsung (`flex items-center gap-3.5`) dengan Label (`text-xs font-medium text-slate-500 dark:text-slate-400`) di atas dan Angka Utama (`text-2xl sm:text-3xl font-extrabold tabular-nums`) di bawahnya.
+   - **Bagian Tengah (Trend Text):** **DILARANG** memasang garis pembatas horizontal (`border-t`/`hr`) di tengah kartu KPI dan dilarang memasang ikon chevron `>`. Tampilkan sub-metrik sebagai teks bersih dengan panah tren (`↗ +X new this month` atau rincian ringkas `X Open · Y On Progress`).
+   - **Ambient Corner Light:** Tambahkan pendaran cahaya lembut (*ambient glow*) di pojok kanan atas kartu (`pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-<color>-500/15 blur-2xl dark:bg-<color>-500/20`) sesuai warna aksen kartu.
+   - **Bagian Bawah (Data-Driven SVG Sparkline — Wajib Berbasis Data Riil):**
+     - Gunakan helper `App\Support\SparklineBuilder::fromSeries($monthlySeries, $currentValue)` yang menarik data agregat historis 6 bulan ke belakang dari database (`SparklineBuilder::monthlyCounts(...)`).
+     - **Aturan Kejujuran Data (Zero/Flat Rule):** Jika nilai metrik saat ini `0` atau seluruh data historis bernilai `0`/datar, `SparklineBuilder` **wajib** merender **garis lurus mendatar (`M0,43 L240,43`)** — dilarang keras merender kurva naik palsu pada metrik bernilai `0`. Jika tren riil naik/turun, kurva Cubic Bezier otomatis mengikuti titik data riil tersebut.
 
-3. **Interaktivitas Standar (Subtle, Tactile & Responsive):**
-   - **Clickable Cards:** Kartu ringkasan angka/KPI yang memiliki halaman detail wajib dibungkus tag `<a>` dengan efek terangkat halus:
-     `transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-accent-400`
-   - **Table Rows:** Seluruh baris tabel wajib memiliki hover feedback:
-     `hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors`
-   - **Interactive Feedback:** Setiap tombol dan tautan aksi wajib memiliki efek sentuh `active:scale-95` atau `active:scale-[0.98]`.
+3. **Distribusi Status (Side-by-Side Donut Chart & 100% Complete Legend):**
+   - Untuk widget distribusi status (seperti *Project Status Breakdown*, *Work Progress*, *Lead Pipeline*), gunakan layout **2 kolom berdampingan di dalam kartu** (`flex flex-col sm:flex-row items-center justify-between gap-6`):
+     - **Kiri:** `<x-donut-chart :size="176" :strokeWidth="24">` dengan angka total di tengah lubang cincin.
+     - **Kanan:** Daftar Legend vertikal yang menampilkan **seluruh status aktif (`count > 0`)** lengkap dengan dot warna, nama status, dan `jumlah (persentase%)` sehingga total segmen Donut dan Legend selalu genap **100%** tanpa celah.
 
-4. **Hierarki Tipografi & Sudut Lengkung (Design Tokens):**
-   - **Font:** *Plus Jakarta Sans* (`font-sans`).
-   - **Page Title (H1):** `text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100`
-   - **Section / Card Heading:** `text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200` (normal title case).
-   - **Secondary / Muted Label:** `text-xs font-medium text-slate-500 dark:text-slate-400`
-   - **Data / Angka Besar:** `text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums`
-   - **Radius Kontainer Utama (Card, Modal, Box):** Wajib `rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800`.
-   - **Radius Elemen Interaktif (Button, Input, Dropdown, Badge):** Wajib `rounded-xl` (kecuali badge pill yang memakai `rounded-full`).
+4. **Clean Lists (No Nested Card Borders), Date Block & System Avatar:**
+   - **DILARANG** membungkus setiap baris item di dalam kartu list (*Agenda*, *Recent Activity*, *Latest Projects*, *Company Board*) dengan border kotak bersarang (*nested boxes*). Gunakan baris list bersih dengan hover halus (`rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35`).
+   - Gunakan **Date Block Box** bergaya kalender (`h-11 w-11 rounded-xl` berisi tanggal besar `03` di atas dan bulan 3 huruf `NOV` di bawah) atau **Soft Colored Icon Box** di sisi kiri item, serta **mini progress bar** (`w-16 h-1.5 rounded-full`) + pill status di sisi kanan.
+   - Untuk aktivitas yang dilakukan oleh `System` (`user === null`), `<x-user-avatar>` wajib merender **ikon SVG Sparkles** di dalam lingkaran indigo lembut, bukan tanda tanya `?`.
+
+5. **Standar Animasi & Interaktivitas (`partials/lynk-dashboard-motion.blade.php`):**
+   - **Staggered Fade-In Up (`.lynk-enter`):** Durasi `650ms` dengan easing `cubic-bezier(0.22, 1, 0.36, 1)` dan delay berurutan (`0ms` header, `100ms–340ms` kartu KPI, `420ms–500ms` baris tengah, `580ms–660ms` baris bawah).
+   - **Smooth Count-Up (`data-countup`):** Durasi **`1800ms` (1.8 detik)** dengan *easeOutExpo* (`1 - Math.pow(2, -10 * p)`) agar pergerakan angka dari `0` menuju nilai akhir terlihat jelas dan halus.
+   - **SVG Line Draw & Progress Fill:** Garis sparkline menggambar dari kiri ke kanan (`.lynk-spark-line` dengan `pathLength="100"`, durasi `1400ms`), area fill muncul halus (`.lynk-spark-area`, delay `300ms`, durasi `1000ms`), cincin Donut Chart berputar (`1200ms`), dan mini progress bar memanjang (`.lynk-progress-bar`, durasi `1000ms`). Seluruh animasi wajib menghormati `prefers-reduced-motion: reduce`.
+   - **Card Container Styling:** Gunakan `rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90` dengan hover `-translate-y-1 transition-all duration-300 hover:shadow-lg` pada kartu KPI.
+   - **Larangan Warna HEX Acak Dark Mode:** Jangan gunakan `dark:bg-[#232b3e]` atau `dark:border-[#334070]`; gunakan token Tailwind slate konsisten (`dark:bg-slate-800/90`, `dark:border-slate-800/60`, `dark:text-slate-100`).
 
 ## 8. Database Safety Rules
 

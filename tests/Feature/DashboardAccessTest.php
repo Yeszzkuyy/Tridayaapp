@@ -104,7 +104,8 @@ class DashboardAccessTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Total Customers')
-            ->assertSee('Total / Completed Projects')
+            ->assertSee('Completed Projects')
+            ->assertDontSee('Total / Completed Projects')
             ->assertSee('Active Projects')
             ->assertSee('Total Documents & KB')
             ->assertSee('My Agenda & Tasks Today')
@@ -166,5 +167,20 @@ class DashboardAccessTest extends TestCase
             ->assertSee('Konfirmasi jadwal presentasi')
             ->assertSee('Demo Solusi')
             ->assertSee('Siapkan BOQ Firewall');
+    }
+
+    public function test_sparkline_builder_renders_flat_line_when_zero_and_bezier_when_data_varies(): void
+    {
+        $zeroSpark = \App\Support\SparklineBuilder::fromSeries([0, 0, 0, 0, 0, 0], 0);
+        $this->assertTrue($zeroSpark['is_flat']);
+        $this->assertSame('M0,43 L240,43', $zeroSpark['line']);
+
+        $zeroMetricOverride = \App\Support\SparklineBuilder::fromSeries([1, 2, 3, 4, 5, 6], 0);
+        $this->assertTrue($zeroMetricOverride['is_flat']);
+        $this->assertSame('M0,43 L240,43', $zeroMetricOverride['line']);
+
+        $activeSpark = \App\Support\SparklineBuilder::fromSeries([1, 3, 2, 5, 4, 8], 8);
+        $this->assertFalse($activeSpark['is_flat']);
+        $this->assertStringContainsString(' C', $activeSpark['line']);
     }
 }

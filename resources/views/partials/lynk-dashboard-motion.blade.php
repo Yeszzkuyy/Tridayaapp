@@ -100,7 +100,7 @@
                 var suffix = el.getAttribute('data-countup-suffix') || '';
                 var decimals = parseInt(el.getAttribute('data-countup-decimals') || '0', 10);
                 var delay = parseInt(el.getAttribute('data-countup-delay') || '120', 10);
-                var duration = 1380;
+                var duration = 1800;
 
                 function formatNum(val) {
                     if (decimals > 0) {
@@ -116,8 +116,8 @@
                     function step(ts) {
                         if (!start) start = ts;
                         var p = Math.min((ts - start) / duration, 1);
-                        // easeOutExpo / easeOutQuart blend for visible smooth deceleration
-                        var ease = 1 - Math.pow(1 - p, 4);
+                        // easeOutExpo for smooth, clearly visible 1.8s deceleration
+                        var ease = p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
                         var curr = ease * rawTarget;
                         el.textContent = prefix + formatNum(curr) + suffix;
                         if (p < 1) {

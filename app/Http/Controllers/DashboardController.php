@@ -20,6 +20,7 @@ use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Support\SparklineBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -166,7 +167,50 @@ class DashboardController extends Controller
         // 5. Company Board / Knowledge Base Highlights (3-4 item terbaru)
         $kbHighlights = $this->buildKnowledgeHighlights($user);
 
-        // 6. Recent Activity (Eager loaded & deduplicated)
+        // 6. Real-Time 6-Month Historical Sparklines (Flat line jika nilai 0 / datar)
+        $docSeries = SparklineBuilder::monthlyCounts(ProjectDocument::query(), 'created_at', 6, $now);
+        $prodSeries = SparklineBuilder::monthlyCounts(
+            Product::where('status', '!=', Product::STATUS_REJECTED),
+            'created_at',
+            6,
+            $now
+        );
+        $kbDocSeries = SparklineBuilder::monthlyCounts(KnowledgeBaseDocument::query(), 'created_at', 6, $now);
+        $combinedDocsKbSeries = [];
+        for ($i = 0; $i < 6; $i++) {
+            $combinedDocsKbSeries[] = ($docSeries[$i] ?? 0) + ($prodSeries[$i] ?? 0) + ($kbDocSeries[$i] ?? 0);
+        }
+
+        $kpiSparklines = [
+            'customers' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(Customer::query(), 'created_at', 6, $now),
+                $customerCount
+            ),
+            'completed_projects' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->whereIn('name', ['Done', 'Completed'])),
+                    'updated_at',
+                    6,
+                    $now
+                ),
+                $completedProjectsTotal
+            ),
+            'active_projects' => SparklineBuilder::fromSeries(
+                SparklineBuilder::monthlyCounts(
+                    Project::whereHas('status', fn ($q) => $q->whereIn('name', [
+                        ProjectStatusEnum::Open->value,
+                        ProjectStatusEnum::OnProgress->value,
+                    ])),
+                    'created_at',
+                    6,
+                    $now
+                ),
+                $activeProjects
+            ),
+            'docs_kb' => SparklineBuilder::fromSeries($combinedDocsKbSeries, $totalDocsAndKb),
+        ];
+
+        // 7. Recent Activity (Eager loaded & deduplicated)
         $activities = ProjectActivity::with([
             'project:id,project_name,customer_id',
             'project.customer:id,name',
@@ -199,6 +243,7 @@ class DashboardController extends Controller
             'agendaItems',
             'agendaMeta',
             'kbHighlights',
+            'kpiSparklines',
             'activities',
             'now',
         ));

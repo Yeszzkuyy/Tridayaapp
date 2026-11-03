@@ -2,38 +2,38 @@
     @include('partials.lynk-dashboard-motion')
 
     @php
-        $sparkPaths = [
+        $sparkStyles = [
             [
                 'id' => 'tek-spark-1',
+                'key' => 'technicians',
                 'color' => '#8b5cf6',
+                'ambient' => 'bg-violet-500/15 dark:bg-violet-500/20',
                 'iconBg' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
                 'borderHover' => 'hover:border-violet-400/50 dark:hover:border-violet-500/40',
-                'line' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4',
-                'area' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4 L240,52 L0,52 Z',
             ],
             [
                 'id' => 'tek-spark-2',
+                'key' => 'active_technicians',
                 'color' => '#10b981',
+                'ambient' => 'bg-emerald-500/15 dark:bg-emerald-500/20',
                 'iconBg' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
                 'borderHover' => 'hover:border-emerald-400/50 dark:hover:border-emerald-500/40',
-                'line' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4',
-                'area' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4 L240,52 L0,52 Z',
             ],
             [
                 'id' => 'tek-spark-3',
+                'key' => 'completed_projects',
                 'color' => '#f59e0b',
+                'ambient' => 'bg-amber-500/15 dark:bg-amber-500/20',
                 'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
                 'borderHover' => 'hover:border-amber-400/50 dark:hover:border-amber-500/40',
-                'line' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5',
-                'area' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5 L240,52 L0,52 Z',
             ],
             [
                 'id' => 'tek-spark-4',
+                'key' => 'ongoing_projects',
                 'color' => '#ec4899',
+                'ambient' => 'bg-pink-500/15 dark:bg-pink-500/20',
                 'iconBg' => 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',
                 'borderHover' => 'hover:border-pink-400/50 dark:hover:border-pink-500/40',
-                'line' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4',
-                'area' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4 L240,52 L0,52 Z',
             ],
         ];
 
@@ -97,17 +97,19 @@
             </div>
         </div>
 
-        {{-- 2. 4 Kartu KPI Bergaya Lynk (delay 100ms, 180ms, 260ms, 340ms) --}}
+        {{-- 2. 4 Kartu KPI Bergaya Lynk (Data-Driven Sparkline, Ambient Light & Count-Up 1.8s) --}}
         <section aria-label="{{ __('Key summary') }}">
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach($dashboardCards as $idx => $card)
                     @php
-                        $sp = $sparkPaths[$idx % count($sparkPaths)];
+                        $sp = $sparkStyles[$idx % count($sparkStyles)];
+                        $sparkData = $kpiSparklines[$sp['key']] ?? \App\Support\SparklineBuilder::fromSeries([], (int) $card['value']);
                         $delayMs = 100 + ($idx * 80);
                     @endphp
                     <article style="--d: {{ $delayMs }}ms"
                              class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/60 dark:bg-slate-800/90 {{ $sp['borderHover'] }}">
-                        <div class="flex items-center gap-3.5">
+                        <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-500 group-hover:opacity-100 {{ $sp['ambient'] }}"></span>
+                        <div class="relative z-10 flex items-center gap-3.5">
                             <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 {{ $sp['iconBg'] }}">
                                 <x-icon name="{{ $card['icon'] }}" class="h-5 w-5" />
                             </span>
@@ -120,16 +122,16 @@
                             </div>
                         </div>
 
-                        <div class="mt-3 -mx-5 -mb-5 pt-1">
+                        <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                             <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                                 <defs>
                                     <linearGradient id="{{ $sp['id'] }}" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="{{ $sp['color'] }}" stop-opacity="0.32" />
+                                        <stop offset="0%" stop-color="{{ $sp['color'] }}" stop-opacity="{{ $sparkData['is_flat'] ? '0.10' : '0.32' }}" />
                                         <stop offset="100%" stop-color="{{ $sp['color'] }}" stop-opacity="0.0" />
                                     </linearGradient>
                                 </defs>
-                                <path class="lynk-spark-area" d="{{ $sp['area'] }}" fill="url(#{{ $sp['id'] }})" />
-                                <path class="lynk-spark-line" pathLength="100" d="{{ $sp['line'] }}" fill="none" stroke="{{ $sp['color'] }}" stroke-width="2.2" stroke-linecap="round" />
+                                <path class="lynk-spark-area" d="{{ $sparkData['area'] }}" fill="url(#{{ $sp['id'] }})" />
+                                <path class="lynk-spark-line" pathLength="100" d="{{ $sparkData['line'] }}" fill="none" stroke="{{ $sp['color'] }}" stroke-width="2.2" stroke-linecap="round" />
                             </svg>
                         </div>
                     </article>

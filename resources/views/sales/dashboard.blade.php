@@ -155,66 +155,80 @@
     @endif
 
     @php
+        $uid = auth()->id();
+        $activeSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::where('assigned_to', $uid)->whereNotIn('status', ['won', 'lost']),
+            'created_at'
+        );
+        $wonSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::where('assigned_to', $uid)->where('status', 'won'),
+            'updated_at'
+        );
+        $fuSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\FollowUp::where('created_by', $uid),
+            'created_at'
+        );
+
         $salesKpiCards = [
             [
                 'label' => __('Active Leads'),
                 'value' => (int) ($kpi['active'] ?? 0),
                 'url' => route('sales.my-leads', ['active' => 1]),
                 'icon' => 'briefcase',
+                'ambient' => 'bg-violet-500/15 dark:bg-violet-500/20',
                 'iconBg' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
                 'borderHover' => 'hover:border-violet-400/50 dark:hover:border-violet-500/40',
                 'color' => '#8b5cf6',
                 'gradId' => 'sales-spark-1',
-                'line' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4',
-                'area' => 'M0,44 C22,42 32,18 56,20 C80,22 92,40 118,34 C144,28 158,10 184,16 C206,21 222,6 240,4 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($activeSeries, (int) ($kpi['active'] ?? 0)),
             ],
             [
                 'label' => __('Won This Month'),
                 'value' => (int) ($kpi['won_month'] ?? 0),
                 'url' => route('sales.my-leads', ['won_month' => 1]),
                 'icon' => 'check-circle',
+                'ambient' => 'bg-emerald-500/15 dark:bg-emerald-500/20',
                 'iconBg' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
                 'borderHover' => 'hover:border-emerald-400/50 dark:hover:border-emerald-500/40',
                 'color' => '#10b981',
                 'gradId' => 'sales-spark-2',
-                'line' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4',
-                'area' => 'M0,40 C26,16 46,16 70,32 C94,48 114,14 142,18 C170,22 186,36 210,16 C224,6 232,6 240,4 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($wonSeries, (int) ($kpi['won_month'] ?? 0)),
             ],
             [
                 'label' => __('Overdue Follow Ups'),
                 'value' => (int) ($kpi['overdue'] ?? 0),
                 'url' => route('sales.follow-ups.index', ['overdue' => 1]),
                 'icon' => 'phone',
+                'ambient' => 'bg-rose-500/15 dark:bg-rose-500/20',
                 'iconBg' => 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300',
                 'borderHover' => 'hover:border-rose-400/50 dark:hover:border-rose-500/40',
                 'color' => '#f43f5e',
                 'gradId' => 'sales-spark-3',
-                'line' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5',
-                'area' => 'M0,46 C28,44 44,14 72,22 C100,30 116,42 144,20 C172,2 194,28 218,12 C228,6 234,6 240,5 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['overdue'] ?? 0)),
             ],
             [
                 'label' => __('Follow Up Hari Ini'),
                 'value' => (int) ($kpi['followups_today'] ?? 0),
                 'url' => route('sales.follow-ups.index', ['overdue' => 'today']),
                 'icon' => 'chat',
+                'ambient' => 'bg-amber-500/15 dark:bg-amber-500/20',
                 'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
                 'borderHover' => 'hover:border-amber-400/50 dark:hover:border-amber-500/40',
                 'color' => '#f59e0b',
                 'gradId' => 'sales-spark-4',
-                'line' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4',
-                'area' => 'M0,42 C20,22 42,38 68,26 C94,14 116,40 146,28 C176,16 196,8 218,14 C228,16 234,6 240,4 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['followups_today'] ?? 0)),
             ],
             [
                 'label' => __('Upcoming Follow Ups'),
                 'value' => (int) ($kpi['followups_upcoming'] ?? 0),
                 'url' => route('sales.follow-ups.index', ['overdue' => 'upcoming']),
                 'icon' => 'activity',
+                'ambient' => 'bg-pink-500/15 dark:bg-pink-500/20',
                 'iconBg' => 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',
                 'borderHover' => 'hover:border-pink-400/50 dark:hover:border-pink-500/40',
                 'color' => '#ec4899',
                 'gradId' => 'sales-spark-5',
-                'line' => 'M0,44 C26,38 48,18 76,24 C104,30 128,14 158,20 C188,26 208,10 240,5',
-                'area' => 'M0,44 C26,38 48,18 76,24 C104,30 128,14 158,20 C188,26 208,10 240,5 L240,52 L0,52 Z',
+                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['followups_upcoming'] ?? 0)),
             ],
         ];
     @endphp
@@ -225,7 +239,8 @@
             <a href="{{ $sc['url'] }}"
                style="--d: {{ $dMs }}ms"
                class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 {{ $sc['borderHover'] }}">
-                <div class="flex items-center gap-3.5">
+                <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-500 group-hover:opacity-100 {{ $sc['ambient'] }}"></span>
+                <div class="relative z-10 flex items-center gap-3.5">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 {{ $sc['iconBg'] }}">
                         <x-icon name="{{ $sc['icon'] }}" class="h-5 w-5" />
                     </span>
@@ -235,16 +250,16 @@
                            data-countup="{{ $sc['value'] }}" data-countup-delay="{{ $dMs + 20 }}">{{ number_format($sc['value']) }}</p>
                     </div>
                 </div>
-                <div class="mt-3 -mx-5 -mb-5 pt-1">
+                <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
                     <svg viewBox="0 0 240 52" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                         <defs>
                             <linearGradient id="{{ $sc['gradId'] }}" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="{{ $sc['color'] }}" stop-opacity="0.32" />
+                                <stop offset="0%" stop-color="{{ $sc['color'] }}" stop-opacity="{{ $sc['spark']['is_flat'] ? '0.10' : '0.32' }}" />
                                 <stop offset="100%" stop-color="{{ $sc['color'] }}" stop-opacity="0.0" />
                             </linearGradient>
                         </defs>
-                        <path class="lynk-spark-area" d="{{ $sc['area'] }}" fill="url(#{{ $sc['gradId'] }})" />
-                        <path class="lynk-spark-line" pathLength="100" d="{{ $sc['line'] }}" fill="none" stroke="{{ $sc['color'] }}" stroke-width="2.2" stroke-linecap="round" />
+                        <path class="lynk-spark-area" d="{{ $sc['spark']['area'] }}" fill="url(#{{ $sc['gradId'] }})" />
+                        <path class="lynk-spark-line" pathLength="100" d="{{ $sc['spark']['line'] }}" fill="none" stroke="{{ $sc['color'] }}" stroke-width="2.2" stroke-linecap="round" />
                     </svg>
                 </div>
             </a>
