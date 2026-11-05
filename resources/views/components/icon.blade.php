@@ -1,4 +1,4 @@
-@props(['name', 'class' => 'w-5 h-5'])
+@props(['name', 'class' => 'w-5 h-5', 'strokeWidth' => 1.75])
 
 @php
 $icons = [
@@ -76,6 +76,6 @@ $icons = [
 ];
 @endphp
 
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" {{ $attributes->merge(['class' => $class]) }}>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="{{ $strokeWidth }}" stroke="currentColor" {{ $attributes->merge(['class' => $class]) }}>
     {!! $icons[$name] ?? '' !!}
 </svg>

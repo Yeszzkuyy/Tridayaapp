@@ -20,9 +20,10 @@
                  | mail | send | whatsapp | more
                                         (semua SVG inline, ikut warna teks;
                                         kosongkan + isi slot untuk ikon sendiri)
-       variant : default | delete      (default: ngikut icon — delete otomatis
-                                        merah; nama lama filter/reset tetap
-                                        diterima, dipetakan ke default)
+       variant : default | delete | solid
+                                        (default: ngikut icon — delete otomatis
+                                        merah; solid = CTA utama accent penuh.
+                                        Nama lama filter/reset tetap diterima.)
        size    : md (= h-10 w-10) | lg (= h-11 w-11)
        title   : title/aria-label (tooltip bawaan browser)
        tooltip : pill tooltip gelap saat hover — ISI EKSPLISIT untuk menampilkan;
@@ -30,6 +31,13 @@
                  tabel menyala bareng saat satu tombol di-hover)
        label   : teks nama di samping ikon (bila diisi tombol jadi lebih lebar,
                  bukan kotak icon-only)
+       reveal  : true = label disembunyikan lalu melebar saat hover (gaya CTA
+                 "New Request"). OPSIONAL per menu — default false (label
+                 selalu tampil). Hanya berlaku bila label diisi; title/aria-label
+                 tetap wajib agar terbaca saat collapsed.
+
+     Aturan ikon tombol berlabel: h-4 w-4 + stroke 2.5 (ikon tidak boleh lebih
+     besar dari teks text-sm). Icon-only tetap h-5 w-5 di kotak 40px.
 --}}
 @props([
     'as' => 'button',
@@ -41,6 +49,7 @@
     'title' => '',
     'tooltip' => null,
     'label' => null,
+    'reveal' => false,
 ])
 
 @php
@@ -49,7 +58,7 @@ $variant ??= match ($icon) {
     default => 'default',
 };
 // Nama varian lama tetap diterima biar view lama tidak rusak.
-if (!in_array($variant, ['default', 'delete'], true)) {
+if (!in_array($variant, ['default', 'delete', 'solid'], true)) {
     $variant = 'default';
 }
 
@@ -86,6 +95,11 @@ $actionColor = match ($variant) {
 };
 $colors = $palettes[$actionColor];
 
+// CTA utama (solid): accent penuh, tidak memakai palet putih/border.
+if ($variant === 'solid') {
+    $colors = 'border-transparent bg-accent-600 text-white shadow-sm shadow-accent-500/20 hover:bg-accent-700 hover:shadow-md hover:shadow-accent-500/30 hover:brightness-105 dark:border-transparent dark:bg-accent-600 dark:text-white dark:hover:bg-accent-700';
+}
+
 $sizes = [
     'md' => 'h-10 w-10',
     'lg' => 'h-11 w-11',
@@ -94,12 +108,28 @@ $sizeClass = $sizes[$size] ?? $sizes['md'];
 
 $ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2';
 
-$btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-xl border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
+// Icon: berlabel 16px + stroke tegas (tidak lebih besar dari teks 14px);
+// icon-only tetap 20px di kotak 40px.
+$iconClass = $label ? 'h-4 w-4 shrink-0' : 'h-5 w-5 shrink-0';
+$iconStroke = $label ? 2.5 : 2;
+$isReveal = (bool) $reveal && (bool) $label;
+
+if ($isReveal) {
+    $iconClass = 'h-4 w-4 shrink-0 transition-transform duration-500 ease-in-out group-hover/btn:rotate-90 motion-reduce:transition-none';
+}
 
 // Label: tombol jadi lebih lebar (ikon + teks) dengan gap, bukan kotak icon-only.
-if ($label) {
+if ($isReveal) {
+    $btnClass = "group/btn relative inline-flex h-10 items-center justify-center overflow-hidden rounded-xl border px-2.5 text-sm font-semibold {$colors} transition-all duration-500 ease-in-out hover:px-4 active:scale-95 motion-reduce:transition-none {$ring}";
+} elseif ($label) {
     $btnClass = "group/btn relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border px-4 text-sm font-medium {$colors} transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95 {$ring}";
+} else {
+    $btnClass = "group/btn relative inline-flex {$sizeClass} items-center justify-center overflow-hidden rounded-xl border {$colors} transition-all duration-300 hover:scale-110 hover:shadow-md active:scale-95 {$ring}";
 }
+
+$labelSpanClass = $isReveal
+    ? 'max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 ease-in-out group-hover/btn:ml-2 group-hover/btn:max-w-44 group-hover/btn:opacity-100 motion-reduce:transition-none'
+    : '';
 
 $paths = [
     'leads' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />',
@@ -129,28 +159,28 @@ $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -s
 
 <div class="group/btn relative">
     @if($as === 'a')
-        <a href="{{ $href }}" title="{{ $title }}" aria-label="{{ $title }}"
+        <a href="{{ $href }}" title="{{ $title ?: $label }}" aria-label="{{ $title ?: $label }}"
            {{ $attributes->merge(['class' => $btnClass]) }}>
             @if($slot->isNotEmpty())
                 {{ $slot }}
             @elseif(isset($paths[$icon]))
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">{!! $paths[$icon] !!}</svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="{{ $iconStroke }}" stroke="currentColor" class="{{ $iconClass }}" aria-hidden="true">{!! $paths[$icon] !!}</svg>
             @endif
             @if($label)
-                <span>{{ $label }}</span>
+                <span class="{{ $labelSpanClass }}">{{ $label }}</span>
             @endif
             {!! $shine !!}
         </a>
     @else
-        <button type="{{ $type }}" title="{{ $title }}" aria-label="{{ $title }}"
+        <button type="{{ $type }}" title="{{ $title ?: $label }}" aria-label="{{ $title ?: $label }}"
                 {{ $attributes->merge(['class' => $btnClass]) }}>
             @if($slot->isNotEmpty())
                 {{ $slot }}
             @elseif(isset($paths[$icon]))
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true">{!! $paths[$icon] !!}</svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="{{ $iconStroke }}" stroke="currentColor" class="{{ $iconClass }}" aria-hidden="true">{!! $paths[$icon] !!}</svg>
             @endif
             @if($label)
-                <span>{{ $label }}</span>
+                <span class="{{ $labelSpanClass }}">{{ $label }}</span>
             @endif
             {!! $shine !!}
         </button>
