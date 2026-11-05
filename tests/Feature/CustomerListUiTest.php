@@ -89,7 +89,7 @@ class CustomerListUiTest extends TestCase
 
         $html = $this->actingAs($this->admin())->get(route('customers.show', $customer))->getContent();
 
-        foreach (['Edit Customer', 'Back', 'Add Project', 'Add PIC', 'Upload Document', 'Add Follow Up'] as $label) {
+        foreach (['Edit Customer', 'Add Project', 'Add PIC', 'Upload Document', 'Add Follow Up'] as $label) {
             $this->assertMatchesRegularExpression(
                 '/aria-label="'.preg_quote($label, '/').'".{0,400}rounded-\[100px\]/s',
                 $html,
@@ -105,5 +105,17 @@ class CustomerListUiTest extends TestCase
         ] as $icon => $pathFragment) {
             $this->assertStringContainsString($pathFragment, $html, "Ikon {$icon} pada flow button tidak ter-render.");
         }
+    }
+
+    public function test_back_button_uses_its_own_style_not_flow_button(): void
+    {
+        $customer = Customer::create(['name' => 'PT Back', 'pt_group' => 'NTI']);
+
+        $html = $this->actingAs($this->admin())->get(route('customers.show', $customer))->getContent();
+
+        $this->assertStringContainsString('group/back', $html);
+        $this->assertMatchesRegularExpression('/aria-label="Back".{0,600}group\/back/s', $html);
+        // Back tidak lagi memakai bentuk pill flow button.
+        $this->assertDoesNotMatchRegularExpression('/aria-label="Back".{0,400}rounded-\[100px\]/s', $html);
     }
 }
