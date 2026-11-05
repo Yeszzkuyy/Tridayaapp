@@ -209,6 +209,44 @@ class Proposal extends Model
     }
 
     /**
+     * PO customer sudah diverifikasi Admin dan tidak sedang dikembalikan.
+     * Ini gate untuk membuat Supplier PO / convert project.
+     */
+    public function isReadyForSupplierPo(): bool
+    {
+        return $this->isReadyForPurchasing()
+            && $this->isPoVerified()
+            && ! $this->isPoReturned();
+    }
+
+    /** Daftar field PO customer yang masih kurang sebelum boleh diverifikasi. */
+    public function poCompletenessErrors(): array
+    {
+        $errors = [];
+
+        if (blank($this->po_document_path)) {
+            $errors[] = __('Customer PO document is missing.');
+        }
+        if (blank($this->po_number)) {
+            $errors[] = __('Customer PO number is missing.');
+        }
+        if (blank($this->po_date)) {
+            $errors[] = __('Customer PO date is missing.');
+        }
+        if (blank($this->delivery_deadline)) {
+            $errors[] = __('Delivery deadline is missing.');
+        }
+        if (blank($this->delivery_address)) {
+            $errors[] = __('Delivery address is missing.');
+        }
+        if (blank($this->payment_scheme)) {
+            $errors[] = __('Payment terms are missing.');
+        }
+
+        return $errors;
+    }
+
+    /**
      * Quotation yang siap ditarik ke Supplier PO (belum semua item selesai dipesan).
      *
      * Tetap muncul di antrean belanja bila ada rincian item yang jumlah ordered-nya
@@ -218,6 +256,8 @@ class Proposal extends Model
     {
         return $query->where('status', 'accepted')
             ->whereNotNull('po_document_path')
+            ->whereNotNull('po_verified_at')
+            ->whereNull('po_returned_at')
             ->where(function ($q) {
                 $q->whereHas('items', function ($itemQuery) {
                     $itemQuery->whereRaw(
@@ -376,8 +416,14 @@ class Proposal extends Model
         if (blank($this->po_number)) {
             $warnings[] = __('Customer PO number is missing.');
         }
+        if (blank($this->po_date)) {
+            $warnings[] = __('Customer PO date is missing.');
+        }
         if (blank($this->delivery_deadline)) {
             $warnings[] = __('Delivery deadline is missing.');
+        }
+        if (blank($this->delivery_address)) {
+            $warnings[] = __('Delivery address is missing.');
         }
         if (blank($this->payment_scheme)) {
             $warnings[] = __('Payment terms are missing.');

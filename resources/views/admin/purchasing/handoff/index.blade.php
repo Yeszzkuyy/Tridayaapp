@@ -83,9 +83,11 @@
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.purchasing.show', $proposal) }}" title="{{ __('Handoff Detail') }}" />
-                                    @can('manage-admin')
-                                        <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}" title="{{ __('Create Supplier PO') }}" />
-                                    @endcan
+                                    @if($proposal->isReadyForSupplierPo())
+                                        @can('manage-admin')
+                                            <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}" title="{{ __('Create Supplier PO') }}" />
+                                        @endcan
+                                    @endif
                                     @if($proposal->project)
                                         <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" title="{{ __('View Project') }}" />
                                     @endif

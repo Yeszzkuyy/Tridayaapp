@@ -330,7 +330,12 @@ class PurchasingHandoffTest extends TestCase
         $proposal->update([
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-TEST-1',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Konversi No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
             'notes' => 'Harga termasuk instalasi.',
             'internal_notes' => 'Jangan disebut ke pelanggan: margin tipis.',
         ]);

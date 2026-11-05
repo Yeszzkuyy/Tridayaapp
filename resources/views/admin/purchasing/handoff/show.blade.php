@@ -12,7 +12,7 @@
             <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
             @if($proposal->project)
                 <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('View Project') }}" title="{{ __('View Project') }}" />
-            @else
+            @elseif($proposal->isPoVerified() && ! $proposal->isPoReturned())
                 @canany(['manage-admin', 'manage-sales-leads'])
                     <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
                                    onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
@@ -127,7 +127,7 @@
 
                 @can('manage-admin')
                     <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2 mt-2">
-                        @if(! $proposal->isPoVerified())
+                        @if(! $proposal->isPoVerified() && ! $proposal->isPoReturned())
                             <form action="{{ route('admin.purchasing.verify-po', $proposal) }}" method="POST" class="inline">
                                 @csrf
                                 <x-icon-button type="submit" icon="sparkles" label="{{ __('Verify PO') }}" title="{{ __('Verify PO') }}" />
@@ -155,9 +155,11 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 text-sm space-y-2">
                 <div class="flex items-center justify-between gap-2">
                     <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Supplier Purchase Orders') }}</h2>
-                    @can('manage-admin')
-                        <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}" title="{{ __('Create Supplier PO') }}" />
-                    @endcan
+                    @if($proposal->isReadyForSupplierPo())
+                        @can('manage-admin')
+                            <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}" title="{{ __('Create Supplier PO') }}" />
+                        @endcan
+                    @endif
                 </div>
                 @forelse($proposal->supplierPurchaseOrders as $supplierPo)
                     <a href="{{ route('admin.supplier-pos.show', $supplierPo) }}" class="block rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
@@ -212,7 +214,7 @@
     </div>
 
     {{-- Modal Convert to Project --}}
-    @if(! $proposal->project)
+    @if(! $proposal->project && $proposal->isPoVerified() && ! $proposal->isPoReturned())
         <div id="convert-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 hidden">
             <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
                 <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Convert to Project') }}</h3>

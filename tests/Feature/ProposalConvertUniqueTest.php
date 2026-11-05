@@ -48,7 +48,12 @@ class ProposalConvertUniqueTest extends TestCase
             'status' => 'accepted',
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-CONVERT-'.uniqid(),
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Convert No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
         ProposalItem::create([
             'proposal_id' => $proposal->id,

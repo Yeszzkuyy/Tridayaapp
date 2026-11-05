@@ -495,7 +495,12 @@ class ProcurementFlowTest extends TestCase
         $proposal = $this->makeProposal($project, 2500000);
         $proposal->update([
             'po_document_path' => 'customer-po/test.pdf',
+            'po_number' => 'PO-HUB-'.Str::upper(Str::random(4)),
             'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Hub Procurement No. 1',
+            'payment_scheme' => 'full',
+            'po_verified_at' => now(),
         ]);
 
         $this->actingAs($admin)->get(route('admin.hub'))

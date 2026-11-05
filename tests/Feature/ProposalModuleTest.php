@@ -218,7 +218,12 @@ class ProposalModuleTest extends TestCase
         $proposal->update([
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-TEST-3',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Mapping No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
         $workType = WorkType::create(['name' => 'Instalasi']);
 
@@ -305,6 +310,10 @@ class ProposalModuleTest extends TestCase
             'payment_scheme' => 'dp',
             'dp_percent' => 30,
             'delivery_deadline' => $deadline,
+            'po_date' => now()->toDateString(),
+            'delivery_address' => 'Jl. Uji Deadline No. 1',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
 
         $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [

@@ -853,6 +853,8 @@ class ProposalController extends Controller
         abort_unless(filled($proposal->po_document_path), 422, __('Upload the customer PO before converting to a project.'));
         abort_unless(filled($proposal->po_number), 422, __('Fill in the customer PO number before converting to a project.'));
         abort_unless(filled($proposal->payment_scheme), 422, __('Fill in the payment terms before converting to a project.'));
+        abort_if($proposal->isPoReturned(), 422, __('This customer PO was returned to Sales. Wait for the revised PO before converting to a project.'));
+        abort_unless($proposal->isPoVerified(), 422, __('Verify the customer PO before converting to a project.'));
 
         $validated = $request->validate([
             'work_type_id' => 'required|exists:work_types,id',

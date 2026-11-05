@@ -110,7 +110,12 @@ class ProjectWorkflowTest extends TestCase
         $proposal->update([
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-TEST-2',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Project Workflow No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
         $workType = WorkType::create(['name' => 'Instalasi CCTV']);
         $pendingId = ProjectStatus::where('name', 'Pending')->value('id');

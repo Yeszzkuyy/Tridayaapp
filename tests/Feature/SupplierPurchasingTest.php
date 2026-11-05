@@ -91,6 +91,8 @@ class SupplierPurchasingTest extends TestCase
             'po_date' => now()->toDateString(),
             'po_document_path' => 'customer-po/po-'.Str::random(6).'.pdf',
             'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Supplier Test No. 1',
+            'po_verified_at' => now(),
             'status' => 'accepted',
         ]);
 

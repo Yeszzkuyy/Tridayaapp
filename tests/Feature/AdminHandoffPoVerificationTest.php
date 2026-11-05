@@ -59,6 +59,8 @@ class AdminHandoffPoVerificationTest extends TestCase
             'po_number' => 'PO-CUST-100',
             'po_date' => now()->toDateString(),
             'po_document_path' => 'proposals/test/po.pdf',
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Handoff No. 1, Jakarta',
             'payment_scheme' => 'full',
             'subtotal' => 10000000,
             'discount' => 0,
@@ -106,6 +108,71 @@ class AdminHandoffPoVerificationTest extends TestCase
         $this->actingAs($otherSales)
             ->post(route('admin.purchasing.verify-po', $proposal))
             ->assertForbidden();
+    }
+
+    public function test_admin_cannot_verify_incomplete_customer_po(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales, [
+            'delivery_deadline' => null,
+            'delivery_address' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.purchasing.verify-po', $proposal))
+            ->assertSessionHasErrors('po');
+
+        $this->assertFalse($proposal->fresh()->isPoVerified());
+    }
+
+    public function test_supplier_po_form_only_lists_verified_and_not_returned_po(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales);
+        Supplier::create(['name' => 'PT Supplier Gate', 'is_active' => true]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.supplier-pos.create'))
+            ->assertOk()
+            ->assertDontSee($proposal->proposal_number);
+
+        $proposal->update(['po_verified_at' => now(), 'po_verified_by' => $admin->id]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.supplier-pos.create'))
+            ->assertOk()
+            ->assertSee($proposal->proposal_number);
+
+        $proposal->update([
+            'po_returned_at' => now(),
+            'po_returned_by' => $admin->id,
+            'po_return_reason' => 'Revisi alamat kirim.',
+            'po_verified_at' => null,
+            'po_verified_by' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.supplier-pos.create'))
+            ->assertOk()
+            ->assertDontSee($proposal->proposal_number);
+    }
+
+    public function test_conversion_requires_verified_customer_po(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales);
+        $workType = WorkType::firstOrCreate(['name' => 'Instalasi Uji']);
+
+        $this->actingAs($admin)
+            ->post(route('sales.proposals.convert', $proposal), [
+                'work_type_id' => $workType->id,
+            ])
+            ->assertStatus(422);
+
+        $this->assertNull($proposal->fresh()->project);
     }
 
     public function test_admin_can_return_customer_po_with_revision_reason(): void
@@ -199,7 +266,10 @@ class AdminHandoffPoVerificationTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $admin = $this->userWithRole('admin');
-        $proposal = $this->makeProposal($sales);
+        $proposal = $this->makeProposal($sales, [
+            'po_verified_at' => now(),
+            'po_verified_by' => $admin->id,
+        ]);
         $workType = WorkType::firstOrCreate(['name' => 'Pengadaan Server']);
 
         // Admin performs fallback conversion
@@ -259,7 +329,11 @@ class AdminHandoffPoVerificationTest extends TestCase
     public function test_partial_sourcing_keeps_quotation_in_pending_supplier_po_queue(): void
     {
         $sales = $this->userWithRole('sales');
-        $proposal = $this->makeProposal($sales);
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales, [
+            'po_verified_at' => now(),
+            'po_verified_by' => $admin->id,
+        ]);
 
         // Tambah item kedua
         $item1 = $proposal->items()->first(); // quantity = 2

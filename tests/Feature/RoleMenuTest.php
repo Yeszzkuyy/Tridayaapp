@@ -123,7 +123,7 @@ class RoleMenuTest extends TestCase
         $res = $this->actingAs($u)->get('/admin/invoices')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/admin/invoices', '/admin/pos', '/admin/payments', '/trash', '/customers', '/sales/my-leads'] as $link) {
+        foreach (['/admin/hub', '/admin/invoices', '/admin/supplier-pos', '/admin/payments', '/trash', '/customers', '/sales/my-leads'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for admin");
         }
         foreach (['/leads"', '/monitoring'] as $link) {

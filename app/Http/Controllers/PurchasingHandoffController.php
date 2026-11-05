@@ -7,6 +7,7 @@ use App\Models\LeadActivity;
 use App\Models\Proposal;
 use App\Notifications\ProposalStatusNotification;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Antrean handoff Sales → Admin/Purchasing.
@@ -116,6 +117,14 @@ class PurchasingHandoffController extends Controller
         $user = $request->user();
         abort_unless($user->can('manage-admin') || $user->hasRole('ceo'), 403);
         abort_unless($proposal->isReadyForPurchasing(), 422);
+        abort_if($proposal->isPoReturned(), 422, __('This customer PO was returned to Sales. Wait for the revised PO before verifying.'));
+
+        $missing = $proposal->poCompletenessErrors();
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'po' => __('Customer PO is incomplete: :fields', ['fields' => implode(' ', $missing)]),
+            ]);
+        }
 
         $proposal->update([
             'po_verified_at' => now(),
