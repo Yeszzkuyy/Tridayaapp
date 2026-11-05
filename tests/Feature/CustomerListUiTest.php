@@ -53,4 +53,57 @@ class CustomerListUiTest extends TestCase
             ->assertSee('sticky top-16 z-20', false)
             ->assertSee('aria-label="Edit Customer"', false);
     }
+
+    public function test_legacy_pic_is_backfilled_as_primary_contact_when_detail_opened(): void
+    {
+        // Customer lama: PIC hanya ada di kolom legacy, belum ada baris kontak.
+        $customer = Customer::create([
+            'name' => 'PT Legacy',
+            'pt_group' => 'NTI',
+            'contact_person' => 'Budi Legacy',
+            'phone' => '0215551234',
+            'email' => 'budi@legacy.test',
+        ]);
+
+        $this->assertDatabaseMissing('customer_contacts', ['customer_id' => $customer->id]);
+
+        $response = $this->actingAs($this->admin())->get(route('customers.show', $customer));
+
+        $response->assertOk()->assertSee('Budi Legacy');
+
+        $this->assertDatabaseHas('customer_contacts', [
+            'customer_id' => $customer->id,
+            'name' => 'Budi Legacy',
+            'is_primary' => true,
+            'email' => 'budi@legacy.test',
+        ]);
+
+        // Membuka ulang tidak boleh menggandakan kontak.
+        $this->actingAs($this->admin())->get(route('customers.show', $customer))->assertOk();
+        $this->assertSame(1, $customer->contacts()->count());
+    }
+
+    public function test_detail_tab_actions_use_flow_buttons(): void
+    {
+        $customer = Customer::create(['name' => 'PT Flow', 'pt_group' => 'NTI']);
+
+        $html = $this->actingAs($this->admin())->get(route('customers.show', $customer))->getContent();
+
+        foreach (['Edit Customer', 'Back', 'Add Project', 'Add PIC', 'Upload Document', 'Add Follow Up'] as $label) {
+            $this->assertMatchesRegularExpression(
+                '/aria-label="'.preg_quote($label, '/').'".{0,400}rounded-\[100px\]/s',
+                $html,
+                "Tombol '{$label}' belum memakai flow button."
+            );
+        }
+
+        // Ikon fallback (folder/users/phone) harus benar-benar merender SVG.
+        foreach ([
+            'folder' => 'M3 7.5a2 2 0 012-2h3.6l1.6 1.8h7.2',
+            'users' => 'M3.25 20c0-3.6',
+            'phone' => 'M4.5 4.5h3.6l1.6 4',
+        ] as $icon => $pathFragment) {
+            $this->assertStringContainsString($pathFragment, $html, "Ikon {$icon} pada flow button tidak ter-render.");
+        }
+    }
 }

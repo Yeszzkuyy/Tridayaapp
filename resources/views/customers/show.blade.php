@@ -27,11 +27,13 @@
 
             <div class="flex shrink-0 items-center gap-2">
                 @can('update', $customer)
-                    <x-icon-button as="a" variant="solid" icon="edit"
-                                   href="{{ route('customers.edit', $customer) }}"
+                    <x-flow-button as="a" href="{{ route('customers.edit', $customer) }}"
+                                   icon="edit"
                                    label="{{ __('Edit Customer') }}" title="{{ __('Edit Customer') }}" />
                 @endcan
-                <x-icon-button as="a" icon="back" href="{{ route('customers.index') }}" title="{{ __('Back') }}" />
+                <x-flow-button as="a" href="{{ route('customers.index') }}"
+                               variant="neutral" icon="back"
+                               label="{{ __('Back') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
@@ -186,9 +188,9 @@
                 <div x-show="tab === 'projects'" x-transition>
                     <x-section-header title="{{ __('Project List') }}">
                         @if(auth()->user()->can('create', App\Models\Project::class) || auth()->user()->can('update', $customer))
-                            <x-add-button href="{{ route('projects.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('Add Project') }}
-                            </x-add-button>
+                            <x-flow-button as="a" href="{{ route('projects.create', ['customer_id' => $customer->id]) }}"
+                                           icon="folder"
+                                           label="{{ __('Add Project') }}" title="{{ __('Add Project') }}" />
                         @endif
                     </x-section-header>
 
@@ -208,9 +210,9 @@
                 <div x-show="tab === 'contacts'" x-transition>
                     <x-section-header title="{{ __('PIC / Customer Contacts List') }}">
                         @can('update', $customer)
-                            <x-add-button href="{{ route('customer-contacts.create', $customer) }}">
-                                {{ __('Add PIC') }}
-                            </x-add-button>
+                            <x-flow-button as="a" href="{{ route('customer-contacts.create', $customer) }}"
+                                           icon="users"
+                                           label="{{ __('Add PIC') }}" title="{{ __('Add PIC') }}" />
                         @endcan
                     </x-section-header>
 
@@ -309,7 +311,8 @@
                         </div>
                         @if($canUploadAnyDoc)
                             <div class="shrink-0">
-                                <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
+                                <x-flow-button as="button" icon="upload"
+                                               label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
                                                data-doc-upload-open />
                             </div>
                         @endif
@@ -596,9 +599,9 @@
                         <div>
                             <x-section-header title="{{ __('Follow Up') }}">
                                 @can('update', $customer)
-                                    <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('Add Follow Up') }}
-                                    </x-add-button>
+                                    <x-flow-button as="a" href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}"
+                                                   icon="phone"
+                                                   label="{{ __('Add Follow Up') }}" title="{{ __('Add Follow Up') }}" />
                                 @endcan
                             </x-section-header>
                             @php $followups = $customer->followUps()->with(['creator'])->latest('follow_up_date')->get(); @endphp

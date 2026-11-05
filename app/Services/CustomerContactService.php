@@ -150,6 +150,35 @@ class CustomerContactService
     }
 
     /**
+     * Backfill PIC legacy → kontak primary.
+     *
+     * Customer lama (dibuat sebelum tabel customer_contacts ada) hanya punya
+     * kolom `contact_person`. Saat halaman detail dibuka dan customer belum
+     * punya kontak sama sekali, PIC legacy dijadikan kontak primary supaya
+     * tampil di tab Contacts dan tidak kosong di Overview.
+     */
+    public function backfillLegacyPrimary(Customer $customer): ?CustomerContact
+    {
+        if ($this->hasContacts($customer)) {
+            return $this->primary($customer);
+        }
+
+        $name = trim((string) $customer->contact_person);
+
+        if ($name === '') {
+            return null;
+        }
+
+        return $this->create($customer, [
+            'name' => $name,
+            'phone' => $customer->phone,
+            'whatsapp' => $customer->whatsapp,
+            'email' => $customer->email,
+            'is_primary' => true,
+        ]);
+    }
+
+    /**
      * Samakan cache `customers.contact_person` dengan kontak primary.
      *
      * - Ada kontak tapi tanpa primary → cache dikosongkan (jangan pakai
