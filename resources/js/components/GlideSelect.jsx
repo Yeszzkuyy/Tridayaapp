@@ -6,7 +6,9 @@ import './GlideSelect.css';
 const SIZES = {
   sm: { chip: 28, row: 26, font: 12 },
   md: { chip: 32, row: 30, font: 13 },
-  lg: { chip: 44, row: 40, font: 14 }
+  lg: { chip: 44, row: 40, font: 14 },
+  // Selaras dengan field input h-10 (40px) supaya sejajar di baris filter.
+  field: { chip: 40, row: 34, font: 14 }
 };
 const PAD = 4;
 const GAP = 1;
