@@ -97,6 +97,18 @@ test/artisan di main, bersihkan cache view sebagai pemilik web server:
 sudo -u www-data php artisan view:clear
 ```
 
+**Cache file juga ikut:** perintah artisan/test sebagai user lain membuat
+`storage/framework/cache/data/**` milik user tersebut (mode 644), sehingga
+proses lain yang bukan pemiliknya gagal menulis cache dan halaman bisa
+**500** (gejala: `/teknisi/dashboard` & `/teknisi/jadwal` error
+`file_put_contents` / `fopen ... Permission denied`). Setelah menjalankan
+artisan/test di main, rapikan juga izin cache:
+
+```bash
+sudo chmod -R g+rwX storage/framework/cache storage/framework/views \
+     storage/framework/sessions storage/app storage/logs
+```
+
 ## 6. Jangan commit
 
 - Folder `backups/` (sudah di-gitignore)
@@ -115,7 +127,8 @@ ukuran, feedback interaktif, dan warna agar tidak ada tombol yang terasa belang.
 | Simpan / Submit utama (Save) | `<x-primary-button>` | `group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 text-sm font-medium` + shine + `hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95` |
 | Batal (Cancel, di form/modal) | `<x-secondary-button>` | `group relative overflow-hidden rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-6 py-2.5 text-sm font-medium text-center active:scale-95` + shine |
 | Aksi tabel/baris/filter/navigasi | `<x-icon-button>` | `rounded-xl` — idle putih + border tipis + **ikon berwarna per aksi**, hover fill warna aksi solid + ikon putih + shine + `hover:scale-110 active:scale-95` |
-| **CTA utama tunggal per halaman** (New Request, Add Meeting, Add Follow Up, Add Survey, dst.) | `<x-icon-button variant="solid">` | `rounded-xl h-10 bg-accent-600 text-white` + `shadow-accent-500/20` + shine + `active:scale-95`. Ikon `h-4 w-4` stroke 2.5. Animasi `reveal` **opsional** (lihat bawah). |
+| **CTA utama tunggal per halaman** (New Request, Add Meeting, Add Follow Up, Add Survey, dst.) | `<x-icon-button variant="solid">` | `rounded-xl h-10 bg-accent-600 text-white` + `shadow-accent-500/20` + shine + `active:scale-95`. Ikon `h-4 w-4` stroke 3.5. Animasi `reveal` **opsional** (lihat bawah). |
+| **CTA utama dengan efek "flow"** (aksen bergerak, mis. Field Work → Add Survey) | `<x-flow-button>` | Port CSS murni dari gaya 21st.dev flow-button (gradient border + sheen berjalan). `h-10 rounded-xl`, ikon `h-4 w-4` stroke 3.5, teks `text-sm font-semibold`. **Maksimal satu per halaman**; aksi lain pakai `x-icon-button` (soft). |
 | Hapus / destructive (icon-only) | `<x-icon-button icon="delete">` | `rounded-xl` — idle putih + ikon merah, hover background merah solid + ikon putih |
 | Konfirmasi hapus (tombol teks modal) | `<x-danger-button>` | `rounded-xl border border-red-200 text-red-600`, hover background merah solid + teks putih + shine + `active:scale-95` |
 

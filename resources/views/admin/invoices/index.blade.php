@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Invoice Management') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Manage invoices for customers.') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
+        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
