@@ -70,6 +70,63 @@ class AdminInvoicePaymentTest extends TestCase
             ->assertSee($invoice->invoice_number, false);
     }
 
+    public function test_invoice_items_calculate_total_and_render_on_show_and_print(): void
+    {
+        $this->actingAs($this->admin());
+        $customer = $this->customer('PT Invoice Items');
+
+        $this->post(route('admin.invoices.store'), [
+            'customer_id' => $customer->id,
+            'amount' => 0,
+            'discount' => 50000,
+            'tax' => 100000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'items' => [[
+                'description' => 'Paket CCTV 2 unit',
+                'quantity' => 2,
+                'unit' => 'paket',
+                'unit_price' => 1000000,
+                'discount' => 0,
+            ]],
+        ])->assertRedirect();
+
+        $invoice = Invoice::firstOrFail();
+        $this->assertSame(2000000.0, (float) $invoice->subtotal);
+        $this->assertSame(50000.0, (float) $invoice->discount);
+        $this->assertSame(100000.0, (float) $invoice->tax);
+        $this->assertSame(2050000.0, (float) $invoice->amount);
+        $this->assertCount(1, $invoice->items);
+
+        $this->get(route('admin.invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Paket CCTV 2 unit');
+
+        $this->get(route('admin.invoices.print', $invoice))
+            ->assertOk()
+            ->assertSee('Paket CCTV 2 unit')
+            ->assertSee('2.050.000');
+    }
+
+    public function test_invoice_without_items_keeps_manual_amount(): void
+    {
+        $this->actingAs($this->admin());
+        $customer = $this->customer('PT Invoice Manual');
+
+        $this->post(route('admin.invoices.store'), [
+            'customer_id' => $customer->id,
+            'amount' => 1750000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+            'items' => [],
+        ])->assertRedirect();
+
+        $invoice = Invoice::firstOrFail();
+        $this->assertSame(1750000.0, (float) $invoice->amount);
+        $this->assertCount(0, $invoice->items);
+    }
+
     public function test_legacy_customer_po_creation_is_read_only(): void
     {
         $this->actingAs($this->admin());

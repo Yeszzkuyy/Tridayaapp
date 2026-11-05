@@ -111,16 +111,22 @@ class AdminController extends Controller
 
         $invoiceType = $invoiceType ?: 'full';
 
+        $defaultItems = [];
+        $discount = (float) $request->input('discount', 0);
+        $tax = (float) $request->input('tax', 0);
+
         return view('admin.invoices.create', compact(
             'customers', 'projects', 'statuses', 'types', 'customerId', 'projectId',
             'amount', 'notes', 'proposalId', 'invoiceType', 'customerPoNumber', 'dueDate',
-            'paymentTermsSummary', 'idempotencyKey'
+            'paymentTermsSummary', 'idempotencyKey', 'defaultItems', 'discount', 'tax'
         ));
     }
 
     public function invoicesStore(Request $request)
     {
-        $validated = $request->validate([
+        $request->merge(['items' => $this->normalizedInvoiceItemsInput($request->input('items'))]);
+
+        $validated = $request->validate(array_merge([
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
@@ -128,12 +134,14 @@ class AdminController extends Controller
             'invoice_type' => 'nullable|in:dp,termin,pelunasan,full',
             'idempotency_key' => 'nullable|string|max:64',
             'amount' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
             'status' => 'required|in:unpaid,partial,paid,cancelled',
             'issue_date' => 'required|date',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string|max:2000',
             'file' => ['nullable', 'file', 'max:20480', SecureFile::documents()],
-        ]);
+        ], $this->invoiceItemRules()));
 
         $validated['invoice_type'] = $validated['invoice_type'] ?? 'full';
 
@@ -145,15 +153,21 @@ class AdminController extends Controller
 
     public function invoicesShow(Invoice $invoice)
     {
-        $invoice->load(['customer', 'project', 'proposal', 'payments.creator', 'creator', 'documents']);
-
+        $invoice->load(['customer', 'project', 'proposal', 'items', 'payments.creator', 'creator', 'documents']);
 
         return view('admin.invoices.show', compact('invoice'));
     }
 
+    public function invoicesPrint(Invoice $invoice)
+    {
+        $invoice->load(['customer', 'project', 'proposal', 'items', 'creator']);
+
+        return view('admin.invoices.print', compact('invoice'));
+    }
+
     public function invoicesEdit(Invoice $invoice)
     {
-        $invoice->load('proposal');
+        $invoice->load(['proposal', 'items']);
         $customers = Customer::orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
         $statuses = ['unpaid' => __('Unpaid'), 'partial' => __('Partial'), 'paid' => __('Paid'), 'cancelled' => __('Cancelled')];
@@ -164,19 +178,23 @@ class AdminController extends Controller
 
     public function invoicesUpdate(Request $request, Invoice $invoice)
     {
-        $validated = $request->validate([
+        $request->merge(['items' => $this->normalizedInvoiceItemsInput($request->input('items'))]);
+
+        $validated = $request->validate(array_merge([
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
             'customer_po_number' => 'nullable|string|max:100',
             'invoice_type' => 'nullable|in:dp,termin,pelunasan,full',
             'amount' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
             'status' => 'required|in:unpaid,partial,paid,cancelled',
             'issue_date' => 'required|date',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string|max:2000',
             'file' => ['nullable', 'file', 'max:20480', SecureFile::documents()],
-        ]);
+        ], $this->invoiceItemRules()));
 
         $validated['invoice_type'] = $validated['invoice_type'] ?? ($invoice->invoice_type ?: 'full');
 
@@ -192,6 +210,27 @@ class AdminController extends Controller
 
         return redirect()->route('admin.invoices.index')
             ->with('success', __('Invoice deleted successfully.'));
+    }
+
+    private function normalizedInvoiceItemsInput(mixed $items): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->filter(fn ($item) => is_array($item)
+                && (filled($item['description'] ?? null) || (float) ($item['unit_price'] ?? 0) > 0))
+            ->values()
+            ->all();
+    }
+
+    private function invoiceItemRules(): array
+    {
+        return [
+            'items' => 'nullable|array|max:100',
+            'items.*.description' => 'required_with:items|string|max:255',
+            'items.*.quantity' => 'required_with:items|numeric|min:0.01|max:999999',
+            'items.*.unit' => 'nullable|string|max:16',
+            'items.*.unit_price' => 'required_with:items|numeric|min:0|max:999999999999',
+            'items.*.discount' => 'nullable|numeric|min:0|max:999999999999',
+        ];
     }
 
     // ========== PURCHASE ORDER ==========

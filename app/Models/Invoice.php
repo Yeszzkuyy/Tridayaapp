@@ -22,6 +22,9 @@ class Invoice extends Model
         'payment_terms',
         'invoice_type',
         'amount',
+        'subtotal',
+        'discount',
+        'tax',
         'paid_amount',
         'status',
         'idempotency_key',
@@ -33,6 +36,9 @@ class Invoice extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'tax' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'issue_date' => 'date',
         'due_date' => 'date',
@@ -69,6 +75,34 @@ class Invoice extends Model
     public function documents()
     {
         return $this->morphMany(ProjectDocument::class, 'documentable');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(InvoiceItem::class)->orderBy('id');
+    }
+
+    /**
+     * Hitung ulang total invoice dari line items.
+     * Invoice lama tanpa items tetap memakai nominal manual di `amount`.
+     */
+    public function recalculateFromItems(): void
+    {
+        if ($this->items()->doesntExist()) {
+            return;
+        }
+
+        $items = $this->items()->get();
+        $subtotal = round((float) $items->sum('subtotal'), 2);
+        $discount = round(min((float) ($this->discount ?? 0), $subtotal), 2);
+        $tax = round(max(0, (float) ($this->tax ?? 0)), 2);
+
+        $this->forceFill([
+            'subtotal' => $subtotal,
+            'discount' => $discount,
+            'tax' => $tax,
+            'amount' => round($subtotal - $discount + $tax, 2),
+        ])->save();
     }
 
     /**

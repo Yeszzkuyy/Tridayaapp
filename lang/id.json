@@ -4720,5 +4720,12 @@
     "menunggu verifikasi": "menunggu verifikasi",
     "belum terkirim": "belum terkirim",
     "belum lunas": "belum lunas",
-    "Procurement & AP": "Procurement & AP"
+    "Procurement & AP": "Procurement & AP",
+    "Discount (Rp)": "Diskon (Rp)",
+    "Items subtotal": "Subtotal item",
+    "Print Invoice": "Cetak Invoice",
+    "Invoice Items": "Item Invoice",
+    "Optional. If items are filled, the invoice total is calculated automatically.": "Opsional. Jika item diisi, total invoice dihitung otomatis.",
+    "Bill To": "Ditagihkan Kepada",
+    "Invoice amount": "Nilai invoice"
 }

@@ -38,6 +38,7 @@
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.invoices.show', $inv) }}" title="{{ __('Invoice detail') }}" />
+                                    <x-icon-button as="a" icon="print" href="{{ route('admin.invoices.print', $inv) }}" target="_blank" title="{{ __('Print Invoice') }}" />
                                     @can('manage-admin')
                                         @if($inv->status !== 'cancelled' && ! $inv->isFullyPaid())
                                             <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $inv->id]) }}" title="{{ __('Record Payment') }}" />

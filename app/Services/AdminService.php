@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\GoodsReceipt;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectDocument;
@@ -67,6 +68,13 @@ class AdminService
         $this->assertProposalBelongsToCustomer($data);
         $data = $this->withInvoiceSnapshot($data);
 
+        $items = $this->normalizedInvoiceItems($data['items'] ?? []);
+        unset($data['items']);
+
+        if ($items !== []) {
+            [$data['subtotal'], $data['discount'], $data['tax'], $data['amount']] = $this->invoiceTotals($items, $data);
+        }
+
         $key = $data['idempotency_key'] ?? null;
         if ($key && ($existing = Invoice::where('idempotency_key', $key)->first())) {
             return $existing;
@@ -82,10 +90,14 @@ class AdminService
         $data['paid_amount'] = 0;
 
         try {
-            return DB::transaction(function () use ($data, $file) {
+            return DB::transaction(function () use ($data, $file, $items) {
                 $data['invoice_number'] = $this->generateInvoiceNumber();
                 $data['created_by'] = auth()->id();
                 $invoice = Invoice::create($data);
+
+                foreach ($items as $item) {
+                    $invoice->items()->create($item);
+                }
 
                 if ($file) {
                     $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
@@ -100,6 +112,38 @@ class AdminService
 
             throw $e;
         }
+    }
+
+    private function normalizedInvoiceItems(mixed $items): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->filter(fn ($item) => is_array($item)
+                && (filled($item['description'] ?? null) || (float) ($item['unit_price'] ?? 0) > 0))
+            ->map(function ($item) {
+                $quantity = round((float) ($item['quantity'] ?? 1), 2);
+                $unitPrice = round((float) ($item['unit_price'] ?? 0), 2);
+                $discount = round((float) ($item['discount'] ?? 0), 2);
+
+                return [
+                    'description' => trim((string) $item['description']),
+                    'quantity' => $quantity,
+                    'unit' => filled($item['unit'] ?? null) ? $item['unit'] : 'pcs',
+                    'unit_price' => $unitPrice,
+                    'discount' => $discount,
+                    'subtotal' => InvoiceItem::subtotalFor($quantity, $unitPrice, $discount),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function invoiceTotals(array $items, array $data): array
+    {
+        $subtotal = round((float) collect($items)->sum('subtotal'), 2);
+        $discount = round(min((float) ($data['discount'] ?? 0), $subtotal), 2);
+        $tax = round(max(0, (float) ($data['tax'] ?? 0)), 2);
+
+        return [$subtotal, $discount, $tax, round($subtotal - $discount + $tax, 2)];
     }
 
     /**
@@ -131,6 +175,18 @@ class AdminService
         $this->assertProjectBelongsToCustomer($data);
         $this->assertProposalBelongsToCustomer($data);
 
+        $hasItemsInput = array_key_exists('items', $data);
+        $items = $this->normalizedInvoiceItems($data['items'] ?? []);
+        unset($data['items']);
+
+        if ($hasItemsInput && $items !== []) {
+            [$data['subtotal'], $data['discount'], $data['tax'], $data['amount']] = $this->invoiceTotals($items, $data);
+        } elseif ($hasItemsInput) {
+            $data['subtotal'] = null;
+            $data['discount'] = 0;
+            $data['tax'] = 0;
+        }
+
         $paid = round((float) $invoice->payments()->sum('amount'), 2);
         $amount = round((float) ($data['amount'] ?? $invoice->amount), 2);
 
@@ -144,8 +200,15 @@ class AdminService
             $this->assertInvoiceStatusMatchesPayments((string) $data['status'], $paid, $amount);
         }
 
-        return DB::transaction(function () use ($invoice, $data, $file) {
+        return DB::transaction(function () use ($invoice, $data, $file, $hasItemsInput, $items) {
             $invoice->update($data);
+
+            if ($hasItemsInput) {
+                $invoice->items()->delete();
+                foreach ($items as $item) {
+                    $invoice->items()->create($item);
+                }
+            }
 
             if ($file) {
                 $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);

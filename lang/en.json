@@ -4720,5 +4720,12 @@
     "menunggu verifikasi": "waiting verification",
     "belum terkirim": "not delivered",
     "belum lunas": "unpaid",
-    "Procurement & AP": "Procurement & AP"
+    "Procurement & AP": "Procurement & AP",
+    "Discount (Rp)": "Discount (Rp)",
+    "Items subtotal": "Items subtotal",
+    "Print Invoice": "Print Invoice",
+    "Invoice Items": "Invoice Items",
+    "Optional. If items are filled, the invoice total is calculated automatically.": "Optional. If items are filled, the invoice total is calculated automatically.",
+    "Bill To": "Bill To",
+    "Invoice amount": "Invoice amount"
 }

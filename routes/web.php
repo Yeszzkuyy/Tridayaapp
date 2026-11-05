@@ -547,6 +547,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('permission:view-admin-hub|manage-admin')
             ->name('hub');
         Route::get('/invoices', [AdminController::class, 'invoicesIndex'])->name('invoices.index');
+        Route::get('/invoices/{invoice}/print', [AdminController::class, 'invoicesPrint'])->name('invoices.print');
         Route::get('/invoices/{invoice}', [AdminController::class, 'invoicesShow'])->name('invoices.show');
         Route::get('/pos', [AdminController::class, 'posIndex'])->name('pos.index');
         Route::get('/pos/{purchaseOrder}', [AdminController::class, 'posShow'])->name('pos.show');
