@@ -104,23 +104,28 @@ class MeetingReportTest extends TestCase
         $photo1 = UploadedFile::fake()->image('meeting_1.jpg', 600, 400);
         $photo2 = UploadedFile::fake()->image('meeting_2.png', 800, 600);
 
+        // Tanggal dinamis: validasi meeting_next_action_date mensyaratkan
+        // >= hari ini, jadi hardcode tanggal akan gagal seiring waktu.
+        $nextActionDate = now()->addDays(5)->toDateString();
+        $returnDate = now()->toDateString();
+
         $res = $this->actingAs($sales)->post(route('sales.meetings.report.store', $fu), [
             'meeting_photos' => [$photo1, $photo2],
             'meeting_notes' => 'Diskusi berjalan lancar. Klien meminta quotation 16 unit kamera beserta switch PoE. Target follow-up minggu depan.',
             'meeting_outcome' => 'need_quotation',
-            'meeting_next_action_date' => '2026-10-30',
+            'meeting_next_action_date' => $nextActionDate,
             'return' => 'schedule',
-            'date' => '2026-10-25',
+            'date' => $returnDate,
         ]);
 
-        $res->assertRedirect(route('sales.schedules.index', ['date' => '2026-10-25']));
+        $res->assertRedirect(route('sales.schedules.index', ['date' => $returnDate]));
         $res->assertSessionHas('success');
 
         $fu->refresh();
         $this->assertNotNull($fu->completed_at);
         $this->assertSame('need_quotation', $fu->meeting_outcome);
         $this->assertStringContainsString('Diskusi berjalan lancar', $fu->meeting_notes);
-        $this->assertSame('2026-10-30', $fu->meeting_next_action_date->toDateString());
+        $this->assertSame($nextActionDate, $fu->meeting_next_action_date->toDateString());
         $this->assertCount(2, $fu->meeting_photos);
         $this->assertTrue($fu->hasMeetingReport());
 

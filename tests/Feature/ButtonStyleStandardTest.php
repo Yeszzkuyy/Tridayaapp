@@ -24,7 +24,7 @@ class ButtonStyleStandardTest extends TestCase
         $html = $this->render('<x-icon-button icon="add" label="Add PIC" title="Add PIC" />');
 
         $this->assertStringContainsString('class="h-4 w-4 shrink-0"', $html);
-        $this->assertStringContainsString('stroke-width="2.5"', $html);
+        $this->assertStringContainsString('stroke-width="3.5"', $html);
         $this->assertStringNotContainsString('class="h-5 w-5 shrink-0"', $html);
 
         // Default: label selalu tampil (reveal tidak aktif).
