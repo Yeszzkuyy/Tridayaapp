@@ -15,7 +15,7 @@ ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 | `/var/www/3dyapp-mon` | `feature/div-mon` | Monitoring (progress per customer) |
 | `/var/www/3dyapp-cus` | `feature/div-cus` | Customer |
 | `/var/www/3dyapp-dash` | `feature/general-dashboard` | Dashboard umum |
-| `/var/www/3dyapp-management` | `feature/management` | Management (Activity Log, assign lead) |
+| `/home/yeski/3dyapp-management` | `feature/management` | Management (Activity Log, assign lead) |
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
