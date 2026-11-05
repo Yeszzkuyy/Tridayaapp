@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Manage Lead:') }} {{ $lead->customer->name ?? __('N/A') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Fill in the solution, follow-up progress, internal notes, and assign to Sales') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="{{ __('Back') }}" />
+        <x-back-button href="{{ route('manage-sales.index') }}" />
     </div>
 
     <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="{{ __('Saving…') }}"

@@ -11,7 +11,7 @@
                 @endif
             </p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="{{ __('Back') }}" />
+        <x-back-button href="{{ route('manage-sales.index') }}" />
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 p-6">
