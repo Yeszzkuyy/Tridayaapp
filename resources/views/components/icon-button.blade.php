@@ -154,6 +154,7 @@ $paths = [
     'send' => '<path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12zm0 0h7.5" />',
     'whatsapp' => '<path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />',
     'more' => '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z" />',
+    'receipt' => '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 17.5v-11" />',
 ];
 
 $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover/btn:translate-x-full" aria-hidden="true"></span>';
@@ -167,6 +168,10 @@ $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -s
                 {{ $slot }}
             @elseif(isset($paths[$icon]))
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="{{ $iconStroke }}" stroke="currentColor" class="{{ $iconClass }}" aria-hidden="true">{!! $paths[$icon] !!}</svg>
+            @elseif($icon)
+                {{-- Fallback: nama ikon yang tidak ada di peta lokal tetap tampil
+                     lewat <x-icon> (set ikon aplikasi jauh lebih lengkap). --}}
+                <x-icon :name="$icon" :stroke-width="$iconStroke" class="{{ $iconClass }}" />
             @endif
             @if($label)
                 <span class="{{ $labelSpanClass }}">{{ $label }}</span>
@@ -180,6 +185,10 @@ $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -s
                 {{ $slot }}
             @elseif(isset($paths[$icon]))
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="{{ $iconStroke }}" stroke="currentColor" class="{{ $iconClass }}" aria-hidden="true">{!! $paths[$icon] !!}</svg>
+            @elseif($icon)
+                {{-- Fallback: nama ikon yang tidak ada di peta lokal tetap tampil
+                     lewat <x-icon> (set ikon aplikasi jauh lebih lengkap). --}}
+                <x-icon :name="$icon" :stroke-width="$iconStroke" class="{{ $iconClass }}" />
             @endif
             @if($label)
                 <span class="{{ $labelSpanClass }}">{{ $label }}</span>
