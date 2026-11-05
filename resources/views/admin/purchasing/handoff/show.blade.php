@@ -12,6 +12,11 @@
             <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
             @if($proposal->project)
                 <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('View Project') }}" title="{{ __('View Project') }}" />
+            @else
+                @canany(['manage-admin', 'manage-sales-leads'])
+                    <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
+                                   onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
+                @endcanany
             @endif
         </div>
     </div>
@@ -58,11 +63,45 @@
             @if($proposal->notes)
                 <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $proposal->notes }}</p>
             @endif
+
+            @if($proposal->attachments->isNotEmpty())
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-2 mt-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Original Quotation Files') }}</p>
+                    <ul class="space-y-2">
+                        @foreach($proposal->attachments as $file)
+                            <li class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{{ $file->original_name }}</p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ $file->humanSize() }} · {{ $file->uploader?->name ?? __('System') }} · {{ $file->created_at?->translatedFormat('d M Y H:i') }}
+                                    </p>
+                                </div>
+                                <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </div>
 
         <div class="space-y-4">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 text-sm space-y-1">
-                <h2 class="font-semibold text-slate-700 dark:text-slate-200 mb-2">{{ __('Customer PO') }}</h2>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer PO') }}</h2>
+                    @if($proposal->isPoVerified())
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            ✓ {{ __('Verified') }}
+                        </span>
+                    @elseif($proposal->isPoReturned())
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                            ✕ {{ __('Returned to Sales') }}
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300">
+                            {{ __('Waiting Verification') }}
+                        </span>
+                    @endif
+                </div>
                 <p class="text-slate-500">{{ __('PO Number') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
                 <p class="text-slate-500">{{ __('PO Date') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
                 <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</span></p>
@@ -72,6 +111,35 @@
                     <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_terms }}</span></p>
                 @endif
                 <p class="text-slate-500">{{ __('PO Status') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->purchasingStatusLabel() }}</span></p>
+
+                @if($proposal->isPoVerified())
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400 pt-1">
+                        {{ __('Verified by :name on :date', ['name' => $proposal->poVerifiedBy?->name ?? __('Admin'), 'date' => $proposal->po_verified_at?->format('d M Y H:i')]) }}
+                    </p>
+                @endif
+
+                @if($proposal->isPoReturned())
+                    <div class="mt-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+                        <p class="font-semibold">{{ __('Returned by :name on :date', ['name' => $proposal->poReturnedBy?->name ?? __('Admin'), 'date' => $proposal->po_returned_at?->format('d M Y H:i')]) }}</p>
+                        <p class="mt-1 whitespace-pre-wrap">{{ $proposal->po_return_reason }}</p>
+                    </div>
+                @endif
+
+                @can('manage-admin')
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-2 mt-2">
+                        @if(! $proposal->isPoVerified())
+                            <form action="{{ route('admin.purchasing.verify-po', $proposal) }}" method="POST" class="inline">
+                                @csrf
+                                <x-icon-button type="submit" icon="sparkles" label="{{ __('Verify PO') }}" title="{{ __('Verify PO') }}" />
+                            </form>
+                        @endif
+                        <button type="button" onclick="document.getElementById('return-po-modal').classList.remove('hidden')"
+                                class="group relative overflow-hidden px-4 py-2 rounded-xl border border-red-200 dark:border-red-800 text-red-600 hover:bg-red-600 hover:text-white text-xs font-medium transition-all duration-300 active:scale-95">
+                            {{ __('Return to Sales') }}
+                        </button>
+                    </div>
+                @endcan
+
                 @if($proposal->handoffWarnings())
                     <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                         <p class="font-semibold mb-1">{{ __('Handoff data incomplete') }}</p>
@@ -122,4 +190,74 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Return PO to Sales --}}
+    <div id="return-po-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Return Customer PO to Sales') }}</h3>
+            <p class="text-xs text-slate-500">{{ __('Provide revision notes explaining what needs to be fixed or updated by the Sales team.') }}</p>
+            <form action="{{ route('admin.purchasing.return-po', $proposal) }}" method="POST" class="space-y-4">
+                @csrf
+                <textarea name="reason" rows="3" required placeholder="{{ __('e.g. Incomplete warehouse delivery address, missing client signature...') }}"
+                          class="w-full rounded-xl border-slate-300 text-sm focus:border-red-500 focus:ring-red-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="document.getElementById('return-po-modal').classList.add('hidden')"
+                            class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700">
+                        {{ __('Cancel') }}
+                    </button>
+                    <x-danger-button type="submit">{{ __('Return with Notes') }}</x-danger-button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Convert to Project --}}
+    @if(! $proposal->project)
+        <div id="convert-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 hidden">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Convert to Project') }}</h3>
+                <p class="text-xs text-slate-500">{{ __('Create a technician project from this approved proposal.') }}</p>
+
+                <form action="{{ route('sales.proposals.convert', $proposal) }}" method="POST" class="space-y-3">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Jenis Pekerjaan') }} <span class="text-red-500">*</span></label>
+                        <select name="work_type_id" required class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200">
+                            <option value="">{{ __('Select...') }}</option>
+                            @foreach($workTypes as $wt)
+                                <option value="{{ $wt->id }}">{{ $wt->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Start Date') }}</label>
+                        <input type="date" name="start_date" value="{{ now()->format('Y-m-d') }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200">
+                    </div>
+                    <div class="space-y-2 py-1">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="requires_delivery" value="1" checked class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                            <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ __('Requires Physical Delivery (Goods Delivery Note)') }}</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="requires_installation" value="1" checked class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                            <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ __('Requires Field Installation / Technician Work') }}</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes for Technician (optional)') }}</label>
+                        <textarea name="notes" rows="2" placeholder="{{ __('Anything the technician should know before starting...') }}"
+                                  class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200">{{ old('notes') }}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="document.getElementById('convert-modal').classList.add('hidden')"
+                                class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700">
+                            {{ __('Cancel') }}
+                        </button>
+                        <x-primary-button type="submit">{{ __('Convert to Project') }}</x-primary-button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 </x-app-layout>

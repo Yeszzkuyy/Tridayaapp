@@ -427,12 +427,6 @@
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
                                         <span>{{ __('Invoice') }}</span>
                                     </a>
-                                    <a wire:navigate.hover href="{{ route('admin.pos.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.pos.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.pos.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-400" aria-hidden="true"></span>
-                                        <span>{{ __('Purchase Order') }}</span>
-                                    </a>
                                     <a wire:navigate.hover href="{{ route('admin.payments.index') }}"
                                        aria-current="{{ request()->routeIs('admin.payments.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.payments.*') ? $navActive : $navInactive }}">

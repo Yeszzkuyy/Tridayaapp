@@ -5,19 +5,23 @@ namespace App\Observers;
 use App\Models\Project;
 use App\Models\ProjectActivity;
 use App\Models\ProjectStatus;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectObserver
 {
     public function created(Project $project): void
     {
-        ProjectActivity::create([
-            'project_id'    => $project->id,
-            'user_id'       => Auth::id(),
-            'activity_date' => now(),
-            'title'         => __('Projects Created'),
-            'description'   => __('New project created successfully'),
-        ]);
+        $userId = Auth::id() ?? User::first()?->id;
+        if ($userId) {
+            ProjectActivity::create([
+                'project_id'    => $project->id,
+                'user_id'       => $userId,
+                'activity_date' => now(),
+                'title'         => __('Projects Created'),
+                'description'   => __('New project created successfully'),
+            ]);
+        }
 
         // Sinkronisasi status customer: punya project = sudah deal/berjalan.
         if ($project->customer && $project->customer->status === 'lead') {

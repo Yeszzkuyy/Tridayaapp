@@ -47,6 +47,7 @@ class Project extends Model
         'end_date' => 'date',
         'progress' => 'integer',
         'requires_installation' => 'boolean',
+        'requires_delivery' => 'boolean',
         'bast_date' => 'date',
         'bast_signed_3dy_at' => 'datetime',
         'bast_signed_customer_at' => 'datetime',
@@ -215,8 +216,9 @@ class Project extends Model
         }
 
         $deliveryQuery = $this->goodsDeliveries();
-        $deliveryDone = (clone $deliveryQuery)->exists()
-            && (clone $deliveryQuery)->where('status', '!=', 'delivered')->doesntExist();
+        $deliveryDone = ! $this->requires_delivery
+            || ((clone $deliveryQuery)->exists()
+                && (clone $deliveryQuery)->where('status', '!=', 'delivered')->doesntExist());
 
         $procurementDone = $this->deliveryObligationsMet();
 

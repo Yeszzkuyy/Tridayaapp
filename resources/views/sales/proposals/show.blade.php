@@ -225,7 +225,7 @@
                     @endif
                     @if($proposal->project)
                         <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('View Project') }}: {{ $proposal->project->project_name }}" title="{{ __('View Project') }}: {{ $proposal->project->project_name }}" />
-                    @elseif($isOwner)
+                    @elseif($isOwner || auth()->user()->can('manage-admin') || auth()->user()->can('manage-sales-leads'))
                         <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
                                        onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
                     @endif
@@ -246,6 +246,14 @@
                     <p class="text-slate-500">{{ __('Payment Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->paymentTermsSummary() }}</span></p>
                     @if($proposal->delivery_terms)
                         <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_terms }}</span></p>
+                    @endif
+
+                    @if($proposal->isPoReturned())
+                        <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 my-2">
+                            <p class="font-bold text-sm">⚠️ {{ __('Customer PO Returned by Admin') }}</p>
+                            <p class="mt-1 font-medium">{{ __('Notes from Admin: ') }} <span class="font-normal">{{ $proposal->po_return_reason }}</span></p>
+                            <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Please revise or upload the corrected PO document below.') }}</p>
+                        </div>
                     @endif
 
                     @if($isOwner)
@@ -368,6 +376,16 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Start Date') }}</label>
                                 <input type="date" name="start_date" value="{{ now()->format('Y-m-d') }}"
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2 py-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="requires_delivery" value="1" checked class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ __('Requires Physical Delivery (Goods Delivery Note)') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="requires_installation" value="1" checked class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ __('Requires Field Installation / Technician Work') }}</span>
+                                </label>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes for Technician (optional)') }}</label>

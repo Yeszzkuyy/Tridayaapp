@@ -795,6 +795,12 @@ class ProposalController extends Controller
             $payload['po_document_path'] = $path;
         }
 
+        if ($proposal->po_returned_at !== null) {
+            $payload['po_returned_at'] = null;
+            $payload['po_returned_by'] = null;
+            $payload['po_return_reason'] = null;
+        }
+
         $proposal->update($payload);
 
         $this->notifyAdminHandoff($proposal->fresh(), PurchasingHandoffNotification::STAGE_PO_RECEIVED);
@@ -831,7 +837,14 @@ class ProposalController extends Controller
     /** Convert proposal WON menjadi Project untuk divisi Teknisi (sekali saja). */
     public function convertToProject(Request $request, Proposal $proposal)
     {
-        $this->authorizeManage($proposal);
+        $user = auth()->user();
+        abort_unless(
+            $this->isOwner($proposal)
+            || $user->can('manage-admin')
+            || $user->can('manage-sales-leads')
+            || $user->hasRole('ceo'),
+            403
+        );
         abort_unless($proposal->status === 'accepted', 422);
         abort_if($proposal->project()->exists(), 422, __('This proposal has already been converted.'));
         $this->assertQuotationHasBillableContent($proposal);
@@ -844,6 +857,8 @@ class ProposalController extends Controller
         $validated = $request->validate([
             'work_type_id' => 'required|exists:work_types,id',
             'start_date' => 'nullable|date',
+            'requires_delivery' => 'nullable|boolean',
+            'requires_installation' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
         ]);
 
@@ -856,7 +871,7 @@ class ProposalController extends Controller
             . (! empty($validated['notes']) ? "\nCatatan untuk Teknisi: ".$validated['notes'] : '')
         );
 
-        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated, $description) {
+        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated, $description, $request) {
             $project = Project::create([
                 'customer_id' => $lead->customer_id,
                 'sales_user_id' => $lead->assigned_to ?? $proposal->created_by,
@@ -867,6 +882,8 @@ class ProposalController extends Controller
                 'proposal_id' => $proposal->id,
                 'start_date' => $validated['start_date'] ?? null,
                 'delivery_deadline' => $proposal->delivery_deadline,
+                'requires_delivery' => $request->boolean('requires_delivery', true),
+                'requires_installation' => $request->boolean('requires_installation', true),
                 'description' => $description,
                 'progress' => 0,
             ]);

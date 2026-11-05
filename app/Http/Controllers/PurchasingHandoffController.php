@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lead;
+use App\Models\LeadActivity;
 use App\Models\Proposal;
+use App\Notifications\ProposalStatusNotification;
 use Illuminate\Http\Request;
 
 /**
@@ -99,9 +101,78 @@ class PurchasingHandoffController extends Controller
 
         $proposal->load([
             'lead.customer', 'lead.assignee', 'creator', 'items', 'project',
-            'supplierPurchaseOrders.supplier',
+            'supplierPurchaseOrders.supplier', 'attachments.uploader',
         ]);
 
-        return view('admin.purchasing.handoff.show', compact('proposal'));
+        $workTypes = ! $proposal->project
+            ? \App\Models\WorkType::orderBy('name')->get(['id', 'name'])
+            : collect();
+
+        return view('admin.purchasing.handoff.show', compact('proposal', 'workTypes'));
+    }
+
+    public function verifyPo(Request $request, Proposal $proposal)
+    {
+        $user = $request->user();
+        abort_unless($user->can('manage-admin') || $user->hasRole('ceo'), 403);
+        abort_unless($proposal->isReadyForPurchasing(), 422);
+
+        $proposal->update([
+            'po_verified_at' => now(),
+            'po_verified_by' => $user->id,
+            'po_returned_at' => null,
+            'po_returned_by' => null,
+            'po_return_reason' => null,
+        ]);
+
+        if ($proposal->lead) {
+            LeadActivity::create([
+                'lead_id' => $proposal->lead_id,
+                'user_id' => $user->id,
+                'action' => 'po_verified',
+                'changes' => ['number' => $proposal->proposal_number, 'po_number' => $proposal->po_number],
+            ]);
+        }
+
+        return back()->with('success', __('Customer PO verified successfully.'));
+    }
+
+    public function returnPo(Request $request, Proposal $proposal)
+    {
+        $user = $request->user();
+        abort_unless($user->can('manage-admin') || $user->hasRole('ceo'), 403);
+        abort_unless($proposal->isReadyForPurchasing(), 422);
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $proposal->update([
+            'po_returned_at' => now(),
+            'po_returned_by' => $user->id,
+            'po_return_reason' => $validated['reason'],
+            'po_verified_at' => null,
+            'po_verified_by' => null,
+        ]);
+
+        if ($proposal->lead) {
+            LeadActivity::create([
+                'lead_id' => $proposal->lead_id,
+                'user_id' => $user->id,
+                'action' => 'po_returned',
+                'changes' => [
+                    'number' => $proposal->proposal_number,
+                    'po_number' => $proposal->po_number,
+                    'reason' => $validated['reason'],
+                ],
+            ]);
+        }
+
+        $assignee = $proposal->lead?->assignee ?: $proposal->creator;
+        if ($assignee && (int) $assignee->id !== (int) $user->id) {
+            $assignee->notify(new ProposalStatusNotification($proposal, 'po_returned'));
+        }
+
+        return back()->with('success', __('Customer PO returned to Sales with revision notes.'));
     }
 }

@@ -38,6 +38,11 @@ class Proposal extends Model
         'term_days',
         'payment_terms',
         'delivery_terms',
+        'po_verified_at',
+        'po_verified_by',
+        'po_returned_at',
+        'po_returned_by',
+        'po_return_reason',
         'total_cost',
         'gross_profit',
         'gross_margin',
@@ -52,6 +57,8 @@ class Proposal extends Model
         'valid_until' => 'date',
         'po_date' => 'date',
         'delivery_deadline' => 'date',
+        'po_verified_at' => 'datetime',
+        'po_returned_at' => 'datetime',
         'dp_percent' => 'float',
         'term_days' => 'integer',
         'sent_at' => 'datetime',
@@ -111,6 +118,26 @@ class Proposal extends Model
     public function priceRequest()
     {
         return $this->hasOne(PriceRequest::class);
+    }
+
+    public function poVerifiedBy()
+    {
+        return $this->belongsTo(User::class, 'po_verified_by');
+    }
+
+    public function poReturnedBy()
+    {
+        return $this->belongsTo(User::class, 'po_returned_by');
+    }
+
+    public function isPoVerified(): bool
+    {
+        return $this->po_verified_at !== null;
+    }
+
+    public function isPoReturned(): bool
+    {
+        return $this->po_returned_at !== null;
     }
 
     public function recalculate(): void
@@ -181,11 +208,56 @@ class Proposal extends Model
         return $this->status === 'accepted' && filled($this->po_document_path);
     }
 
+    /**
+     * Quotation yang siap ditarik ke Supplier PO (belum semua item selesai dipesan).
+     *
+     * Tetap muncul di antrean belanja bila ada rincian item yang jumlah ordered-nya
+     * pada Supplier PO aktif masih kurang dari quantity quotation.
+     */
+    public function scopePendingSupplierPo($query)
+    {
+        return $query->where('status', 'accepted')
+            ->whereNotNull('po_document_path')
+            ->where(function ($q) {
+                $q->whereHas('items', function ($itemQuery) {
+                    $itemQuery->whereRaw(
+                        'quantity > (SELECT COALESCE(SUM(spoi.quantity_ordered), 0) FROM supplier_purchase_order_items spoi JOIN supplier_purchase_orders spo ON spo.id = spoi.supplier_purchase_order_id WHERE spoi.proposal_item_id = proposal_items.id AND spo.status != ? AND spo.deleted_at IS NULL)',
+                        ['cancelled']
+                    );
+                })->orWhere(function ($fallbackQuery) {
+                    $fallbackQuery->whereDoesntHave('items')
+                        ->whereDoesntHave('supplierPurchaseOrders', fn ($spo) => $spo->where('status', '!=', 'cancelled'));
+                });
+            });
+    }
+
+    /** Cek apakah seluruh item pada quotation sudah tuntas dipesan ke supplier. */
+    public function isFullySourced(): bool
+    {
+        if ($this->items()->doesntExist()) {
+            return $this->supplierPurchaseOrders()->where('status', '!=', 'cancelled')->exists();
+        }
+
+        return ! $this->items()
+            ->whereRaw(
+                'quantity > (SELECT COALESCE(SUM(spoi.quantity_ordered), 0) FROM supplier_purchase_order_items spoi JOIN supplier_purchase_orders spo ON spo.id = spoi.supplier_purchase_order_id WHERE spoi.proposal_item_id = proposal_items.id AND spo.status != ? AND spo.deleted_at IS NULL)',
+                ['cancelled']
+            )->exists();
+    }
+
     /** Status customer PO untuk antrean Purchasing. */
     public function purchasingStatusLabel(): string
     {
         if ($this->status !== 'accepted') {
             return self::statusLabel($this->status);
+        }
+
+        if ($this->isPoReturned()) {
+            return __('PO Returned (Revision Needed)');
+        }
+
+        if ($this->isPoVerified()) {
+            return __('PO Verified');
         }
 
         return $this->isReadyForPurchasing()
@@ -296,6 +368,10 @@ class Proposal extends Model
     public function handoffWarnings(): array
     {
         $warnings = [];
+
+        if ($this->isPoReturned()) {
+            $warnings[] = __('Customer PO was returned by Admin: ') . $this->po_return_reason;
+        }
 
         if (blank($this->po_number)) {
             $warnings[] = __('Customer PO number is missing.');

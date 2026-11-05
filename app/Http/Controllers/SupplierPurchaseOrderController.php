@@ -45,6 +45,11 @@ class SupplierPurchaseOrderController extends Controller
         $suppliers = Supplier::active()->orderBy('name')->get();
         $proposals = $this->eligibleProposals();
 
+        $selectedProposalId = $request->integer('proposal_id') ?: null;
+        if (! $selectedProposalId && $request->filled('project_id')) {
+            $selectedProposalId = Proposal::whereHas('project', fn ($q) => $q->where('id', $request->integer('project_id')))->value('id');
+        }
+
         return view('admin.supplier-pos.create', [
             'suppliers' => $suppliers,
             'proposals' => $proposals,
@@ -64,7 +69,7 @@ class SupplierPurchaseOrderController extends Controller
                     ])->values(),
                 ],
             ]),
-            'selectedProposalId' => $request->integer('proposal_id') ?: null,
+            'selectedProposalId' => $selectedProposalId,
             'selectedSupplierId' => $request->integer('supplier_id') ?: null,
             // Kunci idempotensi per render form: submit berulang tidak
             // membuat Supplier PO kedua.

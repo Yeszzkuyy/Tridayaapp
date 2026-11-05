@@ -241,8 +241,11 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
         Route::post('proposals/{proposal}/submit-technical', [ProposalController::class, 'submitTechnical'])->name('proposals.submit-technical');
         Route::post('proposals/{proposal}/po', [ProposalController::class, 'uploadPo'])->name('proposals.upload-po');
-        Route::post('proposals/{proposal}/convert', [ProposalController::class, 'convertToProject'])->name('proposals.convert');
     });
+
+    // Konversi quotation accepted menjadi Project: bisa dilakukan oleh pemilik (sales/inside-sales)
+    // atau fallback oleh Admin (manage-admin), Management (manage-sales-leads), dan CEO.
+    Route::post('sales/proposals/{proposal}/convert', [ProposalController::class, 'convertToProject'])->name('sales.proposals.convert');
 
     Route::middleware('permission:manage-technician|manage-admin')->prefix('sales')->name('sales.')->group(function () {
         Route::post('proposals/{proposal}/return-technical', [ProposalController::class, 'returnTechnical'])->name('proposals.return-technical');
@@ -533,6 +536,10 @@ Route::middleware('auth')->group(function () {
         // Tahap 5 — BAST & closing komersial.
         Route::get('/bast/{project}/edit', [BastController::class, 'edit'])->name('bast.edit');
         Route::put('/bast/{project}', [BastController::class, 'update'])->name('bast.update');
+
+        // Verifikasi & Return Customer PO pada Handoff
+        Route::post('/purchasing/{proposal}/verify-po', [\App\Http\Controllers\PurchasingHandoffController::class, 'verifyPo'])->name('purchasing.verify-po');
+        Route::post('/purchasing/{proposal}/return-po', [\App\Http\Controllers\PurchasingHandoffController::class, 'returnPo'])->name('purchasing.return-po');
     });
 
     Route::middleware('permission:view-admin|manage-admin')->prefix('admin')->name('admin.')->group(function () {

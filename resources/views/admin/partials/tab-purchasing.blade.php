@@ -81,7 +81,7 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <x-icon-button as="a" icon="view" href="{{ route('teknisi.request-hargas.show', $rh) }}" title="{{ __('Lihat Detail Request') }}" />
                                     @can('manage-admin')
-                                        <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create', ['project_id' => $rh->project_id, 'request_harga_id' => $rh->id]) }}" title="{{ __('Buat PO dari Request Ini') }}" label="{{ __('Buat PO') }}" />
+                                        <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['project_id' => $rh->project_id]) }}" title="{{ __('Buat PO dari Request Ini') }}" label="{{ __('Buat PO') }}" />
                                     @endcan
                                 </div>
                             </td>
@@ -98,13 +98,13 @@
         </div>
     </div>
 
-    {{-- Panel 2: Purchase Orders (PO) Terbaru --}}
+    {{-- Panel 2: Supplier Purchase Orders (PO) Terbaru --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
                 <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full bg-violet-500"></span>
-                    {{ __('Purchase Orders (PO) Terbaru') }}
+                    {{ __('Supplier Purchase Orders (PO) Terbaru') }}
                 </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {{ __('Daftar purchase order pengadaan yang telah diterbitkan untuk supplier/vendor.') }}
@@ -112,10 +112,10 @@
             </div>
             <div class="flex items-center gap-2">
                 @can('manage-admin')
-                    <x-icon-button as="a" icon="add" href="{{ route('admin.pos.create') }}" title="{{ __('Buat PO Baru') }}" label="{{ __('PO Baru') }}" />
+                    <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create') }}" title="{{ __('Buat Supplier PO Baru') }}" label="{{ __('Supplier PO Baru') }}" />
                 @endcan
-                <a href="{{ route('admin.pos.index') }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline ml-2">
-                    {{ __('Lihat Semua PO') }} →
+                <a href="{{ route('admin.supplier-pos.index') }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline ml-2">
+                    {{ __('Lihat Semua Supplier PO') }} →
                 </a>
             </div>
         </div>
@@ -125,7 +125,7 @@
                 <thead class="bg-slate-50 dark:bg-slate-700/50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Nomor PO') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Klien & Proyek') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Supplier & Proyek') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Rincian Barang') }}</th>
                         <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Total Nilai (Rp)') }}</th>
                         <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status') }}</th>
@@ -133,7 +133,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
-                    @forelse($purchasing['purchase_orders'] as $po)
+                    @forelse($purchasing['supplier_pos'] ?? $purchasing['purchase_orders'] as $po)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
                             <td class="px-4 py-3 font-mono font-semibold text-slate-800 dark:text-white">
                                 {{ $po->po_number }}
@@ -143,7 +143,7 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="font-medium text-slate-800 dark:text-white">
-                                    {{ $po->customer?->name ?? __('Tanpa Klien') }}
+                                    {{ $po->supplier?->name ?? $po->customer?->name ?? __('Tanpa Pemasok') }}
                                 </div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">
                                     {{ $po->project?->project_name ?? __('Tanpa Proyek') }}
@@ -151,34 +151,44 @@
                             </td>
                             <td class="px-4 py-3 max-w-xs">
                                 <div class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
-                                    {{ $po->items }}
+                                    {{ isset($po->items_count) ? $po->items_count . ' ' . __('item pengadaan') : ($po->items ?? '-') }}
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-right font-mono font-medium text-slate-800 dark:text-white">
-                                Rp {{ number_format($po->amount, 0, ',', '.') }}
+                                Rp {{ number_format($po->grand_total ?? $po->amount ?? 0, 0, ',', '.') }}
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full
-                                    @if($po->status === 'selesai') bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300
-                                    @elseif($po->status === 'diproses') bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300
-                                    @elseif($po->status === 'dibatalkan') bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300
-                                    @else bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 @endif">
-                                    {{ $po->statusLabel() }}
-                                </span>
+                                @if($po instanceof \App\Models\SupplierPurchaseOrder)
+                                    <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full {{ \App\Models\SupplierPurchaseOrder::statusBadgeClasses($po->status) }}">
+                                        {{ \App\Models\SupplierPurchaseOrder::statusLabel($po->status) }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full
+                                        @if($po->status === 'selesai') bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300
+                                        @elseif($po->status === 'diproses') bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300
+                                        @elseif($po->status === 'dibatalkan') bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300
+                                        @else bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 @endif">
+                                        {{ method_exists($po, 'statusLabel') ? $po->statusLabel() : ucfirst((string) $po->status) }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-2">
-                                    <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="{{ __('Lihat Detail PO') }}" />
-                                    @can('manage-admin')
-                                        <x-icon-button as="a" icon="edit" href="{{ route('admin.pos.edit', $po) }}" title="{{ __('Edit PO') }}" />
-                                    @endcan
+                                    @if($po instanceof \App\Models\SupplierPurchaseOrder)
+                                        <x-icon-button as="a" icon="view" href="{{ route('admin.supplier-pos.show', $po) }}" title="{{ __('Lihat Detail PO') }}" />
+                                    @else
+                                        <x-icon-button as="a" icon="view" href="{{ route('admin.pos.show', $po) }}" title="{{ __('Lihat Detail PO') }}" />
+                                        @can('manage-admin')
+                                            <x-icon-button as="a" icon="edit" href="{{ route('admin.pos.edit', $po) }}" title="{{ __('Edit PO') }}" />
+                                        @endcan
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="6" class="py-8 text-center text-slate-400 dark:text-slate-500 text-sm italic">
-                                {{ __('Belum ada purchase order yang diterbitkan.') }}
+                                {{ __('Belum ada supplier purchase order yang diterbitkan.') }}
                             </td>
                         </tr>
                     @endforelse

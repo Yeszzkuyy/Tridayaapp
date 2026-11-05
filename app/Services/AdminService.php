@@ -541,13 +541,12 @@ class AdminService
             ->whereIn('status', ['ordered', 'partially_received']);
         $outstandingSupplierPoCount = (clone $outstandingSupplierPoQuery)->count();
         $recentSupplierPos = (clone $outstandingSupplierPoQuery)->latest('issue_date')->limit(10)->get();
+        $allRecentSupplierPos = (clone $supplierPoQuery)->latest('issue_date')->latest('id')->limit(10)->get();
 
         // Quotation deal accepted + Customer PO sudah diunggah, tetapi belum
-        // ditarik menjadi Supplier PO. Ini antrean "Siap Belanja" Purchasing.
-        $quotationDealQuery = Proposal::with(['lead.customer', 'project'])
-            ->where('status', 'accepted')
-            ->whereNotNull('po_document_path')
-            ->whereDoesntHave('supplierPurchaseOrders', fn ($q) => $q->where('status', '!=', 'cancelled'));
+        // semua item selesai dipesan ke supplier (mendukung parsial sourcing).
+        $quotationDealQuery = Proposal::with(['lead.customer', 'project', 'items'])
+            ->pendingSupplierPo();
         if ($ptGroup) {
             $quotationDealQuery->whereHas('lead', fn ($q) => $q->where('pt_group', $ptGroup));
         }
@@ -687,6 +686,7 @@ class AdminService
             ],
             'purchasing' => [
                 'request_hargas' => $recentRequestHargas,
+                'supplier_pos' => $allRecentSupplierPos,
                 'purchase_orders' => $recentPos,
             ],
             'finance' => [
