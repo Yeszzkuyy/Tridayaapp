@@ -117,5 +117,14 @@ class CustomerListUiTest extends TestCase
         $this->assertMatchesRegularExpression('/aria-label="Back".{0,600}group\/back/s', $html);
         // Back tidak lagi memakai bentuk pill flow button.
         $this->assertDoesNotMatchRegularExpression('/aria-label="Back".{0,400}rounded-\[100px\]/s', $html);
+
+        // Panel accent meluncur dari kiri saat hover.
+        $this->assertMatchesRegularExpression('/aria-label="Back".{0,1200}group-hover\/back\:translate-x-0/s', $html);
+
+        // Wajib pakai token tema, bukan bg-white: `.dark .bg-white{...!important}`
+        // mematikan hover di dark mode.
+        $backMarkup = substr($html, (int) strpos($html, 'aria-label="Back"'), 1200);
+        $this->assertStringNotContainsString('bg-white', $backMarkup, 'Tombol Back tidak boleh memakai bg-white (hover mati di dark mode).');
+        $this->assertStringContainsString('bg-[var(--card-bg)]', $backMarkup);
     }
 }
