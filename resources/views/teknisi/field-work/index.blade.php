@@ -13,8 +13,8 @@
             </x-icon-button>
             @include('teknisi.instalasis._bast-dropdown')
             @can('manage-technician')
-                <x-flow-button as="a" href="{{ route('teknisi.surveys.create') }}" icon="add" label="{{ __('Add Survey') }}" title="{{ __('Add Survey') }}" />
-                <x-icon-button as="a" icon="add" href="{{ route('teknisi.instalasis.create') }}" label="{{ __('Add Installation') }}" title="{{ __('Add Installation') }}" />
+                <x-flow-button as="a" href="{{ route('teknisi.surveys.create') }}" label="{{ __('Add Survey') }}" title="{{ __('Add Survey') }}" />
+                <x-flow-button as="a" href="{{ route('teknisi.instalasis.create') }}" label="{{ __('Add Installation') }}" title="{{ __('Add Installation') }}" />
             @endcan
         </div>
     </div>
