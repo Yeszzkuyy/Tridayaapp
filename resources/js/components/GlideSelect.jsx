@@ -46,6 +46,7 @@ export default function GlideSelect({
   showTags = true,
   accentColor = '#f5f5f5',
   surfaceColor = '#27272a',
+  triggerColor,
   highlightColor = '#3f3f46',
   textColor = '#f5f5f5',
   size = 'md',
@@ -278,6 +279,7 @@ export default function GlideSelect({
   const themeVars = {
     '--gs-accent': accentColor,
     '--gs-surface': surfaceColor,
+    '--gs-trigger-bg': triggerColor ?? surfaceColor,
     '--gs-highlight': highlightColor,
     '--gs-text': textColor,
     '--gs-radius': `${radius}px`,

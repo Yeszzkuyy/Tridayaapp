@@ -22,7 +22,14 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', Customer::class);
 
-        $customers = Customer::withCount('projects')
+        $picFilter = (string) $request->string('pic');
+
+        $customers = Customer::withCount([
+            'projects',
+            // Proyek yang belum selesai/batal → dipakai chip "active" di list.
+            'projects as active_projects_count' => fn ($query) => $query
+                ->whereHas('status', fn ($status) => $status->whereNotIn('name', ['Done', 'Cancelled'])),
+        ])
             ->with(['contacts' => function ($query) {
                 $query->orderByDesc('is_primary')->latest();
             }])
@@ -30,6 +37,14 @@ class CustomerController extends Controller
                 $query->whereLike(['name', 'company', 'email'], $request->string('search'));
             })
             ->when($request->filled('pt_group'), fn ($query) => $query->where('pt_group', $request->string('pt_group')))
+            // "PIC" mengikuti sumber kontak customer (tabel contacts, fallback
+            // kolom legacy contact_person) — sama seperti Customer::picName().
+            ->when($picFilter === 'has', fn ($query) => $query->where(function ($q) {
+                $q->whereHas('contacts')
+                    ->orWhere(fn ($legacy) => $legacy->whereNotNull('contact_person')->where('contact_person', '<>', ''));
+            }))
+            ->when($picFilter === 'none', fn ($query) => $query->whereDoesntHave('contacts')
+                ->where(fn ($legacy) => $legacy->whereNull('contact_person')->orWhere('contact_person', '')))
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -38,7 +53,7 @@ class CustomerController extends Controller
 
         return $request->ajax()
             ? view('customers._list', compact('customers'))->render()
-            : view('customers.index', compact('customers', 'ptGroups'))
+            : view('customers.index', compact('customers', 'ptGroups', 'picFilter'))
                 ->with('search', $request->string('search'))
                 ->with('ptGroup', $request->string('pt_group'));
     }

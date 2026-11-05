@@ -139,6 +139,9 @@ ukuran, feedback interaktif, dan warna agar tidak ada tombol yang terasa belang.
   - **Rumus ketebalan tampil:** `stroke-width × (ukuran ikon / 24)`. Contoh: 3.5 pada 16px ≈ **2.33px** (tegas); 2.5 pada 20px ≈ 2.08px; 2 pada 20px ≈ 1.67px (terlalu tipis). Saat mengecilkan ikon, naikkan `stroke-width` agar ketebalan tampil tidak ikut menipis.
   - Varian label di `<x-add-button>` wajib ikut aturan ini (`h-4 w-4` + stroke 3.5).
 - **Animasi `reveal` (opsional, bukan default):** `<x-icon-button variant="solid" reveal>` meringkas tombol jadi icon-only (`px-2.5`) lalu melebarkan label saat hover (`max-w-0 → max-w-44`, ikon `rotate-90`, 500ms). Pakai hanya bila tombol aksi itu memang berdiri sendiri di header halaman; menu lain cukup varian statis (label selalu tampil). Wajib tetap isi `title`/`aria-label` supaya terbaca saat collapsed, dan `motion-reduce:transition-none` sudah otomatis.
+- **Hierarki CTA (WAJIB):** **satu CTA primer per halaman** (`variant="solid"` atau `<x-flow-button>`). Aksi sekunder, baris tabel, filter, dan navigasi wajib icon-only. Jangan menaruh dua CTA primer yang bersaing di header yang sama.
+- **Sumber ikon (WAJIB):** nama ikon harus ada di `<x-icon>`. `<x-icon-button>` otomatis fallback ke `<x-icon>` bila nama tidak ada di peta lokalnya, sehingga tombol tidak pernah tampil kosong — tetap cek `title`/`aria-label` tetap terisi.
+- **Flow button:** `<x-flow-button>` (pill → kotak + lingkaran membesar) maksimal **2 tombol berdampingan**; warna mengikuti `variant` (`accent` default, `neutral` opsional) dan ikon aksi masuk dari kiri saat hover. Ikon `h-4 w-4` stroke 2.5.
 - **Feedback Interaktif:** Seluruh tombol wajib memiliki respon sentuhan instan `active:scale-95` dan transisi halus `transition-all duration-300` ditambah efek kilau (*shine effect*).
 
 **Warna per ikon** (tiap ikon punya identitas warna sendiri — biar tombol
