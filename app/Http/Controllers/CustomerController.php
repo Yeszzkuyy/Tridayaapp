@@ -127,6 +127,10 @@ class CustomerController extends Controller
     {
         $this->authorize('view', $customer);
 
+        // PIC legacy (customer lama) dijadikan kontak primary saat pertama
+        // dibuka, supaya tab Contacts & Overview tidak kosong.
+        $this->contacts->backfillLegacyPrimary($customer);
+
         // Load relasi projects dan contacts sekaligus.
         // Kontak diurutkan berdasarkan is_primary supaya PIC utama muncul di atas.
         // Kartu project butuh status, jenis pekerjaan, dan hitungan progres
