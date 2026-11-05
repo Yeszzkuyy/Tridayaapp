@@ -6,7 +6,9 @@ import './GlideSelect.css';
 const SIZES = {
   sm: { chip: 28, row: 26, font: 12 },
   md: { chip: 32, row: 30, font: 13 },
-  lg: { chip: 44, row: 40, font: 14 }
+  lg: { chip: 44, row: 40, font: 14 },
+  // Selaras dengan field input h-10 (40px) supaya sejajar di baris filter.
+  field: { chip: 40, row: 34, font: 14 }
 };
 const PAD = 4;
 const GAP = 1;
@@ -46,6 +48,7 @@ export default function GlideSelect({
   showTags = true,
   accentColor = '#f5f5f5',
   surfaceColor = '#27272a',
+  triggerColor,
   highlightColor = '#3f3f46',
   textColor = '#f5f5f5',
   size = 'md',
@@ -278,6 +281,7 @@ export default function GlideSelect({
   const themeVars = {
     '--gs-accent': accentColor,
     '--gs-surface': surfaceColor,
+    '--gs-trigger-bg': triggerColor ?? surfaceColor,
     '--gs-highlight': highlightColor,
     '--gs-text': textColor,
     '--gs-radius': `${radius}px`,

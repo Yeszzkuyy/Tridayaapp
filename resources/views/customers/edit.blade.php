@@ -1,14 +1,9 @@
 <x-app-layout>
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div class="min-w-0">
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">
-                    {{ __('Edit Customer') }}
-                </h1>
-                <p class="text-slate-500 mt-1">
-                    {{ __('Edit customer data:') }} <span class="font-semibold text-slate-700">{{ $customer->name }}</span>
-                </p>
-            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                {{ __('Edit Customer') }}
+            </h1>
             <div class="sm:self-start">
                 <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('Back to Customer') }}" />
             </div>
