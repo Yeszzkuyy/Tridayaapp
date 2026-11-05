@@ -304,14 +304,37 @@
                                 </div>
                             </div>
 
-                            @if(! $proposal->po_document_path)
-                                <div class="md:col-span-3">
-                                    <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                           class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <div class="md:col-span-4 rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2 bg-slate-50/50 dark:bg-slate-800/40">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        @if($proposal->isPoReturned())
+                                            <span class="text-red-600 dark:text-red-400 font-bold">⚠️ {{ __('Upload Revised PO Document') }}</span>
+                                        @elseif($proposal->po_document_path)
+                                            {{ __('Replace / Upload New PO Document (Optional)') }}
+                                        @else
+                                            {{ __('Upload Customer PO Document') }} <span class="text-red-500">*</span>
+                                        @endif
+                                    </label>
+                                    @if($proposal->po_document_path)
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-slate-400">{{ __('Current File:') }}</span>
+                                            <a href="{{ route('sales.proposals.download-po', $proposal) }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                                {{ __('Download Current PO') }}
+                                            </a>
+                                        </div>
+                                    @endif
                                 </div>
-                            @endif
-                            <div class="{{ $proposal->po_document_path ? 'md:col-span-4' : '' }}">
-                                <x-icon-button type="submit" icon="upload" label="{{ $proposal->po_document_path ? __('Save PO Info') : __('Upload PO') }}" title="{{ $proposal->po_document_path ? __('Save PO Info') : __('Upload PO') }}" />
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                    <input type="file" name="po_file" {{ $proposal->po_document_path ? '' : 'required' }} accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                           class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/60 dark:file:text-indigo-300">
+                                    <x-icon-button type="submit" icon="upload"
+                                        label="{{ $proposal->isPoReturned() ? __('Submit Revised PO') : ($proposal->po_document_path ? __('Save PO Changes') : __('Upload PO')) }}"
+                                        title="{{ $proposal->isPoReturned() ? __('Submit Revised PO') : ($proposal->po_document_path ? __('Save PO Changes') : __('Upload PO')) }}" />
+                                </div>
+                                @if($proposal->isPoReturned())
+                                    <p class="text-[11px] text-amber-600 dark:text-amber-400">{{ __('Uploading a revised document or updating the PO details will clear the return flag and send it back to Admin for verification.') }}</p>
+                                @endif
                             </div>
                             @error('po_file') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                             @error('po_number') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
