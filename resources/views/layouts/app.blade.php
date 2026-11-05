@@ -147,11 +147,19 @@
             $notifPage = \App\Http\Controllers\NotificationController::pageFor($notifUser);
             $notifCenter['initial'] = [
                 'unread' => $notifUser->unreadNotifications()->count(),
-                'unassigned' => \Illuminate\Support\Facades\Cache::remember(
-                    'leads:unassigned-count',
-                    60,
-                    fn () => \App\Models\Lead::whereNull('assigned_to')->count(),
-                ),
+                'unassigned' => (function () {
+                    // Cache bisa tidak tersedia (permission storage): jangan
+                    // sampai seluruh layout ikut 500 karena badge notifikasi.
+                    try {
+                        return \Illuminate\Support\Facades\Cache::remember(
+                            'leads:unassigned-count',
+                            60,
+                            fn () => \App\Models\Lead::whereNull('assigned_to')->count(),
+                        );
+                    } catch (\Throwable $e) {
+                        return \App\Models\Lead::whereNull('assigned_to')->count();
+                    }
+                })(),
                 'items' => $notifPage['items'],
                 'next_cursor' => $notifPage['next_cursor'],
                 'has_more' => $notifPage['has_more'],

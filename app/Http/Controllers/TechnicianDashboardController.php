@@ -40,19 +40,26 @@ class TechnicianDashboardController extends Controller
 
         // Hitungan per status berubah pelan: cache 5 menit.
         // Simpan angka/teks biasa (aturan keamanan cache melarang simpan bentuk lain).
-        $statusCounts = collect(\Illuminate\Support\Facades\Cache::remember(
-            'tek:status-counts',
-            300,
-            fn () => ProjectStatus::withCount('projects')
-                ->orderBy('sort_order')
-                ->get()
-                ->map(fn ($status) => [
-                    'name' => $status->name,
-                    'count' => $status->projects_count,
-                    'color' => ProjectStatus::BADGE_COLORS[$status->name] ?? 'slate',
-                ])
-                ->all()
-        ));
+        // Cache bisa tidak tersedia (permission storage) — fallback query langsung
+        // supaya dashboard tetap tampil, bukan 500.
+        $countStatuses = fn () => ProjectStatus::withCount('projects')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn ($status) => [
+                'name' => $status->name,
+                'count' => $status->projects_count,
+                'color' => ProjectStatus::BADGE_COLORS[$status->name] ?? 'slate',
+            ])
+            ->all();
+
+        try {
+            $statusCounts = collect(\Illuminate\Support\Facades\Cache::remember('tek:status-counts', 300, $countStatuses));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Cache status teknisi tidak tersedia, memakai query langsung.', [
+                'exception' => $e->getMessage(),
+            ]);
+            $statusCounts = collect($countStatuses());
+        }
 
         $totalProjects = $statusCounts->sum('count');
         $statusBadgeColors = ProjectStatus::BADGE_COLORS;

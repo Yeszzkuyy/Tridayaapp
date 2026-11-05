@@ -254,8 +254,16 @@ class TechnicianScheduleController extends Controller
      */
     private function autoSyncSoon(): void
     {
-        if (\Illuminate\Support\Facades\Cache::add('gcal:last_auto_sync', true, 180)) {
-            SyncGoogleCalendarJob::dispatch();
+        // Cache bisa saja tidak writable (mis. permission storage). Jangan
+        // sampai halaman jadwal 500 hanya karena throttle sync gagal ditulis.
+        try {
+            if (\Illuminate\Support\Facades\Cache::add('gcal:last_auto_sync', true, 180)) {
+                SyncGoogleCalendarJob::dispatch();
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Auto sync Google dilewati: cache tidak tersedia.', [
+                'exception' => $e->getMessage(),
+            ]);
         }
     }
 
