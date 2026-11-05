@@ -32,7 +32,7 @@
                 <tr>
                     <th scope="col" class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 sm:px-6">{{ __('Customer') }}</th>
                     <th scope="col" class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 sm:px-6">{{ __('Company') }}</th>
-                    <th scope="col" class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 sm:px-6">{{ __('PIC') }}</th>
+                    <th scope="col" class="px-5 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 sm:px-6">{{ __('PIC') }}</th>
                     <th scope="col" class="px-5 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 sm:px-6">{{ __('Projects') }}</th>
                     <th scope="col" class="px-5 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 sm:px-6">{{ __('Actions') }}</th>
                 </tr>
@@ -44,7 +44,6 @@
                         $picName = $customer->picName();
                         $picWhatsapp = $customer->picWhatsapp();
                         $picEmail = $customer->picEmail();
-                        $activeProjects = (int) ($customer->active_projects_count ?? 0);
                     @endphp
                     <tr class="transition-colors duration-200 hover:bg-slate-50/80 dark:hover:bg-slate-700/25">
                         <td class="px-5 py-4 sm:px-6">
@@ -64,7 +63,7 @@
                             @endif
                         </td>
 
-                        <td class="px-5 py-4 sm:px-6">
+                        <td class="px-5 py-4 text-center sm:px-6">
                             @if($picName)
                                 <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $picName }}</p>
                                 <p class="mt-0.5 truncate text-xs text-slate-500 tabular-nums dark:text-slate-400">
@@ -76,16 +75,9 @@
                         </td>
 
                         <td class="px-5 py-4 text-center sm:px-6">
-                            <div class="inline-flex flex-col items-center gap-1">
-                                <span class="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full bg-accent-100 px-2.5 text-sm font-bold tabular-nums text-accent-700 dark:bg-accent-500/10 dark:text-accent-300">
-                                    {{ $customer->projects_count }}
-                                </span>
-                                @if($activeProjects > 0)
-                                    <span class="text-[11px] font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
-                                        {{ $activeProjects }} {{ __('active') }}
-                                    </span>
-                                @endif
-                            </div>
+                            <span class="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full bg-accent-100 px-2.5 text-sm font-bold tabular-nums text-accent-700 dark:bg-accent-500/10 dark:text-accent-300">
+                                {{ $customer->projects_count }}
+                            </span>
                         </td>
 
                         <td class="px-5 py-4 sm:px-6">
@@ -116,7 +108,6 @@
         @foreach($customers as $customer)
             @php
                 $picName = $customer->picName();
-                $activeProjects = (int) ($customer->active_projects_count ?? 0);
             @endphp
             <div class="p-4">
                 <div class="flex items-start justify-between gap-3">
@@ -149,9 +140,6 @@
                     <span class="inline-flex items-center gap-1 font-semibold text-accent-700 tabular-nums dark:text-accent-300">
                         <x-icon name="folder" class="h-3.5 w-3.5" />
                         {{ $customer->projects_count }}
-                        @if($activeProjects > 0)
-                            <span class="font-medium text-emerald-600 dark:text-emerald-400">· {{ $activeProjects }} {{ __('active') }}</span>
-                        @endif
                     </span>
                 </div>
             </div>
