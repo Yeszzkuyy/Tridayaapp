@@ -110,8 +110,10 @@ $ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acce
 
 // Icon: berlabel 16px + stroke tegas (tidak lebih besar dari teks 14px);
 // icon-only tetap 20px di kotak 40px.
+// Catatan ketebalan tampil = stroke-width x (ukuran ikon / 24).
+// 3.5 pada 16px = ~2.33px (lebih tegas dari 2.5 pada 20px = ~2.08px).
 $iconClass = $label ? 'h-4 w-4 shrink-0' : 'h-5 w-5 shrink-0';
-$iconStroke = $label ? 2.5 : 2;
+$iconStroke = $label ? 3.5 : 2;
 $isReveal = (bool) $reveal && (bool) $label;
 
 if ($isReveal) {
