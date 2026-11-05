@@ -58,7 +58,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
 
                     $panel['categories'] = $documentCategories ?? [];
                 @endphp
-                <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                <tr x-data="{ panelData: {{ Illuminate\Support\Js::from($panel) }} }" class="transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
                     <td class="px-4 py-4">
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold uppercase text-slate-500 dark:bg-slate-700 dark:text-slate-300">
@@ -66,7 +66,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                             </span>
                             <div class="min-w-0">
                                 <button type="button"
-                                        @click='doc = {{ Illuminate\Support\Js::from($panel) }}; panelOpen = true'
+                                        @click="doc = panelData; panelOpen = true"
                                         class="block max-w-[14rem] truncate text-left text-sm font-medium text-slate-800 transition hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-300 lg:max-w-xs"
                                         title="{{ $doc->name }}">
                                     {{ $doc->name }}
@@ -111,7 +111,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                                 <x-icon-button as="a" icon="download" href="{{ $doc->downloadUrl }}" title="{{ __('Download') }}" />
                             @endif
                             <x-icon-button icon="more" title="{{ __('Details') }}"
-                                           @click='doc = {{ Illuminate\Support\Js::from($panel) }}; panelOpen = true' />
+                                           @click="doc = panelData; panelOpen = true" />
                         </div>
                     </td>
                 </tr>
