@@ -366,7 +366,7 @@ class PriceRequestTest extends TestCase
         $this->assertStringContainsString(route('teknisi.requests.index'), $html);
         $this->assertStringContainsString('Request Sales', $html);
         $this->assertStringContainsString(__('New Price Request'), $html);
-        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(e($sales->name), $html);
         $this->assertStringContainsString(route('sales.price-requests.create'), $html);
     }
 
