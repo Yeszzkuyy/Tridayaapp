@@ -115,12 +115,15 @@ ukuran, feedback interaktif, dan warna agar tidak ada tombol yang terasa belang.
 | Simpan / Submit utama (Save) | `<x-primary-button>` | `group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 text-sm font-medium` + shine + `hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95` |
 | Batal (Cancel, di form/modal) | `<x-secondary-button>` | `group relative overflow-hidden rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-6 py-2.5 text-sm font-medium text-center active:scale-95` + shine |
 | Aksi tabel/baris/filter/navigasi | `<x-icon-button>` | `rounded-xl` — idle putih + border tipis + **ikon berwarna per aksi**, hover fill warna aksi solid + ikon putih + shine + `hover:scale-110 active:scale-95` |
+| **CTA utama tunggal per halaman** (New Request, Add Meeting, Add Follow Up, Add Survey, dst.) | `<x-icon-button variant="solid">` | `rounded-xl h-10 bg-accent-600 text-white` + `shadow-accent-500/20` + shine + `active:scale-95`. Ikon `h-4 w-4` stroke 2.5. Animasi `reveal` **opsional** (lihat bawah). |
 | Hapus / destructive (icon-only) | `<x-icon-button icon="delete">` | `rounded-xl` — idle putih + ikon merah, hover background merah solid + ikon putih |
 | Konfirmasi hapus (tombol teks modal) | `<x-danger-button>` | `rounded-xl border border-red-200 text-red-600`, hover background merah solid + teks putih + shine + `active:scale-95` |
 
 **Aturan Bentuk, Radius & Ukuran (Wajib Seragam):**
 - **Sudut Lengkung Wajib `rounded-xl`:** Seluruh tombol (`primary-button`, `secondary-button`, `danger-button`, `icon-button`, `add-button`) wajib menggunakan `rounded-xl` (12px). Dilarang keras mencampur `rounded-lg` atau `rounded-md`.
 - **Tinggi Elemen:** Tombol teks standar (`primary`, `secondary`, `danger`) memakai `px-6 py-2.5 text-sm font-medium` (tinggi ~40px). Tombol icon-only standar (`<x-icon-button>`) memakai `h-10 w-10` (`size="md"`), dan tombol icon dengan teks (`label="..."`) memakai `h-10 px-4 text-sm font-medium gap-2`. Seluruhnya sejajar 1:1 dengan tinggi field input form (`h-10`).
+- **Ukuran ikon tombol berlabel (WAJIB):** ikon memakai **`h-4 w-4` (16px) + `stroke-width="2.5"`** agar sejajar dengan teks `text-sm` (14px) dan terasa tegas. **Dilarang** memakai ikon `h-5 w-5` di tombol berlabel karena membuat ikon terlihat lebih besar dari teksnya. Icon-only tetap `h-5 w-5` + stroke 2.
+- **Animasi `reveal` (opsional, bukan default):** `<x-icon-button variant="solid" reveal>` meringkas tombol jadi icon-only (`px-2.5`) lalu melebarkan label saat hover (`max-w-0 → max-w-44`, ikon `rotate-90`, 500ms). Pakai hanya bila tombol aksi itu memang berdiri sendiri di header halaman; menu lain cukup varian statis (label selalu tampil). Wajib tetap isi `title`/`aria-label` supaya terbaca saat collapsed, dan `motion-reduce:transition-none` sudah otomatis.
 - **Feedback Interaktif:** Seluruh tombol wajib memiliki respon sentuhan instan `active:scale-95` dan transisi halus `transition-all duration-300` ditambah efek kilau (*shine effect*).
 
 **Warna per ikon** (tiap ikon punya identitas warna sendiri — biar tombol
