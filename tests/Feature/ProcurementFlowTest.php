@@ -472,7 +472,7 @@ class ProcurementFlowTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.hub'))
             ->assertOk()
-            ->assertSee('4. Procurement', false)
+            ->assertSee(__('Procurement & AP'))
             ->assertSee($order->po_number, false);
     }
 

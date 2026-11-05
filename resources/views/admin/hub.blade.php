@@ -10,35 +10,67 @@
                         </svg>
                     </span>
                     <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">
-                        {{ __('Admin Command Center') }}
+                        {{ __('Admin Hub') }}
                     </h1>
                 </div>
             </div>
 
             @can('manage-admin')
                 <div class="flex flex-wrap items-center gap-2.5">
-                    <a href="{{ route('admin.supplier-pos.create') }}"
-                       class="group relative overflow-hidden rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-4 py-2 text-xs font-semibold shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 inline-flex items-center gap-1.5">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>{{ __('+ Buat PO') }}</span>
-                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                    </a>
-                    <a href="{{ route('admin.invoices.create') }}"
-                       class="group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-4 py-2 text-xs font-semibold shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 inline-flex items-center gap-1.5">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span>{{ __('+ Buat Invoice') }}</span>
-                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                    </a>
+                    <x-icon-button as="a" variant="solid" icon="add" href="{{ route('admin.supplier-pos.create') }}"
+                                   label="{{ __('Supplier PO') }}" title="{{ __('Create Supplier PO') }}" />
+                    <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}"
+                                   label="{{ __('Invoice') }}" title="{{ __('Create Invoice') }}" />
                 </div>
             @endcan
         </div>
 
         {{-- Ringkasan KPI & Filter PT --}}
         @include('admin.partials.kpi-summary')
+
+        {{-- Alur kerja Admin: Customer PO -> Supplier PO -> Receipt -> Delivery -> Finance --}}
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <a href="{{ route('admin.purchasing.index') }}"
+               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sm font-bold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">01</span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Customer PO') }}</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['quotation_deals_ready_count'] ?? 0 }} {{ __('siap Supplier PO') }}</span>
+                </span>
+            </a>
+            <a href="{{ route('admin.supplier-pos.index') }}"
+               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-sm font-bold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">02</span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Supplier PO') }}</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['supplier_pos_outstanding_count'] ?? 0 }} {{ __('belum selesai') }}</span>
+                </span>
+            </a>
+            <a href="{{ route('admin.goods-receipts.index') }}"
+               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-sm font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">03</span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Goods Receipts') }}</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['pending_receipts_count'] ?? 0 }} {{ __('menunggu verifikasi') }}</span>
+                </span>
+            </a>
+            <a href="{{ route('admin.goods-deliveries.index') }}"
+               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">04</span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Deliveries') }}</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['outstanding_deliveries_count'] ?? 0 }} {{ __('belum terkirim') }}</span>
+                </span>
+            </a>
+            <a href="{{ route('admin.invoices.index') }}"
+               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-sm font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">05</span>
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Invoice') }}</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['unpaid_invoices_count'] ?? 0 }} {{ __('belum lunas') }}</span>
+                </span>
+            </a>
+        </div>
 
         {{-- 4 Tab Utama (Alpine.js) --}}
         <div x-data="{ activeTab: '{{ request('tab', 'purchasing') }}' }" class="space-y-6">
@@ -55,7 +87,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span>{{ __('1. Purchasing & Pengadaan') }}</span>
+                        <span>{{ __('Purchasing') }}</span>
                         @if(($kpi['request_harga_count'] ?? 0) > 0)
                             <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
                                 {{ $kpi['request_harga_count'] }}
@@ -73,7 +105,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <span>{{ __('2. Finance & Penagihan') }}</span>
+                        <span>{{ __('Finance') }}</span>
                         @if(($kpi['ready_to_invoice_count'] ?? 0) > 0)
                             <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                                 {{ $kpi['ready_to_invoice_count'] }}
@@ -91,7 +123,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span>{{ __('3. Kelengkapan Dokumen Proyek') }}</span>
+                        <span>{{ __('Documents') }}</span>
                         <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                             {{ count($documents['projects']) }}
                         </span>
@@ -107,7 +139,7 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
-                        <span>{{ __('4. Procurement & AP') }}</span>
+                        <span>{{ __('Procurement & AP') }}</span>
                         @if(($kpi['unbilled_receipts_count'] ?? 0) > 0)
                             <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                                 {{ $kpi['unbilled_receipts_count'] }}

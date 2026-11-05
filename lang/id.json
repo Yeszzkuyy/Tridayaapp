@@ -4711,5 +4711,14 @@
     "PO Returned (Revision Needed)": "PO Dikembalikan (Perlu Revisi)",
     "PO Verified": "PO Terverifikasi",
     "Customer PO was returned by Admin:": "PO customer dikembalikan oleh Admin:",
-    "Customer PO was returned by Admin: ": "PO customer dikembalikan oleh Admin: "
+    "Customer PO was returned by Admin: ": "PO customer dikembalikan oleh Admin: ",
+    "Project Closing": "Closing Project",
+    "Supplier PO Aktif": "Supplier PO Aktif",
+    "Status ordered / partially received": "Status ordered / diterima sebagian",
+    "siap Supplier PO": "siap dibuat Supplier PO",
+    "belum selesai": "belum selesai",
+    "menunggu verifikasi": "menunggu verifikasi",
+    "belum terkirim": "belum terkirim",
+    "belum lunas": "belum lunas",
+    "Procurement & AP": "Procurement & AP"
 }

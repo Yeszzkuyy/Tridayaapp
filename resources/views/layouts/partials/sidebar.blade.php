@@ -421,6 +421,44 @@
                                             <span>{{ __('Admin Hub') }}</span>
                                         </a>
                                     @endcanany
+
+                                    <p class="px-3 pt-3 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500">{{ __('Purchasing') }}</p>
+                                    <a wire:navigate.hover href="{{ route('admin.purchasing.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.purchasing.index') || request()->routeIs('admin.purchasing.show') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.purchasing.index') || request()->routeIs('admin.purchasing.show') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" aria-hidden="true"></span>
+                                        <span>{{ __('Customer PO') }}</span>
+                                    </a>
+                                    @canany(['view-supplier-pos', 'manage-admin'])
+                                        <a wire:navigate.hover href="{{ route('admin.supplier-pos.index') }}"
+                                           aria-current="{{ request()->routeIs('admin.supplier-pos.*') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.supplier-pos.*') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
+                                            <span>{{ __('Supplier PO') }}</span>
+                                        </a>
+                                        <a wire:navigate.hover href="{{ route('admin.suppliers.index') }}"
+                                           aria-current="{{ request()->routeIs('admin.suppliers.*') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.suppliers.*') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
+                                            <span>{{ __('Suppliers') }}</span>
+                                        </a>
+                                    @endcanany
+                                    @canany(['view-goods-receipts', 'manage-admin'])
+                                        <a wire:navigate.hover href="{{ route('admin.goods-receipts.index') }}"
+                                           aria-current="{{ request()->routeIs('admin.goods-receipts.*') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.goods-receipts.*') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-lime-400" aria-hidden="true"></span>
+                                            <span>{{ __('Goods Receipts') }}</span>
+                                        </a>
+                                    @endcanany
+                                    <a wire:navigate.hover href="{{ route('admin.goods-deliveries.index') }}"
+                                       aria-current="{{ request()->routeIs('admin.goods-deliveries.*') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.goods-deliveries.*') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                                        <span>{{ __('Deliveries') }}</span>
+                                    </a>
+
+                                    <p class="px-3 pt-3 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500">{{ __('Finance') }}</p>
                                     <a wire:navigate.hover href="{{ route('admin.invoices.index') }}"
                                        aria-current="{{ request()->routeIs('admin.invoices.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.invoices.*') ? $navActive : $navInactive }}">
@@ -433,48 +471,24 @@
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-green-400" aria-hidden="true"></span>
                                         <span>{{ __('Payment') }}</span>
                                     </a>
-                                    <a wire:navigate.hover href="{{ route('admin.purchasing.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.purchasing.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.purchasing.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" aria-hidden="true"></span>
-                                        <span>{{ __('Purchasing') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('admin.supplier-pos.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.supplier-pos.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.supplier-pos.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" aria-hidden="true"></span>
-                                        <span>{{ __('Supplier PO') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('admin.suppliers.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.suppliers.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.suppliers.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
-                                        <span>{{ __('Suppliers') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('admin.goods-receipts.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.goods-receipts.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.goods-receipts.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-lime-400" aria-hidden="true"></span>
-                                        <span>{{ __('Goods Receipts') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('admin.goods-deliveries.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.goods-deliveries.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.goods-deliveries.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
-                                        <span>{{ __('Deliveries') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('admin.supplier-invoices.index') }}"
-                                       aria-current="{{ request()->routeIs('admin.supplier-invoices.*') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.supplier-invoices.*') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
-                                        <span>{{ __('Supplier Invoices') }}</span>
-                                    </a>
+                                    @canany(['view-supplier-invoices', 'manage-admin'])
+                                        <a wire:navigate.hover href="{{ route('admin.supplier-invoices.index') }}"
+                                           aria-current="{{ request()->routeIs('admin.supplier-invoices.*') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.supplier-invoices.*') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" aria-hidden="true"></span>
+                                            <span>{{ __('Supplier Invoices') }}</span>
+                                        </a>
+                                    @endcanany
+
+                                    <p class="px-3 pt-3 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500">{{ __('Project Closing') }}</p>
                                     <a wire:navigate.hover href="{{ route('admin.bast.index') }}"
                                        aria-current="{{ request()->routeIs('admin.bast.*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.bast.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden="true"></span>
                                         <span>{{ __('BAST') }}</span>
                                     </a>
+
+                                    <p class="px-3 pt-3 pb-1 text-xs font-semibold text-slate-400 dark:text-slate-500">{{ __('Reports') }}</p>
                                     <a wire:navigate.hover href="{{ route('admin.purchasing.reports') }}"
                                        aria-current="{{ request()->routeIs('admin.purchasing.reports') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.purchasing.reports') ? $navActive : $navInactive }}">

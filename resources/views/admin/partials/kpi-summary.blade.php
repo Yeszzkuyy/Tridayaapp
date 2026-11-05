@@ -90,10 +90,10 @@
         </div>
     </div>
 
-    {{-- Card 4: Purchase Order (PO) Aktif --}}
+    {{-- Card 4: Supplier PO Aktif --}}
     <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition hover:shadow-md">
         <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('PO Aktif') }}</span>
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Supplier PO Aktif') }}</span>
             <div class="h-9 w-9 rounded-xl bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -102,10 +102,10 @@
         </div>
         <div class="mt-3">
             <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white">
-                {{ number_format($kpi['active_pos_count'] ?? 0) }}
+                {{ number_format($kpi['supplier_pos_outstanding_count'] ?? 0) }}
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('PO status draft & diproses') }}
+                {{ __('Status ordered / partially received') }}
             </p>
         </div>
     </div>

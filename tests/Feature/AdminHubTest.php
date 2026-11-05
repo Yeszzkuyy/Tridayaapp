@@ -34,10 +34,10 @@ class AdminHubTest extends TestCase
         $this->actingAs($admin)
             ->get(route('manage.admin.index'))
             ->assertOk()
-            ->assertSee(__('Admin Command Center'))
-            ->assertSee(__('1. Purchasing & Pengadaan'))
-            ->assertSee(__('2. Finance & Penagihan'))
-            ->assertSee(__('3. Kelengkapan Dokumen Proyek'));
+            ->assertSee(__('Admin Hub'))
+            ->assertSee(__('Purchasing'))
+            ->assertSee(__('Finance'))
+            ->assertSee(__('Documents'));
 
         $this->actingAs($admin)
             ->get('/dashboard')
@@ -49,7 +49,7 @@ class AdminHubTest extends TestCase
         $this->actingAs($management)
             ->get(route('manage.admin.index'))
             ->assertOk()
-            ->assertSee(__('Admin Command Center'));
+            ->assertSee(__('Admin Hub'));
     }
 
     public function test_unauthorized_roles_cannot_access_admin_hub(): void
