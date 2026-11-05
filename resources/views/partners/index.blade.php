@@ -5,7 +5,7 @@
             <p class="text-slate-500 mt-1">{{ $partners->total() }} {{ __('registered partners — supplier, vendor, contractor, partner, and distributor') }}</p>
         </div>
         @can('manage-marketing')
-            <x-icon-button as="a" icon="add" href="{{ route('partners.create') }}" title="{{ __('Add Partner') }}" />
+            <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('partners.create') }}" label="{{ __('Add Partner') }}" title="{{ __('Add Partner') }}" />
         @endcan
     </div>
 

@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Purchase Order Management') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Legacy customer purchase orders are kept for historical reference.') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin.purchasing.index') }}" label="{{ __('Open Quotation Handoff') }}" title="{{ __('Open Quotation Handoff') }}" />
+        <x-icon-button as="a" variant="solid" reveal icon="receipt" href="{{ route('admin.purchasing.index') }}" label="{{ __('Open Quotation Handoff') }}" title="{{ __('Open Quotation Handoff') }}" />
     </div>
 
     <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
