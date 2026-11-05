@@ -5,11 +5,12 @@ namespace App\Notifications;
 use App\Models\Proposal;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /** Dikirim ke PIC lead saat proposal dikirim/diubah status penting oleh orang lain. */
-class ProposalStatusNotification extends Notification
+class ProposalStatusNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 

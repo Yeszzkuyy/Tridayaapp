@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Proposal;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notification;
  * Dikirim ke Admin/Purchasing saat quotation masuk alur handoff:
  * PO customer sudah diunggah, atau project sudah dibuat dari quotation.
  */
-class PurchasingHandoffNotification extends Notification
+class PurchasingHandoffNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 

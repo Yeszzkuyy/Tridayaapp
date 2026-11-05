@@ -248,6 +248,24 @@
                         <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_terms }}</span></p>
                     @endif
 
+                    @if(session('success'))
+                        <div class="rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-200 my-2 flex items-center justify-between shadow-sm">
+                            <span class="font-semibold flex items-center gap-1.5">
+                                <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                {{ session('success') }}
+                            </span>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 my-2 shadow-sm">
+                            <span class="font-semibold flex items-center gap-1.5">
+                                <svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                {{ session('error') }}
+                            </span>
+                        </div>
+                    @endif
+
                     @if($proposal->isPoReturned())
                         <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 my-2">
                             <p class="font-bold text-sm">⚠️ {{ __('Customer PO Returned by Admin') }}</p>
