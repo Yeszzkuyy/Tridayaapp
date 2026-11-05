@@ -5,7 +5,7 @@
                 {{ __('Edit Customer') }}
             </h1>
             <div class="sm:self-start">
-                <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('Back to Customer') }}" />
+                <x-back-button href="{{ route('customers.show', $customer) }}" />
             </div>
         </div>
 

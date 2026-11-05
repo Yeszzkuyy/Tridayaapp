@@ -127,4 +127,14 @@ class CustomerListUiTest extends TestCase
         $this->assertStringNotContainsString('bg-white', $backMarkup, 'Tombol Back tidak boleh memakai bg-white (hover mati di dark mode).');
         $this->assertStringContainsString('bg-[var(--card-bg)]', $backMarkup);
     }
+
+    public function test_edit_customer_back_button_uses_back_button_component(): void
+    {
+        $customer = Customer::create(['name' => 'PT Edit Back', 'pt_group' => 'NTI']);
+
+        $html = $this->actingAs($this->admin())->get(route('customers.edit', $customer))->getContent();
+
+        $this->assertMatchesRegularExpression('/aria-label="Back".{0,600}group\/back/s', $html);
+        $this->assertStringContainsString('bg-[var(--card-bg)]', $html);
+    }
 }
