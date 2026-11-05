@@ -31,9 +31,7 @@
                                    icon="edit"
                                    label="{{ __('Edit Customer') }}" title="{{ __('Edit Customer') }}" />
                 @endcan
-                <x-flow-button as="a" href="{{ route('customers.index') }}"
-                               variant="neutral" icon="back"
-                               label="{{ __('Back') }}" title="{{ __('Back') }}" />
+                <x-back-button href="{{ route('customers.index') }}" />
             </div>
         </div>
 
