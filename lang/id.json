@@ -4620,5 +4620,12 @@
     "idle technicians": "teknisi idle",
     "new this month": "baru bulan ini",
     "ongoing project": "proyek berjalan",
-    "total": "total"
+    "total": "total",
+    "All Companies": "Semua Company",
+    "Customer filters": "Filter customer",
+    "Customers": "Customer",
+    "No PIC": "Tanpa PIC",
+    "Reset filter": "Reset filter",
+    "With PIC": "Punya PIC",
+    "active": "aktif"
 }

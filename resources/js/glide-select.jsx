@@ -6,6 +6,11 @@ import './components/GlideSelect.css';
 // GlideSelect yang tersinkron ke hidden input di .glide-select-root yang sama.
 // Opsi/nilai awal/placeholder dibaca dari data-* yang dirender Blade.
 
+function cssVar(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+}
+
 function themeProps() {
     const dark = document.documentElement.classList.contains('dark');
     let accent = '#2563eb';
@@ -17,10 +22,15 @@ function themeProps() {
         const raw = getComputedStyle(document.documentElement).getPropertyValue('--accent-600').trim();
         if (raw) accent = `rgb(${raw.replace(/\s+/g, ', ')})`;
     }
-    // ponytail: warna dibaca sekali saat mount; submit/filter selalu full reload
-    return dark
-        ? { surfaceColor: '#0f172a', highlightColor: '#334155', textColor: '#f1f5f9', accentColor: accent }
-        : { surfaceColor: '#f1f5f9', highlightColor: '#e2e8f0', textColor: '#334155', accentColor: accent };
+    // Warna mengikuti token tema aplikasi (light & dark), bukan hex hardcode:
+    // trigger = input, menu = card, highlight = card hover, teks = text-primary.
+    return {
+        accentColor: accent,
+        triggerColor: cssVar('--input-bg', dark ? '#1e2640' : '#f1f5f9'),
+        surfaceColor: cssVar('--card-bg', dark ? '#232b3e' : '#ffffff'),
+        highlightColor: cssVar('--card-bg-hover', dark ? '#2a3350' : '#f8fafc'),
+        textColor: cssVar('--text-primary', dark ? '#f2f6ff' : '#1e293b'),
+    };
 }
 
 const gliderRoots = new WeakMap();
@@ -126,3 +136,19 @@ else mountAll();
 // Navigasi Livewire (morph) tidak me-reload modul: mount ulang node baru.
 // Guard data-mounted mencegah mount ganda pada node lama.
 document.addEventListener('livewire:navigated', mountAll);
+
+// Tema bisa berganti tanpa reload (Settings). Token warna dibaca saat mount,
+// jadi remount hanya ketika kelas 'dark' benar-benar berubah.
+(function watchTheme() {
+    let wasDark = document.documentElement.classList.contains('dark');
+    new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        if (isDark === wasDark) return;
+        wasDark = isDark;
+        document.querySelectorAll('[data-glide-mount][data-mounted]').forEach((node) => {
+            try { gliderRoots.get(node)?.unmount(); } catch {}
+            node.removeAttribute('data-mounted');
+        });
+        mountAll();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+})();

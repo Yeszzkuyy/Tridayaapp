@@ -4620,5 +4620,12 @@
     "idle technicians": "idle technicians",
     "new this month": "new this month",
     "ongoing project": "ongoing project",
-    "total": "total"
+    "total": "total",
+    "All Companies": "All Companies",
+    "Customer filters": "Customer filters",
+    "Customers": "Customers",
+    "No PIC": "No PIC",
+    "Reset filter": "Reset filter",
+    "With PIC": "With PIC",
+    "active": "active"
 }

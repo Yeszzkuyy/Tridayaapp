@@ -33,7 +33,7 @@
   padding: 0 8px 0 10px;
   border: 0;
   border-radius: var(--gs-inner-radius);
-  background: var(--gs-surface);
+  background: var(--gs-trigger-bg, var(--gs-surface));
   color: var(--gs-text);
   font-family: inherit;
   font-size: var(--gs-font);
