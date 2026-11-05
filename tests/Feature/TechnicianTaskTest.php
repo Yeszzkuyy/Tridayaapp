@@ -332,8 +332,8 @@ class TechnicianTaskTest extends TestCase
         $this->assertStringContainsString($taskA->title, $html);
         $this->assertStringContainsString($taskB->title, $html);
         $this->assertStringContainsString($unassigned->title, $html);
-        $this->assertStringContainsString($techA->name, $html);
-        $this->assertStringContainsString($techB->name, $html);
+        $this->assertStringContainsString(e($techA->name), $html);
+        $this->assertStringContainsString(e($techB->name), $html);
         $this->assertStringContainsString(__('All technicians'), $html);
         $this->assertStringNotContainsString($estimate->title, $html);
 

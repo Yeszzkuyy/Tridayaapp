@@ -140,7 +140,7 @@ class TechnicalRequestFormTest extends TestCase
 
         $this->assertStringContainsString(__('Request details'), $html);
         $this->assertStringContainsString(__('Work details'), $html);
-        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(e($sales->name), $html);
         $this->assertStringContainsString(strtoupper(substr($sales->name, 0, 1)), $html);
         $this->assertStringContainsString(__('Not assigned yet'), $html);
         $this->assertStringContainsString('Check access requirements', $html);

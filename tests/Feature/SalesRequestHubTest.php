@@ -87,7 +87,7 @@ class SalesRequestHubTest extends TestCase
 
         $this->assertStringContainsString($request->title, $html);
         $this->assertStringContainsString(__('Requested by'), $html);
-        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(e($sales->name), $html);
         $this->assertStringContainsString(route('sales.technical-requests.create'), $html);
     }
 
@@ -216,7 +216,7 @@ class SalesRequestHubTest extends TestCase
         $html = $this->actingAs($sales)->get(route('sales.requests.index', ['tab' => 'price']))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString($customer->name, $html);
+        $this->assertStringContainsString(e($customer->name), $html);
         $this->assertStringNotContainsString($survey->title, $html);
     }
 
