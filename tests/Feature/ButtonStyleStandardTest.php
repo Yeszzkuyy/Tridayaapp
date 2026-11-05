@@ -54,4 +54,44 @@ class ButtonStyleStandardTest extends TestCase
         $this->assertStringContainsString('motion-reduce:transition-none', $reveal);
         $this->assertStringContainsString('aria-label="New Meeting"', $reveal);
     }
+
+    public function test_icon_button_renders_receipt_and_falls_back_to_shared_icon_set(): void
+    {
+        // Ikon yang ada di peta lokal.
+        $receipt = $this->render('<x-icon-button icon="receipt" title="Purchase Order" />');
+        $this->assertStringContainsString('<svg', $receipt);
+        $this->assertStringContainsString('<path', $receipt);
+
+        // Ikon yang hanya ada di <x-icon> tetap tampil lewat fallback.
+        $fallback = $this->render('<x-icon-button icon="clock" title="Clock" />');
+        $this->assertStringContainsString('<svg', $fallback);
+        $this->assertStringContainsString('<circle', $fallback);
+    }
+
+    public function test_every_icon_used_by_icon_button_actually_renders_an_svg(): void
+    {
+        $views = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(resource_path('views'), \FilesystemIterator::SKIP_DOTS)
+        );
+
+        $icons = [];
+        foreach ($views as $file) {
+            if (! str_ends_with($file->getFilename(), '.blade.php')) {
+                continue;
+            }
+            $src = file_get_contents($file->getPathname());
+            if (preg_match_all('/<x-icon-button\b[^>]*?\bicon="([a-z0-9-]+)"/s', $src, $m)) {
+                foreach ($m[1] as $name) {
+                    $icons[$name] = true;
+                }
+            }
+        }
+
+        $this->assertNotEmpty($icons, 'Tidak ada pemakaian x-icon-button dengan icon= yang terdeteksi.');
+
+        foreach (array_keys($icons) as $name) {
+            $html = $this->render('<x-icon-button icon="'.e($name).'" title="Test" />');
+            $this->assertMatchesRegularExpression('/<(path|circle|rect|polyline)\b/', $html, "Ikon '{$name}' tidak merender SVG (tombol akan kosong).");
+        }
+    }
 }
