@@ -30,7 +30,7 @@
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">{{ __('Request Sales') }}</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Incoming requests — take one to process or reply. You can also create a price request with the same file form.') }}</p>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Price Request') }}" title="{{ __('New Price Request') }}" class="shrink-0" />
+        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Price Request') }}" title="{{ __('New Price Request') }}" class="shrink-0" />
     </div>
 
     <x-request-hub-tabs :tabs="$tabs" :active="$tab" :counts="$openCounts" route-name="teknisi.requests.index" />
