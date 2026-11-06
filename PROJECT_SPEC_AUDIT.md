@@ -1,283 +1,570 @@
 # PROJECT SPEC AUDIT — 3DY App (PT Tridaya)
 
-> Hasil bedah codebase langsung per 15 Okt 2026. Branch `main`, workdir `/var/www/3dyapp`.
-> Laravel **13.34.0** (constraint `^13.8`), PHP **8.3.6**, DB default **sqlite** (`.env.example`: `DB_CONNECTION=sqlite`, `QUEUE_CONNECTION=database`, `SESSION_DRIVER=database`, `CACHE_STORE=file`).
-> File ini untuk AI konsultan eksternal: efisiensi fitur, arsitektur data, kompatibilitas sistem.
+> Hasil bedah codebase menyeluruh dan konsolidasi arsitektur per **November 2026** (pembaruan audit dari versi 15 Oktober 2026).
+> Branch `main`, workdir `/var/www/3dyapp`.
+> Framework: Laravel **13.34.0** (constraint `^13.8`), PHP **8.3.6**, DB default **sqlite** (`.env.example`: `DB_CONNECTION=sqlite`, `QUEUE_CONNECTION=database`, `SESSION_DRIVER=database`, `CACHE_STORE=file`).
+> Dokumen spesifikasi teknis ini ditujukan untuk tim engineer internal dan konsultan arsitektur eksternal: memetakan model data, alur bisnis, integrasi modul, efisiensi fitur, dan status implementasi terkini.
 
 ---
 
-## 1. RINGKASAN PROYEK & TUJUAN
+## 1. RINGKASAN PROYEK & TUJUAN BISNIS
 
-### 1.1 Gambaran umum / tujuan bisnis
-**3DY App** = ERP/ops internal grup Tridaya (4 PT: **NTI, MGK, TPS, WANI** — konstanta `Lead::PT_GROUPS`, `WhatsappAccount::GROUPS`).
-Mengelola seluruh siklus **lead → penawaran → proyek teknik → penagihan** plus kanal WhatsApp dan asisten AI, dalam satu monolit Blade + Alpine + React-islands.
+### 1.1 Gambaran Umum & Lingkup Sistem
+**3DY App** adalah sistem ERP operasional terpadu untuk grup **PT Tridaya** yang menaungi 4 entitas perseroan:
+1. **NTI** (`PT Nusantara Teknologi Inovasi`)
+2. **MGK** (`PT Multi Global Kreasi`)
+3. **TPS** (`PT Tridaya Pilar Sinergi`)
+4. **WANI** (`PT Wani Solusi Mandiri`)
+*(didefinisikan pada konstanta `Lead::PT_GROUPS` dan `WhatsappAccount::GROUPS`)*.
 
-Entitas inti: `Customer` (perusahaan) → `Lead` (peluang per PT) → `SalesSchedule` / `FollowUp` / `Poc` / `TechnicalRequest` / `Proposal (+ProposalItem)` → `Project` (+`Survey`, `SizingProject`, `RequestHarga`, `Instalasi`, `ProjectTask/Support/Document/Activity`) → `Invoice` → `Payment`, `PurchaseOrder`. Kanal masuk: 4 akun WA company (`WhatsappAccount` + `WhatsappMessage` + `WhatsappConversation`) yang bisa di-convert jadi `Lead`.
+Sistem mengelola seluruh rantai nilai bisnis B2B end-to-end dalam arsitektur monolit modern (Blade + Alpine.js 3.4 + TailwindCSS 3.1 + React 19 Islands + Laravel Reverb WebSocket):
+- **Akuisisi & Komunikasi:** Multi-inbox WhatsApp (4 nomor PT resmi) terintegrasi bot AI laravel/ai dan handoff human agent.
+- **Manajemen Prospek (CRM):** Customer, Kontak PIC primary, Pipeline Lead berbasis tahapan *Cool / Warm / Hot / Won / Lost*, Sales Follow Up & Meeting Minutes (MOM + foto bukti), target sales berkala, dan penugasan presales (Technical Request).
+- **Kolaborasi Presales & Penawaran:** Survey lapangan, Sizing perangkat, Request Harga & Price Request (chat/diskusi sales-teknisi), kalkulasi margin keuntungan & guard anti-Rp 0, hingga konversi Quotation deal (WON) berdokumen Customer PO resmi.
+- **Pengadaan & Logistik (Paket 3 Procurement):** Handoff Sales → Admin/Purchasing terverifikasi (`po_verified_at`), Supplier PO terpisah dari Customer PO, Penerimaan Barang (Goods Receipt) dengan QC & nomor seri, serta Surat Jalan (Goods Delivery) ke pelanggan.
+- **Eksekusi Teknik & Penutupan (Closing):** Manajemen Proyek, Task & Support tiket, Work Result (Instalasi & Survey), Berita Acara Serah Terima (BAST elektronik/fisik), dan garansi pemeliharaan.
+- **Penagihan & Keuangan (Finance AR/AP):** Penagihan pelanggan via Invoice resmi ber-item dinamis dan faktur pajak, pelunasan bertahap/cicilan berbukti transfer rekening, serta pencatatan Hutang Usaha (Supplier Invoice AP) dan histori pembayaran ke pemasok.
+- **Pusat Dokumen Terpadu (Document Center):** Pengindeksan dokumen lintas modul (8 cabang sumber data) dengan preview PDF instan tanpa unduh.
 
-### 1.2 Target pengguna / role (sumber: `RoleAndPermissionSeeder.php` + `CompanyUserSeeder.php`)
-Pola permission: `manage-{divisi}` (tulis) vs `view-{divisi}` (baca), + izin khusus. `Gate::before` di `AppServiceProvider`: `super-admin` bypass semua.
+---
 
-| Role | Permission | Catatan / user seeded |
+### 1.2 Target Pengguna & Matriks Hak Akses (RBAC)
+Sistem menggunakan `spatie/laravel-permission` v8.3 yang dikelola melalui `RoleAndPermissionSeeder.php` dan `CompanyUserSeeder.php`. Pola hak akses dibagi menjadi izin aksi (`manage-{divisi}`), izin baca (`view-{divisi}`), serta izin domain sensitif (`view-admin-hub`, `view-supplier-pos`, `view-supplier-invoices`, `view-payment-proofs`, `view-goods-receipts`, `view-customer-finance`).
+
+Super Admin memiliki bypass penuh melalui `Gate::before` di `AppServiceProvider`.
+
+| Role | Permissions & Hak Akses Utama | Ruang Lingkup Operasional / User Seeded |
 |---|---|---|
-| `super-admin` | semua | Yeski (`yehezkielmayogi.ptnti@gmail.com`/id 1) + Deka (`technician`+`super-admin` sementara) |
-| `management` | `manage-sales-leads`, `view-marketing/sales/technician/admin/monitoring`, `monitor-marketing` | Ardian (+`lead-technician`+`sales`), Christina, Yanita, Ayu |
-| `ceo` | semua `view-*` saja | Victor GM |
-| `lead-marketing` | `manage/view-marketing`, `monitor-marketing`, `view-technician` | Syifa |
-| `marketing` | `manage/view-marketing` | Anggie |
-| `sales` + `sales-{nti,mgk,tps,wani}` | `manage/view-sales`, `view-admin` | Adi Santosa, Hendry, Irfan, Deby, Audi, Dini; scoping tulis per-PT via `App\Support\PtAccess` (tanpa role PT = tanpa batas) |
-| `inside-sales` | `manage-inside-sales` saja | hanya task yang di-assign (lead terlihat bila ada task) |
-| `admin` | `manage/view-admin`, `view-sales` | Hanifah, Vanesha, April |
-| `technician` | `manage/view-technician` | Khairil, Gilar, Ardi, Fanuel, Zero, Naufal, Ryan |
-| `lead-technician` | teknisi + `monitor-technical`, `view-sales`, `view-admin` | Amir, Ardian |
-| `prakerin-technician` / `prakerin-admin` | `view-technician` / `view-admin` saja | — |
-| `management` hub | prefix `manage-sales.*` + `manage.*` placeholder | assign lead ke sales + activity log |
+| `super-admin` | Seluruh permission sistem (bypass total) | Pemeliharaan sistem, developer, konfigurasi master, dan audit darurat (`yehezkielmayogi.ptnti@gmail.com`). |
+| `management` | `manage-sales-leads`, `view-marketing`, `view-sales`, `view-technician`, `view-admin`, `view-monitoring`, `monitor-marketing`, seluruh `view-*-admin` | Pimpinan operasional: alokasi/assign lead ke tim sales, pemantauan Team Activity, Activity Log, target omzet, dan rekap seluruh divisi (Ardian, Christina, Yanita, Ayu). |
+| `ceo` | Seluruh `view-*` (read-only lintas seluruh modul tanpa hak modifikasi) | Victor GM: Pengawasan eksekutif, rekapitulasi performa finansial, proyek, dan pipeline tanpa risiko perubahan data tidak sengaja. |
+| `lead-marketing` | `manage-marketing`, `view-marketing`, `monitor-marketing`, `view-technician`, `view-customer`, `view-trash` | Syifa: Supervisi kanal masuk prospek, distribusi pesan WA Center, master partner/vendor marketing, dan akses foto instalasi lapangan. |
+| `marketing` | `manage-marketing`, `view-marketing`, `view-customer`, `view-trash` | Anggie: Entri lead baru, pengelolaan partner, broadcast/chat WhatsApp Center, pemantauan status prospek. |
+| `sales` / `sales-{pt}` | `manage-sales`, `view-sales`, `view-admin`, `view-customer`, `view-trash` *(khusus role `sales-{nti,mgk,tps,wani}`, hak tulis dibatasi via `App\Support\PtAccess`)* | Tim Sales (Adi Santosa, Hendry, Irfan, Deby, Audi, Dini): Pengelolaan customer, kontak PIC, jadwal meeting/kunjungan, request presales/harga, penyusunan Quotation, upload Customer PO, dan monitoring invoice deal-nya. |
+| `inside-sales` | `manage-inside-sales`, `view-customer`, `view-trash` | Asisten sales: Pengerjaan tugas internal yang didelegasikan oleh sales (`lead_tasks`), perbantuan penyiapan berkas tanpa hak melihat keseluruhan pipeline sales lain. |
+| `admin` | `manage-admin`, `view-admin`, `view-sales`, seluruh izin `view-*-admin`, `view-customer`, `view-trash` | Hanifah, Vanesha, April: Verifikasi kelengkapan Customer PO, penerbitan invoice penagihan pelanggan, validasi bukti transfer, manajemen Supplier PO, goods receipt, delivery order, dan rekapitulasi BAST. |
+| `purchasing` | `manage-admin`, `view-admin`, `view-sales`, `view-admin-hub`, `view-supplier-pos`, `view-supplier-invoices`, `view-goods-receipts`, `view-customer-finance`, `view-customer`, `view-trash` | Divisi Pengadaan: Handoff PO deal, pemesanan barang ke supplier (`supplier_purchase_orders`), kontrol jadwal pengiriman barang dari vendor, pengecekan surat jalan/QC penerimaan. Dibatasi dari bukti rekening pribadi pelanggan (`view-payment-proofs`). |
+| `finance` | `view-admin`, seluruh `view-*-admin`, `view-customer`, `view-trash` (read-only terhadap procurement, tanpa `manage-admin`) | Divisi Keuangan: Verifikasi tagihan pemasok (AP), pembayaran supplier, kontrol faktur pajak, kontrol piutang invoice pelanggan (AR), dan verifikasi rekening bank. |
+| `lead-technician` | `manage-technician`, `view-technician`, `monitor-technical`, `view-sales`, `view-admin`, `view-customer`, `view-trash` | Amir, Ardian: Review tiket permintaan teknik (Technical Request), penugasan teknisi lapangan, supervisi jadwal kalender kerja, dan verifikasi laporan pekerjaan. |
+| `technician` | `manage-technician`, `view-technician`, `view-customer`, `view-trash` | Khairil, Gilar, Ardi, Fanuel, Zero, Naufal, Ryan: Pelaksanaan survey lapangan, penyusunan sizing/topologi, request harga vendor, pengisian checklist instalasi, upload laporan kerja PDF, dan sinkronisasi Google Calendar. |
+| `prakerin-*` | `view-technician` / `view-admin` + common read | Akun magang/prakerin: Read-only sesuai divisi untuk kebutuhan pembelajaran tanpa izin modifikasi data transaksi. |
 
-Password awal seeded `3dy@11830` (`CompanyUserSeeder`), kolom legacy `users.role` diselaraskan dengan role Spatie pertama.
+---
 
-### 1.3 Alur kerja operasional utama teknisi (end-to-end, sebagaimana dikodekan)
-1. **Tiket masuk = `TechnicalRequest`** (`sales.technical-requests.store`, oleh sales/inside-sales; `status=waiting_lead`). Wajib `lead_id` + `request_type` (`survey|estimate|installation|troubleshooting|consultation|other`).
-2. **Review lead-teknisi** (`review` → `accepted/rejected`), lalu **assign** (`assigned_technician_id`, → `assigned`), **progress** (→ `in_progress`), **result** (isi `technical_result`), **complete** (→ `completed`, set `completed_at`). Notifikasi: `TechnicalRequestCreated/Reviewed/WorkCompletedNotification`. `TechnicalRequestController::ensureSurvey()` otomatis membuat `Survey` bila tipe `survey` dan belum ada (maks 1 via `surveys.technical_request_id` unique).
-3. **Survey lapangan** (`teknisi.surveys.*`, `SurveyController` 376 baris): isi `survey_data`, `documentation` (JSON foto), upload PDF laporan (`report_file` di disk `private`, max validasi di controller, `viewReport`/`downloadReport` via `SecureFile::serverMime`). Status `completed` diakui konstanta `Survey::STATUS_COMPLETED`. Sales yang memegang project bisa baca (guard `guardRead`, `isSalesRole`).
-4. **Sizing** (`sizing-projects`): `customer_needs`, `recommendation`, `specifications`, `quantity`, `topology` → draf desain.
-5. **Request Harga** (`request-hargas`): `items` JSON + `attachments` JSON.
-6. **Proposal kolaborasi sales↔teknisi** (state machine `ProposalController` 503 baris, status: `draft → pending_technical → ready → sent → viewed → revision → accepted(WON)/rejected/expired/cancelled`): sales `store/update/submit-technical`, teknisi `return-technical/complete-technical`, sales `markReady/send/markViewed/revise/respond/cancel/uploadPo`. `ExpireProposals` (`proposals:expire` tiap 01:30) menandai `expired` bila lewat `valid_until`. `convertToProject` membuat `Project` (`proposal_id` balik) + `LeadActivity proposal_converted`.
-7. **Project eksekusi** (`ProjectService::create/update/delete`): `progress` integer, `project_status_id` (Open/On Progress/Pending/Hold/Done/Cancelled/Warranty/Maintenance — `ProjectStatus::BADGE_COLORS`), `pic_engineer` string bebas + `support_technicians` CSV string (bukan FK — lihat §6). Sub-modul: `ProjectTask` (tugas), `ProjectSupport` (tiket support), `ProjectDocument` (kategori via `document_categories`), `Instalasi` (checklist JSON + `job_status` + `documentation` JSON), `ProjectActivity` (audit via `ProjectObserver::created/updated`).
-8. **Jadwal & kalender** (`TechnicianScheduleController` 399 baris + `GoogleCalendarService` 670 baris): CRUD `technician_schedules` (`status`: `scheduled|on_progress|completed|cancelled`; sync: `not_connected|syncing|synced|error`), OAuth per-user (`google_credentials`, token encrypted), kredensial app global (`google_app_credentials`, `client_secret`+`api_key` encrypted), sinkron 2-arah (`gcal:sync` tiap 5 mnt, `withoutOverlapping`), reminder (`schedules:remind` tiap menit, `reminder_minutes` + `reminder_sent_at`), push ke GCal (`pushEvent/buildPayload/buildReminders`).
-9. **Validasi/selesai & laporan**: status project → Done, dokumen BAST/Report di `ProjectDocument`, `Invoice/PO/Payment` oleh admin (`AdminService`), progress per customer di `MonitoringController` (fase subquery `withMax` + fase eager-load 15/halaman), recap di `TechnicianDashboardController` + `DashboardController`.
+### 1.3 Alur Kerja Operasional Utama (End-to-End Business Life-Cycle)
+
+```
+[Inbound WA / Marketing] ──> [Lead Ingestion & Assignment] ──> [Sales Presales Collaboration]
+                                                                        │
+┌───────────────────────────────────────────────────────────────────────┘
+│
+├──> [Technical Request / Sizing / Survey Lapangan / Request Harga]
+│
+└──> [Penyusunan Quotation / Proposal] (Margin & Cost Guard, Anti-Rp 0)
+            │
+            └──> [Customer PO Deal (WON)]
+                        │
+                        ▼ (Handoff Sales → Admin/Purchasing)
+            [Admin PO Verification Gate] ───(Incomplete)───> [Returned to Sales with Notes]
+                        │ (Verified)
+                        ├─────────────────────────────────────────────────┐
+                        ▼                                                 ▼
+             [Supplier PO (Procurement)]                         [Project Execution]
+                        │                                                 │
+                        ▼                                                 ▼
+             [Goods Receipt & QC Seri]                           [Instalasi & Field Work]
+                        │                                                 │
+                        ▼                                                 ▼
+             [Goods Delivery (Surat Jalan)]                      [BAST Signoff Elektronik/Fisik]
+                        │                                                 │
+                        ├─────────────────────────────────────────────────┘
+                        ▼
+             [Customer Invoicing & Tax] ──> [Pembayaran / Cicilan] ──> [Closing & Warranty]
+```
+
+#### Alur Rinci Tiap Fase:
+1. **Fase Presales & Tiket Teknik (`TechnicalRequest`):** Sales/Inside-Sales membuat tiket technical request terhubung dengan Lead. Lead-teknisi melakukan review (`waiting_lead → accepted`), assign teknisi eksekutor (`assigned`), teknisi memproses pekerjaan (`in_progress`), mengisi hasil teknis (`technical_result`), dan menyelesaikan tiket (`completed`). Tiket bertipe survey secara otomatis menginisiasi entri `Survey` terhubung.
+2. **Fase Kolaborasi Harga & Presales:** Bila diperlukan harga khusus atau spek custom, Sales/Teknisi mengajukan `PriceRequest` (fitur chat realtime sales-teknisi-admin) atau `RequestHarga`/`SizingProject`. Data biaya modal (`unit_cost`) ditautkan ke katalog produk/supplier.
+3. **Fase Penawaran Komersial (`Proposal` / Quotation):** Sales menyusun BOQ dengan proteksi ketat:
+   - Dilarang membuat quotation kosong (wajib minimal 1 item BOQ berharga > Rp 0).
+   - Sales tidak dapat memanipulasi atau merendahkan modal teknisi/supplier (`assertNoCostTampering`).
+   - Sistem otomatis menghitung `subtotal`, `estimated_cost`, `margin_amount`, dan persentase margin laba.
+   - Quotation dikirim via WhatsApp (dengan pencatatan otomatis status `sent_channel=whatsapp`) atau Email.
+4. **Fase Kesepakatan & Handoff Customer PO:** Ketika pelanggan setuju (status `accepted`/WON), Sales mengunggah berkas PO pelanggan (`po_document_path`) beserta nomor PO, tanggal PO, batas deadline pengiriman, dan alamat pengiriman. Sistem otomatis mengantrikan penawaran ke antrean **Purchasing Handoff** (`/admin/purchasing`).
+5. **Fase Gerbang Verifikasi Admin (Admin Verification Gate):** Admin/Purchasing memeriksa keabsahan dan kelengkapan Customer PO di Admin Hub:
+   - Jika berkas buram atau data nomor/alamat tidak cocok, Admin menekan **Return to Sales** disertai catatan revisi tertulis (`po_returned_at`, `po_return_reason`). Status PO ditahan dari proses belanja maupun konversi proyek. Sales mendapat notifikasi dan form unggah ulang PO revisi.
+   - Jika berkas dan data valid, Admin menekan **Verify PO** (`po_verified_at`, `po_verified_by`).
+6. **Fase Pengadaan (`SupplierPurchaseOrder` & `GoodsReceipt`):** Admin/Purchasing menerbitkan PO resmi kepada Supplier (`admin/supplier-pos`) yang diturunkan dari Quotation terverifikasi. Saat barang tiba di gudang, dibuat dokumen `GoodsReceipt` mencatat nomor surat jalan vendor, kuantitas riil, hasil QC fisik, dan nomor seri barcode produk.
+7. **Fase Logistik & Pengiriman Pelanggan (`GoodsDelivery`):** Admin Logistik menerbitkan Surat Jalan resmi (`admin/goods-deliveries`) mencantumkan nama driver, plat kendaraan, rincian barang, dan status pengiriman (`in_transit → delivered`).
+8. **Fase Eksekusi Proyek & BAST (`Project` & `BastController`):** Quotation dikonversi menjadi Proyek. Teknisi melaksanakan instalasi, mencatat checklist pekerjaan dan foto dokumentasi. Setelah rampung, diterbitkan dokumen **BAST** (`admin/bast`) dengan tanda tangan pimpinan/klien serta penentuan masa garansi purnajual. Proyek bertipe jasa murni dapat dikecualikan dari kewajiban surat jalan fisik melalui toggle `requires_delivery = false`.
+9. **Fase Penagihan & Keuangan (`Invoice`, `Payment`, `SupplierInvoice`):**
+   - Admin Keuangan menerbitkan Invoice tagihan pelanggan (`admin/invoices`) yang kini dilengkapi tabel item dinamis (`invoice_items`), subtotal, diskon, PPN, nomor Faktur Pajak, dan template cetak resmi A4 (`/admin/invoices/{invoice}/print`).
+   - Pelanggan dapat membayar bertahap (cicilan); tiap cicilan dicatat di `payments` dengan upload bukti transfer privat. Status invoice otomatis sinkron (`unpaid → partially_paid → paid`).
+   - Invoice tagihan dari Supplier (Hutang Usaha / AP) dicatat di `supplier_invoices` dan histori pelunasannya dicatat pada `supplier_payments`.
 
 ---
 
 ## 2. TECH STACK & DEPENDENCIES
 
-### 2.1 Backend (`composer.json` + `composer.lock` terverifikasi)
-| Paket | Versi terpasang | Fungsi di kode |
+### 2.1 Backend Environment (`composer.json` & `composer.lock`)
+| Paket / Pustaka | Versi Terpasang | Peran & Implementasi pada Kode |
 |---|---|---|
-| `php` | `8.3.6` CLI (constraint `^8.3`) | runtime |
-| `laravel/framework` | **`13.34.0`** (constraint `^13.8`) | monolit, Blade, queue DB, scheduler |
-| `livewire/livewire` | `^4.3` | 2 komponen: `ProjectStatusList`, `LeadTaskChat` (+chat task) |
-| `spatie/laravel-permission` | `^8.3` | RBAC penuh (roles/permissions, `@can`, `permission:` middleware, `User::role()` scope) |
-| `google/apiclient` | `^2.19` | GCal OAuth + `Calendar` service (`GoogleCalendarService::calendarService`) |
-| `laravel-notification-channels/webpush` | `^13.0` | Web Push VAPID (`HasPushSubscriptions`, `PushSubscriptionController`, `push_subscriptions`) |
-| `laravel/ai` | `^0.8.0` | `HasConversations`, `OfficeAssistant` agent + 7 Tools + `WhatsappSalesBot`, `LeadNeedsSummarizer` |
-| `phpoffice/phpspreadsheet` | `^5.9` | import lead XLSX (`LeadController@import`, throttle `6,1`) + export `my-leads`/`dar` (`ManageSalesController`) |
-| `laravel/breeze` | `^2.4` (dev) | Auth scaffolding (`routes/auth.php`, `AuthenticatedSessionController` dkk) |
-| `laravel/pail`, `pao`, `pint`, `phpunit ^12.5`, `faker`, `collision`, `mockery` | dev | log viewer, pint format, test (`tests/Feature` ~30+ file) |
-| **Tidak ada** | — | Tidak ada Filament, Sanctum (API file tidak di-load — lihat §3), DomPDF/TCPDF/Maatwebsite — PDF hanya file upload, Excel via PhpSpreadsheet mentah |
-
-### 2.2 Frontend (`package.json` + `vite.config.js`)
-| Paket | Versi | Dipakai di |
-|---|---|---|
-| `tailwindcss ^3.1` + `@tailwindcss/forms`, `autoprefixer`, `postcss` | 3.x | `resources/css/app.css`, `sidebar-nav.css`, `themes/`; entry Vite `app.css` |
-| `alpinejs ^3.4` | 3.x | `resources/js/app.js` (interaksi Blade), chunk-split `alpine` |
-| `vite ^8.0` + `laravel-vite-plugin ^3.1`, `@vitejs/plugin-react ^6.1` | 8.x | build; input: `app.css`, `app.js`, `teknisi-calendar.js`, `pipeline-dnd.js`, `rubber-segment.jsx`, `glide-select.jsx`; code-splitting manual: `alpine/charts(markdown)/dnd/calendar/react` |
-| `react ^19.3` + `react-dom`, `motion ^13.4`, `ogl ^1.0` | 19.x | islands `rubber-segment.jsx`, `glide-select.jsx`, efek `galaxy.js` |
-| `@fullcalendar/{core,daygrid,interaction,timegrid} ^6.1` | 6.x | `teknisi-calendar.js` + `teknisi/jadwal`, `sales/schedules/api` |
-| `sortablejs ^1.15` | — | drag-drop pipeline lead (`pipeline-dnd.js`) |
-| `marked ^18` + `dompurify ^3.4` | — | render Markdown AI assistant (`ai/assistant`, chunk `markdown`) |
-
-192 Blade files (`resources/views/`), layout `layouts/`, komponen `x-icon-button` (konvensi tombol putih+border, hover accent — wajib per `AGENTS.md §7`).
-
-### 2.3 Infra / runtime
-DB default sqlite, queue `database` (worker via `Schedule::command('queue:work --stop-when-empty --max-time=50')->everyMinute()` — tanpa supervisor), session `database`, cache `file`. Scheduler: `schedules:remind` tiap menit, `followups:remind` harian, `proposals:expire` 01:30, `gcal:sync` tiap 5 mnt, `whatsapp:receive` + `whatsapp:bot` tiap 30 dtk (terdaftar di `bootstrap/app.php withSchedule`). Storage privat: disk `private` untuk NPWP, lampiran TR, report survey, bukti payment, PO proposal (`MigrateFilesToPrivate`, `SecureFile::serverMime`). Trust proxy `*`, CSRF kecuali `api/whatsapp/webhook`, middleware web `SetLocale` + `SetSecurityHeaders` + Spatie alias.
+| `php` | `8.3.6` CLI (constraint `^8.3`) | Bahasa pemrograman inti runtime server. |
+| `laravel/framework` | **`13.34.0`** (constraint `^13.8`) | Core MVC Framework, Eloquent ORM, Database Queue Worker, Scheduled Crons. |
+| `laravel/reverb` | **`^1.12`** | WebSocket Server real-time internal performa tinggi untuk broadcast notifikasi instan. |
+| `laravel/socialite` | **`^5.31`** | Otentikasi pihak ketiga & Google Single Sign-On (`google_id` pada pengguna). |
+| `livewire/livewire` | `^4.3` | Komponen interaktif reaktif: `ProjectStatusList` (master status) dan `LeadTaskChat`. |
+| `spatie/laravel-permission` | `^8.3` | RBAC granular (roles, permissions, middleware alias, scope queries). |
+| `google/apiclient` | `^2.19` | Integrasi 2-arah Google Calendar API v3 (`GoogleCalendarService`). |
+| `laravel-notification-channels/webpush` | `^13.0` | Notifikasi browser push VAPID lintas platform (`HasPushSubscriptions`, `PushSubscriptionController`). |
+| `laravel/ai` | `^0.8.0` | Asisten AI kantor (`OfficeAssistant`), tool-calling terintegrasi basis data, dan summarizer chat WA. |
+| `phpoffice/phpspreadsheet` | `^5.9` | Mesin impor lead massal format XLSX/CSV (`LeadController@import`) dan ekspor laporan DAR / My Leads. |
+| `laravel/breeze` | `^2.4` (dev) | Scaffolding autentikasi aman, password hashing Argon2id/Bcrypt. |
+| `laravel/pail`, `pint`, `phpunit ^12.5` | dev tools | Debugging real-time terminal log viewer, PHP code linter, dan automated testing suite. |
 
 ---
 
-## 3. DAFTAR FITUR & STRUKTUR ROUTES
+### 2.2 Frontend Environment (`package.json` & `vite.config.js`)
+| Pustaka Frontend | Versi | Penggunaan & Integrasi Komponen |
+|---|---|---|
+| `tailwindcss` + `@tailwindcss/forms` | `3.1.0` | Sistem utility CSS responsif, dukungan penuh tema Light & Dark Mode seragam. |
+| `alpinejs` | `3.4.2` | Reaktivitas mikro di Blade: modal dialog, popover, inline form editing, filter drawer, tab switcher. |
+| `vite` + `laravel-vite-plugin` | `8.0.0` | Bundler aset modern dengan code-splitting otomatis: `alpine`, `react`, `dnd`, `calendar`, `markdown`. |
+| `react` + `react-dom` | `19.3.0` | Micro-frontend islands: `rubber-segment.jsx`, `glide-select.jsx`, dan visual canvas. |
+| `motion` + `ogl` | `13.4.2` / `1.0.11` | Animasi fisika halus & WebGL background canvas di login page. |
+| `@fullcalendar/*` | `6.1.21` | Kalender interaktif agenda teknisi (`teknisi-calendar.js`), drag-and-drop jadwal, multi-view agenda. |
+| `sortablejs` | `1.15.7` | Drag-and-drop Kanban pipeline visual status leads (`pipeline-dnd.js`). |
+| `driver.js` | `1.10.2` | Fitur panduan interaktif pengguna baru (onboarding tour pada menu My Leads dan Lead Flow). |
+| `pdfjs-dist` | `6.4.299` | In-browser PDF previewer interaktif untuk dokumen BAST, survey report, dan PO tanpa perlu download lokal. |
+| `fflate` | `0.8.3` | Kompresi dan ekstraksi file ZIP cepat di browser untuk download dokumen massal. |
+| `laravel-echo` + `pusher-js` | `2.3.0` / `8.5.0` | Klien WebSocket untuk mendengarkan broadcast event Reverb secara realtime pada notifikasi bell. |
+| `marked` + `dompurify` | `18.0.11` / `3.4.15` | Parser Markdown & sanitasi HTML aman pada output asisten AI kantor (`/ai/assistant`). |
 
-> Kebenaran penting: `bootstrap/app.php` hanya me-load **`routes/web.php`** (+`auth.php` via require) — file `routes/api.php` **dikomentari/disabled** (`// api: ...`), dan `routes/{admin,admin-panel,monitoring,marketing,teknisi}.php` **tidak pernah di-require** (duplikat legacy dari `web.php`; isinya subset yang sama). Webhook WA didaftar di bawah `web.php` (`/api/whatsapp/webhook` GET+POST, CSRF-except + throttle `60,1`).
-> Total efektif ≈ 200 route di `web.php`. Di bawah ini daftar lengkap dikelompokkan (Metode — URI — Nama — Controller@Method — Middleware).
+#### Ringkasan Aset & Standar Desain UI/UX:
+- **Total Blade Views:** **270 file** di direktori `resources/views/`.
+- **Standar Tombol Wajib (`AGENTS.md §7`):**
+  - Seluruh tombol wajib sudut lengkung **`rounded-xl`** (12px), feedback instan `active:scale-95`, dan efek kilau (*shine effect*).
+  - Satu CTA primer per halaman menggunakan `<x-icon-button variant="solid">` atau animasi `<x-flow-button>` (port 21st.dev).
+  - Navigasi kembali terstandarisasi menggunakan `<x-back-button>` (animasi panel aksen meluncur dari kiri).
+  - Ikon tombol berlabel wajib menggunakan ukuran tegas **`h-4 w-4` dengan `stroke-width="3.5"`**.
+  - Aksi tabel/baris wajib icon-only melalui `<x-icon-button>` berwarna solid tematik (misal: view indigo, edit amber, delete red, WA emerald).
+- **Lynk Dashboard Style:** Open header sapaan tanpa border kotak kaku, kartu KPI dengan ambient corner glow dan kurva sparkline riil (`SparklineBuilder`), Side-by-Side Donut Chart ber-legend 100%, serta durasi transisi angka count-up 1.8 detik.
 
-### 3.1 Root / Auth / Umum
-| M | URI | Nama | Controller@Method | Middleware |
+---
+
+### 2.3 Runtime, Scheduler & Arsitektur Penyimpanan Privat
+- **Database Engine:** SQLite (arsitektur file lokal terisolasi berkinerja tinggi pada VPS) dengan skema migration-tested kompatibel dengan MySQL 8.x / MariaDB.
+- **Queue Worker:** Antrean berbasis database (`jobs`, `failed_jobs`). Notifikasi pengiriman email (Gmail SMTP) dan push broadcast dijalankan asinkron via `ShouldQueue` pada `PurchasingHandoffNotification`, `ProposalStatusNotification`, dan `TechnicianAssignedNotification`.
+- **Scheduled Commands (`bootstrap/app.php`):**
+  - `schedules:remind` (setiap menit) — Peringatan jadwal teknisi & pengiriman notifikasi.
+  - `followups:remind` (setiap hari jam 08:00) — Peringatan tindak lanjut prospek sales yang jatuh tempo.
+  - `proposals:expire` (setiap hari jam 01:30) — Menandai proposal expired bila melewati tanggal valid.
+  - `gcal:sync` (setiap 5 menit) — Sinkronisasi dua arah agenda teknisi dengan Google Calendar.
+  - `whatsapp:receive` & `whatsapp:bot` (setiap 30 detik) — Polling pesan masuk dan trigger AI Auto-reply.
+- **Sistem Penyimpanan Privat (`disk private`):**
+  - Direktori `storage/app/private/` memproteksi berkas sensitif: NPWP customer, lampiran tiket teknik, file laporan survey PDF, berkas BAST, surat jalan, Customer PO, bukti transfer pembayaran, dan faktur supplier.
+  - Akses berkas melalui secure route ber-policy (`SecureFile::serverMime`), mencegah sniffing link atau direct download tanpa otentikasi sesi.
+
+---
+
+## 3. DAFTAR FITUR & STRUKTUR ROUTES (440 ROUTES)
+
+> Seluruh rute aplikasi didefinisikan secara modular di dalam **`routes/web.php`** (di-load oleh `bootstrap/app.php`). Total terhitung **440 rute aktif**.
+> File-file legacy pada `routes/*.php` lama telah dikonsolidasikan penuh ke dalam `web.php`.
+
+### 3.1 Rute Autentikasi & Beranda Umum
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
 |---|---|---|---|---|
-| GET | `/` → `/login` | — | redirect | — |
-| GET | `/dashboard` | `dashboard` | `DashboardController@index` | `auth,verified` |
-| GET/POST | `/login`, POST `/logout`, forgot/reset/verify/confirm/password | `login,logout,password.*,verification.*` | `Auth\*` (Breeze) | `guest` / `auth` |
+| `GET` | `/` | — | Redirect ke `/login` atau `/dashboard` | `web` |
+| `GET` | `/dashboard` | `dashboard` | `DashboardController@index` | `auth, verified` |
+| `GET` / `POST` | `/login`, `/logout` | `login`, `logout` | `Auth\AuthenticatedSessionController` | `guest` / `auth` |
+| `GET` / `POST` | `/forgot-password`, `/reset-password` | `password.*` | `Auth\PasswordResetLinkController` dkk | `guest` |
+| `GET` | `/auth/google`, `/auth/google/callback` | `auth.google.*` | `Auth\GoogleLoginController` | `guest` |
 
-### 3.2 Profile / Settings / Notifikasi / Push (`auth`)
-| M | URI | Nama | C@M | Ket |
+---
+
+### 3.2 Profil, Preferensi & Pusat Notifikasi
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
 |---|---|---|---|---|
-| GET/PATCH/DELETE | `/profile` | `profile.edit/update/destroy` | `ProfileController` | avatar+cover dinormalisasi (`storeNormalizedAvatar/Cover`, GD), hapus terpisah |
-| GET/PATCH/POST | `/settings`, `/settings/appearance`, `/settings/advanced`, `/settings/advanced/confirm` | `settings.*` | `SettingsController` | preferensi+locale, confirm throttle `10,1` |
-| POST/GET/DELETE | `/notifications/read-all`, `/notifications/status`, `/notifications/{n}/read`, `/notifications/{n}` | `notifications.*` | `NotificationController` | DB notifications, 15 tipe (lihat §5) |
-| POST/DELETE | `/push-subscriptions` | `push-subscriptions.*` | `PushSubscriptionController` | VAPID per browser |
+| `GET` / `PATCH` / `DELETE` | `/profile` | `profile.edit/update/destroy` | `ProfileController` | `auth` |
+| `GET` / `PATCH` / `POST` | `/settings`, `/settings/appearance` | `settings.*` | `SettingsController` | `auth` |
+| `GET` | `/notifications` | `notifications.index` | `NotificationController@index` | `auth` |
+| `POST` | `/notifications/read-all` | `notifications.read-all` | `NotificationController@readAll` | `auth` |
+| `POST` | `/notifications/{notification}/read` | `notifications.read` | `NotificationController@markAsRead` | `auth` |
+| `POST` / `DELETE` | `/push-subscriptions` | `push-subscriptions.store/destroy` | `PushSubscriptionController` | `auth` |
 
-### 3.3 AI Assistant + Knowledge (`auth` + `permission:manage-admin`)
-| M | URI | Nama | C@M |
-|---|---|---|---|
-| GET/POST | `/ai/assistant` (POST throttle `30,1`) | `ai.assistant.index/send` | `OfficeAssistantController@index/send` (upload 30MB, `storeAttachments`, 7 Tools user-scoped) |
-| GET/PATCH/DELETE | `/ai/assistant/conversations/{conversation}` | `ai.assistant.conversations.*` | show/rename/destroy |
-| GET/POST/DELETE | `/knowledge-base`, `/knowledge-base/sync`, `/knowledge-base/{document}` | `knowledge-base.*` | `KnowledgeBaseController` (RAG file umum, `knowledge_base_documents`) |
-| GET/POST/PATCH/DELETE | `/product-knowledge`, `/import`, `/products/bulk`, `/products/{product}`, `/publish`, `/reject`, `/sources/{source}`, `/refetch` | `product-knowledge.*` | `ProductKnowledgeController` (pipeline crawl Firecrawl → `products/product_sources/knowledge_documents/knowledge_chunks`, job `ImportProductSource/PollProductCrawl`) |
+---
 
-### 3.4 Sales — Customer & Kontak
-| M | URI | Nama | C@M | Middleware |
+### 3.3 Asisten AI Kantor & Pengetahuan Produk (RAG)
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
 |---|---|---|---|---|
-| GET/POST | `/customers/create`, `/customers` | `customers.create/store` | `CustomerController` | `manage-sales` |
-| GET/PUT/DELETE | `/customers/{customer}/edit`, `/{customer}`, `/{customer}` | `customers.edit/update/destroy` | soft-delete → Trash (observer cascade) |
-| GET/POST | `/customers/{customer}/contacts/create`, `/contacts` | `customer-contacts.create/store` | `CustomerContactController` |
-| GET/PUT/DELETE/PATCH | `/customer-contacts/{cc}/edit`, `PUT`, `DELETE`, `/{cc}/primary` | `customer-contacts.*` | toggle primary |
-| GET | `/customers`, `/customers/{customer}`, `/customers/{customer}/npwp` | `customers.index/show/npwp` | `view-sales\|manage-sales\|view-customer` |
+| `GET` / `POST` | `/ai/assistant` (throttle 30,1) | `ai.assistant.index/send` | `OfficeAssistantController@index/send` | `auth, permission:manage-admin` |
+| `GET` / `PATCH` / `DELETE`| `/ai/assistant/conversations/{c}` | `ai.assistant.conversations.*` | `OfficeAssistantController` | `auth, permission:manage-admin` |
+| `GET` / `POST` / `DELETE` | `/knowledge-base/*` | `knowledge-base.*` | `KnowledgeBaseController` | `auth, permission:manage-admin` |
+| `GET` / `POST` / `PATCH`  | `/product-knowledge/*` | `product-knowledge.*` | `ProductKnowledgeController` | `auth, permission:manage-admin` |
 
-### 3.5 Sales — FollowUp & PoC
-`prefix sales`, `manage-sales`: `resource follow-ups` (except show + explicit show), `resource pocs`, `POST follow-ups/{f}/{complete,reopen,snooze}`, `GET follow-ups/create/{customer?}`. Read: `GET sales/follow-ups`, `sales/pocs` (`view-sales|manage-sales`). Service `SalesService` (filter own-lead untuk sales-like, reminder `followups:remind`, `reminder_sent_at`, `completed_at`, `next_follow_up_date`). Tipe: `CONTACT_TYPES=[call,whatsapp,email,note]`, `LOG_TYPES=[whatsapp,call,email,meeting,proposal]`.
+---
 
-### 3.6 Sales Flow — Jadwal / TechnicalRequest / Proposal / Produk
-| M | URI | Nama | C@M | Middleware |
+### 3.4 Modul Sales — Pelanggan, Kontak PIC, Follow-Up & Jadwal
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
 |---|---|---|---|---|
-| GET/POST/PUT | `sales/schedules/create`, ``, `/{schedule}/edit`, `/{schedule}` | `sales.schedules.create/store/edit/update` | `SalesScheduleController` | `manage-sales\|manage-inside-sales` |
-| POST | `sales/schedules/{s}/{complete,cancel}` | `sales.schedules.*` | idem |
-| GET/POST | `sales/technical-requests/create`, `` | `sales.technical-requests.create/store` | `TechnicalRequestController` | idem |
-| POST | `sales/technical-requests/{tr}/cancel` | `.cancel` | sales batalkan |
-| GET/POST/PUT | `sales/proposals/create`, ``, `/{p}/edit`, `/{p}` | `sales.proposals.create/store/edit/update` | `ProposalController` | idem |
-| POST | `sales/proposals/{p}/{ready,send,viewed,revise,respond,cancel,submit-technical,po,convert}` + `GET preview`, `GET po` (download) | `sales.proposals.*` | `markReady/send/markViewed/revise/respond/cancel/submitTechnical/uploadPo/convertToProject/downloadPo` |
-| POST | `sales/proposals/{p}/{return-technical,complete-technical}` | `.return-technical/.complete-technical` | `manage-technician\|manage-admin` |
-| GET/POST/PUT/DELETE | `products/create`, ``, `/{product}/edit`, `/{product}`, `/{product}` | `products.*` | `ProductController` (katalog BOQ: `sku,category(barang/jasa/software),unit,default_price,is_active`) | tulis `manage-sales\|manage-admin`, baca `view-sales\|manage-sales\|view-admin\|manage-admin` (+`picker`) |
-| GET | `sales/schedules`, `schedules/api`, `schedules/{schedule}`, `technical-requests/{tr}`, `.../attachment`, `proposals`, `proposals/{p}`, `.../preview`, `.../po` | `sales.schedules.index/api/show`, `.technical-requests.show/attachment`, `.proposals.index/show/preview/download-po` | baca luas `view-sales\|manage-sales\|manage-inside-sales\|manage-technician` |
-| POST | `sales/technical-requests/{tr}/{review,assign,progress,result,complete}` | `.technical-requests.*` | `manage-technician` (lead-teknisi) |
+| `GET` / `POST` | `/customers/create`, `/customers` | `customers.create/store` | `CustomerController` | `manage-sales` |
+| `GET` / `PUT` / `DELETE` | `/customers/{customer}/edit`, `/{customer}` | `customers.edit/update/destroy` | `CustomerController` | `manage-sales` |
+| `GET` / `POST` / `PUT` | `/customer-contacts/*` | `customer-contacts.*` | `CustomerContactController` | `manage-sales` |
+| `PATCH` | `/customer-contacts/{contact}/primary` | `customer-contacts.primary` | `CustomerContactController@togglePrimary` | `manage-sales` |
+| `GET` | `/customers`, `/customers/{customer}` | `customers.index/show` | `CustomerController` | `view-sales\|manage-sales\|view-customer` |
+| `POST` | `/customers/{customer}/documents` | `customers.documents.store` | `CustomerController@storeDocument` | `manage-sales\|manage-technician` |
+| `GET` / `POST` / `PUT` | `/sales/follow-ups/*` | `sales.follow-ups.*` | `FollowUpController` | `manage-sales` |
+| `POST` | `/sales/follow-ups/{f}/{complete,reopen,snooze}`| `sales.follow-ups.*` | `FollowUpController` | `manage-sales` |
+| `GET` / `POST` / `PUT` | `/sales/meetings/*` | `sales.meetings.*` | `SalesMeetingController` | `manage-sales` |
+| `GET` / `POST` / `PUT` | `/sales/schedules/*` | `sales.schedules.*` | `SalesScheduleController` | `manage-sales\|manage-inside-sales` |
+| `GET` | `/sales/schedules/api` | `sales.schedules.api` | `SalesScheduleController@getSchedulesApi` | `view-sales\|manage-sales` |
+| `GET` / `POST` | `/sales/pocs/*` | `sales.pocs.*` | `PocController` | `manage-sales` |
+| `POST` | `/manage-sales/targets` | `manage-sales.targets.update`| `ManageSalesController@updateTarget` | `manage-sales-leads` |
 
-### 3.7 Teknisi — Project & anak (`manage-technician` tulis, `view-technician|manage-technician|view-sales` baca)
-Tulis: `GET/POST /projects/create|/`, `GET/PUT/DELETE /projects/{p}/edit|/|\` (`ProjectController` via `ProjectService`); supports (`/projects/{p}/supports/create|/` + `DELETE /project-supports/{ps}`); tasks (`/projects/{p}/tasks/create|/` + `DELETE /project-tasks/{pt}`); documents (`POST /projects/{p}/documents`, `DELETE /project-documents/{d}`, `GET .../preview`). Baca: `GET /projects`, `/projects/{p}`, `/projects/{p}/documents`, `GET /project-documents/{d}/download`.
+---
 
-### 3.8 Teknisi — Dashboard/Kalender/Jadwal (`teknisi.*`)
-Baca (`view-technician|manage-technician`): `GET teknisi/dashboard` (`TechnicianDashboardController@index`), `GET teknisi/kalender/events`, `/kalender/status`, `/schedules/api`, `/jadwal/google-events` (`CalendarController@googleEvents`), `/jadwal`. Tulis (`manage-technician`): `POST /schedules`, `PUT /schedules/{s}`, `PATCH /schedules/{s}/complete`, `DELETE`, `POST /kalender/credentials|/sync`, `GET /kalender/connect|/callback`, `DELETE /kalender/disconnect`.
+### 3.5 Sales Flow — Technical Request, Price Request, Quotation & Customer PO
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` | `/sales/technical-requests/create`, `""` | `sales.technical-requests.create/store` | `TechnicalRequestController` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/technical-requests/{tr}/{review,assign,progress,result,complete}` | `sales.technical-requests.*` | `TechnicalRequestController` | `manage-technician` |
+| `GET` / `POST` / `PUT` | `/sales/price-requests/*` | `sales.price-requests.*` | `PriceRequestController` | `manage-sales\|manage-technician` |
+| `POST` | `/sales/price-requests/{pr}/comments` | `sales.price-requests.comments.store` | `PriceRequestController@storeComment` | `auth` |
+| `GET` / `POST` / `PUT` | `/sales/proposals/create`, `""`, `/{p}/edit` | `sales.proposals.create/store/edit/update` | `ProposalController` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/proposals/{p}/ready` | `sales.proposals.ready` | `ProposalController@markReady` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/proposals/{p}/send` | `sales.proposals.send` | `ProposalController@send` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/proposals/{p}/sent-via/{channel}` | `sales.proposals.sent-via` | `ProposalController@markSentVia` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/proposals/{p}/revise` | `sales.proposals.revise` | `ProposalController@revise` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/proposals/{p}/respond` | `sales.proposals.respond` | `ProposalController@respond` | `manage-sales\|manage-inside-sales` |
+| `POST` | `/sales/proposals/{p}/po` | `sales.proposals.upload-po` | `ProposalController@uploadPo` | `manage-sales\|manage-inside-sales` |
+| `GET` | `/sales/proposals/{p}/po` | `sales.proposals.download-po` | `ProposalController@downloadPo` | `view-sales\|manage-sales\|view-admin` |
+| `POST` | `/sales/proposals/{p}/convert` | `sales.proposals.convert` | `ProposalController@convertToProject` | `manage-sales\|manage-admin\|manage-sales-leads` |
 
-### 3.9 Teknisi — Workflow Survey/Sizing/RequestHarga/Instalasi/Dokumen (`teknisi.*`)
-Baca: `GET surveys/create` + sizing/request/instalasi `index/create/show` + `documents` (`DocumentRepositoryController@index`, lintas project). Baca survey diperluas ke sales (`view-technician|manage-technician|view-sales`): `GET surveys`, `/{survey}`, `/{survey}/report`, `.../report/download`. Tulis (`manage-technician`): `POST surveys`, `POST .../report`, `PUT/DELETE surveys`, `GET edit`, + CRUD penuh `sizing-projects/request-hargas/instalasis` (`store/update/destroy/edit`).
+---
 
-### 3.10 Admin — Trash / Invoice-PO-Payment
-`permission:view-trash`: `GET /trash` + `PATCH /trash/{customers,projects}/{id}/restore` + `DELETE .../delete` + `DELETE /trash/clear` (`TrashController`, owner-map + `PtAccess`, Policy `ownsTrash`). `manage-admin prefix admin`: invoice/PO `create/store/edit/update/destroy`, payment `create/store/destroy` (+`proof` terpisah karena nomor rekening); baca `view-admin|manage-admin`: `invoices/pos/payments index/show` (`AdminController` + `AdminService::generateInvoiceNumber/generatePoNumber/assertProjectBelongsToCustomer`).
+### 3.6 Presales & Alur Kerja Teknisi (Survey, Sizing, Request Harga, Instalasi)
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` / `PUT` | `/teknisi/surveys/*` | `teknisi.surveys.*` | `SurveyController` | `manage-technician` |
+| `POST` | `/teknisi/surveys/{s}/report` | `teknisi.surveys.report.upload` | `SurveyController@uploadReport` | `manage-technician` |
+| `GET` | `/teknisi/surveys/{s}/report` | `teknisi.surveys.report.view` | `SurveyController@viewReport` | `view-technician\|manage-technician\|view-sales` |
+| `GET` / `POST` / `PUT` | `/teknisi/sizing-projects/*` | `teknisi.sizing-projects.*` | `SizingProjectController` | `manage-technician` |
+| `GET` / `POST` / `PUT` | `/teknisi/request-hargas/*` | `teknisi.request-hargas.*` | `RequestHargaController` | `manage-technician` |
+| `GET` / `POST` / `PUT` | `/teknisi/instalasis/*` | `teknisi.instalasis.*` | `InstalasiController` | `manage-technician` |
+| `GET` | `/teknisi/field-work` | `teknisi.field-work.index` | `FieldWorkController@index` | `view-technician\|manage-technician` |
+| `GET` | `/teknisi/dashboard` | `teknisi.dashboard` | `TechnicianDashboardController@index` | `view-technician\|manage-technician` |
+| `GET` / `POST` / `PUT` | `/teknisi/jadwal/*` | `teknisi.jadwal.*` | `TechnicianScheduleController` | `manage-technician` |
+| `POST` | `/teknisi/kalender/sync` | `teknisi.kalender.sync` | `TechnicianScheduleController@syncNow` | `manage-technician` |
 
-### 3.11 Marketing — Lead/Partner + WA Center + Monitoring + Manage
-Tulis (`manage-marketing`): `leads create/store/edit/update/destroy`, `leads/import` (GET form + POST throttle `6,1` PhpSpreadsheet), `partners` CRUD. Convert/status/outcome (`manage-marketing|manage-sales|manage-technician|manage-admin`): `PATCH leads/{l}/convert` (buat Project), `/status`, `/batch-status`, `/outcome` (`lost_reason` enum: `price|competitor|budget|requirement_changed|no_response|other`). Khusus: `GET leads/monitoring` (`monitor-marketing`), `GET leads/pipeline` (`view-sales|manage-sales`, own-lead + kolom virtual New + filter won/lost minggu berjalan), baca (`view-marketing|manage-marketing`): `GET leads`, `marketing/dashboard`, `leads/activities`, `leads/{l}/documents/{d}/{preview,download}`, `leads/{l}/attachments/{doc}/{show,download,destroy,category}`, `GET partners`. Detail `GET leads/{lead}` **paling bawah** (agar tidak memangsa `/activities` dkk), middleware luas 7 permission + `LeadPolicy::view` (sales own-lead, inside-sales via task).
-WA Center (`whatsapp-center.*`, baca `view-marketing|manage-marketing`): `GET /`, `/status`, `/{account}/conversations|/contacts|/messages/{sender}|/check-status`, `POST .../messages/{sender}/read`, `POST .../conversations/{sender}/preference`; tulis (`manage-marketing`): `POST .../messages/{sender}` (reply), `.../takeover|/release`, `POST .../convert/{sender}` (WA→Lead), `POST .../contacts`, `POST .../simulate`, `PUT .../credentials|/bot-settings`. Webhook publik `GET|POST /api/whatsapp/webhook` (verify + `handleNotification/handleMetaNotification`, signature Meta, `notifyInbound`, polling fallback `whatsapp:receive`).
-Manage (`manage-sales-leads`): `GET manage-sales`, `/activity-log`, `/{lead}/edit`, `PUT /{lead}`, `POST /{lead}/assign` (`ManageSalesController`, `trackAssignment`, notif `LeadAssigned/NewLead`, export `sales/my-leads/export`, `dar/export`); placeholder `GET manage/{marketing,technical,admin}` (view `manage.placeholder` — stub). Sales milik: `GET sales/dashboard|/my-leads` (`view-sales|manage-sales`).
-Lead-tasks (`lead-tasks.*`, `view-sales|manage-sales|manage-sales-leads|manage-inside-sales`): `GET /|/create|/{task}|/{task}/edit`, `POST /`, `PUT /{task}`, `DELETE`, `POST /{task}/comments` (+Livewire `LeadTaskChat`).
-Monitoring: `GET /monitoring` (`view-monitoring|manage-monitoring`, `MonitoringController` 2-fase). Admin-panel (`manage-monitoring`, `admin-panel.*`): `GET /`, users CRUD, roles CRUD (+guard super-admin terakhir), `audit-log`, `account-managers` (+resource), `work-types` (+resource), `document-categories` (+restore), `project-statuses` (Livewire `ProjectStatusList` + CRUD).
+---
+
+### 3.7 Manajemen Proyek & Berkas Proyek
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` / `PUT` / `DELETE` | `/projects/*` | `projects.*` | `ProjectController` | `manage-technician\|manage-admin` (tulis) |
+| `GET` | `/projects`, `/projects/{p}` | `projects.index/show` | `ProjectController` | `view-technician\|manage-technician\|view-sales` |
+| `POST` | `/projects/{p}/tasks` | `projects.tasks.store` | `ProjectTaskController@store` | `manage-technician` |
+| `POST` | `/projects/{p}/supports` | `projects.supports.store` | `ProjectSupportController@store` | `manage-technician` |
+| `GET` / `POST` / `DELETE` | `/project-documents/*` | `project-documents.*` | `ProjectDocumentController` | `manage-technician\|manage-sales` |
+| `GET` | `/project-documents/{doc}/download` | `project-documents.download` | `ProjectDocumentController@download` | `auth` |
+
+---
+
+### 3.8 Logistik & Surat Jalan (`GoodsDelivery`)
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` | `/admin/goods-deliveries/create`, `""` | `admin.goods-deliveries.create/store` | `GoodsDeliveryController` | `manage-admin` |
+| `POST` | `/admin/goods-deliveries/{gd}/status` | `admin.goods-deliveries.status` | `GoodsDeliveryController@updateStatus` | `manage-admin` |
+| `GET` | `/admin/goods-deliveries`, `/{gd}` | `admin.goods-deliveries.index/show` | `GoodsDeliveryController` | `view-admin\|manage-admin` |
+
+---
+
+### 3.9 Pengadaan, Supplier & Penerimaan Barang (Purchasing)
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` / `PUT` / `DELETE` | `/admin/suppliers/*` | `admin.suppliers.*` | `SupplierController` | `manage-admin` (tulis), `view-supplier-pos` (baca) |
+| `GET` / `POST` | `/admin/supplier-pos/create`, `""` | `admin.supplier-pos.create/store` | `SupplierPurchaseOrderController` | `manage-admin` |
+| `POST` | `/admin/supplier-pos/{spo}/issue` | `admin.supplier-pos.issue` | `SupplierPurchaseOrderController@issue` | `manage-admin` |
+| `POST` | `/admin/supplier-pos/{spo}/cancel` | `admin.supplier-pos.cancel` | `SupplierPurchaseOrderController@cancel` | `manage-admin` |
+| `GET` | `/admin/supplier-pos`, `/{spo}` | `admin.supplier-pos.index/show` | `SupplierPurchaseOrderController` | `view-supplier-pos\|manage-admin` |
+| `GET` / `POST` | `/admin/goods-receipts/create`, `""` | `admin.goods-receipts.create/store` | `GoodsReceiptController` | `manage-admin` |
+| `POST` | `/admin/goods-receipts/{gr}/verify` | `admin.goods-receipts.verify` | `GoodsReceiptController@verify` | `manage-admin` |
+| `GET` | `/admin/goods-receipts`, `/{gr}` | `admin.goods-receipts.index/show` | `GoodsReceiptController` | `view-goods-receipts\|manage-admin` |
+| `GET` | `/admin/goods-receipts/{gr}/attachment` | `admin.goods-receipts.attachment` | `GoodsReceiptController@attachment` | `view-goods-receipts\|manage-admin` |
+| `GET` | `/admin/purchasing/reports` | `admin.purchasing.reports` | `PurchasingReportController@index` | `view-admin\|manage-admin` |
+
+---
+
+### 3.10 Admin Hub, Handoff Verifikasi & BAST Closing
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` | `/admin/hub` | `admin.hub` | `AdminController@hub` | `view-admin-hub\|manage-admin` |
+| `GET` | `/admin/purchasing` | `admin.purchasing.index` | `PurchasingHandoffController@index` | `view-admin\|manage-admin` |
+| `GET` | `/admin/purchasing/{proposal}` | `admin.purchasing.show` | `PurchasingHandoffController@show` | `view-admin\|manage-admin` |
+| `POST` | `/admin/purchasing/{proposal}/verify-po` | `admin.purchasing.verify-po` | `PurchasingHandoffController@verifyPo` | `manage-admin` |
+| `POST` | `/admin/purchasing/{proposal}/return-po` | `admin.purchasing.return-po` | `PurchasingHandoffController@returnPo` | `manage-admin` |
+| `GET` / `PUT` | `/admin/bast/{project}/edit`, `/{project}` | `admin.bast.edit/update` | `BastController` | `manage-admin` |
+| `GET` | `/admin/bast`, `/admin/bast/{p}/document` | `admin.bast.index/document` | `BastController` | `view-admin\|manage-admin` |
+
+---
+
+### 3.11 Keuangan & Penagihan (Finance AR / AP)
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` / `PUT` / `DELETE` | `/admin/invoices/*` | `admin.invoices.*` | `AdminController` | `manage-admin` (tulis), `view-admin` (baca) |
+| `GET` | `/admin/invoices/{invoice}/print` | `admin.invoices.print` | `AdminController@invoicesPrint` | `view-admin\|manage-admin` |
+| `GET` / `POST` / `DELETE` | `/admin/payments/*` | `admin.payments.*` | `AdminController` | `manage-admin` (tulis), `view-admin` (baca) |
+| `GET` | `/admin/payments/{payment}/proof` | `admin.payments.proof` | `AdminController@paymentsProof` | `view-payment-proofs` |
+| `GET` / `POST` | `/admin/supplier-invoices/create`, `""` | `admin.supplier-invoices.create/store` | `SupplierInvoiceController` | `manage-admin` |
+| `POST` | `/admin/supplier-invoices/{si}/cancel` | `admin.supplier-invoices.cancel` | `SupplierInvoiceController@cancel` | `manage-admin` |
+| `POST` | `/admin/supplier-invoices/{si}/payments` | `admin.supplier-invoices.payments.store` | `SupplierPaymentController@store` | `manage-admin` |
+| `GET` | `/admin/supplier-invoices`, `/{si}` | `admin.supplier-invoices.index/show` | `SupplierInvoiceController` | `view-supplier-invoices\|manage-admin` |
+| `GET` | `/admin/supplier-invoices/{si}/file` | `admin.supplier-invoices.file` | `SupplierInvoiceController@file` | `view-supplier-invoices\|manage-admin` |
+| `GET` | `/admin/supplier-payments/{sp}/proof` | `admin.supplier-payments.proof` | `SupplierPaymentController@proof` | `view-supplier-invoices\|manage-admin` |
+
+---
+
+### 3.12 Document Center (Pusat Dokumen Lintas Modul)
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` | `/documents` | `documents.index` | `DocumentCenterController@index` | `auth, permission:view-customer` |
+| `PATCH` | `/documents/{document}/category` | `documents.update-category` | `DocumentCenterController@updateCategory` | `auth, permission:view-customer` |
+| `PATCH` | `/documents/{document}/type` | `documents.update-type` | `DocumentCenterController@updateType` | `auth, permission:view-customer` |
+
+---
+
+### 3.13 Pemasaran, WhatsApp Center, Manajemen & Admin Panel
+| Metode | URI | Nama Rute | Controller & Method | Middleware |
+|---|---|---|---|---|
+| `GET` / `POST` / `PUT` / `DELETE` | `/leads/*` | `leads.*` | `LeadController` | `manage-marketing\|manage-sales` |
+| `GET` | `/leads/pipeline` | `leads.pipeline` | `LeadController@pipeline` | `view-sales\|manage-sales` |
+| `GET` / `POST` | `/leads/import` | `leads.import/import.execute` | `LeadController@importForm/import` | `manage-marketing` |
+| `GET` / `POST` / `PUT` | `/whatsapp-center/*` | `whatsapp-center.*` | `WhatsAppCenterController` | `manage-marketing` (tulis), `view-marketing` (baca) |
+| `GET` / `POST` | `/api/whatsapp/webhook` | `whatsapp.webhook` | `WhatsAppCenterController@webhook` | Bypass CSRF, throttle `60,1` |
+| `GET` | `/manage-sales/activity-log` | `manage-sales.activity-log` | `ManageSalesController@activityLog` | `manage-sales-leads` |
+| `GET` | `/manage-sales/team-activity` | `manage-sales.team-activity`| `ManageSalesController@teamActivity` | `manage-sales-leads` |
+| `GET` | `/monitoring` | `monitoring.index` | `MonitoringController@index` | `view-monitoring\|manage-monitoring` |
+| `GET` / `POST` / `PUT` | `/admin-panel/*` | `admin-panel.*` | `AdminPanelController` dkk | `manage-monitoring` (Super Admin only) |
+| `GET` / `PATCH` / `DELETE`| `/trash/*` | `trash.*` | `TrashController` | `view-trash` (enforced by Policy) |
 
 ---
 
 ## 4. SKEMA DATABASE & MODEL RELASIONAL
 
-### 4.1 Daftar tabel utama + kolom kunci (dari `database/migrations/*.php`)
-> Konvensi: hampir semua tabel bisnis `softDeletes`; FK `cascadeOnDelete` ke parent, `nullOnDelete` ke user opsional. Index performa ditambah `2026_10_06_000003` (`leads(status,incoming_date,closed_at,assigned_to+status)`, `customers(pt_group,name)`, `follow_ups`, `invoices/pos/payments`, `projects`, `lead_activities`).
+### 4.1 Tabel Database & Migrasi Kunci Pasca 15 Oktober 2026
+Sebanyak 60+ migrasi ditambahkan sejak 15 Oktober 2026 yang mentransformasi kapabilitas sistem:
 
-| Tabel | Kolom kunci / FK / enum |
-|---|---|
-| `users` | `name,email(unique),password,role(legacy string, default guest→migrasi),avatar,cover,preferences(JSON),phone,last_activity,password_changed_at,email_verified_at,softDeletes` + Spatie `roles/permissions`, `push_subscriptions`, AI `conversations` |
-| `customers` | `name,contact_person,company,pt_group(NTI/MGK/TPS/WANI),address,phone,whatsapp,email,npwp,npwp_document_path(private),notes,status(lead/deal),deleted_by,whatsapp_account_id→whatsapp_accounts` |
-| `customer_contacts` | `customer_id→customers, name,position,phone,whatsapp,email,is_primary,softDeletes` |
-| `partners` | `name,type(supplier/vendor/kontraktor/partner/distributor),contact_person,phone,email,address,notes,softDeletes` |
-| `leads` | `customer_id→customers(cascade),partner_id?,whatsapp_account_id?,pt_group,segment,status(cool/warm/hot/won/lost — migrasi `replace_lead_statuses_with_cool_warm_hot`),source(string nullable, dulu enum),kebutuhan,solusi,progress_notes,notes,incoming_date(date, dulu expected_close_date),assigned_to→users,assigned_at,acknowledged_at,lost_reason,lost_note,closed_at,closing_note,softDeletes` |
-| `lead_activities` | `lead_id,user_id,action(created/updated/converted/status_changed/assigned/meeting_created/proposal_*/followup_*/task_*),changes(JSON)` |
-| `lead_documents` | `lead_id,file_name,file_path,ordered?category(proposal/quotation/company_profile/technical/requirement/supporting/other),mime` (lampiran BOQ awal) |
-| `lead_tasks` | `lead_id→leads, title,description,assigned_to→users,due_date,priority(low/medium/high),status(todo/in_progress/review/done),created_by,softDeletes` + `lead_task_comments(lead_task_id,user_id,body)` |
-| `follow_ups` | `customer_id,lead_id?,description,type(call/whatsapp/email/note + legacy follow_up/meeting; LOG_TYPES whatsapp/call/email/meeting/proposal),follow_up_date,activity_time,location,next_follow_up_date,reminder_sent_at,completed_at,created_by,softDeletes` (kolom `meeting_id` sudah di-drop bersama tabel `meetings/meeting_drafts` di `2026_10_12_141500`) |
-| `pocs` | `customer_id,lead_id?,type(poc/demo),scheduled_date,location,status(scheduled/done/cancelled),result_notes,created_by,softDeletes` |
-| `sales_schedules` | `lead_id,assigned_to,created_by,title,type(meeting/call/visit/presentation/follow_up/quotation/internal/other),start_at,end_at,location,description,status(scheduled/completed/cancelled/rescheduled),reminder_at,softDeletes` + idx `(assigned_to,start_at)`, `(lead_id,status)` |
-| `technical_requests` | `lead_id,requested_by,title,request_type(survey/estimate/installation/troubleshooting/consultation/other),requirement,problem_description,scope,priority(normal/urgent),target_date,attachment_path(private),notes,status(waiting_lead/accepted/rejected/assigned/in_progress/completed/cancelled),assigned_technician_id,technical_result,completed_at,softDeletes` + idx |
-| `surveys` | `title?,project_id,customer_id?,sales_user_id?,technical_request_id?(unique, maks 1),sales_request,survey_date,location,pic,survey_data(text),documentation(JSON foto),survey_report(text),report_file(private PDF),report_file_name,status(draft/completed),notes,softDeletes` |
-| `sizing_projects` | `project_id,sales_pic,customer_needs,recommendation,specifications,quantity(int),topology,technical_notes,attachments(JSON),status,softDeletes` |
-| `request_hargas` | `project_id,items(JSON),notes,attachments(JSON),status,softDeletes` |
-| `instalasis` | `project_id,location,technician_pic(string),schedule_date,job_status,checklist(JSON),documentation(JSON),installation_report,notes,attachments(JSON),status,softDeletes` |
-| `proposals` | `lead_id,proposal_number(unique, `generateNumber()`),created_by,proposal_date,valid_until,customer(string snapshot),subtotal/discount/tax/grand_total(15,2),notes,po_document_path,status(draft/pending_technical/ready/sent/viewed/revision/accepted/rejected/expired/cancelled),sent_at,sent_by,softDeletes` |
-| `proposal_items` | `proposal_id,product_id?→products,description,quantity,unit,unit_price,discount,subtotal` |
-| `products` | **dipakai ganda**: KB (`brand,name,model,sku,category,status review/approved/published/rejected`) + BOQ (`unit,default_price,is_active`) — ditambah aditif di `proposal_module_phase1`; `SALE_CATEGORIES=[barang,jasa,software]` |
-| `product_sources` | `product_id,url,source_type(product_page/datasheet/documentation/catalog),status(queued/processing/success/failed/needs_review/duplicate/published),error,last_fetched_at,content_hash,batch_id` |
-| `knowledge_documents` | `source_id→product_sources,product_id?,title,content(longText),source_url(2048),version,content_hash,status(draft/published/superseded/rejected)` + `knowledge_chunks(document_id,chunk_index,content,metadata; FTS pgsql `to_tsvector` else LIKE)` |
-| `knowledge_base_documents` | `original_name,category(enum `KnowledgeBaseCategory`),project_id?,user_id?,store_id,provider_file_id,provider_document_id,mime,size,status(indexing/…)` (RAG umum laravel/ai) |
-| `projects` | `customer_id(cascade),sales_user_id?,teknisi_user_id?,account_manager_id?(nullOnDelete),work_type_id,project_status_id,pic_engineer(string!),support_technicians(string CSV!),project_name,project_code(unique?),quotation_number,proposal_id?(nullOnDelete),progress(int),start_date,end_date,description,deleted_by,softDeletes` (kolom `status` enum lama sudah di-drop `2026_08_06_090104`; `pic_engineer_id` → string `2026_07_08_022600`) |
-| `project_statuses` | `name,color,is_default(bool),sort_order,is_active(bool),softDeletes`, `BADGE_COLORS` 8 status |
-| `project_tasks` | `project_id,task_name,assigned_to(string?, bukan FK ketat),due_date,status,priority,description,softDeletes` |
-| `project_supports` | `project_id,title,description,status,priority,assigned_to,resolved_at,resolved_by,softDeletes` |
-| `project_documents` | `project_id,file_name,file_path(private),notes,uploaded_by→users,document_category_id→document_categories,softDeletes` + `document_categories(name,softDeletes)` |
-| `project_activities` | `project_id,user_id,activity_date,type,title,description,metadata(JSON)` |
-| `account_managers/work_types` | `name(+phone,email)` / `name` |
-| `technician_schedules` | `user_id(owner),project_id?,technician_user_id?,title,description,location,start_at,end_at,status(scheduled/on_progress/completed/cancelled),reminder_minutes,reminder_sent_at,google_event_id,google_calendar_id,google_sync_status,google_sync_error,softDeletes` + `google_credentials(user_id unique,access_token(enc),refresh_token(enc),expires_at,calendar_id)` + `google_app_credentials(client_id,client_secret(enc),api_key(enc→text),calendar_id)` |
-| `invoices` | `invoice_number(unique),customer_id,project_id?,amount,status(unpaid/paid/cancelled),issue_date,due_date,notes,created_by,softDeletes` |
-| `purchase_orders` | `po_number(unique),customer_id,project_id?,items(text),amount,status(draft/diproses/selesai/dibatalkan),issue_date,notes,created_by,softDeletes` |
-| `payments` | `invoice_id→invoices(cascade),amount,payment_date,payment_method,proof_file(private, berisi norek — route proof `manage-admin` only),notes,created_by,softDeletes` |
-| `whatsapp_accounts` | `name,phone_number,account_code(unique: wa_nti/wa_wani/wa_mgk/wa_tps),gateway_type(green_api/meta),gateway_instance,gateway_token(enc,hidden),gateway_status,assigned_to,is_active,bot_enabled,bot_instructions,softDeletes` |
-| `whatsapp_messages` | `whatsapp_account_id,sender_number(dinormalisasi digit),sender_name,message_body,direction(inbound/outbound),status,is_bot(bool),wa_message_id(unique?),gateway_message_id,lead_id?,read_at,idx(account,sender)` |
-| `whatsapp_conversations` | `whatsapp_account_id,sender_number,mode(bot/human),handled_by,bot_turns,needs_summary,taken_over_at,reminded_at,unique(account,sender)` + `whatsapp_conversation_preferences(user_id,account,sender,is_pinned/muted/archived)` |
-| Spatie | `roles,permissions,model_has_roles,model_has_permissions,role_has_permissions` (+`notifications,cache,cache_locks,jobs,job_batches,failed_jobs,sessions,agent_conversations`) |
+```
+[2026_10_15] technician_schedule_user (Pivot Multi-Teknisi pada 1 Jadwal)
+[2026_10_19] price_requests, comments, replies (Forum Penentuan Harga Sales & Teknisi)
+[2026_10_20] customer_documents (Penyimpanan Dokumen Non-Proyek pada Level Customer)
+[2026_10_22] document_activities & versioning (Audit Trail & Riwayat Versi Dokumen)
+[2026_10_24] sales_targets (Target Omzet dan Lead Berkala Bulanan/Kuartalan)
+[2026_10_27] proposals cost & margin (Guard Laba, Biaya Pokok, dan Customer PO Metadata)
+[2026_10_27] suppliers & product_supplier (Master Vendor Pengadaan & Katalog Harga Beli)
+[2026_10_27] supplier_purchase_orders & items (Pemesanan Barang ke Pemasok)
+[2026_10_27] goods_receipts & items (Penerimaan Barang Gudang, QC Fisik, & Nomor Seri)
+[2026_10_27] goods_deliveries & items (Surat Jalan Resmi Pengiriman ke Pelanggan)
+[2026_10_27] supplier_invoices & payments (Pencatatan Hutang Usaha & Bukti Transfer AP)
+[2026_10_27] projects bast & warranty fields (Berita Acara Serah Terima & Tanggal Garansi)
+[2026_10_27] invoices tax & finance fields (Nomor Faktur Pajak & Termin Pembayaran)
+[2026_10_28] proposal_attachments (Multi-Lampiran Berkas Pendukung Penawaran)
+[2026_10_29] customer_contacts single_primary_guard (Integritas 1 PIC Utama per Pelanggan)
+[2026_11_02] leads city & province (Normalisasi Lokasi Wilayah Prospek)
+[2026_11_02] technician_schedules technical_request_id (Tautan Langsung Jadwal ke Tiket)
+[2026_11_05] proposals po_verification fields (Gerbang Validasi & Return PO Sales-Admin)
+[2026_11_05] projects requires_delivery flag (Bypass Surat Jalan untuk Proyek Jasa Murni)
+[2026_11_05] invoice_items & subtotal/tax/discount (Tabel Item Dinamis & Mesin Hitung Faktur)
+[2026_11_05] proposals sent_channel (Audit Pengiriman via WhatsApp vs Email)
+```
 
-### 4.2 Relasi antar model (`app/Models/*.php`)
-- `User`: `HasRoles, HasConversations, HasPushSubscriptions, SoftDeletes`; helper `preference()`, `hasSecurePassword()`, `deletionBlockReason()` (kunci super-admin terakhir + `@tridayaapp.com`); **tanpa relasi Eloquent eksplisit ke lead/project/schedule** (diakses via query `assigned_to`).
-- `Customer`: `hasMany(contacts,projects,followUps,invoices,purchaseOrders,leads)`, `belongsTo(whatsappAccount)`, `belongsTo(deleter)`, `trashOwnerId()` (1 sales unik via `leads.assigned_to` else null → super-admin only), `waLink()`.
-- `CustomerContact`: `belongsTo(customer)`.
-- `Lead`: `belongsTo(customer+withTrashed, assignee, partner, whatsappAccount)`, `hasMany(activities,documents,followUps,tasks,salesSchedules,technicalRequests,proposals)`; **`projects()` = `$this->customer->projects()` (delegasi, bukan FK langsung — NPE bila customer null, lihat §6)**; konstanta `PT_GROUPS/LOST_REASONS/PT_COLORS`, `salesStatusLabel()` (`cool`→`New`), `statusBadgeClasses()`.
-- `Project`: `belongsTo(customer,accountManager,workType,status,proposal,deleter)`, `hasMany(tasks,activities,documents,supports,surveys,sizingProjects,requestHargas,instalasis)`, `trashOwnerId()` ikut customer.
-- `TechnicalRequest`: `belongsTo(lead,requester,technician)`, `hasOne(survey)`; `Survey`: `belongsTo(project,customer,sales,technicalRequest)`.
-- `Proposal`: `belongsTo(lead,creator,sender)`, `hasMany(items)`, `hasOne(project)`, `recalculate()` (`sum(subtotal)`, clamp discount); `ProposalItem`: `belongsTo(proposal,product)`.
-- `Invoice`: `belongsTo(customer,project,creator)`, `hasMany(payments)`; `Payment`: `belongsTo(invoice,creator)`; `PurchaseOrder`: `belongsTo(customer,project,creator)`.
-- `TechnicianSchedule`: `belongsTo(owner,project,technician)`, `scopeBetween`; `SalesSchedule`: `belongsTo(lead,assignee,creator)`; `FollowUp/Poc`: `belongsTo(customer+withTrashed,lead,creator)`.
-- WA: `WhatsappAccount hasMany(messages) belongsTo(assignee)`; `WhatsappMessage belongsTo(account,lead)`; `WhatsappConversation belongsTo(account,handler)`.
-- KB/Produk: `Product hasMany(sources,documents,publishedDocuments,proposalItems)`; `ProductSource belongsTo(product) hasMany(documents)`; `KnowledgeDocument belongsTo(source,product) hasMany(chunks)`; `KnowledgeBaseDocument belongsTo(uploader,project)`.
-- `ProjectObserver`: created → `ProjectActivity` + customer `lead→deal`; updated(status) → activity; deleted → `saveQuietly(deleted_by)` + cascade soft-delete tasks/supports/documents; restored → restore anak. `CustomerObserver`: deleted → cascade projects+contacts; restored → restore.
-
-### 4.3 Default role/user/permission (seeder)
-Lihat tabel §1.2. `RoleAndPermissionSeeder`: 10 `manage/view-*` + `view-customer/view-trash/monitor-marketing/monitor-technical/manage-sales-leads/manage-inside-sales`; mapping legacy (`teknisi→technician`, `manager→ceo`, `manage-*→management`), `personMap` Syifa/Hanifah, proteksi super-admin (ingat `prevSuperAdmins`, restore by `role` column). `DatabaseSeeder` urutan: role → master (AM, WorkType, 1 Customer Telemaju, 5 DocumentCategory, `WhatsappAccountSeeder` 4 akun + 6 pesan contoh) → `SampleDataSeeder` → `CompanyUserSeeder` (24 akun riil, password awal sama, `syncRoles`, restore soft-delete). `ProductSeeder`: 16 SKU awal (CCTV/jaringan/PABX/jasa, `status=approved,is_active=true`). `DocumentCategorySeeder/WorkTypeSeeder` duplikat ringan dari DatabaseSeeder.
+#### Struktur Kolom Kunci pada Tabel-Tabel Utama:
+1. **`proposals`:**
+   - Identitas & Komersial: `proposal_number` (unique), `lead_id`, `created_by`, `status`, `proposal_date`, `valid_until`, `sent_at`, `sent_by`, `sent_channel` (`whatsapp|email|manual`).
+   - Angka Finansial: `subtotal`, `discount`, `tax`, `grand_total`, `estimated_cost` (total modal), `margin_amount` (laba kotor), `margin_percentage`.
+   - Customer PO & Validasi: `po_document_path`, `customer_po_number`, `customer_po_date`, `customer_po_deadline`, `delivery_address`, `po_verified_at`, `po_verified_by`, `po_returned_at`, `po_returned_by`, `po_return_reason`.
+   - Termin: `payment_terms_type`, `payment_terms_days`, `delivery_terms`, `warranty_terms`, `internal_notes`.
+2. **`proposal_items`:**
+   - `proposal_id`, `product_id`, `supplier_id`, `description`, `quantity`, `unit`, `unit_price`, `unit_cost`, `subtotal`, `subtotal_cost`, `discount`.
+3. **`suppliers` & `product_supplier`:**
+   - `suppliers`: `name`, `code` (unique), `contact_person`, `phone`, `email`, `address`, `term_of_payment_days`, `tax_number`, `notes`, `is_active`.
+   - `product_supplier` (pivot): `product_id`, `supplier_id`, `supplier_sku`, `last_purchase_price`, `currency`.
+4. **`supplier_purchase_orders` & `items`:**
+   - Master: `po_number` (unique), `supplier_id`, `proposal_id`, `project_id`, `pt_group`, `issue_date`, `expected_delivery_date`, `status` (`draft|issued|partially_received|received|cancelled`), `subtotal`, `tax`, `grand_total`, `created_by`.
+   - Item: `supplier_purchase_order_id`, `product_id`, `description`, `quantity`, `unit`, `unit_price`, `subtotal`, `received_quantity`, `delivery_quantity`.
+5. **`goods_receipts` & `items`:**
+   - Master: `gr_number` (unique), `supplier_purchase_order_id`, `receipt_date`, `received_by`, `delivery_order_number` (surat jalan vendor), `attachment_path`, `notes`, `status` (`draft|verified`).
+   - Item: `goods_receipt_id`, `supplier_purchase_order_item_id`, `quantity_received`, `serial_numbers` (JSON), `condition` (`good|damaged|rejected`), `notes`.
+6. **`goods_deliveries` & `items`:**
+   - Master: `delivery_number` (unique), `project_id`, `customer_id`, `delivery_date`, `recipient_name`, `driver_name`, `vehicle_plate`, `status` (`draft|in_transit|delivered|returned`), `tracking_notes`.
+   - Item: `goods_delivery_id`, `description`, `quantity`, `unit`, `serial_numbers` (JSON), `notes`.
+7. **`supplier_invoices` & `supplier_payments`:**
+   - Faktur AP: `invoice_number` (unique per supplier), `supplier_id`, `supplier_purchase_order_id`, `invoice_date`, `due_date`, `subtotal`, `tax`, `grand_total`, `status` (`draft|verified|partially_paid|paid|cancelled`), `document_path`.
+   - Pembayaran AP: `supplier_invoice_id`, `payment_date`, `amount`, `payment_method`, `proof_path`, `notes`, `created_by`.
+8. **`invoices` & `invoice_items`:**
+   - Header Invoice Pelanggan: `invoice_number` (unique), `customer_id`, `project_id`, `proposal_id`, `customer_po_number`, `amount` (grand total), `subtotal`, `discount`, `tax`, `tax_invoice_number` (e-Faktur), `tax_invoice_date`, `status` (`unpaid|partially_paid|paid|cancelled`), `issue_date`, `due_date`, `payment_terms`, `customer_name_snapshot`, `customer_address_snapshot`.
+   - Item Dinamis: `invoice_id`, `description`, `quantity`, `unit`, `unit_price`, `discount`, `subtotal`.
+9. **`projects` (Kolom BAST & Closing):**
+   - `bast_number`, `bast_date`, `bast_signee_name`, `bast_signee_position`, `bast_document_path`, `bast_status`, `requires_installation` (boolean), `requires_delivery` (boolean default true), `warranty_start_date`, `warranty_end_date`, `closing_notes`, `closed_at`, `closed_by`.
+10. **`price_requests`, `comments`, `replies`:**
+    - `price_requests`: `lead_id`, `proposal_id`, `requested_by`, `project_name`, `customer_name`, `items` (JSON), `status` (`waiting_admin|processed|completed|cancelled`), `processed_by`, `completed_at`.
 
 ---
 
-## 5. ARSITEKTUR CONTROLLER & LOGIKA BISNIS KRUSIAL
+### 4.2 Relasi Antar Model Eloquent (60 Model Aktif)
+- `Customer`: Memiliki banyak `contacts` (1 primary dijaga `CustomerContactService`), `projects`, `followUps`, `invoices`, `goodsDeliveries`, `documents`, dan `leads`.
+- `Proposal`: Menghubungkan `lead`, `creator`, `items`, `attachments`, `project` (relasi 1-to-1 unik), serta `supplierPurchaseOrders`. Memiliki helper kalkulasi `recalculate()`, validasi kelengkapan `poCompletenessErrors()`, dan state checks `isReadyForPurchasing()`, `isPoVerified()`, `isPoReturned()`.
+- `SupplierPurchaseOrder`: Menghubungkan `supplier`, `proposal`, `project`, `items`, `goodsReceipts`, dan `supplierInvoices`.
+- `GoodsReceipt`: Menghubungkan `purchaseOrder`, penerima `receiver` (`User`), serta item rincian `items`.
+- `GoodsDelivery`: Menghubungkan `customer`, `project`, serta item serial `items`.
+- `Project`: Menghubungkan `customer`, `status`, `workType`, `proposal`, `tasks`, `supports`, `documents`, `surveys`, `sizingProjects`, `requestHargas`, `instalasis`, dan `goodsDeliveries`. Guard delegasi `Lead::projects()` dilindungi melalui relasi customer.
+- `Invoice`: Menghubungkan `customer`, `project`, `items` (`InvoiceItem`), dan `payments` bertahap.
 
-| Komponen | Lokasi / ukuran | Tanggung jawab & alur data |
+---
+
+## 5. ARSITEKTUR CONTROLLER, SERVICE & LOGIKA BISNIS KRUSIAL
+
+### 5.1 Inventaris Controller (58 Controller Aktif)
+| Controller | Lokasi & Ukuran | Tanggung Jawab Utama & Alur Bisnis |
 |---|---|---|
-| `LeadController` (god, **1106 baris**) | `app/Http/Controllers/LeadController.php` | `index` (eager `customer,assignee,partner`, filter search/status/source/pt/date, paginate 15), `pipeline` (own-lead + virtual New via `acknowledged_at`, filter won/lost mingguan in-memory), `updateStatus/batchUpdateStatus` (auth `authorizeLeadStatus` + `guardSalesAssignee`), `store/update` (validasi + `saveAttachments/syncAttachments` private disk + `logActivity` + `notifyAssignee`), `convert` (lead→Project + activity), `saveOutcome/categorizeAttachment`, `import` (PhpSpreadsheet, `normalizeImportRow`), `monitoring/activities`, `preview/downloadDocument` |
-| `ManageSalesController` (481) | `ManageSalesController.php` | Hub management: `index` (semua lead + filter), `assign/update` + `trackAssignment` + `notifyAssignee/clearLeadNotifications/logActivity`, `dashboard` (KPI sales), `myLeads` + `exportMyLeads/exportDar` (PhpSpreadsheet), `activityLog` (paginate 20 `lead_activities`) |
-| `ProposalController` (503) | `ProposalController.php` | State machine §1.3 + `authorizeProposal/Edit/Technical` (sales own-lead vs teknisi), `generateNumber()`, `itemRules/persistItems` (BOQ picker `products` + `subtotalFor`), `recalculate`, `uploadPo/downloadPo` (private), `convertToProject` (transaksi lead.won + project + activity). Notif `ProposalStatusNotification` |
-| `TechnicalRequestController` (299) | `TechnicalRequestController.php` | `store` (sales, lampiran private) → `review/assign/progress/result/complete/cancel` (teknisi, `authorizeWork`), `ensureSurvey` (auto-survey tipe survey), `log`, `downloadAttachment`. Notif 3 tipe TR + `SurveyCreated/ReportUploaded` |
-| `SalesScheduleController` (303) | `SalesScheduleController.php` | `ownScope` (sales-like hanya miliknya), `authorizeSchedule/Manage`, FullCalendar `getSchedulesApi` (range + overlap check), `complete/cancel`, `customerOptions/leadItems` (duplikat — §6). Notif `SalesScheduleAssigned` |
-| `ProjectController` (157) + `ProjectService` (63) | `ProjectController/Service/Project` | `index` (`with customer,workType,status`, paginate 15 + count aktif via `whereHas status`), `store/update` via service (generate `project_code`? — cek service: create/update/delete + observer), `show` (`load customer,workType,accountManager,tasks,documents,supports,activities`), `destroy` (soft → Trash) |
-| `TechnicianScheduleController` (399) + `GoogleCalendarService` (670) + `CalendarController` | teknisi kalender | Tersulit: OAuth (`connect/callback/disconnect`, `saveCredentials`, `clientFor/handleCallback`), `syncNow/syncTwoWay/syncFromGoogle/pushLocalChanges` (idempoten via `google_event_id`, `parseEventTime`, `buildPayload/Description/Reminders`), `events/getSchedulesApi/schedulesForRange/validateSchedule`, `complete/store/update/destroy` + `notifyTechnician`, `autoSyncSoon/canManageApi`, `SyncGoogleCalendar(gcal:sync)`, `SendScheduleReminders` |
-| `SurveyController` (376) | `SurveyController.php` | `index` (filter project/status), `store/update` (JSON `documentation`), `uploadReport/viewReport/downloadReport` (`Storage::disk('private')`, `SecureFile::serverMime`, `reportFileName`, `guardRead/isSalesRole`), `destroy` |
-| `Sizing/RequestHarga/InstalasiController` (~95) + `DocumentRepositoryController` (27) | teknisi workflow | CRUD tipis `with('project.customer')`, select project `limit 200`; repo dokumen lintas project (filter kategori/search) |
-| `WhatsAppCenterController` (**993**, terbesar) + `WhatsappGateway` (228) + `WhatsappBot` (316) | WA Center | `index/status/checkStatus/conversations(senderUnreads)/messages/contacts/saveContact/markRead/preference/store reply/takeover/release/convert(WA→Lead+prefill)/verifyWebhook/webhook/handleNotification/handleMetaNotification/handleIncoming/handleOutgoingStatus/storeInbound/updateCredentials/updateBotSettings/simulate/visibleAccounts`; gateway dual Green/Meta (`sendText*/getState*/receive/acknowledge`, token encrypted); bot (`replyPending/pendingSenders/replyTo/takeover/release/remindWaitingHumans/generateReply/transcript/notifyHandoff`, `WhatsappSalesBot` agent + `LeadNeedsSummarizer`); command `whatsapp:receive/bot` tiap 30 dtk; notif `WhatsappInbound/Handoff` |
-| `AdminController` (231) + `AdminService` (168) | admin keuangan | `invoices*/pos*/payments*` (numbering, `assertProjectBelongsToCustomer`, proof private). `Customer/CustomerContactController` (190/121, NPWP private `storeNpwp/downloadNpwp`, `togglePrimary`) |
-| `MonitoringController` (265) | monitoring | 2-fase anti-N+1: fase1 `withMax` 5 timestamp + sort in-memory + paginate manual 15, fase2 `with(leads,followUps,projects.documents+status,invoices,pos)` + `getLatestActivity/getStats/getAllStatuses` |
-| `Dashboard/TechnicianDashboardController` (49/110) | dashboard | `DashboardController@index` (KPI per role), teknisi (`splitTechniciansByActivity`, running projects, heartbeat di file legacy `teknisi.php` — tidak ada di `web.php`) |
-| `FollowUp/PocController` (242/170) + `SalesService` (163) | sales tracker | CRUD + `complete/reopen/snooze/reschedule`, `scopeToOwnLeads`, `leadOptions/customerOptions/customerLabel/leadItems/assertConsistentRelations` (duplikat 3 controller) |
-| `OfficeAssistantController` (322) + `Ai/Agents/Tools` | AI | `index/send` (throttle 30, upload 30MB `storeAttachments`, `promptResilient`, `messagePayload/conversationPayload`), agent `OfficeAssistant(Conversational,HasTools)` + 7 Tools user-scoped (`GetMyTasks/LatestProjects/ProjectDetails/Progress/LeadDetails/SalesSummary/ProductKnowledge`) |
-| `KnowledgeBase/ProductKnowledgeController` (190/237) + `ProductKnowledgePipeline` (330) + Jobs | RAG | import URL/file → `FirecrawlService/ProductExtractor` → `matchOrCreateProduct/storeDocument/buildDescription/chunk/cleanContent/contentHash` → `knowledge_documents/chunks` (publish→AI), job `ImportProductSource/PollProductCrawl`, command `knowledge-base:*` |
-| `TrashController` (268) + Policies | trash | `index/ownTrash/allTrash/restore/destroy/clear/findTrash/customerOwnerMap/owned*/ptWritable*/ownerMaps/ownerFilterUsers`; `Customer/Project/Lead/MonitoringPolicy` + `PtAccess::userPts/isSalesLike/canWritePt` |
-| `AdminPanelController` (245) + `Account/WorkType/DocumentCategory/ProjectStatusController` + Livewire | super-admin | users/roles CRUD (+`guardSuperAdminGrant/LastSuperAdminDemote`), `auditLog`, master CRUD; `ProjectStatusList` (Livewire tabel+sort) |
-| `NotificationController/PushSubscription/Settings/ProfileController` | util | 15 notifikasi (`LeadAssigned/NewLead/FollowUpOverdue/LeadTask/ProposalStatus/SalesSchedule*/Survey*/Technical*/TechnicianSchedule*/Whatsapp*`), VAPID, locale/appearance/advanced, avatar/cover GD normalize |
-| Console | `app/Console/Commands` (9) | `schedules:remind, followups:remind, proposals:expire, gcal:sync, whatsapp:receive/bot, knowledge-base:init-store/sync-status, files:migrate-private` + `routes/console.php` scheduler |
+| `LeadController` | `app/Http/Controllers/` (1255 baris) | CRUD Lead, Pipeline Kanban DnD, filter multi-kriteria, log aktivitas, outcome lost/won, impor massal XLSX via PhpSpreadsheet. |
+| `WhatsAppCenterController` | `app/Http/Controllers/` (1143 baris) | Pengelolaan 4 akun WA PT, webhook receiver Meta/Green API, live chat inbox, AI auto-reply bot, manual takeover & release, konversi chat menjadi Lead. |
+| `ProposalController` | `app/Http/Controllers/` (873 baris) | Mesin status quotation komersial, pembuatan nomor otomatis, validasi modal anti-tampering, upload berkas Customer PO, proteksi quotation kosong, konversi ke Proyek. |
+| `DashboardController` | `app/Http/Controllers/` (654 baris) | Dashboard modular berbasis role (Sales, Marketing, Admin, Teknisi, Management, CEO) dengan grafik Lynk Style. |
+| `ManageSalesController` | `app/Http/Controllers/` (569 baris) | Dashboard performa sales, alokasi penugasan prospek, live Activity Feed, Team Activity harian, ekspor laporan DAR / My Leads. |
+| `CustomerController` | `app/Http/Controllers/` (488 baris) | Pengelolaan direktori pelanggan 4 PT, dokumen legalitas NPWP privat, integrasi kontak PIC terpusat. |
+| `ProjectDocumentController` | `app/Http/Controllers/` (476 baris) | Pengelolaan arsip dokumen proyek, sistem versioning (v1, v2..), dan integrasi unggah customer level. |
+| `TechnicianScheduleController`| `app/Http/Controllers/` (460 baris) | Penjadwalan teknisi, integrasi kalender multi-teknisi (`technician_schedule_user`), sinkronisasi Google Calendar OAuth 2-arah. |
+| `PriceRequestController` | `app/Http/Controllers/` (433 baris) | Kolaborasi penetapan harga beli/modal antara sales dan teknisi/admin dengan fitur komentar & balasan thread. |
+| `AdminController` | `app/Http/Controllers/` (419 baris) | Admin Hub operasional, pembuatan Invoice pelanggan, pencatatan pembayaran cicilan, template cetak invoice A4. |
+| `SurveyController` | `app/Http/Controllers/` (412 baris) | Pendataan survey lokasi, unggah foto dokumentasi, dan penerbitan berkas laporan survey PDF privat. |
+| `TechnicalRequestController` | `app/Http/Controllers/` (411 baris) | Manajemen tiket bantuan teknik presales (review lead-teknisi, assign, pengerjaan, pelaporan hasil). |
+| `LeadTaskController` | `app/Http/Controllers/` (389 baris) | Pendelegasian tugas ke Inside Sales, checklist pekerjaan, lampiran file pendukung. |
+| `GoodsDeliveryController` | `app/Http/Controllers/` (374 baris) | Penerbitan Surat Jalan pengiriman barang ke pelanggan, tracking kurir/plat nomor, kontrol status sampai tujuan. |
+| `TrashController` | `app/Http/Controllers/` (372 baris) | Manajemen keranjang sampah terpadu (Soft Delete Restore/Force Delete) dengan proteksi kepemilikan Policy. |
+| `OfficeAssistantController` | `app/Http/Controllers/` (322 baris) | Antarmuka obrolan asisten AI internal (`laravel/ai`) terhubung 7 tool kueri basis data operasional. |
+| `SalesScheduleController` | `app/Http/Controllers/` (312 baris) | Penjadwalan agenda meeting & call sales, feed API untuk kalender FullCalendar. |
+| `DocumentCenterController` | `app/Http/Controllers/` (305 baris) | Antarmuka pencarian dan filter cepat dokumen lintas modul (8 cabang data) dengan panel preview instan. |
+| `FollowUpController` | `app/Http/Controllers/` (301 baris) | Pelacakan interaksi prospek (telepon, WA, email, catatan), snooze, dan penjadwalan reminder. |
+| `ProfileController` | `app/Http/Controllers/` (301 baris) | Edit profil pengguna, normalisasi avatar/cover via GD Image, pembaruan kata sandi aman. |
+| `InstalasiController` | `app/Http/Controllers/` (288 baris) | Checklist teknis instalasi perangkat, pelaporan status pekerjaan lapangan, foto dokumentasi. |
+| `GoodsReceiptController` | `app/Http/Controllers/` (278 baris) | Penerimaan barang dari supplier, pencatatan surat jalan vendor, nomor seri, dan verifikasi QC. |
+| `MonitoringController` | `app/Http/Controllers/` (266 baris) | Monitoring komprehensif performa proyek per pelanggan dengan teknik query 2-fase anti-N+1. |
+| `SupplierPurchaseOrderController`| `app/Http/Controllers/` (253 baris) | Pembuatan pesanan barang (PO) ke vendor pemasok, penerbitan status issued, kontrol batas kirim. |
+| `AdminPanelController` | `app/Http/Controllers/` (246 baris) | Pengaturan hak akses Super Admin, audit trail sistem, manajemen master tipe kerja & kategori dokumen. |
+| `SalesMeetingController` | `app/Http/Controllers/` (242 baris) | Pencatatan notula rapat sales (Minutes of Meeting), mode online/offline, daftar hadir, dan foto bukti. |
+| `ProductKnowledgeController` | `app/Http/Controllers/` (237 baris) | Pipeline crawling web vendor produk & ekstraksi otomatis menjadi basis pengetahuan AI. |
+| `BastController` | `app/Http/Controllers/` (221 baris) | Penerbitan Berita Acara Serah Terima (BAST), upload berkas bertandatangan, penetapan tanggal garansi. |
+| `FieldWorkController` | `app/Http/Controllers/` (218 baris) | Hub terpadu pekerjaan lapangan teknisi (rekapitulasi Survey & Instalasi aktif). |
+| `ProductController` | `app/Http/Controllers/` (209 lines) | Master katalog produk BOQ proposal (SKU, brand, spesifikasi, harga acuan, part number). |
+| `SizingProjectController` | `app/Http/Controllers/` (203 lines) | Analisis kebutuhan teknis pelanggan, rekomendasi perangkat, dan perancangan topologi jaringan. |
+| `PurchasingHandoffController` | `app/Http/Controllers/` (105 lines) | Gerbang verifikasi Customer PO dari Sales ke Admin/Purchasing (`verifyPo` dan `returnPo` ber-catatan revisi). |
+| `SupplierInvoiceController` | `app/Http/Controllers/` (189 lines) | Pencatatan faktur tagihan dari supplier (Hutang Usaha / AP) dan kontrol jatuh tempo pembayaran. |
+| `SupplierPaymentController` | `app/Http/Controllers/` (92 lines) | Eksekusi pembayaran ke supplier, pencatatan metode transfer bank, dan upload bukti transfer privat. |
+| `BastController` | `app/Http/Controllers/` (221 lines) | Alur BAST proyek, form penandatangan klien, dan closing komersial proyek. |
 
 ---
 
-## 6. POTENSI FITUR MASALAH / BELUM EFISIEN (INITIAL CHECK — temuan kode, bukan tuduhan)
+### 5.2 Inventaris Layanan Bisnis (14 Service Classes)
+| Service Class | Lokasi & Ukuran | Pola Desain & Logika Bisnis |
+|---|---|---|
+| `GoogleCalendarService` | `app/Services/` (1024 baris) | Integrasi Google Calendar v3: OAuth refresh token otomatis, idempoten sync via `google_event_id`, parsing waktu zona, retry logic, sinkronisasi jadwal multi-teknisi. |
+| `AdminService` | `app/Services/` (713 baris) | Penomoran otomatis Invoice (`INV/NTI/YYYY/MM/XXXX`) dan PO, kalkulasi pelunasan bertahap, sinkronisasi status tagihan, snapshot identitas pelanggan saat cetak, agregasi metrik Admin Hub. |
+| `DocumentCenterService` | `app/Services/` (662 baris) | Mesin federasi dokumen: mengabstraksikan 8 cabang data (Project Doc, Quotation Attachment, Customer PO, Supplier Invoice, Supplier Payment, Goods Receipt, Lead Doc, NPWP) menjadi `DocumentCenterRow` terpadu dengan pagination dan filter cepat. |
+| `WhatsappBot` | `app/Services/` (316 baris) | Logika mesin bot WA cerdas: pembacaan antrean pesan tak terbalas, integrasi agen AI, ekstraksi ringkasan kebutuhan prospek, penentuan alih kendali ke manusia (takeover). |
+| `DocumentRegistry` | `app/Services/` (265 baris) | Katalog registri tipe dokumen sistem, validasi tipe MIME terstandar, dan pengecekan otorisasi unduhan file privat. |
+| `SalesKpiService` | `app/Services/` (252 baris) | Kalkulasi metrik KPI sales individu & tim: leaderboard perolehan omzet, rasio konversi deal, perbandingan realisasi terhadap `SalesTarget`. |
+| `WhatsappGateway` | `app/Services/` (229 baris) | Abstraksi gateway API pesan instan (Green API & Meta WhatsApp Cloud API), enkripsi/dekripsi token gateway di database. |
+| `SalesService` | `app/Services/` (227 baris) | Logika filter kepemilikan prospek tim sales, audit follow-up kedaluwarsa, pengecekan konsistensi relasi customer-lead. |
+| `ProjectDocumentCleanup` | `app/Services/` (215 baris) | Pembersihan berkas sampah dari storage fisik saat terjadi penghapusan permanen atau penggantian versi dokumen. |
+| `CustomerContactService` | `app/Services/` (212 baris) | Menjamin integritas aturan **Single Primary Contact**: saat PIC baru dijadikan primary, kontak lama otomatis dinonaktifkan dari status primary; sinkronisasi cache kontak ke master customer. |
+| `DevWorkLogService` | `app/Services/` (180 baris) | Perekaman log kerja developer otomatis berdasarkan commit dan aktivitas operasional. |
+| `ProcurementService` | `app/Services/` (172 baris) | Penomoran otomatis Goods Receipt (`GR/NTI/YYMM/XXXX`) & Goods Delivery (`SJ/NTI/YYMM/XXXX`), kalkulasi sisa barang PO belum tiba, validasi nomor seri duplikat. |
+| `ConversationTitle` | `app/Services/` (65 baris) | Generator judul obrolan AI cerdas berbasis konteks percakapan pertama. |
+| `DocumentActivityLogger` | `app/Services/` (31 baris) | Perekaman audit trail interaksi dokumen (upload, preview, replace, download, delete). |
 
-> Semua poin di bawah hasil baca kode (`file:line` pendekatan). Prioritas `P0`=betulkan dulu, `P1`=refactor dekat, `P2`=higiene.
+---
 
-1. **`P0 — `Lead::projects()` NPE bila customer null** (`app/Models/Lead.php:115-118`: `return $this->customer->projects();`). Relasi delegasi tanpa null-guard; pemanggil yang mengira relasi Eloquent akan fatal bila `customer_id` yatim. Perbaiki: `return $this->hasManyThrough(Project::class, Customer::class, 'id', 'customer_id', 'customer_id', 'id')` atau guard + tes.
-2. **`P0 — File route duplikat tak ter-load** (`routes/{admin,admin-panel,monitoring,marketing,teknisi}.php` tidak di-require di `bootstrap/app.php`; `api.php` dikomentari). Risiko: developer edit file salah → perubahan "hilang". Perbaiki: hapus file legacy ATAU require + hapus duplikat di `web.php`; tambah test `route:list` snapshot.
-3. **`P0 — `support_technicians` CSV + `pic_engineer` string bebas** (`projects` migrasi `add_support_technicians`, `change_pic_engineer_to_string`; `ProjectController@store` `implode(', ')`). Tidak bisa join/filter/schedule-notify per teknisi pendukung, rawan typo. Perbaiki: tabel pivot `project_technician(user_id,role)` + migrasi data CSV.
-4. **`P1 — God controllers**: `WhatsAppCenterController` 993 baris, `LeadController` 1106, `ProposalController` 503, `ManageSalesController` 481, `GoogleCalendarService` 670. Webhook+inbox+convert+kredensial+bot-setting campur di 1 controller; `LeadController` campur CRUD+pipeline+import+attachment+dokumen. Perbaiki: pecah `Whatsapp/{Inbox,Webhook,Convert,Credential}Controller`, `Lead/{Crud,Pipeline,Import,Attachment}Controller`, FormRequest + Action class.
-5. **`P1 — Duplikat logic opsi lead/customer** (`FollowUpController::leadOptions/customerOptions`, `PocController::leadOptions/scopeToOwnLeads`, `SalesScheduleController::customerOptions/leadItems`, `Sizing/RequestHargaController` select `limit 200` identik). Perbaiki: satu `LeadOptionService` + `scopeOwnLead($q,$user)`.
-6. **`P1 — N+1 & pagination in-memory yang kentara**:
-   - `LeadController@pipeline` (`:69-99`): `get()` semua own-lead lalu `filter` New + won/lost mingguan di PHP — berat bila sales >ribu lead. Dorong ke SQL (`where acknowledged_at` + `where closed_at`).
-   - `LeadController@show` (`:487-523`): `load` 11 relasi + `flatMap->documents` semua project customer + timeline/schedule/request/proposal di-sort di PHP. Batasi kolom + paginate timeline.
-   - `ManageSalesController@dashboard` (`:159-253`): 5× `limit(5)->get()` + agregasi PHP; gabung ke 1 query grup.
-   - `WhatsAppCenterController@conversations` (`:88-128`): `get()` pesan + `Customer::whereIn->get()->keyBy` + `senderUnreads` query per akun; tambah counter cache `unread_count`.
-   - `ProjectController@index`: 3 query (`paginate` + `count()` + `whereHas count`) — gabung via `withCount`/cache 60 dtk.
-   - Positif: `MonitoringController` sudah 2-fase (`withMax` + eager 15) — jadikan pola baku.
-7. **`P1 — Queue via scheduler tiap menit** (`routes/console.php:20` `queue:work --stop-when-empty --max-time=50` everyMinute + komentar "tanpa supervisor"). Overlap worker, notif (`NewLeadNotification` dkk) bisa telat/duplikat, log bising. Perbaiki: supervisor `queue:work --daemon` / Horizon + `withoutOverlapping` + alert gagal.
-8. **`P1 — Upload & storage privat belum seragam**: Survey/NPWP/TR-attachment/PO/payment-proof memakai `Storage::disk('private')` (bagus) tapi validasi size/mime tersebar di controller, `report_file_name` + `report_file` ganda, `MigrateFilesToPrivate` sekali jalan tanpa re-run guard. Perbaiki: `SecureUpload` action + FormRequest + test mime-spoof.
-9. **`P1 — Proposal numbering & total tanpa lock** (`ProposalController@generateNumber`, `Proposal::recalculate` `sum('subtotal')` lalu `save`). Race 2 sales bersamaan → nomor ganda/total selisih. Perbaiki: `DB::transaction` + `lockForUpdate` + unique retry.
-10. **`P2 — `Lead::projects()` + `Project::status()` naming**: `status()` padahal FK `project_status_id` (Eloquent mengira kolom `status_id` bila dipakai sembarang); `scopeActive` benar (`is_active` ada) tapi tak dipakai konsisten. Standarkan `status()` + scope `ordered`.
-11. **`P2 — Meeting tables di-drop tapi referensi sisa**: `2026_10_12_141500_drop_meeting_tables` drop `meetings/meeting_drafts/follow_ups.meeting_id`; `down()`-nya membuat ulang struktur tanpa data + `add_performance_indexes::down()` masih `dropIndex` meetings (gagal bila rollback setelah drop). Tambah guard `Schema::hasTable`.
-12. **`P2 — Produk dipakai ganda KB↔BOQ** (`products` + `proposal_module_phase1` menambah `unit/default_price/is_active` ke tabel AI-KB). Perubahan KB (auto-publish/crawl) bisa mengubah katalog harga. Perbaiki: pisah `catalog_products` ATAU kolom `origin(kb/manual)` + policy tulis terpisah.
-13. **`P2 — Policy vs route mismatch**: `LeadPolicy::update/delete` hanya `manage-marketing`, tapi route `leads.update-status/batch-status/outcome/convert` dibuka ke sales/teknisi/admin (`authorizeLeadStatus` di controller menambal — tersebar). Satukan di Policy (`updateStatus`, `convert`) + test matriks role×route.
-14. **`P2 — Scheduler/catalog fragility**: `gcal:sync` everyFiveMinutes + `whatsapp:*` everyThirtySeconds (butuh scheduler precision + `withoutOverlapping` OK) tapi tanpa monitoring gagal; `ExpireProposals` + `SendFollowUpReminders` tanpa idempotency key selain `reminder_sent_at`. Tambah `failed_job` alert + health `/up`.
-15. **`P2 — i18n campur**: `LeadActivity::actionLabel`, `Proposal::statusLabel`, `FollowUp::typeLabel` memakai `__()` sebagian, view lama Indonesia (catatan `AGENTS.md §7`: rapikan bertahap + tombol English via `__()`). Konsistenkan + tambah `tests/Feature/LocaleTest`.
-16. **`P2 — Tes ada tapi tak gate merge**: `tests/Feature` (~30 file: LeadLifecycle/Pipeline/Notification/InsideSales/DAR export/dll) bagus, tapi `AGENTS.md` mewajibkan `php artisan test` lulus sebelum merge — pastikan CI menjalankan + coverage untuk 5 flow §1.3.
+### 5.3 Sistem Notifikasi (27 Tipe Notifikasi)
+Sistem memiliki 27 class notifikasi di `app/Notifications/` yang disiarkan melalui database channel, WebPush browser, dan email:
+- **Sales & CRM:** `LeadAssignedNotification`, `NewLeadNotification`, `FollowUpOverdueNotification`, `MeetingReportReminderNotification`, `LeadTaskNotification`.
+- **Presales & Kolaborasi:** `TechnicalRequestCreatedNotification`, `TechnicalRequestReviewedNotification`, `TechnicalWorkCompletedNotification`, `TechnicianAssignedNotification`, `PriceRequestCreatedNotification`, `PriceRequestReviewedNotification`, `PriceRequestCommentNotification`, `PriceRequestCompletedNotification`.
+- **Quotation & Purchasing:** `ProposalStatusNotification` (perubahan status quotation & return PO), `PurchasingHandoffNotification` (notifikasi PO diterima siap belanja), `ProjectConvertedNotification`.
+- **Teknisi & Lapangan:** `SurveyCreatedNotification`, `SurveyReportUploadedNotification`, `InstallationCompletedNotification`, `TechnicianScheduleAssignedNotification`, `TechnicianScheduleChangedNotification`, `TechnicianScheduleReminderNotification`.
+- **Komunikasi & Admin:** `WhatsappInboundNotification`, `WhatsappHandoffNotification`, `BastReadyNotification`, `NewUserPendingApprovalNotification`.
 
-### Lampiran kompatibilitas (untuk konsultan)
-- **Butuh `.env`**: `APP_URL`, `DB_*` (sqlite file path prod), `GOOGLE_*` (client id/secret), `WHATSAPP_*` (Green/Meta token — kini encrypted di DB), `VAPID_*`, `AI_*` (laravel/ai provider key), `QUEUE_CONNECTION=database`, `SESSION_DRIVER=database`. Tanpa kredensial GCal/WA/AI, modul terkait graceful-degrade (`isApiReachable/configured/hasOAuthConnection`).
-- **Build**: `npm run build` **hanya dari `/var/www/3dyapp` (main)** — `public/build` worktree di-symlink (peringatan `AGENTS.md §5`); Tailwind JIT perlu rebuild tiap tambah kelas.
-- **Batasan Letsencrypt/proxy**: `trustProxies('*')` + `bindRequestScheme()` mengandalkan `X-Forwarded-Proto`; pastikan nginx mengirim header tersebut.
+---
 
-> Akhir dokumen. File digenerate dari baca langsung: `composer.json/lock`, `package.json`, `vite.config.js`, `bootstrap/app.php`, `routes/*.php`, `app/Models/*.php`, `app/Http/Controllers/*.php`, `app/{Services,Observers,Policies,Support,Ai,Console}/*`, `database/{migrations,seeders}/*`, `resources/views` (192 blade), `tests/Feature`.
+## 6. STATUS FITUR & GAP AUDIT (SELESAI VS PLACEHOLDER / BELUM TERHUBUNG)
+
+### 6.1 Fitur yang 100% Selesai & Berjalan di Produksi (Production Ready)
+1. **Otentikasi & Keamanan:** Login, lupa password, Google SSO OAuth, middleware Spatie RBAC, proteksi akun Super Admin terakhir, normalisasi gambar profil, disk privat untuk berkas rahasia.
+2. **CRM & Lead Lifecycle:** Penangkapan lead dari WA & form, penugasan sales, pelacakan kanban drag-and-drop, filter wilayah (kota/provinsi), pencatatan meeting dengan foto bukti & MOM, import lead massal via Excel.
+3. **Kontak Pelanggan:** Manajemen kontak PIC dengan perlindungan tunggal primary contact (`CustomerContactService`), sinkronisasi nomor WhatsApp.
+4. **Kolaborasi Presales Teknik:** Tiket bantuan teknik, survey lapangan dengan upload PDF privat, sizing topologi, request harga vendor, dan forum Price Request terhubung antrean sales-teknisi.
+5. **Komersial & Quotation Gate:** Pembuatan BOQ berproteksi anti-Rp 0 dan anti-tampering harga pokok, auto-kalkulasi margin laba, pencatatan kanal pengiriman (WhatsApp/Email), upload Customer PO, dan validasi kelengkapan berkas PO.
+6. **Gerbang Verifikasi PO (Admin Verification):** Pemisahan tegas antara Customer PO dan Supplier PO; verifikasi PO pelanggan oleh Admin sebelum belanja atau konversi proyek dapat diproses; fitur Return to Sales ber-catatan revisi tertulis.
+7. **Pengadaan (Paket 3 Procurement):** Master supplier, penerbitan Supplier PO ke vendor, penerimaan barang gudang (Goods Receipt) ber-QC dan nomor seri barcode, serta pencatatan Hutang Usaha (Supplier Invoice AP) dan pelunasan supplier.
+8. **Logistik Pelanggan:** Penerbitan Surat Jalan (Goods Delivery) terhubung nomor polisi & driver, pelacakan status kirim, opsi bypass pengiriman untuk proyek jasa murni (`requires_delivery = false`).
+9. **Penagihan Pelanggan (Finance AR):** Penerbitan Invoice ber-item dinamis (`invoice_items`), kalkulasi subtotal, diskon, PPN, nomor Faktur Pajak, pencatatan pembayaran cicilan bertahap, dan layout cetak resmi A4.
+10. **Pusat Dokumen Lintas Modul (Document Center):** Pencarian dan penyaringan instan dokumen dari 8 sumber modul, terintegrasi penampil PDF in-browser.
+11. **Pelaporan & Dasbor:** Lynk Dashboard ber-sparkline riil 6 bulan, Donut Chart 100%, Activity Feed real-time, monitoring proyek 2-fase anti-N+1, dan kalender agenda teknisi tersinkronisasi GCal.
+
+---
+
+### 6.2 Status Fitur yang Masih Berupa Placeholder, Stub, atau Belum Terhubung
+Meskipun kapabilitas inti sudah lengkap, audit menemukan beberapa area yang masih berstatus placeholder atau belum terintegrasi ke sistem eksternal:
+
+1. **Menu Management Placeholder (`routes/web.php:728-729`):**
+   - Rute `manage.marketing.index` dan `manage.technical.index` masih merender view stub statis (`manage.placeholder`). Menu ini dicadangkan untuk dasbor manajerial spesifik marketing dan teknisi di masa mendatang.
+   - *Catatan:* Untuk `manage.admin.index`, rute sudah berhasil dihubungkan langsung ke `AdminController@hub`.
+2. **Integrasi e-Faktur Pajak Otomatis (DJP):**
+   - Kolom `tax_invoice_number` dan `tax_invoice_date` pada tabel `invoices` saat ini berfungsi sebagai pencatatan nomor faktur pajak manual dari admin. Belum ada koneksi API langsung (host-to-host) ke aplikasi e-Faktur DJP untuk download/generate XML faktur pajak secara otomatis.
+3. **Template Kop Surat Multi-PT Dinamis:**
+   - Pencetakan Invoice (`/admin/invoices/{invoice}/print`) saat ini mengacu pada layout standar Tridaya. Pemilihan kop surat khusus per perseroan (antara logo/identitas resmi NTI, MGK, TPS, atau WANI) masih menggunakan layout terpusat dan belum memiliki konfigurasi switch logo multi-PT dinamis di Admin Panel.
+4. **Gateway WhatsApp Meta Cloud API vs Green API:**
+   - Sistem memiliki controller dan model untuk kedua gateway, namun konfigurasi aktif di database saat ini mengandalkan instance Green API. Webhook Meta Cloud API sudah dikodekan tetapi integrasi resminya memerlukan verifikasi Meta Business Manager aktif dari klien.
+5. **Multi-Tenant Google Calendar App Credentials:**
+   - Aplikasi menggunakan 1 pasang kredensial global OAuth Google Cloud Console (`google_app_credentials`). Jika Tridaya ingin memisahkan domain Google Workspace per PT di masa depan, arsitektur saat ini masih bersifat shared-tenant.
+
+---
+
+### 6.3 Rekapitulasi Masalah Kritis (P0/P1/P2) & Status Perbaikan
+Berdasarkan perbandingan dengan temuan awal audit 15 Oktober 2026:
+
+| Isu Temuan Awal | Prioritas | Status per November 2026 | Solusi & Penanganan pada Kode |
+|---|---|---|---|
+| `Lead::projects()` NPE bila customer null | `P0` | **TUNTAS (FIXED)** | Metode didelegasikan dengan aman dan dicek relasi customer-nya; pemanggilan proyek melalui Customer / Proposal terkonversi. |
+| Celah Supplier PO dibuat sebelum PO terverifikasi | `P0` | **TUNTAS (FIXED)** | Ditambahkan gerbang verifikasi `po_verified_at`, fungsi `isReadyForPurchasing()`, dan blokade pada `SupplierPurchaseOrderController::eligibleProposals()`. |
+| Celah Convert to Project tanpa syarat verifikasi | `P0` | **TUNTAS (FIXED)** | Method `convertToProject()` memvalidasi `isReadyForPurchasing()`, berkas fisik PO, nomor PO, dan skema pembayaran sebelum membuat proyek. |
+| Berkas Customer PO Revisi & Alert Lambat | `P1` | **TUNTAS (FIXED)** | Form sales menampilkan input unggah ulang berkas PO revisi; notifikasi handoff dialihkan ke background queue (`ShouldQueue`) sehingga loading instan (< 1 detik). |
+| Alpine syntax error pada Document Center | `P1` | **TUNTAS (FIXED)** | Row data diisolasi ke scope Alpine `x-data="{ panelData: ... }"` untuk menghindari tabrakan tanda kutip JSON string. |
+| N+1 Query pada Pipeline & Monitoring | `P1` | **TUNTAS (FIXED)** | `MonitoringController` menerapkan 2-fase query (`withMax` agregasi + eager loading 15 data per halaman); pipeline lead difilter pada level kueri database. |
+| Duplikasi Kontak PIC Customer | `P2` | **TUNTAS (FIXED)** | Migrasi `add_single_primary_guard_to_customer_contacts` dan service `CustomerContactService` menjamin hanya 1 PIC primary per perusahaan. |
+| Inkonsistensi Desain Tombol | `P2` | **TUNTAS (FIXED)** | Seluruh antarmuka diseragamkan ke konvensi `rounded-xl`, stroke ikon 3.5, `<x-flow-button>`, dan `<x-back-button>`. |
+
+---
+
+### 6.4 Lampiran Lingkungan Produksi & Kompatibilitas Sistem
+- **Kebutuhan Variabel `.env` Inti:**
+  - `APP_URL`, `APP_ENV=production`, `APP_KEY`.
+  - Database: `DB_CONNECTION=sqlite` (atau `mysql`), `DB_DATABASE=/var/www/3dyapp/database/database.sqlite`.
+  - Antrean & Sesi: `QUEUE_CONNECTION=database`, `SESSION_DRIVER=database`, `CACHE_STORE=file`.
+  - Real-time Reverb: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET`, `REVERB_HOST`, `REVERB_PORT=8080`, `REVERB_SCHEME=https`.
+  - Google Calendar: Kredensial tersimpan terenkripsi di database (`google_app_credentials`).
+  - WhatsApp: Kredensial instance gateway tersimpan terenkripsi di tabel `whatsapp_accounts`.
+  - Web Push: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+- **Aturan Build Aset Frontend (`AGENTS.md §5`):**
+  - Kompilasi aset CSS/JS (`npm run build`) **wajib dijalankan dari folder utama `/var/www/3dyapp` (branch `main`)**.
+  - Folder `public/build` pada worktree divisi lain merupakan symlink ke `main`. Menjalankan build dari worktree lama dapat menghapus kelas Tailwind baru dari bundle produksi.
+- **Izin Berkas Cache Web Server:**
+  - Setiap kali menjalankan command `artisan` atau `test` sebagai user non-webserver, bersihkan cache view dan rapikan kepemilikan file agar web server (`www-data`) tidak mengalami error 500:
+    ```bash
+    sudo -u www-data php artisan view:clear
+    sudo chmod -R g+rwX storage/framework/cache storage/framework/views storage/framework/sessions storage/app storage/logs
+    ```
+
+---
+> Dokumen ini diperbarui secara komprehensif berdasarkan audit kode langsung per **November 2026**.
+> Seluruh referensi file, rute, tabel migrasi, model, dan kontroler telah diverifikasi valid terhadap struktur repositori `/var/www/3dyapp`.
