@@ -44,6 +44,7 @@ class Proposal extends Model
         'status',
         'sent_at',
         'sent_by',
+        'sent_channel',
     ];
 
     protected $casts = [
@@ -69,6 +70,17 @@ class Proposal extends Model
     public function sender()
     {
         return $this->belongsTo(User::class, 'sent_by');
+    }
+
+    /** Label kanal pengiriman quotation (dipakai badge "Terkirim via …"). */
+    public function sentChannelLabel(): ?string
+    {
+        return match ($this->sent_channel) {
+            'whatsapp' => 'WhatsApp',
+            'email' => __('Email'),
+            'manual' => __('Manual'),
+            default => null,
+        };
     }
 
     public function items()

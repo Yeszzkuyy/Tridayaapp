@@ -234,6 +234,7 @@ Route::middleware('auth')->group(function () {
         Route::put('proposals/{proposal}', [ProposalController::class, 'update'])->name('proposals.update');
         Route::post('proposals/{proposal}/ready', [ProposalController::class, 'markReady'])->name('proposals.ready');
         Route::post('proposals/{proposal}/send', [ProposalController::class, 'send'])->name('proposals.send');
+        Route::post('proposals/{proposal}/sent-via/{channel}', [ProposalController::class, 'markSentVia'])->name('proposals.sent-via');
         Route::post('proposals/{proposal}/viewed', [ProposalController::class, 'markViewed'])->name('proposals.viewed');
         Route::post('proposals/{proposal}/revise', [ProposalController::class, 'revise'])->name('proposals.revise');
         Route::post('proposals/{proposal}/respond', [ProposalController::class, 'respond'])->name('proposals.respond');

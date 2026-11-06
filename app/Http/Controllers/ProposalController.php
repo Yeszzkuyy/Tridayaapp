@@ -585,6 +585,7 @@ class ProposalController extends Controller
             'status' => 'sent',
             'sent_at' => now(),
             'sent_by' => auth()->id(),
+            'sent_channel' => 'manual',
         ]);
 
         $this->log($proposal->lead, 'proposal_sent', ['number' => $proposal->proposal_number]);
@@ -595,6 +596,48 @@ class ProposalController extends Controller
         }
 
         return back()->with('success', __('Proposal marked as sent.'));
+    }
+
+
+    /**
+     * Tandai quotation terkirim lewat kanal tertentu (WhatsApp/email).
+     * Dipanggil lewat fetch dari tombol kanal, jadi pemilik quotation tidak
+     * perlu klik "Mark as Sent" lagi setelah benar-benar mengirim.
+     */
+    public function markSentVia(Request $request, Proposal $proposal, string $channel)
+    {
+        $this->authorizeManage($proposal);
+
+        abort_unless(in_array($channel, ['whatsapp', 'email'], true), 404);
+
+        if ($proposal->status === 'ready') {
+            $proposal->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'sent_by' => auth()->id(),
+                'sent_channel' => $channel,
+            ]);
+
+            $this->log($proposal->lead, 'proposal_sent', [
+                'number' => $proposal->proposal_number,
+                'channel' => $channel,
+            ]);
+
+            $assignee = $proposal->lead?->assignee;
+            if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
+                $assignee->notify(new ProposalStatusNotification($proposal->fresh(), 'sent'));
+            }
+        } elseif ($proposal->status === 'sent' && $proposal->sent_channel === null) {
+            // Sudah ditandai manual sebelumnya: lengkapi kanalnya saja.
+            $proposal->update(['sent_channel' => $channel]);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'status' => $proposal->status,
+            'channel' => $proposal->fresh()->sent_channel,
+            'sent_at' => $proposal->fresh()->sent_at?->toIso8601String(),
+        ]);
     }
 
     public function markViewed(Proposal $proposal)
