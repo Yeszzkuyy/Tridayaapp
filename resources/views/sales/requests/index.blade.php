@@ -1,4 +1,7 @@
 <x-app-layout>
+    @if(session('success') && session('success_card'))
+        <x-status-card :message="session('success')" />
+    @endif
     @php
         $user = auth()->user();
         $canCreateInsideSales = $user && ($user->can('manage-sales') || $user->can('manage-sales-leads') || $user->can('manage-marketing'));
@@ -72,9 +75,14 @@
              dibuka di halaman Request, bukan pindah ke halaman detail task. --}}
         @if(!empty($openTask))
             <div class="mb-6">
-                <div class="mb-3 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                <div class="mb-3 flex flex-col gap-3 rounded-2xl border border-accent-300 bg-white px-4 py-3 shadow-sm ring-2 ring-accent-500/20 dark:border-accent-600 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between">
                     <div class="min-w-0">
-                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Inside Sales Discussion') }}</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            {{ __('Inside Sales Discussion') }}
+                            @if(request()->filled('task'))
+                                <span class="ml-1 rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-bold text-accent-700 dark:bg-accent-900/50 dark:text-accent-300">{{ __('Opened from notification') }}</span>
+                            @endif
+                        </p>
                         <h2 class="mt-0.5 truncate text-lg font-bold text-slate-800 dark:text-slate-100">{{ $openTask->title }}</h2>
                         <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
                             {{ $openTask->lead?->customer?->name ?? '-' }}
@@ -82,7 +90,7 @@
                         </p>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $openTask) }}" title="{{ __('View details') }}" />
+                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $openTask) }}" onclick="showHubLoading()" title="{{ __('View details') }}" />
                         <x-icon-button as="a" icon="back" href="{{ route('sales.requests.index', ['tab' => 'inside-sales']) }}" title="{{ __('Close discussion') }}" />
                     </div>
                 </div>
@@ -328,4 +336,24 @@
                 <div class="mt-4 p-4">{{ $engineerRequests->links() }}</div>
             @endif
         @endif
+    <div id="hub-loading" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4" role="status" aria-live="polite">
+        <div class="w-full max-w-sm rounded-2xl bg-white px-10 py-8 text-center shadow-xl dark:bg-slate-800">
+            <svg class="mx-auto h-8 w-8 animate-spin text-accent-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p class="mt-4 font-semibold text-slate-800 dark:text-slate-100">{{ __('Loading…') }}</p>
+        </div>
+    </div>
+
+    @once
+    <script>
+        function showHubLoading() {
+            const overlay = document.getElementById('hub-loading');
+            if (!overlay) return;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+    </script>
+    @endonce
 </x-app-layout>
