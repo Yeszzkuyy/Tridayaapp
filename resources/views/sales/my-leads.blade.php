@@ -1,25 +1,46 @@
 <x-app-layout>
+    <div x-data="{ tips: localStorage.getItem('sales_followup_tips') !== 'off' }">
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('My Leads') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Leads assigned to you by Management') }}</p>
         </div>
         <div class="flex gap-2">
+            <button type="button"
+                    @click="tips = true; localStorage.setItem('sales_followup_tips', 'on')"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    title="{{ __('Show guide') }}">
+                <span class="text-sm font-bold">?</span>
+                <span class="sr-only">{{ __('Show guide') }}</span>
+            </button>
             <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
             <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Sales Dashboard') }}" />
         </div>
     </div>
 
     @php($newLeadCount = $leads->getCollection()->whereNull('acknowledged_at')->count())
-    <div x-data="{ tips: localStorage.getItem('sales_followup_tips') !== 'off' }" x-show="tips" x-cloak
+    <div x-show="tips" x-cloak
          class="mb-4 rounded-2xl border border-accent-200 bg-accent-50/60 p-4 dark:border-accent-700 dark:bg-accent-900/20">
         <div class="flex items-start gap-3">
             <x-icon name="bolt" class="h-5 w-5 shrink-0 text-accent-600 dark:text-accent-400" />
             <div class="min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-200">
-                <p class="font-semibold">{{ __('How to follow up a lead') }}</p>
-                <p class="mt-1">{{ __('Open the lead, note what the customer said, then press the follow up button to record it. Every recorded follow up shows in the timeline and is visible to Management.') }}</p>
+                <p class="font-semibold">{{ __('Quick guide: 3 steps to follow up') }}</p>
+                <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <div class="rounded-xl border border-accent-200/70 bg-white/70 px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
+                        <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">1</span>
+                        <p class="mt-0.5">{{ __('Pick a prospect from the table.') }}</p>
+                    </div>
+                    <div class="rounded-xl border border-accent-200/70 bg-white/70 px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
+                        <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">2</span>
+                        <p class="mt-0.5">{{ __('Click the + Follow Up button in the Actions column.') }}</p>
+                    </div>
+                    <div class="rounded-xl border border-accent-200/70 bg-white/70 px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
+                        <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">3</span>
+                        <p class="mt-0.5">{{ __('Fill the interaction result and save it to the timeline.') }}</p>
+                    </div>
+                </div>
                 @if($newLeadCount > 0)
-                    <p class="mt-1 font-medium text-accent-700 dark:text-accent-300">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
+                    <p class="mt-2 font-medium text-accent-700 dark:text-accent-300">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
                 @endif
             </div>
             <button type="button" @click="localStorage.setItem('sales_followup_tips', 'off'); tips = false"
@@ -148,7 +169,9 @@
                                     @if($lead->has_done_fu)
                                         <x-icon-button as="a" icon="mail" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
                                     @else
-                                        <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
+                                        <span @if($loop->first) data-tour="followup" @endif>
+                                            <x-icon-button as="a" icon="add" label="{{ __('Follow Up') }}" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
+                                        </span>
                                     @endif
                         </tr>
                     @empty
@@ -170,4 +193,9 @@
             {{ $leads->links() }}
         </div>
     </div>
+    </div>
+
+    @if($leads->isNotEmpty())
+        <script type="module" src="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/leads-tour.js') }}"></script>
+    @endif
 </x-app-layout>
