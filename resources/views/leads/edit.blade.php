@@ -129,22 +129,12 @@
         {{-- Detail --}}
         <section class="border-t border-slate-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-                <div>
-                    <label for="location" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                        {{ __('Location') }}
-                        <x-info-tip tip="{{ __('Area or city of the lead. Used for grouping and follow-up coverage.') }}" />
-                    </label>
-                    <input type="text" name="location" id="location" value="{{ old('location', $lead->location) }}"
-                           placeholder="{{ __('e.g. West Jakarta') }}"
-                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                    @error('location') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-                <div>
+                <div class="md:col-span-2">
                     <label for="kebutuhan" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
                         {{ __('Requirement') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('Summary of what the user needs: product, quantity, and whether installation is included.') }}" />
                     </label>
-                    <textarea name="kebutuhan" id="kebutuhan" rows="2" required
+                    <textarea name="kebutuhan" id="kebutuhan" rows="4" required data-auto-grow
                               placeholder="{{ __('e.g. Cisco IP Phone 780 Series requirement with installation') }}"
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('kebutuhan', $lead->kebutuhan) }}</textarea>
                     @error('kebutuhan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
@@ -223,4 +213,5 @@
             </button>
         </div>
     </form>
+    @include('partials.auto-grow')
 </x-app-layout>
