@@ -65,7 +65,7 @@
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Source') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Requirement') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Requirement') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Entry Date') }}</th>
                         <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
@@ -114,12 +114,8 @@
                                     <span class="text-slate-400">-</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-right">
-                                @if($lead->kebutuhan)
-                                    <span class="text-sm text-slate-700 whitespace-normal break-words min-w-[200px] inline-block align-bottom">{{ $lead->kebutuhan }}</span>
-                                @else
-                                    <span class="text-slate-400">-</span>
-                                @endif
+                            <td class="px-6 py-4 text-left">
+                                <x-requirement-cell :text="$lead->kebutuhan" />
                             </td>
                             <td class="px-6 py-4 text-center">
                                 @if($lead->incoming_date)
