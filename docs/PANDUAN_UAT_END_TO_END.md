@@ -13,11 +13,11 @@
 
 Centang dulu sebelum testing:
 
-- [ ] Jalankan worktree, bukan website `main`.
-- [ ] Buka `http://IP-SERVER:8001`, bukan `http://IP-SERVER`.
-- [ ] Gunakan incognito/private window.
+- [x] Jalankan worktree, bukan website `main`.
+- [x] Buka `http://IP-SERVER:8001`, bukan `http://IP-SERVER`.
+- [x] Gunakan incognito/private window.
 - [ ] Jangan campur akun Sales dan Admin dalam satu tab.
-- [ ] Gunakan customer/lead dummy untuk testing.
+- [x] Gunakan customer/lead dummy untuk testing.
 - [ ] Jangan menghapus data lama yang sudah ada; buat data baru dengan prefix tanggal.
 - [ ] Jika tampilan tidak berubah: hard refresh `Ctrl+Shift+R`, lalu `php artisan view:clear`.
 - [ ] Ingat: database worktree masih memakai database yang sama dengan website utama.
