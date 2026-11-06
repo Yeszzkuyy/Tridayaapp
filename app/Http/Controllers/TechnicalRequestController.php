@@ -295,8 +295,9 @@ class TechnicalRequestController extends Controller
         // jadwal bentrok, assign ditolak dengan pesan yang jelas.
         $schedule = $this->ensureScheduleFromRequest($technicalRequest, $technician);
 
-        if (! $schedule && (int) $technician->id !== (int) auth()->id()) {
-            // Tanpa jadwal (target date kosong): tetap beri tahu teknisi.
+        // Teknisi SELALU diberi tahu detail task yang di-assign (bukan hanya
+        // notifikasi jadwal), supaya tidak bingung saat klik notifikasi.
+        if ((int) $technician->id !== (int) auth()->id()) {
             $technician->notify(new TechnicianAssignedNotification($technicalRequest->fresh()));
         }
 
