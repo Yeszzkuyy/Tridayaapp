@@ -7,6 +7,7 @@ use App\Models\FollowUp;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\SalesSchedule;
 use App\Models\SalesTarget;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
@@ -265,6 +266,86 @@ class ManageSalesController extends Controller
             ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
 
         return view('sales.dashboard', compact('kpi', 'myKpi', 'salesLeaderboard', 'dueFollowUps', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes', 'meetingsToday', 'meetingsPending'));
+    }
+
+
+    /**
+     * Team Activity — pemantauan harian tim sales untuk Management:
+     * kepatuhan jadwal hari ini, aktivitas harian, lead mengendap, dan funnel.
+     */
+    public function teamActivity(Request $request)
+    {
+        $today = now()->toDateString();
+
+        $salesRoleNames = \Spatie\Permission\Models\Role::query()
+            ->where('name', 'like', 'sales%')
+            ->pluck('name')
+            ->all();
+
+        $salesUsers = User::role($salesRoleNames)->orderBy('name')->get(['id', 'name']);
+
+        $todaySchedules = SalesSchedule::with(['lead.customer', 'assignee'])
+            ->whereDate('start_at', $today)
+            ->where('status', '!=', 'cancelled')
+            ->orderBy('start_at')
+            ->get();
+
+        $overdueSchedules = SalesSchedule::with(['lead.customer', 'assignee'])
+            ->where('start_at', '<', now()->startOfDay())
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->orderBy('start_at')
+            ->get();
+
+        $followUpsToday = FollowUp::query()
+            ->whereDate('created_at', $today)
+            ->selectRaw('created_by, count(*) as total')
+            ->groupBy('created_by')
+            ->pluck('total', 'created_by');
+
+        $leadActivitiesToday = LeadActivity::query()
+            ->whereDate('created_at', $today)
+            ->selectRaw('user_id, count(*) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
+        $rows = $salesUsers->map(function (User $user) use ($todaySchedules, $overdueSchedules, $followUpsToday, $leadActivitiesToday) {
+            $schedules = $todaySchedules->where('assigned_to', $user->id);
+            $done = $schedules->where('status', 'completed')->count();
+            $pending = $schedules->filter(fn ($s) => $s->status !== 'completed' && $s->start_at && $s->start_at->isPast())->count();
+
+            return [
+                'user' => $user,
+                'total' => $schedules->count(),
+                'done' => $done,
+                'pending' => $pending,
+                'upcoming' => max(0, $schedules->count() - $done - $pending),
+                'overdue' => $overdueSchedules->where('assigned_to', $user->id)->count(),
+                'follow_ups' => (int) ($followUpsToday[$user->id] ?? 0),
+                'lead_activities' => (int) ($leadActivitiesToday[$user->id] ?? 0),
+            ];
+        });
+
+        // Lead Warm/Hot yang tidak disentuh follow-up lebih dari 7 hari.
+        $staleLeads = Lead::with(['customer', 'assignee'])
+            ->whereIn('status', ['warm', 'hot'])
+            ->whereNotNull('assigned_to')
+            ->whereDoesntHave('followUps', fn ($q) => $q->where('created_at', '>=', now()->subDays(7)))
+            ->orderByDesc('updated_at')
+            ->limit(12)
+            ->get();
+
+        $funnel = Lead::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return view('manage-sales.team-activity', compact(
+            'rows',
+            'staleLeads',
+            'funnel',
+            'todaySchedules',
+            'overdueSchedules',
+        ));
     }
 
     public function kpi(Request $request, SalesKpiService $salesKpiService)
