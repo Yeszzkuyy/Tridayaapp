@@ -11,7 +11,7 @@
     <form method="GET" class="flex flex-wrap gap-3">
         <select name="project_id" class="rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
             <option value="">{{ __('All Projects') }}</option>
-            @foreach($documents->pluck('project')->unique('id') as $p)
+            @foreach($documents->pluck('project')->filter()->unique('id') as $p)
                 <option value="{{ $p->id }}" {{ request('project_id') == $p->id ? 'selected' : '' }}>{{ $p->project_name }}</option>
             @endforeach
         </select>

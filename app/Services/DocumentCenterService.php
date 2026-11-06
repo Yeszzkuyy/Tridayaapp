@@ -219,7 +219,7 @@ class DocumentCenterService
         return $query->select([
             DB::raw("'project' as source"),
             'pd.id as source_id',
-            DB::raw('NULL as parent_id'),
+            DB::raw('CAST(NULL AS BIGINT) as parent_id'),
             DB::raw('pd.file_name as name'),
             DB::raw('coalesce(inv.invoice_number, cpo.po_number, payinv.invoice_number, p.bast_number) as number'),
             DB::raw('coalesce(inv.customer_po_number, payinv.customer_po_number) as ref_number'),
@@ -276,9 +276,9 @@ class DocumentCenterService
             'pr.status as status',
             'pa.file_path as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
         ]);
     }
 
@@ -299,7 +299,7 @@ class DocumentCenterService
         return $query->select([
             DB::raw("'customer_po' as source"),
             'pr.id as source_id',
-            DB::raw('NULL as parent_id'),
+            DB::raw('CAST(NULL AS BIGINT) as parent_id'),
             DB::raw('coalesce(pr.po_number, pr.proposal_number) as name'),
             DB::raw('coalesce(pr.po_number, pr.proposal_number) as number'),
             DB::raw('pr.proposal_number as ref_number'),
@@ -313,9 +313,9 @@ class DocumentCenterService
             'pr.status as status',
             'pr.po_document_path as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
         ]);
     }
 
@@ -329,7 +329,7 @@ class DocumentCenterService
             ->select([
                 DB::raw("'supplier_invoice' as source"),
                 'si.id as source_id',
-                DB::raw('NULL as parent_id'),
+                DB::raw('CAST(NULL AS BIGINT) as parent_id'),
                 'si.supplier_invoice_number as name',
                 'si.supplier_invoice_number as number',
                 'spo.po_number as ref_number',
@@ -343,9 +343,9 @@ class DocumentCenterService
                 'si.status as status',
                 'si.invoice_file_path as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
             ]);
     }
 
@@ -375,9 +375,9 @@ class DocumentCenterService
                 'si.status as status',
                 'sp.proof_file as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
             ]);
     }
 
@@ -391,7 +391,7 @@ class DocumentCenterService
             ->select([
                 DB::raw("'goods_receipt' as source"),
                 'gr.id as source_id',
-                DB::raw('NULL as parent_id'),
+                DB::raw('CAST(NULL AS BIGINT) as parent_id'),
                 DB::raw("coalesce(gr.supplier_delivery_note_no, gr.receipt_number) as name"),
                 'gr.receipt_number as number',
                 'spo.po_number as ref_number',
@@ -405,9 +405,9 @@ class DocumentCenterService
                 DB::raw('NULL as status'),
                 'gr.attachment_path as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
             ]);
     }
 
@@ -430,16 +430,16 @@ class DocumentCenterService
                 end as category"),
                 DB::raw("coalesce(ld.category, 'other') as subcategory"),
                 'l.customer_id as customer_id',
-                DB::raw('NULL as project_id'),
-                DB::raw('NULL as doc_date'),
+                DB::raw('CAST(NULL AS BIGINT) as project_id'),
+                DB::raw('CAST(NULL AS TIMESTAMP) as doc_date'),
                 'ld.created_at as uploaded_at',
-                DB::raw('NULL as uploader_id'),
+                DB::raw('CAST(NULL AS BIGINT) as uploader_id'),
                 DB::raw('NULL as status'),
                 'ld.file_path as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
             ]);
     }
 
@@ -451,23 +451,23 @@ class DocumentCenterService
             ->select([
                 DB::raw("'npwp' as source"),
                 'c.id as source_id',
-                DB::raw('NULL as parent_id'),
+                DB::raw('CAST(NULL AS BIGINT) as parent_id'),
                 DB::raw("coalesce(c.npwp_document_name, 'NPWP') as name"),
                 DB::raw('NULL as number'),
                 DB::raw('NULL as ref_number'),
                 DB::raw("'customer' as category"),
                 DB::raw("'npwp' as subcategory"),
                 'c.id as customer_id',
-                DB::raw('NULL as project_id'),
-                DB::raw('NULL as doc_date'),
+                DB::raw('CAST(NULL AS BIGINT) as project_id'),
+                DB::raw('CAST(NULL AS TIMESTAMP) as doc_date'),
                 'c.updated_at as uploaded_at',
-                DB::raw('NULL as uploader_id'),
+                DB::raw('CAST(NULL AS BIGINT) as uploader_id'),
                 DB::raw('NULL as status'),
                 'c.npwp_document_path as file_path',
                 DB::raw('NULL as ref_type'),
-                DB::raw('NULL as ref_id'),
+                DB::raw('CAST(NULL AS BIGINT) as ref_id'),
                 DB::raw('NULL as raw_type'),
-                DB::raw('NULL as raw_category_id'),
+                DB::raw('CAST(NULL AS BIGINT) as raw_category_id'),
             ]);
     }
 
