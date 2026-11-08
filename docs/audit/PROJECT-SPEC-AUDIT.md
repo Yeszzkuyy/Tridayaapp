@@ -11,10 +11,10 @@
 
 ### 1.1 Gambaran Umum & Lingkup Sistem
 **3DY App** adalah sistem ERP operasional terpadu untuk grup **PT Tridaya** yang menaungi 4 entitas perseroan:
-1. **NTI** (`PT Nusantara Teknologi Inovasi`)
-2. **MGK** (`PT Multi Global Kreasi`)
-3. **TPS** (`PT Tridaya Pilar Sinergi`)
-4. **WANI** (`PT Wani Solusi Mandiri`)
+1. **NTI** (`PT Nusantara Tridaya Inovasi`)
+2. **MGK** (`PT Mega Gada Kencana`)
+3. **TPS** (`PT Tridaya Piranti Selaras`)
+4. **WANI** (`PT Wiskira Adinata Indonesia`)
 *(didefinisikan pada konstanta `Lead::PT_GROUPS` dan `WhatsappAccount::GROUPS`)*.
 
 Sistem mengelola seluruh rantai nilai bisnis B2B end-to-end dalam arsitektur monolit modern (Blade + Alpine.js 3.4 + TailwindCSS 3.1 + React 19 Islands + Laravel Reverb WebSocket):
