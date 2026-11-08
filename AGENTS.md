@@ -111,8 +111,6 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 | `/home/raafi/3dyapp-contacts` | `feature/cus-contact-source` | Satu sumber kontak customer (PIC) |
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
-| `/home/yeski/3dyapp-handoff` | `feature/handoff-admin` | Audit Nov 2026 — Sesi A: handoff Sales → Admin (`docs/plans/PLAN-SALES-HANDOFF-ADMIN.md`) |
-| `/home/yeski/3dyapp-notif-tek` | `feature/notif-teknisi` | Audit Nov 2026 — Sesi B: notifikasi & teknisi (`docs/plans/PLAN-SISTEM-NOTIFIKASI-TEKNISI.md`) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
