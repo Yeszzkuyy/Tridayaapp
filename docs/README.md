@@ -53,6 +53,7 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 - `audit/AUDIT-UNUSED-PAGES.md`
 - `audit/AUDIT-SECURITY.md`
 - `audit/AUDIT-ROLE-PERMISSION.md`
+- `audit/PROJECT-SPEC-AUDIT.md`
 
 ## Referensi
 
@@ -83,5 +84,5 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 
 ## Catatan
 
-`PROJECT_SPEC_AUDIT.md` masih di root repo karena sedang diubah sesi lain.
-Setelah sesi itu commit, file dipindah ke `audit/PROJECT-SPEC-AUDIT.md`.
+Dokumen spesifikasi lengkap dan hasil bedah codebase ada di
+`audit/PROJECT-SPEC-AUDIT.md`.
