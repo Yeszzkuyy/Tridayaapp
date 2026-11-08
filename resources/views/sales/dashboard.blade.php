@@ -159,6 +159,9 @@
         </div>
     @endif
 
+    {{-- Customer-Centric Hub: daftar customer milik sales + aksi cepat --}}
+    @include('sales.partials.customer-hub', ['hubResetRoute' => route('sales.dashboard')])
+
     @php
         $uid = auth()->id();
         $activeSeries = \App\Support\SparklineBuilder::monthlyCounts(

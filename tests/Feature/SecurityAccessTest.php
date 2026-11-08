@@ -143,8 +143,8 @@ class SecurityAccessTest extends TestCase
 
     /**
      * H5: Bukti transfer customer hanya untuk permission proof khusus.
-     * Sales tetap boleh melihat halaman show (read-only recap), tetapi
-     * tidak boleh mengunduh file bukti.
+     * Sales tidak memegang view-admin lagi, jadi halaman pembayaran pun
+     * tidak bisa dibuka.
      */
     public function test_payment_proof_sales_forbidden_but_show_allowed(): void
     {
@@ -168,7 +168,7 @@ class SecurityAccessTest extends TestCase
 
         $sales = $this->loginAs('sales');
         $this->actingAs($sales)->get(route('admin.payments.proof', $payment))->assertForbidden();
-        $this->actingAs($sales)->get(route('admin.payments.show', $payment))->assertOk();
+        $this->actingAs($sales)->get(route('admin.payments.show', $payment))->assertForbidden();
     }
 
     /**

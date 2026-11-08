@@ -22,7 +22,7 @@ class SalesKpiTargetTest extends TestCase
         return $user;
     }
 
-    public function test_sales_dashboard_renders_with_personal_kpi_and_leaderboard(): void
+    public function test_sales_dashboard_renders_with_personal_kpi_without_team_leaderboard(): void
     {
         $salesUser = $this->userWithRole('sales');
 
@@ -39,8 +39,22 @@ class SalesKpiTargetTest extends TestCase
 
         $response->assertOk();
         $response->assertViewHas('myKpi');
-        $response->assertViewHas('salesLeaderboard');
+        // Privasi: sales murni tidak melihat papan peringkat tim.
+        $response->assertViewHas('salesLeaderboard', fn ($board) => $board->isEmpty());
         $response->assertSee(__('KPI Personal Saya'));
+        $response->assertSee(__('Customer Hub'));
+        $response->assertDontSee(__('Peringkat & Target Bulanan Sales'));
+    }
+
+    public function test_management_sees_team_leaderboard_on_sales_dashboard(): void
+    {
+        $mgmtUser = $this->userWithRole('management');
+        $this->userWithRole('sales');
+
+        $response = $this->actingAs($mgmtUser)->get(route('sales.dashboard'));
+
+        $response->assertOk();
+        $response->assertViewHas('salesLeaderboard', fn ($board) => $board->isNotEmpty());
         $response->assertSee(__('Peringkat & Target Bulanan Sales'));
     }
 

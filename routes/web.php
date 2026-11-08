@@ -718,6 +718,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/activity-log', [ManageSalesController::class, 'activityLog'])->name('activity-log');
         Route::get('/activity-log/feed', [ManageSalesController::class, 'activityLogFeed'])->name('activity-log.feed');
         Route::get('/team-activity', [ManageSalesController::class, 'teamActivity'])->name('team-activity');
+        // Drill-down supervisi: snapshot dashboard + customer milik satu sales.
+        Route::get('/sales-rep/{user}', [ManageSalesController::class, 'showSalesRep'])->name('sales-rep');
         Route::get('/{lead}/edit', [ManageSalesController::class, 'edit'])->name('edit');
         Route::put('/{lead}', [ManageSalesController::class, 'update'])->name('update');
         Route::post('/{lead}/assign', [ManageSalesController::class, 'assign'])->name('assign');

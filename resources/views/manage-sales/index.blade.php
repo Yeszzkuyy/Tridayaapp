@@ -108,7 +108,11 @@
                 <div class="mt-3 space-y-1 pt-2">
                     @foreach($bySales as $row)
                         <p class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <span class="truncate">{{ $row->assignee?->name ?? '-' }}</span>
+                            @if($row->assignee)
+                                <a href="{{ route('manage-sales.sales-rep', $row->assignee) }}" class="truncate transition-colors hover:text-accent-600 dark:hover:text-accent-400">{{ $row->assignee->name }}</a>
+                            @else
+                                <span class="truncate">-</span>
+                            @endif
                             <span class="font-bold text-slate-700 dark:text-slate-200 tabular-nums">{{ $row->total }}</span>
                         </p>
                     @endforeach

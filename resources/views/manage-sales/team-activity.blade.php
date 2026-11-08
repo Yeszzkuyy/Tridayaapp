@@ -80,7 +80,7 @@
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-2">
                                     <x-user-avatar :user="$row['user']" size="w-7 h-7" text="text-[10px]" :clickable="false" />
-                                    <span class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $row['user']->name }}</span>
+                                    <a href="{{ route('manage-sales.sales-rep', $row['user']) }}" class="truncate text-sm font-medium text-slate-800 transition-colors hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">{{ $row['user']->name }}</a>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-center text-sm tabular-nums text-slate-700 dark:text-slate-200">{{ $row['total'] }}</td>

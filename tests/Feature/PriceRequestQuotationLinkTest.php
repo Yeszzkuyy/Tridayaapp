@@ -33,6 +33,14 @@ class PriceRequestQuotationLinkTest extends TestCase
             'status' => 'hot',
         ]);
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $sales->id,
+        ]);
+
         $priceRequest = PriceRequest::create([
             'customer_id' => $customer->id,
             'requested_by' => $sales->id,

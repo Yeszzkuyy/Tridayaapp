@@ -76,11 +76,13 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Divisi
         $mk('marketing', ['manage-marketing', 'view-marketing', ...$common]);
-        $mk('sales', ['manage-sales', 'view-sales', 'view-admin', ...$common]);
+        $mk('sales', ['manage-sales', 'view-sales', ...$common]);
 
         // Sales per PT: izin sama dengan sales, tulis dibatasi PT-nya (PtAccess).
         // Satu user boleh pegang banyak PT. Tanpa role PT = tanpa batas.
-        $salesPerms = ['manage-sales', 'view-sales', 'view-admin', ...$common];
+        // Catatan: view-admin sengaja TIDAK diberikan ke sales supaya
+        // dokumen/invoice internal Admin tidak bisa diintip sesama sales.
+        $salesPerms = ['manage-sales', 'view-sales', ...$common];
         foreach (Lead::PT_GROUPS as $pt) {
             $mk('sales-'.strtolower($pt), $salesPerms);
         }

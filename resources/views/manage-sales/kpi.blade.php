@@ -117,7 +117,7 @@
                 </p>
                 @if($teamSummary['top_performer'])
                     <p class="mt-2 text-lg font-bold text-slate-800 dark:text-slate-100 truncate">
-                        {{ $teamSummary['top_performer']['user']->name }}
+                        <a href="{{ route('manage-sales.sales-rep', $teamSummary['top_performer']['user']) }}" class="transition-colors hover:text-accent-600 dark:hover:text-accent-400">{{ $teamSummary['top_performer']['user']->name }}</a>
                     </p>
                     <p class="mt-1 text-xs text-slate-600 dark:text-slate-300 font-semibold tabular-nums">
                         Rp {{ number_format($teamSummary['top_performer']['actual_revenue'], 0, ',', '.') }} · {{ $teamSummary['top_performer']['actual_deals'] }} Deals
@@ -174,7 +174,7 @@
                                             {{ strtoupper(substr($row['user']->name, 0, 2)) }}
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="font-bold text-slate-800 dark:text-slate-100 truncate">{{ $row['user']->name }}</p>
+                                            <a href="{{ route('manage-sales.sales-rep', $row['user']) }}" class="block truncate font-bold text-slate-800 transition-colors hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">{{ $row['user']->name }}</a>
                                             <p class="text-xs text-slate-400 truncate">{{ $row['user']->email }}</p>
                                         </div>
                                     </div>

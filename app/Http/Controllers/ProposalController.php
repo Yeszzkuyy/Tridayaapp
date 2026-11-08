@@ -141,6 +141,20 @@ class ProposalController extends Controller
     }
 
     /**
+     * Lead/customer dianggap sudah "hidup" bila minimal ada satu catatan
+     * follow-up (DAR). Dipakai sebagai gerbang anti-ghosting.
+     */
+    private function hasFollowUpNotes(?Lead $lead): bool
+    {
+        if (! $lead) {
+            return false;
+        }
+
+        return $lead->followUps()->exists()
+            || ($lead->customer?->followUps()->exists() ?? false);
+    }
+
+    /**
      * Tulis quotation (ready/send/respond/PO/convert): HANYA pemilik.
      * Management & CEO hanya baca — tidak memperoleh hak ubah karena
      * punya akses baca (matriks Role & Permission).
@@ -429,6 +443,14 @@ class ProposalController extends Controller
 
         $lead = Lead::with('customer')->findOrFail($validated['lead_id']);
         $this->authorize('view', $lead);
+
+        // Anti-ghosting: jangan buat penawaran untuk lead yang belum pernah
+        // dicatat update/follow-up-nya.
+        if (! $this->hasFollowUpNotes($lead)) {
+            return back()->withInput()->withErrors([
+                'lead_id' => __('Record at least one follow-up update before creating a quotation.'),
+            ]);
+        }
 
         $priceRequest = null;
         if (! empty($validated['price_request_id'])) {
@@ -753,6 +775,14 @@ class ProposalController extends Controller
     {
         $this->authorizeManage($proposal);
         abort_unless($proposal->status === 'accepted', 422);
+
+        // Anti-ghosting: PO hanya boleh diunggah bila lead sudah punya
+        // catatan follow-up/DAR.
+        if (! $this->hasFollowUpNotes($proposal->lead)) {
+            return back()->withErrors([
+                'po_file' => __('Record at least one follow-up update before uploading the customer PO.'),
+            ]);
+        }
 
         $validated = $request->validate(array_merge([
             // File wajib bila belum ada PO tersimpan; bila sudah ada, boleh

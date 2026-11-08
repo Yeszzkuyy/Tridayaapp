@@ -55,6 +55,14 @@ class PurchasingHandoffTest extends TestCase
             $lead->update(['assigned_to' => $assignedTo]);
         }
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $assignedTo,
+        ]);
+
         return $lead;
     }
 
@@ -233,10 +241,10 @@ class PurchasingHandoffTest extends TestCase
         $proposal = $this->makeProposal($this->makeLead($owner->id), 'accepted', $owner->id);
         $this->uploadPo($proposal, $owner);
 
-        // Antrean boleh dibuka (view-admin read-only) tapi hanya quotation sendiri.
+        // Sales tidak lagi memegang view-admin: antrean purchasing tertutup
+        // total, termasuk quotation milik sales lain.
         $this->actingAs($other)->get(route('admin.purchasing.index'))
-            ->assertOk()
-            ->assertDontSee($proposal->proposal_number);
+            ->assertForbidden();
 
         $this->actingAs($other)->get(route('admin.purchasing.show', $proposal))->assertForbidden();
     }

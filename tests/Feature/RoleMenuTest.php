@@ -99,10 +99,10 @@ class RoleMenuTest extends TestCase
         $res = $this->actingAs($u)->get('/sales/my-leads')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/sales/my-leads', '/customers', '/trash', '/admin/invoices'] as $link) {
+        foreach (['/sales/my-leads', '/customers', '/trash'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for sales");
         }
-        foreach (['/leads"', '/monitoring'] as $link) {
+        foreach (['/leads"', '/monitoring', '/admin/invoices'] as $link) {
             $this->assertStringNotContainsString($link, $html, "$link should be hidden for sales");
         }
 
@@ -113,8 +113,8 @@ class RoleMenuTest extends TestCase
         // Sales read-only pada Project: lihat boleh, mutasi 403
         $this->actingAs($u)->get('/projects')->assertOk();
         $this->actingAs($u)->get('/teknisi/dashboard')->assertForbidden();
-        // Sales read-only pada Admin: lihat boleh, mutasi 403 ( tested di RoleMatrixTest )
-        $this->actingAs($u)->get('/admin/invoices')->assertOk();
+        // view-admin dicabut dari sales: halaman Admin/internal tertutup total.
+        $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
     }
 
     public function test_admin_menu_and_access()

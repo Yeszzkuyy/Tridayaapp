@@ -117,9 +117,14 @@ class ProjectDocumentController extends Controller
 
     public function storeForCustomer(Request $request, \App\Models\Customer $customer)
     {
-        $canUpload = auth()->user()->can('manage-technician')
-            || auth()->user()->can('manage-admin')
-            || auth()->user()->can('update', $customer);
+        $user = auth()->user();
+        $ownsCustomer = $customer->leads()->where('assigned_to', $user->id)->exists()
+            || $customer->projects()->where('sales_user_id', $user->id)->exists();
+
+        $canUpload = $user->can('manage-technician')
+            || $user->can('manage-admin')
+            || $user->can('update', $customer)
+            || $ownsCustomer;
         abort_unless($canUpload, 403);
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:20480', \App\Rules\SecureFile::documents()],

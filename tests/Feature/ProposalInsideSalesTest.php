@@ -44,6 +44,14 @@ class ProposalInsideSalesTest extends TestCase
         ]);
         $lead->update(['assigned_to' => $sales->id]);
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $sales->id,
+        ]);
+
         return $lead;
     }
 

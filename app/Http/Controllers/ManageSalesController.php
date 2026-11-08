@@ -157,18 +157,75 @@ class ManageSalesController extends Controller
             ->with('success_card', true);
     }
 
-    public function dashboard(SalesKpiService $salesKpiService)
+    public function dashboard(Request $request, SalesKpiService $salesKpiService)
     {
-        $ownLead = fn ($q) => $q->where('assigned_to', auth()->id());
+        $user = auth()->user();
+        $data = $this->dashboardData($request, $user, $salesKpiService);
+
+        // Leaderboard hanya untuk supervisor. Sales murni tidak boleh
+        // melihat performa dan nama sales lain.
+        $data['salesLeaderboard'] = $this->canSupervise($user)
+            ? $salesKpiService->getLeaderboard(now()->month, now()->year)
+            : collect();
+
+        return view('sales.dashboard', $data);
+    }
+
+    /**
+     * Snapshot dashboard + customer milik satu sales untuk supervisi
+     * Lead of Sales (Bu Yanita). Sales murni ditolak oleh middleware rute.
+     */
+    public function showSalesRep(Request $request, User $user, SalesKpiService $salesKpiService)
+    {
+        abort_unless($this->isSalesRep($user), 404);
+
+        $data = $this->dashboardData($request, $user, $salesKpiService);
+        $data['rep'] = $user;
+        $data['salesLeaderboard'] = $salesKpiService->getLeaderboard(now()->month, now()->year);
+        $data['repActivities'] = FollowUp::with('customer')
+            ->where(function ($q) use ($user) {
+                $q->whereHas('lead', fn ($l) => $l->where('assigned_to', $user->id))
+                    ->orWhere('created_by', $user->id);
+            })
+            ->latest('created_at')
+            ->limit(10)
+            ->get();
+        $data['repLeads'] = Lead::with('customer')
+            ->where('assigned_to', $user->id)
+            ->latest('updated_at')
+            ->limit(5)
+            ->get();
+
+        return view('manage-sales.sales-rep', $data);
+    }
+
+    private function canSupervise(User $user): bool
+    {
+        return $user->hasAnyRole(['management', 'ceo', 'super-admin'])
+            || $user->can('manage-sales-leads');
+    }
+
+    private function isSalesRep(User $user): bool
+    {
+        return $user->hasRole('sales')
+            || $user->roles->contains(fn ($role) => str_starts_with($role->name, 'sales-'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function dashboardData(Request $request, User $user, SalesKpiService $salesKpiService): array
+    {
+        $ownLead = fn ($q) => $q->where('assigned_to', $user->id);
         // Follow Up tidak menghitung Meeting (menu Meeting terpisah).
-        $ownActivity = function ($q) use ($ownLead) {
+        $ownActivity = function ($q) use ($ownLead, $user) {
             $q->where(fn ($t) => $t->whereNull('type')->orWhere('type', '!=', 'meeting'))
-                ->where(function ($w) use ($ownLead) {
+                ->where(function ($w) use ($ownLead, $user) {
                     $w->whereHas('lead', $ownLead)
-                        ->orWhere(fn ($x) => $x->whereNull('lead_id')->where('created_by', auth()->id()));
+                        ->orWhere(fn ($x) => $x->whereNull('lead_id')->where('created_by', $user->id));
                 });
         };
-        $mine = fn () => Lead::where('assigned_to', auth()->id());
+        $mine = fn () => Lead::where('assigned_to', $user->id);
         $kpi = [
             'active' => $mine()->whereNotIn('status', ['won', 'lost'])->count(),
             'won_month' => $mine()->where('status', 'won')
@@ -187,17 +244,16 @@ class ManageSalesController extends Controller
                 ->whereDate('follow_up_date', '>', today())->count(),
         ];
 
-        $meetingBase = \App\Models\FollowUp::query()->meetings()->where(function ($w) {
-            $w->where('created_by', auth()->id())
-                ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', auth()->id()));
+        $meetingBase = \App\Models\FollowUp::query()->meetings()->where(function ($w) use ($user) {
+            $w->where('created_by', $user->id)
+                ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
         });
         $meetingsToday = (clone $meetingBase)->whereDate('follow_up_date', today())->count();
         $meetingsPending = (clone $meetingBase)->whereNull('completed_at')
             ->whereDate('follow_up_date', '<=', today())->count();
 
-        // KPI Personal & Leaderboard Tim Sales
-        $myKpi = $salesKpiService->getUserKpi(auth()->user(), now()->month, now()->year);
-        $salesLeaderboard = $salesKpiService->getLeaderboard(now()->month, now()->year);
+        // KPI Personal
+        $myKpi = $salesKpiService->getUserKpi($user, now()->month, now()->year);
 
         $dueFollowUps = FollowUp::with('customer')
             ->where($ownActivity)
@@ -235,7 +291,6 @@ class ManageSalesController extends Controller
         $weekEnd = now()->endOfWeek()->toDateString();
 
         // Income bulan berjalan dari invoice admin, dirinci per PT/company.
-        // Sumber sementara (opsi A); diganti rekap admin bila modulnya lengkap.
         $incomeRows = Invoice::selectRaw('customers.pt_group as pt_group, SUM(invoices.amount) as total')
             ->join('customers', 'customers.id', '=', 'invoices.customer_id')
             ->whereMonth('invoices.issue_date', now()->month)
@@ -248,10 +303,10 @@ class ManageSalesController extends Controller
         $incomeTotal = $incomeMonth->sum();
 
         // Ringkasan agenda sales milik sendiri (jadwal saya: PIC/creator/lead saya).
-        $ownSchedules = fn ($q) => $q->where(function ($w) {
-            $w->where('sales_schedules.assigned_to', auth()->id())
-                ->orWhere('sales_schedules.created_by', auth()->id())
-                ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', auth()->id()));
+        $ownSchedules = fn ($q) => $q->where(function ($w) use ($user) {
+            $w->where('sales_schedules.assigned_to', $user->id)
+                ->orWhere('sales_schedules.created_by', $user->id)
+                ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
         });
         $scheduleSummary = [
             'today' => \App\Models\SalesSchedule::where($ownSchedules)
@@ -265,8 +320,128 @@ class ManageSalesController extends Controller
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
 
-        return view('sales.dashboard', compact('kpi', 'myKpi', 'salesLeaderboard', 'dueFollowUps', 'myTasks', 'donutSales', 'funnelTotal', 'weekStart', 'weekEnd', 'incomeMonth', 'incomeTotal', 'scheduleSummary', 'scheduleTypes', 'meetingsToday', 'meetingsPending'));
+        // Customer-Centric Hub: pencarian cepat + filter tahap.
+        $hubSearch = trim((string) $request->query('q', ''));
+        $hubStage = trim((string) $request->query('stage', ''));
+        $customerHub = $this->customerHubRows($user, $hubSearch, $hubStage);
+        $hubStages = [
+            'po_verified' => __('PO Verified'),
+            'quotation_sent' => __('Quotation Sent'),
+            'project_running' => __('Project Running'),
+            'invoice_paid' => __('Invoice Paid'),
+        ];
+
+        return compact(
+            'myKpi',
+            'dueFollowUps',
+            'myTasks',
+            'donutSales',
+            'funnelTotal',
+            'weekStart',
+            'weekEnd',
+            'incomeMonth',
+            'incomeTotal',
+            'scheduleSummary',
+            'scheduleTypes',
+            'meetingsToday',
+            'meetingsPending',
+            'kpi',
+            'customerHub',
+            'hubSearch',
+            'hubStage',
+            'hubStages',
+        );
     }
+
+    /**
+     * Ambil customer yang benar-benar dipegang sales: lead yang di-assign,
+     * proposal yang dia buat, atau proyek dengan sales_user_id miliknya.
+     */
+    private function customerHubRows(User $user, string $search, string $stage): \Illuminate\Support\Collection
+    {
+        $customers = Customer::query()
+            ->where(function ($q) use ($user) {
+                $q->whereHas('leads', fn ($l) => $l->where('assigned_to', $user->id))
+                    ->orWhereHas('leads.proposals', fn ($p) => $p->where('created_by', $user->id))
+                    ->orWhereHas('projects', fn ($p) => $p->where('sales_user_id', $user->id));
+            })
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($w) use ($search) {
+                    $w->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('company', 'like', '%'.$search.'%')
+                        ->orWhere('contact_person', 'like', '%'.$search.'%');
+                });
+            })
+            ->with([
+                'leads' => fn ($q) => $q->with(['proposals' => fn ($p) => $p->orderByDesc('updated_at')])->orderByDesc('updated_at'),
+                'projects' => fn ($q) => $q->with('status')->orderByDesc('updated_at'),
+                'invoices',
+                'followUps' => fn ($q) => $q->orderByDesc('id'),
+            ])
+            ->withCount('documents')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        return $customers->map(function (Customer $customer) {
+            [$label, $tone, $key] = $this->customerStage($customer);
+            $lastFollowUp = $customer->followUps->first();
+            $poDocuments = $customer->leads
+                ->flatMap(fn ($lead) => $lead->proposals)
+                ->whereNotNull('po_document_path')
+                ->count();
+
+            return [
+                'customer' => $customer,
+                'lead' => $customer->leads->first(),
+                'stage' => $label,
+                'stage_key' => $key,
+                'tone' => $tone,
+                'last_note' => $lastFollowUp?->description,
+                'last_note_at' => $lastFollowUp?->created_at,
+                'documents' => (int) $customer->documents_count + $poDocuments,
+            ];
+        })->when($stage !== '', fn ($rows) => $rows->where('stage_key', $stage)->values())
+            ->take(15)
+            ->values();
+    }
+
+    /** @return array{0: string, 1: string, 2: string} label, tone, key */
+    private function customerStage(Customer $customer): array
+    {
+        $proposal = $customer->leads
+            ->flatMap(fn ($lead) => $lead->proposals)
+            ->sortByDesc('updated_at')
+            ->first();
+        $invoice = $customer->invoices->sortByDesc('issue_date')->first();
+        $project = $customer->projects->sortByDesc('updated_at')->first();
+        $lead = $customer->leads->first();
+        $projectStatus = strtolower((string) $project?->status?->name);
+
+        if ($invoice?->status === 'paid') {
+            return [__('Invoice Paid'), 'emerald', 'invoice_paid'];
+        }
+
+        if ($project && ! in_array($projectStatus, ['done', 'cancelled', 'cancel'], true)) {
+            return [__('Project Running'), 'violet', 'project_running'];
+        }
+
+        if ($proposal?->po_verified_at) {
+            return [__('PO Verified'), 'indigo', 'po_verified'];
+        }
+
+        if ($proposal && in_array($proposal->status, ['sent', 'viewed'], true)) {
+            return [__('Quotation Sent'), 'blue', 'quotation_sent'];
+        }
+
+        if ($proposal) {
+            return [__('Quotation').' '.ucfirst((string) $proposal->status), 'sky', 'quotation_'.$proposal->status];
+        }
+
+        $status = $lead?->status ?? 'cool';
+
+        return [Lead::salesStatusLabel($status), $status === 'hot' ? 'orange' : 'slate', 'lead_'.$status];
+    }
+
 
 
     /**

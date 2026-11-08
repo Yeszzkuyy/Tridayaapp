@@ -58,9 +58,9 @@ class RoleMatrixTest extends TestCase
 
     public function test_cross_division_read_only(): void
     {
-        // Sales baca admin, tidak bisa tulis.
+        // Sales tidak lagi memegang view-admin: invoice internal tertutup.
         $this->actingAs($this->loginAs('sales'));
-        $this->get(route('admin.invoices.index'))->assertOk();
+        $this->get(route('admin.invoices.index'))->assertForbidden();
         $this->get(route('admin.invoices.edit', $this->invoice()))->assertForbidden(); // form create sudah dihapus, edit tetap gerbang manage-admin
 
         // Admin baca sales, tidak bisa tulis.
