@@ -10,7 +10,7 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 | `plans/` | Rencana aktif, nama `PLAN-*.md`, status jelas |
 | `audit/` | Hasil audit read-only per modul |
 | `reference/` | Acuan desain, database, arsitektur, dan PRD |
-| `ops/` | Runbook dan panduan operasional |
+| `panduan/` | Runbook dan panduan operasional |
 | `archive/` | Dokumen lama/superseded, disimpan untuk riwayat |
 
 ## Daftar Rencana
@@ -22,7 +22,6 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 | [PLAN-SALES-QUOTATION](plans/PLAN-SALES-QUOTATION.md) | Siap Dikerjakan | Revamp Proposal menjadi Quotation |
 | [PLAN-SALES-EKOSISTEM](plans/PLAN-SALES-EKOSISTEM.md) | Belum Dikerjakan | Ekosistem Sales & Quotation (draft V2) |
 | [PLAN-SALES-DAR-TIMELINE](plans/PLAN-SALES-DAR-TIMELINE.md) | Belum Dikerjakan | Integrasi DAR & timeline follow up |
-| [PLAN-SALES-HANDOFF-ADMIN](plans/PLAN-SALES-HANDOFF-ADMIN.md) | Siap Dikerjakan | Handoff Sales ke Admin (11/12 item merge) |
 
 ### Admin
 
@@ -40,8 +39,6 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 
 | Plan | Status | Keterangan |
 |---|---|---|
-| [PLAN-SISTEM-AUDIT-NOVEMBER](plans/PLAN-SISTEM-AUDIT-NOVEMBER.md) | Siap Dikerjakan | Konteks audit November + 3 item terbuka |
-| [PLAN-SISTEM-NOTIFIKASI-TEKNISI](plans/PLAN-SISTEM-NOTIFIKASI-TEKNISI.md) | Siap Dikerjakan | Notifikasi & teknisi (sisa UM-1, TEK-5) |
 | [PLAN-SISTEM-ROADMAP-DESEMBER](plans/PLAN-SISTEM-ROADMAP-DESEMBER.md) | Belum Dikerjakan | Roadmap Desember & AI Agent |
 
 ## Audit
@@ -69,12 +66,20 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 - `reference/PRD-PROJECT-WORKFLOW.md`
 - `reference/TENTANG-WEBSITE.md`
 
-## Operasional
+## Panduan
 
-- `ops/DATABASE-RESTORE-RUNBOOK.md`
-- `ops/PANDUAN-UAT-END-TO-END.md`
+- `panduan/DATABASE-RESTORE-RUNBOOK.md`
+- `panduan/PANDUAN-UAT-END-TO-END.md`
 
 ## Arsip
+
+### Rencana Lama
+
+- `archive/plans/PLAN-SALES-HANDOFF-ADMIN.md`
+- `archive/plans/PLAN-SISTEM-NOTIFIKASI-TEKNISI.md`
+- `archive/plans/PLAN-SISTEM-AUDIT-NOVEMBER.md`
+
+### Dokumen Lain
 
 - `archive/COMPLETE-SALES-ECOSYSTEM-PLAN-V1.md`
 - `archive/DARK-PALETTE-OLD.md`
