@@ -17,7 +17,7 @@ fail() {
   {
     echo "✗ commit ditolak: $1"
     echo "  Aturan : AGENTS.md §9 (satu commit = satu paket perubahan)"
-    echo "  Bypass : git commit --no-verify  (hanya keadaan mendesak)"
+    echo "  Bypass : git commit --no-verify  (hanya dengan persetujuan user)"
   } >&2
   exit 1
 }
@@ -27,18 +27,25 @@ case "$SUBJECT" in
   "Merge "*|merge:*) exit 0 ;;
 esac
 
-# 1. format wajib
-if ! [[ "$SUBJECT" =~ ^($TIPE)\(($DIVISI)(/[a-z0-9-]+)?\):[[:space:]]+[^[:space:]].*$ ]]; then
+# 1. format wajib (! opsional untuk breaking change)
+if ! [[ "$SUBJECT" =~ ^($TIPE)\(($DIVISI)(/[a-z0-9-]+)?\)!?:[[:space:]]+[^[:space:]].*$ ]]; then
   fail "format harus '<tipe>(<divisi>/<menu>): <ringkasan>'
-         contoh: feat(sales/meeting): form Add Meeting dengan mode Online/Offline"
+         contoh: feat(sales/meeting): form Add Meeting dengan mode Online/Offline
+         breaking: feat(panel/invoice)!: format nomor invoice baru"
 fi
 
 TIPE_MSG="${BASH_REMATCH[1]}"
 
-# 2. ringkasan generik
-LOWER="$(printf '%s' "$SUBJECT" | tr '[:upper:]' '[:lower:]')"
+# 1b. panjang header maksimal 90 karakter
+if [ "${#SUBJECT}" -gt 90 ]; then
+  fail "header ${#SUBJECT} karakter, maksimal 90. Ringkas ringkasannya (target 72)."
+fi
+
+# 2. ringkasan generik (abaikan prefix tipe/scope, termasuk marker !)
+SUMMARY="$(printf '%s' "$SUBJECT" | sed -E 's/^[a-z]+\([^)]*\)!?:[[:space:]]*//')"
+LOWER="$(printf '%s' "$SUMMARY" | tr '[:upper:]' '[:lower:]')"
 case "$LOWER" in
-  *"): update"*|*"): fix bug"*|*"): tes"*|*"): asdasd"*|*"): wip"*|*"): perbaiki"*|*"): revisi"*)
+  update*|"fix bug"*|tes*|asdasd*|wip*|perbaiki*|revisi*)
     fail "ringkasan terlalu generik — jelaskan paket perubahannya, bukan 'update/revisi/perbaiki'."
     ;;
 esac
@@ -49,9 +56,14 @@ if [ "$TIPE_MSG" = "wip" ] && [ "$BRANCH" = "main" ]; then
   fail "commit wip(...) dilarang di branch main. Kerjakan di branch feature/<divisi>-<topik>."
 fi
 
-# 4. body wajib untuk feat/fix/style
-if [[ "$TIPE_MSG" =~ ^(feat|fix|style)$ ]] && [ -z "$BODY" ]; then
+# 4. body wajib untuk feat/fix/style/refactor/perf
+if [[ "$TIPE_MSG" =~ ^(feat|fix|style|refactor|perf)$ ]] && [ -z "$BODY" ]; then
   fail "tipe '$TIPE_MSG' wajib punya body: apa yang berubah, kenapa, dan baris 'Diverifikasi: ...'."
+fi
+
+# 5. breaking change wajib dideklarasikan di body
+if [[ "$SUBJECT" =~ \)\!:[[:space:]] ]] && ! grep -qiE '^BREAKING-CHANGE:[[:space:]]*[^[:space:]]' "$MSG_FILE"; then
+  fail "header memakai '!' — body wajib punya baris 'BREAKING-CHANGE: <yang rusak + cara migrasi>'."
 fi
 
 exit 0

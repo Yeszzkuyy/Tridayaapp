@@ -389,7 +389,7 @@ Format commit: `<tipe>(<divisi>/<menu>): <perubahan singkat>`
 
 | Bagian | Pilihan |
 |---|---|
-| `<tipe>` | `feat` (fitur baru), `fix` (perbaikan), `style` (tampilan), `test`, `chore`, `docs`, `wip` (checkpoint, **dilarang di `main`**) |
+| `<tipe>` | `feat` (fitur baru), `fix` (perbaikan), `style` (tampilan UI), `refactor` (restrukturisasi tanpa ubah perilaku), `perf` (performa), `revert` (batalkan commit lain), `test`, `chore`, `docs`, `wip` (checkpoint, **dilarang di `main`**) |
 | `<divisi>` | `mkt \| tek \| user \| mon \| cus \| dash \| mng \| sec \| sales \| auth \| trash \| panel \| i18n \| sys` |
 | `<menu>` | nama menu huruf kecil, misal `leads`, `jadwal`, `avatar`, `monitoring`. Boleh dikosongkan untuk `i18n`/`sys` |
 
@@ -417,8 +417,9 @@ Bukan satu file, bukan satu baris, dan bukan satu iterasi.
 **Kapan commit:** hanya setelah (a) kamu cek sendiri di UI/test, dan (b) user
 bilang sudah sesuai. Sebelum itu → `wip(...)`.
 
-**Body wajib untuk `feat`, `fix`, `style`** (2–5 baris): apa yang berubah,
-kenapa/maksud user, dan cara verifikasinya.
+**Body wajib untuk `feat`, `fix`, `style`, `refactor`, `perf`** (2–6 baris,
+wrap ~72 karakter): apa yang berubah, kenapa/maksud user, dan cara
+verifikasinya.
 
 ```text
 feat(sales/meeting): form Add Meeting dengan mode Online/Offline + foto bukti
@@ -456,14 +457,59 @@ git log --oneline main..HEAD          # lihat tumpukan wip
 scripts/squash-wip.sh -m "feat(sales/meeting): ..."
 ```
 
-Hook `.githooks/commit-msg` menegakkan format, body wajib, dan larangan `wip`
-di `main`. Aktifkan sekali dengan `scripts/setup-hooks.sh`. Bypass darurat:
-`git commit --no-verify` (hanya untuk keadaan mendesak).
+Hook `.githooks/commit-msg` menegakkan format, panjang header, body wajib,
+deklarasi breaking change, dan larangan `wip` di `main`. Aktifkan sekali dengan
+`scripts/setup-hooks.sh`. Bypass darurat: `git commit --no-verify` (hanya dengan
+persetujuan user).
 
 Nama branch: `feature/<divisi>-<topik-singkat>` (contoh:
 `feature/mkt-filter-lead`, `feature/tek-jadwal-inggris`).
 Satu-satunya branch i18n adalah `feature/i18n-english` —
 dilarang membuat `feature/i18n-<modul>` baru.
+
+### 9.1 Disiplin commit (adopsi atomic-commits)
+
+Aturan ini melengkapi §9, bukan menggantikan. Sumber: `atomic-commits-plugin`
+(thoughtbot) dan `conventional-commits-framework`, disesuaikan dengan format repo.
+
+**Satu commit = satu jenis pekerjaan**
+
+- `refactor` tidak boleh mengubah perilaku; pisahkan dari `feat`/`fix`.
+- `feat`/`fix` tidak boleh menyelipkan refactor besar atau cleanup kode mati.
+- Kalau satu commit punya dua tujuan yang tidak saling bergantung, pecah.
+  Kata "+" masih boleh untuk beberapa perubahan dalam satu paket user.
+
+**Setiap commit harus deployable**
+
+- Test/lint/build lulus di commit itu, bukan hanya di commit terakhir.
+- Tidak ada fitur setengah jadi, route tanpa view, import mati, atau dead code.
+
+**Rencanakan sebelum coding**
+
+- Urutan: refactor → fitur → cleanup.
+- Stage selektif (`git add -p` atau path spesifik), lalu review `git diff --staged`.
+- Commit body multi-baris lewat `git commit -F - <<'EOF'` agar aman dari quoting.
+
+**Ukuran & format**
+
+- Header maksimal **90 karakter** (target 72); ringkasan tanpa titik di akhir.
+- Body 2–6 baris, wrap ~72 karakter.
+- Target diff **≤200 baris**; kalau lebih, cari seam yang bisa dipisah.
+
+**Breaking change**
+
+- Header pakai `!`: `feat(panel/invoice)!: format nomor invoice baru`
+- Body wajib punya baris `BREAKING-CHANGE: <apa yang rusak + cara migrasi>`.
+- Hook `.githooks/commit-msg` menolak `!` tanpa deklarasi ini.
+
+**Atribusi & larangan**
+
+- Identitas git tetap user; jangan mengubah `user.name`/`user.email`.
+- Default tanpa trailer AI (`Co-Authored-By`/`Assisted-by`). Kalau nanti
+  diputuskan dipakai, satu format tetap untuk seluruh repo.
+- Dilarang commit otomatis tanpa permintaan eksplisit user.
+- `--no-verify` hanya dengan persetujuan user.
+- Dilarang menempelkan prompt/tool log ke body commit.
 
 ## 10. Kebersihan storage & worktree (anti-30GB)
 
