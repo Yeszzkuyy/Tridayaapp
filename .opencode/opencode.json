@@ -1,5 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "permissions": [
+    { "action": "skill", "resource": "*", "effect": "allow" },
+    { "action": "skill", "resource": "21st-*", "effect": "deny" },
+    { "action": "skill", "resource": "context7-mcp", "effect": "deny" },
+    { "action": "skill", "resource": "brand", "effect": "deny" },
+    { "action": "skill", "resource": "banner-design", "effect": "deny" },
+    { "action": "skill", "resource": "design", "effect": "deny" },
+    { "action": "skill", "resource": "slides", "effect": "deny" },
+    { "action": "skill", "resource": "find-skills", "effect": "deny" }
+  ],
   "mcp": {
     "context7": {
       "type": "remote",
