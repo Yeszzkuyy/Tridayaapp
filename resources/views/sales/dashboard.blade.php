@@ -86,15 +86,15 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Metric 1: Target Omset --}}
+                {{-- Metric 1: Realisasi Closing dari uang masuk --}}
                 <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Target Omset') }}</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Realisasi Closing (Lunas)') }}</span>
                         <span class="text-xs font-extrabold px-2 py-0.5 rounded-full {{ $myKpi['revenue_pct'] >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-accent-100 text-accent-700 dark:bg-accent-950/60 dark:text-accent-300' }}">
                             {{ $myKpi['revenue_pct'] }}%
                         </span>
                     </div>
-                    <div class="flex items-baseline justify-between mb-2">
+                    <div class="flex items-baseline justify-between mb-1">
                         <p class="text-xl font-black text-slate-800 dark:text-white tabular-nums">
                             Rp {{ number_format($myKpi['actual_revenue'], 0, ',', '.') }}
                         </p>
@@ -102,6 +102,11 @@
                             / Rp {{ number_format($myKpi['target_revenue'], 0, ',', '.') }}
                         </span>
                     </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2 tabular-nums">
+                        {{ __('PO Masuk') }}: <strong class="text-slate-700 dark:text-slate-200">Rp {{ number_format($myKpi['verified_po_revenue'], 0, ',', '.') }}</strong>
+                        <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                        {{ $myKpi['verified_po_deals'] }} PO
+                    </p>
                     <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
                         <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['revenue_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-accent-500 to-accent-600' }}" style="width: {{ min(100, $myKpi['revenue_pct']) }}%"></div>
                     </div>

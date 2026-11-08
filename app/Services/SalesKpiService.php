@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Lead;
+use App\Models\Payment;
 use App\Models\Proposal;
-use App\Models\PurchaseOrder;
 use App\Models\SalesTarget;
 use App\Models\User;
 use Carbon\Carbon;
@@ -33,54 +33,44 @@ class SalesKpiService
         $targetDeals = $targetRecord ? (int) $targetRecord->target_deals : (int) self::DEFAULT_TARGET_DEALS;
         $isCustomTarget = $targetRecord !== null;
 
-        // 2. Hitung Deals Closing (WON)
-        // Ambil proposal accepted
-        $acceptedProposals = Proposal::where('status', 'accepted')
+        // 2. Deal / PO Masuk: proposal accepted yang PO-nya sudah diverifikasi.
+        //    Nilai ini dipakai sebagai indikator "PO Masuk" di dashboard,
+        //    terpisah dari uang yang benar-benar sudah dibayar.
+        $verifiedPoProposals = Proposal::where('status', 'accepted')
+            ->whereNotNull('po_verified_at')
+            ->whereBetween('po_verified_at', [$startOfMonth, $endOfMonth])
             ->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id)
                     ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
             })
-            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
             ->get();
 
-        $proposalRevenue = (float) $acceptedProposals->sum('grand_total');
+        $verifiedPoRevenue = (float) $verifiedPoProposals->sum('grand_total');
+        $verifiedPoDeals = $verifiedPoProposals->count();
 
-        // Ambil lead yang statusnya 'won' dalam bulan ini
-        $wonLeads = Lead::where('assigned_to', $user->id)
-            ->where('status', 'won')
-            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
-                $q->whereBetween('closed_at', [$startOfMonth, $endOfMonth])
-                    ->orWhere(function ($w) use ($startOfMonth, $endOfMonth) {
-                        $w->whereNull('closed_at')
-                            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth]);
-                    });
+        // 3. Realisasi Closing: uang yang benar-benar masuk lewat pembayaran
+        //    Finance (boleh bertahap), bukan nilai PO di atas kertas.
+        $paidRevenue = (float) Payment::query()
+            ->whereBetween('payment_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->whereHas('invoice', function ($q) use ($user) {
+                $q->where(function ($w) use ($user) {
+                    $w->whereHas('proposal', function ($p) use ($user) {
+                        $p->where('created_by', $user->id)
+                            ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
+                    })
+                        ->orWhereHas('project', fn ($pr) => $pr->where('sales_user_id', $user->id))
+                        ->orWhereHas('customer.leads', fn ($l) => $l->where('assigned_to', $user->id));
+                });
             })
-            ->get();
+            ->sum('amount');
 
-        // Ambil PO yang dibuat oleh user atau terhubung ke project sales ini
-        $purchaseOrders = PurchaseOrder::where('created_by', $user->id)
-            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-            ->where('status', '!=', 'dibatalkan')
-            ->get();
+        // Jumlah deal closing mengikuti PO yang sudah diverifikasi.
+        $actualDeals = $verifiedPoDeals;
 
-        $poRevenue = (float) $purchaseOrders->sum('amount');
+        // Realisasi omset = uang masuk (paid), bukan nilai PO.
+        $actualRevenue = $paidRevenue;
 
-        // Jumlah deal closing adalah kombinasi distinct deal (proposal accepted atau won lead)
-        $actualDeals = max($acceptedProposals->count(), $wonLeads->count());
-        if ($actualDeals === 0 && $purchaseOrders->count() > 0) {
-            $actualDeals = $purchaseOrders->count();
-        }
-
-        // Realisasi omset (ambil nominal terbesar antara proposal won vs PO vs estimasi)
-        $actualRevenue = max($proposalRevenue, $poRevenue);
-
-        // Jika belum ada nominal proposal/PO tapi ada lead won, beri nilai baseline
-        if ($actualRevenue == 0 && $wonLeads->count() > 0) {
-            // Jika ada won lead tanpa proposal nominal
-            $actualRevenue = 0;
-        }
-
-        // 3. Persentase pencapaian
+        // 4. Persentase pencapaian
         $revenuePct = $targetRevenue > 0 ? round(($actualRevenue / $targetRevenue) * 100, 1) : 0;
         $dealsPct = $targetDeals > 0 ? round(($actualDeals / $targetDeals) * 100, 1) : 0;
 
@@ -120,6 +110,9 @@ class SalesKpiService
             'target_notes' => $targetRecord?->notes,
             'actual_revenue' => $actualRevenue,
             'actual_deals' => $actualDeals,
+            'verified_po_revenue' => $verifiedPoRevenue,
+            'verified_po_deals' => $verifiedPoDeals,
+            'paid_revenue' => $paidRevenue,
             'revenue_pct' => $revenuePct,
             'deals_pct' => $dealsPct,
             'overall_pct' => $overallPct,

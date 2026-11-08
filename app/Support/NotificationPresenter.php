@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\User;
 use App\Notifications\FollowUpOverdueNotification;
+use App\Notifications\InvoicePaidSalesNotification;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\LeadTaskNotification;
 use App\Notifications\MeetingReportReminderNotification;
@@ -94,6 +95,7 @@ final class NotificationPresenter
             SurveyCreatedNotification::class => 'survey_created',
             SurveyReportUploadedNotification::class => 'survey_report_uploaded',
             NewUserPendingApprovalNotification::class => 'user_pending_approval',
+            InvoicePaidSalesNotification::class => 'invoice_paid',
             default => self::legacyKind($data),
         };
     }
@@ -259,6 +261,12 @@ final class NotificationPresenter
                 'title' => (string) ($data['title'] ?? __('New User Waiting for Role')),
                 'body' => (string) ($data['body'] ?? $data['name'] ?? ''),
                 'chips' => [self::chip(__('Pending Role'), 'warning')],
+            ],
+            'invoice_paid' => [
+                'app' => __('Finance'),
+                'title' => (string) ($data['title'] ?? __('Invoice fully paid')),
+                'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
+                'chips' => [self::chip(__('Paid'), 'success')],
             ],
             default => [
                 'app' => __('Notifications'),

@@ -338,7 +338,10 @@ class AdminService
             return $existing;
         }
 
-        return DB::transaction(function () use ($data, $proof) {
+        $invoice = Invoice::find($data['invoice_id']);
+        $wasPaid = $invoice?->status === 'paid';
+
+        $payment = DB::transaction(function () use ($data, $proof) {
             $data['created_by'] = auth()->id();
             $payment = Payment::create($data);
 
@@ -360,6 +363,75 @@ class AdminService
 
             return $payment;
         });
+
+        // Notifikasi hanya saat invoice berubah menjadi lunas, bukan setiap cicilan.
+        if (! $wasPaid && $payment->invoice->fresh()?->status === 'paid') {
+            $this->notifyInvoicePaid($payment->invoice->fresh());
+        }
+
+        return $payment;
+    }
+
+    /**
+     * Kabari Sales pemilik proyek dan Management saat invoice lunas.
+     * Persentase target dihitung dari uang masuk (payments), bukan nilai PO.
+     */
+    private function notifyInvoicePaid(Invoice $invoice): void
+    {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        $owner = $this->resolveSalesOwner($invoice);
+
+        $recipients = collect([$owner])
+            ->filter()
+            ->merge(\App\Models\User::role('management')->get())
+            ->unique('id')
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $targetPct = null;
+
+        if ($owner) {
+            $targetPct = app(SalesKpiService::class)
+                ->getUserKpi($owner, now()->month, now()->year)['revenue_pct'];
+        }
+
+        \Illuminate\Support\Facades\Notification::send(
+            $recipients,
+            new \App\Notifications\InvoicePaidSalesNotification($invoice, $targetPct)
+        );
+    }
+
+    /** Sales pemilik proyek/proposal/customer pada invoice ini. */
+    private function resolveSalesOwner(Invoice $invoice): ?\App\Models\User
+    {
+        $invoice->loadMissing(['proposal.lead', 'project', 'customer']);
+
+        $proposal = $invoice->proposal;
+
+        if ($proposal?->created_by) {
+            return \App\Models\User::find($proposal->created_by);
+        }
+
+        if ($proposal?->lead?->assigned_to) {
+            return \App\Models\User::find($proposal->lead->assigned_to);
+        }
+
+        if ($invoice->project?->sales_user_id) {
+            return \App\Models\User::find($invoice->project->sales_user_id);
+        }
+
+        $lead = $invoice->customer?->leads()
+            ->whereNotNull('assigned_to')
+            ->orderByDesc('updated_at')
+            ->first();
+
+        return $lead?->assigned_to ? \App\Models\User::find($lead->assigned_to) : null;
     }
 
     public function deletePayment(Payment $payment): void
