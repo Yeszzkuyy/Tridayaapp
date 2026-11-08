@@ -20,7 +20,7 @@ produk/operasional kantor yang sederhana, singkat, dan langsung ke inti.
   baris 69"*. Ganti menjadi bahasa hasil: *"Saya akan merapikan papan Pipeline
   agar loading-nya cepat dan tidak error saat data Customer kosong."* Sebutkan
   nama file hanya di baris ringkas jika diperlukan.
-- **Batas panjang jawaban:** maksimal **3–5 poin pendek** per bagian. Jangan
+- **Batas panjang jawaban:** maksimal **3–5 poin pendek** per bagian atau sesuai dengan kebutuhan yang memang perlu dijelaskan. Jangan
   menulis paragraf panjang.
 
 ### 0.2 Protokol "Interview Me" (Konfirmasi Dulu Sebelum Eksekusi)
