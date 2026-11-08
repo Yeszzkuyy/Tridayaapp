@@ -268,7 +268,7 @@ Route::middleware('auth')->group(function () {
     // ============================================
     // MASTER PRODUK (katalog BOQ proposal)
     // ============================================
-    Route::middleware('permission:manage-sales|manage-admin')->group(function () {
+    Route::middleware('permission:manage-sales|manage-admin|manage-products')->group(function () {
         Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
         Route::post('products', [ProductController::class, 'store'])->name('products.store');
         Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
@@ -276,18 +276,19 @@ Route::middleware('auth')->group(function () {
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     });
 
-    Route::middleware('permission:view-sales|manage-sales|view-admin|manage-admin')->group(function () {
+    Route::middleware('permission:view-sales|manage-sales|view-admin|manage-admin|view-products')->group(function () {
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
         Route::get('products/picker', [ProductController::class, 'picker'])->name('products.picker');
     });
 
-    Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
+    Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician|manage-price-requests')->prefix('sales')->name('sales.')->group(function () {
         Route::get('requests', [SalesRequestHubController::class, 'index'])->name('requests.index');
         Route::get('schedules', [SalesScheduleController::class, 'index'])->name('schedules.index');
         Route::get('schedules/api', [SalesScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
         Route::get('schedules/{schedule}', [SalesScheduleController::class, 'show'])->name('schedules.show');
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
+        Route::get('price-requests/export-excel', [PriceRequestController::class, 'exportExcel'])->name('price-requests.export-excel');
         Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
         Route::get('price-requests/{priceRequest}/reply', [PriceRequestController::class, 'downloadReply'])->name('price-requests.reply');
@@ -299,7 +300,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
     });
 
-    Route::middleware('permission:manage-technician')->prefix('sales')->name('sales.')->group(function () {
+    Route::middleware('permission:manage-technician|manage-price-requests')->prefix('sales')->name('sales.')->group(function () {
         Route::post('technical-requests/{technicalRequest}/review', [TechnicalRequestController::class, 'review'])->name('technical-requests.review');
         Route::post('technical-requests/{technicalRequest}/assign', [TechnicalRequestController::class, 'assign'])->name('technical-requests.assign');
         Route::post('technical-requests/{technicalRequest}/progress', [TechnicalRequestController::class, 'progress'])->name('technical-requests.progress');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductPriceLog;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -29,6 +30,7 @@ class ProductController extends Controller
     public function picker(Request $request)
     {
         $items = Product::saleable()
+            ->with(['priceLogs' => fn ($q) => $q->with('supplier')->limit(6)])
             ->when($request->filled('q'), fn ($q) => $q->where(
                 fn ($w) => $w->whereLike('name', "%{$request->q}%")
                     ->orWhereLike('sku', "%{$request->q}%")
@@ -37,7 +39,21 @@ class ProductController extends Controller
             ->limit(20)
             ->get(['id', 'sku', 'name', 'category', 'unit', 'default_price']);
 
-        return response()->json($items);
+        return response()->json($items->map(fn (Product $product) => [
+            'id' => $product->id,
+            'sku' => $product->sku,
+            'name' => $product->name,
+            'category' => $product->category,
+            'unit' => $product->unit,
+            'default_price' => (float) $product->default_price,
+            'price_history' => $product->priceLogs->map(fn (ProductPriceLog $log) => [
+                'id' => $log->id,
+                'price' => (float) $log->price,
+                'supplier' => $log->supplier?->name,
+                'date' => $log->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'),
+                'notes' => $log->notes,
+            ])->values(),
+        ])->values());
     }
 
     public function create()
@@ -121,6 +137,10 @@ class ProductController extends Controller
     {
         $canManageSuppliers = auth()->user()?->can('manage-admin') ?? false;
 
+        if ($product) {
+            $product->loadMissing(['priceLogs.supplier', 'priceLogs.updater']);
+        }
+
         return [
             'suppliers' => $canManageSuppliers
                 ? Supplier::active()->orderBy('name')->get()
@@ -129,6 +149,7 @@ class ProductController extends Controller
                 ? $product->suppliers()->pluck('suppliers.id')->all()
                 : [],
             'primarySupplierId' => $product?->primarySupplier()?->id,
+            'latestPriceLog' => $product?->priceLogs->first(),
         ];
     }
 
@@ -160,6 +181,7 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
         $this->syncSuppliers($request, $product);
+        $this->logPriceChange($product, (float) ($validated['default_price'] ?? 0));
 
         return redirect()->route('products.index')->with('success', __('Product added successfully.'));
     }
@@ -193,8 +215,14 @@ class ProductController extends Controller
         $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
         $validated['has_serial_number'] = (bool) ($validated['has_serial_number'] ?? false);
 
+        $before = (float) $product->default_price;
         $product->update($validated);
         $this->syncSuppliers($request, $product);
+
+        $newPrice = (float) ($validated['default_price'] ?? $product->default_price);
+        if (abs($newPrice - $before) > 0.0001) {
+            $this->logPriceChange($product, $newPrice);
+        }
 
         return redirect()->route('products.index')->with('success', __('Product updated successfully.'));
     }
@@ -205,5 +233,28 @@ class ProductController extends Controller
         $product->update(['is_active' => false]);
 
         return redirect()->route('products.index')->with('success', __('Product deactivated.'));
+    }
+
+    /**
+     * Catat harga baru ke riwayat. Harga 0 tidak dicatat supaya tidak
+     * membanjiri log dengan baris kosong.
+     */
+    private function logPriceChange(Product $product, float $price, ?int $priceRequestId = null, ?string $notes = null): void
+    {
+        $userId = auth()->id();
+
+        if ($price <= 0 || ! $userId) {
+            return;
+        }
+
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $product->primarySupplier()?->id,
+            'price' => $price,
+            'currency' => 'IDR',
+            'price_request_id' => $priceRequestId,
+            'updated_by' => $userId,
+            'notes' => $notes,
+        ]);
     }
 }

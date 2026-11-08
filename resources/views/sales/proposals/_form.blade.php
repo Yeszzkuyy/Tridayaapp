@@ -80,6 +80,11 @@
                 if (empty($rows)) {
                     $rows = [['product_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'unit_cost' => null, 'discount' => 0]];
                 }
+                $historyByProduct = \App\Models\ProductPriceLog::with('supplier')
+                    ->whereIn('product_id', collect($rows)->pluck('product_id')->filter()->unique())
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->groupBy('product_id');
             @endphp
             @foreach($rows as $i => $row)
                 <div class="proposal-row grid grid-cols-12 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
@@ -96,6 +101,21 @@
                         <input type="number" name="items[{{ $i }}][unit_cost]" min="0" step="0.01" value="{{ old('items.'.$i.'.unit_cost', $row['unit_cost']) }}" placeholder="{{ __('Cost Price (Rp)') }}"
                                 class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">
                     @endcan
+                    @php($priceHistory = $historyByProduct[$row['product_id']] ?? collect())
+                    @if($priceHistory->isNotEmpty())
+                        <div class="col-span-12">
+                            <select class="proposal-price-pick w-full rounded-lg border-slate-200 bg-white text-xs text-slate-600 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                <option value="">{{ __('Price history: pick an older price (optional)') }}</option>
+                                @foreach($priceHistory as $log)
+                                    <option value="{{ $log->price }}">
+                                        {{ $log->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i') }}
+                                        - Rp {{ number_format((float) $log->price, 0, ',', '.') }}
+                                        @if($log->supplier) ({{ $log->supplier->name }}) @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
                     <input type="number" name="items[{{ $i }}][discount]" min="0" step="0.01" value="{{ $row['discount'] }}" placeholder="{{ __('Discount') }}"
                             class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>
@@ -154,6 +174,13 @@ const proposalItemsRequired = {{ $itemsRequired ? 'true' : 'false' }};
 function proposalRowHtml(i, prefill) {
     prefill = prefill || {};
     const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const history = prefill.price_history || [];
+    const historyHtml = history.length ? '<div class="col-span-12"><select class="proposal-price-pick w-full rounded-lg border-slate-200 bg-white text-xs text-slate-600 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">' +
+        '<option value="">{{ __('Price history: pick an older price (optional)') }}</option>' +
+        history.map(function (h) {
+            return '<option value="' + (h.price || 0) + '">' + esc(h.date || '') + ' - Rp ' + proposalFmt.format(Math.round(h.price || 0)) + (h.supplier ? ' (' + esc(h.supplier) + ')' : '') + '</option>';
+        }).join('') +
+        '</select></div>' : '';
     return '<input type="hidden" name="items[' + i + '][product_id]" value="' + (prefill.product_id || '') + '">' +
         '<input type="text" name="items[' + i + '][description]"' + (proposalItemsRequired ? ' required' : '') + ' value="' + esc(prefill.description) + '" placeholder="{{ __('Description') }}" class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="number" name="items[' + i + '][quantity]" required min="0.01" step="0.01" value="' + (prefill.quantity || 1) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
@@ -162,6 +189,7 @@ function proposalRowHtml(i, prefill) {
         @can('updateCost', \App\Models\Proposal::class)
         '<input type="number" name="items[' + i + '][unit_cost]" min="0" step="0.01" value="' + (prefill.unit_cost ?? '') + '" placeholder="{{ __('Cost Price (Rp)') }}" class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">' +
         @endcan
+        historyHtml +
         '<input type="number" name="items[' + i + '][discount]" min="0" step="0.01" value="0" class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>';
 }
@@ -196,6 +224,17 @@ function proposalRecalc() {
 }
 
 document.getElementById('proposal-items').addEventListener('input', proposalRecalc);
+document.getElementById('proposal-items').addEventListener('change', function (event) {
+    if (!event.target.classList.contains('proposal-price-pick')) return;
+    const row = event.target.closest('.proposal-row');
+    const price = parseFloat(event.target.value || 0) || 0;
+    if (!row || price <= 0) return;
+    const cost = row.querySelector('input[name$="[unit_cost]"]');
+    const sell = row.querySelector('input[name$="[unit_price]"]');
+    if (cost) cost.value = price;
+    if (sell && (!sell.value || parseFloat(sell.value) === 0)) sell.value = price;
+    proposalRecalc();
+});
 document.getElementById('proposal-discount').addEventListener('input', proposalRecalc);
 document.getElementById('proposal-tax').addEventListener('input', proposalRecalc);
 
@@ -229,7 +268,7 @@ document.getElementById('proposal-tax').addEventListener('input', proposalRecalc
         const btn = e.target.closest('.proposal-pick');
         if (!btn) return;
         const p = JSON.parse(btn.dataset.p);
-        proposalAddRow({ product_id: p.id, description: p.name, quantity: 1, unit: p.unit, unit_price: p.default_price });
+        proposalAddRow({ product_id: p.id, description: p.name, quantity: 1, unit: p.unit, unit_price: p.default_price, price_history: p.price_history || [] });
         input.value = '';
         box.classList.add('hidden');
         box.innerHTML = '';

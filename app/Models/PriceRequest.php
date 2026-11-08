@@ -22,12 +22,15 @@ class PriceRequest extends Model
 
     protected $fillable = [
         'customer_id',
+        'lead_id',
+        'project_id',
         'proposal_id',
         'requested_by',
         'quotation_path',
         'notes',
         'status',
         'assigned_to',
+        'handled_by',
         'reply_path',
         'reply_notes',
         'completed_at',
@@ -60,6 +63,28 @@ class PriceRequest extends Model
     public function replies()
     {
         return $this->hasMany(PriceRequestReply::class)->orderBy('version');
+    }
+
+    public function lead()
+    {
+        return $this->belongsTo(Lead::class);
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /** Estimator penanggung jawab (kolom baru; assigned_to tetap mesin status). */
+    public function handledBy()
+    {
+        return $this->belongsTo(User::class, 'handled_by');
+    }
+
+    /** Harga yang dicatat saat request ini diselesaikan. */
+    public function priceLogs()
+    {
+        return $this->hasMany(ProductPriceLog::class)->orderByDesc('created_at');
     }
 
     public function comments()

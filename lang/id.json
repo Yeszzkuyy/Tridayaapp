@@ -4761,5 +4761,18 @@
     "Record at least one follow-up update before uploading the customer PO.": "Isi minimal satu catatan follow-up sebelum mengunggah PO customer.",
     "Quotation Sent": "Penawaran Terkirim",
     "Project Running": "Proyek Berjalan",
-    "Invoice Paid": "Invoice Lunas"
+    "Invoice Paid": "Invoice Lunas",
+    "Estimator": "Estimator",
+    "Price history: pick an older price (optional)": "Riwayat harga: pilih harga lama (opsional)",
+    "Item & Price (optional)": "Item & Harga (opsional)",
+    "Filled prices are saved to product price history automatically.": "Harga yang diisi otomatis tersimpan ke riwayat harga produk.",
+    "Select product": "Pilih produk",
+    "Vendor / MOQ note": "Catatan vendor / MOQ",
+    "Last updated: :date by :name": "Terakhir di-update: :date oleh :name",
+    "Export Report Estimator (.xlsx)": "Export Laporan Estimator (.xlsx)",
+    "Estimator Report": "Laporan Estimator",
+    "Request Date": "Tanggal Request",
+    "Project / Requirement": "Proyek / Kebutuhan",
+    "Item & Estimated Price": "Item & Harga Estimasi",
+    "Completed Date": "Tanggal Selesai"
 }

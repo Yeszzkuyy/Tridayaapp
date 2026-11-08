@@ -41,6 +41,14 @@ class RoleAndPermissionSeeder extends Seeder
         $permissions[] = 'view-customer';
         $permissions[] = 'view-trash';
 
+        // Katalog produk: semua role boleh membaca; hanya Sales/Admin/Estimator
+        // yang boleh mengubah harga.
+        $permissions[] = 'view-products';
+        $permissions[] = 'manage-products';
+
+        // Ekosistem Estimator: mengelola tiket Price Request + mencatat harga.
+        $permissions[] = 'manage-price-requests';
+
         // Monitoring anggota divisi (lead & manage tiap divisi)
         $permissions[] = 'monitor-marketing';
         $permissions[] = 'monitor-technical';
@@ -67,7 +75,7 @@ class RoleAndPermissionSeeder extends Seeder
         }
 
         // === 2. Create Roles & Assign Permissions ===
-        $common = ['view-customer', 'view-trash'];
+        $common = ['view-customer', 'view-trash', 'view-products'];
 
         $mk = fn (string $name, array $perms) => tap(
             Role::create(['name' => $name, 'guard_name' => 'web']),
@@ -127,6 +135,9 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Inside Sales: hanya task yang di-assign kepadanya (lead terlihat bila ada task)
         $mk('inside-sales', ['manage-inside-sales', ...$common]);
+
+        // Estimator: memproses tiket Price Request dan mencatat histori harga.
+        $mk('estimator', ['manage-price-requests', 'manage-products', ...$common]);
 
         // Prakerin: read-only di divisinya masing-masing
         $mk('prakerin-technician', ['view-technician', ...$common]);

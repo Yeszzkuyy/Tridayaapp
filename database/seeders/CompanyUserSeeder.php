@@ -39,7 +39,7 @@ class CompanyUserSeeder extends Seeder
             ['Zero', 'zero@tridayaapp.com', ['technician']],
             ['Naufal', 'naufal@tridayaapp.com', ['technician']],
             ['Hanifah', 'hanifah@tridayaapp.com', ['admin']],
-            ['Vanesha', 'vanesha@tridayaapp.com', ['admin']],
+            ['Vanesha', 'vanesha@tridayaapp.com', ['estimator']],
             ['Adi Santosa', 'adi.santosa@tridayaapp.com', ['sales', 'sales-mgk']],
             ['Hendry', 'hendry@tridayaapp.com', ['sales', 'sales-mgk']],
             ['Irfan', 'irfan@tridayaapp.com', ['sales', 'sales-nti']],

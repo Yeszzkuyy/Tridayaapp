@@ -41,6 +41,15 @@
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Base Price (Rp)') }}</label>
             <input type="number" name="default_price" min="0" step="0.01" value="{{ old('default_price', $product->default_price ?? 0) }}"
                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+            @if(!empty($latestPriceLog))
+                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    {{ __('Last updated: :date by :name', ['date' => $latestPriceLog->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'), 'name' => $latestPriceLog->updater?->name ?? '-']) }}
+                    &middot; Rp {{ number_format((float) $latestPriceLog->price, 0, ',', '.') }}
+                    @if($latestPriceLog->supplier)
+                        ({{ $latestPriceLog->supplier->name }})
+                    @endif
+                </p>
+            @endif
         </div>
         @can('manageCost', \App\Models\Product::class)
         <div>

@@ -178,6 +178,29 @@
                 <div class="mt-4 p-4">{{ $tasks->links() }}</div>
             @endif
         @elseif($tab === 'price')
+            @if(auth()->user()->can('manage-price-requests') || auth()->user()->can('manage-sales-leads'))
+                <form method="GET" action="{{ route('sales.price-requests.export-excel') }}" class="mb-3 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+                    <div>
+                        <label for="export-from" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('From') }}</label>
+                        <input id="export-from" type="date" name="date_from" value="{{ now()->startOfWeek()->toDateString() }}" class="h-9 rounded-lg border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-900">
+                    </div>
+                    <div>
+                        <label for="export-to" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('To') }}</label>
+                        <input id="export-to" type="date" name="date_to" value="{{ now()->endOfWeek()->toDateString() }}" class="h-9 rounded-lg border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-900">
+                    </div>
+                    <div>
+                        <label for="export-status" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</label>
+                        <select id="export-status" name="status" class="h-9 rounded-lg border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-900">
+                            <option value="">{{ __('All') }}</option>
+                            @foreach(\App\Models\PriceRequest::STATUSES as $status)
+                                <option value="{{ $status }}">{{ \App\Models\PriceRequest::statusLabel($status) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <x-icon-button icon="download" type="submit" label="{{ __('Export Report Estimator (.xlsx)') }}" title="{{ __('Export Report Estimator (.xlsx)') }}" />
+                </form>
+            @endif
+
             <div class="overflow-x-auto">
                 <table class="w-full border-separate border-spacing-y-2 text-left">
                     <thead>

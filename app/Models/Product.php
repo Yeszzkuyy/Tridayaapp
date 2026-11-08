@@ -44,6 +44,17 @@ class Product extends Model
         return $this->hasMany(ProductSource::class);
     }
 
+    /** Riwayat harga, terbaru di atas. */
+    public function priceLogs()
+    {
+        return $this->hasMany(ProductPriceLog::class)->orderByDesc('created_at')->orderByDesc('id');
+    }
+
+    public function latestPriceLog()
+    {
+        return $this->hasOne(ProductPriceLog::class)->latestOfMany();
+    }
+
     public function documents()
     {
         return $this->hasMany(KnowledgeDocument::class);

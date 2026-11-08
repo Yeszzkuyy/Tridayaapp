@@ -14,6 +14,8 @@
     // (user only melihat item yang boleh ia akses).
     $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
     $adminActive = request()->routeIs('admin.hub') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.purchasing.*') || request()->routeIs('admin.supplier-pos.*') || request()->routeIs('admin.suppliers.*') || request()->routeIs('admin.goods-receipts.*') || request()->routeIs('admin.goods-deliveries.*') || request()->routeIs('admin.supplier-invoices.*') || request()->routeIs('admin.bast.*');
+    $estimatorActive = request()->routeIs('products*')
+        || (request()->routeIs('sales.requests*') && request()->query('tab') === 'price');
     $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
     $roleName = auth()->user()->roles->first()?->name ?? 'User';
@@ -393,6 +395,42 @@
 </div>
 </div>
                         @endcanany
+
+                        {{-- Estimator: antrean Price Request + histori harga produk --}}
+                        @can('manage-price-requests')
+                            <div x-data="{ open: {{ $estimatorActive ? 'true' : 'false' }} }" class="sb-group"{{ $estimatorActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="estimator">
+                                <div class="sb-head {{ $navLink }} group w-full {{ $estimatorActive ? $navActive.' sb-active' : $navInactive }}">
+                                    <a wire:navigate.hover href="{{ route('sales.requests.index', ['tab' => 'price']) }}"
+                                            class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
+                                        <x-icon name="tools" class="h-5 w-5 shrink-0" />
+                                        <span>{{ __('Estimator') }}</span>
+                                    </a>
+                                    <button type="button" class="sb-toggle sidebar-hide" @click="open = !open"
+                                            :aria-expanded="open" aria-controls="sidebar-estimator-menu"
+                                            aria-label="{{ __('Open/close submenu') }}">
+                                        <svg class="h-4 w-4 transition-transform duration-300" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div id="sidebar-estimator-menu" class="sb-sub sidebar-hide">
+                                    <div class="sb-sub-list">
+                                        <a wire:navigate.hover href="{{ route('sales.requests.index', ['tab' => 'price']) }}"
+                                           aria-current="{{ request()->routeIs('sales.requests*') && request()->query('tab') === 'price' ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('sales.requests*') && request()->query('tab') === 'price' ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-400" aria-hidden="true"></span>
+                                            <span>{{ __('Price Request') }}</span>
+                                        </a>
+                                        <a wire:navigate.hover href="{{ route('products.index') }}"
+                                           aria-current="{{ request()->routeIs('products*') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('products*') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
+                                            <span>{{ __('Products') }}</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endcan
 
                         {{-- Admin: Invoice, PO, Payment --}}
                         @can('view-admin')

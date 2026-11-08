@@ -120,7 +120,13 @@ class SalesRequestHubController extends Controller
      */
     private function priceRequestsFor($user)
     {
-        $query = PriceRequest::with(['customer', 'requester', 'assignee'])->latest();
+        $query = PriceRequest::with(['customer', 'requester', 'assignee', 'handledBy'])->latest();
+
+        // Estimator memegang seluruh antrean harga (termasuk yang belum
+        // di-assign) supaya bisa mengambil tiket sendiri.
+        if ($user && $user->can('manage-price-requests')) {
+            return $query;
+        }
 
         if (!($user && $user->can('manage-sales-leads'))) {
             $query->where('requested_by', $user->id);

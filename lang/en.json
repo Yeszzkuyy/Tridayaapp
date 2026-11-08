@@ -4761,5 +4761,18 @@
     "Record at least one follow-up update before uploading the customer PO.": "Record at least one follow-up update before uploading the customer PO.",
     "Quotation Sent": "Quotation Sent",
     "Project Running": "Project Running",
-    "Invoice Paid": "Invoice Paid"
+    "Invoice Paid": "Invoice Paid",
+    "Estimator": "Estimator",
+    "Price history: pick an older price (optional)": "Price history: pick an older price (optional)",
+    "Item & Price (optional)": "Item & Price (optional)",
+    "Filled prices are saved to product price history automatically.": "Filled prices are saved to product price history automatically.",
+    "Select product": "Select product",
+    "Vendor / MOQ note": "Vendor / MOQ note",
+    "Last updated: :date by :name": "Last updated: :date by :name",
+    "Export Report Estimator (.xlsx)": "Export Report Estimator (.xlsx)",
+    "Estimator Report": "Estimator Report",
+    "Request Date": "Request Date",
+    "Project / Requirement": "Project / Requirement",
+    "Item & Estimated Price": "Item & Estimated Price",
+    "Completed Date": "Completed Date"
 }
