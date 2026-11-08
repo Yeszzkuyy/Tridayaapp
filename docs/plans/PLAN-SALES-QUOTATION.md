@@ -1,4 +1,13 @@
-# Rencana Perubahan & Revamp Menu: Proposal Menjadi Quotation (Penawaran Harga)
+# PLAN-SALES-QUOTATION: Revamp Menu Proposal menjadi Quotation
+
+**Status Pengerjaan:** Siap Dikerjakan
+**Menu:** Sales / Quotation
+**Branch:** feature/sales-quotation
+**Terakhir diperbarui:** 2026-11-08
+
+> Sebagian besar alur sudah diimplementasikan; sisa item perlu dicek ulang sebelum ditutup.
+
+---
 
 ---
 

@@ -1,4 +1,13 @@
-# PLAN V2 — Ekosistem Sales & Quotation 3DY App
+# PLAN-SALES-EKOSISTEM: Ekosistem Sales & Quotation
+
+**Status Pengerjaan:** Belum Dikerjakan
+**Menu:** Sales / Ekosistem
+**Branch:** feature/sales-ekosistem
+**Terakhir diperbarui:** 2026-11-08
+
+> Draft konsultasi; belum dieksekusi.
+
+---
 
 > **Status:** draft untuk konsultasi, **belum dieksekusi**
 > **Baseline kode:** `main` @ `1ac4b6b` (27 Oktober 2026)

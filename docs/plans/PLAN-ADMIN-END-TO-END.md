@@ -1,4 +1,13 @@
-# MASTER PLAN: Integrasi End-to-End Sales, Purchasing, Logistik & Finance (3DY App)
+# PLAN-ADMIN-END-TO-END: Integrasi Sales, Purchasing, Logistik & Finance
+
+**Status Pengerjaan:** Siap Dikerjakan
+**Menu:** Admin / End-to-End
+**Branch:** feature/admin-end-to-end
+**Terakhir diperbarui:** 2026-11-08
+
+> Sebagian tahap sudah berjalan; sisa tahap mengikuti dokumen.
+
+---
 
 Dokumen ini adalah penyempurnaan dari **Rencana Arsitektur 6 Tahap (Raafi)** yang telah dipetakan secara presisi ke skema database, model, controller, dan rute aktual di **3DY App** (`PROJECT_SPEC_AUDIT.md`) serta kebutuhan nyata dari **Hasil Wawancara Admin & Sales**.
 

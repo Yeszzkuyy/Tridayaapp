@@ -1,4 +1,13 @@
-# Frontend Plan — Sistem Operasional Kantor Lintas Divisi
+# PLAN-DASHBOARD-FRONTEND: Wireframe Sistem Operasional
+
+**Status Pengerjaan:** Siap Dikerjakan
+**Menu:** Dashboard / Frontend
+**Branch:** feature/general-dashboard
+**Terakhir diperbarui:** 2026-11-08
+
+> Sebagian redesign dashboard sudah berjalan; sisa wireframe mengikuti dokumen.
+
+---
 
 ## 0. Asumsi Stack Frontend
 
