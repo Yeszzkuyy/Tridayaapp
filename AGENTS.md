@@ -111,8 +111,8 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 | `/home/raafi/3dyapp-contacts` | `feature/cus-contact-source` | Satu sumber kontak customer (PIC) |
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
-| `/home/yeski/3dyapp-handoff` | `feature/handoff-admin` | Audit Nov 2026 — Sesi A: handoff Sales → Admin (`docs/rencana-kerja`) |
-| `/home/yeski/3dyapp-notif-tek` | `feature/notif-teknisi` | Audit Nov 2026 — Sesi B: notifikasi & teknisi (`docs/rencana-kerja`) |
+| `/home/yeski/3dyapp-handoff` | `feature/handoff-admin` | Audit Nov 2026 — Sesi A: handoff Sales → Admin (`docs/plans/PLAN-SALES-HANDOFF-ADMIN.md`) |
+| `/home/yeski/3dyapp-notif-tek` | `feature/notif-teknisi` | Audit Nov 2026 — Sesi B: notifikasi & teknisi (`docs/plans/PLAN-SISTEM-NOTIFIKASI-TEKNISI.md`) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
@@ -696,4 +696,70 @@ Login System
 
 4. **Larangan**: menempelkan hash commit, nama branch, atau path file; melaporkan
    commit `chore`/`docs`/`ci` internal; mengarang kendala, target, atau nama orang.
+
+## 14. Format Dokumen Rencana (PLAN-*.md)
+
+Semua rencana perubahan website disimpan di `docs/plans/`. Satu file = satu rencana.
+
+### 14.1 Nama file
+
+`PLAN-[MENU_UTAMA]-[SUB_MENU_ATAU_FITUR].md`
+
+- Huruf kapital, pemisah hyphen, tanpa spasi.
+- `MENU_UTAMA` mengikuti divisi/branch:
+
+| Divisi / branch | Prefix file |
+|---|---|
+| Marketing | `PLAN-MARKETING-*` |
+| Sales | `PLAN-SALES-*` |
+| Admin / Panel | `PLAN-ADMIN-*` |
+| Teknisi | `PLAN-TEKNISI-*` |
+| Customer | `PLAN-CUSTOMER-*` |
+| Management | `PLAN-MANAGEMENT-*` |
+| Dashboard | `PLAN-DASHBOARD-*` |
+| Lintas sistem / notifikasi | `PLAN-SISTEM-*` |
+
+- Contoh: `PLAN-SALES-QUOTATION.md`, `PLAN-ADMIN-INVOICE.md`,
+  `PLAN-TEKNISI-JADWAL.md`.
+- Dilarang mencampur dua divisi dalam satu file; pecah per divisi.
+
+### 14.2 Header wajib
+
+Setiap file diawali:
+
+```md
+# PLAN-SALES-QUOTATION: Judul Rencana
+
+**Status Pengerjaan:** Belum Dikerjakan
+**Menu:** Sales / Quotation
+**Branch:** feature/sales-quotation
+**Terakhir diperbarui:** 2026-11-08
+```
+
+Nilai `Status Pengerjaan` hanya: `Belum Dikerjakan`, `Siap Dikerjakan`,
+`Selesai`.
+
+### 14.3 Isi minimal
+
+- Tujuan & hasil akhir (bahasa user, bukan bahasa kode).
+- Ruang lingkup, termasuk yang **tidak** dikerjakan.
+- Langkah pengerjaan.
+- Kriteria selesai / cara verifikasi.
+- Dependensi ke menu atau divisi lain.
+
+### 14.4 Aturan status
+
+- `Belum Dikerjakan`: belum ada kode sama sekali.
+- `Siap Dikerjakan`: scope dan keputusan sudah jelas, siap dieksekusi.
+- `Selesai`: sudah di-merge ke `main` dan sudah dicek user.
+- Status diperbarui pada commit `docs(...)` yang sama dengan perubahan rencana.
+- Rencana `Selesai` tetap disimpan; jangan hapus tanpa persetujuan user.
+
+### 14.5 Larangan
+
+- Jangan menaruh rencana di root repo atau folder lain; semua di `docs/plans/`.
+- Jangan memakai nama bebas seperti `plan.md`, `rencana.md`, atau `todo.md`.
+- Catatan audit dan referensi teknis bukan PLAN; taruh di `docs/audit/` atau
+  `docs/reference/`.
+- Folder `docs/rencana-kerja/` sudah dihapus; jangan dibuat lagi.
 
