@@ -4,6 +4,92 @@ Repo ini dikerjakan oleh lebih dari satu sesi AI/developer secara paralel.
 Sejak konsolidasi, setiap sesi punya **folder kerja (worktree) sendiri** —
 ikuti aturan berikut supaya tidak saling menimpa kerjaan.
 
+## 0. Protokol Komunikasi & Konfirmasi User (WAJIB DIPATUHI AGENT)
+
+Saat berinteraksi dengan User (Yeski), kamu **DILARANG** memberikan penjelasan
+yang terlalu panjang, bertele-tele, atau penuh istilah teknis kode (seperti
+menulis potongan kode PHP/Eloquent/SQL panjang di chat). Gunakan bahasa
+produk/operasional kantor yang sederhana, singkat, dan langsung ke inti.
+
+### 0.1 Aturan Gaya Bahasa (Singkat, Padat, Non-Teknis)
+
+- **Bahasa:** Bahasa Indonesia yang santai, jelas, dan mudah dipahami dari sudut
+  pandang pengguna website (Sales, Admin, Teknisi, Manajemen).
+- **Larangan jargon teknis di chat:** jangan menjelaskan logika dengan kalimat
+  seperti *"Saya akan mengubah `hasManyThrough` di `LeadController@pipeline`
+  baris 69"*. Ganti menjadi bahasa hasil: *"Saya akan merapikan papan Pipeline
+  agar loading-nya cepat dan tidak error saat data Customer kosong."* Sebutkan
+  nama file hanya di baris ringkas jika diperlukan.
+- **Batas panjang jawaban:** maksimal **3–5 poin pendek** per bagian. Jangan
+  menulis paragraf panjang.
+
+### 0.2 Protokol "Interview Me" (Konfirmasi Dulu Sebelum Eksekusi)
+
+Sebelum mengubah kode, atau saat masih ada alur yang bisa berdampak ke cara kerja
+orang kantor, kamu **WAJIB berhenti dan bertanya/konfirmasi dulu** kepada User.
+
+Saat bertanya, **DILARANG** memberikan pertanyaan teknis kode. Gunakan format
+pertanyaan **"Tujuan & Hasil Akhir"** berikut (maksimal 1–3 pertanyaan sekali
+tanya):
+
+> ### 🤔 Konfirmasi Dulu Sebelum Dikerjakan
+> **1. Tujuan yang Mau Dicapai:**
+> - [Jelaskan 1 kalimat singkat fitur/perubahan apa yang sedang mau diselesaikan]
+>
+> **2. Hal yang Perlu Kamu Putuskan:**
+> - **Pertanyaan:** [Tanyakan dengan bahasa sederhana tentang aturan kerja di kantor]
+>   - **Opsi A (Rekomendasi):** [Apa yang terjadi] → **Hasilnya nanti di layar:** [Gambaran jelas tampilan/alurnya bagi user]
+>   - **Opsi B:** [Alternatif lain] → **Hasilnya nanti di layar:** [Gambaran jelas tampilan/alurnya bagi user]
+>
+> **3. Dampak ke Rencana Berikutnya:**
+> - [1 kalimat tentang bagaimana pilihan ini memengaruhi menu lain ke depannya, misal ke menu Sales, Admin, atau Teknisi]
+
+Tunggu sampai User menjawab "Oke opsi A" atau memberi arahan sebelum kamu
+mengeksekusi perubahan file.
+
+**Pengecualian:** kalau User sudah menulis "kerjakan", "oke", "lanjut", atau
+instruksi sudah spesifik, konfirmasi dianggap selesai. Jangan bertanya ulang
+hanya karena protokol ini.
+
+### 0.3 Format Standar Saat Melaporkan Rencana Kerja (Plan Mode)
+
+Jika User meminta rencana perbaikan/fitur, jawab **HANYA** dengan struktur
+ringkas ini:
+
+> ### 📋 Rencana Perubahan Singkat
+> **🎯 Tujuan & Hasil Akhir:**
+> - [1-2 kalimat: Setelah ini selesai, tampilan/fitur di menu X akan menjadi seperti apa]
+>
+> **🛠️ Apa Saja yang Akan Dilakukan:**
+> - [Poin 1 - bahasa non-teknis]
+> - [Poin 2 - bahasa non-teknis]
+> *(File yang disentuh: `nama_file_1`, `nama_file_2`)*
+>
+> **❓ Butuh Konfirmasi Darimu:**
+> - [Tanyakan 1-2 hal penting sesuai protokol "Interview Me", atau tanyakan: *"Apakah hasil akhirnya sudah sesuai harapanmu untuk langsung aku kerjakan?"*]
+
+### 0.4 Format Standar Setelah Selesai Mengerjakan Tugas (Build Mode)
+
+Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
+**HANYA** dengan 3 bagian pendek ini:
+
+> ### ✅ Ringkasan Pekerjaan Selesai
+> **1. Apa yang Sudah Dilakukan:**
+> - [Poin singkat fitur/perbaikan apa yang sudah berhasil dipasang]
+> - [Status Test: Semua pengujian otomatis aman/hijau]
+>
+> **2. Yang Perlu Kamu Pahami (Cara Kerjanya Sekarang):**
+> - [Jelaskan 2-3 poin singkat bagaimana alur fitur ini berjalan sekarang di website, supaya User punya gambaran jelas untuk menyusun plan fitur berikutnya]
+>
+> **3. Yang Dibutuhkan Darimu Sekarang:**
+> - [Sebutkan apa yang perlu User cek di layar browser, atau keputusan apa yang perlu disiapkan untuk tahap selanjutnya]
+
+### 0.5 Batasan
+
+- Protokol ini mengatur gaya komunikasi di chat, bukan kualitas kode.
+- Aturan teknis di §7, §7.1, §7.2, §8, dan §9 tetap wajib dipatuhi.
+- Laporan WhatsApp ke Senior tetap mengikuti §13, bukan format §0.4.
+
 ## 1. Satu sesi = satu folder = satu branch
 
 | Folder | Branch | Topik |
