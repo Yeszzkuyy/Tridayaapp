@@ -247,6 +247,115 @@ Seluruh halaman (terutama Dashboard, Monitoring, KPI, dan List/Detail) wajib men
    - **Card Container Styling:** Gunakan `rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90` dengan hover `-translate-y-1 transition-all duration-300 hover:shadow-lg` pada kartu KPI.
    - **Larangan Warna HEX Acak Dark Mode:** Jangan gunakan `dark:bg-[#232b3e]` atau `dark:border-[#334070]`; gunakan token Tailwind slate konsisten (`dark:bg-slate-800/90`, `dark:border-slate-800/60`, `dark:text-slate-100`).
 
+## 7.2 Aturan Anti-Slop (Adopsi "design-taste-frontend")
+
+Diadaptasi dari skill Anti-Slop `design-taste-frontend` (tasteskill). Skill aslinya
+untuk landing page/portfolio, jadi yang dipakai di sini hanya prinsip yang relevan
+untuk aplikasi internal (dashboard, list, detail, form, modal). Aturan hero, logo
+wall, bento, scroll-stacking, dan scroll cue **tidak berlaku** di repo ini. §7
+(tombol) dan §7.1 (Lynk) tetap menang bila terjadi benturan.
+
+### A. Baca konteks sebelum menulis UI
+
+1. Tentukan jenis layar (dashboard / list / detail / form / modal) dan role pemakainya.
+2. Cek komponen & token yang sudah ada: `x-icon-button`, `x-flow-button`,
+   `x-back-button`, `x-donut-chart`, `SparklineBuilder`, `lynk-*`. Jangan bikin pola
+   baru bila komponen yang ada sudah cukup.
+3. Untuk pekerjaan UI baru atau redesign, tulis satu baris **"Reading this as: ..."**
+   di rencana sebelum coding. Kalau brief benar-benar ambigu, tanya **satu**
+   pertanyaan; jangan mengarang arah desain.
+4. Redesign: audit layar lama dulu, pertahankan yang sudah sesuai §7/§7.1, ubah
+   hanya bagian yang diminta.
+
+### B. Anti-Default (DILARANG sebagai default)
+
+- Gradient ungu/biru ala "AI", neon glow, dan glassmorphism generik.
+- Tiga kartu fitur identik berjajar sebagai pengganti struktur konten. Kartu KPI
+  dashboard tetap mengikuti §7.1.
+- Animasi infinite di semua elemen, atau motion tanpa alasan yang jelas.
+- Font Inter sebagai default (repo memakai Plus Jakarta Sans + Outfit).
+- Emoji sebagai ikon; ikon dekoratif yang tidak menyampaikan makna.
+- Data palsu yang terlihat rapi: `99.99%`, `1234567`, nama "John Doe"/"Acme",
+  "Lorem ipsum", testimoni atau logo klien fiktif.
+- Label mikro-meta: `01 / 04`, `Stage 1`, `v1.4.2`, `last sync 4s ago`,
+  `Scroll to explore`.
+- Em-dash (`—`) dan en-dash (`–`) di teks yang dilihat user; pakai hyphen biasa.
+  Teks lama dirapikan bertahap saat file itu disentuh.
+- Teks dekoratif di bawah judul ("Latest figures from...", "4 indicators") —
+  sudah dilarang di §7.1.
+
+### C. Tipografi & warna
+
+- Maksimal 2 keluarga font. Hierarki lewat weight + warna, bukan H1 raksasa.
+- Body `max-w-[65ch]` + `leading-relaxed`; jangan center teks panjang.
+- Italic di display wajib `leading-[1.1]` + ruang descender.
+- Satu accent per halaman (token `accent-*`). Dilarang hex acak, `bg-slate-*`/
+  `bg-gray-*` untuk tombol (§7), dan mencampur warm/cool gray.
+- Kontras WCAG AA: teks 4.5:1, teks besar 3:1. Placeholder, helper, dan focus ring
+  ikut dicek.
+- Dark mode memakai token yang sama; jangan mengubah tema per section.
+
+### D. Layout & material
+
+- Kartu hanya bila elevation menyampaikan hierarki; selain itu pakai `divide-y`,
+  border tipis, atau whitespace.
+- Radius konsisten: tombol `rounded-xl`, kartu `rounded-2xl`. Jangan campur
+  `rounded-md`/`rounded-lg` (§7).
+- Dilarang kartu bersarang di dalam kartu list (§7.1).
+- Shadow diberi tint warna background, bukan hitam pekat.
+- Setiap grid multi-kolom wajib punya perilaku mobile eksplisit
+  (`grid-cols-1 sm:grid-cols-2 ...`), bukan asumsi "Tailwind sudah urus".
+- Satu tema per halaman: jangan menyisipkan section terang di halaman gelap
+  (atau sebaliknya).
+- Jangan menaruh paragraf penjelas kecil melayang di pojok kanan header section;
+  taruh di bawah judul atau susun 2 kolom yang sejajar.
+
+### E. State & interaksi
+
+- Wajib ada state: loading, empty, error, success.
+- Utamakan skeleton yang mengikuti bentuk konten; spinner generik hanya untuk aksi
+  singkat.
+- Empty state menjelaskan cara mengisi data, bukan sekadar "No data".
+- Form: label di atas input, helper opsional, error di bawah input. Placeholder
+  bukan pengganti label.
+- Tombol wajib punya `active:scale-95`, focus ring, dan teks yang tidak wrap di
+  desktop.
+- Satu intent = satu label CTA. Jangan "Simpan" + "Submit" untuk aksi yang sama di
+  satu halaman.
+
+### F. Copy & data
+
+- Semua teks UI lewat `__('...')`; default Inggris, Indonesia lewat `lang/id.json`
+  (§7).
+- Dilarang filler/AI-copy: "Elevate", "Seamless", "Unleash", "Next-Gen",
+  "Revolutionize", atau kalimat mock-puitis.
+- Angka harus berasal dari data riil atau diberi label contoh. Dilarang angka
+  presisi palsu.
+- Data demo/test memakai nama & konteks Indonesia yang wajar, bukan "John Doe".
+- Baca ulang semua string sebelum selesai: judul, label, tombol, error, alt text.
+  Ganti kalimat yang ambigu atau terasa seperti terjemahan mesin.
+
+### G. Aksesibilitas & performa
+
+- Fokus keyboard terlihat di semua elemen interaktif; jangan `outline-none` tanpa
+  pengganti.
+- Ikon-only wajib punya `title`/`aria-label` (§7).
+- Hormati `prefers-reduced-motion`; animasi hanya untuk hierarki, feedback, atau
+  transisi state.
+- Jangan menambah dependency UI/animasi baru tanpa persetujuan; satu sistem desain
+  per proyek.
+
+### H. Pre-Flight Check (sebelum bilang "selesai")
+
+1. Buka halaman di light & dark mode, desktop & mobile.
+2. Cek kontras teks, tombol, placeholder, dan focus ring.
+3. Cek state: loading, empty, error, sukses.
+4. Cek keyboard: Tab, Enter, Esc, dan focus ring.
+5. Cek tidak ada teks filler, em-dash, angka palsu, atau nama generik.
+6. Cek tombol mengikuti §7 (radius, ikon, hierarki CTA).
+7. Cek tidak ada kartu bersarang, 3 kartu identik, atau section theme flip.
+8. Jalankan `npm run build` dari `/var/www/3dyapp` bila ada kelas Tailwind baru.
+
 ## 8. Database Safety Rules
 
 1. NEVER run:
