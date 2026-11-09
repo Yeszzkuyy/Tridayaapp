@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, animate, motion, useReducedMotion } from 'motion/react';
+import ToastViewport from './ToastViewport.jsx';
+import { pushToast } from '../toast-store.js';
 
 /**
  * Notification Center — bell + feed di header.
@@ -17,6 +19,9 @@ const CONFIG = (typeof window !== 'undefined' && window.notifCenter) || {};
 const I18N = CONFIG.i18n || {};
 const ROUTES = CONFIG.routes || {};
 const LOCALE = CONFIG.locale || undefined;
+
+/** Pop up pesan simpan/gagal hanya diputar sekali per muat halaman. */
+let flashShown = false;
 
 /** Panel: dipasang di tengah bawah bell, digeser/clamp bila mepet tepi layar. */
 const PANEL_WIDTH = 400;
@@ -92,7 +97,7 @@ function withId(template, id) {
     return (template || '').replace('__ID__', encodeURIComponent(id));
 }
 
-function TypeIcon({ name, className }) {
+export function TypeIcon({ name, className }) {
     switch (name) {
         case 'userPlus':
             return (
@@ -268,10 +273,28 @@ export default function NotificationCenter() {
     const bellRef = useRef(null);
     const openRef = useRef(false);
     const expiredRef = useRef(false);
+    // Pembuka notifikasi dipakai listener realtime (Echo) — disimpan di ref
+    // supaya listener tidak perlu dipasang ulang tiap render.
+    const openItemRef = useRef(null);
 
     useEffect(() => {
         openRef.current = open;
     }, [open]);
+
+    // Pesan simpan/gagal dari form biasa (session flash di layout) tampil
+    // sebagai pop up yang sama, supaya tidak ada lagi kotak kecil di atas
+    // halaman. Hanya sekali per muat halaman.
+    useEffect(() => {
+        if (flashShown) return;
+
+        flashShown = true;
+
+        ['success', 'warning', 'error'].forEach((variant) => {
+            const message = CONFIG.flash?.[variant];
+
+            if (message) pushToast({ variant, message });
+        });
+    }, []);
 
     useEffect(() => {
         expiredRef.current = sessionExpired;
@@ -451,6 +474,21 @@ export default function NotificationCenter() {
                 setUnread((previous) => (typeof payload.unread === 'number' ? payload.unread : previous + (item.read ? 0 : 1)));
                 setLive(`${item.app ? `${item.app}: ` : ''}${item.title}`);
                 ringBell();
+
+                // Pop up pojok kanan bawah, kecuali panel lonceng sedang
+                // terbuka (user sudah melihat daftarnya — jangan dobel).
+                if (!openRef.current) {
+                    const meta = TYPE_META[item.type] || TYPE_META.generic;
+
+                    pushToast({
+                        variant: 'default',
+                        title: item.title,
+                        message: item.body || '',
+                        accent: meta.color,
+                        icon: <TypeIcon name={meta.icon} className="h-5 w-5" />,
+                        onOpen: () => openItemRef.current?.(item),
+                    });
+                }
             };
 
             channel.listen('.notification.created', handler);
@@ -588,6 +626,10 @@ export default function NotificationCenter() {
         [markRead],
     );
 
+    useEffect(() => {
+        openItemRef.current = openItem;
+    }, [openItem]);
+
     const dismiss = useCallback(
         async (event, item) => {
             event.preventDefault();
@@ -685,6 +727,8 @@ export default function NotificationCenter() {
             <span className="sr-only" aria-live="polite">
                 {live}
             </span>
+
+            <ToastViewport />
 
             <AnimatePresence>
                 {open && (

@@ -90,6 +90,12 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 - Aturan teknis di §7, §7.1, §7.2, §8, dan §9 tetap wajib dipatuhi.
 - Laporan WhatsApp ke Senior tetap mengikuti §13, bukan format §0.4.
 
+### 0.6 Mekanisme Proteksi Konteks (Self-Correction)
+
+- Sebelum kamu mengirimkan respons chat ke User (Yeski), kamu WAJIB melakukan validasi mandiri: *"Apakah jawaban saya mengandung istilah teknis kode seperti nama method, framework logic, atau query SQL di luar tanda kurung ringkas?"*
+- Jika YA, kamu WAJIB menulis ulang jawaban tersebut ke dalam bahasa operasional kantor (Sales/Admin/Teknisi) sesuai aturan §0.1 sebelum tombol kirim ditekan.
+
+
 ## 1. Satu sesi = satu folder = satu branch
 
 | Folder | Branch | Topik |
@@ -105,6 +111,7 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
+| `/home/raafi/3dyapp-notifpop` | `feature/sys-notif-popup` | Pop up notifikasi pojok layar (gaya toast 21st.dev) |
 | `/home/raafi/3dyapp-i18n` | `feature/i18n-english` | i18n (konsistensi bahasa semua menu) + tampilan settings |
 | `/home/raafi/3dyapp-price` | `feature/sales-price-sync` | Price Request sales+teknisi satu tabel (sementara, hapus setelah merge) |
 | `/home/raafi/3dyapp-panel` | `feature/div-panel` | Admin Panel (invoice, PO, payment) |
@@ -760,4 +767,11 @@ Nilai `Status Pengerjaan` hanya: `Belum Dikerjakan`, `Siap Dikerjakan`,
 - Catatan audit dan referensi teknis bukan PLAN; taruh di `docs/audit/` atau
   `docs/reference/`.
 - Folder `docs/rencana-kerja/` sudah dihapus; jangan dibuat lagi.
+
+## 15. Penanganan Konflik Database & Migrasi
+
+Setiap sesi AI/Developer yang membuat file migrasi database baru WAJIB mematuhi aturan berikut:
+- **Gunakan Timestamp Unik:** Jangan membuat file migrasi secara manual dengan menebak urutan waktu. Selalu gunakan perintah `php artisan make:migration`.
+- **Dilarang Mengubah Migrasi yang Sudah Di-merge ke `main`:** Jika ada perubahan struktur tabel setelah file di-merge ke `main`, buat file migrasi baru (rollback/alter), JANGAN mengedit file migrasi lama.
+- **Sinkronisasi Schema:** Setelah melakukan `git pull` dari `main` di worktree divisi Anda, segera jalankan `php artisan migrate` untuk memastikan state database lokal selaras dengan versi terbaru.
 
