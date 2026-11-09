@@ -47,9 +47,11 @@
                                        clearTimeout(timer);
                                         timer = setTimeout(() => {
                                             const pt = document.getElementById('customer-pt')?.value.trim() ?? '';
+                                            const status = document.getElementById('customer-status')?.value.trim() ?? '';
                                             const params = new URLSearchParams();
                                             if ($el.value.trim()) params.set('search', $el.value.trim());
                                             if (pt) params.set('pt_group', pt);
+                                            if (status) params.set('status', status);
                                             fetch('{{ route('customers.index') }}?' + params.toString(), {
                                                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
                                             })
@@ -81,6 +83,13 @@
                         <x-glide-select id="customer-pt" name="pt_group" size="field" :label="__('Filter by Company')"
                             :options="collect($ptGroups)->all()"
                             :value="request('pt_group', '')" :empty-label="__('All Companies')" autosubmit />
+                    </div>
+
+                    <div class="w-full sm:w-40 sm:shrink-0">
+                        <label for="customer-status" class="sr-only">{{ __('Status') }}</label>
+                        <x-glide-select id="customer-status" name="status" size="field" :label="__('Status')"
+                            :options="[['value' => 'lead', 'label' => __('Prospects')]]"
+                            :value="request('status', '')" :empty-label="__('Customers')" autosubmit />
                     </div>
 
                     <x-icon-button icon="search" type="submit" title="{{ __('Search') }}" class="shrink-0" />

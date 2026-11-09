@@ -120,6 +120,58 @@ class LeadFormTest extends TestCase
         $this->assertSame('info@ujicoba.id', $lead->customer->email);
         $this->assertSame('Budi PIC', $lead->customer->contact_person);
         $this->assertSame('Jl. Testing No. 1, Jakarta', $lead->customer->address);
+        $this->assertSame('lead', $lead->customer->status);
+    }
+
+    public function test_sales_can_promote_lead_customer_manually(): void
+    {
+        $this->marketingUser();
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+
+        $customer = Customer::create(['name' => 'PT Prospek', 'status' => 'lead', 'pt_group' => 'NTI']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'kebutuhan' => 'Butuh CCTV',
+            'incoming_date' => '2026-01-05',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)
+            ->post(route('leads.promote-customer', $lead))
+            ->assertRedirect();
+
+        $this->assertSame('deal', $customer->fresh()->status);
+        $this->assertTrue(
+            LeadActivity::where('lead_id', $lead->id)->where('action', 'customer_promoted')->exists()
+        );
+    }
+
+    public function test_promote_rejects_customer_that_is_already_deal(): void
+    {
+        $this->marketingUser();
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+
+        $customer = Customer::create(['name' => 'PT Sudah Deal', 'status' => 'deal', 'pt_group' => 'NTI']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'kebutuhan' => 'Butuh CCTV',
+            'incoming_date' => '2026-01-05',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)
+            ->post(route('leads.promote-customer', $lead))
+            ->assertStatus(422);
+
+        $this->assertSame('deal', $customer->fresh()->status);
     }
 
     public function test_update_persists_customer_whatsapp_even_when_customer_soft_deleted(): void

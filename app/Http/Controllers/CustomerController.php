@@ -49,6 +49,12 @@ class CustomerController extends Controller
                 }
             })
             ->when($request->filled('pt_group'), fn ($query) => $query->where('pt_group', $request->string('pt_group')))
+            // Lead/prospek tidak tampil di menu Customer sampai menjadi deal.
+            ->when(
+                $request->string('status')->toString() === 'lead',
+                fn ($query) => $query->where('status', 'lead'),
+                fn ($query) => $query->where('status', '!=', 'lead'),
+            )
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -113,6 +119,11 @@ class CustomerController extends Controller
 
         // Form customer hanya punya satu kolom nama; company = name supaya tampilan Lead/Monitoring konsisten
         $validated['company'] ??= $validated['name'];
+
+        // Customer yang dibuat manual dari menu Customer adalah customer
+        // resmi. Lead dari Marketing tetap berstatus `lead` dan tidak
+        // muncul di menu ini sampai menjadi deal.
+        $validated['status'] = $validated['status'] ?? 'deal';
 
         // PIC di form diterjemahkan menjadi satu kontak primary (input eksplisit
         // pengguna), bukan lagi kolom legacy yang berdiri sendiri.

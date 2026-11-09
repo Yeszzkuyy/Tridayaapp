@@ -1,5 +1,5 @@
 @php
-    $hasFilter = request()->filled('search') || request()->filled('pt_group') || request()->filled('pic');
+    $hasFilter = request()->filled('search') || request()->filled('pt_group') || request()->filled('pic') || request()->filled('status');
 @endphp
 
 @if($customers->isEmpty())

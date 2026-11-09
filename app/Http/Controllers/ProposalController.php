@@ -769,6 +769,10 @@ class ProposalController extends Controller
             }
         });
 
+        if ($validated['decision'] === 'accepted') {
+            app(\App\Services\CustomerLifecycleService::class)->promoteFromLead($proposal->lead);
+        }
+
         $assignee = $proposal->lead->assignee;
         if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
             $assignee->notify(new ProposalStatusNotification($proposal, $validated['decision']));
@@ -849,6 +853,8 @@ class ProposalController extends Controller
         }
 
         $proposal->update($payload);
+
+        app(\App\Services\CustomerLifecycleService::class)->promoteFromLead($proposal->lead);
 
         $this->notifyAdminHandoff($proposal->fresh(), PurchasingHandoffNotification::STAGE_PO_RECEIVED);
 
@@ -962,6 +968,8 @@ class ProposalController extends Controller
 
         // Beri tahu tim teknisi (jangan notifikasi diri sendiri bila yang
         // convert juga memegang role lead-technician).
+        app(\App\Services\CustomerLifecycleService::class)->promoteFromLead($lead);
+
         Notification::send(
             User::role('lead-technician')->where('id', '!=', auth()->id())->get(),
             new ProjectConvertedNotification($project)

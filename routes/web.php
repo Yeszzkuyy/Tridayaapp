@@ -648,6 +648,14 @@ Route::middleware('auth')->group(function () {
         Route::patch('/leads/batch-status', [LeadController::class, 'batchUpdateStatus'])->name('leads.batch-status');
         Route::patch('/leads/{lead}/outcome', [LeadController::class, 'saveOutcome'])->name('leads.outcome');
     });
+
+    // Lead -> Customer resmi (Sales/Management). Lead baru tetap berstatus
+    // `lead` dan tidak muncul di menu Customer sampai diangkat di sini.
+    Route::middleware('permission:manage-sales|manage-sales-leads')->group(function () {
+        Route::post('/leads/{lead}/promote-customer', [LeadController::class, 'promoteCustomer'])
+            ->name('leads.promote-customer');
+    });
+
     // Monitoring tim marketing — khusus lead divisi (sebelum /leads/{lead})
     Route::get('/leads/monitoring', [LeadController::class, 'monitoring'])
         ->middleware('permission:monitor-marketing')
