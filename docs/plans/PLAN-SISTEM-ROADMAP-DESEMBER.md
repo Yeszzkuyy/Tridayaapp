@@ -9,8 +9,8 @@
 
 ---
 
-**Dokumen Referensi Pengembangan Web 3dyapp**  
-*Tanggal Dibuat: 23 Oktober 2026*  
+**Dokumen Referensi Pengembangan Web 3dyapp**
+*Tanggal Dibuat: 23 Oktober 2026*
 *Target Peluncuran: Desember 2026 (Ready for Production Tahun Baru)*
 
 ---
@@ -79,12 +79,12 @@ flowchart TD
     subgraph AI Engine & Watchdog
         B[Scheduled Cron / Daemon Worker] -->|Query Data Harian| A
         B --> C{Anomaly & Hygiene Evaluator}
-        
+
         C -->|Sales belum update meeting| D[Generate Nudge Reminder]
         C -->|Target mingguan di bawah pace| E[Generate KPI Action Advice]
         C -->|PO gantung > 48 jam| F[Cross-Division Bottleneck Ping]
         C -->|BAST belum diupload teknisi| G[Field Progress Alert]
-        
+
         D & E & F & G --> H[LLM Tone & Context Formatter]
     end
 
@@ -99,12 +99,12 @@ flowchart TD
 
 1. **Anomaly & Activity Reminder (Sales):**
    * *Kondisi:* Sales memiliki jadwal meeting terjadwal hari ini, namun hingga pukul 17:00 belum ada notulensi atau foto terunggah.
-   * *Aksi AI:* Mengirim notifikasi ramah via Notification Center/Widget:  
+   * *Aksi AI:* Mengirim notifikasi ramah via Notification Center/Widget:
      > *"Halo [Nama Sales], sistem mencatat agenda meeting dengan [Klien] hari ini belum ada dokumentasi. Yuk upload foto dan hasil pertemuannya sebelum jam kerja berakhir agar masuk ke rekapan harianmu!"*
 
 2. **Pacing Target & Evaluasi KPI Mingguan:**
    * *Kondisi:* Target sales adalah 5 meeting/minggu. Pada hari Kamis, sales baru menyelesaikan 2 meeting.
-   * *Aksi AI:* Memberikan analisis gap:  
+   * *Aksi AI:* Memberikan analisis gap:
      > *"Pencapaian meeting mingguan: 2/5 (40%). Untuk mencapai target, kamu memerlukan 3 meeting lagi dalam 2 hari ke depan. Terdapat 4 lead berpotensi tinggi di pipeline kamu yang siap dihubungi."*
 
 3. **Deteksi Bottleneck Antar-Divisi:**
