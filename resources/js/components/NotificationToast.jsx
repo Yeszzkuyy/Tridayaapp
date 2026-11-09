@@ -15,22 +15,22 @@ import { dismissToast } from '../toast-store.js';
 const CARD_STYLES = {
     default: {
         card: 'border-slate-200 bg-white text-slate-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-slate-800 dark:text-slate-100',
-        icon: 'text-slate-400 dark:text-slate-500',
+        title: 'text-slate-900 dark:text-white',
+        icon: 'text-slate-500 dark:text-slate-300',
     },
     success: {
         card: 'border-green-600/50 bg-white text-slate-800 dark:border-green-500/50 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-green-600 dark:text-green-400',
+        title: 'text-green-700 dark:text-green-400',
         icon: 'text-green-600 dark:text-green-400',
     },
     error: {
         card: 'border-red-600/50 bg-white text-slate-800 dark:border-red-500/50 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-red-600 dark:text-red-400',
+        title: 'text-red-700 dark:text-red-400',
         icon: 'text-red-600 dark:text-red-400',
     },
     warning: {
         card: 'border-amber-600/50 bg-white text-slate-800 dark:border-amber-500/50 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-amber-600 dark:text-amber-400',
+        title: 'text-amber-700 dark:text-amber-400',
         icon: 'text-amber-600 dark:text-amber-400',
     },
 };
@@ -119,17 +119,17 @@ export default function NotificationToast({ toast, paused, onPauseChange }) {
     const body = (
         <>
             <span
-                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center ${meta.icon}`}
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center ${meta.icon}`}
                 style={toast.accent ? { color: toast.accent } : undefined}
             >
-                {toast.icon || <VariantIcon variant={toast.variant} className="h-4 w-4" />}
+                {toast.icon || <VariantIcon variant={toast.variant} className="h-5 w-5" />}
             </span>
-            <div className="min-w-0 space-y-0.5">
+            <div className="min-w-0 space-y-1">
                 {toast.title ? (
-                    <h3 className={`text-xs font-medium leading-none ${meta.title}`}>{toast.title}</h3>
+                    <h3 className={`text-sm font-semibold leading-snug ${meta.title}`}>{toast.title}</h3>
                 ) : null}
                 {toast.message ? (
-                    <p className="text-xs leading-relaxed text-slate-500 line-clamp-3 dark:text-slate-400">
+                    <p className="text-sm leading-relaxed text-slate-700 line-clamp-3 dark:text-slate-200">
                         {toast.message}
                     </p>
                 ) : null}
@@ -148,14 +148,14 @@ export default function NotificationToast({ toast, paused, onPauseChange }) {
             onMouseLeave={() => onPauseChange?.(false)}
             onFocus={() => onPauseChange?.(true)}
             onBlur={() => onPauseChange?.(false)}
-            className={`pointer-events-auto flex w-full max-w-xs items-center justify-between gap-3 rounded-xl border p-3 shadow-md ${meta.card}`}
+            className={`pointer-events-auto flex w-full max-w-[420px] items-center justify-between gap-3 rounded-xl border p-4 shadow-md ${meta.card}`}
         >
             {interactive ? (
-                <button type="button" onClick={openCard} className="flex min-w-0 items-start gap-2 text-left">
+                <button type="button" onClick={openCard} className="flex min-w-0 items-start gap-2.5 text-left">
                     {body}
                 </button>
             ) : (
-                <div className="flex min-w-0 items-start gap-2">{body}</div>
+                <div className="flex min-w-0 items-start gap-2.5">{body}</div>
             )}
 
             <div className="flex shrink-0 items-center gap-2">
@@ -164,7 +164,7 @@ export default function NotificationToast({ toast, paused, onPauseChange }) {
                         <a
                             href={toast.action.href}
                             onClick={() => dismissToast(toast.id)}
-                            className={`inline-flex h-8 items-center rounded-xl border px-3 text-xs font-medium transition-all duration-200 active:scale-95 ${ACTION_STYLES[toast.variant] || ACTION_STYLES.default}`}
+                            className={`inline-flex h-9 items-center rounded-xl border px-3.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${ACTION_STYLES[toast.variant] || ACTION_STYLES.default}`}
                         >
                             {toast.action.label}
                         </a>
@@ -175,7 +175,7 @@ export default function NotificationToast({ toast, paused, onPauseChange }) {
                                 dismissToast(toast.id);
                                 toast.action.onClick?.();
                             }}
-                            className={`inline-flex h-8 items-center rounded-xl border px-3 text-xs font-medium transition-all duration-200 active:scale-95 ${ACTION_STYLES[toast.variant] || ACTION_STYLES.default}`}
+                            className={`inline-flex h-9 items-center rounded-xl border px-3.5 text-xs font-semibold transition-all duration-200 active:scale-95 ${ACTION_STYLES[toast.variant] || ACTION_STYLES.default}`}
                         >
                             {toast.action.label}
                         </button>
@@ -187,9 +187,9 @@ export default function NotificationToast({ toast, paused, onPauseChange }) {
                     onClick={() => dismissToast(toast.id)}
                     aria-label={DISMISS_LABEL}
                     title={DISMISS_LABEL}
-                    className="rounded-xl p-1 text-slate-400 transition-colors hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 active:scale-95 dark:text-slate-500 dark:hover:text-white"
+                    className="rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 active:scale-95 dark:text-slate-300 dark:hover:text-white"
                 >
-                    <svg {...ICON_PROPS} className="h-3 w-3">
+                    <svg {...ICON_PROPS} className="h-3.5 w-3.5">
                         <path d="M18 6 6 18M6 6l12 12" />
                     </svg>
                 </button>

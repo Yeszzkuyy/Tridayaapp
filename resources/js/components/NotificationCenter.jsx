@@ -467,7 +467,7 @@ export default function NotificationCenter() {
                         title: item.title,
                         message: item.body || '',
                         accent: meta.color,
-                        icon: <TypeIcon name={meta.icon} className="h-4 w-4" />,
+                        icon: <TypeIcon name={meta.icon} className="h-5 w-5" />,
                         onOpen: () => openItemRef.current?.(item),
                     });
                 }

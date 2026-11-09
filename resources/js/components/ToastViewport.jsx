@@ -27,7 +27,7 @@ export default function ToastViewport() {
         <div
             aria-live="polite"
             aria-atomic="false"
-            className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] flex flex-col items-end gap-2 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:gap-3"
+            className="pointer-events-none fixed inset-x-3 bottom-3 z-[100] flex w-auto flex-col items-stretch gap-2 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[420px] sm:gap-3"
         >
             <AnimatePresence initial={false}>
                 {toasts.map((toast) => (
