@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Events\NotificationCreated;
+use App\Events\NotificationDeleted;
+use App\Events\NotificationRead;
 use App\Http\Controllers\NotificationController;
 use App\Models\User;
 use App\Notifications\FollowUpOverdueNotification;
@@ -237,5 +239,89 @@ class NotificationCenterTest extends TestCase
             $payload['item']['url']
         );
         $this->assertSame(1, $payload['unread']);
+    }
+
+    public function test_read_notification_dispatches_broadcast_event(): void
+    {
+        Event::fake([NotificationRead::class]);
+
+        $user = $this->makeUser('sales');
+        $id = $this->makeNotification($user, FollowUpOverdueNotification::class, ['type' => 'followup', 'customer' => 'PT A', 'url' => '/']);
+
+        $this->actingAs($user)
+            ->postJson(route('notifications.read', ['notification' => $id]))
+            ->assertOk()
+            ->assertJson(['unread' => 0]);
+
+        Event::assertDispatched(NotificationRead::class, function (NotificationRead $event) use ($user, $id) {
+            return (string) $event->userId === (string) $user->id
+                && $event->ids === [$id]
+                && $event->unread === 0
+                && $event->scope === 'single';
+        });
+    }
+
+    public function test_read_all_dispatches_broadcast_event(): void
+    {
+        Event::fake([NotificationRead::class]);
+
+        $user = $this->makeUser('sales');
+        $id1 = $this->makeNotification($user, FollowUpOverdueNotification::class, ['type' => 'followup', 'customer' => 'PT A', 'url' => '/']);
+        $id2 = $this->makeNotification($user, FollowUpOverdueNotification::class, ['type' => 'followup', 'customer' => 'PT B', 'url' => '/']);
+
+        $this->actingAs($user)
+            ->postJson(route('notifications.read-all'))
+            ->assertOk()
+            ->assertJson(['unread' => 0]);
+
+        Event::assertDispatched(NotificationRead::class, function (NotificationRead $event) use ($user, $id1, $id2) {
+            return (string) $event->userId === (string) $user->id
+                && in_array($id1, $event->ids, true)
+                && in_array($id2, $event->ids, true)
+                && $event->unread === 0
+                && $event->scope === 'all';
+        });
+    }
+
+    public function test_destroy_notification_dispatches_broadcast_event(): void
+    {
+        Event::fake([NotificationDeleted::class]);
+
+        $user = $this->makeUser('sales');
+        $id = $this->makeNotification($user, FollowUpOverdueNotification::class, ['type' => 'followup', 'customer' => 'PT A', 'url' => '/']);
+
+        $this->actingAs($user)
+            ->deleteJson(route('notifications.destroy', ['notification' => $id]))
+            ->assertOk()
+            ->assertJson(['unread' => 0]);
+
+        Event::assertDispatched(NotificationDeleted::class, function (NotificationDeleted $event) use ($user, $id) {
+            return (string) $event->userId === (string) $user->id
+                && $event->ids === [$id]
+                && $event->unread === 0
+                && $event->scope === 'single';
+        });
+    }
+
+    public function test_destroy_all_dispatches_broadcast_event_and_returns_deleted_count(): void
+    {
+        Event::fake([NotificationDeleted::class]);
+
+        $user = $this->makeUser('sales');
+        $this->makeNotification($user, FollowUpOverdueNotification::class, ['type' => 'followup', 'customer' => 'PT A', 'url' => '/']);
+        $this->makeNotification($user, FollowUpOverdueNotification::class, ['type' => 'followup', 'customer' => 'PT B', 'url' => '/']);
+
+        $this->actingAs($user)
+            ->deleteJson(route('notifications.destroy-all'))
+            ->assertOk()
+            ->assertJson(['unread' => 0, 'deleted' => 2]);
+
+        Event::assertDispatched(NotificationDeleted::class, function (NotificationDeleted $event) use ($user) {
+            return (string) $event->userId === (string) $user->id
+                && $event->unread === 0
+                && $event->scope === 'all';
+        });
+
+        $this->assertSame(0, $user->fresh()->notifications()->count());
     }
 }

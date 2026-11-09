@@ -387,19 +387,24 @@ export default function NotificationCenter() {
         setItems((previous) => {
             if (!merge) return incoming;
 
-            // Panel terbuka: jangan reset daftar (posisi scroll aman) —
-            // sisipkan hanya item yang benar-benar baru, perbarui status baca.
-            const known = new Map(previous.map((item) => [item.id, item]));
-            const updated = previous.map((item) => {
-                const fresh = incoming.find((candidate) => candidate.id === item.id);
+            // Panel terbuka: jangan reset posisi scroll bila tidak ada perubahan drastis —
+            // tapi sinkronkan dengan server (buang item yang sudah dihapus di server).
+            const incomingMap = new Map(incoming.map((item) => [item.id, item]));
 
-                return fresh && fresh.read !== item.read ? { ...item, read: fresh.read } : item;
-            });
+            const synced = previous
+                .filter((item) => incomingMap.has(item.id) || item._fresh)
+                .map((item) => {
+                    const fresh = incomingMap.get(item.id);
+
+                    return fresh && fresh.read !== item.read ? { ...item, read: fresh.read } : item;
+                });
+
+            const previousIds = new Set(previous.map((it) => it.id));
             const added = incoming
-                .filter((item) => !known.has(item.id))
+                .filter((item) => !previousIds.has(item.id))
                 .map((item) => ({ ...item, _fresh: true }));
 
-            return [...added, ...updated];
+            return [...added, ...synced];
         });
 
         setCursor(data.next_cursor ?? null);
@@ -432,13 +437,17 @@ export default function NotificationCenter() {
 
         let channel = null;
         let handler = null;
+        let readHandler = null;
+        let deleteHandler = null;
         let connection = null;
         let onState = null;
 
         const detach = () => {
-            if (channel && handler) {
+            if (channel) {
                 try {
-                    channel.stopListening('.notification.created', handler);
+                    if (handler) channel.stopListening('.notification.created', handler);
+                    if (readHandler) channel.stopListening('.notification.read', readHandler);
+                    if (deleteHandler) channel.stopListening('.notification.deleted', deleteHandler);
                 } catch (error) {
                     /* channel sudah mati — abaikan */
                 }
@@ -448,6 +457,8 @@ export default function NotificationCenter() {
 
             channel = null;
             handler = null;
+            readHandler = null;
+            deleteHandler = null;
             connection = null;
             onState = null;
         };
@@ -491,7 +502,49 @@ export default function NotificationCenter() {
                 }
             };
 
+            readHandler = (payload) => {
+                const ids = payload?.ids || [];
+                const scope = payload?.scope;
+
+                setItems((previous) => {
+                    if (scope === 'all') {
+                        return previous.map((it) => ({ ...it, read: true }));
+                    }
+                    if (ids.length > 0) {
+                        const set = new Set(ids);
+                        return previous.map((it) => (set.has(it.id) ? { ...it, read: true } : it));
+                    }
+                    return previous;
+                });
+
+                if (typeof payload?.unread === 'number') {
+                    setUnread(payload.unread);
+                }
+            };
+
+            deleteHandler = (payload) => {
+                const ids = payload?.ids || [];
+                const scope = payload?.scope;
+
+                setItems((previous) => {
+                    if (scope === 'all') {
+                        return [];
+                    }
+                    if (ids.length > 0) {
+                        const set = new Set(ids);
+                        return previous.filter((it) => !set.has(it.id));
+                    }
+                    return previous;
+                });
+
+                if (typeof payload?.unread === 'number') {
+                    setUnread(payload.unread);
+                }
+            };
+
             channel.listen('.notification.created', handler);
+            channel.listen('.notification.read', readHandler);
+            channel.listen('.notification.deleted', deleteHandler);
 
             connection = Echo.connector?.pusher?.connection ?? null;
 
@@ -511,12 +564,12 @@ export default function NotificationCenter() {
         };
     }, [ringBell]);
 
-    // Fallback: poll 60 dtk saat socket putus + fetch saat tab kembali aktif.
+    // Jaring pengaman: poll berkala (60 dtk) + fetch saat tab kembali aktif.
     useEffect(() => {
         if (CONFIG.userId == null || sessionExpired) return undefined;
 
         const timer = setInterval(() => {
-            if (document.hidden || expiredRef.current || connected) return;
+            if (document.hidden || expiredRef.current) return;
 
             refreshStatus({ merge: openRef.current });
         }, 60000);
@@ -535,7 +588,7 @@ export default function NotificationCenter() {
             window.removeEventListener('focus', onWake);
             document.removeEventListener('visibilitychange', onWake);
         };
-    }, [connected, refreshStatus, sessionExpired]);
+    }, [refreshStatus, sessionExpired]);
 
     // Muat segar tiap panel dibuka.
     useEffect(() => {
@@ -612,7 +665,20 @@ export default function NotificationCenter() {
                 headers: { 'X-CSRF-TOKEN': CONFIG.csrf },
             });
 
-            if (data && typeof data.unread === 'number') setUnread(data.unread);
+            if (!data) {
+                // Rollback jika request gagal
+                setItems((previous) => previous.map((known) => (known.id === item.id ? { ...known, read: false } : known)));
+                setUnread((previous) => previous + 1);
+                pushToast({
+                    variant: 'danger',
+                    title: 'Gagal Memperbarui Notifikasi',
+                    message: 'Tidak dapat menandai notifikasi sebagai dibaca.',
+                });
+
+                return;
+            }
+
+            if (typeof data.unread === 'number') setUnread(data.unread);
         },
         [fetchJson],
     );
@@ -635,35 +701,89 @@ export default function NotificationCenter() {
             event.preventDefault();
             event.stopPropagation();
 
+            const wasRead = item.read;
+            const removedItem = item;
+
             setItems((previous) => previous.filter((known) => known.id !== item.id));
-            if (!item.read) setUnread((previous) => Math.max(0, previous - 1));
+            if (!wasRead) setUnread((previous) => Math.max(0, previous - 1));
 
             const data = await fetchJson(withId(ROUTES.destroy, item.id), {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CONFIG.csrf },
             });
 
-            if (data && typeof data.unread === 'number') setUnread(data.unread);
+            if (!data) {
+                // Rollback jika request gagal
+                setItems((previous) => [removedItem, ...previous]);
+                if (!wasRead) setUnread((previous) => previous + 1);
+                pushToast({
+                    variant: 'danger',
+                    title: 'Gagal Menghapus Notifikasi',
+                    message: 'Terjadi kendala saat menghapus notifikasi.',
+                });
+
+                return;
+            }
+
+            if (typeof data.unread === 'number') setUnread(data.unread);
         },
         [fetchJson],
     );
 
     const markAllRead = useCallback(async () => {
+        const previousItems = items;
+        const previousUnread = unread;
+
         setItems((previous) => previous.map((item) => ({ ...item, read: true })));
         setUnread(0);
 
-        await fetchJson(ROUTES.readAll, { method: 'POST', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
-    }, [fetchJson]);
+        const data = await fetchJson(ROUTES.readAll, { method: 'POST', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
+
+        if (!data) {
+            setItems(previousItems);
+            setUnread(previousUnread);
+            pushToast({
+                variant: 'danger',
+                title: 'Gagal Menandai Semua',
+                message: 'Tidak dapat menandai semua notifikasi sebagai dibaca.',
+            });
+
+            return;
+        }
+
+        refreshStatus({ merge: false });
+    }, [fetchJson, items, unread, refreshStatus]);
 
     const clearAll = useCallback(async () => {
+        const previousItems = items;
+        const previousUnread = unread;
+        const previousCursor = cursor;
+        const previousHasMore = hasMore;
+
         setItems([]);
         setUnread(0);
         setCursor(null);
         setHasMore(false);
         setConfirmClear(false);
 
-        await fetchJson(ROUTES.clear, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
-    }, [fetchJson]);
+        const data = await fetchJson(ROUTES.clear, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
+
+        if (!data) {
+            setItems(previousItems);
+            setUnread(previousUnread);
+            setCursor(previousCursor);
+            setHasMore(previousHasMore);
+            pushToast({
+                variant: 'danger',
+                title: 'Gagal Menghapus Semua',
+                message: 'Tidak dapat menghapus semua notifikasi.',
+            });
+
+            return;
+        }
+
+        refreshStatus({ merge: false });
+    }, [fetchJson, items, unread, cursor, hasMore, refreshStatus]);
 
     const loadMore = useCallback(async () => {
         if (!cursor || loadingMore) return;
