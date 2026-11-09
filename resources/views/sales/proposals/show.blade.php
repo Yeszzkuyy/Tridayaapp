@@ -117,6 +117,9 @@
                                         · {{ $file->created_at?->translatedFormat('d M Y H:i') }}
                                     </p>
                                 </div>
+                                <x-file-preview :url="route('sales.proposals.attachments.preview', [$proposal, $file])"
+                                                :download="route('sales.proposals.attachments.download', [$proposal, $file])"
+                                                :name="$file->original_name" />
                                 <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" title="{{ __('Download') }}" />
                             </li>
                         @endforeach
@@ -221,6 +224,9 @@
                 @endif
                 @if($proposal->status === 'accepted')
                     @if($proposal->po_document_path)
+                        <x-file-preview :url="route('sales.proposals.download-po', $proposal)"
+                                        :download="route('sales.proposals.download-po', $proposal)"
+                                        :name="basename($proposal->po_document_path)" />
                         <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
                     @endif
                     @if($proposal->project)

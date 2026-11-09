@@ -585,11 +585,9 @@
                                     {{ \App\Models\LeadDocument::categoryLabel($doc->category) }}
                                 </span>
                                 <div class="flex items-center gap-2 shrink-0">
-                                    <x-icon-button icon="view" type="button" title="{{ __('View') }}"
-                                            data-url="{{ route('leads.attachments.show', [$lead, $doc]) }}"
-                                            data-filename="{{ $doc->file_name }}"
-                                            data-mime="{{ $doc->mime_type }}"
-                                            onclick="openPreviewModal(this.dataset.url, this.dataset.filename, this.dataset.mime)" />
+                                    <x-file-preview :url="route('leads.attachments.show', [$lead, $doc])"
+                                                    :download="route('leads.attachments.download', [$lead, $doc])"
+                                                    :name="$doc->file_name" />
                                     <x-icon-button as="a" icon="download" href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="{{ __('Download') }}" />
                                     @can('manage-marketing')
                                         <form action="{{ route('leads.attachments.destroy', [$lead, $doc]) }}" method="POST"
@@ -652,14 +650,12 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 flex gap-2">
+                                        <x-file-preview :url="route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id])"
+                                                        :download="route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id])"
+                                                        :name="$doc->file_name"
+                                                        label="{{ __('Preview') }}" />
                                         <x-icon-button as="a" icon="download" href="{{ route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id]) }}"
                                            label="{{ __('Download') }}" title="{{ __('Download') }}" />
-                                        @if($doc->is_image || $doc->is_pdf)
-                                            <x-icon-button as="a" icon="view"
-                                               href="{{ route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id]) }}"
-                                               target="_blank"
-                                               label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
-                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -745,61 +741,4 @@
         document.getElementById('convertModal').classList.add('hidden');
     }
 
-    function openPreviewModal(url, filename, mimeType) {
-        var modal = document.getElementById('previewModal');
-        var content = document.getElementById('previewContent');
-        var title = document.getElementById('previewTitle');
-
-        title.textContent = filename;
-        content.innerHTML = '';
-
-        var imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-        var pdfTypes = ['application/pdf'];
-
-        if (imageTypes.includes(mimeType)) {
-            var img = document.createElement('img');
-            img.src = url;
-            img.className = 'max-h-[80vh] max-w-full mx-auto rounded-lg object-contain';
-            img.alt = filename;
-            content.appendChild(img);
-        } else if (pdfTypes.includes(mimeType)) {
-            var iframe = document.createElement('iframe');
-            iframe.src = url;
-            iframe.className = 'w-full h-[80vh] rounded-lg border-0';
-            content.appendChild(iframe);
-        } else {
-            content.innerHTML = '<div class="text-center py-10">' +
-                '<svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>' +
-                '<p class="text-slate-600 font-medium mb-2">{{ __('This file needs to be downloaded') }}</p>' +
-                '<a href="' + url.replace('/show', '/download') + '" ' +
-                'class="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-sm font-medium transition">' +
-                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path></svg>' +
-                '{{ __('Download') }}</a>' +
-                '</div>';
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    function closePreviewModal() {
-        var modal = document.getElementById('previewModal');
-        modal.classList.add('hidden');
-        document.getElementById('previewContent').innerHTML = '';
-    }
 </script>
-
-<!-- Preview Modal -->
-<div id="previewModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-900/70" onclick="closePreviewModal()"></div>
-        <div class="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-600">
-            <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-600">
-                <h3 id="previewTitle" class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[80%]"></h3>
-                <button type="button" onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div id="previewContent" class="p-4"></div>
-        </div>
-    </div>
-</div>

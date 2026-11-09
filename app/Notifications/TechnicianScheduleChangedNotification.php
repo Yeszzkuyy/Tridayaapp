@@ -27,7 +27,9 @@ class TechnicianScheduleChangedNotification extends Notification
             return [];
         }
 
-        return $this->withWebPush($notifiable, $this->withMail($notifiable, ['database']));
+        $channels = $notifiable->preference('notify_system', true) ? ['database'] : [];
+
+        return $this->withWebPush($notifiable, $this->withMail($notifiable, $channels));
     }
 
     public function toMail(object $notifiable): MailMessage

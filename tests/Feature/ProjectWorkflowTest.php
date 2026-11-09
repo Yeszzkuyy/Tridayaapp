@@ -130,7 +130,7 @@ class ProjectWorkflowTest extends TestCase
         $this->assertSame($proposal->id, $project->proposal_id);
         $this->assertSame($sales->id, $project->sales_user_id);
         $this->assertSame($pendingId, $project->project_status_id);
-        $this->assertStringContainsString('Catatan untuk Teknisi: Gunakan kabel outdoor.', $project->description);
+        $this->assertStringContainsString('Catatan untuk Engineer: Gunakan kabel outdoor.', $project->description);
 
         Notification::assertSentTo($leadTech, ProjectConvertedNotification::class);
 

@@ -1,9 +1,9 @@
 # PLAN-SALES-DASHBOARD-CUSTOMER-HUB: Privasi Sales, Drill-Down Bu Yanita & Customer-Centric Hub
 
-**Status Pengerjaan:** Siap Dikerjakan  
-**Menu:** Sales / Dashboard & Management  
-**Branch Terkait:** `feature/sales-flow` & `feature/management`  
-**Terakhir Diperbarui:** 2026-11-08  
+**Status Pengerjaan:** Siap Dikerjakan
+**Menu:** Sales / Dashboard & Management
+**Branch:** `feature/sales-flow` & `feature/management`
+**Terakhir diperbarui:** 2026-11-08
 
 ---
 

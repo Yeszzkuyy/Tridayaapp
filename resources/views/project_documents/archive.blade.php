@@ -101,6 +101,9 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
+                                <x-file-preview :url="route('project-documents.preview', $document)"
+                                                :download="route('project-documents.download', $document)"
+                                                :name="$document->file_name" />
                                 <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
                                                label="{{ __('Download') }}" title="{{ __('Download') }}" />
                                 @can('restore', $document)

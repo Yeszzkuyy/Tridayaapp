@@ -733,6 +733,10 @@
             }catch(e){}
         })();
     </script>
+    {{-- Jendela pratinjau file bersama (dipakai semua modul, tanpa unduh dulu). --}}
+    <x-doc-lightbox />
+    <script type="module" src="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/doc-thumbs.js') }}"></script>
+
     {{-- 3DY AI Chat V2 (pengganti floating lama; file lama dipertahankan tapi tidak di-mount) --}}
     @include('components.ai-chat-v2')
     @stack('scripts')

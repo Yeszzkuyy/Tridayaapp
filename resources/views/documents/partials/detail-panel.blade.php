@@ -168,11 +168,17 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 p-5 dark:border-slate-700">
-            <a x-show="doc?.can_preview && doc?.preview_url" :href="doc?.preview_url" target="_blank" rel="noopener"
+            <button type="button" x-show="doc?.can_preview && doc?.preview_url"
+               @click="window.openDocPreview({
+                   kind: window.docPreviewKind ? window.docPreviewKind(doc?.file_ext) : 'other',
+                   url: doc?.preview_url,
+                   filename: doc?.name,
+                   download: doc?.download_url || doc?.preview_url,
+               })"
                class="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-indigo-600 transition hover:border-indigo-600 hover:bg-indigo-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-indigo-400">
                 <x-icon name="eye" class="h-4 w-4" />
                 <span>{{ __('Preview') }}</span>
-            </a>
+            </button>
             <a x-show="doc?.download_url" :href="doc?.download_url"
                class="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-teal-600 transition hover:border-teal-600 hover:bg-teal-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-teal-400">
                 <x-icon name="folder" class="h-4 w-4" />

@@ -61,6 +61,9 @@
                                     <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $version->created_at->format('d M Y H:i') }}</td>
                                     <td class="px-6 py-4 text-sm">
                                         <div class="flex items-center gap-2">
+                                            <x-file-preview :url="route('project-documents.preview', $version)"
+                                                            :download="route('project-documents.download', $version)"
+                                                            :name="$version->file_name" />
                                             <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $version) }}"
                                                 label="{{ __('Unduh Versi ini') }}" title="{{ __('Unduh Versi ini') }}" size="sm" />
                                             @if($version->id !== $document->id)

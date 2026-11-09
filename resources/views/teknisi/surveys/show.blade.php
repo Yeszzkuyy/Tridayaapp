@@ -120,8 +120,10 @@
 
                     <div class="flex shrink-0 flex-wrap items-center gap-2 self-end sm:self-center">
                         @if($survey->hasReport())
-                            <x-icon-button as="a" icon="view" href="{{ route('teknisi.surveys.report.view', $survey) }}" target="_blank" rel="noopener"
-                                           title="{{ __('View') }}" label="{{ __('View') }}" />
+                            <x-file-preview :url="route('teknisi.surveys.report.view', $survey)"
+                                            :download="route('teknisi.surveys.report.download', $survey)"
+                                            :name="basename((string) ($survey->report_file_name ?: $survey->report_file))"
+                                            label="{{ __('View') }}" />
                             <x-icon-button as="a" icon="download" href="{{ route('teknisi.surveys.report.download', $survey) }}"
                                            title="{{ __('Download') }}" label="{{ __('Download') }}" />
                             @can('manage-technician')

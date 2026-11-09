@@ -1,6 +1,6 @@
 # PLAN-SISTEM-NOTIF-POPUP: Pop Up Notifikasi Pojok Layar
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Menu:** Sistem / Notification Center
 **Branch:** feature/sys-notif-popup
 **Terakhir diperbarui:** 2026-11-09

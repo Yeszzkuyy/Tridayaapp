@@ -503,6 +503,30 @@ class PriceRequestController extends Controller
         return Storage::disk('private')->download($priceRequest->reply_path);
     }
 
+    public function previewQuotation(Request $request, PriceRequest $priceRequest)
+    {
+        $this->authorize('view', $priceRequest);
+        abort_unless($priceRequest->quotation_path && Storage::disk('private')->exists($priceRequest->quotation_path), 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $priceRequest->quotation_path,
+            basename($priceRequest->quotation_path)
+        );
+    }
+
+    public function previewReply(Request $request, PriceRequest $priceRequest)
+    {
+        $this->authorize('view', $priceRequest);
+        abort_unless($priceRequest->reply_path && Storage::disk('private')->exists($priceRequest->reply_path), 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $priceRequest->reply_path,
+            basename($priceRequest->reply_path)
+        );
+    }
+
     public function downloadReplyVersion(Request $request, PriceRequest $priceRequest, PriceRequestReply $reply)
     {
         $this->authorize('view', $priceRequest);
@@ -510,6 +534,19 @@ class PriceRequestController extends Controller
         abort_unless(Storage::disk('private')->exists($reply->file_path), 404);
 
         return Storage::disk('private')->download($reply->file_path);
+    }
+
+    public function previewReplyVersion(Request $request, PriceRequest $priceRequest, PriceRequestReply $reply)
+    {
+        $this->authorize('view', $priceRequest);
+        abort_unless((int) $reply->price_request_id === (int) $priceRequest->id, 404);
+        abort_unless(Storage::disk('private')->exists($reply->file_path), 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $reply->file_path,
+            basename($reply->file_path)
+        );
     }
 
     private function configuredPricingEngineer(): ?User

@@ -74,7 +74,7 @@ sequenceDiagram
     actor M as Management
 
     C->>S: Permintaan Penawaran (Inquiry / BoQ)
-    
+
     alt Skenario 1: Jual-Putus / Retail (Barang Standar)
         Note over S: Barang standar & harga sudah ada di katalog
         S->>S: Buat Quotation langsung (input item & harga jual)
@@ -99,7 +99,7 @@ sequenceDiagram
     else Customer Deal & Terbit PO
         C->>S: Kirimkan Purchase Order (PO)
         S->>S: Upload Berkas PO & Set Status "Won"
-        
+
         alt PO Butuh Pengerjaan Lapangan?
             S->>E: Klik [Convert to Project] -> Project terbentuk untuk Teknisi
         else Hanya Beli Barang
