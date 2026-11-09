@@ -14,9 +14,11 @@ use App\Models\SupplierPurchaseOrder;
 use App\Models\SupplierPurchaseOrderItem;
 use App\Models\User;
 use App\Models\WorkType;
+use App\Notifications\ProposalStatusNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -116,6 +118,56 @@ class AdminHandoffPoVerificationTest extends TestCase
         $this->actingAs($otherSales)
             ->post(route('admin.purchasing.verify-po', $proposal))
             ->assertForbidden();
+    }
+
+    public function test_verifying_po_notifies_sales_owner(): void
+    {
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales);
+
+        $this->actingAs($admin)
+            ->post(route('admin.purchasing.verify-po', $proposal))
+            ->assertRedirect();
+
+        Notification::assertSentTo($sales, ProposalStatusNotification::class);
+    }
+
+    public function test_admin_handoff_shows_incomplete_po_checklist_and_hides_verify_button(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales, ['delivery_address' => null]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.purchasing.show', $proposal))
+            ->assertOk()
+            ->assertSee('Customer PO is incomplete')
+            ->assertSee('Delivery address is missing.')
+            ->assertDontSee('Verify PO');
+    }
+
+    public function test_sales_sees_po_status_badge_before_and_after_verification(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $proposal = $this->makeProposal($sales);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.show', $proposal))
+            ->assertOk()
+            ->assertSee('PO Received — Ready for Purchasing');
+
+        $this->actingAs($admin)
+            ->post(route('admin.purchasing.verify-po', $proposal))
+            ->assertRedirect();
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.show', $proposal))
+            ->assertOk()
+            ->assertSee('PO Verified');
     }
 
     public function test_admin_cannot_verify_incomplete_customer_po(): void

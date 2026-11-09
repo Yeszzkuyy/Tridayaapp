@@ -143,6 +143,13 @@ class PurchasingHandoffController extends Controller
             ]);
         }
 
+        // Sales pemilik lead perlu tahu PO sudah lolos verifikasi dan
+        // boleh lanjut convert.
+        $assignee = $proposal->lead?->assignee ?: $proposal->creator;
+        if ($assignee && (int) $assignee->id !== (int) $user->id) {
+            $assignee->notify(new ProposalStatusNotification($proposal, 'po_verified'));
+        }
+
         return back()->with('success', __('Customer PO verified successfully.'));
     }
 

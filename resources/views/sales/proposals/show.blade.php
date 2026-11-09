@@ -240,10 +240,17 @@
 
             {{-- Customer PO (pesanan pelanggan ke 3DY) — bukan Supplier PO --}}
             @if($proposal->status === 'accepted')
+                @php
+                    $poStatusClass = $proposal->isPoReturned()
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                        : ($proposal->isPoVerified()
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                            : 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300');
+                @endphp
                 <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 text-sm space-y-1">
                     <div class="flex items-center justify-between gap-2">
                         <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer PO') }}</p>
-                        <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ $proposal->isReadyForPurchasing() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ $proposal->purchasingStatusLabel() }}</span>
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $poStatusClass }}">{{ $proposal->purchasingStatusLabel() }}</span>
                     </div>
                     <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
                     <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
@@ -379,6 +386,7 @@
                         ['label' => __('Customer PO number'), 'done' => filled($proposal->po_number)],
                         ['label' => __('Payment terms'), 'done' => filled($proposal->payment_scheme)],
                         ['label' => __('Delivery deadline'), 'done' => filled($proposal->delivery_deadline)],
+                        ['label' => __('Customer PO verified'), 'done' => $proposal->isPoVerified()],
                     ];
                     $handoffComplete = collect($handoffItems)->every(fn ($item) => $item['done']);
                 @endphp
