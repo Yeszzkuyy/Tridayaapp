@@ -373,6 +373,23 @@ class LeadTaskController extends Controller
             ->download($attachment->file_path, $attachment->original_name);
     }
 
+    /**
+     * Pratinjau lampiran quotation task tanpa mengunduh (PDF/gambar inline).
+     */
+    public function previewAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
+    {
+        $this->authorizeTaskView($leadTask);
+
+        abort_unless((int) $attachment->lead_task_id === (int) $leadTask->id, 404);
+        abort_unless(\Illuminate\Support\Facades\Storage::disk('private')->exists($attachment->file_path), 404, __('File not found.'));
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $attachment->file_path,
+            $attachment->original_name
+        );
+    }
+
     public function destroyAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
     {
         $this->authorizeTaskManage($leadTask);

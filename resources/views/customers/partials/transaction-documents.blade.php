@@ -55,7 +55,11 @@ Props:
                     @endforeach
 
                     @foreach(($typedDocs->get('invoice', collect())) as $doc)
-                        <a href="{{ route('project-documents.download', $doc) }}"
+                        <a href="{{ route('project-documents.preview', $doc) }}"
+                           data-doc-open
+                           data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                           data-download="{{ route('project-documents.download', $doc) }}"
+                           data-filename="{{ $doc->file_name }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
                             <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                 <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,7 +127,11 @@ Props:
                     @endforeach
 
                     @foreach(($typedDocs->get('po', collect())) as $doc)
-                        <a href="{{ route('project-documents.download', $doc) }}"
+                        <a href="{{ route('project-documents.preview', $doc) }}"
+                           data-doc-open
+                           data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                           data-download="{{ route('project-documents.download', $doc) }}"
+                           data-filename="{{ $doc->file_name }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
                             <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                 <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +190,11 @@ Props:
                     @endforeach
 
                     @foreach(($typedDocs->get('payment', collect())) as $doc)
-                        <a href="{{ route('project-documents.download', $doc) }}"
+                        <a href="{{ route('project-documents.preview', $doc) }}"
+                           data-doc-open
+                           data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                           data-download="{{ route('project-documents.download', $doc) }}"
+                           data-filename="{{ $doc->file_name }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
                             <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                 <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

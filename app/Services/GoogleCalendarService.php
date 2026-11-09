@@ -829,13 +829,13 @@ class GoogleCalendarService
     }
 
     /**
-     * Kirim notifikasi ke teknisi/owner, lewati bila null, sama dengan
-     * pengirim aksi, atau sudah dinotifikasi. Kegagalan push tidak
-     * boleh menggagalkan simpan jadwal.
+     * Kirim notifikasi ke teknisi/owner, lewati bila null, bukan penerima
+     * yang sah, sama dengan pengirim aksi, atau sudah dinotifikasi.
+     * Kegagalan push tidak boleh menggagalkan simpan jadwal.
      */
     private function notifyTechnician(?User $target, ?User $actor, object $notification, array &$notified = []): void
     {
-        if (! $target || ($actor && $target->is($actor)) || in_array($target->id, $notified, true)) {
+        if (! $target || ! $target->canReceiveScheduleNotification() || ($actor && $target->is($actor)) || in_array($target->id, $notified, true)) {
             return;
         }
 

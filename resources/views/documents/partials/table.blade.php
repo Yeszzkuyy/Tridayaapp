@@ -105,7 +105,7 @@ Props: $documents (paginator DocumentCenterRow), $lockedCustomer (Customer|null)
                     <td class="px-4 py-4">
                         <div class="flex items-center justify-end gap-1.5">
                             @if($doc->canPreview && $doc->previewUrl)
-                                <x-icon-button as="a" icon="view" href="{{ $doc->previewUrl }}" target="_blank" rel="noopener" title="{{ __('Preview') }}" />
+                                <x-file-preview :url="$doc->previewUrl" :download="$doc->downloadUrl" :name="$doc->name" />
                             @endif
                             @if($doc->downloadUrl)
                                 <x-icon-button as="a" icon="download" href="{{ $doc->downloadUrl }}" title="{{ __('Download') }}" />

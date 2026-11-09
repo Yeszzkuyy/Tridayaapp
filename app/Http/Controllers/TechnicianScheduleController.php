@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
 use App\Services\GoogleCalendarService;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -51,7 +52,7 @@ class TechnicianScheduleController extends Controller
     public function jadwal(Request $request)
     {
         $this->autoSyncSoon();
-        $technicians = User::orderBy('name')->limit(200)->get(['id', 'name']);
+        $technicians = User::role(User::TECHNICIAN_ROLES)->orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
         $connection = $this->google->connectionStatus(auth()->user());
         $credential = GoogleAppCredential::current();
@@ -392,10 +393,26 @@ class TechnicianScheduleController extends Controller
             'title' => 'required|string|max:255',
             'project_id' => 'nullable|exists:projects,id',
             'technician_ids' => 'nullable|array',
-            'technician_ids.*' => 'exists:users,id',
+            'technician_ids.*' => [
+                'integer',
+                'exists:users,id',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! User::find($value)?->isTechnician()) {
+                        $fail(__('The selected user is not a technician.'));
+                    }
+                },
+            ],
             // Kolom lama tetap diterima sebagai fallback (kompatibilitas
             // mundur — data/pemanggil lama tidak boleh rusak).
-            'technician_user_id' => 'nullable|exists:users,id',
+            'technician_user_id' => [
+                'nullable',
+                'exists:users,id',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if ($value !== null && ! User::find($value)?->isTechnician()) {
+                        $fail(__('The selected user is not a technician.'));
+                    }
+                },
+            ],
             'date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'nullable|date_format:H:i|after:start_time',

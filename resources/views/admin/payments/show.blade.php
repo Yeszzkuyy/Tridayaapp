@@ -18,7 +18,9 @@
                 @if($payment->proof_file)
                 <div class="mt-6">
                     <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Transfer Proof') }}</h3>
-                    <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" label="{{ __('View Transfer Proof') }}" title="{{ __('View Transfer Proof') }}" />
+                    <x-file-preview :url="route('admin.payments.proof', $payment)"
+                                    :name="basename((string) $payment->proof_file)"
+                                    label="{{ __('View Transfer Proof') }}" />
                 </div>
                 @endif
             @endcan

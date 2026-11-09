@@ -41,7 +41,9 @@
                             <p class="text-xs text-slate-400">{{ $document->created_at->format('d M Y') }}</p>
                         </div>
                         <div class="flex shrink-0 gap-2">
-                            <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $document) }}" target="_blank" title="{{ __('Preview') }}" />
+                            <x-file-preview :url="route('project-documents.preview', $document)"
+                                            :download="route('project-documents.download', $document)"
+                                            :name="$document->file_name" />
                             <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}" title="{{ __('Download') }}" />
                         </div>
                     </div>

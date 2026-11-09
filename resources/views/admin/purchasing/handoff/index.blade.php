@@ -91,6 +91,8 @@
                                     @if($proposal->project)
                                         <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" title="{{ __('View Project') }}" />
                                     @endif
+                                    <x-file-preview :url="route('sales.proposals.download-po', $proposal)"
+                                                    :name="basename((string) $proposal->po_document_path)" />
                                     <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" title="{{ __('Download PO') }}" />
                                 </div>
                             </td>

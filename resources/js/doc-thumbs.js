@@ -108,6 +108,23 @@ async function renderPdfThumb(canvas) {
 
 const CONTENT_KINDS = ['txt', 'csv', 'docx', 'xlsx', 'pptx', 'zip'];
 
+// Ekstensi -> jenis pratinjau (dipakai tombol/panel yang memanggil
+// window.openDocPreview langsung tanpa atribut data-kind).
+export function docPreviewKind(ext) {
+    const e = String(ext || '').toLowerCase().replace(/^\./, '');
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(e)) return 'image';
+    if (e === 'pdf') return 'pdf';
+    if (['mp4', 'webm', 'ogg'].includes(e)) return 'video';
+    if (['mp3', 'wav'].includes(e)) return 'audio';
+    if (e === 'md') return 'txt';
+    if (CONTENT_KINDS.includes(e)) return e;
+    return 'other';
+}
+
+if (typeof window !== 'undefined') {
+    window.docPreviewKind = docPreviewKind;
+}
+
 function previewShell() {
     const wrap = document.createElement('div');
     wrap.className = 'max-h-[70vh] w-full overflow-auto rounded-lg bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200';
@@ -731,15 +748,13 @@ function initDocLightbox() {
         return div.innerHTML;
     };
 
-    const openFrom = async (trigger) => {
+    const openDocPreview = async ({ kind = 'other', url = '', filename = '', download = '' } = {}) => {
         closeAllDocMenus();
-        const kind = trigger.dataset.kind || 'other';
-        const url = trigger.dataset.url || '';
-        const filename = trigger.dataset.filename || '';
-        const download = trigger.dataset.download || url;
+        download = download || url;
 
         nameEl.textContent = filename;
         downloadEl.setAttribute('href', download);
+        document.getElementById('doc-lightbox-open')?.setAttribute('href', url);
         body.innerHTML = '';
 
         if (kind === 'image') {
@@ -788,8 +803,22 @@ function initDocLightbox() {
         showModal(lightbox);
     };
 
+    // Bisa dipanggil dari mana saja (mis. panel Alpine) tanpa elemen pemicu.
+    window.openDocPreview = openDocPreview;
+
+    const openFrom = (trigger) => openDocPreview({
+        kind: trigger.dataset.kind || 'other',
+        url: trigger.dataset.url || '',
+        filename: trigger.dataset.filename || '',
+        download: trigger.dataset.download || '',
+    });
+
     document.querySelectorAll('[data-doc-open]').forEach((thumb) => {
-        bindOnce(thumb, 'click', () => openFrom(thumb));
+        bindOnce(thumb, 'click', (e) => {
+            // Tautan fallback: jangan pindah halaman, tampilkan di lightbox.
+            e.preventDefault();
+            openFrom(thumb);
+        });
     });
     document.querySelectorAll('[data-doc-open-child]').forEach((btn) => {
         bindOnce(btn, 'click', (e) => {

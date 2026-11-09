@@ -69,7 +69,10 @@
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <p class="text-xs text-slate-400 mb-2">{{ __('Installation Report') }}</p>
                 <div class="flex items-center gap-2">
-                    <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View') }}" label="{{ __('View') }}" />
+                    <x-file-preview :url="route('teknisi.instalasis.report.view', $instalasi)"
+                                    :download="route('teknisi.instalasis.report.download', $instalasi)"
+                                    :name="$instalasi->report_file_name ?: basename((string) $instalasi->report_file)"
+                                    label="{{ __('View') }}" />
                     <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" label="{{ __('Download') }}" />
                     <span class="text-sm text-slate-600 dark:text-slate-300 truncate">{{ $instalasi->report_file_name }}</span>
                 </div>

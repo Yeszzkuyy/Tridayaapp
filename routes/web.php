@@ -288,15 +288,20 @@ Route::middleware('auth')->group(function () {
         Route::get('schedules/{schedule}', [SalesScheduleController::class, 'show'])->name('schedules.show');
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
+        Route::get('technical-requests/{technicalRequest}/attachment/preview', [TechnicalRequestController::class, 'previewAttachment'])->name('technical-requests.attachment.preview');
         Route::get('price-requests/export-excel', [PriceRequestController::class, 'exportExcel'])->name('price-requests.export-excel');
         Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
+        Route::get('price-requests/{priceRequest}/quotation/preview', [PriceRequestController::class, 'previewQuotation'])->name('price-requests.quotation.preview');
         Route::get('price-requests/{priceRequest}/reply', [PriceRequestController::class, 'downloadReply'])->name('price-requests.reply');
+        Route::get('price-requests/{priceRequest}/reply/preview', [PriceRequestController::class, 'previewReply'])->name('price-requests.reply.preview');
         Route::get('price-requests/{priceRequest}/replies/{reply}', [PriceRequestController::class, 'downloadReplyVersion'])->name('price-requests.replies.download');
+        Route::get('price-requests/{priceRequest}/replies/{reply}/preview', [PriceRequestController::class, 'previewReplyVersion'])->name('price-requests.replies.preview');
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
         Route::get('proposals/{proposal}/attachments/{attachment}', [ProposalController::class, 'downloadAttachment'])->name('proposals.attachments.download');
+        Route::get('proposals/{proposal}/attachments/{attachment}/preview', [ProposalController::class, 'previewAttachment'])->name('proposals.attachments.preview');
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
     });
 
@@ -415,6 +420,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('/technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('/technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
+        Route::get('/technical-requests/{technicalRequest}/attachment/preview', [TechnicalRequestController::class, 'previewAttachment'])->name('technical-requests.attachment.preview');
         Route::get('/surveys/create', [\App\Http\Controllers\SurveyController::class, 'create'])->name('surveys.create');
         Route::get('/sizing-projects', [\App\Http\Controllers\SizingProjectController::class, 'index'])->name('sizing-projects.index');
         Route::get('/sizing-projects/create', [\App\Http\Controllers\SizingProjectController::class, 'create'])->name('sizing-projects.create');
@@ -762,6 +768,7 @@ Route::middleware('auth')->group(function () {
             // Lampiran quotation (riwayat versi, disimpan di disk privat).
             Route::post('/{leadTask}/attachments', [LeadTaskController::class, 'storeAttachment'])->name('attachments.store');
             Route::get('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'downloadAttachment'])->name('attachments.download');
+            Route::get('/{leadTask}/attachments/{attachment}/preview', [LeadTaskController::class, 'previewAttachment'])->name('attachments.preview');
             Route::delete('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'destroyAttachment'])->name('attachments.destroy');
             Route::post('/{leadTask}/attachments/{attachment}/accept', [LeadTaskController::class, 'acceptAttachment'])->name('attachments.accept');
         });

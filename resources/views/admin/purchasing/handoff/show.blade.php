@@ -9,6 +9,8 @@
         </div>
         <div class="flex items-center gap-2">
             <x-icon-button as="a" icon="back" href="{{ route('admin.purchasing.index') }}" title="{{ __('Back') }}" />
+            <x-file-preview :url="route('sales.proposals.download-po', $proposal)"
+                            :name="basename((string) $proposal->po_document_path)" />
             <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
             @if($proposal->project)
                 <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('View Project') }}" title="{{ __('View Project') }}" />
@@ -76,6 +78,9 @@
                                         {{ $file->humanSize() }} · {{ $file->uploader?->name ?? __('System') }} · {{ $file->created_at?->translatedFormat('d M Y H:i') }}
                                     </p>
                                 </div>
+                                <x-file-preview :url="route('sales.proposals.attachments.preview', [$proposal, $file])"
+                                                :download="route('sales.proposals.attachments.download', [$proposal, $file])"
+                                                :name="$file->original_name" />
                                 <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
                             </li>
                         @endforeach

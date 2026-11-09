@@ -145,7 +145,12 @@
                         @endphp
                         <div class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between">
                             <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ $quotationFileName }}</p>
-                            <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.quotation', $priceRequest) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
+                            <div class="flex shrink-0 items-center gap-2">
+                                <x-file-preview :url="route('sales.price-requests.quotation.preview', $priceRequest)"
+                                                :download="route('sales.price-requests.quotation', $priceRequest)"
+                                                :name="$quotationFileName" />
+                                <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.quotation', $priceRequest) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
+                            </div>
                         </div>
                     @else
                         <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ __('No quotation file attached.') }}</p>
@@ -190,7 +195,12 @@
                                             @endif
                                             <p class="mt-3 break-all text-xs text-slate-500 dark:text-slate-400">{{ $replyFileName }}</p>
                                         </div>
-                                        <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply]) }}" title="{{ __('Download version :number', ['number' => $reply->version]) }}" />
+                                        <div class="flex shrink-0 items-center gap-2">
+                                            <x-file-preview :url="route('sales.price-requests.replies.preview', ['priceRequest' => $priceRequest, 'reply' => $reply])"
+                                                            :download="route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply])"
+                                                            :name="$replyFileName" />
+                                            <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply]) }}" title="{{ __('Download version :number', ['number' => $reply->version]) }}" />
+                                        </div>
                                     </div>
                                 </article>
                             @endforeach

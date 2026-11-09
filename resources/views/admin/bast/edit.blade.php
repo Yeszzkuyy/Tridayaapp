@@ -210,7 +210,9 @@
                         @endif
                         <div class="flex items-center gap-1.5">
                             @if($instalasi->hasReport())
-                                <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View report') }}" />
+                                <x-file-preview :url="route('teknisi.instalasis.report.view', $instalasi)"
+                                                :download="route('teknisi.instalasis.report.download', $instalasi)"
+                                                :name="$instalasi->report_file_name ?: basename((string) $instalasi->report_file)" />
                                 <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download report') }}" />
                             @endif
                             <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.show', $instalasi) }}" title="{{ __('Installation detail') }}" />
@@ -270,6 +272,9 @@
                 @forelse($project->documents as $document)
                     <div class="flex items-center justify-between gap-2">
                         <span class="truncate text-slate-700 dark:text-slate-300" title="{{ $document->file_name }}">{{ $document->file_name }}</span>
+                        <x-file-preview :url="route('project-documents.preview', $document)"
+                                        :download="route('project-documents.download', $document)"
+                                        :name="$document->file_name" />
                         <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}" title="{{ __('Download') }}" />
                     </div>
                 @empty
