@@ -27,7 +27,26 @@ class CustomerController extends Controller
                 $query->orderByDesc('is_primary')->latest();
             }])
             ->when($request->filled('search'), function ($query) use ($request) {
-                $query->whereLike(['name', 'company', 'email'], $request->string('search'));
+                $search = $request->string('search');
+
+                $query->where(function ($q) use ($search) {
+                    $q->whereLike('name', $search)
+                        ->orWhereLike('company', $search)
+                        ->orWhereLike('email', $search)
+                        ->orWhereHas('contacts', function ($contact) use ($search) {
+                            $contact->whereLike('name', $search)
+                                ->orWhereLike('phone', $search)
+                                ->orWhereLike('whatsapp', $search)
+                                ->orWhereLike('email', $search);
+                        });
+                });
+            })
+            ->when($request->filled('pic'), function ($query) use ($request) {
+                if ($request->string('pic')->toString() === 'no') {
+                    $query->whereDoesntHave('contacts');
+                } else {
+                    $query->whereHas('contacts');
+                }
             })
             ->when($request->filled('pt_group'), fn ($query) => $query->where('pt_group', $request->string('pt_group')))
             ->latest()
@@ -72,6 +91,9 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
+            'contact_position' => 'nullable|string|max:255',
+            'contact_whatsapp' => 'nullable|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
             'company' => 'nullable|string|max:255',
             'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
@@ -95,13 +117,24 @@ class CustomerController extends Controller
         // PIC di form diterjemahkan menjadi satu kontak primary (input eksplisit
         // pengguna), bukan lagi kolom legacy yang berdiri sendiri.
         $contactPerson = $validated['contact_person'] ?? null;
-        unset($validated['contact_person']);
+        $contactPosition = $validated['contact_position'] ?? null;
+        $contactWhatsapp = $validated['contact_whatsapp'] ?? null;
+        $contactEmail = $validated['contact_email'] ?? null;
+        unset(
+            $validated['contact_person'],
+            $validated['contact_position'],
+            $validated['contact_whatsapp'],
+            $validated['contact_email'],
+        );
 
         $customer = Customer::create($validated);
 
         if (filled($contactPerson)) {
             $this->contacts->create($customer, [
                 'name' => $contactPerson,
+                'position' => $contactPosition,
+                'whatsapp' => $contactWhatsapp,
+                'email' => $contactEmail,
                 'is_primary' => true,
             ]);
         }
@@ -126,10 +159,6 @@ class CustomerController extends Controller
     public function show(Customer $customer, Request $request, \App\Services\DocumentCenterService $documentCenter)
     {
         $this->authorize('view', $customer);
-
-        // PIC legacy (customer lama) dijadikan kontak primary saat pertama
-        // dibuka, supaya tab Contacts & Overview tidak kosong.
-        $this->contacts->backfillLegacyPrimary($customer);
 
         // Load relasi projects dan contacts sekaligus.
         // Kontak diurutkan berdasarkan is_primary supaya PIC utama muncul di atas.
@@ -414,6 +443,9 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
+            'contact_position' => 'nullable|string|max:255',
+            'contact_whatsapp' => 'nullable|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
             'company' => 'nullable|string|max:255',
             'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
@@ -436,7 +468,21 @@ class CustomerController extends Controller
         // `contact_person` bukan lagi sumber tulis independen: arahkan ke
         // kontak primary supaya halaman Lead/Manage Sales tidak basi.
         $contactPerson = $validated['contact_person'] ?? null;
-        unset($validated['contact_person']);
+        $contactPosition = $validated['contact_position'] ?? null;
+        $contactWhatsapp = $validated['contact_whatsapp'] ?? null;
+        $contactEmail = $validated['contact_email'] ?? null;
+        $hasPicPayload = $request->hasAny([
+            'contact_person',
+            'contact_position',
+            'contact_whatsapp',
+            'contact_email',
+        ]);
+        unset(
+            $validated['contact_person'],
+            $validated['contact_position'],
+            $validated['contact_whatsapp'],
+            $validated['contact_email'],
+        );
 
         if ($request->hasFile('npwp_document')) {
             if ($customer->npwp_document_path) {
@@ -451,19 +497,25 @@ class CustomerController extends Controller
 
         $primary = $this->contacts->primary($customer);
 
-        if ($primary) {
+        if ($primary && $hasPicPayload) {
             // PIC utama diubah eksplisit dari form customer -> ikut ubah kontak.
-            if (filled($contactPerson) && $contactPerson !== $primary->name) {
-                $this->contacts->update($primary, ['name' => $contactPerson]);
-            } else {
-                $this->contacts->syncPicCache($customer);
-            }
-        } elseif (filled($contactPerson) && $contactPerson !== $customer->contact_person) {
+            $this->contacts->update($primary, [
+                'name' => filled($contactPerson) ? $contactPerson : $primary->name,
+                'position' => filled($contactPosition) ? $contactPosition : null,
+                'whatsapp' => filled($contactWhatsapp) ? $contactWhatsapp : null,
+                'email' => filled($contactEmail) ? $contactEmail : null,
+            ]);
+        } elseif (! $primary && filled($contactPerson)) {
             // Customer lama tanpa kontak: angkat PIC yang diisi menjadi primary.
             $this->contacts->create($customer, [
                 'name' => $contactPerson,
+                'position' => $contactPosition,
+                'whatsapp' => $contactWhatsapp,
+                'email' => $contactEmail,
                 'is_primary' => true,
             ]);
+        } else {
+            $this->contacts->syncPicCache($customer);
         }
 
         return redirect()

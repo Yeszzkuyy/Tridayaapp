@@ -115,6 +115,8 @@
                             ['icon' => 'phone', 'label' => __('Telepon'), 'value' => \App\Support\PhoneFormatter::format($customer->phone)],
                             ['icon' => 'chat', 'label' => __('Company WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Company'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('PIC WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->picWhatsapp()), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
+                            ['icon' => 'user', 'label' => __('PIC Position'), 'value' => $customer->picPosition()],
+                            ['icon' => 'mail', 'label' => __('PIC Email'), 'value' => $customer->preferredContact()?->email],
                             ['icon' => 'mail', 'label' => __('Email'), 'value' => $customer->email],
                             ['icon' => 'user', 'label' => __('Finance PIC'), 'value' => $customer->financeContact()],
                             ['icon' => 'file-text', 'label' => __('NPWP'), 'value' => $customer->npwp],

@@ -64,15 +64,15 @@ class CustomerContactSourceTest extends TestCase
     // ATURAN PRIMARY
     // ============================================================
 
-    public function test_first_contact_is_not_primary_unless_explicit(): void
+    public function test_first_contact_becomes_primary_automatically(): void
     {
         $customer = $this->makeCustomer(['contact_person' => 'PIC Lama']);
 
         $contact = $this->service()->create($customer, ['name' => 'Budi']);
 
-        $this->assertFalse($contact->is_primary);
-        $this->assertNull($customer->fresh()->contact_person);
-        $this->assertNull($customer->fresh()->picName());
+        $this->assertTrue($contact->is_primary);
+        $this->assertSame('Budi', $customer->fresh()->contact_person);
+        $this->assertSame('Budi', $customer->fresh()->picName());
     }
 
     public function test_set_primary_keeps_only_one_and_syncs_cache(): void
@@ -103,7 +103,7 @@ class CustomerContactSourceTest extends TestCase
         $this->assertSame('Andi', $customer->fresh()->contact_person);
     }
 
-    public function test_deleting_primary_does_not_auto_promote_another(): void
+    public function test_deleting_primary_falls_back_to_first_contact_without_promoting_it(): void
     {
         $customer = $this->makeCustomer();
         $primary = $this->service()->create($customer, ['name' => 'Andi', 'is_primary' => true]);
@@ -113,7 +113,8 @@ class CustomerContactSourceTest extends TestCase
 
         $this->assertSame(0, $customer->contacts()->where('is_primary', true)->count());
         $this->assertFalse($secondary->fresh()->is_primary);
-        $this->assertNull($customer->fresh()->contact_person);
+        $this->assertSame('Budi', $customer->fresh()->contact_person);
+        $this->assertSame('Budi', $customer->fresh()->picName());
     }
 
     public function test_database_rejects_second_primary(): void
@@ -153,6 +154,52 @@ class CustomerContactSourceTest extends TestCase
         $this->assertNotNull($primary);
         $this->assertSame('Pak Budi', $primary->name);
         $this->assertSame('Pak Budi', $customer->contact_person);
+    }
+
+    public function test_customer_form_saves_primary_pic_details(): void
+    {
+        $user = $this->userWithRole('sales');
+
+        $this->actingAs($user)->post(route('customers.store'), [
+            'name' => 'PT PIC Lengkap',
+            'contact_person' => 'Pak Budi',
+            'contact_position' => 'Purchasing',
+            'contact_whatsapp' => '08123456789',
+            'contact_email' => 'budi@example.test',
+            'pt_group' => 'NTI',
+        ])->assertRedirect();
+
+        $customer = Customer::where('name', 'PT PIC Lengkap')->firstOrFail();
+        $primary = $customer->primaryContact();
+
+        $this->assertNotNull($primary);
+        $this->assertSame('Pak Budi', $primary->name);
+        $this->assertSame('Purchasing', $primary->position);
+        $this->assertSame('08123456789', $primary->whatsapp);
+        $this->assertSame('budi@example.test', $primary->email);
+    }
+
+    public function test_customer_edit_updates_primary_pic_details(): void
+    {
+        $user = $this->userWithRole('sales');
+        $customer = $this->makeCustomer(['pt_group' => 'NTI']);
+        $primary = $this->service()->create($customer, ['name' => 'Lama', 'is_primary' => true]);
+
+        $this->actingAs($user)->put(route('customers.update', $customer), [
+            'name' => 'PT Kontak',
+            'pt_group' => 'NTI',
+            'contact_person' => 'Baru',
+            'contact_position' => 'Direktur',
+            'contact_whatsapp' => '0811000011',
+            'contact_email' => 'baru@example.test',
+        ])->assertRedirect();
+
+        $primary->refresh();
+
+        $this->assertSame('Baru', $primary->name);
+        $this->assertSame('Direktur', $primary->position);
+        $this->assertSame('0811000011', $primary->whatsapp);
+        $this->assertSame('baru@example.test', $primary->email);
     }
 
     public function test_editing_lead_keeps_primary_but_saves_lead_pic_as_extra_contact(): void
@@ -214,7 +261,14 @@ class CustomerContactSourceTest extends TestCase
         $withPrimary = $this->makeCustomer(['contact_person' => 'Sudah Ada']);
         $this->service()->create($withPrimary, ['name' => 'Sudah Ada', 'is_primary' => true]);
         $withoutPrimary = $this->makeCustomer(['contact_person' => 'Perlu Review']);
-        $this->service()->create($withoutPrimary, ['name' => 'Sekunder']);
+        // Simulasikan data lama: ada kontak tetapi tidak ada yang primary.
+        DB::table('customer_contacts')->insert([
+            'customer_id' => $withoutPrimary->id,
+            'name' => 'Sekunder',
+            'is_primary' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $this->artisan('customers:backfill-contacts')->assertSuccessful();
         $this->artisan('customers:backfill-contacts')->assertSuccessful();
