@@ -38,6 +38,11 @@ class CustomerContactService
         return DB::transaction(function () use ($customer, $data, $makePrimary) {
             $this->lockContacts($customer);
 
+            // Kontak pertama otomatis menjadi PIC utama. Tanpa ini,
+            // customer sudah punya PIC tetapi layar menampilkan
+            // "No PIC yet" karena tidak ada kontak ber-flag primary.
+            $makePrimary = $makePrimary || $this->primary($customer) === null;
+
             if ($makePrimary) {
                 $this->clearPrimary($customer);
             }
@@ -179,11 +184,11 @@ class CustomerContactService
     }
 
     /**
-     * Samakan cache `customers.contact_person` dengan kontak primary.
+     * Samakan cache `customers.contact_person` dengan PIC default.
      *
-     * - Ada kontak tapi tanpa primary → cache dikosongkan (jangan pakai
-     *   nilai lama yang bisa jadi basi).
-     * - Belum ada kontak sama sekali → kolom legacy dibiarkan, supaya
+     * - Ada kontak tapi tanpa primary -> pakai kontak pertama, jangan
+     *   dikosongkan selama datanya masih ada.
+     * - Belum ada kontak sama sekali -> kolom legacy dibiarkan, supaya
      *   customer lama tetap tampil sampai backfill dijalankan.
      */
     public function syncPicCache(Customer $customer): void
@@ -192,9 +197,10 @@ class CustomerContactService
             return;
         }
 
-        $primary = $this->primary($customer);
+        $preferred = $this->primary($customer)
+            ?? $customer->contacts()->orderByDesc('is_primary')->orderBy('id')->first();
 
-        $customer->forceFill(['contact_person' => $primary?->name])->saveQuietly();
+        $customer->forceFill(['contact_person' => $preferred?->name])->saveQuietly();
     }
 
     /** Kunci baris kontak customer agar perubahan primary tidak balapan. */

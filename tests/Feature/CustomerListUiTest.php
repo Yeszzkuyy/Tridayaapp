@@ -54,7 +54,7 @@ class CustomerListUiTest extends TestCase
             ->assertSee('aria-label="Edit Customer"', false);
     }
 
-    public function test_legacy_pic_is_backfilled_as_primary_contact_when_detail_opened(): void
+    public function test_legacy_pic_is_displayed_without_writing_contact_on_detail_open(): void
     {
         // Customer lama: PIC hanya ada di kolom legacy, belum ada baris kontak.
         $customer = Customer::create([
@@ -67,20 +67,12 @@ class CustomerListUiTest extends TestCase
 
         $this->assertDatabaseMissing('customer_contacts', ['customer_id' => $customer->id]);
 
-        $response = $this->actingAs($this->admin())->get(route('customers.show', $customer));
+        $this->actingAs($this->admin())->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee('Budi Legacy');
 
-        $response->assertOk()->assertSee('Budi Legacy');
-
-        $this->assertDatabaseHas('customer_contacts', [
-            'customer_id' => $customer->id,
-            'name' => 'Budi Legacy',
-            'is_primary' => true,
-            'email' => 'budi@legacy.test',
-        ]);
-
-        // Membuka ulang tidak boleh menggandakan kontak.
-        $this->actingAs($this->admin())->get(route('customers.show', $customer))->assertOk();
-        $this->assertSame(1, $customer->contacts()->count());
+        // Membuka detail tidak lagi menulis kontak baru (bukan write-on-GET).
+        $this->assertDatabaseMissing('customer_contacts', ['customer_id' => $customer->id]);
     }
 
     public function test_detail_tab_actions_use_flow_buttons(): void

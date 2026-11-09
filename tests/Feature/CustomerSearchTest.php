@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\CustomerContact;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -87,5 +88,50 @@ class CustomerSearchTest extends TestCase
             ->assertOk()
             ->assertSee('PT Jepun')
             ->assertDontSee('Beta Ltd');
+    }
+
+    public function test_search_matches_pic_name_and_whatsapp()
+    {
+        $u = $this->user();
+        $alpha = Customer::create(['name' => 'PT Alpha']);
+        CustomerContact::create([
+            'customer_id' => $alpha->id,
+            'name' => 'Budi Santoso',
+            'whatsapp' => '081234567890',
+            'is_primary' => true,
+        ]);
+        Customer::create(['name' => 'Beta Ltd']);
+
+        $this->actingAs($u)->call('GET', '/customers', ['search' => 'Budi'])
+            ->assertOk()
+            ->assertSee('PT Alpha')
+            ->assertDontSee('Beta Ltd');
+
+        $this->actingAs($u)->call('GET', '/customers', ['search' => '081234567890'])
+            ->assertOk()
+            ->assertSee('PT Alpha')
+            ->assertDontSee('Beta Ltd');
+    }
+
+    public function test_pic_filter_can_show_only_customers_with_or_without_pic()
+    {
+        $u = $this->user();
+        $withPic = Customer::create(['name' => 'PT Ada PIC']);
+        CustomerContact::create([
+            'customer_id' => $withPic->id,
+            'name' => 'Budi',
+            'is_primary' => true,
+        ]);
+        Customer::create(['name' => 'PT Tanpa PIC']);
+
+        $this->actingAs($u)->call('GET', '/customers', ['pic' => 'yes'])
+            ->assertOk()
+            ->assertSee('PT Ada PIC')
+            ->assertDontSee('PT Tanpa PIC');
+
+        $this->actingAs($u)->call('GET', '/customers', ['pic' => 'no'])
+            ->assertOk()
+            ->assertSee('PT Tanpa PIC')
+            ->assertDontSee('PT Ada PIC');
     }
 }

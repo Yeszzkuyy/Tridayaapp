@@ -60,6 +60,26 @@ class Customer extends Model
     }
 
     /**
+     * Kontak default untuk tampilan PIC: primary, atau kontak pertama
+     * bila belum ada yang ditandai primary. Ini mencegah "No PIC yet"
+     * padahal customer sudah punya data kontak.
+     */
+    public function preferredContact(): ?CustomerContact
+    {
+        $primary = $this->primaryContact();
+
+        if ($primary) {
+            return $primary;
+        }
+
+        if ($this->relationLoaded('contacts')) {
+            return $this->contacts->first();
+        }
+
+        return $this->contacts()->orderByDesc('is_primary')->orderBy('id')->first();
+    }
+
+    /**
      * Nama PIC default.
      *
      * Sumber utama tabel `customer_contacts`; kolom legacy hanya dipakai
@@ -67,37 +87,37 @@ class Customer extends Model
      */
     public function picName(): ?string
     {
-        $primary = $this->primaryContact();
+        $preferred = $this->preferredContact();
 
-        return $primary?->name ?: $this->contact_person;
+        return $preferred?->name ?: $this->contact_person;
     }
 
     /** WhatsApp PIC default (bukan nomor perusahaan). */
     public function picWhatsapp(): ?string
     {
-        $primary = $this->primaryContact();
+        $preferred = $this->preferredContact();
 
         // Kontak dulu; kalau kontak belum punya nomor, pakai nomor customer
         // supaya kartu PIC tidak kosong padahal nomornya ada.
-        return $primary?->whatsapp ?: ($primary?->phone ?: $this->whatsapp);
+        return $preferred?->whatsapp ?: ($preferred?->phone ?: $this->whatsapp);
     }
 
     /** Telepon PIC default (bukan nomor perusahaan). */
     public function picPhone(): ?string
     {
-        return $this->primaryContact()?->phone ?: $this->phone;
+        return $this->preferredContact()?->phone ?: $this->phone;
     }
 
     /** Email PIC default (bukan email perusahaan). */
     public function picEmail(): ?string
     {
-        return $this->primaryContact()?->email ?: $this->email;
+        return $this->preferredContact()?->email ?: $this->email;
     }
 
     /** Jabatan PIC default, bila diisi. */
     public function picPosition(): ?string
     {
-        return $this->primaryContact()?->position;
+        return $this->preferredContact()?->position;
     }
 
     /**
