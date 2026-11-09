@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('follow_ups', 'daily_report_submitted_at')) {
+            return;
+        }
+
         Schema::table('follow_ups', function (Blueprint $table) {
             $table->timestamp('daily_report_submitted_at')->nullable()->after('completed_at');
         });
@@ -21,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasColumn('follow_ups', 'daily_report_submitted_at')) {
+            return;
+        }
+
         Schema::table('follow_ups', function (Blueprint $table) {
             $table->dropColumn('daily_report_submitted_at');
         });
