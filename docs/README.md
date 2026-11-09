@@ -22,12 +22,15 @@ dengan nama `PLAN-<MENU>-<FITUR>.md` dan header `**Status Pengerjaan:**`.
 | [PLAN-SALES-QUOTATION](plans/PLAN-SALES-QUOTATION.md) | Siap Dikerjakan | Revamp Proposal menjadi Quotation |
 | [PLAN-SALES-EKOSISTEM](plans/PLAN-SALES-EKOSISTEM.md) | Belum Dikerjakan | Ekosistem Sales & Quotation (draft V2) |
 | [PLAN-SALES-DAR-TIMELINE](plans/PLAN-SALES-DAR-TIMELINE.md) | Belum Dikerjakan | Integrasi DAR & timeline follow up |
+| [PLAN-SALES-ESTIMATOR-PRICE-REQUEST](plans/PLAN-SALES-ESTIMATOR-PRICE-REQUEST.md) | Siap Dikerjakan | Estimator, histori harga, export Excel |
+| [PLAN-SALES-DASHBOARD-CUSTOMER-HUB](plans/PLAN-SALES-DASHBOARD-CUSTOMER-HUB.md) | Siap Dikerjakan | Privasi sales, drill-down, customer hub |
 
 ### Admin
 
 | Plan | Status | Keterangan |
 |---|---|---|
 | [PLAN-ADMIN-END-TO-END](plans/PLAN-ADMIN-END-TO-END.md) | Siap Dikerjakan | Integrasi Sales, Purchasing, Logistik & Finance |
+| [PLAN-ADMIN-SALES-TARGET-SYNC](plans/PLAN-ADMIN-SALES-TARGET-SYNC.md) | Siap Dikerjakan | Realisasi target sales dari pembayaran finance |
 
 ### Dashboard
 
