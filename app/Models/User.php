@@ -14,6 +14,12 @@ class User extends Authenticatable
 {
     use HasConversations, HasFactory, HasPushSubscriptions, HasRoles, Notifiable, SoftDeletes; // ← Tambahkan SoftDeletes
 
+    /**
+     * Role yang dianggap teknisi untuk penugasan jadwal dan penerima
+     * notifikasi jadwal. Role marketing/admin tidak termasuk.
+     */
+    public const TECHNICIAN_ROLES = ['technician', 'lead-technician', 'prakerin-technician'];
+
     protected $fillable = [
         'name',
         'email',
@@ -44,6 +50,21 @@ class User extends Authenticatable
     public function preference(string $key, mixed $default = null): mixed
     {
         return data_get($this->preferences, $key, $default);
+    }
+
+    /** True bila user memegang salah satu role teknisi. */
+    public function isTechnician(): bool
+    {
+        return $this->hasAnyRole(self::TECHNICIAN_ROLES);
+    }
+
+    /**
+     * Penerima notifikasi jadwal teknisi: teknisi pelaksana dan super-admin
+     * (pemilik sistem). Marketing/Admin biasa tidak termasuk.
+     */
+    public function canReceiveScheduleNotification(): bool
+    {
+        return $this->isTechnician() || $this->hasRole('super-admin');
     }
 
     /**

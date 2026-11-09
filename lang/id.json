@@ -3416,6 +3416,7 @@
     "The provided password is incorrect.": "Kata sandi yang Anda masukkan salah.",
     "The provider brand handling this lead. Can be changed if management replaces it.": "Jenama penyedia yang menangani lead ini. Bisa diubah jikalau management menggantinya.",
     "The selected lead does not belong to this customer.": "Lead yang dipilih bukan milik customer ini.",
+    "The selected user is not a technician.": "User yang dipilih bukan teknisi.",
     "The super-admin role cannot be deleted.": "Role super-admin tidak bisa dihapus.",
     "The super-admin role cannot be edited.": "Role super-admin tidak bisa diedit.",
     "The survey has no report yet. Upload the survey report before completing this request.": "Survey belum memiliki laporan. Unggah laporan survey dulu sebelum menyelesaikan request ini.",

@@ -143,7 +143,9 @@ class TechnicianScheduleTest extends TestCase
         ]);
 
         $naufal = User::factory()->create(['name' => 'Naufal']);
+        $naufal->assignRole('technician');
         $budi = User::factory()->create(['name' => 'Budi']);
+        $budi->assignRole('technician');
 
         $this->actingAs($user)
             ->post(route('teknisi.schedules.store'), $this->validPayload([
