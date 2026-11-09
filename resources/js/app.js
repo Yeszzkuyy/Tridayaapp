@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { mountLoginGalaxy } from './galaxy.js';
 import { applyAppearanceDom } from './appearance.js';
+import { installLegacyToast } from './toast-store.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -264,6 +265,10 @@ document.addEventListener('livewire:navigated', () => syncSidebarGroups());
 
 /* ============================================================
    Toast global + form AJAX (tanpa refresh).
+   Pop up notifikasi dirender oleh ToastViewport (React island notifikasi)
+   lewat antrean di resources/js/toast-store.js; API lama
+   `window.toast(message, ok, action)` tetap sama supaya semua pemanggil
+   di view Blade tidak perlu diubah.
    - <form data-ajax data-ajax-target="#tabel"> (GET): ganti target
      dengan partial `html` + pushState URL.
    - <form data-ajax> (POST/PUT/DELETE): JSON {ok, message,
@@ -272,31 +277,7 @@ document.addEventListener('livewire:navigated', () => syncSidebarGroups());
    - 422: kotak error inline di atas form. Gagal total: submit biasa.
    - Diabaikan bila event sudah di-cancel (mis. confirm() batal).
    ============================================================ */
-window.toast = function (message, ok = true, action = null) {
-    const el = document.createElement('div');
-    el.className = 'fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-white transition-opacity ' + (ok ? 'bg-green-600' : 'bg-red-600');
-    const icon = document.createElement('span');
-    icon.setAttribute('aria-hidden', 'true');
-    icon.innerHTML = ok
-        ? '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" stroke-linejoin="round" d="m8.5 12.3 2.4 2.4 4.8-5" /></svg>'
-        : '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M9 9l6 6M15 9l-6 6" /></svg>';
-    el.appendChild(icon);
-    const text = document.createElement('span');
-    text.textContent = message;
-    el.appendChild(text);
-    if (action && action.href && action.label) {
-        const a = document.createElement('a');
-        a.href = action.href;
-        a.textContent = action.label;
-        a.className = 'font-bold underline underline-offset-2 whitespace-nowrap';
-        el.appendChild(a);
-    }
-    document.body.appendChild(el);
-    setTimeout(() => {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 300);
-    }, 3500);
-};
+installLegacyToast();
 
 function ajaxShowErrors(form, errors) {
     form.querySelector('[data-ajax-errors]')?.remove();
