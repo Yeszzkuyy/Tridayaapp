@@ -3416,6 +3416,7 @@
     "The provided password is incorrect.": "The provided password is incorrect.",
     "The provider brand handling this lead. Can be changed if management replaces it.": "The provider brand handling this lead. Can be changed if management replaces it.",
     "The selected lead does not belong to this customer.": "The selected lead does not belong to this customer.",
+    "The selected user is not a technician.": "The selected user is not a technician.",
     "The super-admin role cannot be deleted.": "The super-admin role cannot be deleted.",
     "The super-admin role cannot be edited.": "The super-admin role cannot be edited.",
     "The survey has no report yet. Upload the survey report before completing this request.": "The survey has no report yet. Upload the survey report before completing this request.",

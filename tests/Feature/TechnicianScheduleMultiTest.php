@@ -37,6 +37,15 @@ class TechnicianScheduleMultiTest extends TestCase
         return $user;
     }
 
+    /** User yang benar-benar memegang role teknisi. */
+    private function technician(string $name): User
+    {
+        $user = User::factory()->create(['name' => $name]);
+        $user->assignRole('technician');
+
+        return $user;
+    }
+
     private function payload(array $overrides = []): array
     {
         return array_merge([
@@ -52,9 +61,9 @@ class TechnicianScheduleMultiTest extends TestCase
     public function test_schedule_can_have_multiple_technicians(): void
     {
         $user = $this->userWithPerms();
-        $budi = User::factory()->create(['name' => 'Budi']);
-        $ani = User::factory()->create(['name' => 'Ani']);
-        $dedy = User::factory()->create(['name' => 'Dedy']);
+        $budi = $this->technician('Budi');
+        $ani = $this->technician('Ani');
+        $dedy = $this->technician('Dedy');
 
         $this->actingAs($user)
             ->post(route('teknisi.schedules.store'), $this->payload([
@@ -85,8 +94,8 @@ class TechnicianScheduleMultiTest extends TestCase
     {
         Notification::fake();
         $user = $this->userWithPerms();
-        $budi = User::factory()->create(['name' => 'Budi']);
-        $ani = User::factory()->create(['name' => 'Ani']);
+        $budi = $this->technician('Budi');
+        $ani = $this->technician('Ani');
 
         $this->actingAs($user)
             ->post(route('teknisi.schedules.store'), $this->payload([
@@ -103,8 +112,8 @@ class TechnicianScheduleMultiTest extends TestCase
     {
         Notification::fake();
         $user = $this->userWithPerms();
-        $budi = User::factory()->create(['name' => 'Budi']);
-        $ani = User::factory()->create(['name' => 'Ani']);
+        $budi = $this->technician('Budi');
+        $ani = $this->technician('Ani');
 
         $this->actingAs($user)
             ->post(route('teknisi.schedules.store'), $this->payload([
@@ -128,7 +137,7 @@ class TechnicianScheduleMultiTest extends TestCase
     public function test_legacy_single_technician_schedule_still_works(): void
     {
         $user = $this->userWithPerms();
-        $budi = User::factory()->create(['name' => 'Budi']);
+        $budi = $this->technician('Budi');
 
         // Data lama / pemanggil lama: technician_user_id tunggal.
         $this->actingAs($user)
@@ -155,8 +164,8 @@ class TechnicianScheduleMultiTest extends TestCase
     public function test_calendar_events_join_multiple_technician_names(): void
     {
         $user = $this->userWithPerms();
-        $budi = User::factory()->create(['name' => 'Budi']);
-        $ani = User::factory()->create(['name' => 'Ani']);
+        $budi = $this->technician('Budi');
+        $ani = $this->technician('Ani');
 
         $this->actingAs($user)
             ->post(route('teknisi.schedules.store'), $this->payload([
@@ -175,5 +184,99 @@ class TechnicianScheduleMultiTest extends TestCase
         $names = collect($events[0]['technicians'])->pluck('name')->all();
         $this->assertContains('Budi', $names);
         $this->assertContains('Ani', $names);
+    }
+
+    public function test_non_technician_pivot_member_does_not_receive_change_notification(): void
+    {
+        Notification::fake();
+        $user = $this->userWithPerms();
+        $budi = $this->technician('Budi');
+
+        $anggie = User::factory()->create(['name' => 'Anggie']);
+        $anggie->assignRole('marketing');
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->payload([
+                'technician_ids' => [$budi->id],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $schedule = TechnicianSchedule::firstOrFail();
+
+        // Simulasikan data lama yang salah: marketing masuk pivot.
+        $schedule->technicians()->attach($anggie->id);
+        Notification::fake();
+
+        $this->actingAs($user)
+            ->put(route('teknisi.schedules.update', $schedule), $this->payload([
+                'technician_ids' => [$budi->id],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        Notification::assertNotSentTo($anggie, TechnicianScheduleChangedNotification::class);
+        Notification::assertSentTo($budi, TechnicianScheduleChangedNotification::class);
+    }
+
+    public function test_non_technician_cannot_be_assigned_to_schedule(): void
+    {
+        $user = $this->userWithPerms();
+
+        $anggie = User::factory()->create(['name' => 'Anggie']);
+        $anggie->assignRole('marketing');
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->payload([
+                'technician_ids' => [$anggie->id],
+            ]))
+            ->assertSessionHasErrors('technician_ids.0');
+
+        $this->assertDatabaseCount('technician_schedules', 0);
+    }
+
+    public function test_schedule_notification_respects_system_preference(): void
+    {
+        $user = $this->userWithPerms();
+        $budi = $this->technician('Budi');
+        $budi->update(['preferences' => [
+            'notify_system' => false,
+            'notify_email' => false,
+            'notify_push' => false,
+        ]]);
+
+        $schedule = new TechnicianSchedule;
+        $schedule->title = 'Instalasi';
+        $schedule->status = 'scheduled';
+
+        $notification = new TechnicianScheduleChangedNotification($schedule);
+
+        $this->assertSame([], $notification->via($budi->fresh()));
+    }
+
+    public function test_super_admin_owner_still_receives_change_notification(): void
+    {
+        Notification::fake();
+        $user = $this->userWithPerms();
+        $budi = $this->technician('Budi');
+
+        $owner = User::factory()->create(['name' => 'Yeski']);
+        $owner->assignRole('super-admin');
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->payload([
+                'technician_ids' => [$budi->id],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $schedule = TechnicianSchedule::firstOrFail();
+        $schedule->update(['user_id' => $owner->id]);
+        Notification::fake();
+
+        $this->actingAs($user)
+            ->put(route('teknisi.schedules.update', $schedule), $this->payload([
+                'technician_ids' => [$budi->id],
+            ]))
+            ->assertSessionHasNoErrors();
+
+        Notification::assertSentTo($owner, TechnicianScheduleChangedNotification::class);
     }
 }
