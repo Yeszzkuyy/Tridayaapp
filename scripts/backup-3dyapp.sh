@@ -39,3 +39,11 @@ chmod 600 "$PKG"
 find "$BACKUP_DIR" -maxdepth 1 -name '3dyapp-*.tar.gz.enc' -mtime +7 -delete
 
 echo "[$STAMP] backup OK: $PKG ($(du -h "$PKG" | cut -f1))"
+
+# Unggah ke Google Drive di folder Backup-3DYApp
+if command -v rclone >/dev/null 2>&1; then
+    rclone copy "$PKG" gdrive:Backup-3DYApp/
+    # Hapus file backup di Google Drive yang umurnya lebih dari 30 hari
+    rclone delete --min-age 30d gdrive:Backup-3DYApp/
+    echo "[$STAMP] upload Google Drive OK: Backup-3DYApp/"
+fi
