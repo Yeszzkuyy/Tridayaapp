@@ -42,7 +42,13 @@ class NotificationController extends Controller
 
     public function readAll(Request $request)
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        $user = $request->user();
+        $ids = $user->unreadNotifications()->pluck('id')->all();
+        $user->unreadNotifications()->update(['read_at' => now()]);
+
+        if ($ids !== []) {
+            \App\Events\NotificationRead::dispatch($user->id, $ids, 0, 'all');
+        }
 
         return $request->wantsJson()
             ? response()->json(['unread' => 0])
@@ -51,24 +57,35 @@ class NotificationController extends Controller
 
     public function read(Request $request, string $notification)
     {
-        $request->user()->notifications()->findOrFail($notification)->markAsRead();
+        $user = $request->user();
+        $user->notifications()->findOrFail($notification)->markAsRead();
+        $unread = $user->unreadNotifications()->count();
 
-        return response()->json(['unread' => $request->user()->unreadNotifications()->count()]);
+        \App\Events\NotificationRead::dispatch($user->id, [$notification], $unread, 'single');
+
+        return response()->json(['unread' => $unread]);
     }
 
     public function destroy(Request $request, string $notification)
     {
-        $request->user()->notifications()->findOrFail($notification)->delete();
+        $user = $request->user();
+        $user->notifications()->findOrFail($notification)->delete();
+        $unread = $user->unreadNotifications()->count();
 
-        return response()->json(['unread' => $request->user()->unreadNotifications()->count()]);
+        \App\Events\NotificationDeleted::dispatch($user->id, [$notification], $unread, 'single');
+
+        return response()->json(['unread' => $unread]);
     }
 
     /** Hapus semua notifikasi user (read + unread). */
     public function destroyAll(Request $request)
     {
-        $request->user()->notifications()->delete();
+        $user = $request->user();
+        $deleted = $user->notifications()->delete();
 
-        return response()->json(['unread' => 0]);
+        \App\Events\NotificationDeleted::dispatch($user->id, [], 0, 'all');
+
+        return response()->json(['unread' => 0, 'deleted' => $deleted]);
     }
 
     /**
