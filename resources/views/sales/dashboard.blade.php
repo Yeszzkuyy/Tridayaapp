@@ -61,107 +61,6 @@
         </div>
     @endif
 
-    {{-- Card KPI Personal (Hanya untuk Sales yang Sedang Login) --}}
-    @if(isset($myKpi))
-        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-slate-100 dark:border-slate-700/60 pb-4">
-                <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-2xl bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300 font-extrabold flex items-center justify-center text-sm shadow-sm">
-                        🎯
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h2 class="font-bold text-slate-800 dark:text-white text-lg">{{ __('KPI Personal Saya') }}</h2>
-                            <span class="text-xs px-2.5 py-0.5 rounded-full font-bold {{ $myKpi['overall_pct'] >= 100 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : ($myKpi['overall_pct'] >= 60 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300') }}">
-                                {{ $myKpi['overall_pct'] }}% Capaian
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs text-slate-400">Pipeline: <strong class="text-slate-700 dark:text-slate-200">{{ $myKpi['active_leads'] }} Lead Aktif</strong></span>
-                    <span class="text-slate-300 dark:text-slate-600">·</span>
-                    <span class="text-xs text-slate-400">Konversi: <strong class="text-slate-700 dark:text-slate-200">{{ $myKpi['conversion_rate'] }}%</strong></span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {{-- Metric 1: Realisasi Closing dari uang masuk --}}
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Realisasi Closing (Lunas)') }}</span>
-                        <span class="text-xs font-extrabold px-2 py-0.5 rounded-full {{ $myKpi['revenue_pct'] >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-accent-100 text-accent-700 dark:bg-accent-950/60 dark:text-accent-300' }}">
-                            {{ $myKpi['revenue_pct'] }}%
-                        </span>
-                    </div>
-                    <div class="flex items-baseline justify-between mb-1">
-                        <p class="text-xl font-black text-slate-800 dark:text-white tabular-nums">
-                            Rp {{ number_format($myKpi['actual_revenue'], 0, ',', '.') }}
-                        </p>
-                        <span class="text-xs text-slate-400 tabular-nums">
-                            / Rp {{ number_format($myKpi['target_revenue'], 0, ',', '.') }}
-                        </span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2 tabular-nums">
-                        {{ __('PO Masuk') }}: <strong class="text-slate-700 dark:text-slate-200">Rp {{ number_format($myKpi['verified_po_revenue'], 0, ',', '.') }}</strong>
-                        <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
-                        {{ $myKpi['verified_po_deals'] }} PO
-                    </p>
-                    <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['revenue_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-accent-500 to-accent-600' }}" style="width: {{ min(100, $myKpi['revenue_pct']) }}%"></div>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
-                        @if($myKpi['revenue_shortfall'] > 0)
-                            <span>Sisa target: <strong class="text-amber-600 dark:text-amber-400 tabular-nums">Rp {{ number_format($myKpi['revenue_shortfall'], 0, ',', '.') }}</strong></span>
-                        @else
-                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">🎉 Target omset telah terlampaui!</span>
-                        @endif
-                        <span class="text-[10px] text-slate-400">Bulan {{ \Carbon\Carbon::create(null, $myKpi['period_month'], 1)->locale(app()->getLocale())->translatedFormat('F') }}</span>
-                    </p>
-                </div>
-
-                {{-- Metric 2: Target Closing Deals / PO --}}
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Target Closing Deals (PO)') }}</span>
-                        <span class="text-xs font-extrabold px-2 py-0.5 rounded-full {{ $myKpi['deals_pct'] >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300' }}">
-                            {{ $myKpi['deals_pct'] }}%
-                        </span>
-                    </div>
-                    <div class="flex items-baseline justify-between mb-2">
-                        <p class="text-xl font-black text-slate-800 dark:text-white tabular-nums">
-                            {{ $myKpi['actual_deals'] }} <span class="text-sm font-semibold text-slate-400">Closing</span>
-                        </p>
-                        <span class="text-xs text-slate-400 tabular-nums">
-                            / {{ $myKpi['target_deals'] }} Deals
-                        </span>
-                    </div>
-                    <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['deals_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-indigo-500 to-blue-500' }}" style="width: {{ min(100, $myKpi['deals_pct']) }}%"></div>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
-                        @if($myKpi['deals_shortfall'] > 0)
-                            <span>Sisa target: <strong class="text-indigo-600 dark:text-indigo-400 tabular-nums">{{ $myKpi['deals_shortfall'] }} Deal / PO</strong> lagi</span>
-                        @else
-                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">🚀 Target closing sukses tercapai!</span>
-                        @endif
-                        <span class="text-[10px] text-slate-400">{{ $myKpi['active_leads'] }} leads aktif siap closing</span>
-                    </p>
-                </div>
-            </div>
-
-            @if(!empty($myKpi['target_notes']))
-                <div class="mt-4 p-3 rounded-xl bg-accent-50 dark:bg-accent-950/30 border border-accent-100 dark:border-accent-900/40 text-xs text-accent-900 dark:text-accent-200 flex items-start gap-2">
-                    <span class="font-bold shrink-0">📌 Catatan Management:</span>
-                    <span>{{ $myKpi['target_notes'] }}</span>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    {{-- Customer-Centric Hub: daftar customer milik sales + aksi cepat --}}
-    @include('sales.partials.customer-hub', ['hubResetRoute' => route('sales.dashboard')])
-
     @php
         $uid = auth()->id();
         $activeSeries = \App\Support\SparklineBuilder::monthlyCounts(
@@ -274,13 +173,114 @@
         @endforeach
     </div>
 
+    {{-- Card KPI Personal (Hanya untuk Sales yang Sedang Login) --}}
+    @if(isset($myKpi))
+        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-slate-100 dark:border-slate-700/60 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-2xl bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300 font-extrabold flex items-center justify-center text-sm shadow-sm">
+                        🎯
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-bold text-slate-800 dark:text-white text-lg">{{ __('KPI Personal Saya') }}</h2>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full font-bold {{ $myKpi['overall_pct'] >= 100 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : ($myKpi['overall_pct'] >= 60 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300') }}">
+                                {{ $myKpi['overall_pct'] }}% {{ __('Achieved') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-400">{{ __('Pipeline:') }} <strong class="text-slate-700 dark:text-slate-200">{{ $myKpi['active_leads'] }} {{ __('Active Leads') }}</strong></span>
+                    <span class="text-slate-300 dark:text-slate-600">·</span>
+                    <span class="text-xs text-slate-400">{{ __('Conversion:') }} <strong class="text-slate-700 dark:text-slate-200">{{ $myKpi['conversion_rate'] }}%</strong></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {{-- Metric 1: Realisasi Closing dari uang masuk --}}
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Realisasi Closing (Lunas)') }}</span>
+                        <span class="text-xs font-extrabold px-2 py-0.5 rounded-full {{ $myKpi['revenue_pct'] >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-accent-100 text-accent-700 dark:bg-accent-950/60 dark:text-accent-300' }}">
+                            {{ $myKpi['revenue_pct'] }}%
+                        </span>
+                    </div>
+                    <div class="flex items-baseline justify-between mb-1">
+                        <p class="text-xl font-black text-slate-800 dark:text-white tabular-nums">
+                            Rp {{ number_format($myKpi['actual_revenue'], 0, ',', '.') }}
+                        </p>
+                        <span class="text-xs text-slate-400 tabular-nums">
+                            / Rp {{ number_format($myKpi['target_revenue'], 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2 tabular-nums">
+                        {{ __('PO Masuk') }}: <strong class="text-slate-700 dark:text-slate-200">Rp {{ number_format($myKpi['verified_po_revenue'], 0, ',', '.') }}</strong>
+                        <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                        {{ $myKpi['verified_po_deals'] }} PO
+                    </p>
+                    <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['revenue_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-accent-500 to-accent-600' }}" style="width: {{ min(100, $myKpi['revenue_pct']) }}%"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
+                        @if($myKpi['revenue_shortfall'] > 0)
+                            <span>{{ __('Target remaining:') }} <strong class="text-amber-600 dark:text-amber-400 tabular-nums">Rp {{ number_format($myKpi['revenue_shortfall'], 0, ',', '.') }}</strong></span>
+                        @else
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">🎉 {{ __('Monthly target has been exceeded!') }}</span>
+                        @endif
+                        <span class="text-[10px] text-slate-400">{{ __('Month') }} {{ \Carbon\Carbon::create(null, $myKpi['period_month'], 1)->locale(app()->getLocale())->translatedFormat('F') }}</span>
+                    </p>
+                </div>
+
+                {{-- Metric 2: Target Closing Deals / PO --}}
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Target Closing Deals (PO)') }}</span>
+                        <span class="text-xs font-extrabold px-2 py-0.5 rounded-full {{ $myKpi['deals_pct'] >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300' }}">
+                            {{ $myKpi['deals_pct'] }}%
+                        </span>
+                    </div>
+                    <div class="flex items-baseline justify-between mb-2">
+                        <p class="text-xl font-black text-slate-800 dark:text-white tabular-nums">
+                            {{ $myKpi['actual_deals'] }} <span class="text-sm font-semibold text-slate-400">{{ __('Closing') }}</span>
+                        </p>
+                        <span class="text-xs text-slate-400 tabular-nums">
+                            / {{ $myKpi['target_deals'] }} Deals
+                        </span>
+                    </div>
+                    <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['deals_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-indigo-500 to-blue-500' }}" style="width: {{ min(100, $myKpi['deals_pct']) }}%"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
+                        @if($myKpi['deals_shortfall'] > 0)
+                            <span>{{ __('Target remaining:') }} <strong class="text-indigo-600 dark:text-indigo-400 tabular-nums">{{ $myKpi['deals_shortfall'] }} Deal / PO</strong> {{ __('remaining') }}</span>
+                        @else
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">🚀 {{ __('Closing target achieved!') }}</span>
+                        @endif
+                        <span class="text-[10px] text-slate-400">{{ $myKpi['active_leads'] }} {{ __('active leads ready to close') }}</span>
+                    </p>
+                </div>
+            </div>
+
+            @if(!empty($myKpi['target_notes']))
+                <div class="mt-4 p-3 rounded-xl bg-accent-50 dark:bg-accent-950/30 border border-accent-100 dark:border-accent-900/40 text-xs text-accent-900 dark:text-accent-200 flex items-start gap-2">
+                    <span class="font-bold shrink-0">📌 {{ __('Management Note:') }}</span>
+                    <span>{{ $myKpi['target_notes'] }}</span>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Customer-Centric Hub: daftar customer milik sales + aksi cepat --}}
+    @include('sales.partials.customer-hub', ['hubResetRoute' => route('sales.dashboard')])
+
     {{-- Peringkat Tim & Target Bulanan Sales --}}
     @if(isset($salesLeaderboard) && $salesLeaderboard->isNotEmpty())
         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6" data-reveal>
             <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <h2 class="font-bold text-slate-800 dark:text-white text-lg">{{ __('Peringkat & Target Bulanan Sales') }}</h2>
                 <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                    {{ $salesLeaderboard->count() }} Anggota Tim
+                    {{ $salesLeaderboard->count() }} {{ __('Team Members') }}
                 </span>
             </div>
 
@@ -314,7 +314,7 @@
                                         @endif
                                     </div>
                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        {{ $rep['actual_deals'] }} Closing Deal · <span class="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">Rp {{ number_format($rep['actual_revenue'], 0, ',', '.') }}</span>
+                                        {{ $rep['actual_deals'] }} {{ __('Closing Deal') }} · <span class="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">Rp {{ number_format($rep['actual_revenue'], 0, ',', '.') }}</span>
                                     </p>
                                 </div>
                             </div>

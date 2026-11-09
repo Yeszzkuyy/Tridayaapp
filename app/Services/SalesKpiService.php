@@ -203,7 +203,7 @@ class SalesKpiService
         if (($actualRev >= $targetRev && $targetRev > 0) || ($actualDeals >= $targetDeals && $targetDeals > 0)) {
             return [
                 'type' => 'congratulations',
-                'badge' => 'TARGET TERCAPAI 🏆',
+                'badge' => __('TARGET ACHIEVED 🏆'),
                 'title' => __('Selamat :name, target bulan ini sukses tercapai!', ['name' => $name]),
                 'description' => __('Luar biasa! Anda mencatatkan :deals closing deal dengan pencapaian omset :pct% dari target. Pertahankan performa juara ini!', [
                     'deals' => $actualDeals,
@@ -218,7 +218,7 @@ class SalesKpiService
         if ($actualDeals > 0 || $actualRev > 0) {
             return [
                 'type' => 'progress',
-                'badge' => 'ON TRACK 🚀',
+                'badge' => __('ON TRACK 🚀'),
                 'title' => __('Hebat :name, :count project berhasil closing!', ['name' => $name, 'count' => $actualDeals]),
                 'description' => __('Progres Anda saat ini :pct% dari target. Tinggal :shortfall closing lagi untuk menuntaskan 100% target bulan ini!', [
                     'pct' => $revPct,
@@ -232,7 +232,7 @@ class SalesKpiService
         // Kasus 3: Belum ada closing bulan ini (Motivasi)
         return [
             'type' => 'motivation',
-            'badge' => 'FOKUS TARGET 💪',
+            'badge' => __('FOCUS ON TARGET 💪'),
             'title' => __('Semangat :name, target bulan ini siap diraih!', ['name' => $name]),
             'description' => __('Target bulan ini: :deals Closing Deals & Rp :target. Terus gencarkan follow up dan dekati prospek Anda hari ini!', [
                 'deals' => $targetDeals,
