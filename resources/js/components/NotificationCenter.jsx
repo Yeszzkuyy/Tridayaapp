@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, animate, motion, useReducedMotion } from 'motion/react';
+import ToastViewport from './ToastViewport.jsx';
+import { pushToast } from '../toast-store.js';
 
 /**
  * Notification Center — bell + feed di header.
@@ -92,7 +94,7 @@ function withId(template, id) {
     return (template || '').replace('__ID__', encodeURIComponent(id));
 }
 
-function TypeIcon({ name, className }) {
+export function TypeIcon({ name, className }) {
     switch (name) {
         case 'userPlus':
             return (
@@ -268,6 +270,9 @@ export default function NotificationCenter() {
     const bellRef = useRef(null);
     const openRef = useRef(false);
     const expiredRef = useRef(false);
+    // Pembuka notifikasi dipakai listener realtime (Echo) — disimpan di ref
+    // supaya listener tidak perlu dipasang ulang tiap render.
+    const openItemRef = useRef(null);
 
     useEffect(() => {
         openRef.current = open;
@@ -451,6 +456,21 @@ export default function NotificationCenter() {
                 setUnread((previous) => (typeof payload.unread === 'number' ? payload.unread : previous + (item.read ? 0 : 1)));
                 setLive(`${item.app ? `${item.app}: ` : ''}${item.title}`);
                 ringBell();
+
+                // Pop up pojok kanan bawah, kecuali panel lonceng sedang
+                // terbuka (user sudah melihat daftarnya — jangan dobel).
+                if (!openRef.current) {
+                    const meta = TYPE_META[item.type] || TYPE_META.generic;
+
+                    pushToast({
+                        variant: 'default',
+                        title: item.title,
+                        message: item.body || '',
+                        accent: meta.color,
+                        icon: <TypeIcon name={meta.icon} className="h-4 w-4" />,
+                        onOpen: () => openItemRef.current?.(item),
+                    });
+                }
             };
 
             channel.listen('.notification.created', handler);
@@ -588,6 +608,10 @@ export default function NotificationCenter() {
         [markRead],
     );
 
+    useEffect(() => {
+        openItemRef.current = openItem;
+    }, [openItem]);
+
     const dismiss = useCallback(
         async (event, item) => {
             event.preventDefault();
@@ -685,6 +709,8 @@ export default function NotificationCenter() {
             <span className="sr-only" aria-live="polite">
                 {live}
             </span>
+
+            <ToastViewport />
 
             <AnimatePresence>
                 {open && (
