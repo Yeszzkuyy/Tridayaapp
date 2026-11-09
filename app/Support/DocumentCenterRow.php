@@ -202,8 +202,6 @@ class DocumentCenterRow
 
     public static function canPreviewExtension(?string $name): bool
     {
-        $extension = strtolower(pathinfo((string) $name, PATHINFO_EXTENSION));
-
-        return in_array($extension, SecureFile::INLINE_EXTENSIONS, true);
+        return SecureFile::isPreviewable((string) $name);
     }
 }

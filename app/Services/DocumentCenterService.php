@@ -593,6 +593,10 @@ class DocumentCenterService
     {
         return match ($row->source) {
             'project' => route('project-documents.preview', $row->source_id),
+            'quotation' => $row->parent_id
+                ? route('sales.proposals.attachments.preview', [$row->parent_id, $row->source_id])
+                : null,
+            'customer_po' => route('sales.proposals.download-po', $row->source_id),
             'supplier_invoice' => route('admin.supplier-invoices.file', $row->source_id),
             'supplier_payment' => route('admin.supplier-payments.proof', $row->source_id),
             'goods_receipt' => route('admin.goods-receipts.attachment', $row->source_id),

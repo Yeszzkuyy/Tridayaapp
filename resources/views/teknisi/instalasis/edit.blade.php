@@ -67,7 +67,9 @@
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Upload Installation Report File') }}</label>
                     @if($instalasi->hasReport())
                         <div class="mb-2 flex items-center gap-2">
-                            <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View') }}" />
+                            <x-file-preview :url="route('teknisi.instalasis.report.view', $instalasi)"
+                                            :download="route('teknisi.instalasis.report.download', $instalasi)"
+                                            :name="$instalasi->report_file_name ?: basename((string) $instalasi->report_file)" />
                             <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" />
                             <span class="text-sm text-slate-600 dark:text-slate-300 truncate">{{ $instalasi->report_file_name }}</span>
                         </div>

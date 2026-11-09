@@ -151,6 +151,8 @@
                         </div>
                         <div class="flex gap-2">
                             @if($payment->proof_file)
+                                <x-file-preview :url="route('admin.payments.proof', $payment)"
+                                                :name="basename($payment->proof_file)" />
                                 <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" title="{{ __('Proof') }}" />
                             @endif
                             <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $payment) }}" title="{{ __('Detail') }}" />
@@ -172,7 +174,9 @@
                         <p class="text-xs text-slate-400">{{ $document->created_at->format('d M Y') }}</p>
                     </div>
                     <div class="flex shrink-0 gap-2">
-                        <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $document) }}" target="_blank" title="{{ __('Preview') }}" />
+                        <x-file-preview :url="route('project-documents.preview', $document)"
+                                        :download="route('project-documents.download', $document)"
+                                        :name="$document->file_name" />
                         <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}" title="{{ __('Download') }}" />
                     </div>
                 </div>

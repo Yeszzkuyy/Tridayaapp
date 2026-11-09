@@ -12,6 +12,8 @@
         <div class="flex items-center gap-2">
             <x-icon-button as="a" icon="back" href="{{ route('admin.supplier-invoices.index') }}" title="{{ __('Back') }}" />
             @if($supplierInvoice->invoice_file_path)
+                <x-file-preview :url="route('admin.supplier-invoices.file', $supplierInvoice)"
+                                :name="basename((string) $supplierInvoice->invoice_file_path)" />
                 <x-icon-button as="a" icon="download" href="{{ route('admin.supplier-invoices.file', $supplierInvoice) }}" title="{{ __('Download invoice file') }}" />
             @endif
             @can('manage-admin')
@@ -79,6 +81,8 @@
                                     <td class="px-3 py-3">
                                         <div class="flex justify-end gap-2">
                                             @if($payment->proof_file)
+                                                <x-file-preview :url="route('admin.supplier-payments.proof', $payment)"
+                                                                :name="basename((string) $payment->proof_file)" />
                                                 <x-icon-button as="a" icon="download" href="{{ route('admin.supplier-payments.proof', $payment) }}" title="{{ __('Download proof') }}" />
                                             @endif
                                             @can('manage-admin')

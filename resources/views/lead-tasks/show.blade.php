@@ -124,6 +124,9 @@
                                     <x-icon-button type="submit" icon="sparkles" title="{{ __('Accept as Quotation') }}" />
                                 </form>
                             @endif
+                            <x-file-preview :url="route('lead-tasks.attachments.preview', [$task, $attachment])"
+                                            :download="route('lead-tasks.attachments.download', [$task, $attachment])"
+                                            :name="$attachment->original_name" />
                             <x-icon-button as="a" icon="download" href="{{ route('lead-tasks.attachments.download', [$task, $attachment]) }}" title="{{ __('Download') }}" />
                             @if($canManageAttachment)
                                 <form action="{{ route('lead-tasks.attachments.destroy', [$task, $attachment]) }}" method="POST"

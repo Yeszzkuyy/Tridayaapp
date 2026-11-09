@@ -259,8 +259,9 @@
                             </div>
 
                             <div class="flex shrink-0 items-center gap-1.5 self-end sm:self-center">
-                                <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $document) }}"
-                                               target="_blank" title="{{ __('Preview') }}" />
+                                <x-file-preview :url="route('project-documents.preview', $document)"
+                                                :download="route('project-documents.download', $document)"
+                                                :name="$document->file_name" />
                                 <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}"
                                                title="{{ __('Download') }}" />
 

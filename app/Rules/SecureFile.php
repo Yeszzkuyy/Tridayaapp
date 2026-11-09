@@ -159,12 +159,54 @@ class SecureFile implements ValidationRule
 
     /**
      * Ekstensi yang aman disajikan inline: tidak bisa mengeksekusi script.
-     * svg/html/txt/csv sengaja dikecualikan (bisa berisi JS atau formula).
+     * svg/html sengaja dikecualikan (bisa berisi JS).
      */
     public const INLINE_EXTENSIONS = [
         'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp',
         'mp4', 'webm', 'ogg', 'mp3', 'wav',
     ];
+
+    /**
+     * Berkas teks disajikan inline sebagai text/plain + nosniff, sehingga
+     * browser hanya menampilkannya sebagai teks biasa (tidak dieksekusi).
+     */
+    public const TEXT_INLINE_EXTENSIONS = ['txt', 'csv', 'md', 'log'];
+
+    /**
+     * Format yang bisa dipratinjau di aplikasi: tipe inline (browser) plus
+     * isi Office/ZIP yang dibaca pembaca berkas di sisi klien.
+     */
+    public const PREVIEWABLE_CONTENT_EXTENSIONS = [
+        'txt', 'csv', 'md', 'docx', 'xlsx', 'pptx', 'zip',
+    ];
+
+    /** Apakah berkas bisa dibuka di jendela pratinjau tanpa diunduh. */
+    public static function isPreviewable(string $name): bool
+    {
+        $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+        return in_array($extension, self::INLINE_EXTENSIONS, true)
+            || in_array($extension, self::PREVIEWABLE_CONTENT_EXTENSIONS, true);
+    }
+
+    /**
+     * Jenis pratinjau untuk UI: image | pdf | video | audio | txt | csv |
+     * docx | xlsx | pptx | zip | other.
+     */
+    public static function previewKind(string $name): string
+    {
+        $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+
+        return match (true) {
+            in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true) => 'image',
+            $extension === 'pdf' => 'pdf',
+            in_array($extension, ['mp4', 'webm', 'ogg'], true) => 'video',
+            in_array($extension, ['mp3', 'wav'], true) => 'audio',
+            $extension === 'md' => 'txt',
+            in_array($extension, self::PREVIEWABLE_CONTENT_EXTENSIONS, true) => $extension,
+            default => 'other',
+        };
+    }
 
     /** MIME finfo yang diterima per ekstensi inline. */
     public const EXTENSION_MIME_TYPES = [
@@ -188,6 +230,15 @@ class SecureFile implements ValidationRule
         $safeName = self::sanitizeName($fileName);
         $extension = strtolower(pathinfo($safeName, PATHINFO_EXTENSION));
         $absolute = Storage::disk($disk)->path($path);
+
+        // Teks/CSV tidak boleh dirender sebagai HTML: kirim text/plain.
+        if (in_array($extension, self::TEXT_INLINE_EXTENSIONS, true)) {
+            return response()->file($absolute, [
+                'Content-Type' => 'text/plain; charset=UTF-8',
+                'Content-Disposition' => 'inline; filename="'.$safeName.'"',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
 
         if (! in_array($extension, self::INLINE_EXTENSIONS, true)) {
             return Storage::disk($disk)->download($path, $safeName, ['X-Content-Type-Options' => 'nosniff']);

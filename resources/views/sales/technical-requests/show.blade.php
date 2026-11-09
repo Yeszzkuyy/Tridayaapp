@@ -253,7 +253,13 @@
                     <h2 id="technical-request-attachments-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Attachments') }}</h2>
                     <div class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between">
                         <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ $attachmentName }}</p>
-                        <x-icon-button as="a" icon="download" href="{{ $fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
+                        <div class="flex shrink-0 items-center gap-2">
+                            <x-file-preview
+                                :url="$fromTasks ? route('teknisi.technical-requests.attachment.preview', $technicalRequest) : route('sales.technical-requests.attachment.preview', $technicalRequest)"
+                                :download="$fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest)"
+                                :name="$attachmentName" />
+                            <x-icon-button as="a" icon="download" href="{{ $fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
+                        </div>
                     </div>
                 </section>
             @endif

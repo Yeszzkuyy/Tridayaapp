@@ -90,8 +90,9 @@
                             <li class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600">
                                 <span class="min-w-0 truncate text-slate-700 dark:text-slate-200">{{ $doc->file_name }}</span>
                                 <span class="flex shrink-0 items-center gap-1.5">
-                                    <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $doc) }}"
-                                                   target="_blank" title="{{ __('Preview') }}" />
+                                    <x-file-preview :url="route('project-documents.preview', $doc)"
+                                                    :download="route('project-documents.download', $doc)"
+                                                    :name="$doc->file_name" />
                                     <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}"
                                                    title="{{ __('Download') }}" />
                                 </span>

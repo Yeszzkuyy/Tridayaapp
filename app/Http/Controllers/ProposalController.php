@@ -126,6 +126,23 @@ class ProposalController extends Controller
             ->download($attachment->file_path, $attachment->original_name);
     }
 
+    /**
+     * Sajikan lampiran quotation inline (PDF/gambar/teks tampil di browser);
+     * format lain dipaksa unduh oleh SecureFile.
+     */
+    public function previewAttachment(Proposal $proposal, ProposalAttachment $attachment)
+    {
+        $this->authorizeView($proposal);
+
+        abort_unless((int) $attachment->proposal_id === (int) $proposal->id, 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $attachment->file_path,
+            $attachment->original_name
+        );
+    }
+
     private function authorizeView(Proposal $proposal): void
     {
         $user = auth()->user();

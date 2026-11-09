@@ -12,6 +12,8 @@
         <div class="flex items-center gap-2">
             <x-icon-button as="a" icon="back" href="{{ route('admin.goods-receipts.index') }}" title="{{ __('Back') }}" />
             @if($goodsReceipt->attachment_path)
+                <x-file-preview :url="route('admin.goods-receipts.attachment', $goodsReceipt)"
+                                :name="basename((string) $goodsReceipt->attachment_path)" />
                 <x-icon-button as="a" icon="download" href="{{ route('admin.goods-receipts.attachment', $goodsReceipt) }}" title="{{ __('Download attachment') }}" />
             @endif
             @can('manage-admin')

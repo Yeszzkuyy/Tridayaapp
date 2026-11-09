@@ -397,6 +397,22 @@ class TechnicalRequestController extends Controller
         return Storage::disk('private')->download($technicalRequest->attachment_path);
     }
 
+    /**
+     * Pratinjau lampiran request teknis: PDF/gambar/teks tampil di browser,
+     * format lain tetap diunduh.
+     */
+    public function previewAttachment(TechnicalRequest $technicalRequest)
+    {
+        $this->authorizeView($technicalRequest);
+        abort_unless($technicalRequest->attachment_path && Storage::disk('private')->exists($technicalRequest->attachment_path), 404);
+
+        return \App\Rules\SecureFile::fileResponse(
+            'private',
+            $technicalRequest->attachment_path,
+            basename($technicalRequest->attachment_path)
+        );
+    }
+
     private function authorizeWork(TechnicalRequest $technicalRequest): void
     {
         $this->authorizeView($technicalRequest);
