@@ -23,7 +23,7 @@ Dikerjakan:
   default/success/error/warning) memakai token warna aplikasi.
 - Pop up otomatis untuk notifikasi realtime dari Notification Center.
 - Seluruh pemanggil `window.toast(...)` lama ikut diarahkan ke kartu baru.
-- Aturan tampil: maksimal 3 kartu, hilang sendiri 5 detik (gagal 8 detik),
+- Aturan tampil: maksimal 3 kartu menumpuk, hilang sendiri 8 detik,
   berhenti selama kursor di kartu, tutup manual lewat tombol silang,
   tidak muncul bila panel lonceng sedang terbuka.
 

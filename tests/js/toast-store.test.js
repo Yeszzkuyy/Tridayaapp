@@ -28,17 +28,21 @@ test('pushToast menambah kartu dan subscribe langsung menerima isi antrean', () 
     unsubscribe();
 });
 
-test('varian tidak dikenal jatuh ke default dan error tampil lebih lama', () => {
+test('varian tidak dikenal jatuh ke default dan durasi bawaan 8 detik', () => {
     dismissAllToasts();
 
     const unknownId = pushToast({ variant: 'ngawur', message: 'x' });
     const unknown = getToasts().find((toast) => toast.id === unknownId);
     assert.equal(unknown.variant, 'default');
+    assert.equal(unknown.duration, 8000);
 
     const errorId = pushToast({ variant: 'error', message: 'gagal' });
     const error = getToasts().find((toast) => toast.id === errorId);
     assert.equal(error.duration, 8000);
-    assert.ok(error.duration > unknown.duration);
+
+    const customId = pushToast({ message: 'khusus', duration: 3000 });
+    const custom = getToasts().find((toast) => toast.id === customId);
+    assert.equal(custom.duration, 3000);
 });
 
 test('antrean dibatasi tiga kartu, yang tertua dibuang', () => {

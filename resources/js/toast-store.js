@@ -15,6 +15,9 @@
 /** Maksimal kartu yang tampil bersamaan; yang tertua dibuang. */
 const MAX_VISIBLE = 3;
 
+/** Lama kartu tampil sebelum hilang sendiri (ms). */
+const DEFAULT_DURATION = 8000;
+
 const VARIANTS = ['default', 'success', 'error', 'warning'];
 
 let toasts = [];
@@ -54,7 +57,6 @@ export function getToasts() {
  */
 export function pushToast(input = {}) {
     const variant = VARIANTS.includes(input.variant) ? input.variant : 'default';
-    const fallbackDuration = variant === 'error' ? 8000 : 5000;
 
     const toast = {
         id: `toast-${++sequence}`,
@@ -63,7 +65,7 @@ export function pushToast(input = {}) {
         message: input.message || '',
         accent: input.accent || null,
         icon: input.icon || null,
-        duration: Number.isFinite(input.duration) ? input.duration : fallbackDuration,
+        duration: Number.isFinite(input.duration) ? input.duration : DEFAULT_DURATION,
         action: input.action && input.action.label ? input.action : null,
         onOpen: typeof input.onOpen === 'function' ? input.onOpen : null,
         onDismiss: typeof input.onDismiss === 'function' ? input.onDismiss : null,
