@@ -1,15 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { dismissToast } from '../toast-store.js';
 
 /**
  * Kartu pop up notifikasi — tampilan disalin dari template 21st.dev
- * ("Toast" dengan varian default/success/error/warning), lalu warnanya
- * disesuaikan token aplikasi (accent/slate + mode gelap). Tidak memakai
- * sonner/shadcn supaya tidak menambah library dan tidak bentrok tema.
- *
- * Struktur kartu: ikon kecil di kiri, judul tebal + keterangan singkat,
+ * ("arunachalam/toast"): ikon kecil kiri, judul tebal + keterangan,
  * tombol aksi opsional, dan tombol silang di kanan.
+ *
+ * Posisi & tumpukan diatur ToastViewport (kartu ini hanya menggambar satu
+ * kartu dan melaporkan tingginya untuk perhitungan tumpukan).
  */
 
 const CARD_STYLES = {
@@ -39,11 +38,11 @@ const ACTION_STYLES = {
     default:
         'border-slate-300 text-slate-700 hover:bg-slate-700 hover:text-white dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 dark:hover:text-white',
     success:
-        'border-green-600 text-green-600 hover:bg-green-600 hover:text-white dark:border-green-400 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white',
+        'border-green-600 text-green-700 hover:bg-green-600 hover:text-white dark:border-green-400 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white',
     error:
-        'border-red-600 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-400 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white',
+        'border-red-600 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-400 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white',
     warning:
-        'border-amber-600 text-amber-600 hover:bg-amber-600 hover:text-white dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-600 dark:hover:text-white',
+        'border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-600 dark:hover:text-white',
 };
 
 const ICON_PROPS = {
@@ -92,12 +91,32 @@ function VariantIcon({ variant, className }) {
 const DISMISS_LABEL =
     (typeof window !== 'undefined' && window.notifCenter?.i18n?.dismiss) || 'Dismiss';
 
-export default function NotificationToast({ toast, paused, onPauseChange }) {
+export default function NotificationToast({ toast, paused, depth = 0, y = 0, scale = 1, zIndex = 1, clickable = true, onHeight }) {
     const reduceMotion = useReducedMotion();
     const meta = CARD_STYLES[toast.variant] || CARD_STYLES.default;
+    const cardRef = useRef(null);
+
+    // Laporkan tinggi asli kartu ke ToastViewport untuk menghitung tumpukan
+    // (dan tinggi panggung saat mengembang).
+    useEffect(() => {
+        const element = cardRef.current;
+
+        if (!element || !onHeight) return undefined;
+
+        const report = () => onHeight(toast.id, element.offsetHeight);
+
+        report();
+
+        if (typeof ResizeObserver === 'undefined') return undefined;
+
+        const observer = new ResizeObserver(report);
+        observer.observe(element);
+
+        return () => observer.disconnect();
+    }, [toast.id, onHeight]);
 
     // Hilang sendiri setelah `duration`; berhenti selama kursor/fokus ada di
-    // kartu supaya user sempat membaca. 0 = bertahan sampai ditutup.
+    // tumpukan supaya user sempat membaca. 0 = bertahan sampai ditutup.
     useEffect(() => {
         if (!toast.duration || paused) return undefined;
 
@@ -139,16 +158,18 @@ export default function NotificationToast({ toast, paused, onPauseChange }) {
 
     return (
         <motion.div
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 50, scale: 0.95 }}
-            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 50, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            ref={cardRef}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: y + 40, scale: 0.95 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y, scale }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: y + 24, scale: scale * 0.96 }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
             role={toast.variant === 'error' ? 'alert' : 'status'}
-            onMouseEnter={() => onPauseChange?.(true)}
-            onMouseLeave={() => onPauseChange?.(false)}
-            onFocus={() => onPauseChange?.(true)}
-            onBlur={() => onPauseChange?.(false)}
-            className={`pointer-events-auto flex w-full max-w-[420px] items-center justify-between gap-3 rounded-xl border p-4 shadow-md ${meta.card}`}
+            style={{
+                zIndex,
+                transformOrigin: 'bottom center',
+                pointerEvents: clickable ? 'auto' : 'none',
+            }}
+            className={`absolute inset-x-0 bottom-0 flex w-full max-w-[420px] items-center justify-between gap-3 rounded-xl border p-4 shadow-md ${meta.card}`}
         >
             {interactive ? (
                 <button type="button" onClick={openCard} className="flex min-w-0 items-start gap-2.5 text-left">
