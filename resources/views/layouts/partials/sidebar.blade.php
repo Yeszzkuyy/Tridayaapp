@@ -177,6 +177,12 @@
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
                                         <span>{{ __('Sales KPI & Target') }}</span>
                                     </a>
+                                    <a wire:navigate.hover href="{{ route('manage-sales.team-activity') }}"
+                                       aria-current="{{ request()->routeIs('manage-sales.team-activity') ? 'page' : 'false' }}"
+                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage-sales.team-activity') ? $navActive : $navInactive }}">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
+                                        <span>{{ __('Team Activity') }}</span>
+                                    </a>
                                     <a wire:navigate.hover href="{{ route('manage.marketing.index') }}"
                                        aria-current="{{ request()->routeIs('manage.marketing*') ? 'page' : 'false' }}"
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('manage.marketing*') ? $navActive : $navInactive }}">

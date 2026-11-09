@@ -16,6 +16,7 @@ use App\Services\SalesKpiService;
 use App\Services\SalesReportStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Carbon;
 
 class ManageSalesController extends Controller
 {
@@ -451,9 +452,25 @@ class ManageSalesController extends Controller
      * Team Activity — pemantauan harian tim sales untuk Management:
      * kepatuhan jadwal hari ini, aktivitas harian, lead mengendap, dan funnel.
      */
-    public function teamActivity(Request $request)
+    public function teamActivity(Request $request, SalesReportStatusService $reportStatusService)
     {
         $today = now()->toDateString();
+
+        $date = today();
+        if ($request->filled('date')) {
+            try {
+                $date = Carbon::createFromFormat('Y-m-d', $request->string('date')->toString());
+            } catch (\Throwable) {
+                $date = today();
+            }
+        }
+        $dateString = $date->toDateString();
+
+        $ptGroup = in_array($request->query('pt_group'), Lead::PT_GROUPS, true)
+            ? $request->query('pt_group')
+            : null;
+
+        $reportRows = $reportStatusService->daily($dateString, $ptGroup);
 
         $salesRoleNames = \Spatie\Permission\Models\Role::query()
             ->where('name', 'like', 'sales%')
@@ -523,6 +540,9 @@ class ManageSalesController extends Controller
             'funnel',
             'todaySchedules',
             'overdueSchedules',
+            'reportRows',
+            'dateString',
+            'ptGroup',
         ));
     }
 

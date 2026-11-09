@@ -20,7 +20,7 @@ class SalesReportStatusService
      *
      * @return Collection<int, array{user: User, total: int, sent: int, pending: int, status: string, last_report_at: Carbon|null}>
      */
-    public function daily(Carbon|string|null $date = null): Collection
+    public function daily(Carbon|string|null $date = null, ?string $ptGroup = null): Collection
     {
         $day = $date instanceof Carbon
             ? $date->toDateString()
@@ -37,6 +37,10 @@ class SalesReportStatusService
             ->meetings()
             ->with('lead:id,assigned_to')
             ->whereDate('follow_up_date', $day)
+            ->when($ptGroup, fn ($query) => $query->whereHas(
+                'lead',
+                fn ($lead) => $lead->where('pt_group', $ptGroup)
+            ))
             ->get(['id', 'created_by', 'lead_id', 'completed_at', 'daily_report_submitted_at']);
 
         return $salesUsers->map(function (User $user) use ($meetings) {

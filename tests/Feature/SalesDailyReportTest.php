@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Customer;
 use App\Models\FollowUp;
+use App\Models\Lead;
 use App\Models\User;
 use App\Services\SalesReportStatusService;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -94,5 +95,92 @@ class SalesDailyReportTest extends TestCase
         $res->assertOk();
         $res->assertSee('Daily Report');
         $res->assertSee('Send report');
+    }
+
+    public function test_management_team_activity_shows_meeting_report_status(): void
+    {
+        $management = $this->userWithRole('management');
+        $done = $this->userWithRole('sales');
+        $missing = $this->userWithRole('sales');
+
+        $this->makeMeeting($done, [
+            'completed_at' => now(),
+            'meeting_notes' => 'Laporan lengkap.',
+            'meeting_outcome' => 'prospect',
+            'daily_report_submitted_at' => now(),
+        ]);
+        $this->makeMeeting($missing);
+
+        $this->actingAs($management)
+            ->get(route('manage-sales.team-activity'))
+            ->assertOk()
+            ->assertSee(__('Meeting Reports'))
+            ->assertSee(__('Report Sent'))
+            ->assertSee(__('Not reported'))
+            ->assertSee($done->name)
+            ->assertSee($missing->name);
+    }
+
+    public function test_team_activity_date_filter_uses_selected_date(): void
+    {
+        $management = $this->userWithRole('management');
+        $sales = $this->userWithRole('sales');
+        $yesterday = now()->subDay()->toDateString();
+
+        $this->makeMeeting($sales, ['follow_up_date' => $yesterday]);
+        $this->makeMeeting($sales, [
+            'completed_at' => now(),
+            'meeting_notes' => 'Laporan hari ini.',
+            'daily_report_submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($management)
+            ->get(route('manage-sales.team-activity', ['date' => $yesterday]))
+            ->assertOk();
+
+        $rows = collect($response->viewData('reportRows'))->keyBy(fn ($row) => $row['user']->id);
+
+        $this->assertSame(1, $rows[$sales->id]['total']);
+        $this->assertSame(0, $rows[$sales->id]['sent']);
+        $this->assertSame('missing', $rows[$sales->id]['status']);
+    }
+
+    public function test_team_activity_pt_filter_uses_lead_pt_group(): void
+    {
+        $management = $this->userWithRole('management');
+        $sales = $this->userWithRole('sales');
+
+        $ntiCustomer = Customer::create(['name' => 'PT NTI Filter']);
+        $ntiLead = Lead::create([
+            'customer_id' => $ntiCustomer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'assigned_to' => $sales->id,
+            'incoming_date' => today()->toDateString(),
+            'kebutuhan' => 'Meeting NTI',
+        ]);
+
+        $mgkCustomer = Customer::create(['name' => 'PT MGK Filter']);
+        $mgkLead = Lead::create([
+            'customer_id' => $mgkCustomer->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'assigned_to' => $sales->id,
+            'incoming_date' => today()->toDateString(),
+            'kebutuhan' => 'Meeting MGK',
+        ]);
+
+        $this->makeMeeting($sales, ['customer_id' => $ntiCustomer->id, 'lead_id' => $ntiLead->id]);
+        $this->makeMeeting($sales, ['customer_id' => $mgkCustomer->id, 'lead_id' => $mgkLead->id]);
+
+        $response = $this->actingAs($management)
+            ->get(route('manage-sales.team-activity', ['pt_group' => 'NTI']))
+            ->assertOk();
+
+        $rows = collect($response->viewData('reportRows'))->keyBy(fn ($row) => $row['user']->id);
+
+        $this->assertSame(1, $rows[$sales->id]['total']);
     }
 }

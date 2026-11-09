@@ -105,6 +105,121 @@
         </div>
     </div>
 
+    {{-- Meeting report harian per Sales --}}
+    @php
+        $reportTotal = (int) $reportRows->sum('total');
+        $reportSent = (int) $reportRows->sum('sent');
+        $reportPending = (int) $reportRows->sum('pending');
+    @endphp
+    <div class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200 sm:text-base">{{ __('Meeting Reports') }}</h2>
+
+            <form method="GET" action="{{ route('manage-sales.team-activity') }}" class="flex flex-wrap items-end gap-2">
+                <div>
+                    <label for="report-date" class="sr-only">{{ __('Date') }}</label>
+                    <input type="date" id="report-date" name="date" value="{{ $dateString }}"
+                           class="h-10 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                </div>
+                <div>
+                    <label for="report-pt" class="sr-only">{{ __('Company') }}</label>
+                    <select id="report-pt" name="pt_group"
+                            class="h-10 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        <option value="">{{ __('All Companies') }}</option>
+                        @foreach(\App\Models\Lead::PT_GROUPS as $pt)
+                            <option value="{{ $pt }}" @selected($ptGroup === $pt)>{{ $pt }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                @if($dateString !== today()->toDateString() || $ptGroup)
+                    <x-icon-button as="a" icon="reset" href="{{ route('manage-sales.team-activity') }}" title="{{ __('Reset') }}" />
+                @endif
+            </form>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Meetings') }}</p>
+                <p class="mt-1 text-xl font-extrabold tabular-nums text-slate-900 dark:text-white">{{ $reportTotal }}</p>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Reported') }}</p>
+                <p class="mt-1 text-xl font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">{{ $reportSent }}</p>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Pending') }}</p>
+                <p class="mt-1 text-xl font-extrabold tabular-nums text-amber-600 dark:text-amber-400">{{ $reportPending }}</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 dark:bg-slate-700/50">
+                    <tr class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-300">
+                        <th class="px-5 py-3">{{ __('Sales') }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('Meetings') }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('Reported') }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('Pending') }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('Last Report') }}</th>
+                        <th class="px-4 py-3 text-center">{{ __('Status') }}</th>
+                        <th class="px-5 py-3 text-center">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @forelse($reportRows as $row)
+                        @php
+                            $meetingTotal = (int) $row['total'];
+
+                            if ($meetingTotal === 0) {
+                                $reportBadge = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200';
+                                $reportLabel = __('No meeting');
+                            } elseif ($row['status'] === 'done') {
+                                $reportBadge = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300';
+                                $reportLabel = __('Report Sent');
+                            } elseif ($row['status'] === 'partial') {
+                                $reportBadge = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300';
+                                $reportLabel = __('Partial');
+                            } else {
+                                $reportBadge = 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300';
+                                $reportLabel = __('Not reported');
+                            }
+                        @endphp
+                        <tr class="transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/60">
+                            <td class="px-5 py-3">
+                                <div class="flex items-center gap-2">
+                                    <x-user-avatar :user="$row['user']" size="w-7 h-7" text="text-[10px]" :clickable="false" />
+                                    <a href="{{ route('manage-sales.sales-rep', $row['user']) }}"
+                                       class="truncate text-sm font-medium text-slate-800 transition-colors hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">
+                                        {{ $row['user']->name }}
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center text-sm tabular-nums text-slate-700 dark:text-slate-200">{{ $meetingTotal }}</td>
+                            <td class="px-4 py-3 text-center text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{{ $row['sent'] }}</td>
+                            <td class="px-4 py-3 text-center text-sm font-semibold tabular-nums text-amber-600 dark:text-amber-400">{{ $row['pending'] }}</td>
+                            <td class="px-4 py-3 text-center text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                                {{ $row['last_report_at']?->format('d M Y H:i') ?? '-' }}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $reportBadge }}">{{ $reportLabel }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <x-icon-button as="a" icon="view" href="{{ route('manage-sales.sales-rep', $row['user']) }}" title="{{ __('View') }}" />
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                {{ __('No sales team members found.') }}
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {{-- Lead mengendap --}}
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
