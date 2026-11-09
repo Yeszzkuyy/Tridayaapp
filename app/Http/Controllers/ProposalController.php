@@ -900,7 +900,7 @@ class ProposalController extends Controller
         $description = trim(
             ($lead->kebutuhan ? "Kebutuhan: {$lead->kebutuhan}\n" : '')
             . ($proposal->notes ?? '')
-            . (! empty($validated['notes']) ? "\nCatatan untuk Teknisi: ".$validated['notes'] : '')
+            . (! empty($validated['notes']) ? "\nCatatan untuk Engineer: ".$validated['notes'] : '')
         );
 
         $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated, $description, $request) {

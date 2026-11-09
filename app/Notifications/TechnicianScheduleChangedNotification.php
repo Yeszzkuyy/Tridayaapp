@@ -35,7 +35,7 @@ class TechnicianScheduleChangedNotification extends Notification
         $cancelled = $this->change === 'cancelled' || $this->change === 'deleted';
 
         return (new MailMessage)
-            ->subject($cancelled ? 'Jadwal teknisi dibatalkan' : 'Jadwal teknisi berubah')
+            ->subject($cancelled ? 'Jadwal engineer dibatalkan' : 'Jadwal engineer berubah')
             ->line($this->schedule->title . ' — ' . $this->describe())
             ->action('Lihat Jadwal', url(route('teknisi.jadwal')))
             ->line('Terima kasih.');
@@ -56,8 +56,8 @@ class TechnicianScheduleChangedNotification extends Notification
     {
         return [
             'title' => $this->change === 'cancelled' || $this->change === 'deleted'
-                ? 'Jadwal teknisi dibatalkan'
-                : 'Jadwal teknisi berubah',
+                ? 'Jadwal engineer dibatalkan'
+                : 'Jadwal engineer berubah',
             'body' => $this->schedule->title . ' — ' . $this->describe(),
             'url' => route('teknisi.jadwal'),
         ];

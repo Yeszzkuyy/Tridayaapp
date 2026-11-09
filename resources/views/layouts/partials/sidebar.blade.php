@@ -650,7 +650,7 @@
             <x-user-avatar :user="auth()->user()" size="w-9 h-9" text="text-xs" :clickable="false" />
             <span class="sidebar-hide min-w-0 flex-1">
                 <span class="block truncate text-sm font-semibold text-slate-200">{{ auth()->user()->name }}</span>
-                <span class="mt-0.5 block truncate text-[11px] text-slate-400">{{ \Illuminate\Support\Str::headline($roleName) }}</span>
+                <span class="mt-0.5 block truncate text-[11px] text-slate-400">{{ __(\Illuminate\Support\Str::headline($roleName)) }}</span>
             </span>
                         <x-icon name="chevron-right" class="sidebar-hide h-4 w-4 shrink-0 text-slate-400 transition-colors duration-300 group-hover:text-accent-300" />
         </a>

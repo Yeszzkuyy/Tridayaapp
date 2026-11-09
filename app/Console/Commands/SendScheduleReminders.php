@@ -11,7 +11,7 @@ class SendScheduleReminders extends Command
 {
     protected $signature = 'schedules:remind';
 
-    protected $description = 'Kirim pengingat jadwal teknisi yang akan segera dimulai.';
+    protected $description = 'Kirim pengingat jadwal engineer yang akan segera dimulai.';
 
     public function handle(): int
     {

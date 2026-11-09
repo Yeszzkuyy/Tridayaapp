@@ -11,7 +11,7 @@ class SyncGoogleCalendar extends Command
 {
     protected $signature = 'gcal:sync';
 
-    protected $description = 'Tarik event Google Calendar ke jadwal teknisi secara otomatis.';
+    protected $description = 'Tarik event Google Calendar ke jadwal engineer secara otomatis.';
 
     public function handle(GoogleCalendarService $google): int
     {

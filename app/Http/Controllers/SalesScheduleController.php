@@ -137,7 +137,7 @@ class SalesScheduleController extends Controller
                 'lead_id' => $fu->lead_id,
                 'creator' => $fu->creator?->name,
                 'creator_avatar' => $fu->creator?->avatar ? asset('storage/'.$fu->creator->avatar) : null,
-                'creator_role' => $fu->creator?->roles->first() ? \Illuminate\Support\Str::headline($fu->creator->roles->first()->name) : null,
+                'creator_role' => $fu->creator?->roles->first() ? __(\Illuminate\Support\Str::headline($fu->creator->roles->first()->name)) : null,
                 'pic_name' => $contact?->name,
                 'pic_position' => $contact?->position,
                 'pic_phone' => $phone === '' ? null : $phone,

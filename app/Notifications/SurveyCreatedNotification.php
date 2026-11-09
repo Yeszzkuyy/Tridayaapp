@@ -48,7 +48,7 @@ class SurveyCreatedNotification extends Notification
         return (new MailMessage)
             ->subject('Survey Dibuat dari Permintaan Anda')
             ->line('Survey "' . $this->survey->title . '" sudah dibuat dari permintaan teknis Anda.')
-            ->line('Teknisi akan mengerjakan dan mengunggah laporannya.')
+            ->line('Engineer akan mengerjakan dan mengunggah laporannya.')
             ->action('Lihat Survey', url(route('teknisi.surveys.show', $this->survey->id)))
             ->line('Terima kasih.');
     }

@@ -27,7 +27,7 @@ class TechnicianScheduleReminderNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Pengingat jadwal teknisi')
+            ->subject('Pengingat jadwal engineer')
             ->line($this->schedule->title . ' dimulai ' . $this->schedule->start_at->format('d M Y H:i'))
             ->action('Lihat Jadwal', url(route('teknisi.jadwal')))
             ->line('Terima kasih.');

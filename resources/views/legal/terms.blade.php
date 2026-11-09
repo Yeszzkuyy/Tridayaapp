@@ -43,7 +43,7 @@
         <p>Dengan mengakses atau menggunakan 3DY App, Anda setuju untuk terikat oleh syarat dan ketentuan operasional yang berlaku di lingkungan 3DY Group.</p>
 
         <h2>2. Penggunaan yang Diizinkan</h2>
-        <p>Aplikasi ini ditujukan untuk personil yang berwenang di 3DY Group guna mengelola aktivitas operasional, proyek teknisi, prospek pemasaran, dan data pelanggan.</p>
+        <p>Aplikasi ini ditujukan untuk personil yang berwenang di 3DY Group guna mengelola aktivitas operasional, proyek engineer, prospek pemasaran, dan data pelanggan.</p>
     </div>
 </body>
 </html>

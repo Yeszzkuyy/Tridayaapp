@@ -21,7 +21,7 @@ class GetMyTasks implements Tool
     public function handle(Request $request): Stringable|string
     {
         if (! $this->user->hasAnyPermission(['view-technician', 'manage-technician', 'view-sales'])) {
-            return 'Akses ditolak: kamu tidak memiliki izin untuk melihat data tugas (perlu izin divisi teknisi atau sales).';
+            return 'Akses ditolak: kamu tidak memiliki izin untuk melihat data tugas (perlu izin divisi engineer atau sales).';
         }
 
         $tasks = ProjectTask::query()

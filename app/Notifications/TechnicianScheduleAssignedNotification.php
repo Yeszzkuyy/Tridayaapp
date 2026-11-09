@@ -27,7 +27,7 @@ class TechnicianScheduleAssignedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Jadwal teknisi baru')
+            ->subject('Jadwal engineer baru')
             ->line('Jadwal berikut di-assign ke Anda:')
             ->line($this->schedule->title . ' — ' . $this->schedule->start_at->format('d M Y H:i'))
             ->action('Lihat Jadwal', url(route('teknisi.jadwal')))
