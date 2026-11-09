@@ -111,6 +111,14 @@
             'userId' => auth()->id(),
             'csrf' => csrf_token(),
             'locale' => str_replace('_', '-', app()->getLocale()),
+            // Pesan simpan/gagal dari form biasa (POST + redirect) ikut
+            // ditampilkan sebagai pop up, bukan kotak hijau/merah di atas
+            // halaman. `success_card` = halaman itu punya tampilan sendiri.
+            'flash' => [
+                'success' => session('success') && ! session('success_card') ? (string) session('success') : null,
+                'warning' => session('warning') ? (string) session('warning') : null,
+                'error' => session('error') ? (string) session('error') : null,
+            ],
             'initial' => ['unread' => 0, 'unassigned' => 0, 'items' => [], 'next_cursor' => null, 'has_more' => false],
             'routes' => [
                 'status' => route('notifications.status'),
@@ -389,15 +397,10 @@
             @include('partials.avatar-lightbox')
 
             <div class="px-4 sm:px-6 lg:px-8 pt-5">
-                @if(session('success') && !session('success_card'))
-                    <x-toast type="success">{{ session('success') }}</x-toast>
-                @endif
-                @if(session('warning'))
-                    <x-toast type="warning">{{ session('warning') }}</x-toast>
-                @endif
-                @if(session('error'))
-                    <x-toast type="error">{{ session('error') }}</x-toast>
-                @endif
+                {{-- Pesan simpan/gagal (session success/warning/error) tidak lagi
+                     dirender sebagai kotak di sini; sudah jadi pop up pojok
+                     kanan bawah lewat Notification Center. Error validasi form
+                     tetap inline di bawah agar bisa dibaca sambil memperbaiki. --}}
                 @if($errors->any())
                     <x-toast type="error">
                         <p class="font-semibold mb-1">{{ __('There were errors in the form:') }}</p>

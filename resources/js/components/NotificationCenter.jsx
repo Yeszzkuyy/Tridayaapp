@@ -20,6 +20,9 @@ const I18N = CONFIG.i18n || {};
 const ROUTES = CONFIG.routes || {};
 const LOCALE = CONFIG.locale || undefined;
 
+/** Pop up pesan simpan/gagal hanya diputar sekali per muat halaman. */
+let flashShown = false;
+
 /** Panel: dipasang di tengah bawah bell, digeser/clamp bila mepet tepi layar. */
 const PANEL_WIDTH = 400;
 const PANEL_GAP = 8;
@@ -277,6 +280,21 @@ export default function NotificationCenter() {
     useEffect(() => {
         openRef.current = open;
     }, [open]);
+
+    // Pesan simpan/gagal dari form biasa (session flash di layout) tampil
+    // sebagai pop up yang sama, supaya tidak ada lagi kotak kecil di atas
+    // halaman. Hanya sekali per muat halaman.
+    useEffect(() => {
+        if (flashShown) return;
+
+        flashShown = true;
+
+        ['success', 'warning', 'error'].forEach((variant) => {
+            const message = CONFIG.flash?.[variant];
+
+            if (message) pushToast({ variant, message });
+        });
+    }, []);
 
     useEffect(() => {
         expiredRef.current = sessionExpired;
