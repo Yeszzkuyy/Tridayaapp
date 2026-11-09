@@ -45,6 +45,25 @@ class MeetingReportTest extends TestCase
         ], $overrides));
     }
 
+    public function test_store_meeting_redirects_to_report_form(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $customer = Customer::create(['name' => 'PT Meeting Baru '.uniqid()]);
+
+        $res = $this->actingAs($sales)->post(route('sales.meetings.store'), [
+            'customer_id' => $customer->id,
+            'follow_up_date' => today()->toDateString(),
+            'activity_time' => '10:00',
+            'meeting_mode' => 'offline',
+            'description' => 'Meeting perdana dengan calon customer.',
+        ]);
+
+        $meeting = FollowUp::query()->latest('id')->firstOrFail();
+
+        $res->assertRedirect(route('sales.meetings.report', $meeting));
+        $this->assertSame('meeting', $meeting->type);
+    }
+
     public function test_sales_can_view_meeting_report_form(): void
     {
         $sales = $this->userWithRole('sales');
@@ -123,6 +142,7 @@ class MeetingReportTest extends TestCase
 
         $fu->refresh();
         $this->assertNotNull($fu->completed_at);
+        $this->assertNotNull($fu->daily_report_submitted_at);
         $this->assertSame('need_quotation', $fu->meeting_outcome);
         $this->assertStringContainsString('Diskusi berjalan lancar', $fu->meeting_notes);
         $this->assertSame($nextActionDate, $fu->meeting_next_action_date->toDateString());

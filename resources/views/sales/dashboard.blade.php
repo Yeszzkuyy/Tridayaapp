@@ -379,27 +379,46 @@
         @endif
     </div>
 
-    {{-- Meeting tracker (dipisah dari Follow Up) --}}
+    {{-- Daily Report (dari Meeting hari ini) --}}
+    @php
+        $reportStatus = [
+            'done' => ['label' => __('Report complete'), 'class' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'],
+            'partial' => ['label' => __('Partially reported'), 'class' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'],
+            'missing' => ['label' => __('Not reported'), 'class' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'],
+        ][$dailyReport['status']] ?? ['label' => __('Report complete'), 'class' => 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'];
+    @endphp
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Meeting') }}</h2>
+            <div class="flex items-center gap-2">
+                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Daily Report') }}</h2>
+                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $reportStatus['class'] }}">{{ $reportStatus['label'] }}</span>
+            </div>
             <a href="{{ route('sales.meetings.index') }}" class="text-sm font-medium text-accent-600 hover:text-accent-500">{{ __('Open tracker') }}</a>
         </div>
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Today') }}</p>
-                <p class="mt-1.5 text-2xl font-extrabold text-slate-800 dark:text-white">{{ $meetingsToday ?? 0 }}</p>
+                <p class="mt-1.5 text-2xl font-extrabold text-slate-800 dark:text-white tabular-nums">{{ $dailyReport['total'] }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Report Sent') }}</p>
+                <p class="mt-1.5 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ $dailyReport['sent'] }}</p>
             </div>
             <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Report Pending') }}</p>
-                <p class="mt-1.5 text-2xl font-extrabold text-amber-600 dark:text-amber-400">{{ $meetingsPending ?? 0 }}</p>
+                <p class="mt-1.5 text-2xl font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">{{ $dailyReport['pending'] }}</p>
             </div>
-            <a href="{{ route('sales.meetings.create') }}"
+            <a href="{{ $dailyReport['pending'] > 0 ? route('sales.meetings.index', ['status' => 'pending']) : route('sales.meetings.create') }}"
                class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent-300 px-4 py-3 text-sm font-semibold text-accent-700 transition hover:bg-accent-50 dark:border-accent-700 dark:text-accent-300 dark:hover:bg-accent-900/20">
                 <x-icon name="add" class="h-4 w-4" />
-                {{ __('New Meeting') }}
+                {{ $dailyReport['pending'] > 0 ? __('Send report') : __('New Meeting') }}
             </a>
         </div>
+        @if($dailyReport['total'] === 0)
+            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">{{ __('No meeting today.') }}</p>
+        @elseif($dailyReport['last_report_at'])
+            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">{{ __('Last report sent at :time.', ['time' => $dailyReport['last_report_at']->format('H:i')]) }}</p>
+        @endif
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6" data-reveal>

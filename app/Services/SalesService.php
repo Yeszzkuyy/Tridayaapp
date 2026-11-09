@@ -132,6 +132,7 @@ class SalesService
 
         $followUp->forceFill([
             'completed_at' => now(),
+            'daily_report_submitted_at' => now(),
             'meeting_photos' => $photoPaths,
             'meeting_notes' => $data['meeting_notes'] ?? null,
             'meeting_outcome' => $data['meeting_outcome'] ?? null,
@@ -152,7 +153,10 @@ class SalesService
     public function reopenFollowUp(FollowUp $followUp): FollowUp
     {
         $this->assertFollowUpOwnership($followUp);
-        $followUp->forceFill(['completed_at' => null])->save();
+        $followUp->forceFill([
+            'completed_at' => null,
+            'daily_report_submitted_at' => null,
+        ])->save();
 
         return $followUp;
     }

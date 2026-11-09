@@ -55,6 +55,7 @@ class FollowUp extends Model
         'next_follow_up_date',
         'reminder_sent_at',
         'completed_at',
+        'daily_report_submitted_at',
         'created_by',
         // Meeting Report / MOM fields
         'meeting_photos',
@@ -68,6 +69,7 @@ class FollowUp extends Model
         'next_follow_up_date' => 'date',
         'reminder_sent_at' => 'datetime',
         'completed_at' => 'datetime',
+        'daily_report_submitted_at' => 'datetime',
         'meeting_photos' => 'array',
         'meeting_next_action_date' => 'date',
     ];

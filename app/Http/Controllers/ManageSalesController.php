@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use App\Services\SalesKpiService;
+use App\Services\SalesReportStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 
@@ -157,10 +158,10 @@ class ManageSalesController extends Controller
             ->with('success_card', true);
     }
 
-    public function dashboard(Request $request, SalesKpiService $salesKpiService)
+    public function dashboard(Request $request, SalesKpiService $salesKpiService, SalesReportStatusService $reportStatusService)
     {
         $user = auth()->user();
-        $data = $this->dashboardData($request, $user, $salesKpiService);
+        $data = $this->dashboardData($request, $user, $salesKpiService, $reportStatusService);
 
         // Leaderboard hanya untuk supervisor. Sales murni tidak boleh
         // melihat performa dan nama sales lain.
@@ -175,11 +176,11 @@ class ManageSalesController extends Controller
      * Snapshot dashboard + customer milik satu sales untuk supervisi
      * Lead of Sales (Bu Yanita). Sales murni ditolak oleh middleware rute.
      */
-    public function showSalesRep(Request $request, User $user, SalesKpiService $salesKpiService)
+    public function showSalesRep(Request $request, User $user, SalesKpiService $salesKpiService, SalesReportStatusService $reportStatusService)
     {
         abort_unless($this->isSalesRep($user), 404);
 
-        $data = $this->dashboardData($request, $user, $salesKpiService);
+        $data = $this->dashboardData($request, $user, $salesKpiService, $reportStatusService);
         $data['rep'] = $user;
         $data['salesLeaderboard'] = $salesKpiService->getLeaderboard(now()->month, now()->year);
         $data['repActivities'] = FollowUp::with('customer')
@@ -214,7 +215,7 @@ class ManageSalesController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function dashboardData(Request $request, User $user, SalesKpiService $salesKpiService): array
+    private function dashboardData(Request $request, User $user, SalesKpiService $salesKpiService, SalesReportStatusService $reportStatusService): array
     {
         $ownLead = fn ($q) => $q->where('assigned_to', $user->id);
         // Follow Up tidak menghitung Meeting (menu Meeting terpisah).
@@ -251,6 +252,7 @@ class ManageSalesController extends Controller
         $meetingsToday = (clone $meetingBase)->whereDate('follow_up_date', today())->count();
         $meetingsPending = (clone $meetingBase)->whereNull('completed_at')
             ->whereDate('follow_up_date', '<=', today())->count();
+        $dailyReport = $reportStatusService->summaryFor($user);
 
         // KPI Personal
         $myKpi = $salesKpiService->getUserKpi($user, now()->month, now()->year);
@@ -345,6 +347,7 @@ class ManageSalesController extends Controller
             'scheduleTypes',
             'meetingsToday',
             'meetingsPending',
+            'dailyReport',
             'kpi',
             'customerHub',
             'hubSearch',

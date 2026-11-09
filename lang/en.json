@@ -4792,5 +4792,16 @@
     "ON TRACK 🚀": "ON TRACK 🚀",
     "FOCUS ON TARGET 💪": "FOCUS ON TARGET 💪",
     "View File": "View File",
-    "Open in new tab": "Open in new tab"
+    "Open in new tab": "Open in new tab",
+    "Daily Report": "Daily Report",
+    "Report Sent": "Report Sent",
+    "Send report": "Send report",
+    "Report complete": "Report complete",
+    "Partially reported": "Partially reported",
+    "Not reported": "Not reported",
+    "No meeting today.": "No meeting today.",
+    "Last report sent at :time.": "Last report sent at :time.",
+    "Send Daily Report": "Send Daily Report",
+    "Meeting created. Fill the daily report to send it to Management.": "Meeting created. Fill the daily report to send it to Management.",
+    "Daily report sent to Management.": "Daily report sent to Management."
 }

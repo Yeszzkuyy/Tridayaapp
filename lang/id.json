@@ -4792,5 +4792,16 @@
     "ON TRACK 🚀": "ON TRACK 🚀",
     "FOCUS ON TARGET 💪": "FOKUS TARGET 💪",
     "View File": "Lihat File",
-    "Open in new tab": "Buka di tab baru"
+    "Open in new tab": "Buka di tab baru",
+    "Daily Report": "Laporan Harian",
+    "Report Sent": "Report Terkirim",
+    "Send report": "Kirim report",
+    "Report complete": "Report lengkap",
+    "Partially reported": "Sebagian sudah report",
+    "Not reported": "Belum report",
+    "No meeting today.": "Tidak ada meeting hari ini.",
+    "Last report sent at :time.": "Report terakhir dikirim pukul :time.",
+    "Send Daily Report": "Kirim Laporan Harian",
+    "Meeting created. Fill the daily report to send it to Management.": "Meeting dibuat. Isi laporan harian untuk dikirim ke Management.",
+    "Daily report sent to Management.": "Laporan harian sudah dikirim ke Management."
 }

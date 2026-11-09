@@ -105,11 +105,16 @@
                                                 {{ \App\Models\FollowUp::meetingModeLabel($meeting->meeting_mode) }}
                                             </span>
                                         @endif
+                                        @if($meeting->daily_report_submitted_at)
+                                            <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                {{ __('Report Sent') }} · {{ $meeting->daily_report_submitted_at->format('H:i') }}
+                                            </span>
+                                        @endif
                                         @if($meeting->meeting_outcome)
                                             <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\FollowUp::outcomeBadgeClass($meeting->meeting_outcome) }}">
                                                 {{ \App\Models\FollowUp::outcomeLabel($meeting->meeting_outcome) }}
                                             </span>
-                                        @elseif($meeting->follow_up_date && $meeting->follow_up_date->lte(today()))
+                                        @elseif(! $meeting->daily_report_submitted_at && $meeting->follow_up_date && $meeting->follow_up_date->lte(today()))
                                             <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                                                 {{ __('Report Pending') }}
                                             </span>

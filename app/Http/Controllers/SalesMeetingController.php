@@ -127,8 +127,8 @@ class SalesMeetingController extends Controller
             'created_by' => $user->id,
         ]);
 
-        return redirect()->route('sales.meetings.show', $meeting)
-            ->with('success', __('Meeting created. Fill the report after the meeting.'))
+        return redirect()->route('sales.meetings.report', $meeting)
+            ->with('success', __('Meeting created. Fill the daily report to send it to Management.'))
             ->with('success_card', true);
     }
 
@@ -186,11 +186,11 @@ class SalesMeetingController extends Controller
 
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Meeting report submitted and marked as completed.'));
+                ->with('success', __('Daily report sent to Management.'));
         }
 
         return redirect()->route('sales.meetings.show', $followUp)
-            ->with('success', __('Meeting report submitted and marked as completed.'))
+            ->with('success', __('Daily report sent to Management.'))
             ->with('success_card', true);
     }
 
