@@ -93,29 +93,26 @@ class SalesMeetingTrackerTest extends TestCase
         $this->assertSame($customer->id, $meeting->customer_id);
         $this->assertSame('offline', $meeting->meeting_mode);
         $this->assertSame($sales->id, $meeting->created_by);
-        $this->assertNull($meeting->completed_at);
+        $this->assertNotNull($meeting->completed_at);
+        $this->assertNotNull($meeting->daily_report_submitted_at);
     }
 
-    public function test_meeting_report_saves_photos_and_completes(): void
+    public function test_legacy_meeting_report_marks_daily_report_sent(): void
     {
-        Storage::fake('public');
-
         $sales = $this->userWithRoles(['sales']);
-        $meeting = $this->makeMeeting($sales);
+        $meeting = $this->makeMeeting($sales, [
+            'meeting_photos' => ['meeting-reports/legacy.jpg'],
+        ]);
 
-        $this->actingAs($sales)->post(route('sales.meetings.report.store', $meeting), [
-            'meeting_photos' => [UploadedFile::fake()->image('meeting.jpg', 600, 400)],
-            'meeting_notes' => 'Diskusi berjalan lancar, customer minta penawaran.',
-            'meeting_outcome' => 'need_quotation',
-            'meeting_next_action_date' => today()->addDays(3)->toDateString(),
-        ])->assertRedirect(route('sales.meetings.show', $meeting));
+        $this->actingAs($sales)->post(route('sales.meetings.report.store', $meeting), [])
+            ->assertRedirect(route('sales.meetings.show', $meeting));
 
         $meeting->refresh();
         $this->assertNotNull($meeting->completed_at);
-        $this->assertSame('need_quotation', $meeting->meeting_outcome);
-        $this->assertCount(1, $meeting->meeting_photos);
+        $this->assertNotNull($meeting->daily_report_submitted_at);
+        $this->assertNull($meeting->meeting_outcome);
+        $this->assertSame(['meeting-reports/legacy.jpg'], $meeting->meeting_photos);
         $this->assertTrue($meeting->hasMeetingReport());
-        Storage::disk('public')->assertExists($meeting->meeting_photos[0]);
     }
 
     public function test_create_meeting_accepts_five_photos(): void
@@ -163,30 +160,6 @@ class SalesMeetingTrackerTest extends TestCase
         ])->assertSessionHasErrors('meeting_photos');
 
         $this->assertSame(0, FollowUp::where('type', 'meeting')->count());
-    }
-
-    public function test_report_adds_photos_until_limit(): void
-    {
-        Storage::fake('public');
-
-        $sales = $this->userWithRoles(['sales']);
-        $meeting = $this->makeMeeting($sales, [
-            'meeting_photos' => ['meeting-reports/foto-lama-1.jpg', 'meeting-reports/foto-lama-2.jpg'],
-        ]);
-
-        $newPhotos = collect(range(1, 3))
-            ->map(fn (int $i) => UploadedFile::fake()->image("tambahan-{$i}.jpg", 400, 300))
-            ->all();
-
-        $this->actingAs($sales)->post(route('sales.meetings.report.store', $meeting), [
-            'meeting_photos' => $newPhotos,
-            'meeting_notes' => 'Diskusi lanjutan, foto bukti ditambahkan setelah meeting.',
-            'meeting_outcome' => 'follow_up',
-        ])->assertSessionHasNoErrors();
-
-        $meeting->refresh();
-        $this->assertCount(FollowUp::MAX_MEETING_PHOTOS, $meeting->meeting_photos);
-        $this->assertSame('meeting-reports/foto-lama-1.jpg', $meeting->meeting_photos[0]);
     }
 
     public function test_detail_page_shows_photos_before_report_submitted(): void
@@ -265,25 +238,23 @@ class SalesMeetingTrackerTest extends TestCase
 
         $meeting = FollowUp::where('type', 'meeting')->firstOrFail();
         $this->assertCount(1, $meeting->meeting_photos);
+        $this->assertNotNull($meeting->daily_report_submitted_at);
         Storage::disk('public')->assertExists($meeting->meeting_photos[0]);
     }
 
     public function test_report_keeps_photos_uploaded_at_creation(): void
     {
-        Storage::fake('public');
-
         $sales = $this->userWithRoles(['sales']);
         $meeting = $this->makeMeeting($sales, [
             'meeting_photos' => ['meeting-reports/existing.jpg'],
         ]);
 
-        $this->actingAs($sales)->post(route('sales.meetings.report.store', $meeting), [
-            'meeting_notes' => 'Hasil meeting sudah dicatat.',
-            'meeting_outcome' => 'prospect',
-        ])->assertRedirect();
+        $this->actingAs($sales)->post(route('sales.meetings.report.store', $meeting), [])
+            ->assertRedirect(route('sales.meetings.show', $meeting));
 
         $meeting->refresh();
         $this->assertNotNull($meeting->completed_at);
+        $this->assertNotNull($meeting->daily_report_submitted_at);
         $this->assertSame(['meeting-reports/existing.jpg'], $meeting->meeting_photos);
     }
 

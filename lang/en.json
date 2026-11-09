@@ -4811,5 +4811,10 @@
     "Last report sent at :time.": "Last report sent at :time.",
     "Send Daily Report": "Send Daily Report",
     "Meeting created. Fill the daily report to send it to Management.": "Meeting created. Fill the daily report to send it to Management.",
-    "Daily report sent to Management.": "Daily report sent to Management."
+    "Daily report sent to Management.": "Daily report sent to Management.",
+    "Daily Report Summary": "Daily Report Summary",
+    "attached from New Meeting.": "attached from New Meeting.",
+    "Meeting saved and daily report sent.": "Meeting saved and daily report sent.",
+    "Report Sent This Month": "Report Sent This Month",
+    "Review the meeting data below. No need to retype anything.": "Review the meeting data below. No need to retype anything."
 }

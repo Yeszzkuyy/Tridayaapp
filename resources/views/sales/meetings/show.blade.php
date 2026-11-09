@@ -95,10 +95,10 @@
             </div>
         @endif
 
-        @if($meeting->hasMeetingReport())
+        @if($meeting->completed_at)
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Meeting Report & Minutes of Meeting (MOM)') }}</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Daily Report') }}</h2>
                     @if($meeting->meeting_outcome)
                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ \App\Models\FollowUp::outcomeBadgeClass($meeting->meeting_outcome) }}">
                             {{ \App\Models\FollowUp::outcomeLabel($meeting->meeting_outcome) }}
@@ -106,11 +106,11 @@
                     @endif
                 </div>
 
-                <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-800 dark:text-slate-200">{{ $meeting->meeting_notes }}</p>
-
-                @if($meeting->completed_at)
-                    <p class="mt-4 text-xs text-slate-400">{{ __('Reported at :time', ['time' => $meeting->completed_at->setTimezone('Asia/Jakarta')->format('d M Y H:i')]) }}</p>
+                @if($meeting->meeting_notes && $meeting->meeting_notes !== $meeting->description)
+                    <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-800 dark:text-slate-200">{{ $meeting->meeting_notes }}</p>
                 @endif
+
+                <p class="mt-4 text-xs text-slate-400">{{ __('Reported at :time', ['time' => $meeting->completed_at->setTimezone('Asia/Jakarta')->format('d M Y H:i')]) }}</p>
             </div>
         @endif
     </div>

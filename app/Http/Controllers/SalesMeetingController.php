@@ -49,8 +49,6 @@ class SalesMeetingController extends Controller
             ->when($request->get('status') === 'completed', fn ($q) => $q->whereNotNull('completed_at'))
             ->when(in_array($request->get('mode'), FollowUp::MEETING_MODES, true),
                 fn ($q) => $q->where('meeting_mode', $request->get('mode')))
-            ->when(in_array($request->get('outcome'), FollowUp::MEETING_OUTCOMES, true),
-                fn ($q) => $q->where('meeting_outcome', $request->get('outcome')))
             ->when(trim((string) $request->get('q')) !== '', function ($q) use ($request) {
                 $term = trim((string) $request->get('q'));
                 $q->whereHas('customer', fn ($c) => $c->whereLike('name', $term));
@@ -67,7 +65,7 @@ class SalesMeetingController extends Controller
             'week' => (clone $base)->whereDate('follow_up_date', '>=', now()->startOfWeek())->count(),
             'pending' => (clone $base)->whereNull('completed_at')
                 ->whereDate('follow_up_date', '<=', today())->count(),
-            'won' => (clone $base)->where('meeting_outcome', 'closed_won')
+            'reported' => (clone $base)->whereNotNull('completed_at')
                 ->whereMonth('follow_up_date', now()->month)
                 ->whereYear('follow_up_date', now()->year)->count(),
         ];
@@ -127,8 +125,10 @@ class SalesMeetingController extends Controller
             'created_by' => $user->id,
         ]);
 
-        return redirect()->route('sales.meetings.report', $meeting)
-            ->with('success', __('Meeting created. Fill the daily report to send it to Management.'))
+        app(\App\Services\SalesService::class)->completeMeetingReport($meeting);
+
+        return redirect()->route('sales.meetings.show', $meeting)
+            ->with('success', __('Meeting saved and daily report sent.'))
             ->with('success_card', true);
     }
 
@@ -162,27 +162,7 @@ class SalesMeetingController extends Controller
         $this->authorizeMeeting($followUp);
         abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
 
-        $existingPhotos = count($followUp->meeting_photos ?? []);
-        $remainingSlots = max(0, FollowUp::MAX_MEETING_PHOTOS - $existingPhotos);
-        $photoRule = ($existingPhotos === 0 ? 'required' : 'nullable').'|array|max:'.$remainingSlots;
-
-        $validated = $request->validate([
-            'meeting_photos' => $photoRule,
-            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:'.FollowUp::MEETING_PHOTO_MAX_KB,
-            'meeting_notes' => 'required|string|min:10',
-            'meeting_outcome' => 'required|in:'.implode(',', FollowUp::MEETING_OUTCOMES),
-            'meeting_next_action_date' => 'nullable|date|after_or_equal:today',
-        ], [
-            'meeting_photos.required' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.min' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.max' => __('Maximum :n photos allowed.', ['n' => FollowUp::MAX_MEETING_PHOTOS]),
-            'meeting_photos.*.max' => __('Each photo must be under :mb MB.', ['mb' => intdiv(FollowUp::MEETING_PHOTO_MAX_KB, 1024)]),
-            'meeting_notes.required' => __('Meeting notes are required.'),
-            'meeting_notes.min' => __('Meeting notes must be at least 10 characters.'),
-            'meeting_outcome.required' => __('Please select the meeting outcome.'),
-        ]);
-
-        app(\App\Services\SalesService::class)->completeMeetingReport($followUp, $validated);
+        app(\App\Services\SalesService::class)->completeMeetingReport($followUp);
 
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])

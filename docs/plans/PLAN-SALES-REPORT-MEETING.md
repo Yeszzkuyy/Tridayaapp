@@ -1,15 +1,14 @@
 # PLAN-SALES-REPORT-MEETING: Report Harian Otomatis dari Add Meeting
 
-**Status Pengerjaan:** Belum Dikerjakan
+**Status Pengerjaan:** Siap Dikerjakan
 **Menu:** Sales / Meeting
 **Branch:** `feature/sales-flow`
 **Worktree:** `/var/www/3dyapp-sales`
 **Terakhir diperbarui:** 2026-11-09
-> Catatan: butuh keputusan di bagian 7.
 **Baseline kode:** `main` @ `d30b32d2`
 
-> Worktree `feature/sales-flow` 146 commit di belakang `main`.
-> Sebelum mulai: `git merge main`.
+> Implementasi sudah berjalan di `feature/sales-flow`; menunggu merge ke `main`
+> dan pengecekan user sebelum status diubah menjadi `Selesai`.
 
 ---
 
@@ -17,102 +16,87 @@
 
 Setelah selesai:
 
-- Setelah Sales menyimpan Add Meeting, Sales langsung bisa mengirim report meeting
-  **tanpa mengisi ulang** data pertemuan.
-- Ada penanda jelas "report hari ini sudah dikirim" / "belum".
-- Management bisa melihat siapa Sales yang sudah dan belum update report pada hari itu.
+- New Meeting menjadi satu-satunya tempat input data meeting.
+- Setelah New Meeting disimpan, daily report langsung dianggap terkirim.
+- Tidak ada lagi input MOM, foto, outcome, atau next action yang sama di form report.
+- Meeting lama yang belum report tetap bisa diselesaikan lewat form konfirmasi.
 
 ## 2. Ruang lingkup
 
 Termasuk:
 
-- Alur Add Meeting -> Report -> status terkirim.
-- Kartu status report di dashboard Sales.
-- Sumber data yang dipakai Management untuk monitoring.
+- Alur New Meeting -> daily report otomatis.
+- Form report lama disederhanakan menjadi ringkasan read-only + tombol Send.
+- Kartu Daily Report di dashboard Sales.
+- Badge Report Sent di daftar Meeting.
+- KPI Meeting: Won This Month diganti Report Sent This Month.
 
 Tidak termasuk:
 
-- Tampilan monitoring Management (dibahas di `PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md`).
-- Report bebas (free text) di luar meeting.
+- Tampilan monitoring Management (ada di `PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md`).
 - Perubahan modul Schedule (`sales_schedules`).
+- Mengubah data meeting lama yang sudah selesai.
 
 ## 3. Temuan kondisi sekarang
 
-1. Meeting disimpan di tabel `follow_ups` dengan `type = 'meeting'` (bukan tabel `meetings`).
-2. Kolom report: `meeting_photos`, `meeting_notes`, `meeting_outcome`, `meeting_next_action_date`, `completed_at`.
-3. `FollowUp::hasMeetingReport()` = `completed_at != null && meeting_notes != null`
-   (`app/Models/FollowUp.php:120-127`).
-4. `SalesMeetingController@reportStore()` (159-195) memanggil `SalesService::completeMeetingReport()`
-   yang mengisi `completed_at` dan mencatat aktivitas `meeting_report_submitted`.
-5. **Belum ada tabel/model laporan harian** dan belum ada penanda "daily report terkirim".
-   Status saat ini hanya "Report Pending" untuk meeting yang belum `completed_at`.
-6. `SendMeetingReminders` sudah jalan tiap hari 17:00 untuk meeting yang belum lapor.
-
-Kesimpulan: fondasinya sudah ada. Yang kurang adalah **satu langkah eksplisit "kirim report"**
-dan **ringkasan harian** yang dipakai Sales + Management.
+1. New Meeting sudah menyimpan customer, lead, tanggal, jam, mode, lokasi,
+   `description` (Summary Meeting), `next_follow_up_date`, dan foto bukti.
+2. Form report lama meminta ulang foto, MOM (`meeting_notes`), outcome, dan
+   next action — semuanya duplikat dari New Meeting.
+3. `FollowUp::hasMeetingReport()` masih mensyaratkan `meeting_notes` terisi.
+4. `SalesMeetingController@store()` masih mengarahkan user ke form report.
+5. KPI "Won This Month" bergantung pada `meeting_outcome` yang tidak akan diisi lagi.
 
 ## 4. Langkah pengerjaan
 
 ### 4.1 Alur Sales
 
-1. Setelah `SalesMeetingController@store()` menyimpan meeting, arahkan user ke form report
-   (`sales.meetings.report`) dengan data meeting sudah terisi otomatis
-   (customer, tanggal, jam, mode, summary tidak perlu diketik ulang).
-2. Di form report, tombol akhir diubah menjadi **"Send Daily Report"**.
-   Isi yang wajib: MOM/`meeting_notes` + outcome. Foto opsional (maks 5, sudah ada).
-3. Saat dikirim:
-   - set `completed_at = now()` (sudah ada),
-   - simpan `meeting_notes`, `meeting_outcome`, `meeting_next_action_date`,
-   - catat aktivitas `daily_report_submitted` (bisa menumpang log yang sudah ada).
-4. Tambah kolom penanda di `follow_ups` bila perlu:
-   `daily_report_submitted_at` (timestamp) agar status "sudah kirim hari ini" tidak ambigu
-   bila meeting dijadwalkan beda hari. Buat migrasi baru, jangan edit migrasi lama.
+1. Setelah `SalesMeetingController@store()` menyimpan meeting:
+   - set `completed_at = now()`,
+   - set `daily_report_submitted_at = now()`,
+   - set `meeting_next_action_date` dari `next_follow_up_date`,
+   - catat aktivitas `daily_report_submitted`,
+   - arahkan ke halaman detail meeting.
+2. `FollowUp::hasMeetingReport()` cukup memeriksa `completed_at`.
+3. Halaman detail tidak menampilkan MOM kosong; Summary Meeting sudah menjadi isi report.
 
-### 4.2 Tampilan Sales
+### 4.2 Form report lama (legacy)
 
-5. Dashboard Sales: ganti kartu "Meeting tracker" menjadi kartu **"Daily Report"** berisi:
-   - jumlah meeting hari ini,
-   - sudah dikirim,
-   - belum dikirim,
-   - tombol "Send report" untuk meeting yang belum.
-6. Halaman Meeting (`sales/meetings/index.blade.php`): badge status
-   `Report sent` / `Report pending` (sudah ada, rapikan labelnya dan tambahkan waktu kirim).
-7. Setelah report terkirim, tampilkan konfirmasi jelas ("Report sent to Management").
+4. Form report hanya dipakai meeting lama yang belum selesai.
+5. Isinya ringkasan read-only: customer, mode, tanggal, jam, lokasi, next meeting,
+   Summary Meeting, dan jumlah foto.
+6. Hapus input foto, MOM, outcome, dan next action.
+7. Tombol akhir: **Send Daily Report**; submit langsung menandai selesai.
 
-### 4.3 Data untuk Management
+### 4.3 Tampilan Sales
 
-8. Sediakan satu query/service bersama, misalnya `SalesReportStatusService::daily($date)`:
-   - daftar sales,
-   - jumlah meeting hari itu,
-   - jumlah meeting yang sudah ada report,
-   - status per sales (`done` / `partial` / `missing`),
-   - waktu report terakhir.
-9. Query ini dipakai dashboard Sales (untuk diri sendiri) dan halaman Management.
+8. Dashboard Sales: kartu **Daily Report** berisi meeting hari ini, sudah dikirim,
+   belum dikirim, dan tombol Send report.
+9. Daftar Meeting: badge **Report Sent** + jam kirim; Report Pending hanya untuk data lama.
+10. KPI Meeting: **Report Sent This Month** menggantikan **Won This Month**.
 
-### 4.4 Notifikasi (opsional, disarankan)
+### 4.4 Data untuk Management
 
-10. Reminder 17:00 yang sudah ada dipertahankan.
-11. Tambah digest ke Management 17:30 berisi daftar sales yang belum mengirim report hari itu.
+11. `SalesReportStatusService::daily($date)` mengembalikan status per sales
+    (`done` / `partial` / `missing`) dan dipakai dashboard Sales.
+12. Halaman Management memakai service yang sama (plan terpisah).
 
 ## 5. Kriteria selesai
 
-- Sales Add Meeting -> langsung diarahkan ke form report -> isi MOM -> kirim.
-- Sales tidak perlu mengetik ulang customer/tanggal/jam.
-- Dashboard Sales menampilkan "Report sent" setelah dikirim.
-- Kirim dua kali ditolak (sudah diblokir `FollowUpController@complete`).
-- `php artisan test --filter="MeetingReport|SalesMeetingTracker"` lulus.
-- Test baru: "store meeting mengarah ke form report" dan "status daily report per sales".
+- New Meeting -> Save -> detail meeting langsung berstatus Report Sent.
+- Tidak ada input ulang foto, MOM, outcome, atau next action.
+- Meeting lama yang belum report bisa diselesaikan lewat form konfirmasi.
+- Dashboard Sales menampilkan kartu Daily Report dengan angka yang benar.
+- `php artisan test --filter="MeetingReport|SalesMeetingTracker|SalesDailyReport"` lulus.
 
 ## 6. Dependensi
 
-- `PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md` memakai service dari poin 8.
-- Tidak perlu menunggu `PLAN-SALES-QUOTATION-OTOMATIS.md`.
+- `PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md` memakai service status yang sama.
+- Tidak menunggu `PLAN-SALES-QUOTATION-OTOMATIS.md`.
 
-## 7. Butuh keputusan User sebelum dikerjakan
+## 7. Keputusan yang sudah diambil
 
-1. Apakah report harian **cukup dari meeting**?
-   - **Opsi A (rekomendasi):** ya, report harian = report meeting. Tidak ada input tambahan.
-   - **Opsi B:** tetap ada kolom tambahan "ringkasan hari ini" di luar meeting.
-2. Kalau Sales punya 3 meeting sehari, apakah wajib report semua?
-   - **Opsi A (rekomendasi):** ya, semua meeting wajib ada report.
-   - **Opsi B:** cukup 1 meeting dilaporkan, sisanya opsional.
+1. Report harian cukup dari New Meeting; tidak ada input tambahan.
+2. New Meeting langsung dianggap sebagai report terkirim.
+3. Meeting Outcome dihapus dari form baru; data lama tetap ditampilkan.
+4. Meeting lama tetap bisa di-report lewat form konfirmasi.

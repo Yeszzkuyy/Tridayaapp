@@ -8,8 +8,6 @@ use App\Models\Lead;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MeetingReportTest extends TestCase
@@ -45,10 +43,11 @@ class MeetingReportTest extends TestCase
         ], $overrides));
     }
 
-    public function test_store_meeting_redirects_to_report_form(): void
+    public function test_store_meeting_marks_daily_report_sent(): void
     {
         $sales = $this->userWithRole('sales');
         $customer = Customer::create(['name' => 'PT Meeting Baru '.uniqid()]);
+        $nextMeeting = today()->addDays(3)->toDateString();
 
         $res = $this->actingAs($sales)->post(route('sales.meetings.store'), [
             'customer_id' => $customer->id,
@@ -56,12 +55,16 @@ class MeetingReportTest extends TestCase
             'activity_time' => '10:00',
             'meeting_mode' => 'offline',
             'description' => 'Meeting perdana dengan calon customer.',
+            'next_follow_up_date' => $nextMeeting,
         ]);
 
         $meeting = FollowUp::query()->latest('id')->firstOrFail();
 
-        $res->assertRedirect(route('sales.meetings.report', $meeting));
+        $res->assertRedirect(route('sales.meetings.show', $meeting));
         $this->assertSame('meeting', $meeting->type);
+        $this->assertNotNull($meeting->completed_at);
+        $this->assertNotNull($meeting->daily_report_submitted_at);
+        $this->assertSame($nextMeeting, $meeting->meeting_next_action_date->toDateString());
     }
 
     public function test_sales_can_view_meeting_report_form(): void
@@ -72,8 +75,11 @@ class MeetingReportTest extends TestCase
         $res = $this->actingAs($sales)->get(route('sales.meetings.report', $fu));
 
         $res->assertOk();
-        $res->assertSee('Meeting Report &amp; MOM', false);
-        $res->assertSee(__('Meeting Proof Photos'));
+        $res->assertSee('Send Daily Report');
+        $res->assertSee('Summary Meeting');
+        $res->assertDontSee('name="meeting_outcome"', false);
+        $res->assertDontSee('name="meeting_photos"', false);
+        $res->assertDontSee('name="meeting_notes"', false);
     }
 
     public function test_non_meeting_type_aborts_when_opening_meeting_report(): void
@@ -96,20 +102,23 @@ class MeetingReportTest extends TestCase
         $res->assertStatus(422);
     }
 
-    public function test_submit_meeting_report_validates_required_fields(): void
+    public function test_submit_meeting_report_marks_daily_report_sent_without_fields(): void
     {
         $sales = $this->userWithRole('sales');
         $fu = $this->makeMeeting($sales);
 
         $res = $this->actingAs($sales)->post(route('sales.meetings.report.store', $fu), []);
 
-        $res->assertSessionHasErrors(['meeting_photos', 'meeting_notes', 'meeting_outcome']);
+        $res->assertRedirect(route('sales.meetings.show', $fu));
+
+        $fu->refresh();
+        $this->assertNotNull($fu->completed_at);
+        $this->assertNotNull($fu->daily_report_submitted_at);
+        $this->assertTrue($fu->hasMeetingReport());
     }
 
     public function test_submit_meeting_report_success_and_saves_data(): void
     {
-        Storage::fake('public');
-
         $sales = $this->userWithRole('sales');
         $customer = Customer::create(['name' => 'PT Target Customer '.uniqid()]);
         $lead = Lead::create([
@@ -118,21 +127,16 @@ class MeetingReportTest extends TestCase
             'status' => 'follow_up',
             'assigned_to' => $sales->id,
         ]);
-        $fu = $this->makeMeeting($sales, ['lead_id' => $lead->id, 'customer_id' => $customer->id]);
+        $nextMeeting = now()->addDays(5)->toDateString();
+        $fu = $this->makeMeeting($sales, [
+            'lead_id' => $lead->id,
+            'customer_id' => $customer->id,
+            'next_follow_up_date' => $nextMeeting,
+        ]);
 
-        $photo1 = UploadedFile::fake()->image('meeting_1.jpg', 600, 400);
-        $photo2 = UploadedFile::fake()->image('meeting_2.png', 800, 600);
-
-        // Tanggal dinamis: validasi meeting_next_action_date mensyaratkan
-        // >= hari ini, jadi hardcode tanggal akan gagal seiring waktu.
-        $nextActionDate = now()->addDays(5)->toDateString();
         $returnDate = now()->toDateString();
 
         $res = $this->actingAs($sales)->post(route('sales.meetings.report.store', $fu), [
-            'meeting_photos' => [$photo1, $photo2],
-            'meeting_notes' => 'Diskusi berjalan lancar. Klien meminta quotation 16 unit kamera beserta switch PoE. Target follow-up minggu depan.',
-            'meeting_outcome' => 'need_quotation',
-            'meeting_next_action_date' => $nextActionDate,
             'return' => 'schedule',
             'date' => $returnDate,
         ]);
@@ -143,21 +147,12 @@ class MeetingReportTest extends TestCase
         $fu->refresh();
         $this->assertNotNull($fu->completed_at);
         $this->assertNotNull($fu->daily_report_submitted_at);
-        $this->assertSame('need_quotation', $fu->meeting_outcome);
-        $this->assertStringContainsString('Diskusi berjalan lancar', $fu->meeting_notes);
-        $this->assertSame($nextActionDate, $fu->meeting_next_action_date->toDateString());
-        $this->assertCount(2, $fu->meeting_photos);
+        $this->assertSame($nextMeeting, $fu->meeting_next_action_date->toDateString());
         $this->assertTrue($fu->hasMeetingReport());
 
-        // Pastikan foto tersimpan di public disk
-        foreach ($fu->meeting_photos as $path) {
-            Storage::disk('public')->assertExists($path);
-        }
-
-        // Pastikan aktivitas lead tercatat
         $this->assertDatabaseHas('lead_activities', [
             'lead_id' => $lead->id,
-            'action' => 'meeting_report_submitted',
+            'action' => 'daily_report_submitted',
         ]);
     }
 }

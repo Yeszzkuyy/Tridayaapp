@@ -4811,5 +4811,10 @@
     "Last report sent at :time.": "Report terakhir dikirim pukul :time.",
     "Send Daily Report": "Kirim Laporan Harian",
     "Meeting created. Fill the daily report to send it to Management.": "Meeting dibuat. Isi laporan harian untuk dikirim ke Management.",
-    "Daily report sent to Management.": "Laporan harian sudah dikirim ke Management."
+    "Daily report sent to Management.": "Laporan harian sudah dikirim ke Management.",
+    "Daily Report Summary": "Ringkasan Laporan Harian",
+    "attached from New Meeting.": "dilampirkan dari New Meeting.",
+    "Meeting saved and daily report sent.": "Meeting disimpan dan laporan harian sudah dikirim.",
+    "Report Sent This Month": "Report Terkirim Bulan Ini",
+    "Review the meeting data below. No need to retype anything.": "Periksa data meeting di bawah. Tidak perlu mengetik ulang."
 }

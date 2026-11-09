@@ -124,8 +124,7 @@ class FollowUp extends Model
      */
     public function hasMeetingReport(): bool
     {
-        return $this->completed_at !== null
-            && $this->meeting_notes !== null;
+        return $this->completed_at !== null;
     }
 
     public static function meetingModeLabel(?string $mode): string

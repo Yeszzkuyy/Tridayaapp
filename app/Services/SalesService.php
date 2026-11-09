@@ -115,34 +115,19 @@ class SalesService
         return $followUp;
     }
 
-    public function completeMeetingReport(FollowUp $followUp, array $data): FollowUp
+    public function completeMeetingReport(FollowUp $followUp): FollowUp
     {
         $this->assertFollowUpOwnership($followUp);
-        // Foto bukti bisa sudah diunggah saat meeting dibuat; gabungkan dengan
-        // foto baru (dibatasi FollowUp::MAX_MEETING_PHOTOS).
-        $photoPaths = $followUp->meeting_photos ?? [];
-        if (!empty($data['meeting_photos'])) {
-            foreach ($data['meeting_photos'] as $file) {
-                if ($file instanceof \Illuminate\Http\UploadedFile) {
-                    $photoPaths[] = $file->store('meeting-reports', 'public');
-                }
-            }
-        }
-        $photoPaths = array_slice($photoPaths, 0, FollowUp::MAX_MEETING_PHOTOS);
 
         $followUp->forceFill([
-            'completed_at' => now(),
+            'completed_at' => $followUp->completed_at ?? now(),
             'daily_report_submitted_at' => now(),
-            'meeting_photos' => $photoPaths,
-            'meeting_notes' => $data['meeting_notes'] ?? null,
-            'meeting_outcome' => $data['meeting_outcome'] ?? null,
-            'meeting_next_action_date' => !empty($data['meeting_next_action_date']) ? \Carbon\Carbon::parse($data['meeting_next_action_date']) : null,
+            'meeting_next_action_date' => $followUp->meeting_next_action_date ?? $followUp->next_follow_up_date,
         ])->save();
 
-        $this->logFollowUpActivity($followUp, 'meeting_report_submitted', [
-            'outcome' => $data['meeting_outcome'] ?? null,
-            'photos_count' => count($photoPaths),
-            'next_action_date' => $data['meeting_next_action_date'] ?? null,
+        $this->logFollowUpActivity($followUp, 'daily_report_submitted', [
+            'outcome' => $followUp->meeting_outcome,
+            'photos_count' => count($followUp->meeting_photos ?? []),
         ]);
 
         return $followUp;
