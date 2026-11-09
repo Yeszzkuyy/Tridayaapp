@@ -55,4 +55,16 @@ class EmailVerificationTest extends TestCase
 
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
     }
+
+    public function test_email_verification_notification_is_throttled_after_three_attempts(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->actingAs($user)->post('/email/verification-notification');
+        }
+
+        $response = $this->actingAs($user)->post('/email/verification-notification');
+        $response->assertStatus(429);
+    }
 }
