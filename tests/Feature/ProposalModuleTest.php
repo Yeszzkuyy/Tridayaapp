@@ -214,6 +214,7 @@ class ProposalModuleTest extends TestCase
         $this->assertSame('accepted', $proposal->fresh()->status);
         $fresh = $lead->fresh();
         $this->assertSame('won', $fresh->status);
+        $this->assertSame('deal', $fresh->customer->status);
         $this->assertNotNull($fresh->closed_at);
         $this->assertTrue(LeadActivity::where('lead_id', $lead->id)->where('action', 'proposal_accepted')->exists());
     }

@@ -49,6 +49,20 @@
                         @endif
                     </div>
 
+                    {{-- Status Customer: prospek vs customer resmi --}}
+                    @can('manage-sales')
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status') }}</label>
+                            <select id="status" name="status"
+                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @foreach(['lead' => __('Prospects'), 'deal' => __('Deal'), 'instalasi' => __('Installation'), 'selesai' => __('Completed')] as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('status', $customer->status) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('status') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    @endcan
+
                     {{-- Address --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">

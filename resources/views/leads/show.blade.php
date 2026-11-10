@@ -39,6 +39,13 @@
                             title="{{ __('Delete lead') }}" />
                 </form>
             @endcan
+            @if($lead->customer && $lead->customer->status === 'lead'
+                && (auth()->user()->can('manage-sales') || auth()->user()->can('manage-sales-leads')))
+                <form action="{{ route('leads.promote-customer', $lead) }}" method="POST" class="inline-flex">
+                    @csrf
+                    <x-icon-button type="submit" icon="customer" label="{{ __('Promote to Customer') }}" title="{{ __('Promote to Customer') }}" />
+                </form>
+            @endif
             @if(auth()->user()->can('view-sales') || auth()->user()->can('manage-sales'))
                 <x-icon-button as="a" href="{{ route('leads.pipeline') }}"
                    title="{{ __('Back to Pipeline') }}">

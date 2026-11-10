@@ -38,7 +38,7 @@ class CustomerPtTest extends TestCase
 
     private function customer(string $name, ?string $pt): Customer
     {
-        return Customer::create(['name' => $name, 'pt_group' => $pt]);
+        return Customer::create(['name' => $name, 'pt_group' => $pt, 'status' => 'deal']);
     }
 
     public function test_same_pt_can_edit()

@@ -49,6 +49,7 @@ class LeadActivity extends Model
             'deleted' => __('Deleted lead'),
             'attachment_deleted' => __('Deleted lead attachment'),
             'converted' => __('Converted lead to Project'),
+            'customer_promoted' => __('Promoted to Customer'),
             'status_changed' => __('Moved lead position in pipeline'),
             'assigned' => __('Assigned lead to sales'),
             'reassigned' => __('Reassigned lead to another sales'),

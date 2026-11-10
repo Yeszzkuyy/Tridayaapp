@@ -19,6 +19,7 @@ use App\Models\WhatsappMessage;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use App\Services\CustomerContactService;
+use App\Services\CustomerLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -467,6 +468,7 @@ class LeadController extends Controller
                 'phone' => $validated['customer_phone'] ?? null,
                 'whatsapp' => $validated['customer_whatsapp'] ?? null,
                 'address' => $validated['customer_address'] ?? null,
+                'status' => 'lead',
             ]);
 
             // PIC yang diisi saat membuat lead = satu kontak primary,
@@ -656,6 +658,7 @@ class LeadController extends Controller
                 'phone' => $validated['customer_phone'] ?? null,
                 'whatsapp' => $validated['customer_whatsapp'] ?? null,
                 'address' => $validated['customer_address'] ?? null,
+                'status' => 'lead',
             ]);
 
             if (filled($validated['customer_contact_person'] ?? null)) {
@@ -856,11 +859,32 @@ class LeadController extends Controller
             'closed_at' => now(),
             'closing_note' => $validated['closing_note'] ?? null,
         ]);
+        app(CustomerLifecycleService::class)->promoteFromLead($lead);
         $this->logActivity($lead, 'converted', ['project_id' => $project->id]);
 
         return redirect()
             ->route('projects.show', $project)
             ->with('success', __('Lead converted to Project successfully'));
+    }
+
+    /**
+     * Angkat lead menjadi customer resmi agar muncul di menu Customer.
+     */
+    public function promoteCustomer(Request $request, Lead $lead, CustomerLifecycleService $lifecycle)
+    {
+        abort_unless(
+            $request->user()->can('manage-sales') || $request->user()->can('manage-sales-leads'),
+            403
+        );
+
+        $customer = $lead->customer;
+        abort_if(! $customer || $customer->trashed(), 422, __('This lead has no customer data.'));
+        abort_if($customer->status !== 'lead', 422, __('This lead is already a customer.'));
+
+        $lifecycle->promoteFromLead($lead);
+        $this->logActivity($lead, 'customer_promoted', ['customer_id' => $customer->id]);
+
+        return back()->with('success', __('Lead promoted to customer successfully.'));
     }
 
     public function activities(Request $request)
