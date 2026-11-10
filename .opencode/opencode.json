@@ -8,7 +8,11 @@
     { "action": "skill", "resource": "banner-design", "effect": "deny" },
     { "action": "skill", "resource": "design", "effect": "deny" },
     { "action": "skill", "resource": "slides", "effect": "deny" },
-    { "action": "skill", "resource": "find-skills", "effect": "deny" }
+    { "action": "skill", "resource": "find-skills", "effect": "deny" },
+    { "action": "skill", "resource": "3dy-architecture", "effect": "allow" },
+    { "action": "skill", "resource": "3dy-security", "effect": "allow" },
+    { "action": "skill", "resource": "3dy-crm-workflow", "effect": "allow" },
+    { "action": "skill", "resource": "3dy-testing", "effect": "allow" }
   ],
   "mcp": {
     "context7": {
