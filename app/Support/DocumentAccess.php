@@ -84,6 +84,10 @@ class DocumentAccess
             return true;
         }
 
+        if ($project->supportUsers()->where('users.id', $user->id)->exists()) {
+            return true;
+        }
+
         $name = mb_strtolower(trim((string) $user->name));
         if ($name === '') {
             return false;

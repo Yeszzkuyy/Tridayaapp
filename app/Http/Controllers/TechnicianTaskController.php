@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TechnicalRequest;
 use App\Models\User;
+use App\Services\Project\FieldJobWorkflowService;
 use Illuminate\Http\Request;
 
 /**
@@ -80,14 +81,15 @@ class TechnicianTaskController extends Controller
         // dibuka lewat Tugas Saya.
         abort_if($technicalRequest->request_type === 'estimate', 404);
 
-        $technicalRequest->load(['lead.customer', 'requester', 'technician']);
+        $technicalRequest->load(['lead.customer', 'requester', 'technician', 'project', 'survey', 'installation', 'schedules']);
 
         $technicians = $isSuperAdmin
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
             : collect();
         $fromTasks = true;
         $readOnly = ! $isSuperAdmin;
+        $workflow = app(FieldJobWorkflowService::class)->evaluate($technicalRequest);
 
-        return view('sales.technical-requests.show', compact('technicalRequest', 'technicians', 'fromTasks', 'readOnly'));
+        return view('sales.technical-requests.show', compact('technicalRequest', 'technicians', 'fromTasks', 'readOnly', 'workflow'));
     }
 }

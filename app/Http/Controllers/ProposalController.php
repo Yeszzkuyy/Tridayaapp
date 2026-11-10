@@ -5,20 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\GoodsReceipt;
 use App\Models\Lead;
 use App\Models\LeadActivity;
-use App\Models\ProposalAttachment;
-use App\Models\Project;
-use App\Models\Product;
 use App\Models\PriceRequest;
+use App\Models\Product;
+use App\Models\Project;
 use App\Models\ProjectStatus;
 use App\Models\Proposal;
+use App\Models\ProposalAttachment;
 use App\Models\ProposalItem;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPurchaseOrder;
+use App\Models\User;
 use App\Models\WorkType;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
 use App\Notifications\PurchasingHandoffNotification;
-use App\Models\User;
+use App\Rules\SecureFile;
+use App\Services\CustomerLifecycleService;
+use App\Services\Project\ProjectWorkflowService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -102,7 +105,7 @@ class ProposalController extends Controller
         $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
         $path = $file->storeAs(
             'quotations/'.$proposal->id,
-            \Illuminate\Support\Str::uuid().'_'.$safeName,
+            Str::uuid().'_'.$safeName,
             'private'
         );
 
@@ -120,9 +123,9 @@ class ProposalController extends Controller
         $this->authorizeView($proposal);
 
         abort_unless((int) $attachment->proposal_id === (int) $proposal->id, 404);
-        abort_unless(\Illuminate\Support\Facades\Storage::disk('private')->exists($attachment->file_path), 404, __('File not found.'));
+        abort_unless(Storage::disk('private')->exists($attachment->file_path), 404, __('File not found.'));
 
-        return \Illuminate\Support\Facades\Storage::disk('private')
+        return Storage::disk('private')
             ->download($attachment->file_path, $attachment->original_name);
     }
 
@@ -136,7 +139,7 @@ class ProposalController extends Controller
 
         abort_unless((int) $attachment->proposal_id === (int) $proposal->id, 404);
 
-        return \App\Rules\SecureFile::fileResponse(
+        return SecureFile::fileResponse(
             'private',
             $attachment->file_path,
             $attachment->original_name
@@ -190,6 +193,7 @@ class ProposalController extends Controller
         // Selama pending_technical, BOQ dikunci dari sales; hanya tim teknis/admin yang boleh ubah.
         if ($proposal->status === 'pending_technical') {
             abort_unless(auth()->user()->can('manage-technician') || auth()->user()->can('manage-admin'), 422);
+
             return;
         }
 
@@ -208,6 +212,7 @@ class ProposalController extends Controller
         // pegang view-sales, jadi authorize penuh tidak dipakai di sini.)
         if ($user->can('manage-technician') || $user->can('manage-admin')) {
             $this->authorize('viewAny', Lead::class);
+
             return;
         }
 
@@ -216,18 +221,18 @@ class ProposalController extends Controller
 
     private function generateNumber(): string
     {
-        $prefix = 'Q/' . now()->format('Y/m') . '/';
+        $prefix = 'Q/'.now()->format('Y/m').'/';
 
         for ($attempt = 0; $attempt < 5; $attempt++) {
-            $seq = Proposal::where('proposal_number', 'like', $prefix . '%')->count() + 1 + $attempt;
-            $number = $prefix . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+            $seq = Proposal::where('proposal_number', 'like', $prefix.'%')->count() + 1 + $attempt;
+            $number = $prefix.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
 
             if (! Proposal::where('proposal_number', $number)->exists()) {
                 return $number;
             }
         }
 
-        return $prefix . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
     }
 
     private function itemRules(): array
@@ -286,7 +291,7 @@ class ProposalController extends Controller
     {
         $existing = [];
         foreach ($proposal->items()->get() as $old) {
-            $key = $old->product_id ? 'p' . $old->product_id : 'd' . $old->description;
+            $key = $old->product_id ? 'p'.$old->product_id : 'd'.$old->description;
             $existing[$key] = $old->unit_cost;
         }
 
@@ -296,7 +301,7 @@ class ProposalController extends Controller
             $qty = (float) $item['quantity'];
             $price = (float) $item['unit_price'];
             $disc = (float) ($item['discount'] ?? 0);
-            $key = ! empty($item['product_id']) ? 'p' . $item['product_id'] : 'd' . $item['description'];
+            $key = ! empty($item['product_id']) ? 'p'.$item['product_id'] : 'd'.$item['description'];
 
             if ($canManageCost
                 && array_key_exists('unit_cost', $item)
@@ -447,7 +452,7 @@ class ProposalController extends Controller
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'price_request_id' => 'nullable|exists:price_requests,id',
-            'quotation_file' => ['nullable', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
+            'quotation_file' => ['nullable', 'file', 'max:10240', SecureFile::documents()],
         ], $this->paymentRules(), $this->itemRules()));
 
         $items = $validated['items'] ?? [];
@@ -533,7 +538,13 @@ class ProposalController extends Controller
             ? WorkType::orderBy('name')->get(['id', 'name'])
             : collect();
 
-        return view('sales.proposals.show', compact('proposal', 'workTypes'));
+        $technicians = $proposal->status === 'accepted' && ! $proposal->project
+            ? User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+                ->orderBy('name')
+                ->get(['id', 'name'])
+            : collect();
+
+        return view('sales.proposals.show', compact('proposal', 'workTypes', 'technicians'));
     }
 
     public function preview(Proposal $proposal)
@@ -564,7 +575,7 @@ class ProposalController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
-            'quotation_file' => ['nullable', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
+            'quotation_file' => ['nullable', 'file', 'max:10240', SecureFile::documents()],
         ], $this->paymentRules(), $this->itemRules()));
 
         $canManageCost = Gate::allows('updateCost', Proposal::class);
@@ -616,7 +627,7 @@ class ProposalController extends Controller
         $proposal->update(['status' => 'pending_technical']);
         $this->log($proposal->lead, 'proposal_pending_technical', ['number' => $proposal->proposal_number]);
 
-        \App\Models\User::role(['admin', 'lead-technician'])->get()
+        User::role(['admin', 'lead-technician'])->get()
             ->each(fn ($u) => $u->notify(new ProposalStatusNotification($proposal, 'pending_technical')));
 
         return back()->with('success', __('Proposal submitted to the technical team.'));
@@ -679,7 +690,6 @@ class ProposalController extends Controller
 
         return back()->with('success', __('Proposal marked as sent.'));
     }
-
 
     /**
      * Tandai quotation terkirim lewat kanal tertentu (WhatsApp/email).
@@ -756,7 +766,7 @@ class ProposalController extends Controller
 
         DB::transaction(function () use ($proposal, $validated) {
             $proposal->update(['status' => $validated['decision']]);
-            $this->log($proposal->lead, 'proposal_' . $validated['decision'], ['number' => $proposal->proposal_number]);
+            $this->log($proposal->lead, 'proposal_'.$validated['decision'], ['number' => $proposal->proposal_number]);
 
             // Proposal diterima = lead WON (ikuti konvensi pipeline: closed_at + acknowledged).
             if ($validated['decision'] === 'accepted' && $proposal->lead->status !== 'won') {
@@ -770,7 +780,7 @@ class ProposalController extends Controller
         });
 
         if ($validated['decision'] === 'accepted') {
-            app(\App\Services\CustomerLifecycleService::class)->promoteFromLead($proposal->lead);
+            app(CustomerLifecycleService::class)->promoteFromLead($proposal->lead);
         }
 
         $assignee = $proposal->lead->assignee;
@@ -812,7 +822,7 @@ class ProposalController extends Controller
                 $proposal->po_document_path ? 'nullable' : 'required',
                 'file',
                 'max:10240',
-                \App\Rules\SecureFile::documents(),
+                SecureFile::documents(),
             ],
             'po_number' => 'nullable|string|max:100',
             'po_date' => 'nullable|date',
@@ -836,7 +846,7 @@ class ProposalController extends Controller
             $file = $validated['po_file'];
             $path = $file->storeAs(
                 "proposals/{$proposal->id}/po",
-                Str::uuid() . '.' . strtolower($file->getClientOriginalExtension()),
+                Str::uuid().'.'.strtolower($file->getClientOriginalExtension()),
                 'private'
             );
 
@@ -854,7 +864,7 @@ class ProposalController extends Controller
 
         $proposal->update($payload);
 
-        app(\App\Services\CustomerLifecycleService::class)->promoteFromLead($proposal->lead);
+        app(CustomerLifecycleService::class)->promoteFromLead($proposal->lead);
 
         $this->notifyAdminHandoff($proposal->fresh(), PurchasingHandoffNotification::STAGE_PO_RECEIVED);
 
@@ -880,10 +890,10 @@ class ProposalController extends Controller
         $this->authorizeView($proposal);
         abort_if(! $proposal->po_document_path, 404);
 
-        return \App\Rules\SecureFile::fileResponse(
+        return SecureFile::fileResponse(
             'private',
             $proposal->po_document_path,
-            'PO-' . $proposal->proposal_number . '.' . pathinfo($proposal->po_document_path, PATHINFO_EXTENSION)
+            'PO-'.$proposal->proposal_number.'.'.pathinfo($proposal->po_document_path, PATHINFO_EXTENSION)
         );
     }
 
@@ -914,34 +924,61 @@ class ProposalController extends Controller
             'start_date' => 'nullable|date',
             'requires_delivery' => 'nullable|boolean',
             'requires_installation' => 'nullable|boolean',
+            'teknisi_user_id' => 'nullable|exists:users,id',
+            'support_user_ids' => 'nullable|array',
+            'support_user_ids.*' => 'exists:users,id',
             'notes' => 'nullable|string|max:2000',
         ]);
+
+        $picEngineer = filled($validated['teknisi_user_id'] ?? null)
+            ? User::find($validated['teknisi_user_id'])
+            : null;
+        abort_unless(
+            $picEngineer === null || $picEngineer->hasAnyRole(['technician', 'lead-technician', 'prakerin-technician']),
+            422,
+            __('The selected PIC is not an engineer.')
+        );
+
+        $supportUsers = collect($validated['support_user_ids'] ?? [])
+            ->filter()
+            ->unique()
+            ->map(fn ($id) => User::find($id))
+            ->filter(fn (?User $user) => $user?->hasAnyRole(['technician', 'lead-technician', 'prakerin-technician']))
+            ->values();
 
         $lead = $proposal->lead;
         $customerName = $lead->customer?->name ?? $proposal->customer;
 
         $description = trim(
             ($lead->kebutuhan ? "Kebutuhan: {$lead->kebutuhan}\n" : '')
-            . ($proposal->notes ?? '')
-            . (! empty($validated['notes']) ? "\nCatatan untuk Engineer: ".$validated['notes'] : '')
+            .($proposal->notes ?? '')
+            .(! empty($validated['notes']) ? "\nCatatan untuk Engineer: ".$validated['notes'] : '')
         );
 
-        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated, $description, $request) {
+        $project = DB::transaction(function () use ($proposal, $lead, $customerName, $validated, $description, $request, $picEngineer, $supportUsers) {
             $project = Project::create([
                 'customer_id' => $lead->customer_id,
                 'sales_user_id' => $lead->assigned_to ?? $proposal->created_by,
+                'teknisi_user_id' => $picEngineer?->id,
                 'work_type_id' => $validated['work_type_id'],
                 'project_status_id' => ProjectStatus::default()->value('id'),
-                'project_name' => $customerName . ' — ' . $proposal->proposal_number,
+                'project_name' => $customerName.' — '.$proposal->proposal_number,
                 'quotation_number' => $proposal->proposal_number,
                 'proposal_id' => $proposal->id,
+                'pic_engineer' => $picEngineer?->name,
+                'support_technicians' => $supportUsers->pluck('name')->implode(', '),
                 'start_date' => $validated['start_date'] ?? null,
                 'delivery_deadline' => $proposal->delivery_deadline,
                 'requires_delivery' => $request->boolean('requires_delivery', true),
                 'requires_installation' => $request->boolean('requires_installation', true),
                 'description' => $description,
-                'progress' => 0,
+                'workflow_state' => ['request'],
+                'progress' => 17,
             ]);
+
+            if ($supportUsers->isNotEmpty()) {
+                $project->supportUsers()->sync($supportUsers->pluck('id')->all());
+            }
 
             // Purchasing boleh membuat Supplier PO sebelum project lahir.
             // Saat project dibuat, tautkan dokumen procurement yang masih
@@ -968,7 +1005,10 @@ class ProposalController extends Controller
 
         // Beri tahu tim teknisi (jangan notifikasi diri sendiri bila yang
         // convert juga memegang role lead-technician).
-        app(\App\Services\CustomerLifecycleService::class)->promoteFromLead($lead);
+        app(CustomerLifecycleService::class)->promoteFromLead($lead);
+
+        // Samakan progress awal dengan langkah yang sudah selesai dari quotation.
+        app(ProjectWorkflowService::class)->sync($project, false);
 
         Notification::send(
             User::role('lead-technician')->where('id', '!=', auth()->id())->get(),

@@ -233,9 +233,6 @@
                                 $isDone = $project->status?->name === 'Done';
                                 $isProg = $project->status?->name === 'On Progress';
                                 $progVal = (int) ($project->progress ?? 0);
-                                if ($progVal <= 0) {
-                                    $progVal = $isDone ? 100 : ($isProg ? 60 : 25);
-                                }
                                 $barColor = $isDone ? 'bg-emerald-500' : ($isProg ? 'bg-amber-500' : 'bg-indigo-500');
                                 $boxColor = $isDone
                                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
@@ -320,12 +317,21 @@
                                     <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $technician->name }}</p>
                                     <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                                         {{ $ongoingCount }} {{ $ongoingCount === 1 ? __('ongoing project') : __('ongoing projects') }}
+                                        @if(($fieldJobCounts[$technician->id] ?? 0) > 0)
+                                            · {{ $fieldJobCounts[$technician->id] }} {{ $fieldJobCounts[$technician->id] === 1 ? __('field job') : __('field jobs') }}
+                                        @endif
                                     </p>
                                     <div class="mt-1 flex flex-col gap-0.5">
                                         @foreach($projectsByTechnician[$technician->id] as $project)
                                             <a href="{{ route('projects.show', $project) }}"
                                                class="truncate text-xs font-medium text-accent-600 transition hover:text-accent-700 hover:underline dark:text-accent-400">
                                                 {{ $project->project_name }}
+                                            </a>
+                                        @endforeach
+                                        @foreach($fieldJobsByTechnician[$technician->id] ?? [] as $fieldJob)
+                                            <a href="{{ $fieldJob['url'] }}"
+                                               class="truncate text-xs font-medium text-slate-600 transition hover:text-accent-700 hover:underline dark:text-slate-300 dark:hover:text-accent-400">
+                                                {{ $fieldJob['type_label'] }} · {{ $fieldJob['title'] }}
                                             </a>
                                         @endforeach
                                     </div>
@@ -395,5 +401,48 @@
                 </div>
             </section>
         </div>
+
+        {{-- 5. Pekerjaan Lapangan Saya (survey/instalasi/request non-project) --}}
+        <section style="--d: 720ms"
+                 class="lynk-enter rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800/60 dark:bg-slate-800/90"
+                 aria-labelledby="my-field-jobs-heading">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-3">
+                <div>
+                    <h2 id="my-field-jobs-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">{{ __('My Field Jobs') }}</h2>
+                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ __('Your assigned requests, surveys, installations, and schedules.') }}</p>
+                </div>
+                <a href="{{ route('teknisi.field-work.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-accent-600 transition hover:text-accent-700 dark:text-accent-400">
+                    {{ __('Open Field Work') }} <x-icon name="chevron-right" class="h-4 w-4" />
+                </a>
+            </div>
+
+            <div class="mt-1 grid grid-cols-1 gap-2 lg:grid-cols-2">
+                @forelse($myFieldJobs as $job)
+                    <a href="{{ $job['url'] }}"
+                       class="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
+                        <div class="flex min-w-0 items-center gap-3.5">
+                            <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-accent-50 text-accent-700 dark:bg-accent-500/15 dark:text-accent-300">
+                                <span class="text-sm font-extrabold leading-none tabular-nums">{{ $job['date']?->format('d') ?? '-' }}</span>
+                                <span class="mt-0.5 text-[10px] font-bold uppercase tracking-wider opacity-80">{{ $job['date'] ? strtoupper($job['date']->format('M')) : '' }}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold text-slate-800 group-hover:text-accent-600 dark:text-slate-100 dark:group-hover:text-accent-400">
+                                    {{ $job['title'] }}
+                                </p>
+                                <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                    {{ $job['type_label'] }} · {{ $job['customer'] ?: '-' }}
+                                    @if($job['project']) · {{ $job['project'] }} @endif
+                                </p>
+                            </div>
+                        </div>
+                        <x-status-badge color="amber">{{ $job['status'] }}</x-status-badge>
+                    </a>
+                @empty
+                    <div class="lg:col-span-2">
+                        <x-empty-state label="{{ __('field jobs') }}" />
+                    </div>
+                @endforelse
+            </div>
+        </section>
     </div>
 </x-app-layout>

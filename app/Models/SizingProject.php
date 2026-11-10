@@ -10,7 +10,7 @@ class SizingProject extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'project_id', 'sales_pic', 'customer_needs', 'recommendation',
+        'project_id', 'technician_user_id', 'sales_pic', 'customer_needs', 'recommendation',
         'specifications', 'quantity', 'topology', 'technical_notes',
         'attachments', 'status',
     ];
@@ -23,6 +23,11 @@ class SizingProject extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function technician()
+    {
+        return $this->belongsTo(User::class, 'technician_user_id');
     }
 
     /**

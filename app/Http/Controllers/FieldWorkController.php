@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Instalasi;
+use App\Models\Project;
 use App\Models\Survey;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -30,6 +31,7 @@ class FieldWorkController extends Controller
             'q' => trim((string) $request->query('q', '')),
             'status' => (string) $request->query('status', ''),
             'pic' => trim((string) $request->query('pic', '')),
+            'project_id' => (string) $request->query('project_id', ''),
             'date_from' => (string) $request->query('date_from', ''),
             'date_to' => (string) $request->query('date_to', ''),
         ];
@@ -78,13 +80,18 @@ class FieldWorkController extends Controller
             'tabCounts' => $tabCounts,
             'stats' => $stats,
             'filters' => $filters,
+            'projects' => Project::orderBy('project_name')->limit(200)->get(['id', 'project_name']),
         ]);
     }
 
     /** @return Collection<int, array<string, mixed>> */
     private function installationRows(array $filters): Collection
     {
-        $query = Instalasi::query()->with(['project.customer']);
+        $query = Instalasi::query()->with(['project.customer', 'customer', 'technician', 'technicalRequest']);
+
+        if ($filters['project_id'] !== '') {
+            $query->where('project_id', $filters['project_id']);
+        }
 
         if ($filters['q'] !== '') {
             $q = $filters['q'];
@@ -112,11 +119,13 @@ class FieldWorkController extends Controller
                 'type' => 'installation',
                 'type_label' => __('Installation'),
                 'id' => $instalasi->id,
-                'title' => $instalasi->project?->project_name ?? __('Installation #:id', ['id' => $instalasi->id]),
+                'title' => $instalasi->technicalRequest?->title
+                    ?? $instalasi->project?->project_name
+                    ?? __('Installation #:id', ['id' => $instalasi->id]),
                 'detail' => $instalasi->location,
-                'customer' => $instalasi->project?->customer?->name,
+                'customer' => $instalasi->customer?->name ?? $instalasi->project?->customer?->name,
                 'project' => $instalasi->project?->project_name,
-                'pic' => $instalasi->technician_pic,
+                'pic' => $instalasi->technician?->name ?? $instalasi->technician_pic,
                 'date' => $date?->toDateString(),
                 'date_sort' => $date?->getTimestamp() ?? 0,
                 'status' => $instalasi->status,
@@ -130,7 +139,11 @@ class FieldWorkController extends Controller
     /** @return Collection<int, array<string, mixed>> */
     private function surveyRows(array $filters): Collection
     {
-        $query = Survey::query()->with(['customer', 'project.customer', 'sales']);
+        $query = Survey::query()->with(['customer', 'project.customer', 'sales', 'technician']);
+
+        if ($filters['project_id'] !== '') {
+            $query->where('project_id', $filters['project_id']);
+        }
 
         if ($filters['q'] !== '') {
             $q = $filters['q'];
@@ -162,7 +175,7 @@ class FieldWorkController extends Controller
                 'detail' => $survey->location,
                 'customer' => $survey->customer?->name ?? $survey->project?->customer?->name,
                 'project' => $survey->project?->project_name,
-                'pic' => $survey->pic,
+                'pic' => $survey->technician?->name ?? $survey->pic,
                 'date' => $date?->toDateString(),
                 'date_sort' => $date?->getTimestamp() ?? 0,
                 'status' => $survey->status,

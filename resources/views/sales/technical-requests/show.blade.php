@@ -52,6 +52,8 @@
         ])->contains(fn ($value) => filled($value));
         $survey = $technicalRequest->survey;
         $surveyHasReport = $survey?->hasReport() ?? false;
+        $installation = $technicalRequest->installation;
+        $installationHasReport = $installation?->hasReport() ?? false;
     @endphp
 
     <div>
@@ -77,6 +79,34 @@
             </div>
             <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
         </div>
+
+        {{-- Workflow pekerjaan lapangan --}}
+        <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="field-job-workflow-heading">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="field-job-workflow-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Workflow Progress') }}</h2>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    {{ $workflow['done'] }}/{{ $workflow['total'] }} {{ __('steps completed') }}
+                </span>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach($workflow['steps'] as $index => $step)
+                    <div class="flex items-start gap-2.5 rounded-xl border p-3 {{ $step['done'] ? 'border-green-200 bg-green-50 dark:border-green-800/60 dark:bg-green-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30' }}">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $step['done'] ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300' }}">
+                            @if($step['done'])
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            @else
+                                {{ $index + 1 }}
+                            @endif
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $step['label'] }}</p>
+                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $step['detail'] }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
 
         @if($fromTasks && $readOnly)
             <div class="mb-4 flex items-start gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 dark:border-accent-500/30 dark:bg-accent-500/10">
@@ -274,6 +304,21 @@
                             </p>
                         </div>
                         <x-icon-button as="a" icon="view" href="{{ route('teknisi.surveys.show', $survey) }}" label="{{ $survey->title }}" title="{{ $survey->title }}" />
+                    </div>
+                </section>
+            @endif
+
+            @if($installation)
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="technical-request-installation-heading">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 id="technical-request-installation-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Related Installation') }}</h2>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                {{ $installationHasReport ? __('Report has been uploaded') : __('Report not uploaded yet') }}
+                                · {{ $installation->isBastReady() ? __('BAST signed') : __('BAST not signed yet') }}
+                            </p>
+                        </div>
+                        <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.show', $installation) }}" label="{{ __('Installation Detail') }}" title="{{ __('Installation Detail') }}" />
                     </div>
                 </section>
             @endif

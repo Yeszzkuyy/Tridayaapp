@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class TechnicianSchedule extends Model
 {
@@ -12,6 +13,7 @@ class TechnicianSchedule extends Model
     protected $fillable = [
         'user_id',
         'project_id',
+        'technical_request_id',
         'technician_user_id',
         'title',
         'description',
@@ -58,6 +60,11 @@ class TechnicianSchedule extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function technicalRequest()
+    {
+        return $this->belongsTo(TechnicalRequest::class);
+    }
+
     public function technician()
     {
         return $this->belongsTo(User::class, 'technician_user_id');
@@ -75,7 +82,7 @@ class TechnicianSchedule extends Model
      * Daftar teknisi yang bertugas — pivot utama, fallback kolom lama
      * (jadwal lama yang belum tersentuh pivot tetap tampil).
      *
-     * @return \Illuminate\Support\Collection<int, User>
+     * @return Collection<int, User>
      */
     public function technicianList()
     {
