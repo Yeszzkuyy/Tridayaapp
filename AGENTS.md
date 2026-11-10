@@ -115,7 +115,7 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 | `/home/raafi/3dyapp-notifpop` | `feature/sys-notif-popup` | Pop up notifikasi pojok layar (gaya toast 21st.dev) |
 | `/home/raafi/3dyapp-i18n` | `feature/i18n-english` | i18n (konsistensi bahasa semua menu) + tampilan settings |
 | `/home/raafi/3dyapp-price` | `feature/sales-price-sync` | Price Request sales+teknisi satu tabel (sementara, hapus setelah merge) |
-| `/home/raafi/3dyapp-panel` | `feature/div-panel` | Admin Panel (invoice, PO, payment) |
+| `/home/yeski/3dyapp-panel` | `feature/div-panel` | Admin Panel (invoice, PO, payment) |
 | `/home/raafi/3dyapp-contacts` | `feature/cus-contact-source` | Satu sumber kontak customer (PIC) |
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
@@ -776,4 +776,57 @@ Setiap sesi AI/Developer yang membuat file migrasi database baru WAJIB mematuhi 
 - **Gunakan Timestamp Unik:** Jangan membuat file migrasi secara manual dengan menebak urutan waktu. Selalu gunakan perintah `php artisan make:migration`.
 - **Dilarang Mengubah Migrasi yang Sudah Di-merge ke `main`:** Jika ada perubahan struktur tabel setelah file di-merge ke `main`, buat file migrasi baru (rollback/alter), JANGAN mengedit file migrasi lama.
 - **Sinkronisasi Schema:** Setelah melakukan `git pull` dari `main` di worktree divisi Anda, segera jalankan `php artisan migrate` untuk memastikan state database lokal selaras dengan versi terbaru.
+
+## 16. Skill Proyek 3DY & Pemilihan Otomatis
+
+OpenCode menemukan skill dari `.opencode/skills/` (proyek),
+`~/.config/opencode/skills/` (global), serta folder kompatibilitas
+`.agents/skills` dan `.claude/skills`. Skill proyek 3DY memakai ID `3dy-*`
+dan **wajib dipilih serta dimuat otomatis** berdasarkan konteks tugas, tanpa
+menunggu user menyebut namanya.
+
+### 16.1 Peta pemicu
+
+| Konteks tugas | Skill yang dimuat |
+|---|---|
+| Struktur menu/modul, alur data, penempatan kode, worktree, migration | `3dy-architecture` |
+| Route/controller/policy/permission, 403, menu hilang, akses PT, data sensitif, upload, webhook | `3dy-security` |
+| Lead, follow-up, meeting, quotation, PO, convert project, delivery, instalasi, BAST, invoice, payment | `3dy-crm-workflow` |
+| Menulis/menjalankan test, bug fix, verifikasi sebelum merge | `3dy-testing` |
+| Logika Laravel/PHP umum | `laravel-development` |
+| Review diff/PR sebelum merge | `code-review-and-quality` |
+| Desain halaman/komponen UI | `ui-ux-pro-max` |
+| Landing page/portfolio (bukan dashboard internal) | `design-taste-frontend` |
+| Audit keamanan menyeluruh | `security-audit` + `3dy-security` |
+| Performa/query lambat | `performance-optimization` |
+| Spec/rencana fitur baru | `spec-driven-development` + `docs/plans/PLAN-*.md` |
+| Requirement masih ambigu | `interview-me` |
+
+### 16.2 Aturan pemuatan
+
+1. Muat **1-3 skill paling relevan** sebelum mengubah kode. Jangan bertanya
+   "mau pakai skill apa" bila pemicunya sudah jelas.
+2. **Urutan prioritas:** skill 3DY lebih dulu, lalu skill umum pendamping.
+   `AGENTS.md` selalu menang bila isi skill berbeda.
+3. Jangan memuat skill yang tidak relevan hanya karena tersedia. Skill yang
+   butuh tool tidak tersedia (mis. Chrome DevTools MCP) boleh dilewati.
+4. Skill `3dy-*` adalah skill internal yang dipercaya dan sudah diizinkan di
+   `.opencode/opencode.json`. Tidak perlu minta izin user untuk memuatnya.
+5. Skill bukan izin istimewa: §7 (tombol), §8 (database), §9 (commit), dan
+   §15 (migration) tetap berlaku penuh.
+6. Jangan menempelkan isi skill ke chat. Terapkan langkahnya dan laporkan
+   hasilnya sesuai §0.4.
+
+### 16.3 ID unik & kepemilikan skill
+
+- Sebelum membuat skill baru, cek ID yang sudah ada di
+  `.opencode/skills/`, `~/.config/opencode/skills/`, `.agents/skills/`, dan
+  `.claude/skills/`. Skill proyek menimpa skill global dengan ID sama.
+- Jangan membuat ID duplikat. Jangan menyalin skill global ke proyek.
+- Jangan mengubah, menghapus, atau memindahkan skill global/pihak ketiga.
+- Skill baru hanya dibuat bila fungsinya benar-benar belum tercakup, dengan
+  persetujuan user, deskripsi pemicu yang jelas, dan folder
+  `.opencode/skills/<id>/SKILL.md`.
+- Jika skill gagal dimuat, periksa path, nama file `SKILL.md`, ID, dan
+  permission. Jangan langsung membuat skill baru sebagai pengganti.
 
