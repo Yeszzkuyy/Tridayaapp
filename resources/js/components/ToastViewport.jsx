@@ -77,7 +77,7 @@ export default function ToastViewport() {
             onFocus={() => setExpanded(true)}
             onBlur={() => setExpanded(false)}
             style={{ height: (expanded ? expandedHeight : collapsedHeight) || undefined, pointerEvents: count ? 'auto' : 'none' }}
-            className="fixed inset-x-3 bottom-3 z-[100] transition-[height] duration-300 ease-out sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[420px]"
+            className="fixed inset-x-3 bottom-24 z-[1200] transition-[height] duration-300 ease-out sm:inset-x-auto sm:bottom-24 sm:right-6 sm:w-[420px]"
         >
             <AnimatePresence initial={false}>
                 {toasts.map((toast) => {
