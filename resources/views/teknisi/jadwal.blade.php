@@ -65,6 +65,22 @@
         </div>
         @vite('resources/js/rubber-segment.jsx')
 
+        {{-- Legenda warna kartu jadwal --}}
+        <div class="mb-4 flex flex-wrap items-center justify-center gap-3 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            <span class="inline-flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-accent-500" aria-hidden="true"></span>
+                {{ __('Task') }}
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-violet-500" aria-hidden="true"></span>
+                {{ __('Project') }}
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" aria-hidden="true"></span>
+                {{ __('Cancelled') }}
+            </span>
+        </div>
+
         {{-- Month view --}}
         <div x-show="view === 'month'" x-transition.opacity>
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-3 sm:p-4 mb-4">
@@ -87,7 +103,7 @@
                                 <template x-for="ev in dayEvents(cell.date).slice(0, 3)" :key="ev.id">
                                     <button type="button" @click.stop="openDrawer(ev)"
                                             class="block w-full truncate px-1.5 py-0.5 text-left text-[11px] leading-tight transition hover:ring-1 hover:ring-accent-500"
-                                            :class="cardColor(ev.id).wrap + ' ' + cardColor(ev.id).time"
+                                            :class="cardColor(ev).wrap + ' ' + cardColor(ev).time + ' ' + titleClass(ev)"
                                             x-text="(ev.start_time || '') + ' ' + ev.title"></button>
                                 </template>
                                 <button type="button" x-show="dayEvents(cell.date).length > 3"
@@ -107,7 +123,7 @@
                     <button type="button" @click="setView('day')" class="text-xs font-semibold text-accent-600 hover:text-accent-500 dark:text-accent-400">{{ __('View day') }} →</button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70" :class="cardColor(event).wrap">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -116,7 +132,7 @@
                                   :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.title"></p>
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" :class="titleClass(event)" x-text="event.title"></p>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
@@ -171,15 +187,15 @@
                 </div>
                 <p class="mb-4 text-center text-xs text-slate-400" x-text="weekLabel"></p>
                 <template x-for="event in weekEvents" :key="event.id">
-                    <div class="p-5 mb-4 last:mb-0 shadow-sm bg-white dark:bg-slate-800" :class="cardColor(event.id).wrap">
+                    <div class="p-5 mb-4 last:mb-0 shadow-sm bg-white dark:bg-slate-800" :class="cardColor(event).wrap">
                         <div class="relative flex items-start justify-between gap-3">
-                            <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" x-text="event.title"></button>
+                            <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" :class="titleClass(event)" x-text="event.title"></button>
                             <div class="flex shrink-0 items-center gap-1">
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="statusClass(event.status)" x-text="statusLabel(event.status)"></span>
                                 <x-icon-button icon="view" title="{{ __('View detail') }}" @click="openDrawer(event)" />
                             </div>
                         </div>
-                        <p class="mt-1 text-sm font-semibold" :class="cardColor(event.id).time" x-text="fmtTime(event.start_time) + (event.end_time ? ' – ' + fmtTime(event.end_time) : '')"></p>
+                        <p class="mt-1 text-sm font-semibold" :class="cardColor(event).time" x-text="fmtTime(event.start_time) + (event.end_time ? ' – ' + fmtTime(event.end_time) : '')"></p>
                         <div class="mt-2 flex items-center gap-2">
                             <span class="inline-flex min-w-0 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
                                 <span class="truncate" x-text="event.technician || event.customer || '—'"></span>
@@ -215,7 +231,7 @@
                     </button>
                 </div>
                 <template x-for="event in events" :key="event.id">
-                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70">
+                    <div @click="openDrawer(event)" class="mb-4 flex w-full cursor-pointer items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700/70" :class="cardColor(event).wrap">
                         <template x-if="event.creator_avatar">
                             <img :src="event.creator_avatar" alt="" class="h-12 w-12 rounded-full object-cover">
                         </template>
@@ -224,7 +240,7 @@
                                   :style="'background:' + colorFor(event.technician_user_id)" x-text="initials(event.technician || event.title)"></span>
                         </template>
                         <div class="min-w-0 flex-1">
-                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" x-text="event.title"></p>
+                            <p class="text-lg font-bold text-slate-800 dark:text-slate-100 truncate" :class="titleClass(event)" x-text="event.title"></p>
                             <div class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
                                 <span x-text="event.date"></span>
@@ -273,10 +289,10 @@
                 <template x-for="ev in (moreDate ? dayEvents(moreDate) : [])" :key="ev.id">
                     <button type="button" @click="moreDate = null; openDrawer(ev)"
                             class="mb-1.5 block w-full rounded-lg border border-slate-200 px-2.5 py-2 text-left transition hover:shadow-md dark:border-slate-600"
-                            :class="cardColor(ev.id).wrap">
+                            :class="cardColor(ev).wrap">
                         <div class="flex items-center gap-2">
-                            <span class="shrink-0 text-xs font-semibold tabular-nums" :class="cardColor(ev.id).time" x-text="fmtTime(ev.start_time)"></span>
-                            <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200" x-text="ev.title"></span>
+                            <span class="shrink-0 text-xs font-semibold tabular-nums" :class="cardColor(ev).time" x-text="fmtTime(ev.start_time)"></span>
+                            <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200" :class="titleClass(ev)" x-text="ev.title"></span>
                         </div>
                         <p x-show="ev.location" class="mt-0.5 truncate text-xs text-slate-400" x-text="ev.location"></p>
                     </button>
@@ -305,7 +321,7 @@
                             </button>
                         </div>
                         <div class="flex-1 overflow-y-auto px-5 py-4">
-                            <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" x-text="selected.title"></h3>
+                            <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" :class="titleClass(selected)" x-text="selected.title"></h3>
                             <p class="mt-0.5 text-sm text-slate-500" x-text="(selected.date || '') + ', ' + ((selected.start_time || '') + ' – ' + (selected.end_time || ''))"></p>
 
                             <template x-if="selected.technician">
@@ -1034,19 +1050,21 @@
                 },
 
                 cardPalette: {
-                    blue:   { wrap: 'border-l-[3px] border-blue-500 bg-blue-50 dark:bg-blue-500/20 rounded-r shadow-sm',
-                              time: 'text-blue-600 dark:text-blue-300 text-xs leading-tight font-semibold' },
-                    violet: { wrap: 'border-l-[3px] border-violet-500 bg-violet-50 dark:bg-violet-500/20 rounded-r shadow-sm',
-                              time: 'text-violet-600 dark:text-violet-300 text-xs leading-tight font-semibold' },
-                    emerald:{ wrap: 'border-l-[3px] border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 rounded-r shadow-sm',
-                              time: 'text-emerald-600 dark:text-emerald-300 text-xs leading-tight font-semibold' },
-                    amber:  { wrap: 'border-l-[3px] border-amber-500 bg-amber-50 dark:bg-amber-500/20 rounded-r shadow-sm',
-                              time: 'text-amber-600 dark:text-amber-300 text-xs leading-tight font-semibold' },
+                    task:     { wrap: 'border-l-[3px] border-accent-500 bg-accent-50 dark:bg-accent-500/20 rounded-r shadow-sm',
+                                time: 'text-accent-600 dark:text-accent-300 text-xs leading-tight font-semibold' },
+                    project:  { wrap: 'border-l-[3px] border-violet-500 bg-violet-50 dark:bg-violet-500/20 rounded-r shadow-sm',
+                                time: 'text-violet-600 dark:text-violet-300 text-xs leading-tight font-semibold' },
+                    cancelled:{ wrap: 'border-l-[3px] border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-700/50 rounded-r shadow-sm',
+                                time: 'text-slate-500 dark:text-slate-400 text-xs leading-tight font-semibold line-through' },
                 },
 
-                cardColor(id) {
-                    const keys = Object.keys(this.cardPalette);
-                    return this.cardPalette[keys[(id || 0) % keys.length]];
+                cardColor(event) {
+                    if (event?.status === 'cancelled') return this.cardPalette.cancelled;
+                    return event?.project_id ? this.cardPalette.project : this.cardPalette.task;
+                },
+
+                titleClass(event) {
+                    return event?.status === 'cancelled' ? 'line-through opacity-60' : '';
                 },
 
                 timeSlots: (() => {
@@ -1102,7 +1120,7 @@
                         scheduled: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200',
                         on_progress: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200',
                         completed: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200',
-                        cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200',
+                        cancelled: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
                     }[status] || 'bg-slate-100 text-slate-600';
                 },
 

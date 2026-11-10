@@ -58,6 +58,20 @@ class TechnicianScheduleCalendarTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_cancelled_jobs_stay_visible_in_calendar_api(): void
+    {
+        $tech = $this->userWithRole('technician');
+        $this->makeSchedule($tech, [
+            'title' => 'Survey dibatalkan',
+            'status' => 'cancelled',
+        ]);
+
+        $res = $this->actingAs($tech)->getJson(route('teknisi.schedules.api', ['date' => '2026-10-20']));
+        $res->assertOk();
+        $this->assertSame(['Survey dibatalkan'], collect($res->json())->pluck('title')->all());
+        $this->assertSame('cancelled', $res->json()[0]['status']);
+    }
+
     public function test_credentials_saved_and_gated_to_super_admin_and_lead_technician(): void
     {
         $lead = $this->userWithRole('lead-technician');
