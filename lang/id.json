@@ -4463,6 +4463,7 @@
     "Upload the quotation file (PDF/Word/Excel/image, max 10MB).": "Upload file quotation (PDF/Word/Excel/gambar, maks 10MB).",
     "Please upload the quotation file or fill at least one item.": "Upload file quotation atau isi minimal satu item.",
     "Quotation must have at least one item and a total greater than 0 before it can be sent or accepted.": "Quotation harus memiliki minimal satu item dan total lebih dari 0 sebelum bisa dikirim atau diterima.",
+    "Admin Dashboard": "Dashboard Admin",
     "Admin Hub": "Admin Hub",
     "optional if items are filled": "opsional jika item sudah diisi",
     "Upload the official quotation file (PDF/Word/Excel/image, max 10MB).": "Upload file quotation resmi (PDF/Word/Excel/gambar, maksimal 10MB).",
