@@ -438,11 +438,11 @@
                             </div>
                         @endcan
 
-                        {{-- Admin: Invoice, PO, Payment --}}
+                        {{-- Admin: Dashboard, Invoice, PO, Payment --}}
                         @can('view-admin')
                             <div x-data="{ open: {{ $adminActive ? 'true' : 'false' }} }" class="sb-group"{{ $adminActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="admin">
                                 <div class="sb-head {{ $navLink }} group w-full {{ $adminActive ? $navActive.' sb-active' : $navInactive }}">
-                                    <a wire:navigate.hover href="{{ route('admin.invoices.index') }}"
+                                    <a wire:navigate.hover href="{{ route('admin.hub') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="receipt" class="h-5 w-5 shrink-0" />
                                         <span>{{ __('Admin') }}</span>
@@ -462,7 +462,7 @@
                                            aria-current="{{ request()->routeIs('admin.hub') ? 'page' : 'false' }}"
                                            class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin.hub') ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400" aria-hidden="true"></span>
-                                            <span>{{ __('Admin Hub') }}</span>
+                                            <span>{{ __('Dashboard') }}</span>
                                         </a>
                                     @endcanany
 

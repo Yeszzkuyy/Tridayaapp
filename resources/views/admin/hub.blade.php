@@ -10,7 +10,7 @@
                         </svg>
                     </span>
                     <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">
-                        {{ __('Admin Hub') }}
+                        {{ __('Admin Dashboard') }}
                     </h1>
                 </div>
             </div>
@@ -73,23 +73,60 @@
         </div>
 
         {{-- 4 Tab Utama (Alpine.js) --}}
-        <div x-data="{ activeTab: '{{ request('tab', 'purchasing') }}' }" class="space-y-6">
-            {{-- Tab Navigation Bar --}}
-            <div class="border-b border-slate-200 dark:border-slate-700">
-                <nav class="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto" aria-label="Tabs">
+        <div x-data="{
+            activeTab: '{{ request('tab', 'purchasing') }}',
+            indicatorLeft: 0,
+            indicatorWidth: 0,
+            setIndicator(el) {
+                if (!el) return;
+                this.indicatorLeft = el.offsetLeft;
+                this.indicatorWidth = el.offsetWidth;
+            },
+            resetIndicator() {
+                this.$nextTick(() => {
+                    const el = this.$refs[this.activeTab];
+                    if (el) this.setIndicator(el);
+                });
+            },
+            selectTab(tab, el) {
+                this.activeTab = tab;
+                this.setIndicator(el);
+                try {
+                    const url = new URL(window.location);
+                    url.searchParams.set('tab', tab);
+                    window.history.replaceState({}, '', url);
+                } catch (e) {}
+            }
+        }"
+        x-init="$nextTick(() => resetIndicator())"
+        @resize.window.debounce.100ms="resetIndicator()"
+        x-on:livewire:navigated.window="resetIndicator()"
+        class="space-y-6">
+            {{-- Tab Navigation Bar (Centered with Smooth Sliding Indicator) --}}
+            <div class="relative w-full border-b border-slate-200/80 dark:border-slate-700/80">
+                <nav class="-mb-px relative mx-auto flex w-max max-w-full items-center justify-center space-x-1 sm:space-x-3 overflow-x-auto scrollbar-none py-1"
+                     @mouseleave="resetIndicator()"
+                     role="tablist"
+                     aria-label="{{ __('Admin Sections') }}">
                     {{-- Tab 1: Purchasing --}}
                     <button type="button"
-                            @click="activeTab = 'purchasing'"
+                            x-ref="purchasing"
+                            @click="selectTab('purchasing', $el)"
+                            @mouseenter="setIndicator($el)"
+                            @focus="setIndicator($el)"
+                            @blur="resetIndicator()"
+                            role="tab"
+                            :aria-selected="activeTab === 'purchasing'"
                             :class="activeTab === 'purchasing'
-                                ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-400 font-bold'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all flex items-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                ? 'text-accent-600 dark:text-accent-400 font-bold'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium'"
+                            class="group relative inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-sm transition-colors duration-200 focus-visible:outline-none whitespace-nowrap">
+                        <svg class="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         <span>{{ __('Purchasing') }}</span>
                         @if(($kpi['request_harga_count'] ?? 0) > 0)
-                            <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
+                            <span class="ml-1 py-0.5 px-2 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
                                 {{ $kpi['request_harga_count'] }}
                             </span>
                         @endif
@@ -97,17 +134,23 @@
 
                     {{-- Tab 2: Finance --}}
                     <button type="button"
-                            @click="activeTab = 'finance'"
+                            x-ref="finance"
+                            @click="selectTab('finance', $el)"
+                            @mouseenter="setIndicator($el)"
+                            @focus="setIndicator($el)"
+                            @blur="resetIndicator()"
+                            role="tab"
+                            :aria-selected="activeTab === 'finance'"
                             :class="activeTab === 'finance'
-                                ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-400 font-bold'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all flex items-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                ? 'text-accent-600 dark:text-accent-400 font-bold'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium'"
+                            class="group relative inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-sm transition-colors duration-200 focus-visible:outline-none whitespace-nowrap">
+                        <svg class="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         <span>{{ __('Finance') }}</span>
                         @if(($kpi['ready_to_invoice_count'] ?? 0) > 0)
-                            <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <span class="ml-1 py-0.5 px-2 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                                 {{ $kpi['ready_to_invoice_count'] }}
                             </span>
                         @endif
@@ -115,37 +158,54 @@
 
                     {{-- Tab 3: Documents --}}
                     <button type="button"
-                            @click="activeTab = 'documents'"
+                            x-ref="documents"
+                            @click="selectTab('documents', $el)"
+                            @mouseenter="setIndicator($el)"
+                            @focus="setIndicator($el)"
+                            @blur="resetIndicator()"
+                            role="tab"
+                            :aria-selected="activeTab === 'documents'"
                             :class="activeTab === 'documents'
-                                ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-400 font-bold'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all flex items-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                ? 'text-accent-600 dark:text-accent-400 font-bold'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium'"
+                            class="group relative inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-sm transition-colors duration-200 focus-visible:outline-none whitespace-nowrap">
+                        <svg class="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         <span>{{ __('Documents') }}</span>
-                        <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        <span class="ml-1 py-0.5 px-2 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                             {{ count($documents['projects']) }}
                         </span>
                     </button>
 
                     {{-- Tab 4: Procurement & AP (Tahap 3–5) --}}
                     <button type="button"
-                            @click="activeTab = 'procurement'"
+                            x-ref="procurement"
+                            @click="selectTab('procurement', $el)"
+                            @mouseenter="setIndicator($el)"
+                            @focus="setIndicator($el)"
+                            @blur="resetIndicator()"
+                            role="tab"
+                            :aria-selected="activeTab === 'procurement'"
                             :class="activeTab === 'procurement'
-                                ? 'border-accent-600 text-accent-600 dark:border-accent-400 dark:text-accent-400 font-bold'
-                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200'"
-                            class="whitespace-nowrap py-3.5 px-1 border-b-2 font-medium text-sm transition-all flex items-center gap-2">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                ? 'text-accent-600 dark:text-accent-400 font-bold'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-medium'"
+                            class="group relative inline-flex items-center gap-2 px-3 sm:px-4 py-3 text-sm transition-colors duration-200 focus-visible:outline-none whitespace-nowrap">
+                        <svg class="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
                         <span>{{ __('Procurement & AP') }}</span>
                         @if(($kpi['unbilled_receipts_count'] ?? 0) > 0)
-                            <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                            <span class="ml-1 py-0.5 px-2 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                                 {{ $kpi['unbilled_receipts_count'] }}
                             </span>
                         @endif
                     </button>
+
+                    {{-- Smooth Sliding Underline Indicator --}}
+                    <span class="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-accent-600 shadow-sm shadow-accent-500/40 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] motion-reduce:transition-none dark:bg-accent-400"
+                          :style="`left: ${indicatorLeft}px; width: ${indicatorWidth}px; opacity: ${indicatorWidth > 0 ? 1 : 0};`"
+                          aria-hidden="true"></span>
                 </nav>
             </div>
 

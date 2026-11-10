@@ -64,7 +64,7 @@
                 ['admin-panel.users',               ['Admin Panel', 'User Management']],
                 ['admin-panel.roles',               ['Admin Panel', 'User Management']],
                 ['admin-panel',                     ['Admin Panel']],
-                ['admin.hub',                       ['Admin', 'Admin Hub']],
+                ['admin.hub',                       ['Admin', 'Dashboard']],
                 ['admin.purchasing.reports',        ['Admin', 'Procurement Reports']],
                 ['admin.purchasing',                ['Admin', 'Customer PO']],
                 ['admin.supplier-pos',              ['Admin', 'Supplier PO']],
