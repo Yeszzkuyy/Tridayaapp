@@ -1,8 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Purchase Order Management') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Legacy customer purchase orders are kept for historical reference.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Purchase Order Management') }}</h1>
         </div>
         <x-icon-button as="a" variant="solid" reveal icon="receipt" href="{{ route('admin.purchasing.index') }}" label="{{ __('Open Quotation Handoff') }}" title="{{ __('Open Quotation Handoff') }}" />
     </div>

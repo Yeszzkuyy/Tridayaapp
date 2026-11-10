@@ -10,7 +10,6 @@
             <p class="text-slate-500 mt-1">{{ __('Received from supplier against a Supplier PO.') }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.goods-receipts.index') }}" title="{{ __('Back') }}" />
             @if($goodsReceipt->attachment_path)
                 <x-file-preview :url="route('admin.goods-receipts.attachment', $goodsReceipt)"
                                 :name="basename((string) $goodsReceipt->attachment_path)" />
@@ -24,6 +23,7 @@
                     </form>
                 @endif
             @endcan
+            <x-back-button href="{{ route('admin.goods-receipts.index') }}" />
         </div>
     </div>
 

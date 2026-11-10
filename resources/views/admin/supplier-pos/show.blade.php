@@ -14,7 +14,6 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.supplier-pos.index') }}" title="{{ __('Back') }}" />
             @can('manage-admin')
                 @if($supplierPurchaseOrder->status === 'draft')
                     <form action="{{ route('admin.supplier-pos.issue', $supplierPurchaseOrder) }}" method="POST" class="inline">
@@ -30,6 +29,7 @@
                     </form>
                 @endif
             @endcan
+            <x-back-button href="{{ route('admin.supplier-pos.index') }}" />
         </div>
     </div>
 

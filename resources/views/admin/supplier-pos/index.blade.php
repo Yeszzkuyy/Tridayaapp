@@ -1,14 +1,13 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Supplier Purchase Orders') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Orders issued by 3DY to suppliers. Separate from customer purchase orders.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Supplier Purchase Orders') }}</h1>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.purchasing.index') }}" title="{{ __('Back') }}" />
             @can('manage-admin')
-                <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create') }}" label="{{ __('Create Supplier PO') }}" title="{{ __('Create Supplier PO') }}" />
+                <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.supplier-pos.create') }}" label="{{ __('Create Supplier PO') }}" title="{{ __('Create Supplier PO') }}" />
             @endcan
+            <x-back-button href="{{ route('admin.purchasing.index') }}" />
         </div>
     </div>
 

@@ -1,10 +1,10 @@
 <x-app-layout>
     <div>
         <div class="flex items-center justify-between mb-6">
-            <div><h1 class="text-3xl font-bold text-slate-800">{{ $purchaseOrder->po_number }}</h1><p class="text-slate-500 mt-1">{{ $purchaseOrder->customer->name }}</p></div>
-            <div class="flex gap-2">
-                <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Legacy — read only') }}</span>
-                <x-icon-button as="a" icon="back" href="{{ route('admin.pos.index') }}" title="{{ __('Back') }}" />
+            <div><h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $purchaseOrder->po_number }}</h1><p class="text-slate-500 mt-1 dark:text-slate-400">{{ $purchaseOrder->customer->name }}</p></div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">{{ __('Legacy — read only') }}</span>
+                <x-back-button href="{{ route('admin.pos.index') }}" />
             </div>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">

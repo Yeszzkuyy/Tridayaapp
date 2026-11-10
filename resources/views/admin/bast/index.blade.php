@@ -1,10 +1,9 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('BAST & Commercial Closing') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Check installation completion, upload the signed BAST, and let Finance know the document is ready.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('BAST & Commercial Closing') }}</h1>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin.hub') }}" title="{{ __('Back') }}" />
+        <x-back-button href="{{ route('admin.hub') }}" />
     </div>
 
     <form method="GET" action="{{ route('admin.bast.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
