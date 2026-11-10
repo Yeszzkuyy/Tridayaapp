@@ -93,6 +93,7 @@ class InsideSalesTaskTest extends TestCase
         $this->actingAs($inside)->get(route('lead-tasks.show', $task))->assertOk();
         $this->actingAs($inside)->put(route('lead-tasks.update', $task), [
             'title' => $task->title,
+            'assigned_to' => $inside->id,
             'status' => 'in_progress',
         ])->assertRedirect();
         $this->assertSame('in_progress', $task->fresh()->status);
@@ -109,11 +110,14 @@ class InsideSalesTaskTest extends TestCase
     public function test_task_detail_back_link_points_to_request_hub_inside_sales_tab(): void
     {
         $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
         $lead = $this->makeLead($sales);
 
         $this->actingAs($sales)->post(route('lead-tasks.store'), [
             'lead_id' => $lead->id,
             'title' => 'Buatkan penawaran',
+            'assigned_to' => $inside->id,
         ])->assertRedirect();
 
         $task = LeadTask::where('title', 'Buatkan penawaran')->firstOrFail();
@@ -137,6 +141,7 @@ class InsideSalesTaskTest extends TestCase
         $this->actingAs($otherSales)->post(route('lead-tasks.store'), [
             'lead_id' => $lead->id,
             'title' => 'x',
+            'assigned_to' => $sales->id,
         ])->assertForbidden();
 
         // assign ke non inside-sales ditolak

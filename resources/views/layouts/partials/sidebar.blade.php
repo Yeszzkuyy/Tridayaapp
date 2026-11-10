@@ -134,7 +134,7 @@
                 </div>
             </section>
 
-            @canany(['manage-sales-leads', 'view-technician', 'view-marketing', 'view-sales', 'view-admin', 'manage-inside-sales'])
+            @canany(['manage-sales-leads', 'view-technician', 'view-marketing', 'view-sales', 'view-admin', 'manage-inside-sales', 'manage-price-requests'])
                 <section aria-labelledby="sidebar-departments-label">
                     <p id="sidebar-departments-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Departments') }}</p>
                     <div class="space-y-1">

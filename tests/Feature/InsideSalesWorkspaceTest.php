@@ -189,7 +189,7 @@ class InsideSalesWorkspaceTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_sales_cannot_store_cost_price_on_task_item(): void
+    public function test_sales_creator_cannot_add_item_to_task(): void
     {
         $sales = $this->userWithRole('sales');
         $inside = $this->userWithRole('inside-sales');
@@ -201,9 +201,124 @@ class InsideSalesWorkspaceTest extends TestCase
             'unit' => 'pcs',
             'unit_price' => 1000000,
             'unit_cost' => 700000,
+        ])->assertForbidden();
+
+        $this->assertSame(0, $task->items()->count());
+    }
+
+    public function test_assigned_inside_sales_can_add_item_across_pt(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $inside->assignRole('sales-nti');
+
+        $customer = Customer::create([
+            'name' => 'PT MGK Test '.uniqid(),
+            'pt_group' => 'MGK',
+            'address' => 'Jl. Test No. 2, Jakarta',
+            'email' => 'mgk@example.test',
+            'phone' => '+62 812 0000 0001',
+        ]);
+
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'assigned_to' => $sales->id,
+            'incoming_date' => today()->toDateString(),
+            'kebutuhan' => 'Pengadaan perangkat MGK.',
+        ]);
+
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation MGK',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+            'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($inside)
+            ->get(route('lead-tasks.show', $task))
+            ->assertOk()
+            ->assertSee(__('Cost Price (Estimator)'));
+
+        $this->actingAs($inside)->post(route('lead-tasks.items.store', $task), [
+            'description' => 'Item MGK',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'unit_price' => 1000000,
+            'unit_cost' => 700000,
         ])->assertRedirect();
 
-        $this->assertNull($task->items()->firstOrFail()->unit_cost);
+        $this->assertSame(1, $task->items()->count());
+    }
+
+    public function test_task_creation_requires_inside_sales_assignee(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $task = $this->makeTask($sales, $inside);
+        $lead = $task->lead;
+
+        $this->actingAs($sales)->post(route('lead-tasks.store'), [
+            'lead_id' => $lead->id,
+            'title' => 'Tanpa assignee',
+        ])->assertSessionHasErrors('assigned_to');
+
+        $this->actingAs($sales)->post(route('lead-tasks.store'), [
+            'lead_id' => $lead->id,
+            'title' => 'Assignee bukan inside sales',
+            'assigned_to' => $sales->id,
+        ])->assertStatus(422);
+
+        $this->actingAs($sales)->post(route('lead-tasks.store'), [
+            'lead_id' => $lead->id,
+            'title' => 'Request valid',
+            'assigned_to' => $inside->id,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('lead_tasks', [
+            'title' => 'Request valid',
+            'assigned_to' => $inside->id,
+        ]);
+    }
+
+    public function test_estimator_sees_estimator_menu(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+
+        $this->actingAs($estimator)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Estimator')
+            ->assertSee('Price Request');
+    }
+
+    public function test_inside_sales_request_hub_does_not_list_assigned_task(): void
+    {
+        $salesOwner = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $inside->assignRole('sales');
+        $task = $this->makeTask($salesOwner, $inside);
+        $task->update(['created_by' => $salesOwner->id]);
+
+        $this->actingAs($inside)
+            ->get(route('sales.requests.index', ['tab' => 'inside-sales']))
+            ->assertOk()
+            ->assertDontSee($task->title);
+    }
+
+    public function test_super_admin_permission_sync_command(): void
+    {
+        $role = \Spatie\Permission\Models\Role::findByName('super-admin');
+        $role->revokePermissionTo('manage-price-requests');
+
+        $this->assertFalse($role->fresh()->hasPermissionTo('manage-price-requests'));
+
+        $this->artisan('app:sync-super-admin-permissions')->assertSuccessful();
+
+        $this->assertTrue($role->fresh()->hasPermissionTo('manage-price-requests'));
     }
 
     public function test_task_page_renders_item_form_with_products(): void

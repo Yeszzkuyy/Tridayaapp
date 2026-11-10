@@ -152,11 +152,7 @@
         </div>
 
         <div class="flex items-center justify-end gap-3">
-            <a href="{{ route('lead-tasks.show', $task) }}"
-               class="group relative overflow-hidden rounded-xl bg-accent-500 px-6 py-2.5 text-center text-sm font-medium text-white transition-all duration-300 hover:bg-accent-600 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                {{ __('Cancel') }}
-                <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-            </a>
+            <x-secondary-button as="a" :href="route('lead-tasks.show', $task)">{{ __('Cancel') }}</x-secondary-button>
             <x-primary-button type="submit">{{ __('Generate Quotation') }}</x-primary-button>
         </div>
     </form>

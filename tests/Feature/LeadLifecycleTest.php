@@ -101,6 +101,7 @@ class LeadLifecycleTest extends TestCase
         // 5. Inside sales complete + komentar
         $this->actingAs($inside)->put(route('lead-tasks.update', $task), [
             'title' => $task->title,
+            'assigned_to' => $inside->id,
             'status' => 'done',
         ])->assertRedirect();
         $this->actingAs($inside)->post(route('lead-tasks.comments.store', $task), ['body' => 'Draft selesai.'])

@@ -60,7 +60,13 @@ class LeadTaskNotification extends Notification implements ShouldQueue
      */
     private function databaseUrl(object $notifiable): string
     {
-        $useRequestHub = $notifiable instanceof User
+        // Inside Sales (termasuk multi-role sales + inside) selalu diarahkan
+        // ke task di workspace Inside Sales, bukan ke hub Request milik Sales.
+        $useInsideWorkspace = $notifiable instanceof User
+            && $notifiable->can('manage-inside-sales');
+
+        $useRequestHub = ! $useInsideWorkspace
+            && $notifiable instanceof User
             && ($notifiable->can('view-sales')
                 || $notifiable->can('manage-sales')
                 || $notifiable->can('manage-sales-leads'));
