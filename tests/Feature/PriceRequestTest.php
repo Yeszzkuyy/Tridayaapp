@@ -405,7 +405,7 @@ class PriceRequestTest extends TestCase
             ->assertOk()->getContent();
         $this->assertStringContainsString(__('Request details'), $detailHtml);
         $this->assertStringContainsString(__('Discussion'), $detailHtml);
-        $this->assertStringContainsString($tech->name, $detailHtml);
+        $this->assertStringContainsString(e($tech->name), $detailHtml);
         $this->assertStringContainsString(strtoupper(substr($tech->name, 0, 1)), $detailHtml);
         $this->assertStringContainsString(__('No engineering reply has been submitted yet.'), $detailHtml);
     }
