@@ -293,6 +293,16 @@ class InsideSalesTaskTest extends TestCase
 
         $attachment = $task->attachments()->firstOrFail();
 
+        \App\Models\LeadTaskItem::create([
+            'lead_task_id' => $task->id,
+            'description' => 'Cisco IP Phone 780',
+            'quantity' => 2,
+            'unit' => 'pcs',
+            'unit_price' => 100000,
+            'discount' => 0,
+            'subtotal' => 200000,
+        ]);
+
         $this->actingAs($sales)
             ->post(route('lead-tasks.attachments.accept', [$task, $attachment]))
             ->assertRedirect();
@@ -306,8 +316,9 @@ class InsideSalesTaskTest extends TestCase
         $this->assertSame('draft', $proposal->status);
         $this->assertSame($lead->customer->name, $proposal->customer);
         $this->assertStringStartsWith('Q/', $proposal->proposal_number);
-        // Quotation berbasis file: tidak ada item placeholder, file terlampir.
-        $this->assertCount(0, $proposal->items()->get());
+        // Quotation dibuat dari item Inside Sales + file terlampir.
+        $this->assertCount(1, $proposal->items()->get());
+        $this->assertSame(200000.0, (float) $proposal->grand_total);
         $this->assertCount(1, $proposal->attachments()->get());
 
         // Muncul di menu Quotation milik sales tersebut + file terlampir.

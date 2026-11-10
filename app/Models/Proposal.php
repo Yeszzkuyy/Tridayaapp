@@ -17,6 +17,7 @@ class Proposal extends Model
 
     protected $fillable = [
         'lead_id',
+        'lead_task_id',
         'proposal_number',
         'created_by',
         'proposal_date',
@@ -67,6 +68,11 @@ class Proposal extends Model
     public function lead()
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function leadTask()
+    {
+        return $this->belongsTo(LeadTask::class);
     }
 
     public function creator()

@@ -1,120 +1,89 @@
-# PLAN-SALES-QUOTATION-OTOMATIS: Quotation Lahir dari Inside Sales, Bukan Input Ulang
+# PLAN-SALES-QUOTATION-OTOMATIS: Quotation Lahir dari Inside Sales
 
-**Status Pengerjaan:** Belum Dikerjakan
+**Status Pengerjaan:** Siap Dikerjakan
 **Menu:** Sales / Quotation + Inside Sales
 **Branch:** `feature/sales-flow`
 **Worktree:** `/var/www/3dyapp-sales`
-**Terakhir diperbarui:** 2026-11-09
-> Catatan: butuh keputusan di bagian 7.
-**Baseline kode:** `main` @ `d30b32d2`
+**Terakhir diperbarui:** 2026-11-10
 
-> Worktree `feature/sales-flow` 146 commit di belakang `main`.
-> Sebelum mulai: `git merge main`.
+> Implementasi inti sudah berjalan di `feature/sales-flow`; menunggu merge ke `main`
+> dan pengecekan user. Sinkronisasi harga dari Price Request ditunda ke plan terpisah.
 
 ---
 
 ## 1. Tujuan & hasil akhir
 
-Setelah selesai:
-
-- Inside Sales membuat quotation **dari dalam menu Inside Sales** (item + harga + qty), bukan hanya unggah file.
-- Quotation di menu Sales otomatis terisi item, harga, dan total yang sama. Sales tidak mengetik ulang.
-- Setelah Sales mengirim quotation dan customer menerima, data langsung tersedia untuk Admin
-  tanpa Admin membuka dan menyalin isi quotation.
+- Inside Sales mengisi item quotation (deskripsi, qty, harga, diskon) dari halaman task.
+- Saat file quotation di-Accept, sistem membuat Quotation beserta itemnya secara otomatis.
+- Sales tidak perlu mengetik ulang item; cukup review, revisi bila perlu, lalu kirim.
+- File quotation tetap tersimpan sebagai lampiran bukti.
 
 ## 2. Ruang lingkup
 
 Termasuk:
 
-- Form item terstruktur di Inside Sales.
-- Pembuatan `proposals` + `proposal_items` otomatis saat Inside Sales menyetujui hasil.
-- Sinkronisasi harga dari Price Request (opsional, lihat keputusan).
-- Alur serah terima ke Admin.
+- Form item quotation di halaman task Inside Sales.
+- Pembuatan `proposals` + `proposal_items` saat file di-Accept.
+- Tautan `proposals.lead_task_id` (satu task = satu quotation).
+- Total, diskon, dan margin dihitung memakai logika `Proposal` yang sudah ada.
 
 Tidak termasuk:
 
-- Perubahan desain halaman Quotation Sales (kecuali penyesuaian data).
-- Perubahan alur PO/verify/convert (dibahas di `PLAN-SALES-PO-DAN-CONVERT.md`).
-- Dashboard khusus Inside Sales/Estimator (`PLAN-SALES-INSIDE-ESTIMATOR-DASHBOARD.md`).
+- Sinkronisasi otomatis harga dari Price Request (ditunda).
+- Perubahan desain halaman Quotation Sales.
+- Alur PO/verify/convert (ada di `PLAN-SALES-PO-DAN-CONVERT.md`).
 
 ## 3. Temuan kondisi sekarang
 
-1. Inside Sales mengerjakan `lead_tasks`, lalu mengunggah lampiran
-   (`LeadTaskController@storeAttachment`, baris 234-270).
-2. Saat lampiran di-**Accept** (`LeadTaskController@acceptAttachment`, 278-346):
-   - dibuat `Proposal` status `draft` **tanpa item**,
-   - hanya `ProposalAttachment` yang disimpan,
-   - `created_by` = user Inside Sales yang menekan Accept.
-3. Sales juga bisa membuat quotation manual di `/sales/proposals`
-   (`ProposalController` 386-525) dengan input item manual.
-4. Guard `assertQuotationHasBillableContent` (`ProposalController:47-56`) mewajibkan minimal 1 item
-   dan `grand_total > 0`. Akibatnya quotation hasil Inside Sales **tidak bisa lanjut**
-   (tidak bisa `ready`/`sent`/`accepted`) sampai Sales mengisi item manual.
-5. Price Request (`price_requests` + `price_request_replies`) **tidak** menyalin item/harga ke quotation.
-   Hanya ada FK `proposals.price_request_id` yang diisi manual.
-6. Audit resmi juga menyebut item quotation 100% manual:
-   `docs/audit/AUDIT-QUOTATION.md` bagian 219-225 dan 266-268.
+1. Inside Sales mengerjakan `lead_tasks`, lalu mengunggah lampiran.
+2. Saat lampiran di-Accept, sistem membuat `Proposal` draft **tanpa item**.
+3. Sales tetap harus mengisi item manual agar quotation bisa dikirim.
+4. Guard `assertQuotationHasBillableContent` menolak quotation tanpa item.
+5. Belum ada tabel `lead_task_items` dan kolom `proposals.lead_task_id`.
 
 ## 4. Langkah pengerjaan
 
-### 4.1 Item terstruktur di Inside Sales
+### 4.1 Item di Inside Sales
 
-1. Di halaman task Inside Sales (`lead-tasks/show.blade.php`), tambahkan form item quotation
-   memakai komponen yang sudah ada di quotation Sales (`_form.blade.php`, baris 79-119):
-   `product_id` (opsional), `description`, `quantity`, `unit`, `unit_price`, `discount`.
-2. Simpan item ke tabel baru `lead_task_items` (migrasi baru) - jangan menumpuk di `lead_task_attachments`.
-3. Hitung otomatis `subtotal`, `grand_total`, dan margin (pakai logika `ProposalItem` yang sudah ada).
+1. Tambah tabel `lead_task_items`: `description`, `quantity`, `unit`,
+   `unit_price`, `discount`, `subtotal`, `product_id` opsional.
+2. Halaman task menampilkan daftar item + form tambah item.
+3. Hanya assignee, pembuat task, atau management yang boleh menambah/menghapus item.
+4. Subtotal dihitung dengan rumus yang sama seperti `ProposalItem`.
 
 ### 4.2 Quotation otomatis
 
-4. Saat Accept (`LeadTaskController@acceptAttachment`), buat `Proposal` **beserta** `ProposalItem`
-   dari `lead_task_items`. Lampiran tetap disimpan sebagai bukti.
-5. Tambah kolom `proposals.lead_task_id` (migrasi baru) agar quotation tahu asal task.
-   Aturan: satu task hanya boleh punya satu quotation aktif.
-6. Perbaiki kepemilikan: `proposals.created_by` diisi **Sales pemilik lead** (`lead.assigned_to`),
-   sedangkan Inside Sales tetap tercatat di `lead_tasks`/`lead_task_attachments.accepted_by`.
-   Tujuannya agar Sales bisa mengedit dan mengirim quotation.
-   Alternatif: biarkan `created_by` Inside Sales tetapi pastikan `isOwner()` sudah mencakup
-   `lead.assigned_to` (saat ini sudah, di `ProposalController:77-80`).
-7. Setelah item terisi, status quotation langsung `draft` dengan total benar.
-   Sales tinggal cek, revisi bila perlu, lalu kirim.
+5. Tambah kolom `proposals.lead_task_id` (unique) dan relasi ke `LeadTask`.
+6. Saat file di-Accept:
+   - minimal harus ada 1 item,
+   - satu task hanya boleh punya satu quotation,
+   - buat `Proposal` + `ProposalItem` dari item task,
+   - `created_by` diisi Sales pemilik lead,
+   - lampiran file tetap dipasang,
+   - hitung ulang total/margin.
+7. Jika belum ada item, Accept ditolak dengan pesan jelas.
 
-### 4.3 Dari Price Request (opsional)
+### 4.3 Price Request (ditunda)
 
-8. Saat Sales membuat quotation dari Price Request, ambil harga dari balasan estimator terakhir
-   sebagai nilai awal `unit_price`. Jangan otomatis membuat item dari file.
-9. Kalau disetujui: tambah `proposal_items.price_request_reply_id` untuk jejak audit harga.
-
-### 4.4 Serah terima ke Admin
-
-10. Setelah quotation `accepted` dan Sales mengunggah PO, alur handoff Admin yang sudah ada dipakai
-    (tidak membuat alur baru).
-11. Admin melihat poin-poin quotation (item, qty, harga, total, margin) langsung di halaman handoff,
-    tanpa perlu membuka file quotation.
-12. Pastikan `proposal_number` tetap dibuat di satu tempat (`LeadTaskController` 349-363 dan
-    `ProposalController`) agar tidak dobel format.
+8. Harga dari balasan estimator terakhir belum otomatis mengisi item.
+   Akan dikerjakan sebagai paket terpisah setelah Price Request distabilkan.
 
 ## 5. Kriteria selesai
 
-- Inside Sales isi 3 item + harga -> Accept -> menu Quotation Sales menampilkan 3 item yang sama
+- Inside Sales menambah 2 item + harga -> Accept file -> Quotation berisi 2 item
   dengan total dan margin benar.
-- Sales bisa langsung kirim quotation tanpa mengetik ulang item.
-- Customer PO diunggah -> Admin melihat rincian yang sama di antrean handoff.
-- Tidak ada quotation `draft` dengan 0 item dari alur Inside Sales.
-- `php artisan test --filter="InsideSalesTask|ProposalModule|ProposalInsideSales|PriceRequestQuotation"` lulus.
+- Sales bisa langsung review/kirim quotation tanpa mengetik ulang.
+- Accept tanpa item ditolak 422 dengan pesan jelas.
+- Satu task tidak bisa membuat dua quotation.
+- `php artisan test --filter="LeadTaskQuotationItems|InsideSalesTask|ProposalModule"` lulus.
 
 ## 6. Dependensi
 
-- `PLAN-SALES-PO-DAN-CONVERT.md` (snapshot PO ke project) memakai quotation yang sudah berisi item.
-- Kalau `feature/sales-price-sync` di-merge lebih dulu, selesaikan konflik di `PriceRequest*`
-  sebelum mengerjakan poin 4.3.
-- Dashboard Inside Sales/Estimator dibangun terpisah (`PLAN-SALES-INSIDE-ESTIMATOR-DASHBOARD.md`).
+- `PLAN-SALES-PO-DAN-CONVERT.md` memakai quotation yang sudah berisi item.
+- `PLAN-SALES-INSIDE-DASHBOARD.md` menampilkan hasil quotation dari alur ini.
 
-## 7. Butuh keputusan User sebelum dikerjakan
+## 7. Keputusan yang sudah diambil
 
-1. Siapa yang berhak mengisi item quotation pertama kali?
-   - **Opsi A (rekomendasi):** Inside Sales mengisi item + harga, Sales hanya mereview/revisi.
-   - **Opsi B:** Inside Sales hanya unggah file, Sales tetap input item.
-2. Apakah harga dari Price Request otomatis dipakai sebagai harga awal quotation?
-   - **Opsi A (rekomendasi):** ya, sebagai nilai awal yang masih bisa diubah Sales.
-   - **Opsi B:** tidak otomatis, Sales memilih manual.
+1. Inside Sales yang mengisi item pertama.
+2. Sales tetap bisa merevisi item setelah quotation dibuat.
+3. Sinkronisasi harga Price Request ditunda.

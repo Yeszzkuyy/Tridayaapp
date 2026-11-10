@@ -4823,5 +4823,13 @@
     "attached from New Meeting.": "dilampirkan dari New Meeting.",
     "Meeting saved and daily report sent.": "Meeting disimpan dan laporan harian sudah dikirim.",
     "Report Sent This Month": "Report Terkirim Bulan Ini",
-    "Review the meeting data below. No need to retype anything.": "Periksa data meeting di bawah. Tidak perlu mengetik ulang."
+    "Review the meeting data below. No need to retype anything.": "Periksa data meeting di bawah. Tidak perlu mengetik ulang.",
+    "Disc.": "Diskon",
+    "No quotation items yet. Add at least one item before accepting the file.": "Belum ada item quotation. Tambahkan minimal satu item sebelum menerima file.",
+    "Quotation item added.": "Item quotation ditambahkan.",
+    "Quotation item removed.": "Item quotation dihapus.",
+    "Add at least one quotation item before accepting the file.": "Tambahkan minimal satu item quotation sebelum menerima file.",
+    "This task already has a quotation.": "Task ini sudah punya quotation.",
+    "Created automatically from Inside Sales :count item(s) and file :file (task #:task).": "Dibuat otomatis dari :count item Inside Sales dan file :file (task #:task).",
+    "Delete this quotation item?": "Hapus item quotation ini?"
 }

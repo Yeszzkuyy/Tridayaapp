@@ -54,6 +54,16 @@ class LeadTask extends Model
         return $this->hasMany(LeadTaskAttachment::class)->latest('id');
     }
 
+    public function items()
+    {
+        return $this->hasMany(LeadTaskItem::class);
+    }
+
+    public function proposal()
+    {
+        return $this->hasOne(Proposal::class);
+    }
+
     public static function statusLabel(?string $status): string
     {
         return match ($status) {

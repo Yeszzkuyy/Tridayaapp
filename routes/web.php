@@ -773,6 +773,10 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{leadTask}', [LeadTaskController::class, 'destroy'])->name('destroy');
             Route::post('/{leadTask}/comments', [LeadTaskController::class, 'storeComment'])->name('comments.store');
 
+            // Item quotation yang diisi Inside Sales sebelum file diterima.
+            Route::post('/{leadTask}/items', [LeadTaskController::class, 'storeItem'])->name('items.store');
+            Route::delete('/{leadTask}/items/{item}', [LeadTaskController::class, 'destroyItem'])->name('items.destroy');
+
             // Lampiran quotation (riwayat versi, disimpan di disk privat).
             Route::post('/{leadTask}/attachments', [LeadTaskController::class, 'storeAttachment'])->name('attachments.store');
             Route::get('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'downloadAttachment'])->name('attachments.download');

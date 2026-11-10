@@ -4823,5 +4823,13 @@
     "attached from New Meeting.": "attached from New Meeting.",
     "Meeting saved and daily report sent.": "Meeting saved and daily report sent.",
     "Report Sent This Month": "Report Sent This Month",
-    "Review the meeting data below. No need to retype anything.": "Review the meeting data below. No need to retype anything."
+    "Review the meeting data below. No need to retype anything.": "Review the meeting data below. No need to retype anything.",
+    "Disc.": "Disc.",
+    "No quotation items yet. Add at least one item before accepting the file.": "No quotation items yet. Add at least one item before accepting the file.",
+    "Quotation item added.": "Quotation item added.",
+    "Quotation item removed.": "Quotation item removed.",
+    "Add at least one quotation item before accepting the file.": "Add at least one quotation item before accepting the file.",
+    "This task already has a quotation.": "This task already has a quotation.",
+    "Created automatically from Inside Sales :count item(s) and file :file (task #:task).": "Created automatically from Inside Sales :count item(s) and file :file (task #:task).",
+    "Delete this quotation item?": "Delete this quotation item?"
 }

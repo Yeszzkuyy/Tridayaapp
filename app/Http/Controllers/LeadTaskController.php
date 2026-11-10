@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
+use App\Models\LeadTaskItem;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -138,7 +139,7 @@ class LeadTaskController extends Controller
 
     public function show(LeadTask $leadTask)
     {
-        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader']);
+        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader', 'items.product']);
         $this->authorizeTaskView($leadTask);
 
         return view('lead-tasks.show', ['task' => $leadTask]);
@@ -227,6 +228,51 @@ class LeadTaskController extends Controller
             ->with('success', __('Comment sent.'));
     }
 
+    /** Tambah satu item quotation dari Inside Sales (sebelum file diterima). */
+    public function storeItem(Request $request, LeadTask $leadTask)
+    {
+        $this->authorizeTaskManage($leadTask);
+
+        $validated = $request->validate([
+            'description' => 'required|string|max:255',
+            'quantity' => 'required|numeric|min:0.01',
+            'unit' => 'nullable|string|max:16',
+            'unit_price' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+        ]);
+
+        $qty = (float) $validated['quantity'];
+        $price = (float) $validated['unit_price'];
+        $discount = (float) ($validated['discount'] ?? 0);
+
+        $leadTask->items()->create([
+            'description' => $validated['description'],
+            'quantity' => $qty,
+            'unit' => $validated['unit'] ?? 'pcs',
+            'unit_price' => $price,
+            'discount' => $discount,
+            'subtotal' => LeadTaskItem::subtotalFor($qty, $price, $discount),
+        ]);
+
+        return redirect()
+            ->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Quotation item added.'));
+    }
+
+    /** Hapus item quotation milik task ini. */
+    public function destroyItem(LeadTask $leadTask, LeadTaskItem $item)
+    {
+        $this->authorizeTaskManage($leadTask);
+
+        abort_unless((int) $item->lead_task_id === (int) $leadTask->id, 404);
+
+        $item->delete();
+
+        return redirect()
+            ->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Quotation item removed.'));
+    }
+
     /**
      * Upload file quotation baru dari Inside Sales. File lama TIDAK ditimpa —
      * setiap upload jadi versi baru supaya revisi tetap bisa diunduh.
@@ -300,22 +346,46 @@ class LeadTaskController extends Controller
 
         abort_if($attachment->accepted_at !== null, 422, __('This quotation file has already been accepted.'));
 
-        $proposal = \Illuminate\Support\Facades\DB::transaction(function () use ($attachment, $leadTask, $lead) {
+        $items = $leadTask->items()->get();
+        abort_if($items->isEmpty(), 422, __('Add at least one quotation item before accepting the file.'));
+        abort_if(
+            \App\Models\Proposal::where('lead_task_id', $leadTask->id)->exists(),
+            422,
+            __('This task already has a quotation.')
+        );
+
+        $proposal = \Illuminate\Support\Facades\DB::transaction(function () use ($attachment, $leadTask, $lead, $items) {
             $proposal = \App\Models\Proposal::create([
                 'lead_id' => $leadTask->lead_id,
+                'lead_task_id' => $leadTask->id,
                 'proposal_number' => $this->generateProposalNumber(),
-                'created_by' => auth()->id(),
+                'created_by' => $lead?->assigned_to ?? auth()->id(),
                 'proposal_date' => now()->toDateString(),
                 'customer' => $lead?->customer?->name ?? '-',
                 'status' => 'draft',
-                'internal_notes' => __('Created automatically from Inside Sales quotation file :file (task #:task).', [
+                'internal_notes' => __('Created automatically from Inside Sales :count item(s) and file :file (task #:task).', [
+                    'count' => $items->count(),
                     'file' => $attachment->original_name,
                     'task' => $leadTask->id,
                 ]),
             ]);
 
-            // File ikut dipasang sebagai lampiran quotation (tanpa mengisi
-            // form item — quotation berbasis file).
+            foreach ($items as $item) {
+                $proposal->items()->create([
+                    'product_id' => $item->product_id,
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit' => $item->unit,
+                    'unit_price' => $item->unit_price,
+                    'unit_cost' => null,
+                    'discount' => $item->discount,
+                    'subtotal' => $item->subtotal,
+                ]);
+            }
+
+            $proposal->recalculate();
+
+            // File ikut dipasang sebagai lampiran quotation.
             \App\Models\ProposalAttachment::create([
                 'proposal_id' => $proposal->id,
                 'file_path' => $attachment->file_path,

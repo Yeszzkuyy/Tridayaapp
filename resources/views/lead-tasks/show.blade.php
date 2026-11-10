@@ -90,6 +90,89 @@
         ) && \App\Support\PtAccess::canWritePt($attachmentUser, $task->lead?->customer?->pt_group);
     @endphp
 
+    {{-- Item quotation dari Inside Sales (dipakai saat file di-Accept). --}}
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Quotation Items') }}</h3>
+            <span class="text-xs text-slate-400">{{ $task->items->count() }} {{ __('item(s)') }}</span>
+        </div>
+
+        @if($task->items->isNotEmpty())
+            <ul class="mb-4 divide-y divide-slate-100 dark:divide-slate-700">
+                @foreach($task->items as $item)
+                    <li class="flex flex-wrap items-center justify-between gap-2 py-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
+                            <p class="text-xs text-slate-400">
+                                {{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }} {{ $item->unit }}
+                                × Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}
+                                @if((float) $item->discount > 0)
+                                    − Rp {{ number_format((float) $item->discount, 0, ',', '.') }}
+                                @endif
+                            </p>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-3">
+                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-100 tabular-nums">Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}</span>
+                            @if($canManageAttachment)
+                                <form action="{{ route('lead-tasks.items.destroy', [$task, $item]) }}" method="POST"
+                                      onsubmit="return confirm('{{ __('Delete this quotation item?') }}')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
+                                </form>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+            <p class="mb-4 text-right text-sm font-bold text-slate-800 dark:text-slate-100">
+                {{ __('Total') }}: Rp {{ number_format((float) $task->items->sum('subtotal'), 0, ',', '.') }}
+            </p>
+        @else
+            <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                {{ __('No quotation items yet. Add at least one item before accepting the file.') }}
+            </p>
+        @endif
+
+        @if($canManageAttachment)
+            <form action="{{ route('lead-tasks.items.store', $task) }}" method="POST"
+                  class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 dark:border-slate-700 md:grid-cols-12">
+                @csrf
+                <div class="md:col-span-4">
+                    <label for="item-description" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Description') }}</label>
+                    <input id="item-description" type="text" name="description" required maxlength="255"
+                           placeholder="{{ __('Item / product description') }}"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('description') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                </div>
+                <div class="md:col-span-2">
+                    <label for="item-quantity" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Qty') }}</label>
+                    <input id="item-quantity" type="number" name="quantity" required min="0.01" step="0.01" value="1"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="item-unit" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Unit') }}</label>
+                    <input id="item-unit" type="text" name="unit" value="pcs" maxlength="16"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="item-price" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Unit Price') }}</label>
+                    <input id="item-price" type="number" name="unit_price" required min="0" step="0.01" value="0"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('unit_price') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                </div>
+                <div class="md:col-span-1">
+                    <label for="item-discount" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Disc.') }}</label>
+                    <input id="item-discount" type="number" name="discount" min="0" step="0.01" value="0"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="flex items-end md:col-span-1">
+                    <x-primary-button type="submit" class="w-full justify-center">{{ __('Add') }}</x-primary-button>
+                </div>
+            </form>
+        @endif
+    </div>
+
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Quotation Attachment') }}</h3>
