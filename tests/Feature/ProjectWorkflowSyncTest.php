@@ -209,6 +209,19 @@ class ProjectWorkflowSyncTest extends TestCase
         ]);
     }
 
+    public function test_workflow_sync_runs_without_authenticated_user(): void
+    {
+        $project = $this->makeProject();
+        $openStatus = ProjectStatus::where('name', 'Open')->firstOrFail();
+
+        // CLI tidak punya sesi login; jangan sampai activity not-null gagal.
+        $this->app['auth']->forgetGuards();
+
+        $project->update(['project_status_id' => $openStatus->id]);
+
+        $this->artisan('projects:sync-workflow')->assertExitCode(0);
+    }
+
     public function test_admin_can_manage_non_project_installation_bast(): void
     {
         Storage::fake('private');

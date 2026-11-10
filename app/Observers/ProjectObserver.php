@@ -48,11 +48,18 @@ class ProjectObserver
             return;
         }
 
+        // CLI (mis. projects:sync-workflow) tidak punya user login; pakai
+        // engineer/sales project agar activity tetap punya penulis.
+        $userId = Auth::id() ?? $project->teknisi_user_id ?? $project->sales_user_id ?? User::first()?->id;
+        if (! $userId) {
+            return;
+        }
+
         $oldStatus = ProjectStatus::find($project->getOriginal('project_status_id'))?->name;
 
         ProjectActivity::create([
             'project_id' => $project->id,
-            'user_id' => Auth::id(),
+            'user_id' => $userId,
             'activity_date' => now(),
             'title' => __('Status Changed'),
             'description' => __('Status project diubah dari :old menjadi :new', ['old' => $oldStatus, 'new' => $project->status?->name]),
