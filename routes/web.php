@@ -300,6 +300,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::get('proposals/{proposal}/pdf', [ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
         Route::get('proposals/{proposal}/attachments/{attachment}', [ProposalController::class, 'downloadAttachment'])->name('proposals.attachments.download');
         Route::get('proposals/{proposal}/attachments/{attachment}/preview', [ProposalController::class, 'previewAttachment'])->name('proposals.attachments.preview');
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
