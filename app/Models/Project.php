@@ -25,6 +25,9 @@ class Project extends Model
         'quotation_number',
         'proposal_id',
         'progress',
+        'workflow_state',
+        'workflow_synced_at',
+        'requires_delivery',
         'requires_installation',
         'bast_number',
         'bast_date',
@@ -46,6 +49,8 @@ class Project extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'progress' => 'integer',
+        'workflow_state' => 'array',
+        'workflow_synced_at' => 'datetime',
         'requires_installation' => 'boolean',
         'requires_delivery' => 'boolean',
         'bast_date' => 'date',
@@ -124,6 +129,21 @@ class Project extends Model
         return $this->hasMany(ProjectSupport::class);
     }
 
+    /**
+     * Engineer pendukung sebagai akun user (sumber baru).
+     * Tabel project_supports menyimpan project_id + user_id.
+     */
+    public function supportUsers()
+    {
+        return $this->belongsToMany(User::class, 'project_supports', 'project_id', 'user_id');
+    }
+
+    /** PIC engineer sebagai akun user. */
+    public function engineer()
+    {
+        return $this->belongsTo(User::class, 'teknisi_user_id');
+    }
+
     // Relasi ke Technical Workflow
     public function surveys()
     {
@@ -143,6 +163,11 @@ class Project extends Model
     public function instalasis()
     {
         return $this->hasMany(Instalasi::class);
+    }
+
+    public function priceRequests()
+    {
+        return $this->hasMany(PriceRequest::class);
     }
 
     public function invoices()

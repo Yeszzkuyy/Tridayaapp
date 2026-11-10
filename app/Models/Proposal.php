@@ -23,6 +23,15 @@ class Proposal extends Model
         'proposal_date',
         'valid_until',
         'customer',
+        'customer_address',
+        'contact_name',
+        'contact_email',
+        'contact_phone',
+        'project_description',
+        'payment_terms_text',
+        'letterhead_pt',
+        'pdf_path',
+        'pdf_generated_at',
         'subtotal',
         'discount',
         'tax',
@@ -63,6 +72,7 @@ class Proposal extends Model
         'dp_percent' => 'float',
         'term_days' => 'integer',
         'sent_at' => 'datetime',
+        'pdf_generated_at' => 'datetime',
     ];
 
     public function lead()

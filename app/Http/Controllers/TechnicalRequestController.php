@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Instalasi;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Project;
 use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\TechnicianSchedule;
@@ -12,9 +14,15 @@ use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
 use App\Notifications\TechnicianAssignedNotification;
+use App\Rules\SecureFile;
+use App\Services\GoogleCalendarService;
+use App\Services\Project\FieldJobWorkflowService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class TechnicalRequestController extends Controller
 {
@@ -32,18 +40,24 @@ class TechnicalRequestController extends Controller
             return null;
         }
 
+        $technician = $technicalRequest->technician;
+        $lead = $technicalRequest->lead;
+
         $survey = Survey::withTrashed()->firstOrCreate(
             ['technical_request_id' => $technicalRequest->id],
             [
                 'title' => $technicalRequest->title,
-                'customer_id' => $technicalRequest->lead?->customer_id,
-                'sales_user_id' => $technicalRequest->lead?->assigned_to
+                'project_id' => $technicalRequest->project_id,
+                'customer_id' => $lead?->customer_id,
+                'sales_user_id' => $lead?->assigned_to
                     ?? $technicalRequest->requested_by,
+                'technician_user_id' => $technician?->id,
                 'sales_request' => $technicalRequest->purpose
                     ?: $technicalRequest->requirement
                     ?: $technicalRequest->problem_description,
                 'survey_date' => $technicalRequest->target_date,
-                'location' => $technicalRequest->location ?: $technicalRequest->lead?->customer?->address,
+                'location' => $technicalRequest->location ?: $lead?->customer?->address,
+                'pic' => $technician?->name,
                 'status' => 'scheduled',
             ]
         );
@@ -54,7 +68,84 @@ class TechnicalRequestController extends Controller
             $survey->restore();
         }
 
+        // Lengkapi tautan yang belum terisi tanpa menimpa data yang sudah ada.
+        $survey->fill([
+            'project_id' => $survey->project_id ?: $technicalRequest->project_id,
+            'customer_id' => $survey->customer_id ?: $lead?->customer_id,
+            'sales_user_id' => $survey->sales_user_id ?: ($lead?->assigned_to ?? $technicalRequest->requested_by),
+            'technician_user_id' => $technician?->id ?: $survey->technician_user_id,
+            'pic' => $technician?->name ?: $survey->pic,
+            'survey_date' => $survey->survey_date ?: $technicalRequest->target_date,
+        ])->save();
+
         return $survey;
+    }
+
+    /**
+     * Buat (atau ambil) Instalasi untuk Technical Request tipe installation.
+     * Idempoten lewat kunci unik technical_request_id.
+     */
+    private function ensureInstallation(TechnicalRequest $technicalRequest): ?Instalasi
+    {
+        if ($technicalRequest->request_type !== 'installation') {
+            return null;
+        }
+
+        $technician = $technicalRequest->technician;
+        $lead = $technicalRequest->lead;
+
+        $installation = Instalasi::withTrashed()->firstOrCreate(
+            ['technical_request_id' => $technicalRequest->id],
+            [
+                'project_id' => $technicalRequest->project_id,
+                'customer_id' => $lead?->customer_id,
+                'sales_user_id' => $lead?->assigned_to ?? $technicalRequest->requested_by,
+                'location' => $technicalRequest->location ?: $lead?->customer?->address,
+                'technician_pic' => $technician?->name,
+                'technician_user_id' => $technician?->id,
+                'schedule_date' => $technicalRequest->target_date,
+                'status' => 'scheduled',
+            ]
+        );
+
+        if ($installation->trashed()) {
+            $installation->restore();
+        }
+
+        $installation->fill([
+            'project_id' => $installation->project_id ?: $technicalRequest->project_id,
+            'customer_id' => $installation->customer_id ?: $lead?->customer_id,
+            'sales_user_id' => $installation->sales_user_id ?: ($lead?->assigned_to ?? $technicalRequest->requested_by),
+            'location' => $installation->location ?: ($technicalRequest->location ?: $lead?->customer?->address),
+            'technician_pic' => $technician?->name ?: $installation->technician_pic,
+            'technician_user_id' => $technician?->id ?: $installation->technician_user_id,
+            'schedule_date' => $installation->schedule_date ?: $technicalRequest->target_date,
+        ])->save();
+
+        return $installation;
+    }
+
+    /**
+     * Tautkan request ke project bila lead hanya punya satu project.
+     */
+    private function resolveProjectId(TechnicalRequest $technicalRequest): ?int
+    {
+        if ($technicalRequest->project_id) {
+            return (int) $technicalRequest->project_id;
+        }
+
+        $lead = $technicalRequest->lead;
+        if (! $lead) {
+            return null;
+        }
+
+        $projectIds = Project::query()
+            ->whereHas('proposal', fn ($q) => $q->where('lead_id', $lead->id))
+            ->pluck('id')
+            ->unique()
+            ->values();
+
+        return $projectIds->count() === 1 ? (int) $projectIds->first() : null;
     }
 
     /** Kirim notifikasi ke sales peminta — lewati bila dia sendiri yang beraksi. */
@@ -116,10 +207,10 @@ class TechnicalRequestController extends Controller
 
         // Tanpa lead bawaan: tampilkan pemilih lead (sales biasa hanya miliknya).
         $leads = null;
-        if (!$lead) {
+        if (! $lead) {
             $leadsQuery = Lead::with('customer')->latest()->limit(100);
             $user = $request->user();
-            if ($user && $user->hasRole('sales') && !$user->can('manage-marketing') && !$user->can('manage-sales-leads')) {
+            if ($user && $user->hasRole('sales') && ! $user->can('manage-marketing') && ! $user->can('manage-sales-leads')) {
                 $leadsQuery->where('assigned_to', $user->id);
             }
             $leads = $leadsQuery->get();
@@ -136,7 +227,7 @@ class TechnicalRequestController extends Controller
     {
         $validated = $request->validate([
             'lead_id' => 'required|exists:leads,id',
-            'request_type' => 'required|in:' . implode(',', TechnicalRequest::TYPES),
+            'request_type' => 'required|in:'.implode(',', TechnicalRequest::TYPES),
             'title' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:2000',
             'location' => 'nullable|string|max:255',
@@ -157,6 +248,7 @@ class TechnicalRequestController extends Controller
         $technicalRequest = TechnicalRequest::create([
             ...collect($validated)->except('attachment')->all(),
             'priority' => 'normal',
+            'project_id' => $this->resolveProjectId(new TechnicalRequest(['lead_id' => $lead->id])),
             'pic_contact_name' => $isInstallation ? ($validated['pic_contact_name'] ?? null) : null,
             'pic_contact_phone' => $isInstallation ? ($validated['pic_contact_phone'] ?? null) : null,
             'requested_by' => auth()->id(),
@@ -165,8 +257,8 @@ class TechnicalRequestController extends Controller
 
         if ($request->hasFile('attachment')) {
             $path = $request->file('attachment')->storeAs(
-                'tech-requests/' . $technicalRequest->id,
-                time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $request->file('attachment')->getClientOriginalName()),
+                'tech-requests/'.$technicalRequest->id,
+                time().'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $request->file('attachment')->getClientOriginalName()),
                 'private'
             );
             $technicalRequest->update(['attachment_path' => $path]);
@@ -203,7 +295,7 @@ class TechnicalRequestController extends Controller
         }
 
         $start = $technicalRequest->target_time
-            ? \Illuminate\Support\Carbon::parse($technicalRequest->target_date->format('Y-m-d').' '.$technicalRequest->target_time)
+            ? Carbon::parse($technicalRequest->target_date->format('Y-m-d').' '.$technicalRequest->target_time)
             : $technicalRequest->target_date->copy()->setTime(9, 0);
         $end = $start->copy()->addHours(2);
 
@@ -216,7 +308,7 @@ class TechnicalRequestController extends Controller
             ->first();
 
         if ($conflict) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'technician_id' => __(':name already has :title at :time. Choose another technician or date.', [
                     'name' => $technician->name,
                     'title' => $conflict->title,
@@ -225,7 +317,7 @@ class TechnicalRequestController extends Controller
             ]);
         }
 
-        return app(\App\Services\GoogleCalendarService::class)->createSchedule(\Illuminate\Support\Facades\Auth::user(), [
+        return app(GoogleCalendarService::class)->createSchedule(Auth::user(), [
             'technical_request_id' => $technicalRequest->id,
             'title' => $technicalRequest->title,
             'description' => $technicalRequest->purpose ?: $technicalRequest->problem_description,
@@ -239,14 +331,16 @@ class TechnicalRequestController extends Controller
 
     public function show(TechnicalRequest $technicalRequest)
     {
-        $technicalRequest->load(['lead.customer', 'requester', 'technician']);
+        $technicalRequest->load(['lead.customer', 'requester', 'technician', 'project', 'survey', 'installation', 'schedules']);
         $this->authorizeView($technicalRequest);
 
         $technicians = $this->isTechnicalCoordinator()
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
             : collect();
 
-        return view('sales.technical-requests.show', compact('technicalRequest', 'technicians'));
+        $workflow = app(FieldJobWorkflowService::class)->evaluate($technicalRequest);
+
+        return view('sales.technical-requests.show', compact('technicalRequest', 'technicians', 'workflow'));
     }
 
     public function review(Request $request, TechnicalRequest $technicalRequest)
@@ -258,10 +352,10 @@ class TechnicalRequestController extends Controller
         $validated = $request->validate(['decision' => 'required|in:accepted,rejected']);
 
         $technicalRequest->update(['status' => $validated['decision']]);
-        $this->log($technicalRequest->lead, 'tech_request_' . $validated['decision'], ['title' => $technicalRequest->title]);
+        $this->log($technicalRequest->lead, 'tech_request_'.$validated['decision'], ['title' => $technicalRequest->title]);
         $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, $validated['decision']));
 
-        return back()->with('success', __('Request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
+        return back()->with('success', __('Request telah di-'.$validated['decision'].'.'))->with('success_card', true);
     }
 
     public function assign(Request $request, TechnicalRequest $technicalRequest)
@@ -277,14 +371,14 @@ class TechnicalRequestController extends Controller
 
         $technicalRequest->update([
             'assigned_technician_id' => $technician->id,
+            'project_id' => $this->resolveProjectId($technicalRequest),
             'status' => 'assigned',
         ]);
 
-        // Request tipe survey: buatkan Survey untuk dikerjakan teknisi.
-        // Idempoten — request yang sama diproses ulang tetap satu survey.
-        // Notifikasi ke sales cukup satu (di bawah, 'assigned'); survey adalah
-        // artefak internal tim teknisi, jadi tidak dibuatkan notifikasi sendiri.
-        $this->ensureSurvey($technicalRequest);
+        // Request tipe survey/installation: siapkan data lapangan untuk
+        // dikerjakan teknisi. Idempoten — request yang sama tetap satu data.
+        $this->ensureSurvey($technicalRequest->fresh());
+        $this->ensureInstallation($technicalRequest->fresh());
 
         $this->log($technicalRequest->lead, 'technician_assigned', [
             'title' => $technicalRequest->title,
@@ -347,6 +441,12 @@ class TechnicalRequestController extends Controller
         abort_unless(in_array($technicalRequest->status, ['assigned', 'in_progress']), 422);
         abort_unless(filled($technicalRequest->technical_result), 422, __('Fill in the technical results before completing.'));
 
+        // Data lama / request yang di-assign sebelum integrasi ini mungkin
+        // belum punya record lapangan. Siapkan idempoten sebelum validasi.
+        $this->ensureSurvey($technicalRequest);
+        $this->ensureInstallation($technicalRequest);
+        $technicalRequest->refresh();
+
         // Konsistensi status: request tipe survey TIDAK boleh selesai sebelum
         // Survey-nya punya laporan — jangan sampai request menyatakan selesai
         // padahal laporan belum ada.
@@ -360,11 +460,38 @@ class TechnicalRequestController extends Controller
             );
         }
 
+        // Instalasi baru boleh selesai setelah laporan teknis dan BAST
+        // bertanda tangan kedua pihak tersedia.
+        $installation = null;
+        if ($technicalRequest->request_type === 'installation') {
+            $installation = $technicalRequest->installation;
+            abort_unless(
+                $installation?->hasReport(),
+                422,
+                __('The installation has no report yet. Upload the installation report before completing this request.')
+            );
+
+            // BAST wajib hanya untuk instalasi non-project. Instalasi di dalam
+            // project memakai BAST project yang dikelola Admin.
+            if (blank($technicalRequest->project_id)) {
+                abort_unless(
+                    $installation?->isBastReady(),
+                    422,
+                    __('The installation BAST is not signed yet. Upload the signed BAST before completing this request.')
+                );
+            }
+        }
+
         $technicalRequest->update(['status' => 'completed', 'completed_at' => now()]);
 
-        // Baru setelah request selesai tersimpan, status survey ikut
+        // Baru setelah request selesai tersimpan, status data lapangan ikut
         // diperbarui agar konsisten.
         $survey?->update(['status' => Survey::STATUS_COMPLETED]);
+        $installation?->update([
+            'status' => 'completed',
+            'completed_at' => $installation->completed_at ?? now(),
+            'completed_by' => $installation->completed_by ?? auth()->id(),
+        ]);
 
         $this->log($technicalRequest->lead, 'tech_request_completed', ['title' => $technicalRequest->title]);
         $this->notifyRequester($technicalRequest, new TechnicalWorkCompletedNotification($technicalRequest));
@@ -406,7 +533,7 @@ class TechnicalRequestController extends Controller
         $this->authorizeView($technicalRequest);
         abort_unless($technicalRequest->attachment_path && Storage::disk('private')->exists($technicalRequest->attachment_path), 404);
 
-        return \App\Rules\SecureFile::fileResponse(
+        return SecureFile::fileResponse(
             'private',
             $technicalRequest->attachment_path,
             basename($technicalRequest->attachment_path)

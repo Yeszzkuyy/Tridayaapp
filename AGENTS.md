@@ -110,6 +110,7 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 | `/home/yeski/3dyapp-management` | `feature/management` | Management (Activity Log, assign lead) |
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
+| `/home/yeski/3dyapp-inside` | `feature/sales-inside` | Inside Sales (dashboard, quotation, PDF per PT) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
 | `/home/raafi/3dyapp-notifpop` | `feature/sys-notif-popup` | Pop up notifikasi pojok layar (gaya toast 21st.dev) |
 | `/home/raafi/3dyapp-i18n` | `feature/i18n-english` | i18n (konsistensi bahasa semua menu) + tampilan settings |
@@ -118,6 +119,7 @@ Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
 | `/home/raafi/3dyapp-contacts` | `feature/cus-contact-source` | Satu sumber kontak customer (PIC) |
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
+| `/home/raafi/3dyapp-tekflow` | `feature/tek-project-workflow` | Integrasi workflow project + engineer (survey, sizing, price request, instalasi, BAST) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.

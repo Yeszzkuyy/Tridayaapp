@@ -16,6 +16,7 @@ use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
+use App\Notifications\QuotationGeneratedNotification;
 use App\Notifications\SalesScheduleAssignedNotification;
 use App\Notifications\SurveyCreatedNotification;
 use App\Notifications\SurveyReportUploadedNotification;
@@ -83,6 +84,7 @@ final class NotificationPresenter
             WhatsappInboundNotification::class,
             WhatsappHandoffNotification::class => 'whatsapp',
             ProposalStatusNotification::class => 'proposal',
+            QuotationGeneratedNotification::class => 'proposal',
             TechnicalRequestCreatedNotification::class => 'technical_request_created',
             TechnicalRequestReviewedNotification::class => 'technical_request_reviewed',
             TechnicalWorkCompletedNotification::class => 'technical_work_completed',
@@ -429,6 +431,7 @@ final class NotificationPresenter
     private static function proposalLabel(?string $event): string
     {
         return match ($event) {
+            'created' => __('Quotation created'),
             'pending_technical' => __('Waiting for technical review'),
             'returned_to_draft' => __('Returned to draft'),
             'ready' => __('Ready to send'),

@@ -22,6 +22,9 @@
         if ($isTech) {
             $projectTabs['assigned'] = __('My Assigned Projects');
         }
+        if ($isLeadTech || $isManager) {
+            $projectTabs['unassigned'] = __('Unassigned Projects');
+        }
         $projectTabs['sales'] = __('My Sales Projects');
     @endphp
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -68,7 +71,7 @@
                         <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Project') }}</th>
                         <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Customer') }}</th>
                         <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Jenis Pekerjaan') }}</th>
-                        {{-- <th class="px-4 py-4 text-left text-xs uppercase tracking-wider text-slate-500">PIC Engineer</th> --}}
+                        <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('PIC Engineer') }}</th>
                         <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Status') }}</th>
                         <th class="px-4 py-3.5 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Progress') }}</th>
                         <th class="px-4 py-3.5 text-right text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200 whitespace-nowrap">{{ __('Actions') }}</th>
@@ -80,7 +83,9 @@
                             <td class="px-4 py-5 font-semibold text-slate-800 dark:text-slate-100 max-w-[220px] truncate">{{ $project->project_name }}</td>
                             <td class="px-4 py-5 text-slate-600 dark:text-slate-300 max-w-[180px] truncate">{{ $project->customer?->name ?? '-' }}</td>
                             <td class="px-4 py-5 text-slate-600 dark:text-slate-300 max-w-[160px] truncate">{{ $project->workType?->name ?? '-' }}</td>
-                            {{-- <td class="px-4 py-4 text-slate-600">{{ $project->pic_engineer ?? '-' }}</td> --}}
+                            <td class="px-4 py-5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                {{ $project->engineer?->name ?? ($project->pic_engineer ?: '-') }}
+                            </td>
                             <td class="px-4 py-5 whitespace-nowrap">
                                 <x-status-badge :color="$statusBadgeColors[$project->status?->name] ?? 'slate'">
                                     {{ $project->status?->name ?? __('Not Started') }}
@@ -106,8 +111,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-16 text-center text-slate-400 dark:text-slate-500">
-                                {{ __('There are no active projects (Open / Progress).') }}
+                            <td colspan="7" class="py-16 text-center text-slate-400 dark:text-slate-500">
+                                {{ __('No projects found.') }}
                             </td>
                         </tr>
                     @endforelse

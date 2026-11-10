@@ -8,17 +8,19 @@ use App\Models\PriceRequestComment;
 use App\Models\PriceRequestReply;
 use App\Models\Product;
 use App\Models\ProductPriceLog;
+use App\Models\Project;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Notifications\PriceRequestCommentNotification;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
+use App\Rules\SecureFile;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Throwable;
@@ -46,6 +48,8 @@ class PriceRequestController extends Controller
 
         return view('sales.price-requests.create', [
             'customers' => $this->customerOptions($user),
+            'projects' => Project::orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']),
+            'presetProjectId' => $request->query('project_id'),
             'backUrl' => $backUrl,
         ]);
     }
@@ -54,6 +58,7 @@ class PriceRequestController extends Controller
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
+            'project_id' => 'nullable|exists:projects,id',
             'notes' => 'nullable|string|max:2000',
             'quotation' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,
         ]);
@@ -61,9 +66,16 @@ class PriceRequestController extends Controller
         $customer = Customer::findOrFail($validated['customer_id']);
         abort_unless(PtAccess::canWritePt($request->user(), $customer->pt_group), 403);
 
+        $projectId = $validated['project_id'] ?? null;
+        if ($projectId) {
+            $project = Project::findOrFail($projectId);
+            abort_unless((int) $project->customer_id === (int) $customer->id, 422, __('The selected project does not belong to this customer.'));
+        }
+
         $pricingEngineer = $this->configuredPricingEngineer();
         $priceRequest = PriceRequest::create([
             'customer_id' => $customer->id,
+            'project_id' => $projectId,
             'requested_by' => $request->user()->id,
             'notes' => $validated['notes'] ?? null,
             'assigned_to' => $pricingEngineer?->id,
@@ -184,7 +196,7 @@ class PriceRequestController extends Controller
         );
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
 
-        return back()->with('success', __('Price request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
+        return back()->with('success', __('Price request telah di-'.$validated['decision'].'.'))->with('success_card', true);
     }
 
     /** Fallback only: assign a technician when the configured pricing engineer is unavailable. */
@@ -424,7 +436,7 @@ class PriceRequestController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle(__('Estimator Report'));
 
@@ -459,7 +471,7 @@ class PriceRequestController extends Controller
                 $priceRequest->created_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i'),
                 $priceRequest->requester?->name ?? '-',
                 trim(($priceRequest->customer?->name ?? '-').($priceRequest->customer?->pt_group ? ' / '.$priceRequest->customer->pt_group : '')),
-                \Illuminate\Support\Str::limit((string) $priceRequest->notes, 180),
+                Str::limit((string) $priceRequest->notes, 180),
                 $items !== '' ? $items : ($priceRequest->reply_notes ?? '-'),
                 $priceRequest->handledBy?->name ?? $priceRequest->assignee?->name ?? '-',
                 $priceRequest->completed_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i') ?? '-',
@@ -508,7 +520,7 @@ class PriceRequestController extends Controller
         $this->authorize('view', $priceRequest);
         abort_unless($priceRequest->quotation_path && Storage::disk('private')->exists($priceRequest->quotation_path), 404);
 
-        return \App\Rules\SecureFile::fileResponse(
+        return SecureFile::fileResponse(
             'private',
             $priceRequest->quotation_path,
             basename($priceRequest->quotation_path)
@@ -520,7 +532,7 @@ class PriceRequestController extends Controller
         $this->authorize('view', $priceRequest);
         abort_unless($priceRequest->reply_path && Storage::disk('private')->exists($priceRequest->reply_path), 404);
 
-        return \App\Rules\SecureFile::fileResponse(
+        return SecureFile::fileResponse(
             'private',
             $priceRequest->reply_path,
             basename($priceRequest->reply_path)
@@ -542,7 +554,7 @@ class PriceRequestController extends Controller
         abort_unless((int) $reply->price_request_id === (int) $priceRequest->id, 404);
         abort_unless(Storage::disk('private')->exists($reply->file_path), 404);
 
-        return \App\Rules\SecureFile::fileResponse(
+        return SecureFile::fileResponse(
             'private',
             $reply->file_path,
             basename($reply->file_path)

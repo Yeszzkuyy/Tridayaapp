@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DocumentCategory;
+use App\Models\Instalasi;
 use App\Models\Project;
 use App\Models\ProjectDocument;
 use App\Models\User;
@@ -76,6 +77,12 @@ class BastController extends Controller
         return view('admin.bast.index', [
             'projects' => $projects,
             'status' => $request->input('status'),
+            'installationJobs' => Instalasi::query()
+                ->with(['customer', 'project', 'technician', 'technicalRequest'])
+                ->whereNull('project_id')
+                ->latest()
+                ->paginate(10, ['*'], 'instalasi_page')
+                ->withQueryString(),
         ]);
     }
 

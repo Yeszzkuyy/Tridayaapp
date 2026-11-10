@@ -129,6 +129,9 @@
 
             <div class="flex flex-wrap gap-2 pt-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
+                @if($proposal->pdf_path)
+                    <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.pdf', $proposal) }}" label="{{ __('Download PDF') }}" title="{{ __('Download PDF') }}" />
+                @endif
                 @if($isOwner && (in_array($proposal->status, ['draft', 'revision'], true) || ($proposal->status === 'ready' && (float) $proposal->grand_total <= 0)))
                     <x-icon-button as="a" icon="edit" href="{{ route('sales.proposals.edit', $proposal) }}" label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
                 @endif
@@ -431,6 +434,31 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Start Date') }}</label>
                                 <input type="date" name="start_date" value="{{ now()->format('Y-m-d') }}"
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('PIC Engineer') }}</label>
+                                <select name="teknisi_user_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                    <option value="">{{ __('No engineer yet (Unassigned)') }}</option>
+                                    @foreach($technicians as $tech)
+                                        <option value="{{ $tech->id }}" {{ (string) old('teknisi_user_id') === (string) $tech->id ? 'selected' : '' }}>{{ $tech->name }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-slate-400">{{ __('The lead engineer can assign this later.') }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Support Technicians') }}</label>
+                                <div class="grid max-h-32 grid-cols-2 gap-1.5 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-600">
+                                    @forelse($technicians as $tech)
+                                        <label class="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                            <input type="checkbox" name="support_user_ids[]" value="{{ $tech->id }}"
+                                                   class="rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+                                                   {{ in_array((string) $tech->id, array_map('strval', (array) old('support_user_ids', [])), true) ? 'checked' : '' }}>
+                                            {{ $tech->name }}
+                                        </label>
+                                    @empty
+                                        <p class="text-xs text-slate-400">{{ __('No engineers available.') }}</p>
+                                    @endforelse
+                                </div>
                             </div>
                             <div class="space-y-2 py-1">
                                 <label class="flex items-center gap-2 cursor-pointer">

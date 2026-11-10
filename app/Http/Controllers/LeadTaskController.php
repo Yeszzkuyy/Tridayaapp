@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
 use App\Models\LeadTaskItem;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -139,10 +140,15 @@ class LeadTaskController extends Controller
 
     public function show(LeadTask $leadTask)
     {
-        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader', 'items.product']);
+        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader', 'items.product', 'proposal']);
         $this->authorizeTaskView($leadTask);
 
-        return view('lead-tasks.show', ['task' => $leadTask]);
+        $products = Product::saleable()
+            ->with('latestPriceLog.supplier')
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku', 'unit', 'default_price']);
+
+        return view('lead-tasks.show', ['task' => $leadTask, 'products' => $products]);
     }
 
     public function edit(LeadTask $leadTask)
@@ -234,10 +240,15 @@ class LeadTaskController extends Controller
         $this->authorizeTaskManage($leadTask);
 
         $validated = $request->validate([
+            'product_id' => 'nullable|exists:products,id',
             'description' => 'required|string|max:255',
+            'scope_of_supply' => 'nullable|string|max:100',
+            'lead_time' => 'nullable|string|max:100',
+            'section' => 'nullable|string|max:100',
             'quantity' => 'required|numeric|min:0.01',
             'unit' => 'nullable|string|max:16',
             'unit_price' => 'required|numeric|min:0',
+            'unit_cost' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
         ]);
 
@@ -246,10 +257,19 @@ class LeadTaskController extends Controller
         $discount = (float) ($validated['discount'] ?? 0);
 
         $leadTask->items()->create([
+            'product_id' => $validated['product_id'] ?? null,
             'description' => $validated['description'],
+            'scope_of_supply' => $validated['scope_of_supply'] ?? null,
+            'lead_time' => $validated['lead_time'] ?? null,
+            'section' => $validated['section'] ?? 'MATERIAL',
             'quantity' => $qty,
             'unit' => $validated['unit'] ?? 'pcs',
             'unit_price' => $price,
+            'unit_cost' => $request->user()->can('manage-inside-sales')
+                && isset($validated['unit_cost'])
+                && $validated['unit_cost'] !== ''
+                ? (float) $validated['unit_cost']
+                : null,
             'discount' => $discount,
             'subtotal' => LeadTaskItem::subtotalFor($qty, $price, $discount),
         ]);

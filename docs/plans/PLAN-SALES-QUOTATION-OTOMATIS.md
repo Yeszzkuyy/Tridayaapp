@@ -6,6 +6,10 @@
 **Worktree:** `/var/www/3dyapp-sales`
 **Terakhir diperbarui:** 2026-11-10
 
+> Alur final: quotation digenerate langsung oleh Inside Sales di branch
+> `feature/sales-inside` (lihat `PLAN-SALES-INSIDE-DASHBOARD.md`). Bagian
+> "Accept file" di bawah dipertahankan sebagai alur legacy/opsional.
+
 > Implementasi inti sudah berjalan di `feature/sales-flow`; menunggu merge ke `main`
 > dan pengecekan user. Sinkronisasi harga dari Price Request ditunda ke plan terpisah.
 

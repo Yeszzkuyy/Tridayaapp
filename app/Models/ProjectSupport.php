@@ -11,6 +11,7 @@ class ProjectSupport extends Model
 
     protected $fillable = [
         'project_id',
+        'user_id',
         'title',
         'description',
         'status',
@@ -23,5 +24,10 @@ class ProjectSupport extends Model
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function engineer()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

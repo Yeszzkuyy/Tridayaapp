@@ -26,6 +26,19 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Project (optional)') }}</label>
+                    <select name="project_id"
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        <option value="">{{ __('No project yet') }}</option>
+                        @foreach($projects as $project)
+                            <option value="{{ $project->id }}" @selected((string) old('project_id', $presetProjectId) === (string) $project->id)>{{ $project->project_name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Select the project if this price request is for an existing project.') }}</p>
+                    @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quotation File') }} <span class="text-red-500">*</span></label>
                     <input type="file" name="quotation" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">

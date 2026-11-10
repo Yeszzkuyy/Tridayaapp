@@ -134,4 +134,66 @@
         </div>
         @if($projects->hasPages())<div class="p-4 border-t">{{ $projects->links() }}</div>@endif
     </div>
+
+    {{-- BAST pekerjaan instalasi non-project (Request Sales) --}}
+    <div class="mt-6">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Non-project Installation BAST') }}</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Installation jobs from Request Sales that are not tied to a project.') }}</p>
+            </div>
+            @if($installationJobs->total() > 0)
+                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                    {{ $installationJobs->total() }} {{ __('jobs') }}
+                </span>
+            @endif
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
+                    <thead class="bg-slate-50 dark:bg-slate-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500 dark:text-slate-200">{{ __('Job') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500 dark:text-slate-200">{{ __('Engineer') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500 dark:text-slate-200">{{ __('Report') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500 dark:text-slate-200">{{ __('BAST') }}</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500 dark:text-slate-200">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
+                        @forelse($installationJobs as $job)
+                            <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                                <td class="px-4 py-3">
+                                    <p class="font-medium text-slate-800 dark:text-slate-100">{{ $job->technicalRequest?->title ?? __('Installation #:id', ['id' => $job->id]) }}</p>
+                                    <span class="block text-xs text-slate-400">{{ $job->schedule_date?->format('d M Y') ?? '-' }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $job->customer?->name ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $job->technician?->name ?? $job->technician_pic ?? '-' }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $job->hasReport() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-200' }}">
+                                        {{ $job->hasReport() ? __('Uploaded') : __('Not yet') }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $job->isBastReady() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
+                                        {{ $job->isBastReady() ? __('Signed') : __('Waiting') }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    @can('manage-admin')
+                                        <x-icon-button as="a" icon="edit" href="{{ route('admin.instalasi-bast.show', $job) }}" title="{{ __('Edit BAST') }}" />
+                                    @endcan
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="py-8 text-center text-slate-400">{{ __('No non-project installations waiting for BAST.') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($installationJobs->hasPages())<div class="border-t p-4">{{ $installationJobs->links() }}</div>@endif
+        </div>
+    </div>
 </x-app-layout>

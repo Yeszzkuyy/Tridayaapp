@@ -83,12 +83,17 @@
                     </div>
                 </div>
 
-                {{-- PIC --}}
+                {{-- PIC Engineer (akun) --}}
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('PIC') }}</label>
-                    <input type="text" name="pic" value="{{ old('pic') }}"
-                           class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                    @error('pic') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('PIC Engineer') }}</label>
+                    <select name="technician_user_id"
+                            class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                        <option value="">{{ auth()->user()->name }} ({{ __('Me') }})</option>
+                        @foreach($technicians as $technician)
+                            <option value="{{ $technician->id }}" {{ (string) old('technician_user_id') === (string) $technician->id ? 'selected' : '' }}>{{ $technician->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('technician_user_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Survey Data --}}

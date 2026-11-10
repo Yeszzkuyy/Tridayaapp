@@ -82,13 +82,46 @@
             || $attachmentUser->can('manage-sales-leads')
         ) && \App\Support\PtAccess::canWritePt($attachmentUser, $task->lead?->customer?->pt_group);
         $attachmentTotal = $task->attachments->count();
-        $attachmentUser = auth()->user();
-        $canAcceptQuotation = $attachmentUser && (
-            (int) $task->created_by === (int) $attachmentUser->id
-            || (int) ($task->lead?->assigned_to ?? 0) === (int) $attachmentUser->id
-            || $attachmentUser->can('manage-sales-leads')
-        ) && \App\Support\PtAccess::canWritePt($attachmentUser, $task->lead?->customer?->pt_group);
+        $canGenerateQuotation = $attachmentUser->can('manage-inside-sales')
+            && ((int) $task->assigned_to === (int) $attachmentUser->id
+                || (int) $task->created_by === (int) $attachmentUser->id);
     @endphp
+
+    @if($task->proposal)
+        <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/20">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">{{ __('Quotation') }}</p>
+                    <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ $task->proposal->proposal_number }}</p>
+                    <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
+                        {{ __('Status') }}: <span class="font-semibold">{{ ucfirst($task->proposal->status) }}</span>
+                        · {{ $task->proposal->created_at?->format('d M Y H:i') }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    @if($task->proposal->pdf_path)
+                        <x-icon-button as="a" icon="download" label="{{ __('Download PDF') }}"
+                                       href="{{ auth()->user()->can('manage-inside-sales') ? route('inside-sales.quotations.pdf', $task) : route('sales.proposals.pdf', $task->proposal) }}"
+                                       title="{{ __('Download PDF') }}" />
+                    @endif
+                </div>
+            </div>
+        </div>
+    @elseif($canGenerateQuotation)
+        <div class="mb-6 rounded-2xl border border-accent-200 bg-accent-50/60 p-5 shadow-sm dark:border-accent-800/60 dark:bg-accent-950/20">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation is ready to generate') }}</p>
+                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                        {{ $task->items->isEmpty() ? __('Add at least one item first.') : __('All items are filled. Create the quotation and PDF now.') }}
+                    </p>
+                </div>
+                @if($task->items->isNotEmpty())
+                    <x-icon-button as="a" variant="solid" icon="sparkles" label="{{ __('Create Quotation') }}" href="{{ route('inside-sales.quotations.create', $task) }}" title="{{ __('Create Quotation') }}" />
+                @endif
+            </div>
+        </div>
+    @endif
 
     {{-- Item quotation dari Inside Sales (dipakai saat file di-Accept). --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
@@ -104,12 +137,19 @@
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
                             <p class="text-xs text-slate-400">
+                                {{ $item->scope_of_supply ?: '-' }} · {{ $item->lead_time ?: '-' }} ·
                                 {{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }} {{ $item->unit }}
                                 × Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}
                                 @if((float) $item->discount > 0)
-                                    − Rp {{ number_format((float) $item->discount, 0, ',', '.') }}
+                                    - Rp {{ number_format((float) $item->discount, 0, ',', '.') }}
                                 @endif
                             </p>
+                            @if($item->unit_cost !== null && auth()->user()->can('manage-inside-sales'))
+                                <p class="text-xs text-slate-400">
+                                    {{ __('Cost') }}: Rp {{ number_format((float) $item->unit_cost, 0, ',', '.') }} ·
+                                    {{ __('Margin') }}: Rp {{ number_format((float) $item->subtotal - ((float) $item->quantity * (float) $item->unit_cost), 0, ',', '.') }}
+                                </p>
+                            @endif
                         </div>
                         <div class="flex shrink-0 items-center gap-3">
                             <span class="text-sm font-semibold text-slate-800 dark:text-slate-100 tabular-nums">Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}</span>
@@ -127,6 +167,16 @@
             </ul>
             <p class="mb-4 text-right text-sm font-bold text-slate-800 dark:text-slate-100">
                 {{ __('Total') }}: Rp {{ number_format((float) $task->items->sum('subtotal'), 0, ',', '.') }}
+                @php
+                    $itemsWithCost = $task->items->filter(fn ($item) => $item->unit_cost !== null);
+                    $totalCost = $itemsWithCost->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_cost);
+                    $totalMargin = (float) $task->items->sum('subtotal') - $totalCost;
+                @endphp
+                @if($itemsWithCost->isNotEmpty() && $itemsWithCost->count() === $task->items->count() && auth()->user()->can('manage-inside-sales'))
+                    <span class="block text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        {{ __('Margin') }}: Rp {{ number_format($totalMargin, 0, ',', '.') }}
+                    </span>
+                @endif
             </p>
         @else
             <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
@@ -138,6 +188,54 @@
             <form action="{{ route('lead-tasks.items.store', $task) }}" method="POST"
                   class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 dark:border-slate-700 md:grid-cols-12">
                 @csrf
+                @if(auth()->user()->can('manage-inside-sales'))
+                <div class="md:col-span-4">
+                    <label for="item-product" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Product') }}</label>
+                    <select id="item-product" name="product_id"
+                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                        <option value="">{{ __('Select product (optional)') }}</option>
+                        @foreach(($products ?? collect()) as $product)
+                            @php($log = $product->latestPriceLog)
+                            <option value="{{ $product->id }}"
+                                    data-description="{{ $product->name }}"
+                                    data-sku="{{ $product->sku }}"
+                                    data-unit="{{ $product->unit ?: 'pcs' }}"
+                                    data-price="{{ (float) $product->default_price }}"
+                                    data-cost="{{ $log ? (float) $log->price : '' }}"
+                                    data-supplier="{{ $log?->supplier?->name }}"
+                                    data-date="{{ $log?->created_at?->format('d M Y') }}">
+                                {{ $product->name }}{{ $product->sku ? ' · '.$product->sku : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+                <div class="md:col-span-2">
+                    <label for="item-scope" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Scope of Supply') }}</label>
+                    <input id="item-scope" type="text" name="scope_of_supply" maxlength="100" placeholder="WAN-RS-..."
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="item-lead" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Estimated Lead Time') }}</label>
+                    <input id="item-lead" type="text" name="lead_time" maxlength="100" value="Ready Stock"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="item-section" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Section') }}</label>
+                    <input id="item-section" type="text" name="section" maxlength="100" value="MATERIAL"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-1">
+                    <label for="item-quantity" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Qty') }}</label>
+                    <input id="item-quantity" type="number" name="quantity" required min="0.01" step="0.01" value="1"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-1">
+                    <label for="item-unit" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Unit') }}</label>
+                    <input id="item-unit" type="text" name="unit" value="pcs" maxlength="16"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+
                 <div class="md:col-span-4">
                     <label for="item-description" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Description') }}</label>
                     <input id="item-description" type="text" name="description" required maxlength="255"
@@ -146,36 +244,89 @@
                     @error('description') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
                 </div>
                 <div class="md:col-span-2">
-                    <label for="item-quantity" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Qty') }}</label>
-                    <input id="item-quantity" type="number" name="quantity" required min="0.01" step="0.01" value="1"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="item-unit" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Unit') }}</label>
-                    <input id="item-unit" type="text" name="unit" value="pcs" maxlength="16"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="item-price" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Unit Price') }}</label>
+                    <label for="item-price" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Selling Price') }}</label>
                     <input id="item-price" type="number" name="unit_price" required min="0" step="0.01" value="0"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
                     @error('unit_price') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
                 </div>
-                <div class="md:col-span-1">
+                @if(auth()->user()->can('manage-inside-sales'))
+                <div class="md:col-span-2">
+                    <label for="item-cost" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Cost Price (Estimator)') }}</label>
+                    <input id="item-cost" type="number" name="unit_cost" min="0" step="0.01" readonly
+                           placeholder="{{ __('From estimator') }}"
+                           class="w-full rounded-xl border-slate-300 bg-slate-100 text-sm text-slate-600 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                </div>
+                @endif
+                <div class="md:col-span-2">
                     <label for="item-discount" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Disc.') }}</label>
                     <input id="item-discount" type="number" name="discount" min="0" step="0.01" value="0"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
                 </div>
-                <div class="flex items-end md:col-span-1">
+                <div class="flex items-end md:col-span-2">
                     <x-primary-button type="submit" class="w-full justify-center">{{ __('Add') }}</x-primary-button>
                 </div>
             </form>
+
+            <p id="item-price-info" class="mt-2 text-xs text-slate-500 dark:text-slate-400"></p>
+            <p id="item-margin-preview" class="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"></p>
+
+            <script>
+                (function () {
+                    const product = document.getElementById('item-product');
+                    if (!product) return;
+                    const byId = (id) => document.getElementById(id);
+                    const fmt = (value) => 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(value || 0));
+                    const labelMargin = @js(__('Item margin'));
+                    const labelNoCost = @js(__('Margin cannot be calculated yet: estimator cost is not available.'));
+
+                    function refreshMargin() {
+                        const qty = parseFloat(byId('item-quantity')?.value || 0) || 0;
+                        const price = parseFloat(byId('item-price')?.value || 0) || 0;
+                        const cost = parseFloat(byId('item-cost')?.value || 0) || 0;
+                        const discount = parseFloat(byId('item-discount')?.value || 0) || 0;
+                        const target = byId('item-margin-preview');
+                        if (!target) return;
+                        target.textContent = cost > 0
+                            ? labelMargin + ': ' + fmt((qty * price - discount) - (qty * cost))
+                            : labelNoCost;
+                    }
+
+                    product.addEventListener('change', function () {
+                        const option = product.selectedOptions[0];
+                        if (!option || !option.value) return;
+
+                        byId('item-description').value = option.dataset.description || '';
+                        byId('item-scope').value = option.dataset.sku || '';
+                        byId('item-unit').value = option.dataset.unit || 'pcs';
+                        byId('item-price').value = option.dataset.price || 0;
+                        byId('item-cost').value = option.dataset.cost || '';
+                        byId('item-lead').value = 'Ready Stock';
+                        byId('item-section').value = 'MATERIAL';
+
+                        const info = byId('item-price-info');
+                        if (info) {
+                            info.textContent = option.dataset.cost
+                                ? @js(__('Latest estimator price')) + ': ' + fmt(option.dataset.cost)
+                                    + (option.dataset.supplier ? ' · ' + option.dataset.supplier : '')
+                                    + (option.dataset.date ? ' · ' + option.dataset.date : '')
+                                : @js(__('No estimator price for this product yet.'));
+                        }
+                        refreshMargin();
+                    });
+
+                    ['item-quantity', 'item-price', 'item-cost', 'item-discount'].forEach(function (id) {
+                        byId(id)?.addEventListener('input', refreshMargin);
+                    });
+                    refreshMargin();
+                })();
+            </script>
         @endif
+
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Quotation Attachment') }}</h3>
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Supporting Attachments (Optional)') }}</h3>
             <span class="text-xs text-slate-400">{{ $attachmentTotal }} {{ __('file(s)') }} · {{ __('Latest first') }}</span>
         </div>
 
@@ -200,13 +351,6 @@
                             @endif
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            @if(! $attachment->accepted_at && $canAcceptQuotation)
-                                <form action="{{ route('lead-tasks.attachments.accept', [$task, $attachment]) }}" method="POST"
-                                      onsubmit="return confirm('{{ __('Accept this file and create a quotation?') }}')">
-                                    @csrf
-                                    <x-icon-button type="submit" icon="sparkles" title="{{ __('Accept as Quotation') }}" />
-                                </form>
-                            @endif
                             <x-file-preview :url="route('lead-tasks.attachments.preview', [$task, $attachment])"
                                             :download="route('lead-tasks.attachments.download', [$task, $attachment])"
                                             :name="$attachment->original_name" />
@@ -233,7 +377,7 @@
                 @csrf
                 <div class="min-w-0 flex-1">
                     <label for="quotation-attachment" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                        {{ __('Upload quotation file (PDF/Word/Excel/image, max 10MB)') }}
+                        {{ __('Upload supporting file (optional, PDF/Word/Excel/image, max 10MB)') }}
                     </label>
                     <input id="quotation-attachment" type="file" name="attachment" required
                            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
