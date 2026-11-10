@@ -37,7 +37,7 @@
         // Sales (dan admin read-only): satu pintu Request (3 tab). Inside-sales
         // murni tanpa view-sales tetap memakai menu kerja Inside Sales.
         $canViewSales ? ['route' => route('sales.requests.index'), 'match' => 'sales.requests*', 'label' => 'Request', 'dot' => 'bg-fuchsia-400'] : null,
-        (!$canViewSales && auth()->user()->can('manage-inside-sales')) ? ['route' => route('lead-tasks.index'), 'match' => 'lead-tasks*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
+        auth()->user()->can('manage-inside-sales') ? ['route' => route('inside-sales.dashboard'), 'match' => 'inside-sales.*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
     ]));
     // Header grup harus menuju halaman pertama yang boleh dibuka user ini (mis. inside-sales).
     $salesLanding = $salesItems[0]['route'] ?? route('dashboard');

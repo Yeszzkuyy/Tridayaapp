@@ -544,6 +544,22 @@ class ProposalController extends Controller
         return view('sales.proposals.preview', compact('proposal'));
     }
 
+    public function downloadPdf(Proposal $proposal)
+    {
+        $this->authorizeView($proposal);
+
+        abort_unless(
+            $proposal->pdf_path && Storage::disk('private')->exists($proposal->pdf_path),
+            404,
+            __('Quotation PDF not found.')
+        );
+
+        return Storage::disk('private')->download(
+            $proposal->pdf_path,
+            preg_replace('/[^A-Za-z0-9._-]/', '_', $proposal->proposal_number).'.pdf'
+        );
+    }
+
     public function edit(Proposal $proposal)
     {
         $proposal->load('items');

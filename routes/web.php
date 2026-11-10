@@ -15,6 +15,8 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentCategoryController;
 use App\Http\Controllers\FollowUpController;
+use App\Http\Controllers\InsideSalesController;
+use App\Http\Controllers\InsideSalesQuotationController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadTaskController;
@@ -300,6 +302,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals', [ProposalController::class, 'index'])->name('proposals.index');
         Route::get('proposals/{proposal}', [ProposalController::class, 'show'])->name('proposals.show');
         Route::get('proposals/{proposal}/preview', [ProposalController::class, 'preview'])->name('proposals.preview');
+        Route::get('proposals/{proposal}/pdf', [ProposalController::class, 'downloadPdf'])->name('proposals.pdf');
         Route::get('proposals/{proposal}/attachments/{attachment}', [ProposalController::class, 'downloadAttachment'])->name('proposals.attachments.download');
         Route::get('proposals/{proposal}/attachments/{attachment}/preview', [ProposalController::class, 'previewAttachment'])->name('proposals.attachments.preview');
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
@@ -783,6 +786,17 @@ Route::middleware('auth')->group(function () {
             Route::get('/{leadTask}/attachments/{attachment}/preview', [LeadTaskController::class, 'previewAttachment'])->name('attachments.preview');
             Route::delete('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'destroyAttachment'])->name('attachments.destroy');
             Route::post('/{leadTask}/attachments/{attachment}/accept', [LeadTaskController::class, 'acceptAttachment'])->name('attachments.accept');
+        });
+
+    // ============================================
+    // INSIDE SALES WORKSPACE — antrean & generate quotation
+    // ============================================
+    Route::middleware('permission:manage-inside-sales')
+        ->prefix('inside-sales')->name('inside-sales.')->group(function () {
+            Route::get('/', [InsideSalesController::class, 'dashboard'])->name('dashboard');
+            Route::get('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'create'])->name('quotations.create');
+            Route::post('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'store'])->name('quotations.store');
+            Route::get('/tasks/{leadTask}/quotation/pdf', [InsideSalesQuotationController::class, 'pdf'])->name('quotations.pdf');
         });
 
     // ============================================
