@@ -5,7 +5,7 @@
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $invoice->invoice_number }}</h1>
                 <p class="text-slate-500 mt-1 dark:text-slate-400">{{ $invoice->customer->name }}</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="print" href="{{ route('admin.invoices.print', $invoice) }}" target="_blank" title="{{ __('Print Invoice') }}" />
                 @can('manage-admin')
                     @if($invoice->status !== 'cancelled' && ! $invoice->isFullyPaid())
@@ -13,7 +13,7 @@
                     @endif
                     <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $invoice) }}" title="{{ __('Edit') }}" />
                 @endcan
-                <x-icon-button as="a" icon="back" href="{{ route('admin.invoices.index') }}" title="{{ __('Back') }}" />
+                <x-back-button href="{{ route('admin.invoices.index') }}" />
             </div>
         </div>
 

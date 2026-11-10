@@ -1,8 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Payment Management') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage payments from invoices.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Payment Management') }}</h1>
         </div>
         <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Record Payment') }}" title="{{ __('Record Payment') }}" />
     </div>

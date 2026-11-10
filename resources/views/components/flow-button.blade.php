@@ -24,16 +24,24 @@
 @php
 $aria = $title ?: $label;
 
-$variant = in_array($variant, ['accent', 'neutral'], true) ? $variant : 'accent';
+$variant = in_array($variant, ['accent', 'neutral', 'indigo', 'emerald'], true) ? $variant : 'accent';
 
 $palettes = [
     'accent' => [
         'button' => 'border-accent-600/40 text-accent-700 hover:text-white dark:border-accent-400/40 dark:text-accent-300 dark:hover:text-white',
-        'circle' => 'bg-accent-600',
+        'circle' => 'bg-accent-600 dark:bg-accent-500',
+    ],
+    'indigo' => [
+        'button' => 'border-indigo-600/40 text-indigo-700 hover:text-white dark:border-indigo-400/40 dark:text-indigo-300 dark:hover:text-white',
+        'circle' => 'bg-indigo-600 dark:bg-indigo-500',
+    ],
+    'emerald' => [
+        'button' => 'border-emerald-600/40 text-emerald-700 hover:text-white dark:border-emerald-400/40 dark:text-emerald-300 dark:hover:text-white',
+        'circle' => 'bg-emerald-600 dark:bg-emerald-500',
     ],
     'neutral' => [
-        'button' => 'border-slate-900/30 text-slate-900 hover:text-white dark:border-slate-100/40 dark:text-slate-100 dark:hover:text-slate-900',
-        'circle' => 'bg-slate-900 dark:bg-slate-100',
+        'button' => 'border-slate-300 text-slate-700 hover:text-white dark:border-slate-600 dark:text-slate-200 dark:hover:text-white',
+        'circle' => 'bg-slate-800 dark:bg-slate-700',
     ],
 ];
 $palette = $palettes[$variant];

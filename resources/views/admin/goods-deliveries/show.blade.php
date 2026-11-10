@@ -10,7 +10,6 @@
             <p class="text-slate-500 mt-1">{{ __('Delivery note to customer.') }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.goods-deliveries.index') }}" title="{{ __('Back') }}" />
             @can('manage-admin')
                 @if($goodsDelivery->status === 'prepared')
                     <form method="POST" action="{{ route('admin.goods-deliveries.status', $goodsDelivery) }}">
@@ -27,6 +26,7 @@
                     </form>
                 @endif
             @endcan
+            <x-back-button href="{{ route('admin.goods-deliveries.index') }}" />
         </div>
     </div>
 

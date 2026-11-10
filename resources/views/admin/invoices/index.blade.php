@@ -1,8 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Invoice Management') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage invoices for customers.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Invoice Management') }}</h1>
         </div>
         <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
     </div>

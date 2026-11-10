@@ -1,8 +1,8 @@
 <x-app-layout>
     <div>
         <div class="flex items-center justify-between mb-6">
-            <div><h1 class="text-3xl font-bold text-slate-800">{{ __('Payment Detail') }}</h1><p class="text-slate-500 mt-1">{{ $payment->invoice->invoice_number }}</p></div>
-            <x-icon-button as="a" icon="back" href="{{ route('admin.payments.index') }}" title="{{ __('Back') }}" />
+            <div><h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Payment Detail') }}</h1><p class="text-slate-500 mt-1 dark:text-slate-400">{{ $payment->invoice->invoice_number }}</p></div>
+            <x-back-button href="{{ route('admin.payments.index') }}" />
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">

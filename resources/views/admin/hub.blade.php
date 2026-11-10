@@ -17,10 +17,10 @@
 
             @can('manage-admin')
                 <div class="flex flex-wrap items-center gap-2.5">
-                    <x-icon-button as="a" variant="solid" icon="add" href="{{ route('admin.supplier-pos.create') }}"
-                                   label="{{ __('Supplier PO') }}" title="{{ __('Create Supplier PO') }}" />
-                    <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}"
-                                   label="{{ __('Invoice') }}" title="{{ __('Create Invoice') }}" />
+                    <x-flow-button as="a" href="{{ route('admin.supplier-pos.create') }}"
+                                   icon="add" label="{{ __('Supplier PO') }}" title="{{ __('Create Supplier PO') }}" />
+                    <x-flow-button as="a" variant="indigo" href="{{ route('admin.invoices.create') }}"
+                                   icon="add" label="{{ __('Invoice') }}" title="{{ __('Create Invoice') }}" />
                 </div>
             @endcan
         </div>

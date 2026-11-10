@@ -10,7 +10,6 @@
             <p class="text-slate-500 mt-1">{{ __('Supplier invoice') }} {{ $supplierInvoice->supplier_invoice_number }} · {{ $supplierInvoice->supplier?->name }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.supplier-invoices.index') }}" title="{{ __('Back') }}" />
             @if($supplierInvoice->invoice_file_path)
                 <x-file-preview :url="route('admin.supplier-invoices.file', $supplierInvoice)"
                                 :name="basename((string) $supplierInvoice->invoice_file_path)" />
@@ -24,6 +23,7 @@
                     </form>
                 @endif
             @endcan
+            <x-back-button href="{{ route('admin.supplier-invoices.index') }}" />
         </div>
     </div>
 

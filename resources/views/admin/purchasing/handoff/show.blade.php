@@ -8,7 +8,6 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.purchasing.index') }}" title="{{ __('Back') }}" />
             <x-file-preview :url="route('sales.proposals.download-po', $proposal)"
                             :name="basename((string) $proposal->po_document_path)" />
             <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
@@ -20,6 +19,7 @@
                                    onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
                 @endcanany
             @endif
+            <x-back-button href="{{ route('admin.purchasing.index') }}" />
         </div>
     </div>
 
