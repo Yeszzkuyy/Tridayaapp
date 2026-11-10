@@ -10,9 +10,13 @@ class LeadTaskItem extends Model
         'lead_task_id',
         'product_id',
         'description',
+        'scope_of_supply',
+        'lead_time',
+        'section',
         'quantity',
         'unit',
         'unit_price',
+        'unit_cost',
         'discount',
         'subtotal',
     ];
@@ -20,6 +24,7 @@ class LeadTaskItem extends Model
     protected $casts = [
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
+        'unit_cost' => 'decimal:2',
         'discount' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];
