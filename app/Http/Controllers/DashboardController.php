@@ -506,10 +506,11 @@ class DashboardController extends Controller
 
         if ($items->count() < 4) {
             $canOpenProject = $user->canAny(['view-technician', 'manage-technician', 'view-sales', 'manage-sales', 'view-admin', 'manage-admin']);
-            $activeProjectQuery = Project::with(['customer:id,name', 'status:id,name'])
+            $activeProjectQuery = Project::with(['customer:id,name', 'status:id,name', 'engineer:id,name'])
                 ->whereHas('status', fn ($q) => $q->whereIn('name', [
                     ProjectStatusEnum::Open->value,
                     ProjectStatusEnum::OnProgress->value,
+                    'Pending',
                 ]));
 
             $userProjects = (clone $activeProjectQuery)
@@ -534,13 +535,13 @@ class DashboardController extends Controller
 
             foreach ($userProjects as $proj) {
                 $dt = $proj->start_date ?? ($proj->updated_at ?? ($proj->created_at ?? $now));
-                $isOnProgress = $proj->status?->name === 'On Progress';
+                $isOnProgress = in_array($proj->status?->name, ['On Progress', 'Pending'], true);
                 $rawProgress = (int) ($proj->progress ?? 0);
-                $computedProgress = $rawProgress > 0 ? min(100, $rawProgress) : ($isOnProgress ? 60 : 25);
+                $computedProgress = max(0, min(100, $rawProgress));
 
                 $items->push([
                     'title' => $proj->project_name ?: __('Project #:id', ['id' => $proj->id]),
-                    'subtitle' => $proj->customer?->name ?: ($proj->pic_engineer ? __('PIC: :name', ['name' => $proj->pic_engineer]) : __('Active Project')),
+                    'subtitle' => $proj->customer?->name ?: ($proj->engineer?->name ? __('PIC: :name', ['name' => $proj->engineer->name]) : __('Active Project')),
                     'type_label' => __('Project'),
                     'badge_color' => $isOnProgress ? 'amber' : 'blue',
                     'status_label' => $proj->status?->name ?? __('Active'),

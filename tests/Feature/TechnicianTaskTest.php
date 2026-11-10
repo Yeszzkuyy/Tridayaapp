@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\DocumentCategory;
+use App\Models\Instalasi;
 use App\Models\Lead;
+use App\Models\ProjectDocument;
 use App\Models\TechnicalRequest;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -375,6 +378,31 @@ class TechnicianTaskTest extends TestCase
             'title' => 'Instalasi Untuk Super Admin',
             'status' => 'assigned',
             'assigned_technician_id' => $tech->id,
+        ]);
+
+        // Aturan baru: instalasi hanya selesai setelah laporan + BAST tanda tangan.
+        $installation = Instalasi::create([
+            'technical_request_id' => $request->id,
+            'customer_id' => $lead->customer_id,
+            'sales_user_id' => $sales->id,
+            'status' => 'completed',
+            'report_file' => 'instalasis/reports/test.pdf',
+            'report_file_name' => 'test.pdf',
+            'technician_user_id' => $tech->id,
+        ]);
+        $category = DocumentCategory::firstOrCreate(['name' => 'BAST']);
+        $document = ProjectDocument::create([
+            'customer_id' => $lead->customer_id,
+            'doc_type' => 'bast',
+            'document_category_id' => $category->id,
+            'file_name' => 'bast.pdf',
+            'file_path' => 'bast/test.pdf',
+            'uploaded_by' => $superAdmin->id,
+        ]);
+        $installation->update([
+            'bast_document_id' => $document->id,
+            'bast_signed_3dy_at' => now(),
+            'bast_signed_customer_at' => now(),
         ]);
 
         $html = $this->actingAs($superAdmin)

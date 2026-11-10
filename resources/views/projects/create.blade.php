@@ -36,14 +36,14 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">
                         {{ __('PIC Engineer') }} <span class="text-slate-400 text-xs">{{ __('(Optional)') }}</span>
                     </label>
-                    <select name="pic_engineer"
+                    <select name="teknisi_user_id"
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">{{ __('- Select Technician -') }}</option>
+                        <option value="">{{ __('- Select Engineer -') }}</option>
                         @foreach($technicians as $tech)
-                            <option value="{{ $tech->name }}" {{ old('pic_engineer') === $tech->name ? 'selected' : '' }}>{{ $tech->name }}</option>
+                            <option value="{{ $tech->id }}" {{ (string) old('teknisi_user_id') === (string) $tech->id ? 'selected' : '' }}>{{ $tech->name }}</option>
                         @endforeach
                     </select>
-                    @error('pic_engineer') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    @error('teknisi_user_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Support Technicians --}}
@@ -54,9 +54,9 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         @foreach($technicians as $tech)
                             <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer">
-                                <input type="checkbox" name="support_technicians[]" value="{{ $tech->name }}"
+                                <input type="checkbox" name="support_user_ids[]" value="{{ $tech->id }}"
                                        class="rounded border-slate-300 text-accent-600 focus:ring-accent-500"
-                                       {{ in_array($tech->name, (array) old('support_technicians', [])) ? 'checked' : '' }}>
+                                       {{ in_array((string) $tech->id, array_map('strval', (array) old('support_user_ids', [])), true) ? 'checked' : '' }}>
                                 {{ $tech->name }}
                             </label>
                         @endforeach

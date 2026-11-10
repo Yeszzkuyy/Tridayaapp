@@ -26,7 +26,7 @@
             'installation' => __('Installation'),
             'survey' => __('Survey'),
         ] as $key => $label)
-            <a href="{{ route('teknisi.field-work.index', array_filter(['tab' => $key, 'q' => $filters['q'], 'status' => $filters['status'], 'pic' => $filters['pic'], 'date_from' => $filters['date_from'], 'date_to' => $filters['date_to']])) }}"
+            <a href="{{ route('teknisi.field-work.index', array_filter(['tab' => $key, 'q' => $filters['q'], 'status' => $filters['status'], 'pic' => $filters['pic'], 'project_id' => $filters['project_id'], 'date_from' => $filters['date_from'], 'date_to' => $filters['date_to']])) }}"
                class="rounded-xl px-4 py-2 text-sm font-medium transition-colors {{ $tab === $key
                    ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100'
                    : 'text-slate-500 hover:bg-slate-200 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-600 dark:hover:text-slate-100' }}">
@@ -67,6 +67,15 @@
                 <option value="">{{ __('All') }}</option>
                 @foreach(['planned' => __('Planned'), 'in_progress' => __('In Progress'), 'waiting' => __('Waiting'), 'done' => __('Done'), 'cancelled' => __('Cancelled')] as $value => $label)
                     <option value="{{ $value }}" @selected($filters['status'] === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs text-slate-500">{{ __('Project') }}</label>
+            <select name="project_id" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                <option value="">{{ __('All projects') }}</option>
+                @foreach($projects as $project)
+                    <option value="{{ $project->id }}" @selected((string) $filters['project_id'] === (string) $project->id)>{{ $project->project_name }}</option>
                 @endforeach
             </select>
         </div>

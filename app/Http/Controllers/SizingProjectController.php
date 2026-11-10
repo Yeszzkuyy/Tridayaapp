@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SizingProject;
 use App\Models\Project;
+use App\Models\SizingProject;
+use App\Models\User;
 use App\Rules\SecureFile;
 use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -18,6 +20,14 @@ class SizingProjectController extends Controller
     private function attachmentRules(): array
     {
         return ['file', 'max:20480', SecureFile::documents()];
+    }
+
+    /** Engineer yang bisa dipilih sebagai PIC sizing. */
+    private function technicians()
+    {
+        return User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     public function index(Request $request)
@@ -41,14 +51,16 @@ class SizingProjectController extends Controller
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
         $selectedProject = $request->query('project_id');
+        $technicians = $this->technicians();
 
-        return view('teknisi.sizing-projects.create', compact('projects', 'selectedProject'));
+        return view('teknisi.sizing-projects.create', compact('projects', 'selectedProject', 'technicians'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
+            'technician_user_id' => 'nullable|exists:users,id',
             'sales_pic' => 'nullable|string|max:255',
             'customer_needs' => 'nullable|string',
             'recommendation' => 'nullable|string',
@@ -63,6 +75,14 @@ class SizingProjectController extends Controller
 
         $files = $request->file('attachments', []);
         unset($validated['attachments']);
+
+        if ($validated['status'] === 'completed' && ! $files) {
+            return back()->withInput()->withErrors([
+                'attachments' => __('Upload the sizing result before completing.'),
+            ]);
+        }
+
+        $validated['technician_user_id'] = $validated['technician_user_id'] ?? auth()->id();
 
         $sizingProject = SizingProject::create($validated);
 
@@ -84,14 +104,16 @@ class SizingProjectController extends Controller
     public function edit(SizingProject $sizingProject)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
+        $technicians = $this->technicians();
 
-        return view('teknisi.sizing-projects.edit', compact('sizingProject', 'projects'));
+        return view('teknisi.sizing-projects.edit', compact('sizingProject', 'projects', 'technicians'));
     }
 
     public function update(Request $request, SizingProject $sizingProject)
     {
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
+            'technician_user_id' => 'nullable|exists:users,id',
             'sales_pic' => 'nullable|string|max:255',
             'customer_needs' => 'nullable|string',
             'recommendation' => 'nullable|string',
@@ -109,6 +131,17 @@ class SizingProjectController extends Controller
         $files = $request->file('attachments', []);
         $remove = (array) ($validated['remove_attachments'] ?? []);
         unset($validated['attachments'], $validated['remove_attachments']);
+
+        $becomingComplete = $validated['status'] === 'completed'
+            && $sizingProject->status !== 'completed';
+
+        if ($becomingComplete
+            && ! $files
+            && empty($sizingProject->attachments)) {
+            return back()->withInput()->withErrors([
+                'attachments' => __('Upload the sizing result before completing.'),
+            ]);
+        }
 
         $sizingProject->update($validated);
 
@@ -145,7 +178,7 @@ class SizingProjectController extends Controller
     /**
      * Simpan lampiran baru ke disk privat + daftar dokumen.
      *
-     * @param  array<int, \Illuminate\Http\UploadedFile>  $files
+     * @param  array<int, UploadedFile>  $files
      */
     private function storeAttachments(SizingProject $sizingProject, array $files): void
     {
@@ -153,8 +186,8 @@ class SizingProjectController extends Controller
 
         foreach ($files as $file) {
             $path = $file->storeAs(
-                'sizings/' . $sizingProject->id . '/files',
-                Str::uuid()->toString() . '.' . strtolower($file->guessExtension() ?: 'dat'),
+                'sizings/'.$sizingProject->id.'/files',
+                Str::uuid()->toString().'.'.strtolower($file->guessExtension() ?: 'dat'),
                 'private'
             );
 
@@ -189,6 +222,7 @@ class SizingProjectController extends Controller
 
             if ($path && in_array($path, $remove, true)) {
                 Storage::disk('private')->delete($path);
+
                 continue;
             }
 

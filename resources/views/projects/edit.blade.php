@@ -50,29 +50,36 @@
 
                 {{-- PIC Engineer --}}
                 @php
-                    $selectedPic = old('pic_engineer', $project->pic_engineer);
+                    $selectedPicName = old('pic_engineer', $project->pic_engineer);
+                    $selectedPicId = old(
+                        'teknisi_user_id',
+                        $project->teknisi_user_id ?? $technicians->firstWhere('name', $selectedPicName)?->id
+                    );
                     $selectedSupport = collect((array) old('support_technicians', $project->support_technicians))
                         ->flatMap(fn ($v) => explode(',', (string) $v))
                         ->map(fn ($v) => trim($v))
                         ->filter()
                         ->unique()
                         ->values();
+                    $selectedSupportIds = collect(old('support_user_ids', $project->supportUsers->pluck('id')->all()))
+                        ->map(fn ($v) => (string) $v)
+                        ->all();
                 @endphp
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
                         {{ __('PIC Engineer') }} <span class="text-slate-400 text-xs">{{ __('(Optional)') }}</span>
                     </label>
-                    <select name="pic_engineer"
+                    <select name="teknisi_user_id"
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">{{ __('- Select Technician -') }}</option>
+                        <option value="">{{ __('- Select Engineer -') }}</option>
                         @foreach($technicians as $tech)
-                            <option value="{{ $tech->name }}" {{ $selectedPic === $tech->name ? 'selected' : '' }}>{{ $tech->name }}</option>
+                            <option value="{{ $tech->id }}" {{ (string) $selectedPicId === (string) $tech->id ? 'selected' : '' }}>{{ $tech->name }}</option>
                         @endforeach
-                        @if($selectedPic && !$technicians->pluck('name')->contains($selectedPic))
-                            <option value="{{ $selectedPic }}" selected>{{ $selectedPic }} {{ __('(old data)') }}</option>
+                        @if($selectedPicName && !$technicians->pluck('name')->contains($selectedPicName))
+                            <option value="{{ $selectedPicId }}" selected>{{ $selectedPicName }} {{ __('(old data)') }}</option>
                         @endif
                     </select>
-                    @error('pic_engineer') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    @error('teknisi_user_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Support Technicians --}}
@@ -83,15 +90,15 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         @foreach($technicians as $tech)
                             <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer">
-                                <input type="checkbox" name="support_technicians[]" value="{{ $tech->name }}"
+                                <input type="checkbox" name="support_user_ids[]" value="{{ $tech->id }}"
                                        class="rounded border-slate-300 text-accent-600 focus:ring-accent-500"
-                                       {{ $selectedSupport->contains($tech->name) ? 'checked' : '' }}>
+                                       {{ in_array((string) $tech->id, $selectedSupportIds, true) ? 'checked' : '' }}>
                                 {{ $tech->name }}
                             </label>
                         @endforeach
                     </div>
                     <p class="text-xs text-slate-400 mt-1">{{ __('Check the supporting technicians (more than one allowed).') }}</p>
-                    @error('support_technicians') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    @error('support_user_ids') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -105,24 +112,13 @@
                     </select>
                 </div>
 
-                {{-- Progress --}}
+                {{-- Progress otomatis dari workflow --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
-                        {{ __('Progress (0-100%)') }}
+                        {{ __('Progress') }}
                     </label>
-                    <div class="flex items-center gap-3">
-                        <input type="range" 
-                               name="progress" 
-                               min="0" 
-                               max="100" 
-                               value="{{ old('progress', $project->progress ?? 0) }}"
-                               oninput="document.getElementById('progressValue').textContent = this.value + '%'"
-                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <span id="progressValue" class="text-sm font-semibold text-slate-700 min-w-[50px]">
-                            {{ $project->progress ?? 0 }}%
-                        </span>
-                    </div>
-                    @error('progress') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                    <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ $project->progress ?? 0 }}%</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Calculated automatically from the workflow steps.') }}</p>
                 </div>
 
                 <div>

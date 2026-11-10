@@ -52,6 +52,17 @@
                     <input type="text" name="sales_pic" id="sales_pic" value="{{ old('sales_pic') }}" maxlength="255"
                            class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
                 </div>
+
+                <div>
+                    <label for="technician_user_id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('PIC Engineer') }}</label>
+                    <select name="technician_user_id" id="technician_user_id"
+                            class="mt-1 block w-full rounded-xl border-slate-300 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 text-sm focus:border-accent-500 focus:ring-accent-500">
+                        <option value="">{{ auth()->user()->name }} ({{ __('Me') }})</option>
+                        @foreach ($technicians as $technician)
+                            <option value="{{ $technician->id }}" @selected((string) old('technician_user_id') === (string) $technician->id)>{{ $technician->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
 
             <div>

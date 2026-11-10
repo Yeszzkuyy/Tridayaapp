@@ -475,6 +475,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/instalasis/{instalasi}/edit', [\App\Http\Controllers\InstalasiController::class, 'edit'])->name('instalasis.edit');
     });
 
+    // BAST instalasi (project & non-project) — lead engineer atau admin.
+    Route::middleware('permission:manage-technician|manage-admin')->prefix('teknisi')->name('teknisi.')->group(function () {
+        Route::put('/instalasis/{instalasi}/bast', [\App\Http\Controllers\InstalasiController::class, 'updateBast'])->name('instalasis.bast');
+    });
+
     // ============================================
     // ADMIN — Trash
     // ============================================
@@ -618,6 +623,9 @@ Route::middleware('auth')->group(function () {
         // Tahap 5 — daftar BAST & closing.
         Route::get('/bast', [BastController::class, 'index'])->name('bast.index');
         Route::get('/bast/{project}/document', [BastController::class, 'document'])->name('bast.document');
+        Route::get('/instalasi-bast/{instalasi}', [\App\Http\Controllers\InstalasiController::class, 'show'])->name('instalasi-bast.show');
+        Route::get('/instalasi-bast/{instalasi}/report', [\App\Http\Controllers\InstalasiController::class, 'viewReport'])->name('instalasi-bast.report');
+        Route::get('/instalasi-bast/{instalasi}/report/download', [\App\Http\Controllers\InstalasiController::class, 'downloadReport'])->name('instalasi-bast.report.download');
     });
 
     // ============================================

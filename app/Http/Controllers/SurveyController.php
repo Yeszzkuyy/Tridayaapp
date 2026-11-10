@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Project;
 use App\Models\Survey;
 use App\Models\User;
@@ -52,9 +53,11 @@ class SurveyController extends Controller
     public function create(Request $request)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = \App\Models\Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->limit(200)->get(['id', 'name']);
         $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
             ->orderBy('name')->limit(200)->get(['id', 'name']);
+        $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')->get(['id', 'name']);
 
         // Dari timeline project: bawa project + customer-nya otomatis,
         // teknisi cukup mengisi judul + sales (tidak ada pilihan project yang membingungkan).
@@ -62,7 +65,7 @@ class SurveyController extends Controller
         $presetCustomerId = $request->query('customer_id')
             ?? Project::find($presetProjectId)?->customer_id;
 
-        return view('teknisi.surveys.create', compact('projects', 'customers', 'salesUsers', 'presetProjectId', 'presetCustomerId'));
+        return view('teknisi.surveys.create', compact('projects', 'customers', 'salesUsers', 'technicians', 'presetProjectId', 'presetCustomerId'));
     }
 
     public function store(Request $request)
@@ -72,6 +75,7 @@ class SurveyController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'sales_user_id' => 'required|exists:users,id',
+            'technician_user_id' => 'nullable|exists:users,id',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
@@ -91,14 +95,18 @@ class SurveyController extends Controller
         }
 
         try {
+            $technicianId = $validated['technician_user_id'] ?? auth()->id();
+            $technician = $technicianId ? User::find($technicianId) : null;
+
             $survey = Survey::create([
                 'title' => $validated['title'],
                 'customer_id' => $validated['customer_id'] ?? null,
                 'project_id' => $validated['project_id'] ?? null,
                 'sales_user_id' => $validated['sales_user_id'],
+                'technician_user_id' => $technician?->id,
                 'survey_date' => $validated['survey_date'] ?? null,
                 'location' => $validated['location'] ?? null,
-                'pic' => $validated['pic'] ?? null,
+                'pic' => $validated['pic'] ?? $technician?->name,
                 'survey_data' => $validated['survey_data'] ?? null,
                 // Tanpa laporan = masih rencana; dengan laporan = selesai.
                 'status' => $file ? Survey::STATUS_COMPLETED : 'scheduled',
@@ -179,11 +187,13 @@ class SurveyController extends Controller
     public function edit(Survey $survey)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = \App\Models\Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->limit(200)->get(['id', 'name']);
         $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
             ->orderBy('name')->limit(200)->get(['id', 'name']);
+        $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')->get(['id', 'name']);
 
-        return view('teknisi.surveys.edit', compact('survey', 'projects', 'customers', 'salesUsers'));
+        return view('teknisi.surveys.edit', compact('survey', 'projects', 'customers', 'salesUsers', 'technicians'));
     }
 
     public function update(Request $request, Survey $survey)
@@ -193,6 +203,7 @@ class SurveyController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'sales_user_id' => 'required|exists:users,id',
+            'technician_user_id' => 'nullable|exists:users,id',
             'sales_request' => 'nullable|string',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
@@ -203,7 +214,28 @@ class SurveyController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $becomingComplete = ($validated['status'] ?? null) === Survey::STATUS_COMPLETED
+            && $survey->status !== Survey::STATUS_COMPLETED;
+
+        if ($becomingComplete && ! $survey->hasReport()) {
+            return back()->withInput()->withErrors([
+                'status' => __('Upload the survey report before completing this survey.'),
+            ]);
+        }
+
+        $technician = filled($validated['technician_user_id'] ?? null)
+            ? User::find($validated['technician_user_id'])
+            : null;
+
+        if ($technician) {
+            $validated['pic'] = $technician->name;
+        }
+
         $survey->update($validated);
+
+        if ($survey->hasReport()) {
+            DocumentRegistry::sync($survey);
+        }
 
         return redirect()->route('teknisi.surveys.show', $survey)
             ->with('success', __('Survey updated successfully.'));

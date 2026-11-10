@@ -40,8 +40,8 @@
                     <div><p class="text-xs text-slate-400">{{ __('Jenis Pekerjaan') }}</p><p class="font-medium text-slate-800">{{ $project->workType?->name ?? '-' }}</p></div>
                     <div><p class="text-xs text-slate-400">{{ __('Status') }}</p><x-status-badge :color="$project->status?->color ?? 'slate'">{{ $project->status?->name ?? __('Not Started') }}</x-status-badge></div>
                     <div><p class="text-xs text-slate-400">{{ __('Account Manager') }}</p><p class="font-medium text-slate-800">{{ $project->accountManager?->name ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">{{ __('PIC Engineer') }}</p><p class="font-medium text-slate-800">{{ $project->pic_engineer ?? '-' }}</p></div>
-                    <div><p class="text-xs text-slate-400">{{ __('Support Technicians') }}</p><p class="font-medium text-slate-800">{{ $project->support_technicians ?? '-' }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('PIC Engineer') }}</p><p class="font-medium text-slate-800">{{ $project->engineer?->name ?? ($project->pic_engineer ?? '-') }}</p></div>
+                    <div><p class="text-xs text-slate-400">{{ __('Support Technicians') }}</p><p class="font-medium text-slate-800">{{ $project->supportUsers->isNotEmpty() ? $project->supportUsers->pluck('name')->implode(', ') : ($project->support_technicians ?? '-') }}</p></div>
                 </div>
                 @if($project->description)
                     <div class="mt-4 pt-4 border-t"><p class="text-xs text-slate-400">{{ __('Description') }}</p><p class="text-slate-700">{{ $project->description }}</p></div>
@@ -52,39 +52,17 @@
         {{-- Tab: Workflow --}}
         <div x-show="tab === 'workflow'" x-transition>
             @php
-                // Survey bisa dua arah: yang sudah menempel ke project ini,
-                // atau milik customer sama yang belum punya project (survey
-                // biasanya dibuat SEBELUM project-nya lahir).
-                $surveys = \App\Models\Survey::where(function ($q) use ($project) {
-                    $q->where('project_id', $project->id)
-                        ->orWhere(function ($q2) use ($project) {
-                            $q2->where('customer_id', $project->customer_id)
-                                ->whereNull('project_id');
-                        });
-                })->latest()->get();
-                $sizings = $project->sizingProjects()->latest()->get();
-                $requestHargas = $project->requestHargas()->latest()->get();
-                $instalasis = $project->instalasis()->latest()->get();
-                $bastDocs = $project->documents()->where('document_category_id', 1)->latest()->get();
-
-                $steps = [
-                    ['label' => __('Request'), 'done' => true, 'link' => null, 'detail' => __('Project created')],
-                    ['label' => __('Survey'), 'done' => $surveys->isNotEmpty() && $surveys->first()->status === 'completed', 'link' => $surveys->first() ? route('teknisi.surveys.show', $surveys->first()) : route('teknisi.surveys.create', ['project_id' => $project->id, 'customer_id' => $project->customer_id]), 'detail' => $surveys->first() ? $surveys->first()->status : __('Belum ada')],
-                    ['label' => __('Sizing'), 'done' => $sizings->isNotEmpty() && $sizings->first()->status === 'completed', 'link' => $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', ['project_id' => $project->id]), 'detail' => $sizings->first() ? $sizings->first()->status : __('Belum ada')],
-                    ['label' => __('Price Request'), 'done' => $requestHargas->isNotEmpty() && $requestHargas->first()->status === 'completed', 'link' => $requestHargas->first() ? route('teknisi.request-hargas.show', $requestHargas->first()) : route('teknisi.request-hargas.create', ['project_id' => $project->id]), 'detail' => $requestHargas->first() ? $requestHargas->first()->status : __('Belum ada')],
-                    ['label' => __('Installation'), 'done' => $instalasis->isNotEmpty() && $instalasis->first()->status === 'completed', 'link' => $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', ['project_id' => $project->id]), 'detail' => $instalasis->first() ? $instalasis->first()->status : __('Belum ada')],
-                    ['label' => __('BAST'), 'done' => $bastDocs->isNotEmpty(), 'link' => route('teknisi.documents.index', ['project_id' => $project->id]), 'detail' => $bastDocs->isNotEmpty() ? $bastDocs->count() . ' ' . __('documents') : __('Belum ada')],
-                ];
+                $steps = $workflow['steps'];
+                $progress = $workflow['progress'];
             @endphp
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-bold text-slate-800 mb-6">{{ __('Workflow Progress') }}</h3>
-
-                {{-- Progress bar --}}
-                @php
-                    $completedCount = collect($steps)->where('done', true)->count();
-                    $progress = round(($completedCount / count($steps)) * 100);
-                @endphp
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="text-lg font-bold text-slate-800">{{ __('Workflow Progress') }}</h3>
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                        {{ $workflow['done'] }}/{{ $workflow['total'] }} {{ __('steps completed') }}
+                    </span>
+                </div>
                 <div class="mb-8">
                     <div class="flex justify-between text-sm text-slate-500 mb-2">
                         <span>{{ __('Progress') }}</span>
@@ -114,8 +92,8 @@
                             <div class="flex-1 min-w-0 pt-1">
                                 <div class="flex items-center justify-between gap-2">
                                     <h4 class="text-sm font-bold text-slate-800">{{ $step['label'] }}</h4>
-                                    @if($step['link'])
-                                        <a href="{{ $step['link'] }}" class="text-xs text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 font-medium shrink-0">
+                                    @if($step['url'] && ($step['done'] ? $step['can_view'] : $step['can_start']))
+                                        <a href="{{ $step['url'] }}" class="text-xs text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 font-medium shrink-0">
                                             {{ $step['done'] ? __('View') : __('Start') }} →
                                         </a>
                                     @endif

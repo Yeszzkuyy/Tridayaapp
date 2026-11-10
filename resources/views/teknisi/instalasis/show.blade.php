@@ -10,7 +10,7 @@
             @can('manage-technician')
             <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="{{ __('Edit') }}" />
             @endcan
-            <x-icon-button as="a" icon="back" href="{{ route('teknisi.instalasis.index') }}" title="{{ __('Back') }}" />
+            <x-icon-button as="a" icon="back" href="{{ auth()->user()->can('view-technician') ? route('teknisi.instalasis.index') : route('admin.bast.index') }}" title="{{ __('Back') }}" />
         </div>
     </div>
 
@@ -69,11 +69,11 @@
             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <p class="text-xs text-slate-400 mb-2">{{ __('Installation Report') }}</p>
                 <div class="flex items-center gap-2">
-                    <x-file-preview :url="route('teknisi.instalasis.report.view', $instalasi)"
-                                    :download="route('teknisi.instalasis.report.download', $instalasi)"
+                    <x-file-preview :url="auth()->user()->can('view-technician') ? route('teknisi.instalasis.report.view', $instalasi) : route('admin.instalasi-bast.report', $instalasi)"
+                                    :download="auth()->user()->can('view-technician') ? route('teknisi.instalasis.report.download', $instalasi) : route('admin.instalasi-bast.report.download', $instalasi)"
                                     :name="$instalasi->report_file_name ?: basename((string) $instalasi->report_file)"
                                     label="{{ __('View') }}" />
-                    <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" label="{{ __('Download') }}" />
+                    <x-icon-button as="a" icon="download" href="{{ auth()->user()->can('view-technician') ? route('teknisi.instalasis.report.download', $instalasi) : route('admin.instalasi-bast.report.download', $instalasi) }}" title="{{ __('Download') }}" label="{{ __('Download') }}" />
                     <span class="text-sm text-slate-600 dark:text-slate-300 truncate">{{ $instalasi->report_file_name }}</span>
                 </div>
             </div>
@@ -112,6 +112,77 @@
                 </div>
             </div>
         @endif
+
+        {{-- BAST: wajib sebelum pekerjaan instalasi selesai --}}
+        <div class="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <p class="text-xs text-slate-400">{{ __('BAST') }}</p>
+                    <p class="text-sm font-semibold {{ $instalasi->isBastReady() ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }}">
+                        {{ $instalasi->isBastReady() ? __('Signed by both parties') : __('Waiting for BAST') }}
+                    </p>
+                </div>
+                @if($instalasi->bastDocument)
+                    <x-file-preview :url="route('project-documents.preview', $instalasi->bastDocument)"
+                                    :download="route('project-documents.download', $instalasi->bastDocument)"
+                                    :name="$instalasi->bastDocument->file_name"
+                                    label="{{ __('View BAST') }}" />
+                @endif
+            </div>
+
+            @if($instalasi->project_id)
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                    {{ __('This installation belongs to a project. The official BAST is managed in the Admin BAST menu.') }}
+                    @if(auth()->user()->can('manage-admin'))
+                        <a href="{{ route('admin.bast.edit', $instalasi->project_id) }}" class="ml-1 font-semibold text-accent-600 hover:underline dark:text-accent-400">{{ __('Open BAST') }}</a>
+                    @endif
+                </div>
+            @elseif(auth()->user()->can('manage-technician') || auth()->user()->can('manage-admin'))
+                <form action="{{ route('teknisi.instalasis.bast', $instalasi) }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    @csrf
+                    @method('PUT')
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('BAST Number') }}</label>
+                        <input type="text" name="bast_number" value="{{ old('bast_number', $instalasi->bast_number) }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('BAST Date') }}</label>
+                        <input type="date" name="bast_date" value="{{ old('bast_date', $instalasi->bast_date?->format('Y-m-d')) }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('3DY Signer') }}</label>
+                        <input type="text" name="bast_signed_3dy_name" value="{{ old('bast_signed_3dy_name', $instalasi->bast_signed_3dy_name) }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('3DY Signed At') }}</label>
+                        <input type="date" name="bast_signed_3dy_at" value="{{ old('bast_signed_3dy_at', $instalasi->bast_signed_3dy_at?->format('Y-m-d')) }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('Customer Signer') }}</label>
+                        <input type="text" name="bast_signed_customer_name" value="{{ old('bast_signed_customer_name', $instalasi->bast_signed_customer_name) }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('Customer Signed At') }}</label>
+                        <input type="date" name="bast_signed_customer_at" value="{{ old('bast_signed_customer_at', $instalasi->bast_signed_customer_at?->format('Y-m-d')) }}"
+                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs text-slate-500">{{ __('Signed BAST File') }}</label>
+                        <input type="file" name="bast_file" accept=".pdf,.doc,.docx"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-slate-600 dark:bg-slate-700">
+                        @error('bast_file') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="sm:col-span-2 flex justify-end">
+                        <x-primary-button>{{ __('Save BAST') }}</x-primary-button>
+                    </div>
+                </form>
+            @endif
+        </div>
     </div>
 </div>
 </x-app-layout>

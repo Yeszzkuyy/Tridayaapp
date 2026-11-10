@@ -29,6 +29,7 @@ class TechnicalRequest extends Model
 
     protected $fillable = [
         'lead_id',
+        'project_id',
         'requested_by',
         'request_type',
         'title',
@@ -60,6 +61,11 @@ class TechnicalRequest extends Model
         return $this->belongsTo(Lead::class);
     }
 
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function requester()
     {
         return $this->belongsTo(User::class, 'requested_by');
@@ -76,6 +82,16 @@ class TechnicalRequest extends Model
     public function survey()
     {
         return $this->hasOne(Survey::class);
+    }
+
+    public function installation()
+    {
+        return $this->hasOne(Instalasi::class);
+    }
+
+    public function schedules()
+    {
+        return $this->hasMany(TechnicianSchedule::class, 'technical_request_id');
     }
 
     public static function typeLabel(string $type): string
