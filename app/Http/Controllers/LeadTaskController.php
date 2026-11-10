@@ -47,6 +47,20 @@ class LeadTaskController extends Controller
         abort(403);
     }
 
+    /**
+     * Item & lampiran task adalah pekerjaan Inside Sales.
+     * Sales pembuat request hanya membaca, bukan mengubah item.
+     */
+    private function authorizeTaskItems(LeadTask $task): void
+    {
+        $user = request()->user();
+        if ($user && ((int) $task->assigned_to === (int) $user->id
+            || $user->can('manage-sales-leads'))) {
+            return;
+        }
+        abort(403);
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -103,7 +117,7 @@ class LeadTaskController extends Controller
             'lead_id' => 'required|exists:leads,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to' => 'required|exists:users,id',
             'due_date' => 'nullable|date',
             'priority' => 'nullable|in:'.implode(',', LeadTask::PRIORITIES),
         ]);
@@ -111,11 +125,9 @@ class LeadTaskController extends Controller
         $lead = Lead::findOrFail($validated['lead_id']);
         $this->authorizeTaskRequest($lead);
 
-        if (!empty($validated['assigned_to'])) {
-            $assignee = User::find($validated['assigned_to']);
-            if (!$assignee?->hasRole('inside-sales')) {
-                abort(422, __('The task target must be a user with the Inside Sales role.'));
-            }
+        $assignee = User::find($validated['assigned_to']);
+        if (!$assignee?->hasRole('inside-sales')) {
+            abort(422, __('The task target must be a user with the Inside Sales role.'));
         }
 
         $validated['created_by'] = auth()->id();
@@ -167,17 +179,15 @@ class LeadTaskController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_to' => 'required|exists:users,id',
             'due_date' => 'nullable|date',
             'priority' => 'nullable|in:'.implode(',', LeadTask::PRIORITIES),
             'status' => 'required|in:'.implode(',', LeadTask::STATUSES),
         ]);
 
-        if (!empty($validated['assigned_to'])) {
-            $assignee = User::find($validated['assigned_to']);
-            if (!$assignee?->hasRole('inside-sales')) {
-                abort(422, __('The task target must be a user with the Inside Sales role.'));
-            }
+        $assignee = User::find($validated['assigned_to']);
+        if (!$assignee?->hasRole('inside-sales')) {
+            abort(422, __('The task target must be a user with the Inside Sales role.'));
         }
 
         $oldStatus = $leadTask->status;
@@ -237,7 +247,7 @@ class LeadTaskController extends Controller
     /** Tambah satu item quotation dari Inside Sales (sebelum file diterima). */
     public function storeItem(Request $request, LeadTask $leadTask)
     {
-        $this->authorizeTaskManage($leadTask);
+        $this->authorizeTaskItems($leadTask);
 
         $validated = $request->validate([
             'product_id' => 'nullable|exists:products,id',
@@ -282,7 +292,7 @@ class LeadTaskController extends Controller
     /** Hapus item quotation milik task ini. */
     public function destroyItem(LeadTask $leadTask, LeadTaskItem $item)
     {
-        $this->authorizeTaskManage($leadTask);
+        $this->authorizeTaskItems($leadTask);
 
         abort_unless((int) $item->lead_task_id === (int) $leadTask->id, 404);
 
@@ -299,7 +309,7 @@ class LeadTaskController extends Controller
      */
     public function storeAttachment(Request $request, LeadTask $leadTask)
     {
-        $this->authorizeTaskManage($leadTask);
+        $this->authorizeTaskItems($leadTask);
 
         $request->validate([
             'attachment' => ['required', 'file', 'max:10240', \App\Rules\SecureFile::documents()],
@@ -482,7 +492,7 @@ class LeadTaskController extends Controller
 
     public function destroyAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
     {
-        $this->authorizeTaskManage($leadTask);
+        $this->authorizeTaskItems($leadTask);
 
         abort_unless((int) $attachment->lead_task_id === (int) $leadTask->id, 404);
 

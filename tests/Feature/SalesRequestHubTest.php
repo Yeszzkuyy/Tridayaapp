@@ -132,7 +132,7 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringContainsString('Buatkan penawaran', $html);
     }
 
-    public function test_task_deep_link_opens_discussion_inside_request_hub(): void
+    public function test_sales_task_deep_link_opens_discussion_inside_request_hub(): void
     {
         $sales = $this->userWithRole('sales');
         $inside = User::factory()->create();
@@ -147,13 +147,17 @@ class SalesRequestHubTest extends TestCase
         ]);
         $task->comments()->create(['user_id' => $inside->id, 'body' => 'Pesan dari forum diskusi.']);
 
-        foreach ([$sales, $inside] as $viewer) {
-            $this->actingAs($viewer)
-                ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
-                ->assertOk()
-                ->assertSee('Diskusi penawaran PT Forvis')
-                ->assertSee('Pesan dari forum diskusi.');
-        }
+        // Sales tetap bisa membuka diskusi untuk memantau request milik lead-nya.
+        $this->actingAs($sales)
+            ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
+            ->assertOk()
+            ->assertSee('Diskusi penawaran PT Forvis')
+            ->assertSee('Pesan dari forum diskusi.');
+
+        // Inside Sales tidak lagi memakai hub Request; diarahkan ke workspace-nya.
+        $this->actingAs($inside)
+            ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
+            ->assertRedirect(route('inside-sales.dashboard'));
     }
 
     public function test_task_deep_link_rejects_stranger(): void
@@ -177,7 +181,7 @@ class SalesRequestHubTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_multi_role_sales_and_inside_sales_sees_assigned_task(): void
+    public function test_multi_role_sales_and_inside_sales_uses_inside_workspace_for_assigned_task(): void
     {
         $owner = $this->userWithRole('sales');
         $multi = User::factory()->create();
@@ -191,13 +195,21 @@ class SalesRequestHubTest extends TestCase
             'created_by' => $owner->id,
         ]);
 
+        // Hub Request milik Sales tidak lagi menampilkan task yang di-assign
+        // sebagai Inside Sales.
         $this->actingAs($multi)
             ->get(route('sales.requests.index', ['tab' => 'inside-sales']))
+            ->assertOk()
+            ->assertDontSee($task->title);
+
+        // Task tetap terlihat di workspace Inside Sales dan daftar All Requests.
+        $this->actingAs($multi)
+            ->get(route('lead-tasks.index'))
             ->assertOk()
             ->assertSee($task->title);
 
         $this->actingAs($multi)
-            ->get(route('lead-tasks.index'))
+            ->get(route('inside-sales.dashboard'))
             ->assertOk()
             ->assertSee($task->title);
     }

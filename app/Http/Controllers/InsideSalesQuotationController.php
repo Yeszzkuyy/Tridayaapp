@@ -159,8 +159,7 @@ class InsideSalesQuotationController extends Controller
         abort_unless(
             $user
             && $user->can('manage-inside-sales')
-            && ((int) $task->assigned_to === (int) $user->id
-                || (int) $task->created_by === (int) $user->id),
+            && (int) $task->assigned_to === (int) $user->id,
             403
         );
     }

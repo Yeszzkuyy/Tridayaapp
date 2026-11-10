@@ -1,14 +1,27 @@
 <x-app-layout>
+    @php
+        $backUser = auth()->user();
+        $backUrl = $backUser?->can('manage-inside-sales') && (int) $task->assigned_to === (int) $backUser->id
+            ? route('inside-sales.dashboard')
+            : (($backUser?->can('view-sales') || $backUser?->can('manage-sales-leads'))
+                ? route('sales.requests.index', ['tab' => 'inside-sales'])
+                : route('lead-tasks.index'));
+        $canManageTask = $backUser && (
+            (int) $task->assigned_to === (int) $backUser->id
+            || (int) $task->created_by === (int) $backUser->id
+            || $backUser->can('manage-sales-leads')
+        );
+    @endphp
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ $task->title }}</h1>
             <p class="text-slate-500 mt-1">{{ $task->lead?->customer?->name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" href="{{ route('lead-tasks.edit', $task) }}" title="{{ __('Edit') }}">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5" aria-hidden="true"><path d="M4 20h4.2L18.5 9.7a2.1 2.1 0 0 0 0-3l-1.2-1.2a2.1 2.1 0 0 0-3 0L4 15.8V20z" /><path d="M13.5 6.5l4 4" /></svg>
-            </x-icon-button>
-            <x-icon-button as="a" icon="back" href="{{ (auth()->user()?->can('view-sales') || auth()->user()?->can('manage-sales-leads')) ? route('sales.requests.index', ['tab' => 'inside-sales']) : route('lead-tasks.index') }}" title="{{ __('Back') }}" />
+            @if($canManageTask)
+                <x-icon-button as="a" icon="edit" href="{{ route('lead-tasks.edit', $task) }}" title="{{ __('Edit') }}" />
+            @endif
+            <x-back-button :href="$backUrl" />
         </div>
     </div>
 
@@ -49,43 +62,65 @@
             <p class="text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $task->description ?: '-' }}</p>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
-            <form action="{{ route('lead-tasks.update', $task) }}" method="POST" class="flex flex-wrap items-end gap-3">
-                @csrf @method('PUT')
-                <input type="hidden" name="title" value="{{ $task->title }}">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Change Status') }}</label>
-                    <select name="status"
-                            class="rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        @foreach(\App\Models\LeadTask::STATUSES as $status)
-                            <option value="{{ $status }}" @selected($task->status === $status)>
-                                {{ \App\Models\LeadTask::statusLabel($status) }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit"
-                        class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                    {{ __('Save Status') }}
-                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                </button>
-            </form>
-        </div>
+        @if($canManageTask)
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <form action="{{ route('lead-tasks.update', $task) }}" method="POST" class="flex flex-wrap items-end gap-3">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="title" value="{{ $task->title }}">
+                    <input type="hidden" name="assigned_to" value="{{ $task->assigned_to }}">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Change Status') }}</label>
+                        <select name="status"
+                                class="rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                            @foreach(\App\Models\LeadTask::STATUSES as $status)
+                                <option value="{{ $status }}" @selected($task->status === $status)>
+                                    {{ \App\Models\LeadTask::statusLabel($status) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit"
+                            class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                        {{ __('Save Status') }}
+                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+        @endif
     </div>
 
     {{-- Lampiran quotation dari Inside Sales — riwayat versi (tidak menimpa). --}}
     @php
         $attachmentUser = auth()->user();
+        // Item hanya boleh dikerjakan assignee Inside Sales (bebas batas PT)
+        // atau management. Sales pembuat request hanya membaca.
+        $isTaskWorker = $attachmentUser && (int) $task->assigned_to === (int) $attachmentUser->id;
         $canManageAttachment = $attachmentUser && (
-            (int) $task->assigned_to === (int) $attachmentUser->id
-            || (int) $task->created_by === (int) $attachmentUser->id
+            $isTaskWorker
             || $attachmentUser->can('manage-sales-leads')
-        ) && \App\Support\PtAccess::canWritePt($attachmentUser, $task->lead?->customer?->pt_group);
+        );
         $attachmentTotal = $task->attachments->count();
-        $canGenerateQuotation = $attachmentUser->can('manage-inside-sales')
-            && ((int) $task->assigned_to === (int) $attachmentUser->id
-                || (int) $task->created_by === (int) $attachmentUser->id);
+        $canGenerateQuotation = $attachmentUser?->can('manage-inside-sales')
+            && $isTaskWorker;
     @endphp
+
+    @if(! $task->assigned_to && $attachmentUser && (
+        (int) $task->created_by === (int) $attachmentUser->id
+        || $attachmentUser->can('manage-sales-leads')
+    ))
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/20">
+            <div class="flex items-start gap-3">
+                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-300">
+                    <x-icon name="user" class="h-4 w-4" />
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('This request has no Inside Sales assignee yet.') }}</p>
+                    <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">{{ __('Assign an Inside Sales user so the task can be worked on.') }}</p>
+                </div>
+            </div>
+            <x-icon-button as="a" icon="edit" label="{{ __('Assign') }}" href="{{ route('lead-tasks.edit', $task) }}" title="{{ __('Assign') }}" />
+        </div>
+    @endif
 
     @if($task->proposal)
         <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/20">

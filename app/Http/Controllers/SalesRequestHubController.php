@@ -20,6 +20,15 @@ class SalesRequestHubController extends Controller
 
         $user = $request->user();
 
+        // Inside Sales murni bekerja dari workspace-nya sendiri, bukan dari
+        // hub Request milik Sales.
+        if ($user && $user->can('manage-inside-sales')
+            && ! $user->can('view-sales')
+            && ! $user->can('manage-sales')
+            && ! $user->can('manage-sales-leads')) {
+            return redirect()->route('inside-sales.dashboard');
+        }
+
         $openTask = $this->openTask($request);
         if ($openTask) {
             $tab = 'inside-sales';
@@ -88,9 +97,8 @@ class SalesRequestHubController extends Controller
         }
 
         $query->where(function ($q) use ($user) {
-            if ($user->can('manage-inside-sales')) {
-                $q->orWhere('assigned_to', $user->id);
-            }
+            // Hub Request adalah milik Sales. Task yang di-assign sebagai
+            // Inside Sales hanya muncul di menu Inside Sales, bukan di sini.
             if ($user->can('view-sales') || $user->can('manage-sales')) {
                 $q->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
             }

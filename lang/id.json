@@ -4938,5 +4938,8 @@
     "No engineers available.": "Belum ada engineer yang tersedia.",
     "The selected PIC is not an engineer.": "PIC yang dipilih bukan engineer.",
     "Calculated automatically from the workflow steps.": "Dihitung otomatis dari langkah workflow.",
-    "This installation belongs to a project. The official BAST is managed in the Admin BAST menu.": "Instalasi ini bagian dari project. BAST resmi dikelola di menu Admin BAST."
+    "This installation belongs to a project. The official BAST is managed in the Admin BAST menu.": "Instalasi ini bagian dari project. BAST resmi dikelola di menu Admin BAST.",
+    "This request has no Inside Sales assignee yet.": "Request ini belum punya assignee Inside Sales.",
+    "Assign an Inside Sales user so the task can be worked on.": "Pilih user Inside Sales agar task bisa dikerjakan.",
+    "Selected user will see this request in the Inside Sales menu.": "User yang dipilih akan melihat request ini di menu Inside Sales."
 }
