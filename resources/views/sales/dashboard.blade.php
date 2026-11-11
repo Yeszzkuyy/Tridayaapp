@@ -215,9 +215,7 @@
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2 tabular-nums">
-                        {{ __('PO Masuk') }}: <strong class="text-slate-700 dark:text-slate-200">Rp {{ number_format($myKpi['verified_po_revenue'], 0, ',', '.') }}</strong>
-                        <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
-                        {{ $myKpi['verified_po_deals'] }} PO
+                        {{ __('Closed deals') }}: <strong class="text-slate-700 dark:text-slate-200">{{ $myKpi['actual_deals'] }} PO</strong>
                     </p>
                     <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
                         <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['revenue_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-accent-500 to-accent-600' }}" style="width: {{ min(100, $myKpi['revenue_pct']) }}%"></div>
@@ -422,15 +420,23 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6" data-reveal>
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('My Income This Month') }}</h2>
-            <p class="text-xl font-extrabold text-slate-800 tabular-nums dark:text-white">Rp {{ number_format($incomeTotal ?? 0, 0, ',', '.') }}</p>
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+                <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Deal PO This Month') }}</h2>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('My PO') }}</p>
+                <p class="mt-0.5 text-2xl font-extrabold text-slate-800 tabular-nums dark:text-white">
+                    Rp {{ number_format($dealPoTotal ?? 0, 0, ',', '.') }}
+                    <span class="text-sm font-semibold text-slate-400">· {{ $dealPoDeals ?? 0 }} PO</span>
+                </p>
+            </div>
+            <p class="text-right text-xs text-slate-500 dark:text-slate-400">{{ __('Company total (all Sales) per PT') }}</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            @foreach($incomeMonth ?? [] as $pt => $total)
+            @foreach($dealPoMonth ?? [] as $pt => $row)
                 <div class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-3">
                     <span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$pt] ?? 'bg-indigo-50 text-indigo-700' }} text-[11px] font-semibold">{{ $pt }}</span>
-                    <p class="mt-1.5 text-sm font-bold text-slate-800 tabular-nums dark:text-slate-100">Rp {{ number_format($total, 0, ',', '.') }}</p>
+                    <p class="mt-1.5 text-sm font-bold text-slate-800 tabular-nums dark:text-slate-100">Rp {{ number_format((float) ($row['value'] ?? 0), 0, ',', '.') }}</p>
+                    <p class="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{{ (int) ($row['count'] ?? 0) }} PO</p>
                 </div>
             @endforeach
         </div>

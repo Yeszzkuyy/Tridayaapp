@@ -78,12 +78,14 @@
                         </div>
                     </div>
 
-                    <div class="w-full sm:w-44 sm:shrink-0">
-                        <label for="customer-pt" class="sr-only">{{ __('Filter by Company') }}</label>
-                        <x-glide-select id="customer-pt" name="pt_group" size="field" :label="__('Filter by Company')"
-                            :options="collect($ptGroups)->all()"
-                            :value="request('pt_group', '')" :empty-label="__('All Companies')" autosubmit />
-                    </div>
+                    @if($showCompanyFilter ?? true)
+                        <div class="w-full sm:w-44 sm:shrink-0">
+                            <label for="customer-pt" class="sr-only">{{ __('Filter by Company') }}</label>
+                            <x-glide-select id="customer-pt" name="pt_group" size="field" :label="__('Filter by Company')"
+                                :options="collect($ptGroups)->all()"
+                                :value="request('pt_group', '')" :empty-label="__('All Companies')" autosubmit />
+                        </div>
+                    @endif
 
                     <div class="w-full sm:w-40 sm:shrink-0">
                         <label for="customer-status" class="sr-only">{{ __('Status') }}</label>

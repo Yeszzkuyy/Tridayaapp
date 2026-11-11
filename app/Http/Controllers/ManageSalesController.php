@@ -292,10 +292,10 @@ class ManageSalesController extends Controller
         $weekStart = now()->startOfWeek()->toDateString();
         $weekEnd = now()->endOfWeek()->toDateString();
 
-        // Income pribadi bulan berjalan (hanya pembayaran dari lead/quotation/
-        // project milik Sales ini), dirinci per PT.
-        $incomeMonth = $salesKpiService->getPaidRevenueByPt($user, now()->month, now()->year);
-        $incomeTotal = $incomeMonth->sum();
+        // Deal PO bulan berjalan: milik Sales ini + total seluruh Sales per PT.
+        $dealPoMonth = $salesKpiService->getVerifiedPoByPt(now()->month, now()->year);
+        $dealPoTotal = (float) ($myKpi['verified_po_revenue'] ?? 0);
+        $dealPoDeals = (int) ($myKpi['verified_po_deals'] ?? 0);
 
         // Ringkasan agenda sales milik sendiri (jadwal saya: PIC/creator/lead saya).
         $ownSchedules = fn ($q) => $q->where(function ($w) use ($user) {
@@ -334,8 +334,9 @@ class ManageSalesController extends Controller
             'funnelTotal',
             'weekStart',
             'weekEnd',
-            'incomeMonth',
-            'incomeTotal',
+            'dealPoMonth',
+            'dealPoTotal',
+            'dealPoDeals',
             'scheduleSummary',
             'scheduleTypes',
             'meetingsToday',

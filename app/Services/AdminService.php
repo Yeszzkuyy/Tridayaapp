@@ -462,7 +462,7 @@ class AdminService
         $paid = round((float) $invoice->payments()->sum('amount'), 2);
 
         if ($invoice->status === 'cancelled') {
-            $invoice->update(['paid_amount' => $paid]);
+            $invoice->update(['paid_amount' => $paid, 'paid_at' => null]);
 
             return;
         }
@@ -473,7 +473,21 @@ class AdminService
             default => 'partial',
         };
 
-        $invoice->update(['status' => $status, 'paid_amount' => $paid]);
+        // paid_at = tanggal pembayaran terakhir saat invoice menjadi lunas.
+        // Dipakai KPI closed agar periode closing mengikuti tanggal uang masuk.
+        $paidAt = null;
+        if ($status === 'paid') {
+            $latestPaymentDate = $invoice->payments()->max('payment_date');
+            $paidAt = $latestPaymentDate
+                ? \Illuminate\Support\Carbon::parse($latestPaymentDate)
+                : now();
+        }
+
+        $invoice->update([
+            'status' => $status,
+            'paid_amount' => $paid,
+            'paid_at' => $paidAt,
+        ]);
 
         // Tahap 5: pelunasan pelanggan bisa menjadi syarat terakhir closing.
         $invoice->project?->evaluateCommercialClosing();
