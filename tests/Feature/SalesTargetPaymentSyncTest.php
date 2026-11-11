@@ -32,7 +32,7 @@ class SalesTargetPaymentSyncTest extends TestCase
         return User::factory()->create()->assignRole($role);
     }
 
-    private function invoiceForSales(User $sales, float $amount, string $number = 'INV-TEST-001'): Invoice
+    private function invoiceForSales(User $sales, float $amount, string $number = 'INV-TEST-001', ?float $proposalAmount = null): Invoice
     {
         $customer = Customer::create(['name' => 'PT Uji Target']);
 
@@ -50,7 +50,7 @@ class SalesTargetPaymentSyncTest extends TestCase
             'created_by' => $sales->id,
             'proposal_date' => now()->toDateString(),
             'customer' => $customer->name,
-            'grand_total' => $amount,
+            'grand_total' => $proposalAmount ?? $amount,
             'status' => 'accepted',
             'po_verified_at' => now(),
             'po_verified_by' => $sales->id,
@@ -96,6 +96,8 @@ class SalesTargetPaymentSyncTest extends TestCase
         $this->assertSame(50000000.0, $kpi['paid_revenue']);
         $this->assertSame(50000000.0, $kpi['verified_po_revenue']);
         $this->assertSame(1, $kpi['verified_po_deals']);
+        $this->assertSame(50000000.0, $kpi['actual_revenue']);
+        $this->assertSame(1, $kpi['actual_deals']);
         $this->assertSame(100.0, $kpi['revenue_pct']);
 
         Notification::assertSentTo($sales, InvoicePaidSalesNotification::class);
@@ -120,8 +122,65 @@ class SalesTargetPaymentSyncTest extends TestCase
         $this->assertSame('partial', $invoice->fresh()->status);
         $this->assertSame(4000000.0, $kpi['paid_revenue']);
         $this->assertSame(10000000.0, $kpi['verified_po_revenue']);
+        $this->assertSame(0.0, $kpi['actual_revenue']);
+        $this->assertSame(0, $kpi['actual_deals']);
+        $this->assertSame(0.0, $kpi['revenue_pct']);
 
         Notification::assertNothingSent();
+    }
+
+    public function test_dp_only_invoice_does_not_close_the_deal(): void
+    {
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $invoice = $this->invoiceForSales($sales, 4000000, 'INV-DP-001', 10000000);
+
+        app(AdminService::class)->createPayment([
+            'invoice_id' => $invoice->id,
+            'amount' => 4000000,
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        $kpi = app(SalesKpiService::class)->getUserKpi($sales, now()->month, now()->year);
+
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $this->assertSame(4000000.0, $kpi['paid_revenue']);
+        $this->assertSame(0.0, $kpi['actual_revenue']);
+        $this->assertSame(0, $kpi['actual_deals']);
+    }
+
+    public function test_two_invoices_for_same_deal_count_as_one_closed_deal(): void
+    {
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $first = $this->invoiceForSales($sales, 4000000, 'INV-DP-002', 10000000);
+
+        $second = Invoice::create([
+            'invoice_number' => 'INV-SETTLE-002',
+            'customer_id' => $first->customer_id,
+            'proposal_id' => $first->proposal_id,
+            'amount' => 6000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        app(AdminService::class)->createPayment([
+            'invoice_id' => $first->id,
+            'amount' => 4000000,
+            'payment_date' => now()->toDateString(),
+        ]);
+        app(AdminService::class)->createPayment([
+            'invoice_id' => $second->id,
+            'amount' => 6000000,
+            'payment_date' => now()->toDateString(),
+        ]);
+
+        $kpi = app(SalesKpiService::class)->getUserKpi($sales, now()->month, now()->year);
+
+        $this->assertSame(10000000.0, $kpi['actual_revenue']);
+        $this->assertSame(1, $kpi['actual_deals']);
     }
 
     public function test_payment_from_another_sales_does_not_count(): void
