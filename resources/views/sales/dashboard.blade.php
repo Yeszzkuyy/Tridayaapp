@@ -423,7 +423,7 @@
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6" data-reveal>
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Income Bulan Ini') }}</h2>
+            <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('My Income This Month') }}</h2>
             <p class="text-xl font-extrabold text-slate-800 tabular-nums dark:text-white">Rp {{ number_format($incomeTotal ?? 0, 0, ',', '.') }}</p>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">

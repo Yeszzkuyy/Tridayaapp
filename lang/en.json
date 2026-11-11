@@ -4942,5 +4942,7 @@
     "This installation belongs to a project. The official BAST is managed in the Admin BAST menu.": "This installation belongs to a project. The official BAST is managed in the Admin BAST menu.",
     "This request has no Inside Sales assignee yet.": "This request has no Inside Sales assignee yet.",
     "Assign an Inside Sales user so the task can be worked on.": "Assign an Inside Sales user so the task can be worked on.",
-    "Selected user will see this request in the Inside Sales menu.": "Selected user will see this request in the Inside Sales menu."
+    "Selected user will see this request in the Inside Sales menu.": "Selected user will see this request in the Inside Sales menu.",
+    "My Income This Month": "My Income This Month",
+    "Admin Sections": "Admin Sections"
 }
