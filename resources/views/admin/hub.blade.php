@@ -9,10 +9,22 @@
             </h1>
 
             @php
+                $activeTabParam = in_array(request('tab'), ['purchasing', 'finance', 'documents', 'procurement'], true)
+                    ? request('tab')
+                    : null;
+                $ptUrl = function (string $pt = '') use ($activeTabParam) {
+                    $query = array_filter([
+                        'tab' => $activeTabParam,
+                        'pt_group' => $pt !== '' ? $pt : null,
+                    ]);
+
+                    return request()->url().($query ? '?'.http_build_query($query) : '');
+                };
+
                 $ptActive = 0;
-                $ptItems = [['value' => '', 'label' => __('Semua PT'), 'url' => request()->url()]];
+                $ptItems = [['value' => '', 'label' => __('Semua PT'), 'url' => $ptUrl()]];
                 foreach (['NTI', 'MGK', 'TPS', 'WANI'] as $pt) {
-                    $ptItems[] = ['value' => $pt, 'label' => $pt, 'url' => request()->url().'?pt_group='.$pt];
+                    $ptItems[] = ['value' => $pt, 'label' => $pt, 'url' => $ptUrl($pt)];
                     if ($ptGroup === $pt) {
                         $ptActive = count($ptItems) - 1;
                     }
@@ -128,6 +140,18 @@
         }"
         @admin-tab:change.window="selectTab($event.detail.value)"
         class="space-y-5">
+            @if($ptGroup)
+                <div class="flex justify-center">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700 dark:border-accent-800 dark:bg-accent-950/40 dark:text-accent-300">
+                        <x-icon name="building" class="h-3.5 w-3.5" />
+                        <span>{{ __('Filter') }}: PT {{ $ptGroup }}</span>
+                        <a href="{{ $ptUrl() }}"
+                           class="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-600 text-[10px] font-bold leading-none text-white transition-colors hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-400"
+                           title="{{ __('Reset') }}" aria-label="{{ __('Reset') }}">×</a>
+                    </div>
+                </div>
+            @endif
+
             {{-- Navigasi tab: komponen geser yang sama dengan Time Range Selector --}}
             <div class="flex justify-center" data-tabs="centered">
                 <div id="admin-tabs-segment"
