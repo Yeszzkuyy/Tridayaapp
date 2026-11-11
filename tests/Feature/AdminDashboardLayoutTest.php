@@ -67,6 +67,22 @@ class AdminDashboardLayoutTest extends TestCase
         $this->assertStringContainsString('data-active="1"', $filtered);
     }
 
+    public function test_pt_filter_keeps_active_tab_and_shows_filter_chip(): void
+    {
+        $html = $this->actingAs($this->admin())
+            ->get(route('admin.hub', ['tab' => 'documents', 'pt_group' => 'NTI']))
+            ->assertOk()
+            ->getContent();
+
+        // URL filter tetap membawa tab yang sedang dibuka.
+        $this->assertStringContainsString('tab=documents', $html);
+        $this->assertStringContainsString('pt_group=NTI', $html);
+
+        // Penanda filter aktif muncul dan bisa direset.
+        $this->assertStringContainsString('PT NTI', $html);
+        $this->assertStringContainsString('aria-label="'.__('Reset').'"', $html);
+    }
+
     public function test_tab_panels_have_no_colored_title_dots(): void
     {
         $html = $this->actingAs($this->admin())
