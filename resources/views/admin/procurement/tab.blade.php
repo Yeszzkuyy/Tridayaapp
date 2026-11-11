@@ -1,22 +1,22 @@
-<div class="space-y-6">
+<div class="space-y-5">
     {{-- KPI ringkas pengadaan & AP --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 p-4">
+        <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Supplier PO Outstanding') }}</p>
             <p class="mt-1 text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ $kpi['supplier_pos_outstanding_count'] ?? 0 }}</p>
             <a href="{{ route('admin.purchasing.reports') }}" class="mt-2 inline-block text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View report') }}</a>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 p-4">
+        <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Receipts Not Yet Invoiced') }}</p>
             <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ $kpi['unbilled_receipts_count'] ?? 0 }}</p>
             <a href="{{ route('admin.purchasing.reports') }}" class="mt-2 inline-block text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View report') }}</a>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 p-4">
+        <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Supplier Invoice Outstanding') }}</p>
             <p class="mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">{{ $kpi['supplier_invoices_outstanding_count'] ?? 0 }}</p>
             <p class="text-xs text-slate-500 dark:text-slate-400">Rp {{ number_format($kpi['supplier_invoices_outstanding_amount'] ?? 0, 0, ',', '.') }}</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 p-4">
+        <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('BAST Pending') }} / {{ __('Closed') }}</p>
             <p class="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{{ $kpi['bast_pending_count'] ?? 0 }} <span class="text-base font-medium text-green-600 dark:text-green-400">/ {{ $kpi['commercial_closed_count'] ?? 0 }}</span></p>
             <a href="{{ route('admin.bast.index') }}" class="mt-2 inline-block text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('Open BAST') }}</a>
@@ -75,7 +75,7 @@
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {{-- Quotation deal siap ditarik ke Supplier PO --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation Deals Ready for Supplier PO') }} ({{ $kpi['quotation_deals_ready_count'] ?? 0 }})</h3>
                 <a href="{{ route('admin.purchasing.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -84,7 +84,7 @@
                 @forelse($procurement['quotation_deals'] as $proposal)
                     <div class="px-5 py-3 flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <a href="{{ route('admin.purchasing.show', $proposal) }}" class="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $proposal->proposal_number }}</a>
+                            <a href="{{ route('admin.purchasing.show', $proposal) }}" class="tabular-nums text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $proposal->proposal_number }}</a>
                             <p class="text-xs text-slate-500 truncate">
                                 {{ $proposal->lead?->customer?->name ?? __('No project') }}@if($proposal->project?->project_name) · {{ $proposal->project->project_name }}@endif
                             </p>
@@ -100,7 +100,7 @@
         </div>
 
         {{-- Supplier PO outstanding --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Supplier PO Awaiting Delivery') }}</h3>
                 <a href="{{ route('admin.supplier-pos.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -109,7 +109,7 @@
                 @forelse($procurement['supplier_pos'] as $order)
                     <div class="px-5 py-3 flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <a href="{{ route('admin.supplier-pos.show', $order) }}" class="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $order->po_number }}</a>
+                            <a href="{{ route('admin.supplier-pos.show', $order) }}" class="tabular-nums text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $order->po_number }}</a>
                             <p class="text-xs text-slate-500 truncate">{{ $order->supplier?->name }} · {{ $order->project?->project_name ?? __('No project') }}</p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -126,7 +126,7 @@
         </div>
 
         {{-- Unbilled receipts --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Verified Receipts Not Yet Invoiced') }}</h3>
                 <a href="{{ route('admin.purchasing.reports') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -135,7 +135,7 @@
                 @forelse($procurement['unbilled_receipts'] as $receipt)
                     <div class="px-5 py-3 flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $receipt->receipt_number }}</a>
+                            <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="tabular-nums text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $receipt->receipt_number }}</a>
                             <p class="text-xs text-slate-500 truncate">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
                         </div>
                         @can('manage-admin')
@@ -149,7 +149,7 @@
         </div>
 
         {{-- Supplier invoices outstanding --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Supplier Invoices Outstanding') }}</h3>
                 <a href="{{ route('admin.supplier-invoices.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -158,12 +158,12 @@
                 @forelse($procurement['supplier_invoices'] as $invoice)
                     <div class="px-5 py-3 flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <a href="{{ route('admin.supplier-invoices.show', $invoice) }}" class="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $invoice->internal_ref_number }}</a>
+                            <a href="{{ route('admin.supplier-invoices.show', $invoice) }}" class="tabular-nums text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $invoice->internal_ref_number }}</a>
                             <p class="text-xs text-slate-500 truncate">{{ $invoice->supplier?->name }} · {{ __('Due') }} {{ $invoice->due_date?->format('d M Y') ?? __('Not filled') }}</p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <div class="text-right">
-                                <p class="font-mono text-sm text-slate-800 dark:text-slate-100">Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</p>
+                                <p class="tabular-nums text-sm text-slate-800 dark:text-slate-100">Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</p>
                                 <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold {{ \App\Models\SupplierInvoice::statusBadgeClasses($invoice->status) }}">{{ \App\Models\SupplierInvoice::statusLabel($invoice->status) }}</span>
                             </div>
                             @can('manage-admin')
@@ -178,7 +178,7 @@
         </div>
 
         {{-- Projects waiting BAST --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Projects Waiting BAST') }}</h3>
                 <a href="{{ route('admin.bast.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -206,7 +206,7 @@
         </div>
 
         {{-- Receipts waiting verification --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Receipts Waiting Verification') }} ({{ $kpi['pending_receipts_count'] ?? 0 }})</h3>
                 <a href="{{ route('admin.goods-receipts.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -215,7 +215,7 @@
                 @forelse($procurement['pending_receipts'] as $receipt)
                     <div class="px-5 py-3 flex items-center justify-between gap-3">
                         <div class="min-w-0">
-                            <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="font-mono text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $receipt->receipt_number }}</a>
+                            <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="tabular-nums text-sm font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $receipt->receipt_number }}</a>
                             <p class="text-xs text-slate-500 truncate">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
                         </div>
                         <x-icon-button as="a" icon="view" href="{{ route('admin.goods-receipts.show', $receipt) }}" title="{{ __('View receipt') }}" />
@@ -227,7 +227,7 @@
         </div>
 
         {{-- Received goods not fully delivered --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Received Goods Not Fully Delivered') }} ({{ $kpi['outstanding_deliveries_count'] ?? 0 }})</h3>
                 <a href="{{ route('admin.goods-deliveries.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>
@@ -254,7 +254,7 @@
         </div>
 
         {{-- Projects ready to close --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100">{{ __('Projects Ready to Close') }} ({{ $kpi['ready_to_close_count'] ?? 0 }})</h3>
                 <a href="{{ route('admin.bast.index') }}" class="text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View all') }}</a>

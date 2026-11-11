@@ -1,75 +1,84 @@
 <x-app-layout>
-    <div class="space-y-6">
-        {{-- Header Command Center --}}
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center justify-center p-2 rounded-xl bg-accent-100 dark:bg-accent-950/60 text-accent-600 dark:text-accent-400">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                    </span>
-                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">
-                        {{ __('Admin Dashboard') }}
-                    </h1>
-                </div>
-            </div>
+    @include('partials.lynk-dashboard-motion')
 
-            @can('manage-admin')
-                <div class="flex flex-wrap items-center gap-2.5">
-                    <x-flow-button as="a" href="{{ route('admin.supplier-pos.create') }}"
-                                   icon="add" label="{{ __('Supplier PO') }}" title="{{ __('Create Supplier PO') }}" />
-                    <x-flow-button as="a" variant="indigo" href="{{ route('admin.invoices.create') }}"
-                                   icon="add" label="{{ __('Invoice') }}" title="{{ __('Create Invoice') }}" />
-                </div>
-            @endcan
+    <div class="space-y-5">
+        {{-- Header terbuka: judul + filter PT sebaris, tanpa tombol aksi --}}
+        <div class="lynk-enter flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+                {{ __('Admin Dashboard') }}
+            </h1>
+
+            <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('Filter Berdasarkan PT') }}">
+                <a href="{{ request()->url() }}"
+                   class="rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ empty($ptGroup) ? 'border-accent-600 bg-accent-600 text-white shadow-sm shadow-accent-600/30' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:border-accent-400 dark:border-slate-700 dark:text-slate-300' }}">
+                    {{ __('Semua PT') }}
+                </a>
+                @foreach (['NTI', 'MGK', 'TPS', 'WANI'] as $pt)
+                    <a href="{{ request()->url().'?pt_group='.$pt }}"
+                       class="rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ $ptGroup === $pt ? 'border-accent-600 bg-accent-600 text-white shadow-sm shadow-accent-600/30' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:border-accent-400 dark:border-slate-700 dark:text-slate-300' }}">
+                        {{ $pt }}
+                    </a>
+                @endforeach
+            </nav>
         </div>
 
-        {{-- Ringkasan KPI & Filter PT --}}
+        {{-- 4 kartu ringkasan dengan grafik mini 6 bulan --}}
         @include('admin.partials.kpi-summary')
 
-        {{-- Alur kerja Admin: Customer PO -> Supplier PO -> Receipt -> Delivery -> Finance --}}
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <a href="{{ route('admin.purchasing.index') }}"
-               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sm font-bold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">01</span>
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Customer PO') }}</span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['quotation_deals_ready_count'] ?? 0 }} {{ __('siap Supplier PO') }}</span>
-                </span>
-            </a>
-            <a href="{{ route('admin.supplier-pos.index') }}"
-               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-sm font-bold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">02</span>
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Supplier PO') }}</span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['supplier_pos_outstanding_count'] ?? 0 }} {{ __('belum selesai') }}</span>
-                </span>
-            </a>
-            <a href="{{ route('admin.goods-receipts.index') }}"
-               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-sm font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">03</span>
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Goods Receipts') }}</span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['pending_receipts_count'] ?? 0 }} {{ __('menunggu verifikasi') }}</span>
-                </span>
-            </a>
-            <a href="{{ route('admin.goods-deliveries.index') }}"
-               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">04</span>
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Deliveries') }}</span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['outstanding_deliveries_count'] ?? 0 }} {{ __('belum terkirim') }}</span>
-                </span>
-            </a>
-            <a href="{{ route('admin.invoices.index') }}"
-               class="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-400 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
-                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-sm font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">05</span>
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Invoice') }}</span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $kpi['unpaid_invoices_count'] ?? 0 }} {{ __('belum lunas') }}</span>
-                </span>
-            </a>
+        {{-- Alur kerja admin versi tipis: satu baris, bisa digeser di layar kecil --}}
+        @php
+            $steps = [
+                [
+                    'label' => __('Customer PO'),
+                    'route' => route('admin.purchasing.index'),
+                    'count' => (int) ($kpi['quotation_deals_ready_count'] ?? 0),
+                    'meta' => __('siap Supplier PO'),
+                    'tone' => 'bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
+                ],
+                [
+                    'label' => __('Supplier PO'),
+                    'route' => route('admin.supplier-pos.index'),
+                    'count' => (int) ($kpi['supplier_pos_outstanding_count'] ?? 0),
+                    'meta' => __('belum selesai'),
+                    'tone' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+                ],
+                [
+                    'label' => __('Goods Receipts'),
+                    'route' => route('admin.goods-receipts.index'),
+                    'count' => (int) ($kpi['pending_receipts_count'] ?? 0),
+                    'meta' => __('menunggu verifikasi'),
+                    'tone' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+                ],
+                [
+                    'label' => __('Deliveries'),
+                    'route' => route('admin.goods-deliveries.index'),
+                    'count' => (int) ($kpi['outstanding_deliveries_count'] ?? 0),
+                    'meta' => __('belum terkirim'),
+                    'tone' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+                ],
+                [
+                    'label' => __('Invoice'),
+                    'route' => route('admin.invoices.index'),
+                    'count' => (int) ($kpi['unpaid_invoices_count'] ?? 0),
+                    'meta' => __('belum lunas'),
+                    'tone' => 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
+                ],
+            ];
+        @endphp
+
+        <div class="lynk-enter overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90" style="--d: 340ms">
+            <div class="flex overflow-x-auto">
+                @foreach ($steps as $index => $step)
+                    <a href="{{ $step['route'] }}"
+                       class="group flex min-w-[190px] flex-1 items-center gap-2.5 px-4 py-3.5 transition-colors duration-200 hover:bg-slate-50/90 dark:hover:bg-slate-700/35 {{ $index > 0 ? 'border-l border-slate-100 dark:border-slate-700/60' : '' }}">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold {{ $step['tone'] }}">{{ $index + 1 }}</span>
+                        <span class="min-w-0">
+                            <span class="block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{{ $step['label'] }}</span>
+                            <span class="block truncate text-[11px] text-slate-500 dark:text-slate-400">{{ $step['count'] }} {{ $step['meta'] }}</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
         </div>
 
         {{-- 4 Tab Utama (Alpine.js) --}}
@@ -101,7 +110,7 @@
         x-init="$nextTick(() => resetIndicator())"
         @resize.window.debounce.100ms="resetIndicator()"
         x-on:livewire:navigated.window="resetIndicator()"
-        class="space-y-6">
+        class="space-y-5">
             {{-- Tab Navigation Bar (Centered with Smooth Sliding Indicator) --}}
             <div class="relative w-full border-b border-slate-200/80 dark:border-slate-700/80">
                 <nav class="-mb-px relative mx-auto flex w-max max-w-full items-center justify-center space-x-1 sm:space-x-3 overflow-x-auto scrollbar-none py-1"

@@ -4942,5 +4942,12 @@
     "This installation belongs to a project. The official BAST is managed in the Admin BAST menu.": "Instalasi ini bagian dari project. BAST resmi dikelola di menu Admin BAST.",
     "This request has no Inside Sales assignee yet.": "Request ini belum punya assignee Inside Sales.",
     "Assign an Inside Sales user so the task can be worked on.": "Pilih user Inside Sales agar task bisa dikerjakan.",
-    "Selected user will see this request in the Inside Sales menu.": "User yang dipilih akan melihat request ini di menu Inside Sales."
+    "Selected user will see this request in the Inside Sales menu.": "User yang dipilih akan melihat request ini di menu Inside Sales.",
+    "Tagihan Belum Lunas": "Tagihan Belum Lunas",
+    "Antrean Request Harga": "Antrean Request Harga",
+    "proyek bulan ini": "proyek bulan ini",
+    "invoice bulan ini": "invoice bulan ini",
+    "request bulan ini": "request bulan ini",
+    "PO bulan ini": "PO bulan ini",
+    "Admin Sections": "Bagian Admin"
 }

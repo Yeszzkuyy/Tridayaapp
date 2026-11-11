@@ -16,6 +16,7 @@ use App\Models\SupplierInvoice;
 use App\Models\SupplierPurchaseOrder;
 use App\Models\SupplierPurchaseOrderItem;
 use App\Rules\SecureFile;
+use App\Support\SparklineBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -797,8 +798,31 @@ class AdminService
         $readyToCloseCount = (clone $readyToCloseQuery)->count();
         $readyToCloseProjects = (clone $readyToCloseQuery)->latest()->limit(10)->get();
 
+        // 12. Tren 6 bulan untuk grafik mini kartu ringkasan. Angka besar pada
+        // kartu tetap snapshot antrean; grafik menunjukkan dokumen masuk per
+        // bulan pada antrean yang sama.
+        $spark = [
+            'ready_to_invoice' => SparklineBuilder::monthlyCounts(
+                (clone $readyToInvoiceQuery)->reorder(),
+                'created_at'
+            ),
+            'unpaid_invoices' => SparklineBuilder::monthlyCounts(
+                (clone $unpaidQuery)->reorder(),
+                'issue_date'
+            ),
+            'request_harga' => SparklineBuilder::monthlyCounts(
+                (clone $queueRequestHargaQuery)->reorder(),
+                'created_at'
+            ),
+            'supplier_pos' => SparklineBuilder::monthlyCounts(
+                (clone $outstandingSupplierPoQuery)->reorder(),
+                'issue_date'
+            ),
+        ];
+
         return [
             'ptGroup' => $ptGroup,
+            'spark' => $spark,
             'kpi' => [
                 'ready_to_invoice_count' => $readyToInvoiceCount,
                 'unpaid_invoices_count' => $unpaidCount,

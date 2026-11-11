@@ -1,112 +1,131 @@
-{{-- Filter PT Group --}}
-<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-    <div>
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Filter Berdasarkan PT') }}</h2>
-        <div class="flex flex-wrap gap-2 mt-2">
-            <a href="{{ route('manage.admin.index') }}"
-               class="px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-200 {{ empty($ptGroup) ? 'bg-accent-600 text-white shadow-md shadow-accent-600/30' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-accent-400' }}">
-                {{ __('Semua PT') }}
-            </a>
-            @foreach(['NTI', 'MGK', 'TPS', 'WANI'] as $pt)
-                <a href="{{ route('manage.admin.index', ['pt_group' => $pt]) }}"
-                   class="px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all duration-200 {{ $ptGroup === $pt ? 'bg-accent-600 text-white shadow-md shadow-accent-600/30' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-accent-400' }}">
-                    {{ $pt }}
-                </a>
-            @endforeach
-        </div>
-    </div>
-    @if($ptGroup)
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-300 text-xs font-medium border border-accent-200 dark:border-accent-800">
-            <span>{{ __('Menampilkan data untuk:') }} <strong>PT {{ $ptGroup }}</strong></span>
-            <a href="{{ route('manage.admin.index') }}" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-1">×</a>
-        </div>
-    @endif
-</div>
+{{-- 4 kartu ringkasan gaya Lynk: ikon di kiri, angka besar, tren bulan ini,
+     dan grafik mini 6 bulan dari data riil. --}}
+@php
+    $spark = $spark ?? [];
+    $overdueCount = (int) ($kpi['overdue_invoices_count'] ?? 0);
 
-{{-- 4 Kartu KPI Ringkas --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    {{-- Card 1: Siap Ditagih (Won Deals) --}}
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition hover:shadow-md">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Siap Ditagih') }}</span>
-            <div class="h-9 w-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-        </div>
-        <div class="mt-3">
-            <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white">
-                {{ number_format($kpi['ready_to_invoice_count'] ?? 0) }}
-            </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Proyek deal belum ada invoice') }}
-            </p>
-        </div>
-    </div>
+    $trend = function (string $key) use ($spark): array {
+        $series = array_map('intval', $spark[$key] ?? []);
+        $last = $series ? $series[count($series) - 1] : 0;
+        $prev = count($series) > 1 ? $series[count($series) - 2] : 0;
+        $delta = $last - $prev;
+        $arrow = $delta > 0 ? '↗' : ($delta < 0 ? '↘' : '→');
 
-    {{-- Card 2: Tagihan Belum Lunas --}}
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition hover:shadow-md">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Tagihan Unpaid') }}</span>
-            <div class="h-9 w-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+        return [
+            'arrow' => $arrow,
+            'value' => $delta > 0 ? '+'.$delta : (string) $delta,
+            'color' => $delta > 0
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : ($delta < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'),
+        ];
+    };
+
+    $cards = [
+        [
+            'label' => __('Siap Ditagih'),
+            'value' => (int) ($kpi['ready_to_invoice_count'] ?? 0),
+            'display' => number_format((int) ($kpi['ready_to_invoice_count'] ?? 0)),
+            'countup' => true,
+            'icon' => 'receipt',
+            'ambient' => 'bg-emerald-500/15 dark:bg-emerald-500/20',
+            'iconBg' => 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+            'color' => '#10b981',
+            'gradId' => 'admin-spark-1',
+            'spark' => \App\Support\SparklineBuilder::fromSeries($spark['ready_to_invoice'] ?? [], (int) ($kpi['ready_to_invoice_count'] ?? 0)),
+            'trend' => $trend('ready_to_invoice'),
+            'unit' => __('proyek bulan ini'),
+        ],
+        [
+            'label' => __('Tagihan Belum Lunas'),
+            'value' => null,
+            'display' => 'Rp '.number_format((float) ($kpi['unpaid_invoices_amount'] ?? 0), 0, ',', '.'),
+            'countup' => false,
+            'icon' => 'credit-card',
+            'ambient' => 'bg-amber-500/15 dark:bg-amber-500/20',
+            'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+            'color' => '#f59e0b',
+            'gradId' => 'admin-spark-2',
+            'spark' => \App\Support\SparklineBuilder::fromSeries($spark['unpaid_invoices'] ?? [], (int) ($kpi['unpaid_invoices_count'] ?? 0)),
+            'trend' => $trend('unpaid_invoices'),
+            'unit' => __('invoice bulan ini'),
+        ],
+        [
+            'label' => __('Antrean Request Harga'),
+            'value' => (int) ($kpi['request_harga_count'] ?? 0),
+            'display' => number_format((int) ($kpi['request_harga_count'] ?? 0)),
+            'countup' => true,
+            'icon' => 'clipboard-check',
+            'ambient' => 'bg-sky-500/15 dark:bg-sky-500/20',
+            'iconBg' => 'bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
+            'color' => '#0ea5e9',
+            'gradId' => 'admin-spark-3',
+            'spark' => \App\Support\SparklineBuilder::fromSeries($spark['request_harga'] ?? [], (int) ($kpi['request_harga_count'] ?? 0)),
+            'trend' => $trend('request_harga'),
+            'unit' => __('request bulan ini'),
+        ],
+        [
+            'label' => __('Supplier PO Aktif'),
+            'value' => (int) ($kpi['supplier_pos_outstanding_count'] ?? 0),
+            'display' => number_format((int) ($kpi['supplier_pos_outstanding_count'] ?? 0)),
+            'countup' => true,
+            'icon' => 'cube',
+            'ambient' => 'bg-violet-500/15 dark:bg-violet-500/20',
+            'iconBg' => 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+            'color' => '#8b5cf6',
+            'gradId' => 'admin-spark-4',
+            'spark' => \App\Support\SparklineBuilder::fromSeries($spark['supplier_pos'] ?? [], (int) ($kpi['supplier_pos_outstanding_count'] ?? 0)),
+            'trend' => $trend('supplier_pos'),
+            'unit' => __('PO bulan ini'),
+        ],
+    ];
+@endphp
+
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @foreach ($cards as $idx => $card)
+        @php $delay = 100 + ($idx * 80); @endphp
+        <div style="--d: {{ $delay }}ms"
+             class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/60 dark:bg-slate-800/90">
+            <span aria-hidden="true"
+                  class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl transition-opacity duration-500 {{ $card['ambient'] }}"></span>
+
+            <div class="relative z-10 flex items-center gap-3.5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 {{ $card['iconBg'] }}">
+                    <x-icon name="{{ $card['icon'] }}" class="h-5 w-5" />
+                </span>
+                <div class="min-w-0">
+                    <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ $card['label'] }}</p>
+                    <p class="mt-0.5 text-xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white sm:text-2xl"
+                       @if ($card['countup'])
+                           data-countup="{{ $card['value'] }}" data-countup-delay="{{ $delay + 20 }}"
+                       @endif>{{ $card['display'] }}</p>
+                </div>
             </div>
-        </div>
-        <div class="mt-3">
-            <div class="text-xl font-bold font-mono text-slate-800 dark:text-white truncate">
-                Rp {{ number_format($kpi['unpaid_invoices_amount'] ?? 0, 0, ',', '.') }}
-            </div>
-            <div class="flex items-center gap-1.5 mt-1 text-xs">
-                <span class="text-slate-500 dark:text-slate-400 font-mono">{{ $kpi['unpaid_invoices_count'] ?? 0 }} invoice</span>
-                @if(($kpi['overdue_invoices_count'] ?? 0) > 0)
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400" title="{{ __('Overdue Amount: Rp ') . number_format($kpi['overdue_invoices_amount'] ?? 0, 0, ',', '.') }}">
-                        {{ $kpi['overdue_invoices_count'] }} {{ __('jatuh tempo') }}
+
+            <div class="relative z-10 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium">
+                <span class="inline-flex items-center gap-1 {{ $card['trend']['color'] }}">
+                    <span aria-hidden="true">{{ $card['trend']['arrow'] }}</span>
+                    <span>{{ $card['trend']['value'] }} {{ $card['unit'] }}</span>
+                </span>
+                @if ($idx === 1 && $overdueCount > 0)
+                    <span class="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                        <span class="h-1 w-1 rounded-full bg-rose-500"></span>
+                        {{ $overdueCount }} {{ __('jatuh tempo') }}
                     </span>
                 @endif
             </div>
-        </div>
-    </div>
 
-    {{-- Card 3: Antrean Request Harga --}}
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition hover:shadow-md">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Antrean Req. Harga') }}</span>
-            <div class="h-9 w-9 rounded-xl bg-sky-50 dark:bg-sky-950/50 flex items-center justify-center text-sky-600 dark:text-sky-400">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <div class="relative z-10 -mx-5 -mb-5 mt-2 pt-1">
+                <svg viewBox="0 0 240 52" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="{{ $card['gradId'] }}" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="{{ $card['color'] }}" stop-opacity="{{ $card['spark']['is_flat'] ? '0.10' : '0.32' }}" />
+                            <stop offset="100%" stop-color="{{ $card['color'] }}" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path class="lynk-spark-area" d="{{ $card['spark']['area'] }}" fill="url(#{{ $card['gradId'] }})" />
+                    <path class="lynk-spark-line" pathLength="100" d="{{ $card['spark']['line'] }}" fill="none" stroke="{{ $card['color'] }}" stroke-width="2.2" stroke-linecap="round" />
                 </svg>
             </div>
         </div>
-        <div class="mt-3">
-            <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white">
-                {{ number_format($kpi['request_harga_count'] ?? 0) }}
-            </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Kebutuhan pengadaan teknisi') }}
-            </p>
-        </div>
-    </div>
-
-    {{-- Card 4: Supplier PO Aktif --}}
-    <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition hover:shadow-md">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ __('Supplier PO Aktif') }}</span>
-            <div class="h-9 w-9 rounded-xl bg-violet-50 dark:bg-violet-950/50 flex items-center justify-center text-violet-600 dark:text-violet-400">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-            </div>
-        </div>
-        <div class="mt-3">
-            <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white">
-                {{ number_format($kpi['supplier_pos_outstanding_count'] ?? 0) }}
-            </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {{ __('Status ordered / partially received') }}
-            </p>
-        </div>
-    </div>
+    @endforeach
 </div>

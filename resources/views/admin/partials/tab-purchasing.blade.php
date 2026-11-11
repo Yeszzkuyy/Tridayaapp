@@ -1,16 +1,11 @@
-<div class="space-y-8">
+<div class="space-y-5">
     {{-- Panel 1: Antrean Request Harga Teknisi (Read-Only Connector) --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-sky-500"></span>
-                    {{ __('Antrean Request Harga Teknisi') }}
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {{ __('Kebutuhan pengadaan barang/perangkat dari teknisi untuk diproses menjadi PO ke vendor/supplier.') }}
-                </p>
-            </div>
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
+            <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <span class="h-2 w-2 rounded-full bg-sky-500"></span>
+                {{ __('Antrean Request Harga Teknisi') }}
+            </h3>
             <a href="{{ route('teknisi.request-hargas.index') }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline">
                 {{ __('Lihat Semua Request Harga') }} →
             </a>
@@ -18,18 +13,18 @@
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-                <thead class="bg-slate-50 dark:bg-slate-700/50">
+                <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Proyek & Klien') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Daftar Barang / Kebutuhan') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Tanggal') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Aksi Cepat') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Proyek & Klien') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Daftar Barang / Kebutuhan') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Tanggal') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi Cepat') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                     @forelse($purchasing['request_hargas'] as $rh)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                        <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                             <td class="px-4 py-3">
                                 <div class="font-semibold text-slate-800 dark:text-white">
                                     {{ $rh->project?->project_name ?? __('Proyek Khusus') }}
@@ -48,7 +43,7 @@
                                     <div class="space-y-1">
                                         @foreach(array_slice($rh->items, 0, 3) as $it)
                                             <div class="text-xs text-slate-700 dark:text-slate-300 truncate">
-                                                • <span class="font-mono font-medium">{{ $it['quantity'] ?? 1 }}x</span> {{ $it['device'] ?? '-' }}
+                                                • <span class="tabular-nums font-medium">{{ $it['quantity'] ?? 1 }}x</span> {{ $it['device'] ?? '-' }}
                                                 @if(!empty($it['specification']))
                                                     <span class="text-slate-400 dark:text-slate-500 text-[11px]">({{ $it['specification'] }})</span>
                                                 @endif
@@ -81,7 +76,7 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <x-icon-button as="a" icon="view" href="{{ route('teknisi.request-hargas.show', $rh) }}" title="{{ __('Lihat Detail Request') }}" />
                                     @can('manage-admin')
-                                        <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['project_id' => $rh->project_id]) }}" title="{{ __('Buat PO dari Request Ini') }}" label="{{ __('Buat PO') }}" />
+                                        <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['project_id' => $rh->project_id]) }}" title="{{ __('Buat PO dari Request Ini') }}" />
                                     @endcan
                                 </div>
                             </td>
@@ -99,20 +94,15 @@
     </div>
 
     {{-- Panel 2: Supplier Purchase Orders (PO) Terbaru --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-                <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-violet-500"></span>
-                    {{ __('Supplier Purchase Orders (PO) Terbaru') }}
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {{ __('Daftar purchase order pengadaan yang telah diterbitkan untuk supplier/vendor.') }}
-                </p>
-            </div>
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
+            <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <span class="h-2 w-2 rounded-full bg-violet-500"></span>
+                {{ __('Supplier Purchase Orders (PO) Terbaru') }}
+            </h3>
             <div class="flex items-center gap-2">
                 @can('manage-admin')
-                    <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create') }}" title="{{ __('Buat Supplier PO Baru') }}" label="{{ __('Supplier PO Baru') }}" />
+                    <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create') }}" title="{{ __('Buat Supplier PO Baru') }}" />
                 @endcan
                 <a href="{{ route('admin.supplier-pos.index') }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline ml-2">
                     {{ __('Lihat Semua Supplier PO') }} →
@@ -122,20 +112,20 @@
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-                <thead class="bg-slate-50 dark:bg-slate-700/50">
+                <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Nomor PO') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Supplier & Proyek') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Rincian Barang') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Total Nilai (Rp)') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Nomor PO') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Supplier & Proyek') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Rincian Barang') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Total Nilai (Rp)') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                     @forelse($purchasing['supplier_pos'] ?? $purchasing['purchase_orders'] as $po)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-                            <td class="px-4 py-3 font-mono font-semibold text-slate-800 dark:text-white">
+                        <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
+                            <td class="px-4 py-3 tabular-nums font-semibold text-slate-800 dark:text-white">
                                 {{ $po->po_number }}
                                 <div class="text-[11px] font-sans text-slate-400 font-normal">
                                     {{ $po->issue_date ? $po->issue_date->format('d M Y') : '-' }}
@@ -154,7 +144,7 @@
                                     {{ isset($po->items_count) ? $po->items_count . ' ' . __('item pengadaan') : ($po->items ?? '-') }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-right font-mono font-medium text-slate-800 dark:text-white">
+                            <td class="px-4 py-3 text-right tabular-nums font-medium text-slate-800 dark:text-white">
                                 Rp {{ number_format($po->grand_total ?? $po->amount ?? 0, 0, ',', '.') }}
                             </td>
                             <td class="px-4 py-3 text-center">

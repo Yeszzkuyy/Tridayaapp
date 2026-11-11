@@ -1,29 +1,21 @@
-<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-    <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-            <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-                {{ __('Checklist Kelengkapan Dokumen Proyek') }}
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {{ __('Verifikasi berkas legalitas, PO resmi klien dari Sales, dan BAST/dokumen teknis sebelum penerbitan invoice.') }}
-            </p>
-        </div>
-        <div class="text-xs text-slate-400 dark:text-slate-500">
-            {{ __('Menampilkan 15 proyek terkini') }}
-        </div>
+<div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
+        <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+            {{ __('Checklist Kelengkapan Dokumen Proyek') }}
+        </h3>
     </div>
 
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
-            <thead class="bg-slate-50 dark:bg-slate-700/50">
+            <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Proyek & Klien') }}</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('NPWP Klien') }}</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('PO Klien (Sales)') }}</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('BAST / Teknis') }}</th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status Tagihan') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Aksi') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Proyek & Klien') }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('NPWP Klien') }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('PO Klien (Sales)') }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('BAST / Teknis') }}</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status Tagihan') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -40,7 +32,7 @@
                         $latestInvoice = $invoices->first();
                         $isFullyPaid = $hasInvoice && $invoices->every(fn($i) => $i->status === 'paid');
                     @endphp
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
+                    <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                         {{-- Proyek & Klien --}}
                         <td class="px-4 py-3">
                             <div class="font-semibold text-slate-800 dark:text-white">
@@ -68,7 +60,7 @@
                                     {{ __('Ada Berkas') }}
                                 </a>
                                 @if($customer->npwp)
-                                    <div class="text-[10px] font-mono text-slate-400 mt-0.5 truncate max-w-[120px] mx-auto">
+                                    <div class="text-[10px] tabular-nums text-slate-400 mt-0.5 truncate max-w-[120px] mx-auto">
                                         {{ $customer->npwp }}
                                     </div>
                                 @endif
@@ -76,7 +68,7 @@
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300" title="{{ __('Nomor ada, berkas scan belum diunggah') }}">
                                     {{ __('No. Ada') }}
                                 </span>
-                                <div class="text-[10px] font-mono text-slate-400 mt-0.5 truncate max-w-[120px] mx-auto">
+                                <div class="text-[10px] tabular-nums text-slate-400 mt-0.5 truncate max-w-[120px] mx-auto">
                                     {{ $customer->npwp }}
                                 </div>
                             @else
