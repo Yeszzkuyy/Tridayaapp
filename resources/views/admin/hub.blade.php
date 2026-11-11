@@ -8,18 +8,40 @@
                 {{ __('Admin Dashboard') }}
             </h1>
 
-            <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('Filter Berdasarkan PT') }}">
-                <a href="{{ request()->url() }}"
-                   class="rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ empty($ptGroup) ? 'border-accent-600 bg-accent-600 text-white shadow-sm shadow-accent-600/30' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:border-accent-400 dark:border-slate-700 dark:text-slate-300' }}">
-                    {{ __('Semua PT') }}
-                </a>
-                @foreach (['NTI', 'MGK', 'TPS', 'WANI'] as $pt)
-                    <a href="{{ request()->url().'?pt_group='.$pt }}"
-                       class="rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ $ptGroup === $pt ? 'border-accent-600 bg-accent-600 text-white shadow-sm shadow-accent-600/30' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:border-accent-400 dark:border-slate-700 dark:text-slate-300' }}">
-                        {{ $pt }}
-                    </a>
-                @endforeach
-            </nav>
+            @php
+                $ptActive = 0;
+                $ptItems = [['value' => '', 'label' => __('Semua PT'), 'url' => request()->url()]];
+                foreach (['NTI', 'MGK', 'TPS', 'WANI'] as $pt) {
+                    $ptItems[] = ['value' => $pt, 'label' => $pt, 'url' => request()->url().'?pt_group='.$pt];
+                    if ($ptGroup === $pt) {
+                        $ptActive = count($ptItems) - 1;
+                    }
+                }
+            @endphp
+
+            {{-- Filter PT memakai komponen segmen yang sama dengan Time Range Selector --}}
+            <div class="flex max-w-full justify-start overflow-x-auto scrollbar-none sm:justify-end">
+                <div id="admin-pt-segment"
+                     data-rubber-segment
+                     data-mode="navigate"
+                     data-items='@json($ptItems)'
+                     data-active="{{ $ptActive }}"
+                     data-label="{{ __('Filter Berdasarkan PT') }}"
+                     data-size="md"
+                     data-radius="12"></div>
+                @vite('resources/js/rubber-segment.jsx')
+
+                <noscript>
+                    <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('Filter Berdasarkan PT') }}">
+                        @foreach ($ptItems as $i => $item)
+                            <a href="{{ $item['url'] }}"
+                               class="rounded-xl border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ $i === $ptActive ? 'border-accent-600 bg-accent-600 text-white' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 dark:border-slate-700 dark:text-slate-300' }}">
+                                {{ $item['label'] }}
+                            </a>
+                        @endforeach
+                    </nav>
+                </noscript>
+            </div>
         </div>
 
         {{-- 4 kartu ringkasan dengan grafik mini 6 bulan --}}
@@ -81,9 +103,20 @@
             </div>
         </div>
 
-        {{-- 4 Tab Utama (Alpine.js) --}}
+        {{-- 4 Tab Utama (Alpine.js + efek geser Time Range Selector) --}}
+        @php
+            $tabItems = [
+                ['value' => 'purchasing', 'label' => __('Purchasing'), 'badge' => ($kpi['request_harga_count'] ?? 0) > 0 ? $kpi['request_harga_count'] : null],
+                ['value' => 'finance', 'label' => __('Finance'), 'badge' => ($kpi['ready_to_invoice_count'] ?? 0) > 0 ? $kpi['ready_to_invoice_count'] : null],
+                ['value' => 'documents', 'label' => __('Documents'), 'badge' => count($documents['projects'])],
+                ['value' => 'procurement', 'label' => __('Procurement & AP'), 'badge' => ($kpi['unbilled_receipts_count'] ?? 0) > 0 ? $kpi['unbilled_receipts_count'] : null],
+            ];
+            $tabValues = array_column($tabItems, 'value');
+            $tabIndex = array_search(request('tab', 'purchasing'), $tabValues, true);
+            $tabIndex = $tabIndex === false ? 0 : $tabIndex;
+        @endphp
         <div x-data="{
-            activeTab: '{{ request('tab', 'purchasing') }}',
+            activeTab: '{{ $tabItems[$tabIndex]['value'] }}',
             selectTab(tab) {
                 this.activeTab = tab;
                 try {
@@ -93,96 +126,21 @@
                 } catch (e) {}
             }
         }"
+        @admin-tab:change.window="selectTab($event.detail.value)"
         class="space-y-5">
-            {{-- Navigasi tab: kotak segmen ringkas, di tengah halaman --}}
-            <div class="flex justify-center">
-                <div role="tablist"
-                     data-tabs="centered"
-                     aria-label="{{ __('Admin Sections') }}"
-                     class="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-                {{-- Tab 1: Purchasing --}}
-                <button type="button"
-                        @click="selectTab('purchasing')"
-                        role="tab"
-                        :aria-selected="activeTab === 'purchasing'"
-                        :class="activeTab === 'purchasing'
-                            ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
-                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
-                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span class="truncate">{{ __('Purchasing') }}</span>
-                    @if(($kpi['request_harga_count'] ?? 0) > 0)
-                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums"
-                              :class="activeTab === 'purchasing' ? 'bg-white text-accent-700' : 'bg-accent-600 text-white'">
-                            {{ $kpi['request_harga_count'] }}
-                        </span>
-                    @endif
-                </button>
-
-                {{-- Tab 2: Finance --}}
-                <button type="button"
-                        @click="selectTab('finance')"
-                        role="tab"
-                        :aria-selected="activeTab === 'finance'"
-                        :class="activeTab === 'finance'
-                            ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
-                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
-                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span class="truncate">{{ __('Finance') }}</span>
-                    @if(($kpi['ready_to_invoice_count'] ?? 0) > 0)
-                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums"
-                              :class="activeTab === 'finance' ? 'bg-white text-accent-700' : 'bg-accent-600 text-white'">
-                            {{ $kpi['ready_to_invoice_count'] }}
-                        </span>
-                    @endif
-                </button>
-
-                {{-- Tab 3: Documents --}}
-                <button type="button"
-                        @click="selectTab('documents')"
-                        role="tab"
-                        :aria-selected="activeTab === 'documents'"
-                        :class="activeTab === 'documents'
-                            ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
-                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
-                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span class="truncate">{{ __('Documents') }}</span>
-                    <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums"
-                          :class="activeTab === 'documents' ? 'bg-white text-accent-700' : 'bg-accent-600 text-white'">
-                        {{ count($documents['projects']) }}
-                    </span>
-                </button>
-
-                {{-- Tab 4: Procurement & AP --}}
-                <button type="button"
-                        @click="selectTab('procurement')"
-                        role="tab"
-                        :aria-selected="activeTab === 'procurement'"
-                        :class="activeTab === 'procurement'
-                            ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
-                            : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
-                    <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    <span class="truncate">{{ __('Procurement & AP') }}</span>
-                    @if(($kpi['unbilled_receipts_count'] ?? 0) > 0)
-                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums"
-                              :class="activeTab === 'procurement' ? 'bg-white text-accent-700' : 'bg-accent-600 text-white'">
-                            {{ $kpi['unbilled_receipts_count'] }}
-                        </span>
-                    @endif
-                </button>
-                </div>
+            {{-- Navigasi tab: komponen geser yang sama dengan Time Range Selector --}}
+            <div class="flex justify-center" data-tabs="centered">
+                <div id="admin-tabs-segment"
+                     data-rubber-segment
+                     data-mode="event"
+                     data-event-name="admin-tab:change"
+                     data-items='@json($tabItems)'
+                     data-active="{{ $tabIndex }}"
+                     data-label="{{ __('Admin Sections') }}"
+                     data-size="md"
+                     data-radius="12"></div>
             </div>
+
             {{-- Tab 1 Content: Purchasing --}}
             <div x-show="activeTab === 'purchasing'" x-cloak>
                 @include('admin.partials.tab-purchasing')

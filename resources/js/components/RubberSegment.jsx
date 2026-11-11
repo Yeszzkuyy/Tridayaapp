@@ -360,6 +360,9 @@ export default function RubberSegment({
         >
           {item.icon}
           {item.label}
+          {item.badge !== undefined && item.badge !== null && item.badge !== '' ? (
+            <span className="rubber-segment__badge">{item.badge}</span>
+          ) : null}
         </button>
       ))}
       <motion.div className="rubber-segment__thumb" aria-hidden="true" style={{ clipPath }}>
@@ -367,6 +370,9 @@ export default function RubberSegment({
           <span key={item.value} className="rubber-segment__item rubber-segment__copy">
             {item.icon}
             {item.label}
+            {item.badge !== undefined && item.badge !== null && item.badge !== '' ? (
+              <span className="rubber-segment__badge">{item.badge}</span>
+            ) : null}
           </span>
         ))}
       </motion.div>

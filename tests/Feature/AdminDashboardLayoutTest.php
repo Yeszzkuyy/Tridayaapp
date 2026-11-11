@@ -38,10 +38,33 @@ class AdminDashboardLayoutTest extends TestCase
         $this->assertStringContainsString('data-countup', $html);
         $this->assertStringContainsString('aria-label="'.__('Filter Berdasarkan PT').'"', $html);
 
-        // Navigasi tab berupa 4 kotak segmen (tanpa garis bawah melayang).
-        $this->assertSame(4, substr_count($html, 'role="tab"'));
+        // Navigasi tab memakai komponen geser Time Range Selector.
+        $this->assertStringContainsString('id="admin-tabs-segment"', $html);
+        $this->assertStringContainsString('data-event-name="admin-tab:change"', $html);
         $this->assertStringContainsString('data-tabs="centered"', $html);
         $this->assertStringNotContainsString('indicatorWidth', $html);
+    }
+
+    public function test_pt_filter_uses_rubber_segment_and_reflects_active_pt(): void
+    {
+        $admin = $this->admin();
+
+        $html = $this->actingAs($admin)
+            ->get(route('admin.hub'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-rubber-segment', $html);
+        $this->assertStringContainsString('data-mode="navigate"', $html);
+        $this->assertStringContainsString('data-active="0"', $html);
+        $this->assertStringContainsString('rubber-segment', $html);
+
+        $filtered = $this->actingAs($admin)
+            ->get(route('admin.hub', ['pt_group' => 'NTI']))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-active="1"', $filtered);
     }
 
     public function test_tab_panels_have_no_colored_title_dots(): void

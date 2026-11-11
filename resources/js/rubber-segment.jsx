@@ -7,7 +7,7 @@ import './components/RubberSegment.css';
 // (atau #marketing-range-segment untuk kompatibilitas lama).
 //
 // Konfigurasi lewat data-*:
-//   data-items      : JSON [{value,label,url?}] atau array label string
+//   data-items      : JSON [{value,label,url?,badge?}] atau array label string
 //   data-active     : index ATAU value yang aktif (default 0)
 //   data-mode       : 'navigate' (klik = pindah ke url item) | 'event'
 //                     (klik = dispatch CustomEvent, untuk kontrol state lokal)
@@ -62,7 +62,7 @@ function mountOne(el) {
     el.dataset.mounted = 'true';
 
     const list = raw.map((it) =>
-        typeof it === 'string' ? { value: it, label: it } : { value: it.value ?? it.label, label: it.label, url: it.url }
+        typeof it === 'string' ? { value: it, label: it } : { value: it.value ?? it.label, label: it.label, url: it.url, badge: it.badge }
     );
     const activeRaw = String(el.dataset.active ?? '0');
     const activeIdx = /^\d+$/.test(activeRaw)
@@ -75,7 +75,7 @@ function mountOne(el) {
     createRoot(el).render(
         <SegmentIsland
             id={el.id || el.dataset.segmentId || 'rubber-segment'}
-            items={list.map((it) => ({ value: it.value, label: it.label }))}
+            items={list.map((it) => ({ value: it.value, label: it.label, badge: it.badge }))}
             defaultValue={list[active].value}
             onChange={(value, index) => {
                 if (mode === 'event') {
