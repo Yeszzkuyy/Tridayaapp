@@ -28,7 +28,7 @@
             this.docOpen = true;
         },
     }"
-    class="lynk-enter rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90"
+    class="lynk-enter mb-6 rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90"
     style="--d: 360ms"
 >
     <div class="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-slate-800/60 sm:flex-row sm:items-center sm:justify-between">

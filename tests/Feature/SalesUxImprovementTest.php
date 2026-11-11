@@ -95,6 +95,8 @@ class SalesUxImprovementTest extends TestCase
 
         $this->assertStringContainsString('data-tour="followup"', $html);
         $this->assertStringContainsString(__('Quick guide: 3 steps to follow up'), $html);
+        $this->assertStringContainsString('rounded-[100px]', $html);
+        $this->assertStringContainsString(__('Add Follow Up'), $html);
     }
 
     public function test_requirement_cell_is_left_aligned_with_line_clamp(): void
