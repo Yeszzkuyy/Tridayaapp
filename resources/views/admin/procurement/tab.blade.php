@@ -2,23 +2,23 @@
     {{-- KPI ringkas pengadaan & AP --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Supplier PO Outstanding') }}</p>
-            <p class="mt-1 text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ $kpi['supplier_pos_outstanding_count'] ?? 0 }}</p>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('Supplier PO Outstanding') }}</p>
+            <p class="mt-1 text-3xl font-extrabold tabular-nums text-indigo-600 dark:text-indigo-400">{{ $kpi['supplier_pos_outstanding_count'] ?? 0 }}</p>
             <a href="{{ route('admin.purchasing.reports') }}" class="mt-2 inline-block text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View report') }}</a>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Receipts Not Yet Invoiced') }}</p>
-            <p class="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ $kpi['unbilled_receipts_count'] ?? 0 }}</p>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('Receipts Not Yet Invoiced') }}</p>
+            <p class="mt-1 text-3xl font-extrabold tabular-nums text-amber-600 dark:text-amber-400">{{ $kpi['unbilled_receipts_count'] ?? 0 }}</p>
             <a href="{{ route('admin.purchasing.reports') }}" class="mt-2 inline-block text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('View report') }}</a>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Supplier Invoice Outstanding') }}</p>
-            <p class="mt-1 text-2xl font-bold text-rose-600 dark:text-rose-400">{{ $kpi['supplier_invoices_outstanding_count'] ?? 0 }}</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Rp {{ number_format($kpi['supplier_invoices_outstanding_amount'] ?? 0, 0, ',', '.') }}</p>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('Supplier Invoice Outstanding') }}</p>
+            <p class="mt-1 text-3xl font-extrabold tabular-nums text-rose-600 dark:text-rose-400">{{ $kpi['supplier_invoices_outstanding_count'] ?? 0 }}</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Rp {{ number_format($kpi['supplier_invoices_outstanding_amount'] ?? 0, 0, ',', '.') }}</p>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('BAST Pending') }} / {{ __('Closed') }}</p>
-            <p class="mt-1 text-2xl font-bold text-slate-800 dark:text-slate-100">{{ $kpi['bast_pending_count'] ?? 0 }} <span class="text-base font-medium text-green-600 dark:text-green-400">/ {{ $kpi['commercial_closed_count'] ?? 0 }}</span></p>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('BAST Pending') }} / {{ __('Closed') }}</p>
+            <p class="mt-1 text-3xl font-extrabold tabular-nums text-slate-800 dark:text-slate-100">{{ $kpi['bast_pending_count'] ?? 0 }} <span class="text-base font-medium text-green-600 dark:text-green-400">/ {{ $kpi['commercial_closed_count'] ?? 0 }}</span></p>
             <a href="{{ route('admin.bast.index') }}" class="mt-2 inline-block text-xs text-accent-600 dark:text-accent-400 hover:underline">{{ __('Open BAST') }}</a>
         </div>
     </div>
@@ -60,7 +60,7 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
-                            <span class="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold {{ $days < 0 ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200' }}">
+                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $days < 0 ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200' }}">
                                 {{ $days < 0 ? __('Overdue by :days days', ['days' => abs($days)]) : __(':days days left', ['days' => $days]) }}
                             </span>
                             @can('manage-admin')
@@ -113,7 +113,7 @@
                             <p class="text-xs text-slate-500 truncate">{{ $order->supplier?->name }} · {{ $order->project?->project_name ?? __('No project') }}</p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
-                            <span class="inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold {{ \App\Models\SupplierPurchaseOrder::statusBadgeClasses($order->status) }}">{{ \App\Models\SupplierPurchaseOrder::statusLabel($order->status) }}</span>
+                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ \App\Models\SupplierPurchaseOrder::statusBadgeClasses($order->status) }}">{{ \App\Models\SupplierPurchaseOrder::statusLabel($order->status) }}</span>
                             @can('manage-admin')
                                 <x-icon-button as="a" icon="add" href="{{ route('admin.goods-receipts.create', ['supplier_purchase_order_id' => $order->id]) }}" title="{{ __('Receive Goods') }}" />
                             @endcan
@@ -164,7 +164,7 @@
                         <div class="flex items-center gap-2 shrink-0">
                             <div class="text-right">
                                 <p class="tabular-nums text-sm text-slate-800 dark:text-slate-100">Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</p>
-                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold {{ \App\Models\SupplierInvoice::statusBadgeClasses($invoice->status) }}">{{ \App\Models\SupplierInvoice::statusLabel($invoice->status) }}</span>
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ \App\Models\SupplierInvoice::statusBadgeClasses($invoice->status) }}">{{ \App\Models\SupplierInvoice::statusLabel($invoice->status) }}</span>
                             </div>
                             @can('manage-admin')
                                 <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-invoices.show', $invoice) }}#payment-form" title="{{ __('Record Payment') }}" />

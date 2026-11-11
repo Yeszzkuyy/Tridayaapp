@@ -93,15 +93,15 @@
                     <x-icon name="{{ $card['icon'] }}" class="h-5 w-5" />
                 </span>
                 <div class="min-w-0">
-                    <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ $card['label'] }}</p>
-                    <p class="mt-0.5 text-xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white sm:text-2xl"
+                    <p class="truncate text-sm font-medium text-slate-500 dark:text-slate-400">{{ $card['label'] }}</p>
+                    <p class="mt-0.5 break-words text-2xl font-extrabold leading-tight tracking-tight text-slate-900 tabular-nums dark:text-white sm:text-3xl"
                        @if ($card['countup'])
                            data-countup="{{ $card['value'] }}" data-countup-delay="{{ $delay + 20 }}"
                        @endif>{{ $card['display'] }}</p>
                 </div>
             </div>
 
-            <div class="relative z-10 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium">
+            <div class="relative z-10 mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium">
                 <span class="inline-flex items-center gap-1 {{ $card['trend']['color'] }}">
                     <span aria-hidden="true">{{ $card['trend']['arrow'] }}</span>
                     <span>{{ $card['trend']['value'] }} {{ $card['unit'] }}</span>
@@ -115,7 +115,7 @@
             </div>
 
             <div class="relative z-10 -mx-5 -mb-5 mt-2 pt-1">
-                <svg viewBox="0 0 240 52" class="h-11 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
                     <defs>
                         <linearGradient id="{{ $card['gradId'] }}" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stop-color="{{ $card['color'] }}" stop-opacity="{{ $card['spark']['is_flat'] ? '0.10' : '0.32' }}" />
