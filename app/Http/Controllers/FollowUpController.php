@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Services\SalesService;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -247,12 +248,7 @@ class FollowUpController extends Controller
      */
     private function customerOptions($user, bool $withPtSuffix = true): array
     {
-        $pts = PtAccess::userPts($user);
-
-        return Customer::query()
-            ->when($pts !== [], fn ($q) => $q->where(
-                fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
-            ))
+        return CustomerAccess::queryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $this->customerLabel($c, $withPtSuffix)])
@@ -289,13 +285,19 @@ class FollowUpController extends Controller
      */
     private function assertConsistentRelations(array $validated): void
     {
+        $user = auth()->user();
         $customer = Customer::findOrFail($validated['customer_id']);
-        abort_unless(PtAccess::canWritePt(auth()->user(), $customer->pt_group), 403);
+        abort_unless(PtAccess::canWritePt($user, $customer->pt_group), 403);
+        abort_unless(CustomerAccess::canView($user, $customer), 403);
 
         if (!empty($validated['lead_id'])) {
             $lead = Lead::find($validated['lead_id']);
             abort_if(!$lead || (int) $lead->customer_id !== (int) $validated['customer_id'],
                 422, __('The selected lead does not belong to this customer.'));
+
+            if (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
+                abort_unless((int) $lead->assigned_to === (int) $user->id, 403);
+            }
         }
     }
 }

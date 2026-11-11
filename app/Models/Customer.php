@@ -10,6 +10,7 @@ class Customer extends Model
     use SoftDeletes; // Pastikan ini ada
 
     protected $fillable = [
+        'created_by',
         'name',
         'contact_person',
         'company',
@@ -39,6 +40,11 @@ class Customer extends Model
     public function contacts()
     {
         return $this->hasMany(CustomerContact::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /** Kontak primary aktif; null bila customer belum punya kontak utama. */
@@ -182,6 +188,11 @@ class Customer extends Model
     public function followUps()
     {
         return $this->hasMany(FollowUp::class);
+    }
+
+    public function pocs()
+    {
+        return $this->hasMany(Poc::class);
     }
 
     public function invoices()

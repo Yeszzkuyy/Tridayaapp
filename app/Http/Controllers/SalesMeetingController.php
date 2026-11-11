@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 
@@ -103,6 +104,7 @@ class SalesMeetingController extends Controller
 
         $customer = Customer::findOrFail($validated['customer_id']);
         abort_unless(PtAccess::canWritePt($user, $customer->pt_group), 403);
+        abort_unless(CustomerAccess::canView($user, $customer), 403);
 
         if (! empty($validated['lead_id'])) {
             $lead = Lead::findOrFail($validated['lead_id']);
@@ -188,15 +190,10 @@ class SalesMeetingController extends Controller
         abort_unless($owner, 403);
     }
 
-    /** Customer yang boleh dipilih user ini (batas PT). */
+    /** Customer yang boleh dipilih user ini (milik Sales, bukan seluruh PT). */
     private function customerOptions(User $user): array
     {
-        $pts = PtAccess::userPts($user);
-
-        return Customer::query()
-            ->when($pts !== [], fn ($q) => $q->where(
-                fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
-            ))
+        return CustomerAccess::queryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])

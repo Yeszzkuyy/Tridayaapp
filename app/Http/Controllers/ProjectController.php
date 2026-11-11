@@ -29,8 +29,9 @@ class ProjectController extends Controller
         $user = auth()->user();
         $isTech = $user->can('manage-technician');
         $isManager = $user->can('manage-sales-leads');
+        $isAdmin = $user->can('manage-admin') || $user->can('view-admin');
         $isLeadTech = $user->hasRole('lead-technician');
-        $canSeeAll = $isTech || $isManager;
+        $canSeeAll = $isTech || $isManager || $isAdmin;
 
         // Tab: all (teknisi/manager), assigned (PIC teknisi), sales (sales PIC),
         // unassigned (lead engineer/manager).
@@ -65,11 +66,15 @@ class ProjectController extends Controller
         // Paginasi di SQL supaya perubahan status tidak membuat project "menghilang" dari daftar
         $projects = $query->paginate(15)->withQueryString();
 
-        // Total semua project
-        $totalProjects = Project::count();
+        // Statistik mengikuti cakupan user: Sales hanya project miliknya.
+        $statsQuery = $canSeeAll
+            ? Project::query()
+            : Project::where('sales_user_id', $user->id);
+
+        $totalProjects = (clone $statsQuery)->count();
 
         // Total project aktif (hitung di SQL, bukan di koleksi)
-        $activeProjects = Project::whereHas('status', fn ($q) => $q->whereIn('name', [
+        $activeProjects = (clone $statsQuery)->whereHas('status', fn ($q) => $q->whereIn('name', [
             ProjectStatusEnum::Open->value,
             ProjectStatusEnum::OnProgress->value,
         ]))->count();

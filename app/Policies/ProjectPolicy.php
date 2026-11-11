@@ -19,7 +19,21 @@ class ProjectPolicy
 
     public function view(User $user, Project $project): bool
     {
-        return $user->hasAnyPermission(['view-technician', 'manage-technician', 'view-sales']);
+        // Tim teknisi, Management, Admin, Finance, dan CEO melihat semua.
+        if ($user->hasAnyPermission([
+            'manage-technician', 'view-technician',
+            'manage-sales-leads',
+            'manage-admin', 'view-admin',
+        ]) || $user->hasRole('ceo')) {
+            return true;
+        }
+
+        // Sales hanya membuka project miliknya sendiri.
+        if ($user->can('view-sales') || $user->can('manage-sales')) {
+            return (int) $project->sales_user_id === (int) $user->id;
+        }
+
+        return false;
     }
 
     public function create(User $user): bool
