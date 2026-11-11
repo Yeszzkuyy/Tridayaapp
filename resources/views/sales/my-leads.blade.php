@@ -5,7 +5,12 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('My Leads') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Leads assigned to you by Management') }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <x-flow-button as="a" href="{{ route('sales.follow-ups.create') }}"
+                           wire:navigate.hover
+                           icon="add"
+                           label="{{ __('Add Follow Up') }}"
+                           title="{{ __('Add Follow Up') }}" />
             <button type="button"
                     @click="tips = true; localStorage.setItem('sales_followup_tips', 'on')"
                     class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -170,7 +175,7 @@
                                         <x-icon-button as="a" icon="mail" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
                                     @else
                                         <span @if($loop->first) data-tour="followup" @endif>
-                                            <x-icon-button as="a" icon="add" label="{{ __('Follow Up') }}" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
+                                            <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
                                         </span>
                                     @endif
                         </tr>
