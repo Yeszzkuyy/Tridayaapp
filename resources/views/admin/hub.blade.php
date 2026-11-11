@@ -94,10 +94,12 @@
             }
         }"
         class="space-y-5">
-            {{-- Navigasi tab: 4 kotak segmen sejajar, tanpa garis bawah --}}
-            <div role="tablist"
-                 aria-label="{{ __('Admin Sections') }}"
-                 class="grid grid-cols-2 gap-1.5 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90 lg:grid-cols-4">
+            {{-- Navigasi tab: kotak segmen ringkas, di tengah halaman --}}
+            <div class="flex justify-center">
+                <div role="tablist"
+                     data-tabs="centered"
+                     aria-label="{{ __('Admin Sections') }}"
+                     class="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-2xl border border-slate-100 bg-white p-1.5 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
                 {{-- Tab 1: Purchasing --}}
                 <button type="button"
                         @click="selectTab('purchasing')"
@@ -106,7 +108,7 @@
                         :class="activeTab === 'purchasing'
                             ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
                             : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
+                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
                     <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -127,7 +129,7 @@
                         :class="activeTab === 'finance'
                             ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
                             : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
+                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
                     <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -148,7 +150,7 @@
                         :class="activeTab === 'documents'
                             ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
                             : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
+                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
                     <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -167,7 +169,7 @@
                         :class="activeTab === 'procurement'
                             ? 'bg-accent-600 text-white shadow-sm shadow-accent-600/30'
                             : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/50'"
-                        class="group flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
+                        class="group flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:text-sm">
                     <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
@@ -179,6 +181,7 @@
                         </span>
                     @endif
                 </button>
+                </div>
             </div>
             {{-- Tab 1 Content: Purchasing --}}
             <div x-show="activeTab === 'purchasing'" x-cloak>

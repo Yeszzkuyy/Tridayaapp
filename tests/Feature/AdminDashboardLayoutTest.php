@@ -40,7 +40,7 @@ class AdminDashboardLayoutTest extends TestCase
 
         // Navigasi tab berupa 4 kotak segmen (tanpa garis bawah melayang).
         $this->assertSame(4, substr_count($html, 'role="tab"'));
-        $this->assertStringContainsString('lg:grid-cols-4', $html);
+        $this->assertStringContainsString('data-tabs="centered"', $html);
         $this->assertStringNotContainsString('indicatorWidth', $html);
     }
 
