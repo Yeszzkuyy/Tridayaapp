@@ -35,7 +35,7 @@ Termasuk:
 
 Tidak termasuk:
 
-- Perubahan aturan verifikasi PO oleh Admin (dibahas di `PLAN-ADMIN-PO-VERIFIKASI.md`).
+- Perubahan aturan verifikasi PO oleh Admin (dibahas di `../admin/PLAN-ADMIN-PO-VERIFIKASI.md`).
 - Pembuatan Supplier PO / invoice (modul Admin, tidak diubah di sini).
 
 ## 3. Temuan kondisi sekarang
@@ -150,7 +150,7 @@ Efek samping: karena project sudah terbuat, percobaan convert berikutnya ditolak
 ## 6. Dependensi
 
 - `PLAN-SALES-QUOTATION-OTOMATIS.md`: quotation harus punya item sebelum convert.
-- `PLAN-ADMIN-PO-VERIFIKASI.md`: keputusan aturan verify PO dan tampilan Admin.
+- `../admin/PLAN-ADMIN-PO-VERIFIKASI.md`: keputusan aturan verify PO dan tampilan Admin.
 - Sisi teknisi (daftar project + assign engineer) menyentuh `ProjectController` dan view teknisi;
   kalau ingin dipisah, bagian 4.3 poin 17 boleh dikerjakan di branch `feature/div-teknisi`.
 

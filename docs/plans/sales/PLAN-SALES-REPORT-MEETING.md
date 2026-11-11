@@ -33,7 +33,7 @@ Termasuk:
 
 Tidak termasuk:
 
-- Tampilan monitoring Management (ada di `PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md`).
+- Tampilan monitoring Management (ada di `../management/PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md`).
 - Perubahan modul Schedule (`sales_schedules`).
 - Mengubah data meeting lama yang sudah selesai.
 
@@ -91,7 +91,7 @@ Tidak termasuk:
 
 ## 6. Dependensi
 
-- `PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md` memakai service status yang sama.
+- `../management/PLAN-MANAGEMENT-MONITORING-REPORT-SALES.md` memakai service status yang sama.
 - Tidak menunggu `PLAN-SALES-QUOTATION-OTOMATIS.md`.
 
 ## 7. Keputusan yang sudah diambil

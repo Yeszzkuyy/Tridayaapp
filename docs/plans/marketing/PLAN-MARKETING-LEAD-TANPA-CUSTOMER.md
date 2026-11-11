@@ -34,7 +34,7 @@ Termasuk:
 
 Tidak termasuk:
 
-- Perubahan tampilan daftar/detail Customer (sudah di `PLAN-CUSTOMER-PIC.md`).
+- Perubahan tampilan daftar/detail Customer (sudah di `../customer/PLAN-CUSTOMER-PIC.md`).
 - Quotation dan Convert to Project (disesuaikan di branch `feature/sales-flow`).
 
 ## 3. Temuan kondisi sekarang

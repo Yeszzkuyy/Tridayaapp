@@ -32,7 +32,7 @@ Termasuk:
 
 Tidak termasuk:
 
-- Perubahan form Add Lead (dibahas di `PLAN-MARKETING-LEAD-TANPA-CUSTOMER.md`).
+- Perubahan form Add Lead (dibahas di `../marketing/PLAN-MARKETING-LEAD-TANPA-CUSTOMER.md`).
 - Customer Hub di dashboard Sales (dibahas di branch `feature/sales-flow`).
 - Memisahkan Lead dari Customer (rencana terpisah).
 
@@ -97,6 +97,6 @@ Tidak termasuk:
 
 ## 6. Dependensi
 
-- `PLAN-MARKETING-LEAD-TANPA-CUSTOMER.md` (branch marketing) mengubah cara PIC lead disimpan.
+- `../marketing/PLAN-MARKETING-LEAD-TANPA-CUSTOMER.md` (branch marketing) mengubah cara PIC lead disimpan.
   Urutan aman: kerjakan plan ini dulu (customer tetap menerima PIC), lalu plan marketing.
 - Customer Hub di dashboard Sales memakai `contact_person` lama; perbaikannya ada di branch sales.

@@ -6,8 +6,8 @@
 **Worktree:** `/home/yeski/3dyapp-inside`
 **Terakhir diperbarui:** 2026-11-10
 
-> Estimator memakai `PLAN-SALES-ESTIMATOR-DASHBOARD.md` dan
-> `PLAN-SALES-ESTIMATOR-PRICE-REQUEST.md`. Plan ini fokus pada Inside Sales.
+> Estimator memakai `../estimator/PLAN-SALES-ESTIMATOR-DASHBOARD.md` dan
+> `../estimator/PLAN-SALES-ESTIMATOR-PRICE-REQUEST.md`. Plan ini fokus pada Inside Sales.
 
 ---
 
@@ -91,6 +91,6 @@ Tidak termasuk:
 
 ## 6. Dependensi
 
-- `PLAN-SALES-QUOTATION-PDF.md` untuk template PDF dan kop.
-- `PLAN-SALES-ESTIMATOR-PRICE-REQUEST.md` untuk sumber harga estimator.
-- `PLAN-SALES-QUOTATION-OTOMATIS.md` untuk pembuatan `Proposal` + item.
+- `../sales/PLAN-SALES-QUOTATION-PDF.md` untuk template PDF dan kop.
+- `../estimator/PLAN-SALES-ESTIMATOR-PRICE-REQUEST.md` untuk sumber harga estimator.
+- `../sales/PLAN-SALES-QUOTATION-OTOMATIS.md` untuk pembuatan `Proposal` + item.

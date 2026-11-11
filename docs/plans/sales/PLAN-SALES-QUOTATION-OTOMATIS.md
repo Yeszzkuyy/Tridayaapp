@@ -7,7 +7,7 @@
 **Terakhir diperbarui:** 2026-11-10
 
 > Alur final: quotation digenerate langsung oleh Inside Sales di branch
-> `feature/sales-inside` (lihat `PLAN-SALES-INSIDE-DASHBOARD.md`). Bagian
+> `feature/sales-inside` (lihat `../inside-sales/PLAN-SALES-INSIDE-DASHBOARD.md`). Bagian
 > "Accept file" di bawah dipertahankan sebagai alur legacy/opsional.
 
 > Implementasi inti sudah berjalan di `feature/sales-flow`; menunggu merge ke `main`
@@ -84,7 +84,7 @@ Tidak termasuk:
 ## 6. Dependensi
 
 - `PLAN-SALES-PO-DAN-CONVERT.md` memakai quotation yang sudah berisi item.
-- `PLAN-SALES-INSIDE-DASHBOARD.md` menampilkan hasil quotation dari alur ini.
+- `../inside-sales/PLAN-SALES-INSIDE-DASHBOARD.md` menampilkan hasil quotation dari alur ini.
 
 ## 7. Keputusan yang sudah diambil
 

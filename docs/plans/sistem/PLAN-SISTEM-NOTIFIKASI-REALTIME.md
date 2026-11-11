@@ -32,7 +32,7 @@ Termasuk:
 Tidak termasuk:
 
 - Desain ulang tampilan bell/panel (sudah selesai di branch popup).
-- Notifikasi jadwal teknisi ke marketing (dibahas di `PLAN-TEKNISI-NOTIF-JADWAL.md`).
+- Notifikasi jadwal teknisi ke marketing (dibahas di `../teknisi/PLAN-TEKNISI-NOTIF-JADWAL.md`).
 
 ## 3. Temuan kondisi sekarang (akar masalah)
 

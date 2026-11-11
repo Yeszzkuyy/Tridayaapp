@@ -5,7 +5,7 @@
 **Branch:** `feature/management`
 **Worktree:** `/home/yeski/3dyapp-management`
 **Terakhir diperbarui:** 2026-11-09
-> Catatan: menunggu `PLAN-SALES-REPORT-MEETING.md`.
+> Catatan: menunggu `../sales/PLAN-SALES-REPORT-MEETING.md`.
 **Baseline kode:** `main` @ `d30b32d2`
 
 > Worktree `feature/management` 70 commit di belakang `main` dan 52 commit di depan.
@@ -31,7 +31,7 @@ Termasuk:
 
 Tidak termasuk:
 
-- Membuat input report baru (sudah di `PLAN-SALES-REPORT-MEETING.md`).
+- Membuat input report baru (sudah di `../sales/PLAN-SALES-REPORT-MEETING.md`).
 - Mengubah target KPI/leaderboard.
 
 ## 3. Temuan kondisi sekarang
@@ -69,7 +69,7 @@ Kalau User ingin nama menu yang lebih jelas, ganti label sidebar menjadi
 
 ## 5. Langkah pengerjaan
 
-1. Pastikan `PLAN-SALES-REPORT-MEETING.md` sudah menyediakan `SalesReportStatusService::daily($date)`.
+1. Pastikan `../sales/PLAN-SALES-REPORT-MEETING.md` sudah menyediakan `SalesReportStatusService::daily($date)`.
 2. `ManageSalesController@teamActivity` (451-524): tambahkan data report meeting:
    - jumlah meeting terjadwal hari itu per sales,
    - jumlah yang sudah ada report,
@@ -97,5 +97,5 @@ Kalau User ingin nama menu yang lebih jelas, ganti label sidebar menjadi
 
 ## 7. Dependensi
 
-- Wajib setelah `PLAN-SALES-REPORT-MEETING.md` (butuh penanda report yang sama).
+- Wajib setelah `../sales/PLAN-SALES-REPORT-MEETING.md` (butuh penanda report yang sama).
 - Tidak perlu menunggu quotation/PO.

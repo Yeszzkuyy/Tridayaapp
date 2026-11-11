@@ -7,7 +7,7 @@
 **Terakhir diperbarui:** 2026-11-09
 **Baseline kode:** `main` @ `d30b32d2`
 
-> Menunggu `PLAN-SALES-QUOTATION-OTOMATIS.md` karena harga dari estimator dipakai quotation.
+> Menunggu `../sales/PLAN-SALES-QUOTATION-OTOMATIS.md` karena harga dari estimator dipakai quotation.
 > Struktur menu default: satu route group `/workspace` dengan tab per role.
 
 ---
@@ -32,8 +32,8 @@ Termasuk:
 
 Tidak termasuk:
 
-- Dashboard Inside Sales (ada di `PLAN-SALES-INSIDE-DASHBOARD.md`).
-- Perubahan isi quotation (ada di `PLAN-SALES-QUOTATION-OTOMATIS.md`).
+- Dashboard Inside Sales (ada di `../inside-sales/PLAN-SALES-INSIDE-DASHBOARD.md`).
+- Perubahan isi quotation (ada di `../sales/PLAN-SALES-QUOTATION-OTOMATIS.md`).
 - Perubahan Price Request yang sedang dikerjakan di `feature/sales-price-sync`.
 
 ## 3. Temuan kondisi sekarang
@@ -69,5 +69,5 @@ Tidak termasuk:
 
 ## 6. Dependensi
 
-- `PLAN-SALES-QUOTATION-OTOMATIS.md`: harga estimator dipakai quotation.
+- `../sales/PLAN-SALES-QUOTATION-OTOMATIS.md`: harga estimator dipakai quotation.
 - `feature/sales-price-sync`: merge dulu bila skema Price Request berubah.

@@ -31,7 +31,7 @@ Termasuk:
 
 Tidak termasuk:
 
-- Membuat project (ada di `PLAN-SALES-PO-DAN-CONVERT.md`).
+- Membuat project (ada di `../sales/PLAN-SALES-PO-DAN-CONVERT.md`).
 - Membuat Supplier PO / invoice (tetap di modul Admin yang sudah ada).
 
 ## 3. Temuan kondisi sekarang
@@ -85,7 +85,7 @@ jika semua field wajib sudah lengkap dan file PO terbaca, Admin cukup satu klik 
    - Admin menerima notifikasi saat Sales mengunggah PO (sudah ada, pastikan tetap jalan
      setelah antrean `jobs` diperbaiki).
 4. Nomor PO:
-   - satu sumber dari `proposals.po_number` (lihat `PLAN-SALES-PO-DAN-CONVERT.md`),
+   - satu sumber dari `proposals.po_number` (lihat `../sales/PLAN-SALES-PO-DAN-CONVERT.md`),
    - invoice mengambil dari sana, tidak bisa diketik ulang,
    - validasi unik per customer.
 5. Audit log: tampilkan riwayat `po_verified` / `po_returned` (sudah dicatat) di kedua halaman.

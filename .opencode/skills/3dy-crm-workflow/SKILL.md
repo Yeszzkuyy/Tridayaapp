@@ -207,6 +207,6 @@ Jangan mengarang status baru. Baca konstanta/enum sebelum mengubah alur.
 - `app/Services/ProcurementService.php`
 - `app/Models/Lead.php`, `Proposal.php`, `Project.php`, `Invoice.php`
 - `app/Observers/CustomerObserver.php`, `ProjectObserver.php`
-- `docs/plans/PLAN-SALES-QUOTATION.md`,
-  `docs/plans/PLAN-SALES-PO-DAN-CONVERT.md`,
-  `docs/plans/PLAN-ADMIN-PO-VERIFIKASI.md`
+- `docs/plans/sales/PLAN-SALES-QUOTATION.md`,
+  `docs/plans/sales/PLAN-SALES-PO-DAN-CONVERT.md`,
+  `docs/plans/admin/PLAN-ADMIN-PO-VERIFIKASI.md`

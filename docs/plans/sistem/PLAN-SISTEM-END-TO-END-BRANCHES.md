@@ -7,7 +7,7 @@
 > Catatan: sebagian menunggu keputusan User.
 **Baseline kode:** `main` @ `d30b32d2`
 
-> Dokumen ini disusun dengan gaya yang sama seperti `docs/plans/PLAN-ADMIN-END-TO-END.md`:
+> Dokumen ini disusun dengan gaya yang sama seperti `docs/plans/admin/PLAN-ADMIN-END-TO-END.md`:
 > target perubahan presisi ke file, migrasi, dan kriteria selesai berupa checklist.
 
 ---
@@ -416,6 +416,7 @@ kolom lama `technician_id`.
 
 ## CATATAN AKHIR
 
-- Dokumen ini disimpan di `docs/plans/PLAN-SISTEM-END-TO-END-BRANCHES.md`.
-- Rencana rinci per topik ada di `docs/plans/` dengan nama `PLAN-*` sesuai tabel Bagian 0.
+- Dokumen ini disimpan di `docs/plans/sistem/PLAN-SISTEM-END-TO-END-BRANCHES.md`.
+- Rencana rinci per topik ada di `docs/plans/<divisi>/` dengan nama `PLAN-*`
+  sesuai tabel Bagian 0.
 - Status tiap rencana diperbarui pada commit `docs(...)` yang sama saat rencana berubah.

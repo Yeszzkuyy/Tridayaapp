@@ -745,15 +745,19 @@ Semua rencana perubahan website disimpan di `docs/plans/`. Satu file = satu renc
 
 ### 14.1 Nama file
 
-`PLAN-[MENU_UTAMA]-[SUB_MENU_ATAU_FITUR].md`
+`docs/plans/<divisi>/PLAN-[MENU_UTAMA]-[SUB_MENU_ATAU_FITUR].md`
 
 - Huruf kapital, pemisah hyphen, tanpa spasi.
+- Folder divisi: `sales`, `estimator`, `inside-sales`, `admin`, `teknisi`,
+  `marketing`, `management`, `customer`, `dashboard`, `sistem`.
 - `MENU_UTAMA` mengikuti divisi/branch:
 
 | Divisi / branch | Prefix file |
 |---|---|
 | Marketing | `PLAN-MARKETING-*` |
 | Sales | `PLAN-SALES-*` |
+| Estimator | `PLAN-ESTIMATOR-*` |
+| Inside Sales | `PLAN-INSIDE-SALES-*` |
 | Admin / Panel | `PLAN-ADMIN-*` |
 | Teknisi | `PLAN-TEKNISI-*` |
 | Customer | `PLAN-CUSTOMER-*` |
@@ -761,8 +765,12 @@ Semua rencana perubahan website disimpan di `docs/plans/`. Satu file = satu renc
 | Dashboard | `PLAN-DASHBOARD-*` |
 | Lintas sistem / notifikasi | `PLAN-SISTEM-*` |
 
-- Contoh: `PLAN-SALES-QUOTATION.md`, `PLAN-ADMIN-INVOICE.md`,
-  `PLAN-TEKNISI-JADWAL.md`.
+- Contoh: `docs/plans/sales/PLAN-SALES-QUOTATION.md`,
+  `docs/plans/admin/PLAN-ADMIN-INVOICE.md`,
+  `docs/plans/teknisi/PLAN-TEKNISI-JADWAL.md`.
+- Untuk satu paket pekerjaan lintas divisi, tambahkan penanda work yang sama
+  di nama file, mis. `PLAN-SALES-INTERVIEW-USERSALES.md`, dan buat index di
+  `docs/plans/00-<WORK>-INDEX.md`.
 - Dilarang mencampur dua divisi dalam satu file; pecah per divisi.
 
 ### 14.2 Header wajib
@@ -773,10 +781,15 @@ Setiap file diawali:
 # PLAN-SALES-QUOTATION: Judul Rencana
 
 **Status Pengerjaan:** Belum Dikerjakan
+**Work:** INTERVIEW-USERSALES
+**PIC:** Raafi
 **Menu:** Sales / Quotation
 **Branch:** feature/sales-quotation
 **Terakhir diperbarui:** 2026-11-08
 ```
+
+`Work` dan `PIC` wajib diisi bila satu pekerjaan dibagi ke beberapa divisi
+dan/atau beberapa PIC, supaya file plan mudah dikenali sebagai satu paket.
 
 Nilai `Status Pengerjaan` hanya: `Belum Dikerjakan`, `Siap Dikerjakan`,
 `Selesai`.
@@ -799,7 +812,8 @@ Nilai `Status Pengerjaan` hanya: `Belum Dikerjakan`, `Siap Dikerjakan`,
 
 ### 14.5 Larangan
 
-- Jangan menaruh rencana di root repo atau folder lain; semua di `docs/plans/`.
+- Jangan menaruh rencana di root repo atau folder lain; semua di
+  `docs/plans/<divisi>/`.
 - Jangan memakai nama bebas seperti `plan.md`, `rencana.md`, atau `todo.md`.
 - Catatan audit dan referensi teknis bukan PLAN; taruh di `docs/audit/` atau
   `docs/reference/`.
@@ -834,7 +848,7 @@ menunggu user menyebut namanya.
 | Landing page/portfolio (bukan dashboard internal) | `design-taste-frontend` |
 | Audit keamanan menyeluruh | `security-audit` + `3dy-security` |
 | Performa/query lambat | `performance-optimization` |
-| Spec/rencana fitur baru | `spec-driven-development` + `docs/plans/PLAN-*.md` |
+| Spec/rencana fitur baru | `spec-driven-development` + `docs/plans/<divisi>/PLAN-*.md` |
 | Requirement masih ambigu | `interview-me` |
 
 ### 16.2 Aturan pemuatan
