@@ -179,7 +179,7 @@ class SurveyController extends Controller
     {
         $this->guardRead($request->user(), $survey);
 
-        $survey->load(['customer:id,name', 'sales:id,name', 'project:id,project_name']);
+        $survey->load(['customer:id,name', 'sales:id,name', 'project:id,project_name', 'technicalRequest.supportUsers']);
 
         return view('teknisi.surveys.show', compact('survey'));
     }

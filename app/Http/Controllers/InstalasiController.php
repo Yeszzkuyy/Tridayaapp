@@ -144,7 +144,7 @@ class InstalasiController extends Controller
 
     public function show(Instalasi $instalasi)
     {
-        $instalasi->load(['project.customer', 'customer', 'technician', 'technicalRequest', 'bastDocument', 'completedBy']);
+        $instalasi->load(['project.customer', 'customer', 'technician', 'technicalRequest.supportUsers', 'bastDocument', 'completedBy']);
 
         return view('teknisi.instalasis.show', compact('instalasi'));
     }

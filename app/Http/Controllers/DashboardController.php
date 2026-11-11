@@ -11,7 +11,6 @@ use App\Models\KnowledgeBaseDocument;
 use App\Models\LeadTask;
 use App\Models\Product;
 use App\Models\Project;
-use App\Models\ProjectActivity;
 use App\Models\ProjectDocument;
 use App\Models\ProjectStatus;
 use App\Models\ProjectTask;
@@ -20,6 +19,7 @@ use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Support\RecentActivityFeed;
 use App\Support\SparklineBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -210,19 +210,8 @@ class DashboardController extends Controller
             'docs_kb' => SparklineBuilder::fromSeries($combinedDocsKbSeries, $totalDocsAndKb),
         ];
 
-        // 7. Recent Activity (Eager loaded & deduplicated)
-        $activities = ProjectActivity::with([
-            'project:id,project_name,customer_id',
-            'project.customer:id,name',
-            'user:id,name,avatar',
-        ])
-            ->latest('activity_date')
-            ->latest('id')
-            ->take(25)
-            ->get()
-            ->unique(fn (ProjectActivity $activity) => $activity->dedupKey())
-            ->take(5)
-            ->values();
+        // 7. Recent Activity (project + survey + instalasi)
+        $activities = RecentActivityFeed::build(5);
 
         return view('dashboard.index', compact(
             'customerCount',
@@ -272,7 +261,7 @@ class DashboardController extends Controller
 
         // A. Teknisi / Lead Teknisi: Jadwal Teknisi, Tugas Teknisi, Survey & Instalasi
         if ($user->can('view-technician')) {
-            $schedules = TechnicianSchedule::with(['project:id,project_name,customer_id', 'project.customer:id,name'])
+            $schedules = TechnicianSchedule::with(['customer:id,name', 'project:id,project_name,customer_id', 'project.customer:id,name'])
                 ->whereIn('status', ['scheduled', 'on_progress'])
                 ->where('end_at', '>=', $todayStart)
                 ->where(function ($q) use ($user) {
@@ -290,7 +279,7 @@ class DashboardController extends Controller
                 $items->push([
                     'title' => $schedule->title ?: __('Technical Schedule'),
                     'subtitle' => $schedule->project?->project_name
-                        ?: ($schedule->location ?: ($schedule->project?->customer?->name ?? __('Field schedule'))),
+                        ?: ($schedule->displayCustomer()?->name ?: ($schedule->location ?: __('Field schedule'))),
                     'type_label' => __('Schedule'),
                     'badge_color' => 'violet',
                     'status_label' => $schedule->status === 'on_progress' ? __('On Progress') : __('Scheduled'),
@@ -300,7 +289,10 @@ class DashboardController extends Controller
                     'day' => $dt->format('d'),
                     'month' => strtoupper($dt->format('M')),
                     'progress' => $schedule->status === 'on_progress' ? 65 : 25,
-                    'url' => route('teknisi.jadwal'),
+                    'url' => route('teknisi.jadwal', [
+                        'date' => $dt->toDateString(),
+                        'open' => $schedule->id,
+                    ]),
                 ]);
             }
 

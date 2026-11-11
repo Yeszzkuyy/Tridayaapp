@@ -724,6 +724,12 @@ class GoogleCalendarService
         $technicianIds = array_values(array_unique(array_map('intval', $data['technician_ids'] ?? [])));
         unset($data['technician_ids']);
 
+        // Kolom lama technician_user_id menyimpan engineer utama. Pemanggil
+        // yang hanya mengirim daftar engineer tetap mendapat nilai konsisten.
+        if (! array_key_exists('technician_user_id', $data)) {
+            $data['technician_user_id'] = $technicianIds[0] ?? null;
+        }
+
         $schedule = new TechnicianSchedule(array_merge($data, [
             'user_id' => $user->id,
             'google_sync_status' => $this->isConnected($user) ? 'syncing' : 'not_connected',
@@ -758,14 +764,16 @@ class GoogleCalendarService
         unset($data['technician_ids']);
 
         $change = ($data['status'] ?? $schedule->status) === 'cancelled' ? 'cancelled' : 'updated';
-        // Waktu berubah → reminder perlu dikirim ulang.
+        // Waktu atau opsi pengingat berubah → reminder perlu dikirim ulang.
         $startChanged = isset($data['start_at']) && ! $schedule->start_at->equalTo($data['start_at']);
+        $reminderChanged = array_key_exists('reminder_minutes', $data)
+            && TechnicianSchedule::normalizeReminderValue($data['reminder_minutes']) !== $schedule->reminder_minutes;
 
         $schedule->update(array_merge($data, [
             'google_sync_status' => $schedule->google_sync_status === 'not_connected'
                 ? 'not_connected'
                 : 'syncing',
-            'reminder_sent_at' => $startChanged ? null : $schedule->reminder_sent_at,
+            'reminder_sent_at' => ($startChanged || $reminderChanged) ? null : $schedule->reminder_sent_at,
         ]));
 
         $schedule->technicians()->sync($newTechnicianIds);
@@ -902,10 +910,18 @@ class GoogleCalendarService
             'reminders' => $this->buildReminders($schedule),
         ];
 
-        if ($schedule->technician?->email) {
-            $payload['attendees'] = [
-                ['email' => $schedule->technician->email, 'displayName' => $schedule->technician->name],
-            ];
+        $attendees = $schedule->technicianList()
+            ->filter(fn (User $technician) => filled($technician->email))
+            ->map(fn (User $technician) => [
+                'email' => $technician->email,
+                'displayName' => $technician->name,
+            ])
+            ->unique('email')
+            ->values()
+            ->all();
+
+        if ($attendees !== []) {
+            $payload['attendees'] = $attendees;
         }
 
         return $payload;
@@ -944,7 +960,20 @@ class GoogleCalendarService
         $reminders = new EventReminders;
         $reminders->setUseDefault(false);
 
-        $popup = $schedule->reminder_minutes ?: 30;
+        $popup = $schedule->reminder_minutes;
+
+        if ($popup === TechnicianSchedule::REMINDER_MORNING_OF_EVENT) {
+            // Google Calendar hanya mengenal "X menit sebelum mulai", jadi
+            // target 08:10 WIB diterjemahkan ke selisih menit terhadap start.
+            $target = $schedule->reminderAt();
+            $popup = $target
+                ? (int) round(($schedule->start_at->getTimestamp() - $target->getTimestamp()) / 60)
+                : 30;
+            $popup = max(0, min($popup, 1440));
+        } elseif ($popup === null) {
+            $popup = 30;
+        }
+
         $reminders->setOverrides([
             (new EventReminder)->setMethod('email')->setMinutes(1440),
             (new EventReminder)->setMethod('popup')->setMinutes(min($popup, 1440)),

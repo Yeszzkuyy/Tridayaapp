@@ -35,14 +35,15 @@ class TeknisiRequestController extends Controller
 
         $priceRequests = $priceQuery->paginate(15, ['*'], 'price_page')->withQueryString();
 
-        $engineerRequests = TechnicalRequest::with(['lead.customer', 'requester', 'technician'])
+        $engineerRequests = TechnicalRequest::with(['lead.customer', 'requester', 'technician', 'supportUsers'])
             ->where('request_type', '!=', 'estimate')
             ->when(! $canSeeFullInbox, function ($query) use ($user) {
-                // Teknisi biasa hanya melihat request yang ditugaskan
-                // kepadanya (atau yang ia buat sendiri). Inbox penuh
-                // (waiting_lead) hanya untuk koordinator teknis.
+                // Engineer utama dan support hanya melihat request yang
+                // ditugaskan kepadanya (atau yang ia buat sendiri). Inbox
+                // penuh (waiting_lead) hanya untuk koordinator teknis.
                 $query->where(function ($query) use ($user) {
                     $query->where('assigned_technician_id', $user->id)
+                        ->orWhereHas('supportUsers', fn ($support) => $support->where('users.id', $user->id))
                         ->orWhere('requested_by', $user->id);
                 });
             })
@@ -55,6 +56,7 @@ class TeknisiRequestController extends Controller
             ->when(! $canSeeFullInbox, function ($query) use ($user) {
                 $query->where(function ($query) use ($user) {
                     $query->where('assigned_technician_id', $user->id)
+                        ->orWhereHas('supportUsers', fn ($support) => $support->where('users.id', $user->id))
                         ->orWhere('requested_by', $user->id);
                 });
             });

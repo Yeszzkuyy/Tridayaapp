@@ -60,6 +60,22 @@
             ],
         ];
 
+        // Koordinator teknis boleh membuka daftar tugas engineer lain dari
+        // kartu Active Technicians. Teknisi biasa tetap hanya melihat tugasnya.
+        $canViewEngineerTasks = auth()->user()?->hasAnyRole(['super-admin', 'lead-technician']) ?? false;
+        $currentUserId = auth()->id();
+        // Engineer yang boleh dibuka daftar tugasnya: koordinator melihat
+        // engineer mana pun, teknisi biasa hanya dirinya sendiri.
+        $taskUrlFor = function ($technician) use ($canViewEngineerTasks, $currentUserId) {
+            if ($canViewEngineerTasks) {
+                return route('teknisi.tasks.index', ['technician_id' => $technician->id]);
+            }
+
+            return (int) $technician->id === (int) $currentUserId
+                ? route('teknisi.tasks.index')
+                : null;
+        };
+
         // Tampilkan seluruh status yang memiliki proyek (count > 0) agar genap 100%
         $donutStatuses = $statusCounts
             ->filter(fn ($s) => $s['count'] > 0)
@@ -307,6 +323,7 @@
                         @forelse($activeTechnicians as $technician)
                             @php
                                 $ongoingCount = $projectsByTechnician[$technician->id]->count();
+                                $taskUrl = $taskUrlFor($technician);
                             @endphp
                             <article class="flex items-start gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                                 <div class="relative mt-0.5 shrink-0">
@@ -314,7 +331,14 @@
                                     <span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500 dark:border-slate-800"></span>
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $technician->name }}</p>
+                                    <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                        @if($taskUrl)
+                                            <a href="{{ $taskUrl }}"
+                                               class="transition hover:text-accent-600 hover:underline dark:hover:text-accent-400">{{ $technician->name }}</a>
+                                        @else
+                                            {{ $technician->name }}
+                                        @endif
+                                    </p>
                                     <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
                                         {{ $ongoingCount }} {{ $ongoingCount === 1 ? __('ongoing project') : __('ongoing projects') }}
                                         @if(($fieldJobCounts[$technician->id] ?? 0) > 0)
@@ -336,7 +360,14 @@
                                         @endforeach
                                     </div>
                                 </div>
-                                <x-status-badge color="green">{{ __('Active') }}</x-status-badge>
+                                <div class="flex shrink-0 items-center gap-1.5">
+                                    <x-status-badge color="green">{{ __('Active') }}</x-status-badge>
+                                    @if($taskUrl)
+                                        <a href="{{ $taskUrl }}" class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-accent-500 hover:text-white dark:hover:bg-accent-500" title="{{ __('Open tasks') }}" aria-label="{{ __('Open tasks') }}">
+                                            <x-icon name="chevron-right" class="h-4 w-4" />
+                                        </a>
+                                    @endif
+                                </div>
                             </article>
                         @empty
                             <x-empty-state label="{{ __('active technicians') }}" />
@@ -346,13 +377,27 @@
                     {{-- Panel Idle --}}
                     <div x-show="tab === 'idle'" x-cloak class="mt-1 max-h-96 space-y-1 overflow-y-auto pr-1">
                         @forelse($idleTechnicians as $technician)
+                            @php $taskUrl = $taskUrlFor($technician); @endphp
                             <article class="flex items-center gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                                 <x-user-avatar :user="$technician" size="w-9 h-9" text="text-xs" />
                                 <div class="min-w-0 flex-1">
-                                    <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $technician->name }}</p>
+                                    <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                        @if($taskUrl)
+                                            <a href="{{ $taskUrl }}" class="transition hover:text-accent-600 hover:underline dark:hover:text-accent-400">{{ $technician->name }}</a>
+                                        @else
+                                            {{ $technician->name }}
+                                        @endif
+                                    </p>
                                     <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ __('No ongoing projects') }}</p>
                                 </div>
-                                <x-status-badge color="slate">{{ __('Idle') }}</x-status-badge>
+                                <div class="flex shrink-0 items-center gap-1.5">
+                                    <x-status-badge color="slate">{{ __('Idle') }}</x-status-badge>
+                                    @if($taskUrl)
+                                        <a href="{{ $taskUrl }}" class="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-accent-500 hover:text-white dark:hover:bg-accent-500" title="{{ __('Open tasks') }}" aria-label="{{ __('Open tasks') }}">
+                                            <x-icon name="chevron-right" class="h-4 w-4" />
+                                        </a>
+                                    @endif
+                                </div>
                             </article>
                         @empty
                             <x-empty-state label="{{ __('idle technicians') }}" />
@@ -378,20 +423,23 @@
                             <article class="flex items-center justify-between gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                                 <div class="flex min-w-0 items-center gap-3.5">
                                     <div class="shrink-0">
-                                        <x-user-avatar :user="$activity->user" size="w-9 h-9" text="text-xs" />
+                                        <x-user-avatar :user="$activity['user']" size="w-9 h-9" text="text-xs" />
                                     </div>
                                     <div class="min-w-0">
                                         <p class="truncate text-sm leading-snug text-slate-700 dark:text-slate-200">
-                                            <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $activity->user?->name ?? __('System') }}</span>
-                                            <span class="text-slate-500 dark:text-slate-300">{{ __($activity->displayTitle()) }}</span>
+                                            <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $activity['user']?->name ?? __('System') }}</span>
+                                            <span class="text-slate-500 dark:text-slate-300">{{ __($activity['title']) }}</span>
                                         </p>
                                         <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                                            {{ $activity->project?->project_name ?? __('Project not available') }}
+                                            {{ $activity['subject'] }}
+                                            @if($activity['context'])
+                                                <span class="text-slate-300 dark:text-slate-600">·</span> {{ $activity['context'] }}
+                                            @endif
                                         </p>
                                     </div>
                                 </div>
                                 <time class="shrink-0 text-xs font-medium text-slate-400 tabular-nums">
-                                    {{ $activity->activity_date?->setTimezone('Asia/Jakarta')->shortRelativeDiffForHumans() ?? '-' }}
+                                    {{ $activity['date']?->setTimezone('Asia/Jakarta')->shortRelativeDiffForHumans() ?? '-' }}
                                 </time>
                             </article>
                         @empty

@@ -31,8 +31,8 @@ class TechnicianScheduleAssignedNotification extends Notification
         return (new MailMessage)
             ->subject('Jadwal engineer baru')
             ->line('Jadwal berikut di-assign ke Anda:')
-            ->line($this->schedule->title . ' — ' . $this->schedule->start_at->format('d M Y H:i'))
-            ->action('Lihat Jadwal', url(route('teknisi.jadwal')))
+            ->line($this->schedule->title.' — '.$this->schedule->start_at->format('d M Y H:i'))
+            ->action('Lihat Jadwal', $this->schedule->calendarUrl('tasks'))
             ->line('Terima kasih.');
     }
 
@@ -43,7 +43,7 @@ class TechnicianScheduleAssignedNotification extends Notification
             'schedule_id' => $this->schedule->id,
             'customer' => $this->schedule->title,
             'preview' => $this->schedule->start_at->format('d M Y H:i'),
-            'url' => route('teknisi.jadwal'),
+            'url' => $this->schedule->calendarUrl('tasks'),
         ];
     }
 
@@ -51,8 +51,8 @@ class TechnicianScheduleAssignedNotification extends Notification
     {
         return [
             'title' => __('New technician schedule'),
-            'body' => $this->schedule->title . ' — ' . $this->schedule->start_at->format('d M Y H:i'),
-            'url' => route('teknisi.jadwal'),
+            'body' => $this->schedule->title.' — '.$this->schedule->start_at->format('d M Y H:i'),
+            'url' => $this->schedule->calendarUrl('tasks'),
         ];
     }
 }

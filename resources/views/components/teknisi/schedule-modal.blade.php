@@ -95,7 +95,7 @@ document.addEventListener('alpine:init', () => {
                 location: ev.extendedProps.location || '',
                 description: ev.extendedProps.description || '',
                 status: ev.extendedProps.status || 'scheduled',
-                reminder_minutes: ev.extendedProps.reminder_minutes || '30',
+                reminder_minutes: ev.extendedProps.reminder_value ?? (ev.extendedProps.reminder_minutes != null ? String(ev.extendedProps.reminder_minutes) : ''),
             };
             this.setTechnician();
         },
@@ -152,6 +152,7 @@ document.addEventListener('alpine:init', () => {
                     description: data.description,
                     status: data.status,
                     reminder_minutes: data.reminder_minutes,
+                    reminder_value: data.reminder_value,
                     sync_status: data.sync_status,
                 },
             });
@@ -249,8 +250,6 @@ document.addEventListener('alpine:init', () => {
                     {{ __('Cancel') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </button>
-                    {{ __('Close') }}
-                </button>
             </div>
         </div>
 
@@ -344,11 +343,9 @@ document.addEventListener('alpine:init', () => {
                     <x-input-label for="schedule-reminder" value="{{ __('Reminder') }}" />
                     <select id="schedule-reminder" name="reminder_minutes" x-model="form.reminder_minutes"
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
-                        <option value="">{{ __('No popup reminder') }}</option>
-                        <option value="30">{{ __('30 minutes before') }}</option>
-                        <option value="60">{{ __('1 hour before') }}</option>
-                        <option value="120">{{ __('2 hours before') }}</option>
-                        <option value="1440">{{ __('1 day before') }}</option>
+                        @foreach(\App\Models\TechnicianSchedule::REMINDER_OPTIONS as $value => $label)
+                            <option value="{{ $value }}">{{ __($label) }}</option>
+                        @endforeach
                     </select>
                     <p class="mt-1 text-xs text-slate-400">{{ __('Email reminder 24 hours before is always sent.') }}</p>
                 </div>

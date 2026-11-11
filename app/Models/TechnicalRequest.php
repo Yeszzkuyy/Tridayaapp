@@ -77,6 +77,43 @@ class TechnicalRequest extends Model
     }
 
     /**
+     * Engineer pendukung (bisa banyak). Engineer utama tetap di
+     * assigned_technician_id.
+     */
+    public function supportUsers()
+    {
+        return $this->belongsToMany(User::class, 'technical_request_supports', 'technical_request_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Semua engineer yang bertugas: utama + pendukung.
+     *
+     * @return array<int, int>
+     */
+    public function assignedEngineerIds(): array
+    {
+        $ids = $this->supportUsers->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        if ($this->assigned_technician_id) {
+            array_unshift($ids, (int) $this->assigned_technician_id);
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** Apakah user ini engineer utama atau support pada request ini. */
+    public function isAssignedTo(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return (int) $this->assigned_technician_id === (int) $user->id
+            || $this->supportUsers->contains('id', $user->id);
+    }
+
+    /**
      * Survey yang lahir dari request ini (maksimal satu — dijamin unik di DB).
      */
     public function survey()

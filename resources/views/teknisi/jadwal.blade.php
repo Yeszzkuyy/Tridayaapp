@@ -3,7 +3,7 @@
         {{-- Top bar --}}
         <div class="flex items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3 min-w-0">
-                <x-icon-button as="a" icon="back" href="{{ route('teknisi.dashboard') }}" title="{{ __('Back') }}" />
+                <x-icon-button as="a" icon="back" href="{{ ($backToTasks ?? false) ? route('teknisi.tasks.index') : route('teknisi.dashboard') }}" title="{{ __('Back') }}" />
                 <div class="min-w-0">
                     <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-800 dark:text-slate-100">{{ __('Technician Schedule') }}</h1>
                     <p class="text-sm text-slate-500 truncate" x-text="dayLabel"></p>
@@ -324,13 +324,27 @@
                             <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" :class="titleClass(selected)" x-text="selected.title"></h3>
                             <p class="mt-0.5 text-sm text-slate-500" x-text="(selected.date || '') + ', ' + ((selected.start_time || '') + ' – ' + (selected.end_time || ''))"></p>
 
-                            <template x-if="selected.technician">
+                            <template x-if="selected.technician_user_id">
                                 <div class="mt-3 flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-700/50">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                                          :style="'background:' + colorFor(selected.technician_user_id)" x-text="initials(selected.technician)"></span>
+                                          :style="'background:' + colorFor(selected.technician_user_id)" x-text="initials(technicianName(selected.technician_user_id) || selected.technician)"></span>
                                     <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="selected.technician"></p>
-                                        <p class="truncate text-xs text-slate-400">{{ __('Technician') }}</p>
+                                        <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200" x-text="technicianName(selected.technician_user_id) || selected.technician"></p>
+                                        <p class="truncate text-xs text-slate-400">{{ __('Lead Technician') }}</p>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template x-if="supportNames(selected).length">
+                                <div class="mt-2 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-700/50">
+                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ __('Support Technicians') }}</p>
+                                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                        <template x-for="name in supportNames(selected)" :key="name">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-accent-500" aria-hidden="true"></span>
+                                                <span x-text="name"></span>
+                                            </span>
+                                        </template>
                                     </div>
                                 </div>
                             </template>
@@ -427,10 +441,10 @@
                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 {{ ($customerColumnReady ?? true) ? 'sm:grid-cols-2' : '' }} gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Project') }}</label>
-                                <select name="project_id" x-model="form.project_id"
+                                <select name="project_id" x-model="form.project_id" @change="onProjectChange()"
                                         class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
                                     <option value="">{{ __('Choose a project (optional)') }}</option>
                                     @foreach($projects as $p)
@@ -438,45 +452,75 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Technician') }}</label>
-
-                                {{-- Multi-select: dropdown + centang + cari (bisa lebih dari satu teknisi) --}}
-                                <div class="relative" x-data @click.outside="techOpen = false">
-                                    <button type="button" @click="techOpen = !techOpen"
-                                            class="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-left dark:bg-slate-700 dark:border-slate-600 focus:border-accent-500 focus:ring-accent-500">
-                                        <span class="truncate" :class="form.technician_ids.length ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'"
-                                              x-text="technicianSummary()"></span>
-                                        <svg class="h-4 w-4 shrink-0 text-slate-400" :class="techOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-                                    </button>
-
-                                    <div x-show="techOpen" x-cloak x-transition
-                                         class="absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600">
-                                        <div class="p-2">
-                                            <input type="text" x-model="techQuery"
-                                                   placeholder="{{ __('Search technician...') }}"
-                                                   class="w-full rounded-lg border-slate-300 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                                        </div>
-                                        <div class="max-h-52 overflow-y-auto pb-1">
-                                            <template x-for="t in filteredTechnicians()" :key="t.id">
-                                                <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition hover:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                    <input type="checkbox" :value="t.id"
-                                                           :checked="form.technician_ids.includes(t.id)"
-                                                           @change="toggleTechnician(t.id)"
-                                                           class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                                                    <span class="truncate" x-text="t.name"></span>
-                                                </label>
-                                            </template>
-                                            <p x-show="filteredTechnicians().length === 0" class="px-3 py-2 text-sm text-slate-400">{{ __('No results.') }}</p>
-                                        </div>
-                                    </div>
-
-                                    {{-- Nilai yang dikirim ke server --}}
-                                    <template x-for="id in form.technician_ids" :key="id">
-                                        <input type="hidden" name="technician_ids[]" :value="id">
-                                    </template>
+                            @if($customerColumnReady ?? true)
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Customer') }} <span x-show="!form.project_id" class="text-red-500" aria-hidden="true">*</span></label>
+                                    <select name="customer_id" x-model="form.customer_id" :required="!form.project_id"
+                                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                                        <option value="">{{ __('Choose a customer') }}</option>
+                                        <template x-for="c in allCustomers" :key="c.id">
+                                            <option :value="c.id" x-text="c.name"></option>
+                                        </template>
+                                    </select>
+                                    <p class="mt-1 text-xs text-slate-400">{{ __('For non-project jobs, choose the customer. If a project is selected, the customer follows the project.') }}</p>
+                                    @error('customer_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
+                            @endif
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Lead Technician') }} <span class="text-red-500" aria-hidden="true">*</span></label>
+                            <select name="technician_user_id" x-model="form.technician_user_id" @change="onLeadEngineerChange()" required
+                                    class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
+                                <option value="">{{ __('Choose lead engineer') }}</option>
+                                <template x-for="t in allTechnicians" :key="t.id">
+                                    <option :value="t.id" x-text="t.name"></option>
+                                </template>
+                            </select>
+                            @error('technician_user_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Support Technicians') }}</label>
+
+                            {{-- Multi-select: dropdown + centang + cari (support bisa lebih dari satu) --}}
+                            <div class="relative" x-data @click.outside="supportTechOpen = false">
+                                <button type="button" @click="supportTechOpen = !supportTechOpen"
+                                        class="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-left dark:bg-slate-700 dark:border-slate-600 focus:border-accent-500 focus:ring-accent-500">
+                                    <span class="truncate" :class="form.support_technician_ids.length ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'"
+                                          x-text="supportSummary()"></span>
+                                    <svg class="h-4 w-4 shrink-0 text-slate-400" :class="supportTechOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                </button>
+
+                                <div x-show="supportTechOpen" x-cloak x-transition
+                                     class="absolute bottom-full z-30 mb-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600">
+                                    <div class="p-2">
+                                        <input type="text" x-model="supportTechQuery"
+                                               placeholder="{{ __('Search support engineer...') }}"
+                                               class="w-full rounded-lg border-slate-300 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                                    </div>
+                                    <div class="max-h-52 overflow-y-auto pb-1">
+                                        <template x-for="t in filteredSupportTechnicians()" :key="t.id">
+                                            <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition hover:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                <input type="checkbox" :value="t.id"
+                                                       :checked="form.support_technician_ids.includes(t.id)"
+                                                       @change="toggleSupportTechnician(t.id)"
+                                                       class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                <span class="truncate" x-text="t.name"></span>
+                                            </label>
+                                        </template>
+                                        <p x-show="filteredSupportTechnicians().length === 0" class="px-3 py-2 text-sm text-slate-400">{{ __('No results.') }}</p>
+                                    </div>
+                                </div>
+
+                                {{-- Penanda: form selalu mengirim daftar support (boleh kosong). --}}
+                                <input type="hidden" name="support_present" value="1">
+                                <template x-for="id in form.support_technician_ids" :key="id">
+                                    <input type="hidden" name="support_technician_ids[]" :value="id">
+                                </template>
                             </div>
+                            @error('support_technician_ids') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            @error('support_technician_ids.*') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -529,11 +573,9 @@
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Reminder') }}</label>
                                 <select name="reminder_minutes" x-model="form.reminder_minutes"
                                         class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-700 dark:border-slate-600">
-                                    <option value="">{{ __('None') }}</option>
-                                    <option value="30">30 {{ __('minutes') }}</option>
-                                    <option value="60">60 {{ __('minutes') }}</option>
-                                    <option value="120">120 {{ __('minutes') }}</option>
-                                    <option value="1440">1440 {{ __('minutes') }}</option>
+                                    @foreach(\App\Models\TechnicianSchedule::REMINDER_OPTIONS as $value => $label)
+                                        <option value="{{ $value }}">{{ __($label) }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -633,7 +675,8 @@
     </div>
 
     <script>
-        window.__teknisiProjects = @json($projects->map(fn ($p) => ['id' => $p->id, 'name' => $p->project_name]));
+        window.__teknisiProjects = @json($projects->map(fn ($p) => ['id' => $p->id, 'name' => $p->project_name, 'customer_id' => $p->customer_id]));
+        window.__teknisiCustomers = @json($customers->map(fn ($c) => ['id' => $c->id, 'name' => $c->name]));
         window.__teknisiTechnicians = @json($technicians->map(fn ($t) => ['id' => $t->id, 'name' => $t->name]));
 
         function teknisiScheduleManager() {
@@ -648,7 +691,9 @@
                 canManage: {{ auth()->user()->can('manage-technician') ? 'true' : 'false' }},
                 scheduleBase: @json(route('teknisi.schedules.store')),
                 view: 'month',
-                activeDate: @json(today()->toDateString()),
+                activeDate: @json($initialDate ?? today()->toDateString()),
+                openScheduleId: @js($openScheduleId ?? null),
+                openedInitialSchedule: false,
                 viewYear: null,
                 viewMonth: null,
                 monthCells: [],
@@ -671,11 +716,13 @@
                 saveError: null,
                 apiOpen: false,
                 editingId: null,
-                form: { title: '', project_id: '', technician_ids: [], date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
-                // Dropdown centang teknisi (multi, dengan pencarian).
-                techOpen: false,
-                techQuery: '',
+                form: { title: '', project_id: '', customer_id: '', technician_user_id: '', support_technician_ids: [], date: '', start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' },
+                // Dropdown centang support engineer (multi, dengan pencarian).
+                supportTechOpen: false,
+                supportTechQuery: '',
                 allTechnicians: window.__teknisiTechnicians || [],
+                allProjects: window.__teknisiProjects || [],
+                allCustomers: window.__teknisiCustomers || [],
 
                 init() {
                     const active = new Date(this.activeDate + 'T12:00:00');
@@ -840,6 +887,16 @@
                     this.drawerOpen = true;
                 },
 
+                // Dari Tugas Engineer: buka panel detail jadwal yang dituju
+                // setelah data hari itu selesai dimuat.
+                openInitialSchedule() {
+                    if (!this.openScheduleId || this.openedInitialSchedule) return;
+                    const event = this.events.find(e => Number(e.id) === Number(this.openScheduleId));
+                    if (!event) return;
+                    this.openedInitialSchedule = true;
+                    this.openDrawer(event);
+                },
+
                 openMore(date, e) {
                     // Posisikan popover di dekat tombol "+N more" (fallback tengah layar).
                     const vw = window.innerWidth, vh = window.innerHeight;
@@ -864,44 +921,84 @@
                 openModal(date, event = null) {
                     if (!this.canManage) return;
                     this.isModalOpen = true;
-                    this.techOpen = false;
-                    this.techQuery = '';
+                    this.supportTechOpen = false;
+                    this.supportTechQuery = '';
                     if (event) {
+                        // Hydrate engineer utama + support dari data jadwal.
+                        const ids = (Array.isArray(event.technician_ids)
+                            ? event.technician_ids
+                            : (event.technician_user_id ? [event.technician_user_id] : [])
+                        ).map(Number);
+                        const mainId = event.technician_user_id ? Number(event.technician_user_id) : (ids[0] ?? 0);
+                        // Customer: pakai customer jadwal; untuk data lama yang
+                        // belum punya customer, ambil dari customer project.
+                        const selectedProject = this.allProjects.find(p => Number(p.id) === Number(event.project_id));
+                        const customerId = event.customer_id || selectedProject?.customer_id || '';
+
                         this.editingId = event.id;
                         this.form = {
                             title: event.title || '',
                             project_id: event.project_id || '',
-                            technician_ids: Array.isArray(event.technician_ids) ? [...event.technician_ids] : (event.technician_user_id ? [event.technician_user_id] : []),
+                            customer_id: customerId,
+                            technician_user_id: mainId || '',
+                            support_technician_ids: ids.filter(id => id !== mainId),
                             date: event.date || date,
                             start_time: event.start_time || '',
                             end_time: event.end_time || '',
                             location: event.location || '',
                             description: event.description || '',
                             status: event.status || 'scheduled',
-                            reminder_minutes: event.reminder_minutes ? String(event.reminder_minutes) : '',
+                            reminder_minutes: event.reminder_value || '',
                         };
                     } else {
                         this.editingId = null;
-                        this.form = { title: '', project_id: '', technician_ids: [], date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
+                        this.form = { title: '', project_id: '', customer_id: '', technician_user_id: '', support_technician_ids: [], date: date, start_time: '', end_time: '', location: '', description: '', status: 'scheduled', reminder_minutes: '' };
                     }
                 },
 
-                // --- Dropdown centang teknisi (multi + cari) ---
-                toggleTechnician(id) {
-                    const i = this.form.technician_ids.indexOf(id);
-                    if (i === -1) this.form.technician_ids.push(id);
-                    else this.form.technician_ids.splice(i, 1);
+                // Customer mengikuti project bila project dipilih. Untuk jadwal
+                // non-project, customer dipilih langsung dari daftar customer.
+                onProjectChange() {
+                    const project = this.allProjects.find(p => Number(p.id) === Number(this.form.project_id));
+                    if (project?.customer_id) {
+                        this.form.customer_id = project.customer_id;
+                    }
                 },
-                filteredTechnicians() {
-                    const q = this.techQuery.toLowerCase().trim();
-                    return this.allTechnicians.filter(t => !q || t.name.toLowerCase().includes(q));
+
+                // --- Engineer utama + support engineer ---
+                onLeadEngineerChange() {
+                    const main = Number(this.form.technician_user_id || 0);
+                    if (main) {
+                        this.form.support_technician_ids = this.form.support_technician_ids
+                            .filter(id => Number(id) !== main);
+                    }
                 },
-                technicianSummary() {
+                toggleSupportTechnician(id) {
+                    const i = this.form.support_technician_ids.indexOf(id);
+                    if (i === -1) this.form.support_technician_ids.push(id);
+                    else this.form.support_technician_ids.splice(i, 1);
+                },
+                filteredSupportTechnicians() {
+                    const main = Number(this.form.technician_user_id || 0);
+                    const q = this.supportTechQuery.toLowerCase().trim();
+                    return this.allTechnicians.filter(t => Number(t.id) !== main && (!q || t.name.toLowerCase().includes(q)));
+                },
+                supportSummary() {
                     const names = this.allTechnicians
-                        .filter(t => this.form.technician_ids.includes(t.id))
+                        .filter(t => this.form.support_technician_ids.includes(t.id))
                         .map(t => t.name);
-                    if (names.length === 0) return '{{ __('Choose technicians (optional)') }}';
+                    if (names.length === 0) return '{{ __('Choose support engineers (optional)') }}';
                     return names.join(', ');
+                },
+                technicianName(id) {
+                    const found = this.allTechnicians.find(t => Number(t.id) === Number(id));
+                    return found ? found.name : '';
+                },
+                supportNames(event) {
+                    const ids = Array.isArray(event.support_technician_ids)
+                        ? event.support_technician_ids
+                        : (event.technician_ids || []).filter(id => Number(id) !== Number(event.technician_user_id));
+                    return ids.map(id => this.technicianName(id)).filter(Boolean);
                 },
 
                 // Simpan jadwal via AJAX — tanpa reload halaman.
@@ -992,6 +1089,7 @@
                             if (seq !== this.fetchSeq) return;
                             this.events = Array.isArray(data) ? data : [];
                             this.monthEvents[date] = this.events;
+                            this.openInitialSchedule();
                         })
                         .catch(() => {
                             if (seq !== this.fetchSeq) return;

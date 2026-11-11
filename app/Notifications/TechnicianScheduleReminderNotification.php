@@ -28,8 +28,8 @@ class TechnicianScheduleReminderNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Pengingat jadwal engineer')
-            ->line($this->schedule->title . ' dimulai ' . $this->schedule->start_at->format('d M Y H:i'))
-            ->action('Lihat Jadwal', url(route('teknisi.jadwal')))
+            ->line($this->schedule->title.' dimulai '.$this->schedule->start_at->format('d M Y H:i'))
+            ->action('Lihat Jadwal', $this->schedule->calendarUrl('tasks'))
             ->line('Terima kasih.');
     }
 
@@ -39,8 +39,8 @@ class TechnicianScheduleReminderNotification extends Notification
             'type' => 'schedule',
             'schedule_id' => $this->schedule->id,
             'customer' => $this->schedule->title,
-            'preview' => 'Dimulai ' . $this->schedule->start_at->format('d M Y H:i'),
-            'url' => route('teknisi.jadwal'),
+            'preview' => 'Dimulai '.$this->schedule->start_at->format('d M Y H:i'),
+            'url' => $this->schedule->calendarUrl('tasks'),
         ];
     }
 
@@ -48,8 +48,8 @@ class TechnicianScheduleReminderNotification extends Notification
     {
         return [
             'title' => __('Technician schedule reminder'),
-            'body' => $this->schedule->title . ' dimulai ' . $this->schedule->start_at->format('d M Y H:i'),
-            'url' => route('teknisi.jadwal'),
+            'body' => $this->schedule->title.' dimulai '.$this->schedule->start_at->format('d M Y H:i'),
+            'url' => $this->schedule->calendarUrl('tasks'),
         ];
     }
 }

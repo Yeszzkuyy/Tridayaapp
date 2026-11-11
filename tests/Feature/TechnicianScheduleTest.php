@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\Project;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Models\WorkType;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TechnicianScheduleTest extends TestCase
@@ -22,12 +26,28 @@ class TechnicianScheduleTest extends TestCase
         return $user;
     }
 
+    private ?User $defaultTechnician = null;
+
+    private function defaultTechnician(): User
+    {
+        if (! Role::where('name', 'technician')->exists()) {
+            $this->seed(RoleAndPermissionSeeder::class);
+        }
+
+        if (! $this->defaultTechnician) {
+            $this->defaultTechnician = User::factory()->create();
+            $this->defaultTechnician->assignRole('technician');
+        }
+
+        return $this->defaultTechnician;
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_merge([
             'title' => 'Instalasi CCTV PT ABC',
             'project_id' => null,
-            'technician_user_id' => null,
+            'technician_user_id' => $this->defaultTechnician()->id,
             'date' => '2026-08-12',
             'start_time' => '09:00',
             'end_time' => '12:00',
@@ -101,6 +121,19 @@ class TechnicianScheduleTest extends TestCase
         $this->assertSame('11:00', $schedule->start_at->setTimezone('Asia/Jakarta')->format('H:i'));
     }
 
+    public function test_schedule_requires_lead_engineer(): void
+    {
+        $user = $this->teknisiUser();
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->validPayload([
+                'technician_user_id' => null,
+            ]))
+            ->assertSessionHasErrors('technician_user_id');
+
+        $this->assertDatabaseCount('technician_schedules', 0);
+    }
+
     public function test_validation_rejects_end_time_before_start_time(): void
     {
         $user = $this->teknisiUser();
@@ -132,10 +165,10 @@ class TechnicianScheduleTest extends TestCase
     {
         $user = $this->teknisiUser();
 
-        $customer = \App\Models\Customer::create(['name' => 'PT ABC']);
-        $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
+        $customer = Customer::create(['name' => 'PT ABC']);
+        $workType = WorkType::create(['name' => 'Instalasi']);
         $this->actingAs($user);
-        $project = \App\Models\Project::create([
+        $project = Project::create([
             'customer_id' => $customer->id,
             'work_type_id' => $workType->id,
             'pic_engineer' => 'Engineer A',
@@ -191,10 +224,54 @@ class TechnicianScheduleTest extends TestCase
 
     public function test_user_without_permission_cannot_manage_schedule(): void
     {
+        $this->seed(RoleAndPermissionSeeder::class);
+
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->post(route('teknisi.schedules.store'), $this->validPayload())
             ->assertForbidden();
+    }
+
+    public function test_non_project_schedule_keeps_selected_customer(): void
+    {
+        $user = $this->teknisiUser();
+        $customer = Customer::create(['name' => 'PT Non Project']);
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->validPayload([
+                'customer_id' => $customer->id,
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $schedule = TechnicianSchedule::firstOrFail();
+        $this->assertSame($customer->id, (int) $schedule->customer_id);
+        $this->assertSame('PT Non Project', $schedule->displayCustomer()?->name);
+    }
+
+    public function test_project_schedule_follows_project_customer(): void
+    {
+        $user = $this->teknisiUser();
+        $customer = Customer::create(['name' => 'PT Project Customer']);
+        $other = Customer::create(['name' => 'PT Pilihan Lama']);
+        $workType = WorkType::create(['name' => 'Instalasi']);
+
+        $this->actingAs($user);
+        $project = Project::create([
+            'customer_id' => $customer->id,
+            'work_type_id' => $workType->id,
+            'pic_engineer' => 'Engineer A',
+            'project_name' => 'Project Customer Test',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('teknisi.schedules.store'), $this->validPayload([
+                'project_id' => $project->id,
+                'customer_id' => $other->id,
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $schedule = TechnicianSchedule::firstOrFail();
+        $this->assertSame($customer->id, (int) $schedule->customer_id);
     }
 }

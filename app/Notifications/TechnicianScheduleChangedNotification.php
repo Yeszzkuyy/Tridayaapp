@@ -14,7 +14,7 @@ class TechnicianScheduleChangedNotification extends Notification
     use Queueable, SendsWebPush;
 
     /**
-     * @param 'updated'|'cancelled'|'deleted' $change
+     * @param  'updated'|'cancelled'|'deleted'  $change
      */
     public function __construct(
         public TechnicianSchedule $schedule,
@@ -38,8 +38,8 @@ class TechnicianScheduleChangedNotification extends Notification
 
         return (new MailMessage)
             ->subject($cancelled ? 'Jadwal engineer dibatalkan' : 'Jadwal engineer berubah')
-            ->line($this->schedule->title . ' — ' . $this->describe())
-            ->action('Lihat Jadwal', url(route('teknisi.jadwal')))
+            ->line($this->schedule->title.' — '.$this->describe())
+            ->action('Lihat Jadwal', $this->schedule->calendarUrl('tasks'))
             ->line('Terima kasih.');
     }
 
@@ -50,7 +50,7 @@ class TechnicianScheduleChangedNotification extends Notification
             'schedule_id' => $this->schedule->id,
             'customer' => $this->schedule->title,
             'preview' => $this->describe(),
-            'url' => route('teknisi.jadwal'),
+            'url' => $this->schedule->calendarUrl('tasks'),
         ];
     }
 
@@ -60,8 +60,8 @@ class TechnicianScheduleChangedNotification extends Notification
             'title' => $this->change === 'cancelled' || $this->change === 'deleted'
                 ? 'Jadwal engineer dibatalkan'
                 : 'Jadwal engineer berubah',
-            'body' => $this->schedule->title . ' — ' . $this->describe(),
-            'url' => route('teknisi.jadwal'),
+            'body' => $this->schedule->title.' — '.$this->describe(),
+            'url' => $this->schedule->calendarUrl('tasks'),
         ];
     }
 
@@ -69,7 +69,7 @@ class TechnicianScheduleChangedNotification extends Notification
     {
         return match ($this->change) {
             'cancelled', 'deleted' => 'jadwal dibatalkan',
-            default => 'jadwal diperbarui: ' . $this->schedule->start_at->format('d M Y H:i'),
+            default => 'jadwal diperbarui: '.$this->schedule->start_at->format('d M Y H:i'),
         };
     }
 }

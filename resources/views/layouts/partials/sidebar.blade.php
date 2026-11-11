@@ -235,14 +235,14 @@
                                         aria-current="{{ request()->routeIs('teknisi.dashboard*') ? 'page' : 'false' }}"
                                         class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.dashboard*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" aria-hidden="true"></span>
-                                         <span>{{ __('Technician Dashboard') }}</span>
+                                         <span>{{ __('Dashboard') }}</span>
                                      </a>
-                                     @if(auth()->user()->hasRole('technician') || auth()->user()->hasRole('super-admin'))
+                                     @if(auth()->user()->hasRole('technician') || auth()->user()->hasRole('lead-technician') || auth()->user()->hasRole('super-admin'))
                                      <a wire:navigate.hover href="{{ route('teknisi.tasks.index') }}"
                                         aria-current="{{ request()->routeIs('teknisi.tasks*') ? 'page' : 'false' }}"
                                         class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('teknisi.tasks*') ? $navActive : $navInactive }}">
                                          <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-lime-400" aria-hidden="true"></span>
-                                         <span>{{ auth()->user()->hasRole('super-admin') ? __('Technician Tasks') : __('My Tasks') }}</span>
+                                         <span>{{ auth()->user()->hasAnyRole(['super-admin', 'lead-technician']) ? __('Technician Tasks') : __('My Tasks') }}</span>
                                      </a>
                                      @endif
                                      <a wire:navigate.hover href="{{ route('teknisi.requests.index') }}"

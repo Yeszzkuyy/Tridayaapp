@@ -17,6 +17,7 @@ use App\Notifications\TechnicianAssignedNotification;
 use App\Rules\SecureFile;
 use App\Services\GoogleCalendarService;
 use App\Services\Project\FieldJobWorkflowService;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -182,11 +183,11 @@ class TechnicalRequestController extends Controller
     {
         $user = auth()->user();
 
-        // Koordinator teknis boleh memonitor semua request. Teknisi biasa
-        // hanya boleh membuka request yang ditugaskan kepadanya atau yang ia
-        // buat sendiri.
+        // Koordinator teknis boleh memonitor semua request. Engineer utama
+        // dan support hanya boleh membuka request yang ditugaskan kepadanya
+        // atau yang ia buat sendiri.
         if ($this->isTechnicalCoordinator()
-            || (int) $request->assigned_technician_id === (int) $user->id
+            || $request->isAssignedTo($user)
             || (int) $request->requested_by === (int) $user->id) {
             return;
         }
@@ -282,15 +283,38 @@ class TechnicalRequestController extends Controller
     /**
      * Buat jadwal teknisi dari request (idempoten) dan tolak bila bentrok.
      */
-    private function ensureScheduleFromRequest(TechnicalRequest $technicalRequest, User $technician): ?TechnicianSchedule
+    private function ensureScheduleFromRequest(TechnicalRequest $technicalRequest, User $technician, ?array $engineerIds = null): ?TechnicianSchedule
     {
         if (! $technicalRequest->target_date) {
             return null;
         }
 
+        // Engineer utama + semua support ikut masuk jadwal. Assign mengirim
+        // daftar eksplisit supaya validasi bentrok berjalan SEBELUM data
+        // request diubah (tidak ada penugasan setengah jadi).
+        $engineerIds ??= $technicalRequest->assignedEngineerIds();
         $existing = TechnicianSchedule::where('technical_request_id', $technicalRequest->id)->first();
 
         if ($existing) {
+            // Assign ulang menghasilkan jadwal yang sama, tetapi daftar
+            // engineer-nya harus mengikuti pilihan terbaru.
+            $current = $existing->technicianList()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+            $desired = collect($engineerIds)->sort()->values()->all();
+
+            if ($current !== $desired) {
+                $this->assertNoScheduleConflict(
+                    $engineerIds,
+                    (int) $technician->id,
+                    $existing->id,
+                    $existing->start_at,
+                    $existing->end_at,
+                );
+
+                app(GoogleCalendarService::class)->updateSchedule($existing, [
+                    'technician_ids' => $engineerIds,
+                ]);
+            }
+
             return $existing;
         }
 
@@ -299,23 +323,13 @@ class TechnicalRequestController extends Controller
             : $technicalRequest->target_date->copy()->setTime(9, 0);
         $end = $start->copy()->addHours(2);
 
-        $conflict = TechnicianSchedule::query()
-            ->whereHas('technicians', fn ($query) => $query->where('users.id', $technician->id))
-            ->where('status', '!=', 'cancelled')
-            ->where('start_at', '<', $end)
-            ->where('end_at', '>', $start)
-            ->orderBy('start_at')
-            ->first();
-
-        if ($conflict) {
-            throw ValidationException::withMessages([
-                'technician_id' => __(':name already has :title at :time. Choose another technician or date.', [
-                    'name' => $technician->name,
-                    'title' => $conflict->title,
-                    'time' => $conflict->start_at->format('d M Y H:i'),
-                ]),
-            ]);
-        }
+        $this->assertNoScheduleConflict(
+            $engineerIds,
+            (int) $technician->id,
+            null,
+            $start,
+            $end,
+        );
 
         return app(GoogleCalendarService::class)->createSchedule(Auth::user(), [
             'technical_request_id' => $technicalRequest->id,
@@ -325,13 +339,55 @@ class TechnicalRequestController extends Controller
             'start_at' => $start,
             'end_at' => $end,
             'status' => 'scheduled',
-            'technician_ids' => [$technician->id],
+            'technician_ids' => $engineerIds,
         ]);
+    }
+
+    /**
+     * Tolak assign bila salah satu engineer (utama/support) sudah punya
+     * jadwal yang bertabrakan.
+     *
+     * @param  array<int, int>  $engineerIds
+     */
+    private function assertNoScheduleConflict(
+        array $engineerIds,
+        int $mainEngineerId,
+        ?int $ignoreScheduleId,
+        Carbon $start,
+        Carbon $end,
+    ): void {
+        foreach (array_values(array_unique($engineerIds)) as $id) {
+            $conflict = TechnicianSchedule::query()
+                ->when($ignoreScheduleId, fn ($query) => $query->whereKeyNot($ignoreScheduleId))
+                ->where('status', '!=', 'cancelled')
+                ->where('start_at', '<', $end)
+                ->where('end_at', '>', $start)
+                ->where(function ($query) use ($id) {
+                    $query->where('technician_user_id', $id)
+                        ->orWhereHas('technicians', fn ($technician) => $technician->where('users.id', $id));
+                })
+                ->orderBy('start_at')
+                ->first();
+
+            if (! $conflict) {
+                continue;
+            }
+
+            $name = User::find($id)?->name ?? __('Engineer');
+
+            throw ValidationException::withMessages([
+                $id === $mainEngineerId ? 'technician_id' : 'support_ids' => __(':name already has :title at :time. Choose another technician or date.', [
+                    'name' => $name,
+                    'title' => $conflict->title,
+                    'time' => $conflict->start_at->format('d M Y H:i'),
+                ]),
+            ]);
+        }
     }
 
     public function show(TechnicalRequest $technicalRequest)
     {
-        $technicalRequest->load(['lead.customer', 'requester', 'technician', 'project', 'survey', 'installation', 'schedules']);
+        $technicalRequest->load(['lead.customer', 'requester', 'technician', 'supportUsers', 'project', 'survey', 'installation', 'schedules']);
         $this->authorizeView($technicalRequest);
 
         $technicians = $this->isTechnicalCoordinator()
@@ -364,16 +420,53 @@ class TechnicalRequestController extends Controller
         $this->authorizeView($technicalRequest);
         abort_unless(in_array($technicalRequest->status, ['accepted', 'assigned']), 422);
 
-        $validated = $request->validate(['technician_id' => 'required|exists:users,id']);
+        $validated = $request->validate([
+            'technician_id' => 'required|exists:users,id',
+            'support_ids' => 'nullable|array',
+            'support_ids.*' => [
+                'integer',
+                'exists:users,id',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! User::find($value)?->isTechnician()) {
+                        $fail(__('The selected support engineer is not a technician.'));
+                    }
+                },
+            ],
+        ]);
 
         $technician = User::findOrFail($validated['technician_id']);
-        abort_unless($technician->hasRole('technician'), 422, __('Only users with the Technician role can be assigned.'));
+        abort_unless($technician->isTechnician(), 422, __('Only users with the Technician role can be assigned.'));
+
+        // Support engineer boleh banyak (5/6 orang), tetapi engineer utama
+        // tidak boleh muncul dua kali di daftar support.
+        $supportIds = collect($validated['support_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === (int) $technician->id)
+            ->unique()
+            ->values();
+
+        // Form mengirim penanda agar daftar support kosong pun bisa
+        // disimpan (menghapus semua support). Pemanggil lama tanpa field
+        // ini tidak menghapus support yang sudah ada.
+        $shouldSyncSupport = $request->has('support_ids') || $request->boolean('support_present');
+
+        $engineerIds = array_values(array_unique(array_merge([(int) $technician->id], $supportIds->all())));
+
+        // Validasi bentrok jadwal dilakukan SEBELUM data request diubah,
+        // supaya assign yang gagal tidak meninggalkan penugasan setengah jadi.
+        $this->ensureScheduleFromRequest($technicalRequest, $technician, $engineerIds);
+
+        if ($shouldSyncSupport) {
+            $technicalRequest->supportUsers()->sync($supportIds->all());
+        }
 
         $technicalRequest->update([
             'assigned_technician_id' => $technician->id,
             'project_id' => $this->resolveProjectId($technicalRequest),
             'status' => 'assigned',
         ]);
+
+        $technicalRequest->refresh();
 
         // Request tipe survey/installation: siapkan data lapangan untuk
         // dikerjakan teknisi. Idempoten — request yang sama tetap satu data.
@@ -383,16 +476,15 @@ class TechnicalRequestController extends Controller
         $this->log($technicalRequest->lead, 'technician_assigned', [
             'title' => $technicalRequest->title,
             'technician' => $technician->name,
+            'support_engineers' => $technicalRequest->supportUsers->pluck('name')->implode(', '),
         ]);
 
-        // Request dengan tanggal target langsung dibuatkan jadwal. Bila
-        // jadwal bentrok, assign ditolak dengan pesan yang jelas.
-        $schedule = $this->ensureScheduleFromRequest($technicalRequest, $technician);
-
-        // Teknisi SELALU diberi tahu detail task yang di-assign (bukan hanya
-        // notifikasi jadwal), supaya tidak bingung saat klik notifikasi.
-        if ((int) $technician->id !== (int) auth()->id()) {
-            $technician->notify(new TechnicianAssignedNotification($technicalRequest->fresh()));
+        // Engineer utama DAN support selalu diberi tahu detail task yang
+        // di-assign, supaya tidak bingung saat klik notifikasi.
+        foreach ($technicalRequest->supportUsers->push($technician)->unique('id') as $engineer) {
+            if ((int) $engineer->id !== (int) auth()->id()) {
+                $engineer->notify(new TechnicianAssignedNotification($technicalRequest->fresh()));
+            }
         }
 
         $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
@@ -433,8 +525,7 @@ class TechnicalRequestController extends Controller
     {
         $user = auth()->user();
         abort_unless(
-            (int) $technicalRequest->assigned_technician_id === (int) $user->id
-                || $this->isTechnicalCoordinator(),
+            $technicalRequest->isAssignedTo($user) || $this->isTechnicalCoordinator(),
             403
         );
         $this->authorizeView($technicalRequest);
@@ -544,9 +635,9 @@ class TechnicalRequestController extends Controller
     {
         $this->authorizeView($technicalRequest);
         // Sales (termasuk requester) dilarang menyentuh progres/hasil teknis.
-        // Super-admin boleh mengambil alih semua aksi karena memegang sistem.
+        // Engineer utama, support, dan super-admin boleh bekerja.
         abort_unless(
-            (int) $technicalRequest->assigned_technician_id === (int) auth()->id()
+            $technicalRequest->isAssignedTo(auth()->user())
                 || (auth()->user()?->hasRole('super-admin') ?? false),
             403
         );

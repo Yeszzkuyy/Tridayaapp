@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Instalasi;
 use App\Models\Project;
-use App\Models\ProjectActivity;
 use App\Models\ProjectStatus;
 use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Support\RecentActivityFeed;
 use App\Support\SparklineBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -97,14 +97,7 @@ class TechnicianDashboardController extends Controller
             ->take(5)
             ->get();
 
-        $activities = ProjectActivity::with(['project', 'user'])
-            ->latest('activity_date')
-            ->latest('id')
-            ->take(25)
-            ->get()
-            ->unique(fn (ProjectActivity $activity) => $activity->dedupKey())
-            ->take(5)
-            ->values();
+        $activities = RecentActivityFeed::build(5);
 
         $kpiSparklines = [
             'technicians' => SparklineBuilder::fromSeries(
@@ -168,7 +161,7 @@ class TechnicianDashboardController extends Controller
         // Request Tim Engineer. Jadwal otomatis yang lahir dari request
         // sengaja tidak diambil lagi (lihat query jadwal) supaya satu
         // penugasan tidak dihitung dua kali.
-        TechnicalRequest::with(['lead.customer', 'project'])
+        TechnicalRequest::with(['lead.customer', 'project', 'supportUsers'])
             ->whereNotIn('request_type', ['survey', 'installation'])
             ->whereIn('status', ['assigned', 'in_progress'])
             ->whereNotNull('assigned_technician_id')
@@ -183,20 +176,21 @@ class TechnicianDashboardController extends Controller
                     project: $request->project?->project_name,
                     status: TechnicalRequest::statusLabel($request->status),
                     date: $request->target_date,
-                    technicianIds: [(int) $request->assigned_technician_id],
+                    technicianIds: $request->assignedEngineerIds(),
                     url: route('sales.technical-requests.show', $request),
                 ));
             });
 
         // Survey/instalasi adalah pelaksanaan request bertipe sama. Parent
         // request-nya tidak masuk daftar di atas, jadi tetap satu aktivitas.
-        Survey::with(['customer', 'project'])
+        Survey::with(['customer', 'project', 'technicalRequest.supportUsers'])
             ->whereIn('status', ['scheduled', 'on_survey'])
             ->whereNotNull('technician_user_id')
             ->latest('survey_date')
             ->get()
             ->each(function (Survey $survey) use (&$jobs) {
                 $date = $survey->survey_date ?? $survey->created_at;
+                $supportIds = $survey->technicalRequest?->supportUsers->pluck('id')->all() ?? [];
 
                 $jobs->push($this->fieldJob(
                     type: 'survey',
@@ -206,18 +200,19 @@ class TechnicianDashboardController extends Controller
                     project: $survey->project?->project_name,
                     status: ucfirst(str_replace('_', ' ', (string) $survey->status)),
                     date: $date,
-                    technicianIds: [(int) $survey->technician_user_id],
+                    technicianIds: array_values(array_unique(array_merge([(int) $survey->technician_user_id], $supportIds))),
                     url: route('teknisi.surveys.show', $survey),
                 ));
             });
 
-        Instalasi::with(['customer', 'project', 'technicalRequest'])
+        Instalasi::with(['customer', 'project', 'technicalRequest.supportUsers'])
             ->whereIn('status', ['scheduled', 'on_progress', 'waiting'])
             ->whereNotNull('technician_user_id')
             ->latest('schedule_date')
             ->get()
             ->each(function (Instalasi $instalasi) use (&$jobs) {
                 $date = $instalasi->schedule_date ?? $instalasi->created_at;
+                $supportIds = $instalasi->technicalRequest?->supportUsers->pluck('id')->all() ?? [];
 
                 $jobs->push($this->fieldJob(
                     type: 'installation',
@@ -229,7 +224,7 @@ class TechnicianDashboardController extends Controller
                     project: $instalasi->project?->project_name,
                     status: ucfirst(str_replace('_', ' ', (string) $instalasi->status)),
                     date: $date,
-                    technicianIds: [(int) $instalasi->technician_user_id],
+                    technicianIds: array_values(array_unique(array_merge([(int) $instalasi->technician_user_id], $supportIds))),
                     url: route('teknisi.instalasis.show', $instalasi),
                 ));
             });
@@ -237,7 +232,7 @@ class TechnicianDashboardController extends Controller
         // Jadwal teknisi manual (dibuat dari menu Jadwal Teknisi, bukan
         // turunan Request Tim Engineer). Jadwal yang sudah lewat atau
         // selesai/dibatalkan tidak dianggap aktivitas berjalan.
-        TechnicianSchedule::with(['project.customer', 'technicians', 'technician'])
+        TechnicianSchedule::with(['customer', 'project.customer', 'technicians', 'technician'])
             ->whereNull('technical_request_id')
             ->whereIn('status', ['scheduled', 'on_progress'])
             ->where('end_at', '>=', $now)
@@ -259,12 +254,15 @@ class TechnicianDashboardController extends Controller
                     type: 'schedule',
                     typeLabel: __('Jadwal'),
                     title: $schedule->title,
-                    customer: $schedule->project?->customer?->name,
+                    customer: $schedule->displayCustomer()?->name,
                     project: $schedule->project?->project_name,
                     status: TechnicianSchedule::STATUSES[$schedule->status] ?? ucfirst(str_replace('_', ' ', $schedule->status)),
                     date: $schedule->start_at,
                     technicianIds: $technicianIds,
-                    url: route('teknisi.jadwal'),
+                    url: route('teknisi.jadwal', [
+                        'date' => $schedule->start_at->setTimezone('Asia/Jakarta')->toDateString(),
+                        'open' => $schedule->id,
+                    ]),
                 ));
             });
 
@@ -353,35 +351,44 @@ class TechnicianDashboardController extends Controller
                 $this->projectTechnicianIds($project, $technicians)
             ));
 
-        TechnicalRequest::whereNotIn('request_type', ['survey', 'installation'])
+        TechnicalRequest::with('supportUsers')
+            ->whereNotIn('request_type', ['survey', 'installation'])
             ->whereIn('status', ['assigned', 'in_progress'])
             ->whereNotNull('assigned_technician_id')
             ->whereNotNull('target_date')
             ->where('target_date', '>=', $start->toDateString())
-            ->get(['assigned_technician_id', 'target_date'])
+            ->get(['id', 'assigned_technician_id', 'target_date'])
             ->each(fn (TechnicalRequest $request) => $add(
                 $request->target_date,
-                [(int) $request->assigned_technician_id]
+                $request->assignedEngineerIds()
             ));
 
-        Survey::whereIn('status', ['scheduled', 'on_survey'])
+        Survey::with('technicalRequest.supportUsers')
+            ->whereIn('status', ['scheduled', 'on_survey'])
             ->whereNotNull('technician_user_id')
             ->whereNotNull('survey_date')
             ->where('survey_date', '>=', $start->toDateString())
-            ->get(['technician_user_id', 'survey_date'])
+            ->get(['id', 'technician_user_id', 'survey_date', 'technical_request_id'])
             ->each(fn (Survey $survey) => $add(
                 $survey->survey_date,
-                [(int) $survey->technician_user_id]
+                array_values(array_unique(array_merge(
+                    [(int) $survey->technician_user_id],
+                    $survey->technicalRequest?->supportUsers->pluck('id')->all() ?? []
+                )))
             ));
 
-        Instalasi::whereIn('status', ['scheduled', 'on_progress', 'waiting'])
+        Instalasi::with('technicalRequest.supportUsers')
+            ->whereIn('status', ['scheduled', 'on_progress', 'waiting'])
             ->whereNotNull('technician_user_id')
             ->whereNotNull('schedule_date')
             ->where('schedule_date', '>=', $start->toDateString())
-            ->get(['technician_user_id', 'schedule_date'])
+            ->get(['id', 'technician_user_id', 'schedule_date', 'technical_request_id'])
             ->each(fn (Instalasi $instalasi) => $add(
                 $instalasi->schedule_date,
-                [(int) $instalasi->technician_user_id]
+                array_values(array_unique(array_merge(
+                    [(int) $instalasi->technician_user_id],
+                    $instalasi->technicalRequest?->supportUsers->pluck('id')->all() ?? []
+                )))
             ));
 
         TechnicianSchedule::with(['technicians', 'technician'])

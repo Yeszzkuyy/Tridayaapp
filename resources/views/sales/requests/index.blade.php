@@ -321,6 +321,11 @@
                                     @else
                                         <span class="text-xs text-slate-400 italic">{{ __('Waiting for technician') }}</span>
                                     @endif
+                                    @if($req->supportUsers->isNotEmpty())
+                                        <p class="mt-0.5 max-w-[180px] truncate text-xs text-slate-400" title="{{ $req->supportUsers->pluck('name')->implode(', ') }}">
+                                            {{ __('Support Technicians') }}: {{ $req->supportUsers->pluck('name')->implode(', ') }}
+                                        </p>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-sm text-slate-600 dark:text-slate-300 tabular-nums">
                                     {{ $req->created_at?->format('d M Y') ?? '-' }}

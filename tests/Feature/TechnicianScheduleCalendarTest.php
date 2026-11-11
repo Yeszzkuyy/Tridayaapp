@@ -181,12 +181,14 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res = $this->actingAs($lead)->postJson(route('teknisi.schedules.store'), [
             'title' => 'Ajax create', 'date' => '2026-10-25',
             'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'scheduled',
+            'technician_user_id' => $lead->id,
         ]);
         $res->assertOk()->assertJson(['ok' => true]);
 
         $res = $this->actingAs($lead)->putJson(route('teknisi.schedules.update', $schedule), [
             'title' => 'Ajax update', 'date' => '2026-10-20',
             'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'scheduled',
+            'technician_user_id' => $lead->id,
         ]);
         $res->assertOk()->assertJson(['ok' => true]);
 
@@ -288,6 +290,7 @@ class TechnicianScheduleCalendarTest extends TestCase
             $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
                 'title' => 'Status '.$status, 'date' => '2026-10-25',
                 'start_time' => '09:00', 'end_time' => '11:00', 'status' => $status,
+                'technician_user_id' => $lead->id,
             ])->assertSessionHasNoErrors();
         }
 
@@ -295,6 +298,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
             'title' => 'Salah', 'date' => '2026-10-25',
             'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'Scheduled',
+            'technician_user_id' => $lead->id,
         ])->assertSessionHasErrors('status');
     }
 
@@ -305,6 +309,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
             'title' => 'Tanpa jam selesai', 'date' => '2026-10-25',
             'start_time' => '09:00', 'status' => 'scheduled',
+            'technician_user_id' => $lead->id,
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('technician_schedules', ['title' => 'Tanpa jam selesai']);
@@ -344,6 +349,7 @@ class TechnicianScheduleCalendarTest extends TestCase
                 'date' => '2026-10-20',
                 'start_time' => '10:00',
                 'status' => 'scheduled',
+                'technician_user_id' => $lead->id,
             ])
             ->assertSessionHasNoErrors();
 
@@ -364,6 +370,7 @@ class TechnicianScheduleCalendarTest extends TestCase
                 'date' => '2026-10-20',
                 'start_time' => '10:00',
                 'status' => 'scheduled',
+                'technician_user_id' => $teammate->id,
             ])
             ->assertSessionHasNoErrors();
 
@@ -385,6 +392,7 @@ class TechnicianScheduleCalendarTest extends TestCase
                 'date' => '2026-10-20',
                 'start_time' => '10:00',
                 'status' => 'scheduled',
+                'technician_user_id' => $owner->id,
             ])
             ->assertForbidden();
 

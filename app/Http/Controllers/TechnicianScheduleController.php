@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SyncGoogleCalendarJob;
+use App\Models\Customer;
 use App\Models\GoogleAppCredential;
 use App\Models\Project;
 use App\Models\TechnicianSchedule;
@@ -11,8 +12,11 @@ use App\Services\GoogleCalendarService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class TechnicianScheduleController extends Controller
 {
@@ -34,10 +38,21 @@ class TechnicianScheduleController extends Controller
             'description' => $s->description,
             'location' => $s->location,
             'project_id' => $s->project_id,
+            'customer_id' => $s->customer_id,
             'technician_user_id' => $s->technician_user_id,
             'technician_ids' => $s->technicianList()->pluck('id'),
             'technicians' => $s->technicianList()->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
+            'support_technician_ids' => $s->technicianList()
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->reject(fn ($id) => $id === (int) $s->technician_user_id)
+                ->values(),
+            'support_technicians' => $s->technicianList()
+                ->filter(fn ($t) => (int) $t->id !== (int) $s->technician_user_id)
+                ->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])
+                ->values(),
             'reminder_minutes' => $s->reminder_minutes,
+            'reminder_value' => $s->reminder_value,
             'start' => $s->start_at->setTimezone(GoogleCalendarService::TIMEZONE)->format('Y-m-d\TH:i:s'),
             'end' => $s->end_at->setTimezone(GoogleCalendarService::TIMEZONE)->format('Y-m-d\TH:i:s'),
             'status' => $s->status,
@@ -45,7 +60,7 @@ class TechnicianScheduleController extends Controller
             'google_event_id' => $s->google_event_id,
             'technician' => $s->technicianList()->pluck('name')->implode(', '),
             'project' => $s->project?->project_name,
-            'customer' => $s->project?->customer?->name,
+            'customer' => $s->displayCustomer()?->name,
         ]));
     }
 
@@ -53,11 +68,35 @@ class TechnicianScheduleController extends Controller
     {
         $this->autoSyncSoon();
         $technicians = User::role(User::TECHNICIAN_ROLES)->orderBy('name')->limit(200)->get(['id', 'name']);
-        $projects = Project::whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name']);
+        $projects = Project::with('customer:id,name')->whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
+        $customers = Customer::orderBy('name')->get(['id', 'name']);
         $connection = $this->google->connectionStatus(auth()->user());
         $credential = GoogleAppCredential::current();
+        // Jaga-jaga saat deploy: kolom customer baru bisa saja belum
+        // dimigrasikan. Form tetap tampil, tetapi field customer
+        // disembunyikan sampai kolom tersedia.
+        $customerColumnReady = Schema::hasColumn('technician_schedules', 'customer_id');
 
-        return view('teknisi.jadwal', compact('technicians', 'projects', 'credential', 'connection'));
+        // Dari daftar Tugas Engineer: buka kalender pada tanggal jadwal dan
+        // langsung tampilkan panel detailnya.
+        $initialDate = $request->query('date');
+        if (! is_string($initialDate) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $initialDate)) {
+            $initialDate = null;
+        }
+        $openScheduleId = $request->integer('open') ?: null;
+        $backToTasks = $request->query('from') === 'tasks';
+
+        return view('teknisi.jadwal', compact(
+            'technicians',
+            'projects',
+            'customers',
+            'credential',
+            'connection',
+            'initialDate',
+            'openScheduleId',
+            'backToTasks',
+            'customerColumnReady',
+        ));
     }
 
     /**
@@ -67,7 +106,7 @@ class TechnicianScheduleController extends Controller
     public function getSchedulesApi(Request $request)
     {
         $this->autoSyncSoon();
-        $query = TechnicianSchedule::with(['project.customer', 'technician', 'technicians', 'owner']);
+        $query = TechnicianSchedule::with(['project.customer', 'customer', 'technician', 'technicians', 'owner']);
 
         if ($request->filled('start') && $request->filled('end')) {
             try {
@@ -107,15 +146,27 @@ class TechnicianScheduleController extends Controller
             'location' => $s->location,
             'date' => $s->start_at->toDateString(),
             'start_time' => $s->start_at->format('H:i'),
-            'end_time' => ($s->end_at && !$s->end_at->eq($s->start_at)) ? $s->end_at->format('H:i') : null,
+            'end_time' => ($s->end_at && ! $s->end_at->eq($s->start_at)) ? $s->end_at->format('H:i') : null,
             'status' => $s->status,
             'sync_status' => $s->google_sync_status,
             'technician' => $s->technicianList()->pluck('name')->implode(', '),
+            'customer_id' => $s->customer_id,
             'technician_user_id' => $s->technician_user_id,
             'technician_ids' => $s->technicianList()->pluck('id'),
             'technicians' => $s->technicianList()->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->values(),
+            'support_technician_ids' => $s->technicianList()
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->reject(fn ($id) => $id === (int) $s->technician_user_id)
+                ->values(),
+            'support_technicians' => $s->technicianList()
+                ->filter(fn ($t) => (int) $t->id !== (int) $s->technician_user_id)
+                ->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])
+                ->values(),
+            'reminder_minutes' => $s->reminder_minutes,
+            'reminder_value' => $s->reminder_value,
             'project' => $s->project?->project_name,
-            'customer' => $s->project?->customer?->name,
+            'customer' => $s->displayCustomer()?->name,
             'creator' => $s->owner?->name,
             'creator_avatar' => $s->owner?->avatar ? asset('storage/'.$s->owner->avatar) : null,
             'url' => $s->project_id ? route('projects.show', $s->project_id) : route('teknisi.jadwal'),
@@ -173,7 +224,7 @@ class TechnicianScheduleController extends Controller
             // Logging best-effort: kegagalan menulis log tidak boleh
             // mengubah pesan ramah ini jadi error 500.
             try {
-                \Illuminate\Support\Facades\Log::warning('Google sync gagal: '.$e->getMessage());
+                Log::warning('Google sync gagal: '.$e->getMessage());
             } catch (\Throwable) {
             }
 
@@ -236,7 +287,7 @@ class TechnicianScheduleController extends Controller
             $current->fill($filtered)->save();
         } catch (\Throwable $e) {
             try {
-                \Illuminate\Support\Facades\Log::warning('Simpan kredensial Google gagal: '.$e->getMessage());
+                Log::warning('Simpan kredensial Google gagal: '.$e->getMessage());
             } catch (\Throwable) {
             }
 
@@ -258,11 +309,11 @@ class TechnicianScheduleController extends Controller
         // Cache bisa saja tidak writable (mis. permission storage). Jangan
         // sampai halaman jadwal 500 hanya karena throttle sync gagal ditulis.
         try {
-            if (\Illuminate\Support\Facades\Cache::add('gcal:last_auto_sync', true, 180)) {
+            if (Cache::add('gcal:last_auto_sync', true, 180)) {
                 SyncGoogleCalendarJob::dispatch();
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Auto sync Google dilewati: cache tidak tersedia.', [
+            Log::warning('Auto sync Google dilewati: cache tidak tersedia.', [
                 'exception' => $e->getMessage(),
             ]);
         }
@@ -372,7 +423,7 @@ class TechnicianScheduleController extends Controller
 
     private function schedulesForRange(?string $start, ?string $end, $search = null)
     {
-        return TechnicianSchedule::with(['project.customer', 'technician', 'technicians'])
+        return TechnicianSchedule::with(['project.customer', 'customer', 'technician', 'technicians'])
             ->when($start && $end, function ($q) use ($start, $end) {
                 $q->where('start_at', '<', $end)->where('end_at', '>', $start);
             })
@@ -392,6 +443,7 @@ class TechnicianScheduleController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'project_id' => 'nullable|exists:projects,id',
+            'customer_id' => 'nullable|exists:customers,id',
             'technician_ids' => 'nullable|array',
             'technician_ids.*' => [
                 'integer',
@@ -402,9 +454,24 @@ class TechnicianScheduleController extends Controller
                     }
                 },
             ],
+            // Engineer pendukung pada form baru (utama tetap technician_user_id).
+            'support_technician_ids' => 'nullable|array',
+            'support_technician_ids.*' => [
+                'integer',
+                'exists:users,id',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! User::find($value)?->isTechnician()) {
+                        $fail(__('The selected support engineer is not a technician.'));
+                    }
+                },
+            ],
             // Kolom lama tetap diterima sebagai fallback (kompatibilitas
-            // mundur — data/pemanggil lama tidak boleh rusak).
+            // mundur — data/pemanggil lama tidak boleh rusak). Form baru
+            // wajib memilih engineer utama; pemanggil lama yang hanya
+            // mengirim technician_ids tetap dianggap valid.
             'technician_user_id' => [
+                Rule::requiredIf(fn () => blank($request->input('technician_user_id'))
+                    && blank($request->input('technician_ids'))),
                 'nullable',
                 'exists:users,id',
                 function (string $attribute, mixed $value, Closure $fail): void {
@@ -419,20 +486,68 @@ class TechnicianScheduleController extends Controller
             'location' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:2000',
             'status' => 'required|in:'.implode(',', array_keys(TechnicianSchedule::STATUSES)),
-            'reminder_minutes' => 'nullable|integer|min:5|max:1440',
+            'reminder_minutes' => ['nullable', Rule::in(TechnicianSchedule::REMINDER_VALUES)],
         ], [
             'end_time.after' => 'Jam selesai harus setelah jam mulai.',
+            'reminder_minutes.in' => 'Pilih salah satu opsi pengingat yang tersedia.',
         ]);
 
+        // Form mengirim "morning_of_event" / "30" / dst. Kolom database
+        // bertipe integer: "morning_of_event" disimpan sebagai 0 (penanda),
+        // dan nilai kosong menjadi null (tanpa pengingat). Bila pemanggil
+        // tidak mengirim field ini, nilai lama tidak diubah.
+        if (array_key_exists('reminder_minutes', $validated)) {
+            $validated['reminder_minutes'] = TechnicianSchedule::normalizeReminderValue(
+                $validated['reminder_minutes']
+            );
+        }
+
         // Teknisi bisa lebih dari satu (survey/instalasi berangkat tim).
+        // Form baru memisahkan engineer utama (technician_user_id) dan
+        // support (support_technician_ids); keduanya digabung ke pivot.
         // Teknisi pertama juga disalin ke kolom lama technician_user_id
         // sebagai jaring pengaman kompatibilitas (data lama tetap terbaca).
-        $technicianIds = array_values(array_unique(array_map('intval', $validated['technician_ids'] ?? [])));
-        if ($technicianIds === [] && filled($validated['technician_user_id'] ?? null)) {
-            $technicianIds = [(int) $validated['technician_user_id']];
+        $supportProvided = array_key_exists('support_technician_ids', $validated);
+        $supportIds = array_values(array_unique(array_map('intval', $validated['support_technician_ids'] ?? [])));
+        unset($validated['support_technician_ids']);
+
+        if ($supportProvided) {
+            $mainId = filled($validated['technician_user_id'] ?? null)
+                ? (int) $validated['technician_user_id']
+                : null;
+
+            $supportIds = array_values(array_filter(
+                $supportIds,
+                fn (int $id) => $id !== $mainId
+            ));
+
+            $technicianIds = $mainId
+                ? array_values(array_unique(array_merge([$mainId], $supportIds)))
+                : $supportIds;
+        } else {
+            $technicianIds = array_values(array_unique(array_map('intval', $validated['technician_ids'] ?? [])));
+            if ($technicianIds === [] && filled($validated['technician_user_id'] ?? null)) {
+                $technicianIds = [(int) $validated['technician_user_id']];
+            }
         }
+
         $validated['technician_ids'] = $technicianIds;
         $validated['technician_user_id'] = $technicianIds[0] ?? null;
+
+        // Customer: bila project dipilih, ikuti customer project (sumber
+        // kebenaran). Jadwal non-project memakai customer yang dipilih
+        // langsung dari daftar customer. Bila kolom belum dimigrasikan,
+        // jangan kirim customer_id agar penyimpanan jadwal tidak gagal.
+        if (Schema::hasColumn('technician_schedules', 'customer_id')) {
+            if (filled($validated['project_id'] ?? null)) {
+                $projectCustomerId = Project::whereKey($validated['project_id'])->value('customer_id');
+                if ($projectCustomerId) {
+                    $validated['customer_id'] = $projectCustomerId;
+                }
+            }
+        } else {
+            unset($validated['customer_id']);
+        }
 
         $tz = GoogleCalendarService::TIMEZONE;
         $validated['start_at'] = Carbon::parse(

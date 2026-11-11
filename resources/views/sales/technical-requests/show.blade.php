@@ -34,7 +34,7 @@
         ];
         $canReview = $isCoordinator && $technicalRequest->status === 'waiting_lead';
         $canAssign = $isCoordinator && in_array($technicalRequest->status, ['accepted', 'assigned'], true);
-        $canWork = ($isSuperAdmin || (int) $technicalRequest->assigned_technician_id === (int) $user?->id)
+        $canWork = ($isSuperAdmin || $technicalRequest->isAssignedTo($user))
             && in_array($technicalRequest->status, ['assigned', 'in_progress'], true);
         $canCancel = !in_array($technicalRequest->status, ['completed', 'cancelled'], true)
             && ((int) $technicalRequest->requested_by === (int) $user?->id || $user?->can('manage-sales-leads'));
@@ -133,17 +133,40 @@
                         </div>
                     </div>
 
-                    <div class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
-                        @if($technicalRequest->technician)
-                            <x-user-avatar :user="$technicalRequest->technician" size="w-11 h-11" text="text-sm" color="green" />
-                        @else
+                    <div class="space-y-3">
+                        <div class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+                            @if($technicalRequest->technician)
+                                <x-user-avatar :user="$technicalRequest->technician" size="w-11 h-11" text="text-sm" color="green" />
+                            @else
+                                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300" aria-hidden="true">
+                                    <x-icon name="tools" class="h-5 w-5" />
+                                </span>
+                            @endif
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Technician') }}</p>
+                                <p class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ $technicalRequest->technician?->name ?? __('Not assigned yet') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
                             <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300" aria-hidden="true">
                                 <x-icon name="tools" class="h-5 w-5" />
                             </span>
-                        @endif
-                        <div class="min-w-0">
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Technician') }}</p>
-                            <p class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ $technicalRequest->technician?->name ?? __('Not assigned yet') }}</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Support Technicians') }}</p>
+                                @if($technicalRequest->supportUsers->isNotEmpty())
+                                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                        @foreach($technicalRequest->supportUsers as $support)
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                                <x-user-avatar :user="$support" size="h-5 w-5" text="text-[9px]" :clickable="false" />
+                                                {{ $support->name }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('No support engineers yet') }}</p>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -351,23 +374,99 @@
                         @endif
 
                         @if($canAssign)
-                            <form action="{{ route('sales.technical-requests.assign', $technicalRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Assigning…') }}">
+                            @php
+                                $supportOptions = $technicians
+                                    ->map(fn ($tech) => ['id' => (int) $tech->id, 'name' => $tech->name])
+                                    ->values();
+                                $selectedSupportIds = $technicalRequest->supportUsers
+                                    ->pluck('id')
+                                    ->map(fn ($id) => (int) $id)
+                                    ->values();
+                            @endphp
+                            <form action="{{ route('sales.technical-requests.assign', $technicalRequest) }}" method="POST"
+                                  class="border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Assigning…') }}"
+                                  x-data="{
+                                      mainId: @js((int) old('technician_id', $technicalRequest->assigned_technician_id) ?: null),
+                                      supportOpen: false,
+                                      supportQuery: '',
+                                      supportIds: @js($selectedSupportIds),
+                                      supportOptions: @js($supportOptions),
+                                      get filteredSupports() {
+                                          const q = this.supportQuery.toLowerCase().trim();
+                                          return this.supportOptions.filter(t => Number(t.id) !== Number(this.mainId) && (!q || t.name.toLowerCase().includes(q)));
+                                      },
+                                      get supportSummary() {
+                                          const names = this.supportIds.map(id => this.supportOptions.find(t => Number(t.id) === Number(id))?.name).filter(Boolean);
+                                          return names.length ? names.join(', ') : '{{ __('Choose support engineers (optional)') }}';
+                                      },
+                                      syncMain() {
+                                          this.supportIds = this.supportIds.filter(id => Number(id) !== Number(this.mainId));
+                                      },
+                                      toggleSupport(id) {
+                                          const i = this.supportIds.indexOf(id);
+                                          if (i === -1) this.supportIds.push(id); else this.supportIds.splice(i, 1);
+                                      }
+                                  }">
                                 @csrf
-                                <div>
-                                    <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Assign Technician') }}</label>
-                                    <select name="technician_id" required class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                        <option value="">{{ __('-- Select Technician --') }}</option>
-                                        @foreach($technicians as $tech)
-                                            <option value="{{ $tech->id }}" @selected((int) $technicalRequest->assigned_technician_id === (int) $tech->id)>{{ $tech->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('technician_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                <div class="grid grid-cols-1 gap-3">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Lead Technician') }} <span class="text-red-500" aria-hidden="true">*</span></label>
+                                        <select name="technician_id" x-model.number="mainId" @change="syncMain()" required
+                                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                            <option value="">{{ __('-- Select Technician --') }}</option>
+                                            @foreach($technicians as $tech)
+                                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('technician_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Support Technicians') }}</label>
+                                        <div class="relative" @click.outside="supportOpen = false">
+                                            <button type="button" @click="supportOpen = !supportOpen"
+                                                    class="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-left text-sm dark:border-slate-600 dark:bg-slate-800 focus:border-accent-500 focus:ring-accent-500">
+                                                <span class="truncate" :class="supportIds.length ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'" x-text="supportSummary"></span>
+                                                <svg class="h-4 w-4 shrink-0 text-slate-400" :class="supportOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                            </button>
+
+                                            <div x-show="supportOpen" x-cloak x-transition
+                                                 class="absolute bottom-full z-30 mb-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-800">
+                                                <div class="p-2">
+                                                    <input type="text" x-model="supportQuery" placeholder="{{ __('Search support engineer...') }}"
+                                                           class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                                                </div>
+                                                <div class="max-h-52 overflow-y-auto pb-1">
+                                                    <template x-for="tech in filteredSupports" :key="tech.id">
+                                                        <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition hover:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                            <input type="checkbox" :value="tech.id" :checked="supportIds.includes(tech.id)"
+                                                                   @change="toggleSupport(tech.id)"
+                                                                   class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                            <span class="truncate" x-text="tech.name"></span>
+                                                        </label>
+                                                    </template>
+                                                    <p x-show="filteredSupports.length === 0" class="px-3 py-2 text-sm text-slate-400">{{ __('No results.') }}</p>
+                                                </div>
+                                            </div>
+
+                                            {{-- Penanda: form selalu mengirim daftar support (boleh kosong). --}}
+                                            <input type="hidden" name="support_present" value="1">
+                                            <template x-for="id in supportIds" :key="id">
+                                                <input type="hidden" name="support_ids[]" :value="id">
+                                            </template>
+                                        </div>
+                                        @error('support_ids') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                        @error('support_ids.*') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    </div>
                                 </div>
-                                <button type="submit"
-                                        class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                                    {{ __('Save') }}
-                                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                                </button>
+
+                                <div class="mt-3">
+                                    <button type="submit"
+                                            class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                                        {{ __('Save') }}
+                                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                                    </button>
+                                </div>
                             </form>
                         @endif
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\Instalasi;
 use App\Models\Lead;
 use App\Models\Project;
 use App\Models\ProjectActivity;
@@ -69,7 +70,8 @@ class TechnicianDashboardTest extends TestCase
         $this->actingAs($user)
             ->get(route('teknisi.dashboard'))
             ->assertOk()
-            ->assertSee(__('Dashboard Teknisi'))
+            ->assertSee(__('Dashboard'))
+            ->assertDontSee('Engineer Dashboard')
             ->assertSee(__('Total Teknisi'))
             ->assertSee(__('Teknisi Aktif'))
             ->assertSee(__('Project Berjalan'))
@@ -182,6 +184,63 @@ class TechnicianDashboardTest extends TestCase
             ->assertSee('Rina')
             ->assertSee('Instalasi Server Rina')
             ->assertSee('1 '.__('field job'));
+    }
+
+    public function test_recent_activity_includes_surveys_and_installations(): void
+    {
+        $user = $this->authorizedUser();
+        $open = ProjectStatus::create(['name' => 'Open', 'color' => 'blue', 'sort_order' => 1]);
+        $project = $this->projectWith('Instalasi CCTV Audit', $open->id);
+
+        Survey::create([
+            'title' => 'Survey Lokasi Audit',
+            'project_id' => $project->id,
+            'customer_id' => $project->customer_id,
+            'sales_user_id' => $user->id,
+            'technician_user_id' => $user->id,
+            'status' => 'scheduled',
+        ]);
+
+        Instalasi::create([
+            'project_id' => $project->id,
+            'customer_id' => $project->customer_id,
+            'sales_user_id' => $user->id,
+            'technician_user_id' => $user->id,
+            'status' => 'scheduled',
+        ]);
+
+        $html = $this->actingAs($user)
+            ->get(route('teknisi.dashboard'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(__('Created a survey'), $html);
+        $this->assertStringContainsString('Survey Lokasi Audit', $html);
+        $this->assertStringContainsString(__('Created an installation'), $html);
+        $this->assertStringContainsString('Instalasi CCTV Audit', $html);
+    }
+
+    public function test_active_technician_schedule_links_to_that_engineers_tasks(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $lead = User::factory()->create();
+        $lead->assignRole('lead-technician');
+        $rina = User::factory()->create(['name' => 'Rina']);
+        $rina->assignRole('technician');
+
+        $schedule = TechnicianSchedule::create([
+            'user_id' => $rina->id,
+            'title' => 'Instalasi Server Rina',
+            'start_at' => now()->addHour(),
+            'end_at' => now()->addHours(3),
+            'status' => 'scheduled',
+        ]);
+        $schedule->technicians()->attach($rina->id);
+
+        $this->actingAs($lead)
+            ->get(route('teknisi.dashboard'))
+            ->assertOk()
+            ->assertSee(route('teknisi.tasks.index', ['technician_id' => $rina->id]));
     }
 
     public function test_multi_technician_schedule_counts_each_engineer_once(): void
@@ -357,6 +416,33 @@ class TechnicianDashboardTest extends TestCase
             ->assertSee('Yoga')
             ->assertSee('Fajar')
             ->assertSee('Survey Awal Gudang');
+    }
+
+    public function test_technician_can_open_own_tasks_from_active_engineer_card(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $rina = User::factory()->create(['name' => 'Rina']);
+        $rina->assignRole('technician');
+
+        $schedule = TechnicianSchedule::create([
+            'user_id' => $rina->id,
+            'title' => 'Cek Server Sendiri',
+            'start_at' => now()->addHour(),
+            'end_at' => now()->addHours(3),
+            'status' => 'scheduled',
+        ]);
+        $schedule->technicians()->attach($rina->id);
+
+        $html = $this->actingAs($rina)
+            ->get(route('teknisi.dashboard'))
+            ->assertOk()
+            ->getContent();
+
+        // Nama engineer sendiri bisa diklik ke Tugas Engineer, bukan hanya
+        // untuk koordinator.
+        $this->assertStringContainsString(route('teknisi.tasks.index'), $html);
+        $this->assertStringContainsString('title="'.__('Open tasks').'"', $html);
+        $this->assertStringContainsString('Cek Server Sendiri', $html);
     }
 
     private function leadFor(User $sales): Lead

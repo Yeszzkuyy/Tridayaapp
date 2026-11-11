@@ -8,6 +8,7 @@ use App\Models\Instalasi;
 use App\Models\Lead;
 use App\Models\ProjectDocument;
 use App\Models\TechnicalRequest;
+use App\Models\TechnicianSchedule;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -153,7 +154,7 @@ class TechnicianTaskTest extends TestCase
         $this->assertStringContainsString($request->title, $html);
     }
 
-    public function test_task_detail_shows_full_customer_request_information_read_only(): void
+    public function test_task_detail_shows_full_customer_request_information_and_work_actions(): void
     {
         $sales = $this->userWithRole('sales');
         $tech = $this->userWithRole('technician');
@@ -191,10 +192,11 @@ class TechnicianTaskTest extends TestCase
         $this->assertStringContainsString('Ibu Sari', $html);
         $this->assertStringContainsString('081200001111', $html);
 
-        // Read-only: tidak ada aksi kerja/assign/review di halaman ini.
-        $this->assertStringContainsString(__('Read-only task view'), $html);
-        $this->assertStringNotContainsString(__('Request actions'), $html);
-        $this->assertStringNotContainsString(route('sales.technical-requests.complete', $request), $html);
+        // Engineer utama boleh mengerjakan langsung dari Tugas Saya, tetapi
+        // tetap tidak boleh assign/review (itu wewenang koordinator).
+        $this->assertStringNotContainsString(__('Read-only task view'), $html);
+        $this->assertStringContainsString(__('Request actions'), $html);
+        $this->assertStringContainsString(route('sales.technical-requests.complete', $request), $html);
         $this->assertStringNotContainsString(route('sales.technical-requests.assign', $request), $html);
         $this->assertStringNotContainsString(route('sales.technical-requests.review', $request), $html);
     }
@@ -288,6 +290,47 @@ class TechnicianTaskTest extends TestCase
         $this->assertStringContainsString($own->title, $leadHtml);
         $this->assertStringContainsString($other->title, $leadHtml);
         $this->assertStringContainsString($unassigned->title, $leadHtml);
+    }
+
+    public function test_lead_technician_can_view_all_tasks_and_filter_by_engineer(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $techA = $this->userWithRole('technician');
+        $techB = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+
+        $taskA = $this->makeRequest($sales, $lead, [
+            'title' => 'Tugas Engineer A',
+            'assigned_technician_id' => $techA->id,
+        ]);
+        $taskB = $this->makeRequest($sales, $lead, [
+            'title' => 'Tugas Engineer B',
+            'assigned_technician_id' => $techB->id,
+        ]);
+
+        // Lead Technician adalah koordinator teknis: boleh melihat semua
+        // tugas dan memfilter per engineer.
+        $html = $this->actingAs($leadTech)
+            ->get(route('teknisi.tasks.index'))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString(__('Technician Tasks'), $html);
+        $this->assertStringContainsString($taskA->title, $html);
+        $this->assertStringContainsString($taskB->title, $html);
+
+        $filtered = $this->actingAs($leadTech)
+            ->get(route('teknisi.tasks.index', ['technician_id' => $techA->id]))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($taskA->title, $filtered);
+        $this->assertStringNotContainsString($taskB->title, $filtered);
+
+        // Detail tugas engineer lain juga bisa dibuka (read-only untuk
+        // pekerjaan, tetapi aksi assign tetap milik koordinator).
+        $this->actingAs($leadTech)
+            ->get(route('teknisi.tasks.show', $taskB))
+            ->assertOk();
     }
 
     public function test_sales_cannot_open_technician_tasks(): void
@@ -483,5 +526,186 @@ class TechnicianTaskTest extends TestCase
         $this->actingAs($tech)
             ->get(route('teknisi.tasks.show', $request))
             ->assertOk();
+    }
+
+    public function test_manual_schedule_appears_in_assigned_engineers_tasks(): void
+    {
+        $tech = $this->userWithRole('technician');
+        $other = $this->userWithRole('technician');
+
+        $customer = Customer::create([
+            'name' => 'PT Jadwal Manual',
+            'company' => 'Tridaya Group',
+            'address' => 'Jl. Jadwal No. 5',
+            'contact_person' => 'Pak Jadwal',
+            'phone' => '081200001111',
+        ]);
+
+        $schedule = TechnicianSchedule::create([
+            'user_id' => $tech->id,
+            'customer_id' => $customer->id,
+            'technician_user_id' => $tech->id,
+            'title' => 'Maintenance Server Non Project',
+            'description' => 'Cek server cabang',
+            'location' => 'Gudang Timur',
+            'start_at' => now()->addDay()->setTime(9, 0),
+            'end_at' => now()->addDay()->setTime(11, 0),
+            'status' => 'scheduled',
+        ]);
+        $schedule->technicians()->attach($tech->id);
+
+        $html = $this->actingAs($tech)
+            ->get(route('teknisi.tasks.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($schedule->title, $html);
+        $this->assertStringContainsString($customer->name, $html);
+        $this->assertStringContainsString(__('Jadwal'), $html);
+        $this->assertStringContainsString('Gudang Timur', $html);
+        $this->assertStringContainsString(TechnicianSchedule::STATUSES['scheduled'], $html);
+        $this->assertStringContainsString(
+            'teknisi/jadwal?date='.$schedule->start_at->setTimezone('Asia/Jakarta')->toDateString().'&amp;open='.$schedule->id.'&amp;from=tasks',
+            $html
+        );
+
+        // Engineer lain tidak melihat jadwal ini.
+        $otherHtml = $this->actingAs($other)
+            ->get(route('teknisi.tasks.index'))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringNotContainsString($schedule->title, $otherHtml);
+    }
+
+    public function test_support_engineer_sees_manual_schedule_and_coordinator_can_filter_it(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $main = $this->userWithRole('technician');
+        $support = $this->userWithRole('technician');
+
+        $customer = Customer::create([
+            'name' => 'PT Support Jadwal',
+            'company' => 'Tridaya Group',
+            'address' => 'Jl. Support No. 8',
+            'contact_person' => 'Pak Support',
+            'phone' => '081200002222',
+        ]);
+
+        $schedule = TechnicianSchedule::create([
+            'user_id' => $lead->id,
+            'customer_id' => $customer->id,
+            'technician_user_id' => $main->id,
+            'title' => 'Instalasi Jaringan Support',
+            'start_at' => now()->addDay()->setTime(13, 0),
+            'end_at' => now()->addDay()->setTime(15, 0),
+            'status' => 'scheduled',
+        ]);
+        $schedule->technicians()->sync([$main->id, $support->id]);
+
+        // Engineer pendukung melihat jadwal yang sama di daftar tugasnya.
+        $supportHtml = $this->actingAs($support)
+            ->get(route('teknisi.tasks.index'))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($schedule->title, $supportHtml);
+        $this->assertStringContainsString($main->name, $supportHtml);
+
+        // Koordinator bisa memfilter berdasarkan engineer pendukung.
+        $filtered = $this->actingAs($lead)
+            ->get(route('teknisi.tasks.index', ['technician_id' => $support->id]))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($schedule->title, $filtered);
+        $this->assertStringContainsString($customer->name, $filtered);
+
+        // Filter engineer lain tidak menampilkan jadwal ini.
+        $other = $this->userWithRole('technician');
+        $otherHtml = $this->actingAs($lead)
+            ->get(route('teknisi.tasks.index', ['technician_id' => $other->id]))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringNotContainsString($schedule->title, $otherHtml);
+    }
+
+    public function test_schedule_status_and_search_filter_apply_to_schedule_tasks(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+
+        $customer = Customer::create([
+            'name' => 'PT Cari Jadwal',
+            'company' => 'Tridaya Group',
+            'address' => 'Jl. Cari No. 9',
+            'contact_person' => 'Pak Cari',
+            'phone' => '081200003333',
+        ]);
+
+        $active = TechnicianSchedule::create([
+            'user_id' => $lead->id,
+            'customer_id' => $customer->id,
+            'technician_user_id' => $tech->id,
+            'title' => 'Survey Lokasi Cari',
+            'start_at' => now()->addDay()->setTime(9, 0),
+            'end_at' => now()->addDay()->setTime(11, 0),
+            'status' => 'scheduled',
+        ]);
+        $active->technicians()->attach($tech->id);
+
+        $done = TechnicianSchedule::create([
+            'user_id' => $lead->id,
+            'customer_id' => $customer->id,
+            'technician_user_id' => $tech->id,
+            'title' => 'Jadwal Sudah Selesai',
+            'start_at' => now()->subDay()->setTime(9, 0),
+            'end_at' => now()->subDay()->setTime(11, 0),
+            'status' => 'completed',
+        ]);
+        $done->technicians()->attach($tech->id);
+
+        $scheduled = $this->actingAs($lead)
+            ->get(route('teknisi.tasks.index', ['status' => 'scheduled']))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($active->title, $scheduled);
+        $this->assertStringNotContainsString($done->title, $scheduled);
+
+        $search = $this->actingAs($lead)
+            ->get(route('teknisi.tasks.index', ['q' => 'Cari Jadwal']))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($customer->name, $search);
+        $this->assertStringContainsString($active->title, $search);
+    }
+
+    public function test_unassigned_filter_includes_schedule_without_engineer(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        $schedule = TechnicianSchedule::create([
+            'user_id' => $lead->id,
+            'title' => 'Jadwal Belum Ada Engineer',
+            'start_at' => now()->addDay()->setTime(9, 0),
+            'end_at' => now()->addDay()->setTime(11, 0),
+            'status' => 'scheduled',
+        ]);
+
+        $html = $this->actingAs($lead)
+            ->get(route('teknisi.tasks.index', ['technician_id' => 'unassigned']))
+            ->assertOk()
+            ->getContent();
+        $this->assertStringContainsString($schedule->title, $html);
+    }
+
+    public function test_lead_technician_sees_engineer_tasks_menu_in_sidebar(): void
+    {
+        $lead = $this->userWithRole('lead-technician');
+
+        $html = $this->actingAs($lead)
+            ->get(route('teknisi.dashboard'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(route('teknisi.tasks.index'), $html);
+        $this->assertStringContainsString(__('Technician Tasks'), $html);
     }
 }

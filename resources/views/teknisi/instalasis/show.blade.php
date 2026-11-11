@@ -48,6 +48,12 @@
                 <p class="text-xs text-slate-400">{{ __('Technician PIC') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->technician_pic ?? '-' }}</p>
             </div>
+            @if($instalasi->technicalRequest?->supportUsers->isNotEmpty())
+                <div>
+                    <p class="text-xs text-slate-400">{{ __('Support Technicians') }}</p>
+                    <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->technicalRequest->supportUsers->pluck('name')->implode(', ') }}</p>
+                </div>
+            @endif
             <div>
                 <p class="text-xs text-slate-400">{{ __('Jadwal') }}</p>
                 <p class="font-medium text-slate-800 dark:text-slate-100">{{ $instalasi->schedule_date?->format('d M Y') ?? '-' }}</p>

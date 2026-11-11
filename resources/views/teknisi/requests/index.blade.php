@@ -107,6 +107,13 @@
                             <span>{{ __('Waiting for technician') }}</span>
                         @endif
                     </x-request-meta>
+                    <x-request-meta :label="__('Support Technicians')">
+                        @if($req->supportUsers->isNotEmpty())
+                            <span class="truncate">{{ $req->supportUsers->pluck('name')->implode(', ') }}</span>
+                        @else
+                            <span>{{ __('None') }}</span>
+                        @endif
+                    </x-request-meta>
                     <x-request-meta :label="__('Created')">
                         <span>{{ $req->created_at?->format('d M Y') ?? '-' }}</span>
                     </x-request-meta>

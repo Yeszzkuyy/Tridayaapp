@@ -410,36 +410,32 @@
                             <article class="flex items-center justify-between gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                                 <div class="flex min-w-0 items-center gap-3.5">
                                     <div class="shrink-0">
-                                        <x-user-avatar :user="$activity->user" size="w-9 h-9" text="text-xs" />
+                                        <x-user-avatar :user="$activity['user']" size="w-9 h-9" text="text-xs" />
                                     </div>
                                     <div class="min-w-0">
                                         <p class="truncate text-sm leading-snug text-slate-700 dark:text-slate-200">
-                                            <span class="font-semibold text-slate-900 dark:text-white">{{ $activity->user?->name ?? __('System') }}</span>
-                                            <span class="text-slate-500 dark:text-slate-300">{{ __($activity->displayTitle()) }}</span>
+                                            <span class="font-semibold text-slate-900 dark:text-white">{{ $activity['user']?->name ?? __('System') }}</span>
+                                            <span class="text-slate-500 dark:text-slate-300">{{ __($activity['title']) }}</span>
                                         </p>
                                         <div class="mt-0.5 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                                            @if($activity->project)
-                                                @if($canViewProjects)
-                                                    <a wire:navigate.hover href="{{ route('projects.show', $activity->project) }}"
-                                                       class="truncate font-medium text-accent-600 hover:underline dark:text-accent-400">
-                                                        {{ $activity->project->project_name }}
-                                                    </a>
-                                                @else
-                                                    <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $activity->project->project_name }}</span>
-                                                @endif
-                                                @if($activity->project->customer)
-                                                    <span class="text-slate-300 dark:text-slate-600">·</span>
-                                                    <span class="truncate">{{ $activity->project->customer->name }}</span>
-                                                @endif
+                                            @if($activity['type'] === 'project' && $activity['project_id'] && $canViewProjects)
+                                                <a wire:navigate.hover href="{{ route('projects.show', $activity['project_id']) }}"
+                                                   class="truncate font-medium text-accent-600 hover:underline dark:text-accent-400">
+                                                    {{ $activity['subject'] }}
+                                                </a>
                                             @else
-                                                <span>{{ __('Project not available') }}</span>
+                                                <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $activity['subject'] }}</span>
+                                            @endif
+                                            @if($activity['context'])
+                                                <span class="text-slate-300 dark:text-slate-600">·</span>
+                                                <span class="truncate">{{ $activity['context'] }}</span>
                                             @endif
                                         </div>
                                     </div>
                                 </div>
 
-                                <time class="shrink-0 text-xs font-medium text-slate-400 tabular-nums dark:text-slate-400" datetime="{{ $activity->activity_date?->toIso8601String() }}">
-                                    {{ $activity->activity_date?->setTimezone('Asia/Jakarta')->shortRelativeDiffForHumans() ?? '-' }}
+                                <time class="shrink-0 text-xs font-medium text-slate-400 tabular-nums dark:text-slate-400" datetime="{{ $activity['date']?->toIso8601String() }}">
+                                    {{ $activity['date']?->setTimezone('Asia/Jakarta')->shortRelativeDiffForHumans() ?? '-' }}
                                 </time>
                             </article>
                         @empty

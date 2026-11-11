@@ -64,6 +64,14 @@
                     <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('PIC') }}</p>
                     <p class="text-slate-800 dark:text-slate-100">{{ $survey->pic ?? '-' }}</p>
                 </div>
+
+                {{-- Support engineer dari Request Tim Engineer --}}
+                @if($survey->technicalRequest?->supportUsers->isNotEmpty())
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-slate-400 mb-1">{{ __('Support Technicians') }}</p>
+                        <p class="text-slate-800 dark:text-slate-100">{{ $survey->technicalRequest->supportUsers->pluck('name')->implode(', ') }}</p>
+                    </div>
+                @endif
             </div>
 
             <hr class="border-slate-200 dark:border-slate-600">
