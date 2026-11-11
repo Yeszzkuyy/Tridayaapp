@@ -23,6 +23,8 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', Customer::class);
 
+        $isRestricted = CustomerAccess::isRestricted($request->user());
+
         $customers = CustomerAccess::queryFor($request->user())
             ->withCount('projects')
             ->with(['contacts' => function ($query) {
@@ -50,7 +52,7 @@ class CustomerController extends Controller
                     $query->whereHas('contacts');
                 }
             })
-            ->when($request->filled('pt_group'), fn ($query) => $query->where('pt_group', $request->string('pt_group')))
+            ->when($request->filled('pt_group') && ! $isRestricted, fn ($query) => $query->where('pt_group', $request->string('pt_group')))
             // Lead/prospek tidak tampil di menu Customer sampai menjadi deal.
             ->when(
                 $request->string('status')->toString() === 'lead',
@@ -67,7 +69,8 @@ class CustomerController extends Controller
             ? view('customers._list', compact('customers'))->render()
             : view('customers.index', compact('customers', 'ptGroups'))
                 ->with('search', $request->string('search'))
-                ->with('ptGroup', $request->string('pt_group'));
+                ->with('ptGroup', $isRestricted ? '' : $request->string('pt_group'))
+                ->with('showCompanyFilter', ! $isRestricted);
     }
 
     /**

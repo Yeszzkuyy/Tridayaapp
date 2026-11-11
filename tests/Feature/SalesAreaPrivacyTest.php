@@ -3,10 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
-use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\LeadTask;
-use App\Models\Payment;
 use App\Models\Poc;
 use App\Models\Project;
 use App\Models\ProjectStatus;
@@ -74,36 +72,21 @@ class SalesAreaPrivacyTest extends TestCase
         ]);
     }
 
-    private function paidInvoice(User $sales, Customer $customer, float $amount): Payment
+    private function verifiedPo(User $sales, Customer $customer, float $amount): Proposal
     {
         $lead = $this->lead($customer, $sales);
 
-        $proposal = Proposal::create([
+        return Proposal::create([
             'lead_id' => $lead->id,
             'proposal_number' => 'PRIV-'.uniqid(),
             'created_by' => $sales->id,
             'proposal_date' => today()->toDateString(),
             'customer' => $customer->name,
             'status' => 'accepted',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
             'subtotal' => $amount,
             'grand_total' => $amount,
-        ]);
-
-        $invoice = Invoice::create([
-            'invoice_number' => 'INV-'.uniqid(),
-            'customer_id' => $customer->id,
-            'proposal_id' => $proposal->id,
-            'amount' => $amount,
-            'issue_date' => today()->toDateString(),
-            'status' => 'unpaid',
-            'created_by' => $sales->id,
-        ]);
-
-        return Payment::create([
-            'invoice_id' => $invoice->id,
-            'amount' => $amount,
-            'payment_date' => today()->toDateString(),
-            'created_by' => $sales->id,
         ]);
     }
 
@@ -281,27 +264,47 @@ class SalesAreaPrivacyTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_sales_dashboard_income_is_personal(): void
+    public function test_company_filter_hidden_for_sales_but_visible_for_management(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $management = $this->userWithRole('management');
+
+        $this->actingAs($sales)
+            ->get(route('customers.index'))
+            ->assertOk()
+            ->assertDontSee(__('Filter by Company'))
+            ->assertSee(__('Status'));
+
+        $this->actingAs($management)
+            ->get(route('customers.index'))
+            ->assertOk()
+            ->assertSee(__('Filter by Company'));
+    }
+
+    public function test_sales_dashboard_deal_po_card_is_personal_and_company_total(): void
     {
         $sales = $this->userWithRole('sales');
         $other = $this->userWithRole('sales');
 
-        $ownCustomer = $this->customer('PT Income Sendiri', 'NTI');
-        $this->paidInvoice($sales, $ownCustomer, 1250000);
+        $ownCustomer = $this->customer('PT PO Sendiri', 'NTI');
+        $this->verifiedPo($sales, $ownCustomer, 1250000);
 
-        $foreignCustomer = $this->customer('PT Income Lain', 'MGK');
-        $this->paidInvoice($other, $foreignCustomer, 9000000);
+        $foreignCustomer = $this->customer('PT PO Lain', 'MGK');
+        $this->verifiedPo($other, $foreignCustomer, 9000000);
 
-        $revenue = app(SalesKpiService::class)->getPaidRevenueByPt($sales, now()->month, now()->year);
+        $poByPt = app(SalesKpiService::class)->getVerifiedPoByPt(now()->month, now()->year);
 
-        $this->assertSame(1250000.0, $revenue['NTI']);
-        $this->assertSame(0.0, $revenue['MGK']);
+        $this->assertSame(1250000.0, $poByPt['NTI']['value']);
+        $this->assertSame(1, $poByPt['NTI']['count']);
+        $this->assertSame(9000000.0, $poByPt['MGK']['value']);
+        $this->assertSame(1, $poByPt['MGK']['count']);
 
         $this->actingAs($sales)
             ->get(route('sales.dashboard'))
             ->assertOk()
-            ->assertViewHas('incomeTotal', 1250000.0)
-            ->assertViewHas('incomeMonth', fn ($rows) => (float) $rows['NTI'] === 1250000.0
-                && (float) $rows['MGK'] === 0.0);
+            ->assertViewHas('dealPoTotal', 1250000.0)
+            ->assertViewHas('dealPoDeals', 1)
+            ->assertViewHas('dealPoMonth', fn ($rows) => (float) $rows['NTI']['value'] === 1250000.0
+                && (float) $rows['MGK']['value'] === 9000000.0);
     }
 }

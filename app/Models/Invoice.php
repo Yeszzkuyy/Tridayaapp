@@ -27,6 +27,7 @@ class Invoice extends Model
         'tax',
         'paid_amount',
         'status',
+        'paid_at',
         'idempotency_key',
         'issue_date',
         'due_date',
@@ -42,6 +43,7 @@ class Invoice extends Model
         'paid_amount' => 'decimal:2',
         'issue_date' => 'date',
         'due_date' => 'date',
+        'paid_at' => 'datetime',
     ];
 
     public function customer()

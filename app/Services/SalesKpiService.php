@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Payment;
 use App\Models\Proposal;
@@ -48,18 +49,18 @@ class SalesKpiService
         $verifiedPoRevenue = (float) $verifiedPoProposals->sum('grand_total');
         $verifiedPoDeals = $verifiedPoProposals->count();
 
-        // 3. Realisasi Closing: uang yang benar-benar masuk lewat pembayaran
-        //    Finance (boleh bertahap), bukan nilai PO di atas kertas.
+        // 3. Uang masuk (cash-in) tetap disimpan untuk kebutuhan supervisi
+        //    Management, tetapi KPI Personal memakai deal yang benar-benar
+        //    closed (seluruh invoice lunas), bukan DP/cicilan.
         $paidRevenue = (float) Payment::query()
             ->whereBetween('payment_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
             ->whereHas('invoice', fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
             ->sum('amount');
 
-        // Jumlah deal closing mengikuti PO yang sudah diverifikasi.
-        $actualDeals = $verifiedPoDeals;
+        $closed = $this->closedDealsForUser($user, $startOfMonth, $endOfMonth);
 
-        // Realisasi omset = uang masuk (paid), bukan nilai PO.
-        $actualRevenue = $paidRevenue;
+        $actualDeals = $closed['deals'];
+        $actualRevenue = $closed['revenue'];
 
         // 4. Persentase pencapaian
         $revenuePct = $targetRevenue > 0 ? round(($actualRevenue / $targetRevenue) * 100, 1) : 0;
@@ -116,28 +117,101 @@ class SalesKpiService
     }
 
     /**
-     * Income pribadi Sales bulan berjalan, dirinci per PT.
-     * Hanya pembayaran dari invoice yang terhubung ke lead/quotation/project
-     * milik Sales tersebut.
+     * Total PO terverifikasi bulan berjalan per PT (seluruh Sales di PT itu).
      *
-     * @return Collection<string, float>
+     * @return Collection<string, array{value: float, count: int}>
      */
-    public function getPaidRevenueByPt(User $user, int $month, int $year): Collection
+    public function getVerifiedPoByPt(int $month, int $year): Collection
     {
         $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $rows = Payment::query()
-            ->join('invoices', 'invoices.id', '=', 'payments.invoice_id')
-            ->join('customers', 'customers.id', '=', 'invoices.customer_id')
-            ->whereBetween('payments.payment_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
-            ->whereHas('invoice', fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
-            ->selectRaw('customers.pt_group as pt_group, SUM(payments.amount) as total')
+        $rows = Proposal::query()
+            ->join('leads', 'leads.id', '=', 'proposals.lead_id')
+            ->join('customers', 'customers.id', '=', 'leads.customer_id')
+            ->where('proposals.status', 'accepted')
+            ->whereNotNull('proposals.po_verified_at')
+            ->whereBetween('proposals.po_verified_at', [$startOfMonth, $endOfMonth])
+            ->selectRaw('customers.pt_group as pt_group, SUM(proposals.grand_total) as total, COUNT(*) as deals')
             ->groupBy('customers.pt_group')
-            ->pluck('total', 'pt_group');
+            ->get();
 
-        return collect(Lead::PT_GROUPS)
-            ->mapWithKeys(fn ($pt) => [$pt => (float) ($rows[$pt] ?? 0)]);
+        return collect(Lead::PT_GROUPS)->mapWithKeys(fn ($pt) => [
+            $pt => [
+                'value' => (float) ($rows->firstWhere('pt_group', $pt)?->total ?? 0),
+                'count' => (int) ($rows->firstWhere('pt_group', $pt)?->deals ?? 0),
+            ],
+        ]);
+    }
+
+    /**
+     * Deal yang benar-benar closed: seluruh invoice deal sudah lunas
+     * (atau cancelled) dan total invoice lunas menutup nilai quotation.
+     * Dihitung pada bulan saat invoice terakhir lunas.
+     *
+     * @return array{revenue: float, deals: int}
+     */
+    private function closedDealsForUser(User $user, Carbon $startOfMonth, Carbon $endOfMonth): array
+    {
+        $candidates = Invoice::query()
+            ->with([
+                'proposal:id,grand_total',
+                'project:id,proposal_id',
+                'project.proposal:id,grand_total',
+            ])
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$startOfMonth, $endOfMonth])
+            ->where(fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
+            ->get();
+
+        $groups = $candidates->groupBy(function (Invoice $invoice) {
+            if ($invoice->project_id) {
+                return 'project:'.$invoice->project_id;
+            }
+
+            if ($invoice->proposal_id) {
+                return 'proposal:'.$invoice->proposal_id;
+            }
+
+            return 'invoice:'.$invoice->id;
+        });
+
+        $revenue = 0.0;
+        $deals = 0;
+
+        foreach ($groups as $key => $invoices) {
+            [$type, $id] = explode(':', (string) $key, 2);
+
+            $dealInvoices = match ($type) {
+                'proposal' => Invoice::where('proposal_id', (int) $id)->get(),
+                'project' => Invoice::where('project_id', (int) $id)->get(),
+                default => collect([$invoices->first()]),
+            };
+
+            if ($dealInvoices->whereNotIn('status', ['paid', 'cancelled'])->isNotEmpty()) {
+                continue;
+            }
+
+            $paidTotal = (float) $dealInvoices->where('status', 'paid')->sum('amount');
+            if ($paidTotal <= 0) {
+                continue;
+            }
+
+            $proposal = $invoices->first()->proposal
+                ?? $invoices->first()->project?->proposal;
+            $expectedValue = (float) ($proposal?->grand_total ?? 0);
+
+            // Jangan anggap closed kalau invoice baru menutup DP/termin
+            // sementara total quotation belum tertagih penuh.
+            if ($expectedValue > 0 && $paidTotal + 0.01 < $expectedValue) {
+                continue;
+            }
+
+            $revenue += $expectedValue > 0 ? $expectedValue : $paidTotal;
+            $deals++;
+        }
+
+        return ['revenue' => round($revenue, 2), 'deals' => $deals];
     }
 
     /** Invoice dianggap milik Sales lewat quotation, project, atau lead-nya. */
