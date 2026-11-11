@@ -82,12 +82,12 @@ class TrashPerUserTest extends TestCase
 
     public function test_deleter_is_not_owner()
     {
-        [$budi, $andi] = $this->setUpUsers();
+        [$budi, $andi, $sa] = $this->setUpUsers();
 
         $customer = $this->ownedCustomer($budi, 'Punya Budi');
-        // Andi yang menghapus, Budi yang punya.
-        $this->deleteCustomer($andi, $customer);
-        $this->assertEquals($andi->id, $customer->fresh()->deleted_by);
+        // Super-admin yang menghapus, Budi yang punya.
+        $this->deleteCustomer($sa, $customer);
+        $this->assertEquals($sa->id, $customer->fresh()->deleted_by);
 
         // Budi melihat, Andi tidak.
         $this->assertStringContainsString('Punya Budi', $this->actingAs($budi)->get('/trash')->getContent());
@@ -116,14 +116,14 @@ class TrashPerUserTest extends TestCase
 
     public function test_empty_my_trash_only_deletes_owned()
     {
-        [$budi, $andi] = $this->setUpUsers();
+        [$budi, $andi, $sa] = $this->setUpUsers();
 
         $b1 = $this->ownedCustomer($budi, 'Budi Hapus Sendiri');
         $b2 = $this->ownedCustomer($budi, 'Budi Dihapus Andi');
         $a1 = $this->ownedCustomer($andi, 'Andi Dihapus Budi');
         $this->deleteCustomer($budi, $b1);
-        $this->deleteCustomer($andi, $b2);
-        $this->deleteCustomer($budi, $a1);
+        $this->deleteCustomer($sa, $b2);
+        $this->deleteCustomer($sa, $a1);
 
         $this->actingAs($budi)->delete('/trash/clear')->assertRedirect();
 

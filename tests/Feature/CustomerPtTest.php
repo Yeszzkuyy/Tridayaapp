@@ -57,17 +57,15 @@ class CustomerPtTest extends TestCase
         $this->assertSoftDeleted('customers', ['id' => $c->id]);
     }
 
-    public function test_other_pt_read_only()
+    public function test_other_pt_customer_is_hidden()
     {
         [$hendri] = $this->setUpUsers();
         $c = $this->customer('PT NTI 1', 'NTI');
 
-        // Boleh lihat...
-        $this->actingAs($hendri)->get('/customers/'.$c->id)->assertOk();
+        // Customer PT lain tidak terlihat di daftar maupun detail.
         $html = $this->actingAs($hendri)->get('/customers')->assertOk()->getContent();
-        $this->assertStringContainsString('PT NTI 1', $html);
-        // ...tapi tombol edit tidak tampil dan aksi ditolak.
-        $this->assertStringNotContainsString('/customers/'.$c->id.'/edit', $html);
+        $this->assertStringNotContainsString('PT NTI 1', $html);
+        $this->actingAs($hendri)->get('/customers/'.$c->id)->assertForbidden();
         $this->actingAs($hendri)->get('/customers/'.$c->id.'/edit')->assertForbidden();
         $this->actingAs($hendri)->put('/customers/'.$c->id, ['name' => 'X', 'pt_group' => 'NTI'])->assertForbidden();
         $this->actingAs($hendri)->delete('/customers/'.$c->id)->assertForbidden();
@@ -103,13 +101,13 @@ class CustomerPtTest extends TestCase
 
     public function test_trash_restore_respects_pt()
     {
-        [$hendri] = $this->setUpUsers();
+        [$hendri, , , $sa] = $this->setUpUsers();
 
         // Budi owner (via lead) tapi pegang PT NTI -> tidak boleh restore MGK.
         $budi = $this->sales('Budi', ['sales-nti']);
         $customer = $this->customer('PT MGK Trash', 'MGK');
         Lead::create(['customer_id' => $customer->id, 'assigned_to' => $budi->id]);
-        $this->actingAs($hendri)->delete('/customers/'.$customer->id);
+        $this->actingAs($sa)->delete('/customers/'.$customer->id);
         $this->assertSoftDeleted('customers', ['id' => $customer->id]);
 
         $this->actingAs($budi)->patch('/trash/customers/'.$customer->id.'/restore')->assertForbidden();
@@ -169,7 +167,7 @@ class CustomerPtTest extends TestCase
         $this->assertEquals('MGK', $mgk->fresh()->pt_group);
     }
 
-    public function test_other_pt_detail_hides_write_actions()
+    public function test_other_pt_customer_detail_is_forbidden()
     {
         [$hendri] = $this->setUpUsers();
         $mgk = $this->customer('PT MGK PIC', 'MGK');
@@ -180,10 +178,8 @@ class CustomerPtTest extends TestCase
         $this->assertStringContainsString(route('customer-contacts.create', $mgk), $own);
         $this->assertStringContainsString('/customers/'.$mgk->id.'/edit', $own);
 
-        // PT lain: tombol aksi tulis tidak dirender.
-        $other = $this->actingAs($hendri)->get('/customers/'.$nti->id)->assertOk()->getContent();
-        $this->assertStringNotContainsString(route('customer-contacts.create', $nti), $other);
-        $this->assertStringNotContainsString('/customers/'.$nti->id.'/edit', $other);
+        // PT lain: detail tidak bisa dibuka sama sekali.
+        $this->actingAs($hendri)->get('/customers/'.$nti->id)->assertForbidden();
     }
 
     public function test_management_sales_keeps_full_access()

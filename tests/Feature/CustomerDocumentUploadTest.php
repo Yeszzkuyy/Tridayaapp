@@ -33,13 +33,18 @@ class CustomerDocumentUploadTest extends TestCase
         return $user;
     }
 
-    private function makeProject(string $ptGroup = 'NTI'): Project
+    private function makeProject(string $ptGroup = 'NTI', ?User $owner = null): Project
     {
-        $customer = Customer::create(['name' => 'PT Dokumen ' . uniqid(), 'pt_group' => $ptGroup]);
+        $customer = Customer::create([
+            'name' => 'PT Dokumen '.uniqid(),
+            'pt_group' => $ptGroup,
+            'created_by' => $owner?->id,
+        ]);
         $workType = WorkType::create(['name' => 'Instalasi']);
 
         return Project::create([
             'customer_id' => $customer->id,
+            'sales_user_id' => $owner?->id,
             'work_type_id' => $workType->id,
             'project_name' => 'Project Dokumen',
         ]);
@@ -121,7 +126,7 @@ class CustomerDocumentUploadTest extends TestCase
     {
         $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
         $this->actingAs($sales);
-        $project = $this->makeProject('NTI');
+        $project = $this->makeProject('NTI', $sales);
 
         $this->get(route('project-documents.index', $project))->assertOk();
         $this->upload($project, $this->surveyCategory()->id)->assertRedirect();
