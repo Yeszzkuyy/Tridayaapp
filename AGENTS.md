@@ -71,18 +71,53 @@ ringkas ini:
 ### 0.4 Format Standar Setelah Selesai Mengerjakan Tugas (Build Mode)
 
 Setiap kali kamu selesai mengubah kode dan menjalankan test, laporkan hasilnya
-**HANYA** dengan 3 bagian pendek ini:
+dengan format di bawah ini. Tujuannya agar User bisa langsung mencocokkan
+perubahan dengan layar yang dilihatnya, tanpa menebak bagian mana yang berubah.
 
 > ### ✅ Ringkasan Pekerjaan Selesai
-> **1. Apa yang Sudah Dilakukan:**
-> - [Poin singkat fitur/perbaikan apa yang sudah berhasil dipasang]
-> - [Status Test: Semua pengujian otomatis aman/hijau]
+> **1. Perubahan per Menu:**
+> - **Menu [Nama Menu] → [Sub-menu/Halaman]:**
+>   - Bagian yang berubah: [field/tombol/alur yang diubah]
+>   - Hasil sekarang: [tampilan atau perilaku baru yang terlihat user]
+> - *(ulangi untuk setiap menu yang disentuh, satu poin per menu)*
 >
-> **2. Yang Perlu Kamu Pahami (Cara Kerjanya Sekarang):**
-> - [Jelaskan 2-3 poin singkat bagaimana alur fitur ini berjalan sekarang di website, supaya User punya gambaran jelas untuk menyusun plan fitur berikutnya]
+> **2. Cara Testing di Website:**
+> - **Login sebagai:** [role/user, mis. Sales NTI / Audi]
+> - **Buka menu:** [Menu → Sub-menu]
+> - **Langkah:** [1-3 langkah singkat]
+> - **Hasil yang diharapkan:** [apa yang harus terlihat atau terjadi]
+> - *(ulangi untuk skenario utama lainnya, termasuk sisi Management/Admin bila terkena dampak)*
 >
-> **3. Yang Dibutuhkan Darimu Sekarang:**
-> - [Sebutkan apa yang perlu User cek di layar browser, atau keputusan apa yang perlu disiapkan untuk tahap selanjutnya]
+> **3. Status & Konfirmasi:**
+> - Test otomatis: [jumlah lulus/gagal]
+> - Build/merge: [sudah/belum]
+> - **Berhenti di sini. Jangan lanjut ke tahap atau menu berikutnya sebelum User menyatakan hasilnya sudah sesuai.**
+> - Jika ada yang belum sesuai, tanyakan bagian mana yang perlu diperbaiki dan perbaiki dulu; jangan menumpuk perubahan baru.
+
+**Aturan tambahan:**
+
+- Setiap menu yang berubah wajib punya minimal satu langkah testing.
+- Skenario testing wajib menyebut **user/role**, **menu**, **langkah**, dan
+  **hasil yang diharapkan**.
+- Jika belum ada user/role yang cocok untuk testing, tulis **"belum bisa
+  dites"** beserta alasannya. Jangan mengarang langkah testing.
+- Jangan menulis "sudah selesai" untuk bagian yang belum diverifikasi di layar.
+- Kalau User menemukan hasil yang belum sesuai, perbaiki bagian itu dulu dan
+  ulangi langkah testing. Jangan mulai mengerjakan tahap berikutnya.
+
+Contoh singkat:
+
+```text
+Menu Sales → Customer
+- Bagian yang berubah: daftar customer dibatasi ke pemiliknya.
+- Hasil sekarang: Sales hanya melihat customer dari lead/project miliknya.
+
+Testing:
+- Login sebagai Sales NTI.
+- Buka menu Customer.
+- Hasil yang diharapkan: customer milik Sales lain tidak muncul dan detailnya
+  tidak bisa dibuka lewat URL.
+```
 
 ### 0.5 Batasan
 
