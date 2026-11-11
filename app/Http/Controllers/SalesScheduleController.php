@@ -9,6 +9,7 @@ use App\Models\LeadActivity;
 use App\Models\SalesSchedule;
 use App\Models\User;
 use App\Notifications\SalesScheduleAssignedNotification;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 
@@ -278,12 +279,7 @@ class SalesScheduleController extends Controller
      */
     private function customerOptions($user): array
     {
-        $pts = PtAccess::userPts($user);
-
-        return Customer::query()
-            ->when($pts !== [], fn ($q) => $q->where(
-                fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
-            ))
+        return CustomerAccess::queryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])

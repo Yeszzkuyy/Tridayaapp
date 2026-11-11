@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\FollowUp;
-use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\SalesSchedule;
@@ -293,16 +292,9 @@ class ManageSalesController extends Controller
         $weekStart = now()->startOfWeek()->toDateString();
         $weekEnd = now()->endOfWeek()->toDateString();
 
-        // Income bulan berjalan dari invoice admin, dirinci per PT/company.
-        $incomeRows = Invoice::selectRaw('customers.pt_group as pt_group, SUM(invoices.amount) as total')
-            ->join('customers', 'customers.id', '=', 'invoices.customer_id')
-            ->whereMonth('invoices.issue_date', now()->month)
-            ->whereYear('invoices.issue_date', now()->year)
-            ->whereIn('customers.pt_group', Lead::PT_GROUPS)
-            ->groupBy('customers.pt_group')
-            ->pluck('total', 'pt_group');
-        $incomeMonth = collect(Lead::PT_GROUPS)
-            ->mapWithKeys(fn ($pt) => [$pt => (float) ($incomeRows[$pt] ?? 0)]);
+        // Income pribadi bulan berjalan (hanya pembayaran dari lead/quotation/
+        // project milik Sales ini), dirinci per PT.
+        $incomeMonth = $salesKpiService->getPaidRevenueByPt($user, now()->month, now()->year);
         $incomeTotal = $incomeMonth->sum();
 
         // Ringkasan agenda sales milik sendiri (jadwal saya: PIC/creator/lead saya).

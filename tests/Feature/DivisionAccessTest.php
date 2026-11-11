@@ -63,10 +63,11 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
 
         // Sales pada Project: read-only (PRD project workflow).
-        $customer = \App\Models\Customer::create(['name' => 'Cust Sales']);
+        $customer = \App\Models\Customer::create(['name' => 'Cust Sales', 'created_by' => $u->id]);
         $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
         $project = \App\Models\Project::create([
             'customer_id' => $customer->id,
+            'sales_user_id' => $u->id,
             'work_type_id' => $workType->id,
             'project_name' => 'Proj Sales',
         ]);

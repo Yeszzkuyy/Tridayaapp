@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Services\CustomerContactService;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -22,7 +23,8 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', Customer::class);
 
-        $customers = Customer::withCount('projects')
+        $customers = CustomerAccess::queryFor($request->user())
+            ->withCount('projects')
             ->with(['contacts' => function ($query) {
                 $query->orderByDesc('is_primary')->latest();
             }])
@@ -137,6 +139,8 @@ class CustomerController extends Controller
             $validated['contact_whatsapp'],
             $validated['contact_email'],
         );
+
+        $validated['created_by'] = auth()->id();
 
         $customer = Customer::create($validated);
 

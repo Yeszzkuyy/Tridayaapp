@@ -46,7 +46,10 @@ class MeetingReportTest extends TestCase
     public function test_store_meeting_marks_daily_report_sent(): void
     {
         $sales = $this->userWithRole('sales');
-        $customer = Customer::create(['name' => 'PT Meeting Baru '.uniqid()]);
+        $customer = Customer::create([
+            'name' => 'PT Meeting Baru '.uniqid(),
+            'created_by' => $sales->id,
+        ]);
         $nextMeeting = today()->addDays(3)->toDateString();
 
         $res = $this->actingAs($sales)->post(route('sales.meetings.store'), [

@@ -52,16 +52,7 @@ class SalesKpiService
         //    Finance (boleh bertahap), bukan nilai PO di atas kertas.
         $paidRevenue = (float) Payment::query()
             ->whereBetween('payment_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
-            ->whereHas('invoice', function ($q) use ($user) {
-                $q->where(function ($w) use ($user) {
-                    $w->whereHas('proposal', function ($p) use ($user) {
-                        $p->where('created_by', $user->id)
-                            ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
-                    })
-                        ->orWhereHas('project', fn ($pr) => $pr->where('sales_user_id', $user->id))
-                        ->orWhereHas('customer.leads', fn ($l) => $l->where('assigned_to', $user->id));
-                });
-            })
+            ->whereHas('invoice', fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
             ->sum('amount');
 
         // Jumlah deal closing mengikuti PO yang sudah diverifikasi.
@@ -122,6 +113,44 @@ class SalesKpiService
             'conversion_rate' => $conversionRate,
             'celebration' => $celebration,
         ];
+    }
+
+    /**
+     * Income pribadi Sales bulan berjalan, dirinci per PT.
+     * Hanya pembayaran dari invoice yang terhubung ke lead/quotation/project
+     * milik Sales tersebut.
+     *
+     * @return Collection<string, float>
+     */
+    public function getPaidRevenueByPt(User $user, int $month, int $year): Collection
+    {
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $rows = Payment::query()
+            ->join('invoices', 'invoices.id', '=', 'payments.invoice_id')
+            ->join('customers', 'customers.id', '=', 'invoices.customer_id')
+            ->whereBetween('payments.payment_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->whereHas('invoice', fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
+            ->selectRaw('customers.pt_group as pt_group, SUM(payments.amount) as total')
+            ->groupBy('customers.pt_group')
+            ->pluck('total', 'pt_group');
+
+        return collect(Lead::PT_GROUPS)
+            ->mapWithKeys(fn ($pt) => [$pt => (float) ($rows[$pt] ?? 0)]);
+    }
+
+    /** Invoice dianggap milik Sales lewat quotation, project, atau lead-nya. */
+    private function scopeInvoiceToSalesOwner($query, User $user): void
+    {
+        $query->where(function ($w) use ($user) {
+            $w->whereHas('proposal', function ($p) use ($user) {
+                $p->where('created_by', $user->id)
+                    ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
+            })
+                ->orWhereHas('project', fn ($pr) => $pr->where('sales_user_id', $user->id))
+                ->orWhereHas('customer.leads', fn ($l) => $l->where('assigned_to', $user->id));
+        });
     }
 
     /**

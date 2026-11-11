@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Customer;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 
 class CustomerPolicy
@@ -15,7 +16,8 @@ class CustomerPolicy
 
     public function view(User $user, Customer $customer): bool
     {
-        return $user->hasAnyPermission(['view-customer', 'view-sales', 'manage-sales']);
+        return $user->hasAnyPermission(['view-customer', 'view-sales', 'manage-sales'])
+            && CustomerAccess::canView($user, $customer);
     }
 
     public function create(User $user): bool
@@ -26,13 +28,15 @@ class CustomerPolicy
     public function update(User $user, Customer $customer): bool
     {
         return $user->can('manage-sales')
-            && PtAccess::canWritePt($user, $customer->pt_group);
+            && PtAccess::canWritePt($user, $customer->pt_group)
+            && CustomerAccess::canView($user, $customer);
     }
 
     public function delete(User $user, Customer $customer): bool
     {
         return $user->can('manage-sales')
-            && PtAccess::canWritePt($user, $customer->pt_group);
+            && PtAccess::canWritePt($user, $customer->pt_group)
+            && CustomerAccess::canView($user, $customer);
     }
 
     public function restore(User $user, Customer $customer): bool
@@ -55,6 +59,10 @@ class CustomerPolicy
         }
 
         $owner = $customer->trashOwnerId();
+
+        if ($owner === null && $customer->created_by !== null) {
+            $owner = (int) $customer->created_by;
+        }
 
         return $owner !== null && (int) $owner === (int) $user->id
             && PtAccess::canWritePt($user, $customer->pt_group);
