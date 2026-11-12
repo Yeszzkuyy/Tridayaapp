@@ -41,7 +41,7 @@
             </a>
 
             {{-- 3. Primary CTA: Add Lead --}}
-            @can('manage-marketing')
+            @canany(['manage-marketing', 'manage-sales'])
                 <a href="{{ route('leads.create') }}"
                    wire:navigate.hover
                    title="{{ __('Add Lead') }}"
@@ -52,7 +52,7 @@
                     <span class="tracking-wide">{{ __('Add Lead') }}</span>
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                 </a>
-            @endcan
+            @endcanany
         </div>
     </div>
 

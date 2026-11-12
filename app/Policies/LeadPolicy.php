@@ -38,12 +38,17 @@ class LeadPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('manage-marketing');
+        return $user->can('manage-marketing') || $user->can('manage-sales');
     }
 
     public function update(User $user, Lead $lead): bool
     {
-        return $user->can('manage-marketing');
+        if ($user->can('manage-marketing')) {
+            return true;
+        }
+
+        // Sales boleh mengubah lead miliknya sendiri (prospek yang ia input).
+        return $user->can('manage-sales') && (int) $lead->assigned_to === (int) $user->id;
     }
 
     public function delete(User $user, Lead $lead): bool

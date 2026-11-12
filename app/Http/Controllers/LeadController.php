@@ -21,6 +21,8 @@ use App\Notifications\NewLeadNotification;
 use App\Services\CustomerContactService;
 use App\Services\CustomerLifecycleService;
 use App\Services\LeadPipelineService;
+use App\Support\CustomerAccess;
+use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -151,6 +153,12 @@ class LeadController extends Controller
      * Target assignment harus user divisi yang memang memegang lead
      * (sales/marketing), bukan id sembarang lintas divisi.
      */
+    /** PT yang boleh dipilih user saat membuat/mengubah lead. */
+    private function writablePtGroups(): array
+    {
+        return PtAccess::userPts(auth()->user()) ?: Lead::PT_GROUPS;
+    }
+
     private function guardSalesAssignee(mixed $assignedTo): void
     {
         if (empty($assignedTo)) {
@@ -384,11 +392,12 @@ class LeadController extends Controller
     {
         $this->authorize('create', Lead::class);
 
-        $customers = Customer::with('contacts')->orderBy('name')->get(['id', 'name', 'contact_person']);
+        $customers = CustomerAccess::queryFor($request->user())
+            ->with('contacts')->orderBy('name')->get(['id', 'name', 'contact_person']);
         $partners = Partner::orderBy('name')->get(['id', 'name', 'type']);
         $segments = self::SEGMENTS;
         $sources = self::SOURCES;
-        $ptGroups = Lead::PT_GROUPS;
+        $ptGroups = $this->writablePtGroups();
 
         $prefill = $this->prefillFromWhatsapp($request);
 
@@ -468,7 +477,7 @@ class LeadController extends Controller
             'customer_id' => 'nullable|required_if:customer_mode,existing|exists:customers,id',
             'customer_contact_person' => 'nullable|string|max:255',
             'partner_id' => 'nullable|exists:partners,id',
-            'pt_group' => 'required|in:'.implode(',', Lead::PT_GROUPS),
+            'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'assigned_to' => 'nullable|exists:users,id',
             'whatsapp_account_id' => 'nullable|exists:whatsapp_accounts,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
@@ -492,8 +501,15 @@ class LeadController extends Controller
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
+        // Sales lapangan membuat lead untuk dirinya sendiri; Marketing boleh
+        // mengosongkan assignee agar masuk antrean Management.
+        if (! $request->user()->can('manage-marketing')) {
+            $validated['assigned_to'] = $request->user()->id;
+        }
+
         if ($validated['customer_mode'] === 'new') {
             $customer = Customer::create([
+                'created_by' => $request->user()->id,
                 'name' => $validated['customer_name'],
                 'company' => $validated['customer_company'] ?? $validated['customer_name'],
                 'pt_group' => $validated['pt_group'],
@@ -518,7 +534,8 @@ class LeadController extends Controller
 
             $validated['customer_id'] = $customer->id;
         } else {
-            $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
+            $customer = CustomerAccess::queryFor($request->user())->withTrashed()
+                ->findOrFail($validated['customer_id']);
             $customerSync = ['pt_group' => $validated['pt_group']];
 
             // PIC dari form lead ikut masuk ke kontak customer supaya
@@ -567,8 +584,15 @@ class LeadController extends Controller
             );
         }
 
+        if ($request->user()->can('manage-marketing')) {
+            return redirect()
+                ->route('leads.index')
+                ->with('success', __('Lead added successfully'))
+                ->with('success_card', true);
+        }
+
         return redirect()
-            ->route('leads.index')
+            ->route('leads.show', $lead)
             ->with('success', __('Lead added successfully'))
             ->with('success_card', true);
     }
@@ -640,11 +664,12 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
 
-        $customers = Customer::with('contacts')->orderBy('name')->get(['id', 'name', 'contact_person']);
+        $customers = CustomerAccess::queryFor(request()->user())
+            ->with('contacts')->orderBy('name')->get(['id', 'name', 'contact_person']);
         $partners = Partner::orderBy('name')->get(['id', 'name', 'type']);
         $segments = self::SEGMENTS;
         $sources = self::SOURCES;
-        $ptGroups = Lead::PT_GROUPS;
+        $ptGroups = $this->writablePtGroups();
 
         return view('leads.edit', compact('lead', 'customers', 'partners', 'segments', 'sources', 'ptGroups'));
     }
@@ -664,7 +689,7 @@ class LeadController extends Controller
             'customer_id' => 'nullable|required_if:customer_mode,existing|exists:customers,id',
             'customer_contact_person' => 'nullable|string|max:255',
             'partner_id' => 'nullable|exists:partners,id',
-            'pt_group' => 'required|in:'.implode(',', Lead::PT_GROUPS),
+            'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'assigned_to' => 'nullable|exists:users,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
@@ -687,8 +712,14 @@ class LeadController extends Controller
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
+        // Sales tidak boleh memindahkan lead ke orang lain lewat form edit.
+        if (! $request->user()->can('manage-marketing')) {
+            unset($validated['assigned_to']);
+        }
+
         if ($validated['customer_mode'] === 'new') {
             $customer = Customer::create([
+                'created_by' => $request->user()->id,
                 'name' => $validated['customer_name'],
                 'company' => $validated['customer_company'] ?? $validated['customer_name'],
                 'pt_group' => $validated['pt_group'],
@@ -711,7 +742,8 @@ class LeadController extends Controller
 
             $validated['customer_id'] = $customer->id;
         } else {
-            $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
+            $customer = CustomerAccess::queryFor($request->user())->withTrashed()
+                ->findOrFail($validated['customer_id']);
 
             $customerData = array_filter([
                 'name' => $validated['customer_name'] ?? null,
@@ -778,8 +810,14 @@ class LeadController extends Controller
             $this->logActivity($lead, 'updated', $changes);
         }
 
+        if ($request->user()->can('manage-marketing')) {
+            return redirect()
+                ->route('leads.index')
+                ->with('success', __('Lead berhasil diupdate'));
+        }
+
         return redirect()
-            ->route('leads.index')
+            ->route('leads.show', $lead)
             ->with('success', __('Lead berhasil diupdate'));
     }
 
