@@ -392,10 +392,12 @@
                         @else
                             <div class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-slate-700">
                                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No quotations yet.') }}</p>
-                                <a href="{{ route('sales.proposals.create') }}"
-                                   class="mt-1 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
-                                    {{ __('Create quotation') }}
-                                </a>
+                                @canany(['manage-inside-sales', 'manage-sales-leads'])
+                                    <a href="{{ route('sales.proposals.create') }}"
+                                       class="mt-1 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                                        {{ __('Create quotation') }}
+                                    </a>
+                                @endcanany
                             </div>
                         @endif
                     </div>
@@ -403,6 +405,7 @@
                     @include('customers.partials.transaction-documents', [
                         'custInvoices' => $custInvoices,
                         'custPos' => $custPos,
+                        'custDeliveries' => $custDeliveries,
                         'custPayments' => $custPayments,
                         'typedDocs' => $typedDocs,
                         'canUploadDocs' => $canUploadDocs,

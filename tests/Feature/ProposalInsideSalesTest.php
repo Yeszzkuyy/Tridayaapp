@@ -160,6 +160,22 @@ class ProposalInsideSalesTest extends TestCase
         $this->assertSame($sales->id, (int) $lead->fresh()->assigned_to);
     }
 
+    public function test_sales_cannot_create_quotation_without_inside_sales_file(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLeadOwnedBy($sales);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertForbidden();
+
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.store'), $this->proposalPayload($lead))
+            ->assertForbidden();
+
+        $this->assertSame(0, Proposal::count());
+    }
+
     public function test_unauthorized_roles_are_rejected(): void
     {
         $sales = $this->userWithRole('sales');

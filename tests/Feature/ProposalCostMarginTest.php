@@ -174,9 +174,10 @@ class ProposalCostMarginTest extends TestCase
         $this->assertEqualsWithDelta(1000.0, (float) $p->fresh()->total_cost, 0.01);
     }
 
-    public function test_sales_can_select_price_log_snapshot_with_stock_and_warranty(): void
+    public function test_quotation_draft_can_select_price_log_snapshot_with_stock_and_warranty(): void
     {
         $sales = $this->userWithRole('sales');
+        $management = $this->userWithRole('management');
         $lead = $this->makeLead($sales->id);
         $product = Product::create(['name' => 'Kamera Snapshot', 'cost_price' => 700, 'default_price' => 1200, 'status' => Product::STATUS_APPROVED]);
         $supplier = Supplier::create(['name' => 'Vendor Snapshot']);
@@ -192,7 +193,7 @@ class ProposalCostMarginTest extends TestCase
             'updated_by' => $sales->id,
         ]);
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'delivery_terms' => 'Indent 3 weeks',
@@ -245,14 +246,15 @@ class ProposalCostMarginTest extends TestCase
         $this->assertFalse($this->userWithRole('ceo')->can('updateCost', Proposal::class));
     }
 
-    public function test_sales_cannot_submit_unit_cost_and_snapshot_is_preserved(): void
+    public function test_quotation_creator_cannot_submit_unit_cost_and_snapshot_is_preserved(): void
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $management = $this->userWithRole('management');
         $product = Product::create(['name' => 'Switch', 'cost_price' => 700, 'default_price' => 1200, 'status' => Product::STATUS_APPROVED]);
 
-        // Sales membuat quotation: harga modal = snapshot produk.
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        // Management membuat draf quotation: harga modal = snapshot produk.
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'items' => [['product_id' => $product->id, 'description' => 'Switch', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 1200, 'discount' => 0]],

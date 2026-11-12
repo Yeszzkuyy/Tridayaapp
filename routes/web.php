@@ -43,6 +43,7 @@ use App\Http\Controllers\PurchasingHandoffController;
 use App\Http\Controllers\PurchasingReportController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RequestHargaController;
+use App\Http\Controllers\SalesFinanceController;
 use App\Http\Controllers\SalesMeetingController;
 use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
@@ -240,8 +241,6 @@ Route::middleware('auth')->group(function () {
         Route::post('technical-requests', [TechnicalRequestController::class, 'store'])->name('technical-requests.store');
         Route::post('technical-requests/{technicalRequest}/cancel', [TechnicalRequestController::class, 'cancel'])->name('technical-requests.cancel');
 
-        Route::get('proposals/create', [ProposalController::class, 'create'])->name('proposals.create');
-        Route::post('proposals', [ProposalController::class, 'store'])->name('proposals.store');
         Route::get('proposals/{proposal}/edit', [ProposalController::class, 'edit'])->name('proposals.edit');
         Route::put('proposals/{proposal}', [ProposalController::class, 'update'])->name('proposals.update');
         Route::post('proposals/{proposal}/ready', [ProposalController::class, 'markReady'])->name('proposals.ready');
@@ -253,6 +252,13 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
         Route::post('proposals/{proposal}/submit-technical', [ProposalController::class, 'submitTechnical'])->name('proposals.submit-technical');
         Route::post('proposals/{proposal}/po', [ProposalController::class, 'uploadPo'])->name('proposals.upload-po');
+    });
+
+    // Draf quotation: Inside Sales lewat task, Management sebagai jalur darurat.
+    // Sales lapangan tidak membuat quotation langsung (wawancara Adi Santosa).
+    Route::middleware('permission:manage-inside-sales|manage-sales-leads')->prefix('sales')->name('sales.')->group(function () {
+        Route::get('proposals/create', [ProposalController::class, 'create'])->name('proposals.create');
+        Route::post('proposals', [ProposalController::class, 'store'])->name('proposals.store');
     });
 
     // Konversi quotation accepted menjadi Project: bisa dilakukan oleh pemilik (sales/inside-sales)
@@ -350,6 +356,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals/{proposal}/attachments/{attachment}', [ProposalController::class, 'downloadAttachment'])->name('proposals.attachments.download');
         Route::get('proposals/{proposal}/attachments/{attachment}/preview', [ProposalController::class, 'previewAttachment'])->name('proposals.attachments.preview');
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
+        Route::get('invoices/{invoice}', [SalesFinanceController::class, 'show'])->name('invoices.show');
     });
 
     Route::middleware('permission:manage-technician')->prefix('sales')->name('sales.')->group(function () {

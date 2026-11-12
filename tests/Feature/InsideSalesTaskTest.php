@@ -320,7 +320,7 @@ class InsideSalesTaskTest extends TestCase
         $this->assertSame($lead->id, $proposal->lead_id);
         $this->assertSame('draft', $proposal->status);
         $this->assertSame($lead->customer->name, $proposal->customer);
-        $this->assertStringStartsWith('Q/', $proposal->proposal_number);
+        $this->assertMatchesRegularExpression('#^[A-Z]+/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
         // Quotation dibuat dari item Inside Sales + file terlampir.
         $this->assertCount(1, $proposal->items()->get());
         $this->assertSame(200000.0, (float) $proposal->grand_total);

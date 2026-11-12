@@ -62,9 +62,15 @@ class LeadLifecycleTest extends TestCase
         $this->actingAs($marketing)->post(route('leads.store'), [
             'customer_mode' => 'new',
             'customer_name' => 'PT Lifecycle',
+            'customer_address' => 'Jl. Lifecycle No. 1',
+            'customer_contact_person' => 'Andi Lifecycle',
+            'customer_whatsapp' => '081234567893',
+            'customer_email' => 'andi@lifecycle.test',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'CCTV 8 channel + instalasi.',
+            'project_name' => 'Proyek CCTV Lifecycle',
+            'need_type' => 'cctv',
             'incoming_date' => '2026-09-29',
         ])->assertRedirect(route('leads.index'));
         $lead = Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Lifecycle'))->first();
@@ -146,10 +152,15 @@ class LeadLifecycleTest extends TestCase
         $customer = Customer::create(['name' => 'PT Gagal']);
         $lead = Lead::create(['customer_id' => $customer->id, 'pt_group' => 'NTI', 'segment' => 'vendor', 'status' => 'hot']);
 
-        $this->actingAs($marketing)->patch(route('leads.update-status', $lead), ['status' => 'lost'])
-            ->assertNoContent();
-        $this->actingAs($marketing)->patch(route('leads.outcome', $lead), ['lost_reason' => 'budget'])
-            ->assertRedirect();
+        $this->actingAs($marketing)->patch(route('leads.update-status', $lead), [
+            'status' => 'lost',
+            'lost_reason' => 'budget',
+            'lost_note' => 'Budget terbatas.',
+        ])->assertNoContent();
+        $this->actingAs($marketing)->patch(route('leads.outcome', $lead), [
+            'lost_reason' => 'budget',
+            'lost_note' => 'Budget terbatas.',
+        ])->assertRedirect();
 
         $lead->refresh();
         $this->assertSame('lost', $lead->status);

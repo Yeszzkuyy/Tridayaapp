@@ -197,7 +197,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {{-- Metric 1: Realisasi Closing dari uang masuk --}}
                 <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
                     <div class="flex items-center justify-between mb-2">
@@ -257,6 +257,40 @@
                         @endif
                         <span class="text-[10px] text-slate-400">{{ $myKpi['active_leads'] }} {{ __('active leads ready to close') }}</span>
                     </p>
+                </div>
+
+                {{-- Metric 3: Gross Margin --}}
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-700/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Gross Margin') }}</span>
+                        @if(! $myKpi['margin_incomplete'])
+                            <span class="text-xs font-extrabold px-2 py-0.5 rounded-full {{ $myKpi['margin_pct'] >= 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300' }}">
+                                {{ $myKpi['margin_pct'] }}%
+                            </span>
+                        @endif
+                    </div>
+                    <div class="flex items-baseline justify-between mb-1">
+                        <p class="text-xl font-black text-slate-800 dark:text-white tabular-nums">
+                            Rp {{ number_format($myKpi['actual_margin'], 0, ',', '.') }}
+                        </p>
+                        <span class="text-xs text-slate-400 tabular-nums">
+                            / Rp {{ number_format($myKpi['target_margin'], 0, ',', '.') }}
+                        </span>
+                    </div>
+                    @if($myKpi['margin_incomplete'])
+                        <p class="text-[11px] text-amber-600 dark:text-amber-400 mb-2">{{ __('Margin not yet complete - cost price is missing on some items.') }}</p>
+                    @else
+                        <div class="w-full bg-slate-200/80 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-700 {{ $myKpi['margin_pct'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-violet-500 to-purple-500' }}" style="width: {{ min(100, $myKpi['margin_pct']) }}%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                            @if($myKpi['margin_shortfall'] > 0)
+                                {{ __('Target remaining:') }} <strong class="text-violet-600 dark:text-violet-400 tabular-nums">Rp {{ number_format($myKpi['margin_shortfall'], 0, ',', '.') }}</strong>
+                            @else
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold">🎉 {{ __('Margin target achieved!') }}</span>
+                            @endif
+                        </p>
+                    @endif
                 </div>
             </div>
 

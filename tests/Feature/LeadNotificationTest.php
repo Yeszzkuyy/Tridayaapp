@@ -39,6 +39,8 @@ class LeadNotificationTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'end_user',
             'kebutuhan' => 'CCTV',
+            'project_name' => 'Proyek Notifikasi',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
         ], $overrides))->assertRedirect(route('leads.index'));
     }
@@ -59,6 +61,8 @@ class LeadNotificationTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'end_user',
             'kebutuhan' => 'IP Phone 10 unit.',
+            'project_name' => 'Proyek IP Phone',
+            'need_type' => 'pabx',
             'incoming_date' => now()->toDateString(),
         ])
             ->assertRedirect(route('leads.index'))
@@ -152,6 +156,8 @@ class LeadNotificationTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'end_user',
             'kebutuhan' => 'IP Phone 10 unit.',
+            'project_name' => 'Proyek IP Phone',
+            'need_type' => 'pabx',
             'assigned_to' => $salesB->id,
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
@@ -185,6 +191,8 @@ class LeadNotificationTest extends TestCase
             'segment' => 'end_user',
             'assigned_to' => $sales->id,
             'kebutuhan' => 'Update kebutuhan',
+            'project_name' => 'Proyek Tetap',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
 

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\LeadTask;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Proposal;
@@ -60,6 +61,23 @@ class ProposalModuleTest extends TestCase
         ]);
 
         return $lead;
+    }
+
+    private function insideSalesWithTask(Lead $lead): User
+    {
+        $inside = $this->userWithRole('inside-sales');
+
+        LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan draft quotation',
+            'description' => 'Follow-up kebutuhan customer.',
+            'assigned_to' => $inside->id,
+            'due_date' => now()->addDays(3)->toDateString(),
+            'priority' => 'high',
+            'status' => 'todo',
+        ]);
+
+        return $inside;
     }
 
     private function makeProposal(Lead $lead, string $status = 'draft', ?int $createdBy = null): Proposal
@@ -256,8 +274,9 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $management = $this->userWithRole('management');
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'payment_scheme' => 'dp',
@@ -348,10 +367,11 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $mine = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($mine);
         $otherSales = $this->userWithRole('sales');
         $foreign = $this->makeLead($otherSales->id);
 
-        $html = $this->actingAs($sales)
+        $html = $this->actingAs($inside)
             ->get(route('sales.proposals.create'))
             ->assertOk()
             ->getContent();
@@ -365,15 +385,16 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
         $otherSales = $this->userWithRole('sales');
         $foreign = $this->makeLead($otherSales->id);
 
-        $this->actingAs($sales)
+        $this->actingAs($inside)
             ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
             ->assertOk()
             ->assertSee(__('Create Quotation'));
 
-        $this->actingAs($sales)
+        $this->actingAs($inside)
             ->get(route('sales.proposals.create', ['lead_id' => $foreign->id]))
             ->assertForbidden();
     }
@@ -393,6 +414,7 @@ class ProposalModuleTest extends TestCase
 
         $this->actingAs($sales)->post(route('sales.proposals.upload-po', $proposal), [
             'po_file' => UploadedFile::fake()->create('po.pdf', 100, 'application/pdf'),
+            'delivery_address' => 'Jl. Pengiriman Uji No. 2, Jakarta',
         ])->assertRedirect();
         $this->assertNotNull($proposal->fresh()->po_document_path);
 
@@ -455,8 +477,9 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
 
-        $html = $this->actingAs($sales)
+        $html = $this->actingAs($inside)
             ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
             ->assertOk()
             ->getContent();
@@ -511,12 +534,13 @@ class ProposalModuleTest extends TestCase
 
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
 
-        $this->actingAs($sales)->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+        $this->actingAs($inside)->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
             ->assertOk()
             ->assertSee('quotation_file', false);
 
-        $response = $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $response = $this->actingAs($inside)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'valid_until' => now()->addDays(14)->toDateString(),
@@ -543,8 +567,9 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($inside)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
         ])->assertStatus(422);

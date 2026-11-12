@@ -40,11 +40,11 @@
             <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Quotation Data') }}</h2>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <label for="proposal_number" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('No. Quotation') }} <span class="text-rose-500">*</span></label>
-                    <input id="proposal_number" type="text" name="proposal_number" required maxlength="100"
-                           value="{{ old('proposal_number', $prefill['proposal_number']) }}" placeholder="217R6-FE-WANI-2026"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                    @error('proposal_number') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                    <label for="proposal_number" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('No. Quotation') }}</label>
+                    <input id="proposal_number" type="text" name="proposal_number" readonly
+                           value="{{ old('proposal_number', $prefill['proposal_number']) }}"
+                           class="w-full rounded-xl border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-400">
+                    <p class="mt-1 text-[11px] text-slate-400">{{ __('Auto-generated from company and sales initials.') }}</p>
                 </div>
                 <div>
                     <label for="proposal_date" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Date') }} <span class="text-rose-500">*</span></label>

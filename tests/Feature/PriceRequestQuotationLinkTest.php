@@ -24,6 +24,7 @@ class PriceRequestQuotationLinkTest extends TestCase
     public function test_price_request_can_be_linked_to_a_quotation(): void
     {
         $sales = User::factory()->create()->assignRole('sales');
+        $management = User::factory()->create()->assignRole('management');
         $customer = Customer::create(['name' => 'PT Price Link', 'pt_group' => 'NTI']);
         $lead = Lead::create([
             'customer_id' => $customer->id,
@@ -49,12 +50,17 @@ class PriceRequestQuotationLinkTest extends TestCase
             'reply_path' => 'price-requests/link/reply.pdf',
         ]);
 
-        $this->actingAs($sales)
+        $this->actingAs($management)
             ->get(route('sales.proposals.create', ['price_request_id' => $priceRequest->id]))
             ->assertOk()
             ->assertSee('Lead #'.$lead->id);
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        // Sales lapangan tidak membuat quotation langsung.
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['price_request_id' => $priceRequest->id]))
+            ->assertForbidden();
+
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'price_request_id' => $priceRequest->id,
             'proposal_date' => now()->toDateString(),
@@ -76,7 +82,7 @@ class PriceRequestQuotationLinkTest extends TestCase
             ->assertSee($proposal->proposal_number);
 
         // Request yang sudah tertaut tidak boleh membuat quotation kedua.
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'price_request_id' => $priceRequest->id,
             'proposal_date' => now()->toDateString(),
@@ -87,7 +93,7 @@ class PriceRequestQuotationLinkTest extends TestCase
                 'unit_price' => 5000,
                 'discount' => 0,
             ]],
-        ])->assertStatus(422);
+        ])->assertSessionHasErrors('lead_id');
 
         $this->assertSame(1, Proposal::count());
     }

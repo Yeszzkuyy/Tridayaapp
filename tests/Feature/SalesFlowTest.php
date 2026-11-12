@@ -306,8 +306,9 @@ class SalesFlowTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $management = $this->userWithRole('management');
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->format('Y-m-d'),
             'discount' => 10000,
@@ -319,7 +320,7 @@ class SalesFlowTest extends TestCase
         ])->assertRedirect();
 
         $proposal = Proposal::where('lead_id', $lead->id)->firstOrFail();
-        $this->assertMatchesRegularExpression('#^Q/\d{4}/\d{2}/\d{4}$#', $proposal->proposal_number);
+        $this->assertMatchesRegularExpression('#^[A-Z]+/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
         // (2*50000-5000) + 100000 = 195000; -10000 +11000 => 196000
         $this->assertSame(195000.0, (float) $proposal->subtotal);
         $this->assertSame(196000.0, (float) $proposal->grand_total);

@@ -18,12 +18,14 @@
         modalMonth: {{ $month }},
         modalYear: {{ $year }},
         modalRevenue: 50000000,
+        modalMargin: 5000000,
         modalDeals: 3,
         modalNotes: '',
         openEditTarget(user) {
             this.modalUserId = user.user.id;
             this.modalUser = user.user.name;
             this.modalRevenue = user.target_revenue;
+            this.modalMargin = user.target_margin ?? 0;
             this.modalDeals = user.target_deals;
             this.modalNotes = user.target_notes || '';
             this.editModalOpen = true;
@@ -122,6 +124,9 @@
                     <p class="mt-1 text-xs text-slate-600 dark:text-slate-300 font-semibold tabular-nums">
                         Rp {{ number_format($teamSummary['top_performer']['actual_revenue'], 0, ',', '.') }} · {{ $teamSummary['top_performer']['actual_deals'] }} Deals
                     </p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+                        {{ __('Margin:') }} Rp {{ number_format($teamSummary['top_performer']['actual_margin'], 0, ',', '.') }}
+                    </p>
                     <p class="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                         {{ $teamSummary['top_performer']['revenue_pct'] }}% Pencapaian
                     </p>
@@ -150,6 +155,7 @@
                             <th class="py-3.5 px-4">{{ __('Nama Sales') }}</th>
                             <th class="py-3.5 px-4 min-w-[220px]">{{ __('Target vs Realisasi Omset') }}</th>
                             <th class="py-3.5 px-4 min-w-[180px]">{{ __('Target vs Closing PO/Deal') }}</th>
+                            <th class="py-3.5 px-4 min-w-[180px]">{{ __('Target vs Gross Margin') }}</th>
                             <th class="py-3.5 px-4">{{ __('Status Penilaian') }}</th>
                             <th class="py-3.5 px-4 text-center w-24">{{ __('Aksi') }}</th>
                         </tr>
@@ -215,6 +221,28 @@
                                     </p>
                                 </td>
                                 <td class="py-4 px-4">
+                                    <div class="flex items-center justify-between text-xs mb-1">
+                                        <span class="font-bold text-slate-800 dark:text-slate-100 tabular-nums">
+                                            Rp {{ number_format($row['actual_margin'], 0, ',', '.') }}
+                                        </span>
+                                        @if(! $row['margin_incomplete'])
+                                            <span class="font-bold {{ $row['margin_pct'] >= 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-violet-600 dark:text-violet-400' }}">
+                                                {{ $row['margin_pct'] }}%
+                                            </span>
+                                        @endif
+                                    </div>
+                                    @if($row['margin_incomplete'])
+                                        <p class="text-[11px] text-amber-600 dark:text-amber-400">{{ __('Margin incomplete') }}</p>
+                                    @else
+                                        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full transition-all duration-500 {{ $row['margin_pct'] >= 100 ? 'bg-emerald-500' : 'bg-violet-500' }}" style="width: {{ min(100, $row['margin_pct']) }}%"></div>
+                                        </div>
+                                        <p class="text-[11px] text-slate-400 mt-1">
+                                            {{ __('Target:') }} Rp {{ number_format($row['target_margin'], 0, ',', '.') }}
+                                        </p>
+                                    @endif
+                                </td>
+                                <td class="py-4 px-4">
                                     @if($row['overall_pct'] >= 100)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
                                             <span>🌟</span> Star Performer
@@ -239,7 +267,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-8 text-center text-slate-400">
+                                <td colspan="7" class="py-8 text-center text-slate-400">
                                     {{ __('Belum ada pengguna dengan role Sales terdaftar.') }}
                                 </td>
                             </tr>
@@ -282,6 +310,14 @@
                                     </label>
                                     <input type="number" step="1000000" name="target_revenue" x-model="modalRevenue" required class="w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:border-accent-500 focus:ring-accent-500 font-bold tabular-nums">
                                     <p class="text-[11px] text-slate-400 mt-1">{{ __('Contoh: 50000000 untuk 50 Juta Rupiah.') }}</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                                        {{ __('Target Margin Kotor (Rp)') }}
+                                    </label>
+                                    <input type="number" step="1000000" name="target_margin" x-model="modalMargin" class="w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:border-accent-500 focus:ring-accent-500 font-bold tabular-nums">
+                                    <p class="text-[11px] text-slate-400 mt-1">{{ __('Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah.') }}</p>
                                 </div>
 
                                 <div>

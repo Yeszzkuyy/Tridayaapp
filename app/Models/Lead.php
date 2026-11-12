@@ -13,6 +13,31 @@ class Lead extends Model
 
     public const LOST_REASONS = ['price', 'competitor', 'budget', 'requirement_changed', 'no_response', 'other'];
 
+    public const NEED_TYPES = ['cctv', 'pabx', 'video_conference', 'network', 'other'];
+
+    public const PROCUREMENT_STATUSES = ['new', 'replacement'];
+
+    public static function needTypeLabel(?string $needType): string
+    {
+        return match ($needType) {
+            'cctv' => __('CCTV'),
+            'pabx' => __('PABX'),
+            'video_conference' => __('Video Conference'),
+            'network' => __('Network'),
+            'other' => __('Others'),
+            default => '-',
+        };
+    }
+
+    public static function procurementStatusLabel(?string $status): string
+    {
+        return match ($status) {
+            'new' => __('New Installation'),
+            'replacement' => __('Replacement'),
+            default => '-',
+        };
+    }
+
     public static function lostReasonLabel(?string $reason): string
     {
         return match ($reason) {
@@ -99,6 +124,9 @@ class Lead extends Model
         'status',
         'source',
         'kebutuhan',
+        'project_name',
+        'need_type',
+        'procurement_status',
         'solusi',
         'progress_notes',
         'notes',
@@ -182,5 +210,14 @@ class Lead extends Model
     public function proposals()
     {
         return $this->hasMany(Proposal::class);
+    }
+
+    /**
+     * Satu lead = satu quotation (wawancara Adi Santosa). true bila lead ini
+     * sudah punya quotation aktif (belum soft-delete), apapun statusnya.
+     */
+    public function hasActiveProposal(): bool
+    {
+        return $this->proposals()->exists();
     }
 }

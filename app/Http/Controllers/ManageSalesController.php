@@ -387,6 +387,23 @@ class ManageSalesController extends Controller
                 ->whereNotNull('po_document_path')
                 ->count();
 
+            // Quotation Accepted yang bisa dipilih saat upload PO resmi dari
+            // Customer Hub (bukan dokumen umum).
+            $acceptedQuotations = $customer->leads
+                ->flatMap(fn ($lead) => $lead->proposals)
+                ->where('status', 'accepted')
+                ->sortByDesc('updated_at')
+                ->map(fn ($proposal) => [
+                    'id' => $proposal->id,
+                    'number' => $proposal->proposal_number,
+                    'total_label' => 'Rp '.number_format((float) $proposal->grand_total, 0, ',', '.'),
+                    'po_number' => $proposal->po_number,
+                    'has_po' => (bool) $proposal->po_document_path,
+                    'delivery_address' => $proposal->delivery_address,
+                    'delivery_deadline' => $proposal->delivery_deadline?->toDateString(),
+                ])
+                ->values();
+
             return [
                 'customer' => $customer,
                 'lead' => $customer->leads->first(),
@@ -396,6 +413,7 @@ class ManageSalesController extends Controller
                 'last_note' => $lastFollowUp?->description,
                 'last_note_at' => $lastFollowUp?->created_at,
                 'documents' => (int) $customer->documents_count + $poDocuments,
+                'accepted_quotations' => $acceptedQuotations,
             ];
         })->when($stage !== '', fn ($rows) => $rows->where('stage_key', $stage)->values())
             ->take(15)
@@ -558,6 +576,7 @@ class ManageSalesController extends Controller
             'period_month' => 'required|integer|between:1,12',
             'period_year' => 'required|integer|min:2020|max:2100',
             'target_revenue' => 'required|numeric|min:0',
+            'target_margin' => 'nullable|numeric|min:0',
             'target_deals' => 'required|integer|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -575,6 +594,7 @@ class ManageSalesController extends Controller
             ],
             [
                 'target_revenue' => $validated['target_revenue'],
+                'target_margin' => $validated['target_margin'] ?? null,
                 'target_deals' => $validated['target_deals'],
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => auth()->id(),

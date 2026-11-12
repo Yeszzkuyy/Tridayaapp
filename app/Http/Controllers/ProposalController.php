@@ -23,6 +23,8 @@ use App\Notifications\PurchasingHandoffNotification;
 use App\Rules\SecureFile;
 use App\Services\CustomerLifecycleService;
 use App\Services\Project\ProjectWorkflowService;
+use App\Services\QuotationNumberService;
+use App\Services\QuotationVersionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +36,11 @@ use Illuminate\Validation\ValidationException;
 
 class ProposalController extends Controller
 {
+    public function __construct(
+        private QuotationNumberService $numbers,
+        private QuotationVersionService $versions,
+    ) {}
+
     private function log(Lead $lead, string $action, array $changes = []): void
     {
         LeadActivity::create([
@@ -220,20 +227,26 @@ class ProposalController extends Controller
         $this->authorizeManage($proposal);
     }
 
-    private function generateNumber(): string
+    private function generateNumber(Lead $lead): string
     {
-        $prefix = 'Q/'.now()->format('Y/m').'/';
+        $pt = $lead->pt_group ?: $lead->customer?->pt_group ?: 'WANI';
 
-        for ($attempt = 0; $attempt < 5; $attempt++) {
-            $seq = Proposal::where('proposal_number', 'like', $prefix.'%')->count() + 1 + $attempt;
-            $number = $prefix.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+        // Inisial pada nomor quotation milik Sales pemilik lead, bukan
+        // pembuat draf (Inside Sales / Management).
+        return $this->numbers->generate($pt, $lead->assignee ?? auth()->user());
+    }
 
-            if (! Proposal::where('proposal_number', $number)->exists()) {
-                return $number;
-            }
-        }
-
-        return $prefix.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+    /**
+     * Sales lapangan tidak lagi membuat quotation langsung. Draf disusun
+     * Inside Sales lewat task; Management tetap punya jalur darurat.
+     */
+    private function authorizeQuotationDraft(Request $request): void
+    {
+        abort_unless(
+            $request->user()?->can('manage-inside-sales')
+            || $request->user()?->can('manage-sales-leads'),
+            403
+        );
     }
 
     private function itemRules(): array
@@ -429,6 +442,8 @@ class ProposalController extends Controller
 
     public function create(Request $request)
     {
+        $this->authorizeQuotationDraft($request);
+
         $priceRequest = null;
         if ($request->filled('price_request_id')) {
             $priceRequest = PriceRequest::with('customer')->findOrFail($request->integer('price_request_id'));
@@ -446,7 +461,10 @@ class ProposalController extends Controller
                 $query->where('customer_id', $priceRequest->customer_id);
             }
 
-            if (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
+            if ($user->can('manage-inside-sales')) {
+                // Inside Sales memilih lead dari task yang di-assign kepadanya.
+                $query->whereHas('tasks', fn ($task) => $task->where('assigned_to', $user->id));
+            } elseif (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
                 $query->where('assigned_to', $user->id);
             }
 
@@ -480,6 +498,8 @@ class ProposalController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeQuotationDraft($request);
+
         $request->merge(['items' => $this->normalizedItems($request->input('items'))]);
 
         $validated = $request->validate(array_merge([
@@ -513,6 +533,13 @@ class ProposalController extends Controller
             ]);
         }
 
+        // Satu lead = satu quotation. Revisi memakai nomor yang sama.
+        if ($lead->hasActiveProposal()) {
+            return back()->withInput()->withErrors([
+                'lead_id' => __('This lead already has a quotation. Revise the existing quotation instead of creating a new one.'),
+            ]);
+        }
+
         $priceRequest = null;
         if (! empty($validated['price_request_id'])) {
             $priceRequest = PriceRequest::findOrFail($validated['price_request_id']);
@@ -529,11 +556,12 @@ class ProposalController extends Controller
             $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost, $priceRequest, $items) {
                 $proposal = Proposal::create([
                     'lead_id' => $lead->id,
-                    'proposal_number' => $this->generateNumber(),
+                    'proposal_number' => $this->generateNumber($lead),
                     'created_by' => auth()->id(),
                     'proposal_date' => $validated['proposal_date'],
                     'valid_until' => $validated['valid_until'] ?? null,
                     'customer' => $lead->customer?->name ?? '-',
+                    'letterhead_pt' => $lead->pt_group ?: $lead->customer?->pt_group,
                     'discount' => $validated['discount'] ?? 0,
                     'tax' => $validated['tax'] ?? 0,
                     'notes' => $validated['notes'] ?? null,
@@ -563,6 +591,8 @@ class ProposalController extends Controller
 
         $this->storeQuotationFile($request, $proposal);
 
+        $this->versions->record($proposal, null, __('Initial quotation'));
+
         $this->log($lead, 'proposal_created', ['number' => $proposal->proposal_number]);
 
         return redirect()->route('sales.proposals.show', $proposal)
@@ -571,7 +601,7 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest', 'attachments']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest', 'attachments', 'versions.changer']);
         $this->authorizeView($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
@@ -638,6 +668,8 @@ class ProposalController extends Controller
         $items = $validated['items'] ?? [];
         $this->assertNoCostTampering($items, $canManageCost);
 
+        $totalBefore = (float) $proposal->grand_total;
+
         DB::transaction(function () use ($proposal, $validated, $canManageCost, $items) {
             $proposal->update([
                 'proposal_date' => $validated['proposal_date'],
@@ -659,6 +691,9 @@ class ProposalController extends Controller
         });
 
         $this->storeQuotationFile($request, $proposal);
+
+        $proposal->refresh();
+        $this->versions->record($proposal, $totalBefore, __('Quotation revised.'));
 
         return redirect()->route('sales.proposals.show', $proposal)
             ->with('success', __('Proposal updated successfully.'));
@@ -806,6 +841,7 @@ class ProposalController extends Controller
 
         $proposal->update(['status' => 'revision']);
         $this->log($proposal->lead, 'proposal_revised', ['number' => $proposal->proposal_number]);
+        $this->versions->record($proposal, (float) $proposal->grand_total, __('Requested revision from customer.'));
 
         return back()->with('success', __('Proposal returned for revision.'));
     }
@@ -886,6 +922,15 @@ class ProposalController extends Controller
             'delivery_deadline' => 'nullable|date',
             'delivery_address' => 'nullable|string|max:255',
         ], $this->paymentRules()));
+
+        // Alamat pengiriman wajib sebelum PO masuk handoff (dipisah dari
+        // alamat tagihan kantor, sesuai wawancara Sales).
+        $effectiveAddress = trim((string) ($validated['delivery_address'] ?? $proposal->delivery_address ?? ''));
+        if ($effectiveAddress === '') {
+            return back()->withInput()->withErrors([
+                'delivery_address' => __('Fill in the delivery address before uploading the customer PO.'),
+            ]);
+        }
 
         $payload = [
             'po_number' => $validated['po_number'] ?? $proposal->po_number,

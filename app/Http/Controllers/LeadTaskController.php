@@ -8,10 +8,17 @@ use App\Models\LeadTask;
 use App\Models\LeadTaskItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\QuotationNumberService;
+use App\Services\QuotationVersionService;
 use Illuminate\Http\Request;
 
 class LeadTaskController extends Controller
 {
+    public function __construct(
+        private QuotationNumberService $numbers,
+        private QuotationVersionService $versions,
+    ) {}
+
     /** Boleh request/kelola task: management, marketing, atau sales pemilik lead. */
     private function authorizeTaskRequest(Lead $lead): void
     {
@@ -383,15 +390,21 @@ class LeadTaskController extends Controller
             422,
             __('This task already has a quotation.')
         );
+        abort_if(
+            $lead?->hasActiveProposal(),
+            422,
+            __('This lead already has a quotation. Revise the existing quotation instead of creating a new one.')
+        );
 
         $proposal = \Illuminate\Support\Facades\DB::transaction(function () use ($attachment, $leadTask, $lead, $items) {
             $proposal = \App\Models\Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
-                'proposal_number' => $this->generateProposalNumber(),
+                'proposal_number' => $this->generateProposalNumber($lead),
                 'created_by' => $lead?->assigned_to ?? auth()->id(),
                 'proposal_date' => now()->toDateString(),
                 'customer' => $lead?->customer?->name ?? '-',
+                'letterhead_pt' => $lead?->pt_group ?: $lead?->customer?->pt_group,
                 'status' => 'draft',
                 'internal_notes' => __('Created automatically from Inside Sales :count item(s) and file :file (task #:task).', [
                     'count' => $items->count(),
@@ -434,6 +447,8 @@ class LeadTaskController extends Controller
             return $proposal;
         });
 
+        $this->versions->record($proposal, null, __('Initial quotation'), auth()->id());
+
         // Kabari Inside Sales bahwa file-nya sudah diterima.
         $assignee = $leadTask->assignee;
         if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
@@ -445,21 +460,12 @@ class LeadTaskController extends Controller
             ->with('success', __('Quotation created from the accepted file.'));
     }
 
-    /** Nomor quotation berurutan per bulan, format sama seperti menu Quotation. */
-    private function generateProposalNumber(): string
+    /** Nomor quotation baku: PT/urut/inisial/tahun. */
+    private function generateProposalNumber(?Lead $lead): string
     {
-        $prefix = 'Q/'.now()->format('Y/m').'/';
+        $pt = $lead?->pt_group ?: $lead?->customer?->pt_group ?: 'WANI';
 
-        for ($attempt = 0; $attempt < 5; $attempt++) {
-            $sequence = \App\Models\Proposal::where('proposal_number', 'like', $prefix.'%')->count() + 1 + $attempt;
-            $number = $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
-
-            if (! \App\Models\Proposal::where('proposal_number', $number)->exists()) {
-                return $number;
-            }
-        }
-
-        return $prefix.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        return $this->numbers->generate($pt, $lead?->assignee ?? auth()->user());
     }
 
     public function downloadAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)

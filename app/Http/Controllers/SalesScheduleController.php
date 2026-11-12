@@ -129,6 +129,8 @@ class SalesScheduleController extends Controller
 
             return [
                 'id' => $fu->id,
+                'source' => 'follow_up',
+                'type_label' => __('Meeting'),
                 'date' => $fu->follow_up_date->toDateString(),
                 'description' => $fu->description,
                 'activity_time' => $fu->activity_time ? substr($fu->activity_time, 0, 5) : null,
@@ -151,13 +153,76 @@ class SalesScheduleController extends Controller
                 'meeting_photos' => !empty($fu->meeting_photos) ? array_map(fn($p) => asset('storage/'.$p), $fu->meeting_photos) : [],
                 'meeting_next_action_date' => $fu->meeting_next_action_date?->format('d M Y'),
                 'meeting_report_url' => route('sales.meetings.report', $fu),
+                'edit_url' => route('sales.follow-ups.edit', $fu),
+                'complete_url' => route('sales.follow-ups.complete', $fu),
+                'snooze_url' => route('sales.follow-ups.snooze', $fu),
                 'url' => $fu->lead_id
                     ? route('leads.show', $fu->lead_id)
                     : route('customers.show', $fu->customer_id),
             ];
         });
 
-        return response()->json($schedules);
+        // Agenda Sales (kunjungan, presentasi, demo, internal) digabung ke
+        // kalender yang sama. Jadwal teknisi TIDAK ikut di sini.
+        $scheduleQuery = SalesSchedule::with(['lead.customer.contacts', 'assignee', 'creator.roles'])
+            ->where('status', '!=', 'cancelled');
+
+        if ($request->filled('start') && $request->filled('end')) {
+            $scheduleQuery->whereBetween('start_at', [$start.' 00:00:00', $end.' 23:59:59']);
+        } else {
+            $scheduleQuery->whereBetween('start_at', [$parsed.' 00:00:00', $parsed.' 23:59:59']);
+        }
+
+        $this->ownScope($scheduleQuery);
+
+        $scheduleEvents = $scheduleQuery->orderBy('start_at')->get()->map(function (SalesSchedule $schedule) {
+            $customer = $schedule->lead?->customer;
+            $contact = $customer?->contacts?->sortByDesc('is_primary')->first();
+            $wa = preg_replace('/\D/', '', (string) ($contact?->whatsapp ?: $contact?->phone));
+            $wa = $wa === '' ? null : (str_starts_with($wa, '0') ? '62'.substr($wa, 1) : $wa);
+            $phone = preg_replace('/[^0-9+]/', '', (string) ($contact?->phone ?: $contact?->whatsapp));
+
+            return [
+                'id' => 'schedule-'.$schedule->id,
+                'source' => 'sales_schedule',
+                'type_label' => SalesSchedule::typeLabel($schedule->type),
+                'date' => $schedule->start_at->toDateString(),
+                'description' => $schedule->title,
+                'activity_time' => $schedule->start_at->format('H:i'),
+                'location' => $schedule->location,
+                'customer' => $customer?->name ?? __('Jadwal'),
+                'customer_id' => $customer?->id,
+                'lead_id' => $schedule->lead_id,
+                'creator' => $schedule->creator?->name,
+                'creator_avatar' => $schedule->creator?->avatar ? asset('storage/'.$schedule->creator->avatar) : null,
+                'creator_role' => $schedule->creator?->roles->first() ? __(\Illuminate\Support\Str::headline($schedule->creator->roles->first()->name)) : null,
+                'pic_name' => $contact?->name,
+                'pic_position' => $contact?->position,
+                'pic_phone' => $phone === '' ? null : $phone,
+                'pic_whatsapp' => $wa,
+                'completed' => $schedule->status === 'completed',
+                'meeting_notes' => $schedule->description,
+                'meeting_outcome' => null,
+                'meeting_outcome_label' => null,
+                'meeting_outcome_badge' => null,
+                'meeting_photos' => [],
+                'meeting_next_action_date' => null,
+                'meeting_report_url' => null,
+                'edit_url' => auth()->user()->can('manage-sales') ? route('sales.schedules.edit', $schedule) : null,
+                'complete_url' => auth()->user()->can('manage-sales') ? route('sales.schedules.complete', $schedule) : null,
+                'snooze_url' => null,
+                'url' => $schedule->lead_id
+                    ? route('leads.show', $schedule->lead_id)
+                    : ($customer ? route('customers.show', $customer) : '#'),
+            ];
+        });
+
+        $merged = $schedules
+            ->concat($scheduleEvents)
+            ->sortBy(fn (array $event) => $event['date'].' '.($event['activity_time'] ?? '00:00'))
+            ->values();
+
+        return response()->json($merged);
     }
 
     public function create(Request $request)

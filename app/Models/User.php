@@ -22,6 +22,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'initials',
         'email',
         'password',
         'password_changed_at',
@@ -50,6 +51,26 @@ class User extends Authenticatable
     public function preference(string $key, mixed $default = null): mixed
     {
         return data_get($this->preferences, $key, $default);
+    }
+
+    /**
+     * Inisial untuk nomor quotation: pakai field `initials` bila sudah diisi,
+     * kalau belum turunkan otomatis dari nama (huruf pertama 2 kata pertama).
+     * Nama method sengaja bukan `initials()` agar tidak bentrok dengan kolom.
+     */
+    public function quotationInitials(): string
+    {
+        if (filled($this->getAttribute('initials'))) {
+            return strtoupper(trim((string) $this->getAttribute('initials')));
+        }
+
+        $parts = preg_split('/\s+/u', trim((string) $this->name)) ?: [];
+        $letters = '';
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $letters .= mb_substr($part, 0, 1);
+        }
+
+        return strtoupper($letters) ?: 'X';
     }
 
     /** True bila user memegang salah satu role teknisi. */
