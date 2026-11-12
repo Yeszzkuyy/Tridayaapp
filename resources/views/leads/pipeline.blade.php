@@ -40,19 +40,7 @@
                 <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
             </a>
 
-            {{-- 3. Primary CTA: Add Lead --}}
-            @canany(['manage-marketing', 'manage-sales'])
-                <a href="{{ route('leads.create') }}"
-                   wire:navigate.hover
-                   title="{{ __('Add Lead') }}"
-                   class="group relative inline-flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-5 text-sm font-semibold text-white shadow-sm shadow-accent-500/30 transition-all duration-300 hover:bg-accent-700 hover:shadow-md hover:shadow-accent-500/40 hover:brightness-105 active:scale-95 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
-                    <svg class="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:rotate-90" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    <span class="tracking-wide">{{ __('Add Lead') }}</span>
-                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                </a>
-            @endcanany
+            {{-- 3. Add Lead ada di halaman My Leads (bukan di pipeline). --}}
         </div>
     </div>
 

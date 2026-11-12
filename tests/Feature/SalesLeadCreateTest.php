@@ -92,6 +92,22 @@ class SalesLeadCreateTest extends TestCase
             ->assertSee(__('Installation'));
     }
 
+
+    public function test_add_lead_button_is_on_my_leads_not_pipeline(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $this->actingAs($sales)
+            ->get(route('sales.my-leads'))
+            ->assertOk()
+            ->assertSee(route('leads.create'), false);
+
+        $this->actingAs($sales)
+            ->get(route('leads.pipeline'))
+            ->assertOk()
+            ->assertDontSee(route('leads.create'), false);
+    }
+
     public function test_sales_can_edit_own_lead_but_not_another_sales_lead(): void
     {
         $sales = $this->userWithRole('sales');

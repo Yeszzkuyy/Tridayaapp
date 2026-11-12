@@ -6,6 +6,7 @@
             <p class="text-slate-500 mt-1">{{ __('Leads assigned to you by Management') }}</p>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
+            <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" label="{{ __('Add Lead') }}" title="{{ __('Add Lead') }}" />
             <x-flow-button as="a" href="{{ route('sales.follow-ups.create') }}"
                            wire:navigate.hover
                            icon="add"
