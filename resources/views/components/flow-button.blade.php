@@ -19,6 +19,7 @@
     'title' => '',
     'variant' => 'accent',
     'icon' => null,
+    'size' => 'md',
 ])
 
 @php
@@ -46,15 +47,37 @@ $palettes = [
 ];
 $palette = $palettes[$variant];
 
-$base = 'group relative inline-flex h-10 cursor-pointer items-center justify-center gap-1 overflow-hidden rounded-[100px] border-[1.5px] bg-transparent px-8 text-sm font-semibold transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:rounded-xl hover:border-transparent active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2 motion-reduce:transition-none '.$palette['button'];
+// Ukuran: md untuk CTA halaman, sm untuk aksi di dalam baris tabel.
+$sizes = [
+    'md' => [
+        'base' => 'h-10 gap-1 px-8 text-sm',
+        'iconLeft' => 'left-[-25%] group-hover:left-4',
+        'iconRight' => 'right-4 group-hover:right-[-25%]',
+        'icon' => 'h-4 w-4',
+        'circle' => 'group-hover:h-[220px] group-hover:w-[220px]',
+        'text' => '-translate-x-3 group-hover:translate-x-3',
+    ],
+    'sm' => [
+        'base' => 'h-9 gap-1 px-4 text-xs',
+        'iconLeft' => 'left-[-30%] group-hover:left-3',
+        'iconRight' => 'right-3 group-hover:right-[-30%]',
+        'icon' => 'h-3.5 w-3.5',
+        'circle' => 'group-hover:h-[150px] group-hover:w-[150px]',
+        'text' => '-translate-x-2 group-hover:translate-x-2',
+    ],
+];
+$size = in_array($size, ['md', 'sm'], true) ? $size : 'md';
+$s = $sizes[$size];
 
-$iconLeft = 'absolute left-[-25%] z-[9] h-4 w-4 transition-all duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:left-4 motion-reduce:transition-none';
+$base = 'group relative inline-flex '.$s['base'].' cursor-pointer items-center justify-center overflow-hidden rounded-[100px] border-[1.5px] bg-transparent font-semibold transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:rounded-xl hover:border-transparent active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2 motion-reduce:transition-none '.$palette['button'];
 
-$iconRight = 'absolute right-4 z-[9] h-4 w-4 transition-all duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:right-[-25%] motion-reduce:transition-none';
+$iconLeft = 'absolute z-[9] '.$s['icon'].' '.$s['iconLeft'].' transition-all duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none';
 
-$circle = 'absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-[50%] opacity-0 transition-all duration-[800ms] ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:h-[220px] group-hover:w-[220px] group-hover:opacity-100 motion-reduce:transition-none '.$palette['circle'];
+$iconRight = 'absolute z-[9] '.$s['icon'].' '.$s['iconRight'].' transition-all duration-[800ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none';
 
-$text = 'relative z-[1] -translate-x-3 whitespace-nowrap transition-all duration-[800ms] ease-out group-hover:translate-x-3 motion-reduce:transition-none';
+$circle = 'absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-[50%] opacity-0 transition-all duration-[800ms] ease-[cubic-bezier(0.19,1,0.22,1)] '.$s['circle'].' group-hover:opacity-100 motion-reduce:transition-none '.$palette['circle'];
+
+$text = 'relative z-[1] '.$s['text'].' whitespace-nowrap transition-all duration-[800ms] ease-out motion-reduce:transition-none';
 
 // Peta ikon kecil untuk nama yang paling sering dipakai; nama lain jatuh ke
 // <x-icon> (set ikon aplikasi lebih lengkap) supaya tidak pernah kosong.
