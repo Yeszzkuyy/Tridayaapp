@@ -68,9 +68,9 @@
                         <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
                         <th class="hidden w-[9%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Sales Owner') }}</th>
                         <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
-                        <th class="w-[11%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
-                        <th class="hidden w-[9%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Items') }}</th>
-                        <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
+                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
+                        <th class="hidden w-[8%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Items') }}</th>
+                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
                         <th class="w-[176px] px-2.5 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -139,7 +139,7 @@
                                     @endif
                                 @endif
                                 @if($warningCount > 0)
-                                    <span class="mt-1 inline-flex items-center gap-1 rounded border border-amber-200/70 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300">
+                                    <span class="mt-1 inline-flex items-center gap-1 rounded border border-amber-200/70 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
                                         <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 3.5h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                                         </svg>
