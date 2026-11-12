@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\EstimatorRequest;
 use App\Models\Lead;
 use App\Models\LeadTask;
 use App\Models\PriceRequest;
@@ -65,7 +66,7 @@ class SalesRequestHubTest extends TestCase
         ], $overrides));
     }
 
-    public function test_sales_sees_hub_with_all_three_tabs_and_no_product_price_tab(): void
+    public function test_sales_sees_hub_with_all_four_tabs(): void
     {
         $sales = $this->userWithRole('sales');
 
@@ -75,7 +76,47 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringContainsString(__('Inside Sales'), $html);
         $this->assertStringContainsString(__('Installation Price'), $html);
         $this->assertStringContainsString('Engineer', $html);
-        $this->assertStringNotContainsString('tab=product-price', $html);
+        $this->assertStringContainsString(__('Product Price'), $html);
+    }
+
+    public function test_sales_estimator_queue_url_redirects_to_product_price_tab(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $this->actingAs($sales)
+            ->get(route('estimator.requests.index'))
+            ->assertRedirect(route('sales.requests.index', ['tab' => 'product-price']));
+    }
+
+    public function test_product_price_tab_lists_only_own_estimator_requests(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $otherSales = User::factory()->create();
+        $otherSales->assignRole('sales');
+        $customer = Customer::create(['name' => 'PT Tab Produk']);
+        $otherCustomer = Customer::create(['name' => 'PT Tab Produk Lain']);
+
+        EstimatorRequest::create([
+            'customer_id' => $customer->id,
+            'requested_by' => $sales->id,
+            'status' => 'submitted',
+        ]);
+        EstimatorRequest::create([
+            'customer_id' => $otherCustomer->id,
+            'requested_by' => $otherSales->id,
+            'status' => 'submitted',
+        ]);
+
+        $response = $this->actingAs($sales)
+            ->get(route('sales.requests.index', ['tab' => 'product-price']))
+            ->assertOk()
+            ->assertSee('PT Tab Produk')
+            ->assertSee(__('Product Price'));
+
+        $response->assertViewHas('estimatorRequests', fn ($paginator) => $paginator->total() === 1
+            && (int) $paginator->first()->requested_by === (int) $sales->id);
     }
 
     public function test_engineer_request_card_shows_requester_and_new_request_path(): void

@@ -40,6 +40,15 @@ class EstimatorRequestController extends Controller
             403
         );
 
+        // Sales memakai tab Product Price di menu Request; halaman Queue
+        // berdiri sendiri hanya untuk Estimator/Management.
+        if (! ($user->can('manage-price-requests')
+            || $user->can('manage-sales-leads')
+            || $user->can('manage-admin')
+            || $user->hasRole('ceo'))) {
+            return redirect()->route('sales.requests.index', ['tab' => 'product-price']);
+        }
+
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
             'status' => 'nullable|in:open,'.implode(',', EstimatorRequest::STATUSES),
@@ -256,14 +265,18 @@ class EstimatorRequestController extends Controller
             : collect();
 
         $backUrl = $user->can('manage-price-requests')
+            || $user->can('manage-sales-leads')
+            || $user->can('manage-admin')
+            || $user->hasRole('ceo')
             ? route('estimator.requests.index')
-            : ($estimatorRequest->proposal_id
-                ? route('sales.proposals.show', $estimatorRequest->proposal_id)
-                : ($estimatorRequest->lead_id
-                    ? route('leads.show', $estimatorRequest->lead_id)
-                    : ($estimatorRequest->project_id
-                        ? route('projects.show', $estimatorRequest->project_id)
-                        : route('estimator.requests.index'))));
+            : route('sales.requests.index', ['tab' => 'product-price']);
+        $backUrl = $estimatorRequest->proposal_id
+            ? route('sales.proposals.show', $estimatorRequest->proposal_id)
+            : ($estimatorRequest->lead_id
+                ? route('leads.show', $estimatorRequest->lead_id)
+                : ($estimatorRequest->project_id
+                    ? route('projects.show', $estimatorRequest->project_id)
+                    : $backUrl));
 
         return view('estimator.requests.show', compact('estimatorRequest', 'suppliers', 'backUrl'));
     }

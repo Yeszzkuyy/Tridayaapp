@@ -173,31 +173,6 @@
                          const phone = sup && sup.phone ? sup.phone : '';
                          const msg = `Halo ${name}, saya ${this.estimatorName} dari 3DY. Mau cek stok dan harga modal untuk barang berikut ya:\n${this.waItems}\nApakah ready stok atau indent? Dan harga ini bisa di-keep sampai kapan ya? Terima kasih.`;
                          return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-                     },
-                     applyLastLog(index, log) {
-                         const root = this.$el;
-                         const setVal = (field, val) => {
-                             const el = root.querySelector(`[name='items[${index}][${field}]']`);
-                             if (el && val !== null && val !== undefined && val !== '') {
-                                 el.value = val;
-                                 el.dispatchEvent(new Event('input', { bubbles: true }));
-                                 el.dispatchEvent(new Event('change', { bubbles: true }));
-                             }
-                         };
-                         setVal('supplier_id', log.supplier_id);
-                         setVal('price', log.price);
-                         setVal('stock_status', log.stock_status);
-                         setVal('stock_eta', log.stock_eta);
-                         setVal('warranty_info', log.warranty_info);
-                         if (log.valid_until) setVal('valid_until', log.valid_until);
-                     },
-                     setKeepDate(index, dateStr) {
-                         const el = this.$el.querySelector(`[name='items[${index}][valid_until]']`);
-                         if (el) {
-                             el.value = dateStr;
-                             el.dispatchEvent(new Event('input', { bubbles: true }));
-                             el.dispatchEvent(new Event('change', { bubbles: true }));
-                         }
                      }
                  }" aria-labelledby="estimator-requested-items">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
@@ -230,7 +205,7 @@
                 </div>
 
                 <form action="{{ route('estimator.requests.answer', $estimatorRequest) }}" method="POST"
-                      x-show="editing" x-cloak data-loading-text="{{ __('Sending…') }}"
+                      x-show="editing" x-cloak
                       style="{{ $formOpen ? '' : 'display: none' }}">
                     @csrf
                     <div class="overflow-x-auto">
@@ -278,7 +253,7 @@
                                                             {{ __('Valid until :date', ['date' => $lastLog->valid_until->format('d M Y')]) }}
                                                         </p>
                                                     @endif
-                                                    <button type="button" @click="applyLastLog({{ $index }}, @js($lastLogPayload))"
+                                                    <button type="button" onclick="useLastPrice({{ $index }}, @js($lastLogPayload))"
                                                             class="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-teal-700 active:scale-95">
                                                         {{ __('Use Last Price') }}
                                                     </button>
@@ -309,10 +284,10 @@
                                         <td class="px-4 py-3">
                                             <input type="date" name="items[{{ $index }}][valid_until]" value="{{ old("items.{$index}.valid_until", $item->valid_until?->format('Y-m-d')) }}" class="w-36 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                             <div class="mt-1.5 flex flex-wrap gap-1">
-                                                <button type="button" @click="setKeepDate({{ $index }}, '{{ $keepDates['3d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+3 Days') }}</button>
-                                                <button type="button" @click="setKeepDate({{ $index }}, '{{ $keepDates['7d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Week') }}</button>
-                                                <button type="button" @click="setKeepDate({{ $index }}, '{{ $keepDates['14d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+2 Weeks') }}</button>
-                                                <button type="button" @click="setKeepDate({{ $index }}, '{{ $keepDates['1m'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Month') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['3d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+3 Days') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['7d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Week') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['14d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+2 Weeks') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['1m'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Month') }}</button>
                                             </div>
                                         </td>
                                         <td class="px-4 py-3">
@@ -465,4 +440,29 @@
             @endcan
         </div>
     </div>
+
+    @once
+        <script>
+            function setFieldValue(index, field, value) {
+                const el = document.querySelector(`[name="items[${index}][${field}]"]`);
+                if (!el || value === null || value === undefined || value === '') return;
+                el.value = value;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            function useLastPrice(index, log) {
+                setFieldValue(index, 'supplier_id', log.supplier_id);
+                setFieldValue(index, 'price', log.price);
+                setFieldValue(index, 'stock_status', log.stock_status);
+                setFieldValue(index, 'stock_eta', log.stock_eta);
+                setFieldValue(index, 'warranty_info', log.warranty_info);
+                setFieldValue(index, 'valid_until', log.valid_until);
+            }
+
+            function setKeepDate(index, dateStr) {
+                setFieldValue(index, 'valid_until', dateStr);
+            }
+        </script>
+    @endonce
 </x-app-layout>

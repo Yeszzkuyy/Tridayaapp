@@ -22,7 +22,8 @@ Menjadikan modul Estimator sangat simpel, cepat, dan siap pakai untuk operasiona
    - Estimator bisa langsung menambahkan/memperbarui harga modal produk di Pricelist kapan saja tanpa menunggu tiket dari Sales.
    - Desain Pricelist diperbesar, tegas, kontras, dengan badge status masa berlaku yang jelas (🟢 Hijau = Masih Berlaku, 🟡 Kuning = Perlu Cek Ulang).
 4. **Perapian Alur Sales & Tampilan Web:**
-   - Tab *Product Price* di menu Sales dihilangkan agar tidak membingungkan.
+   - Tab *Product Price* tetap ada di menu Request Sales; halaman queue mandiri
+     untuk Sales dialihkan ke tab tersebut agar tidak ada halaman ganda.
    - Halaman buat request menjadi *full-width* dengan pencarian produk (*searchable picker*, bukan dropdown panjang).
    - Setelah simpan, sistem menampilkan notifikasi *toast* standar pojok layar.
    - Tombol *Export Report Excel* mingguan dipasang di antrean Queue.
@@ -45,9 +46,11 @@ Menjadikan modul Estimator sangat simpel, cepat, dan siap pakai untuk operasiona
   - Jika item katalog sudah memiliki log harga modal terakhir di sistem, muncul ringkasan harga terakhir dan tombol 1-klik untuk menyalin supplier, harga, dan garansi.
 
 ### B. Perapian Menu Sales & Navigasi Back
-- **Hapus Tab Product Price di Menu Sales:**
-  - Tab ke-4 *Product Price* pada `sales.requests` dihilangkan. Menu Sales Request fokus pada Inside Sales, Installation Price (Teknisi), dan Engineer (Teknisi).
-  - Sales mengajukan harga produk langsung dari halaman Lead / Quotation atau lewat menu Estimator jika berhak.
+- **Tab Product Price tetap di Menu Sales:**
+  - Tab ke-4 *Product Price* pada `sales.requests` dipertahankan agar permintaan
+    harga produk Sales sejajar dengan Inside Sales, Installation Price, dan Engineer.
+  - Halaman queue mandiri `estimator.requests.index` dialihkan ke tab tersebut
+    untuk user Sales; Estimator tetap memakai Queue sebagai workspace.
 - **Perbaikan Tombol Back:**
   - Tombol kembali pada detail *price request* diarahkan tepat ke halaman induk asalnya tanpa looping ke halaman detail yang sama.
 
@@ -77,11 +80,11 @@ Menjadikan modul Estimator sangat simpel, cepat, dan siap pakai untuk operasiona
 1. `resources/views/estimator/requests/show.blade.php` (Tombol WhatsApp otomatis, tombol keep 1 minggu, tombol pakai harga terakhir, perbaikan back & feedback).
 2. `resources/views/estimator/requests/create.blade.php` (Tampilan full-width, searchable product picker, perbaikan tombol back).
 3. `resources/views/estimator/requests/index.blade.php` (Tombol Export Excel di header/toolbar).
-4. `resources/views/sales/requests/index.blade.php` (Hapus tab Product Price).
+4. `resources/views/sales/requests/index.blade.php` (Pertahankan tab Product Price).
 5. `resources/views/sales/products/index.blade.php` (Redesain Pricelist: teks lebih jelas, badge aktif/kadaluarsa, tombol update cepat).
 6. `resources/views/sales/products/price.blade.php` (Tombol pintas keep harga +3hr/+1mgg pada form update modal).
 7. `app/Http/Controllers/EstimatorRequestController.php` (Penyesuaian flash toast standar, data backUrl).
-8. `app/Http/Controllers/SalesRequestHubController.php` (Pembersihan tab Product Price).
+8. `app/Http/Controllers/SalesRequestHubController.php` (Tab Product Price + redirect Sales dari queue mandiri).
 9. `tests/Feature/EstimatorRequestTest.php` & `tests/Feature/SalesRequestHubTest.php` (Verifikasi pengujian otomatis).
 
 ---
@@ -91,7 +94,7 @@ Menjadikan modul Estimator sangat simpel, cepat, dan siap pakai untuk operasiona
 1. **Tanya WA Distributor:** Buka detail request Estimator → klik tombol Tanya Supplier via WA → terbuka pesan rapi berisi daftar item.
 2. **Keep 1 Minggu:** Klik tombol `+1 Minggu` pada tanggal berlaku → tanggal terisi otomatis 7 hari ke depan.
 3. **Pakai Data Terakhir:** Klik `Pakai Data Terakhir` → kolom supplier, harga, dan garansi terisi otomatis dari log sebelumnya.
-4. **Menu Sales Bersih:** Buka menu Sales → Request → tab Product Price sudah tidak ada, navigasi back aman.
+4. **Menu Sales Rapi:** Buka menu Sales → Request → tab Product Price ada dan berisi permintaan milik Sales; URL queue mandiri dialihkan ke tab ini.
 5. **Buat Request Full-Width & Search:** Buka form buat request → tampilan lebar penuh, input barang berupa pencarian interaktif.
 6. **Toast Muncul:** Simpan data → muncul pop-up toast di pojok layar.
 7. **Pricelist Jelas & Export Excel Ada:** Buka Pricelist → teks terbaca jelas, badge aktif/kadaluarsa terlihat; buka Queue → tombol Export Excel tersedia.

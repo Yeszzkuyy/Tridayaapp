@@ -166,6 +166,10 @@ class EstimatorRequestTest extends TestCase
 
         $this->actingAs($salesA)
             ->get(route('estimator.requests.index'))
+            ->assertRedirect(route('sales.requests.index', ['tab' => 'product-price']));
+
+        $this->actingAs($salesA)
+            ->get(route('sales.requests.index', ['tab' => 'product-price']))
             ->assertOk()
             ->assertSee('PT Punya A')
             ->assertDontSee('PT Punya B');
@@ -575,7 +579,9 @@ class EstimatorRequestTest extends TestCase
             ->assertSee(__('+3 Days'))
             ->assertSee(__('+1 Week'))
             ->assertSee(__('+2 Weeks'))
-            ->assertSee(__('+1 Month'));
+            ->assertSee(__('+1 Month'))
+            ->assertSee('onclick="useLastPrice(0,', false)
+            ->assertDontSee('data-loading-text');
     }
 
     public function test_create_form_is_full_width_with_searchable_picker_and_queue_has_export_button(): void
