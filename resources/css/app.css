@@ -762,49 +762,13 @@ html.doc-modal-open main .bg-white.shadow:hover {
 }
 
 /* ============================================================
-   Status card sukses: kartu pop + checkmark ter-draw
-   (dash di-setup hanya saat animasi jalan agar reduced-motion
-   tetap menampilkan centang utuh)
-   ============================================================ */
-@media (prefers-reduced-motion: no-preference) {
-    .status-card-pop {
-        animation: status-pop 0.35s var(--ease-out) backwards;
-    }
-
-    .status-check__circle {
-        stroke-dasharray: 214;
-        stroke-dashoffset: 214;
-        animation: status-draw 0.55s var(--ease-out) 0.1s forwards;
-    }
-
-    .status-check__mark {
-        stroke-dasharray: 48;
-        stroke-dashoffset: 48;
-        animation: status-draw 0.35s var(--ease-out) 0.5s forwards;
-    }
-
-    @keyframes status-pop {
-        from {
-            opacity: 0;
-            transform: scale(0.92) translateY(8px);
-        }
-    }
-
-    @keyframes status-draw {
-        to {
-            stroke-dashoffset: 0;
-        }
-    }
-}
-
-/* ============================================================
-   Backdrop kartu status + overlay submit: full selebar viewport
+   Backdrop overlay submit: full selebar viewport
    (redup tembus sampai area sidebar, sidebar tetap terang di atasnya
    karena z-index-nya lebih tinggi).
    Overlay submit (#gs-submit-overlay) mulai di bawah navbar
    (h-16 mobile, sm:h-20).
    ============================================================ */
-.status-card-backdrop {
+.gs-overlay-backdrop {
     left: 0;
 }
 

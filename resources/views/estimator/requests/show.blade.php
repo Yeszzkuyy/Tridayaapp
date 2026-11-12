@@ -1,25 +1,6 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
-    @if(session('price_sent'))
-        <div x-data="{ show: true }" x-show="show" x-cloak x-init="setTimeout(() => show = false, 1600)"
-             class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/55 p-4" role="status" aria-live="polite">
-            <div class="flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-xl dark:bg-slate-800">
-                <svg class="h-14 w-14 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" aria-hidden="true">
-                    <path class="estimator-check" d="M4.5 12.75l6 6 9-13.5" pathLength="40"/>
-                </svg>
-            </div>
-            <style>
-                @keyframes estimator-check-draw { to { stroke-dashoffset: 0; } }
-                .estimator-check { stroke-dasharray: 40; stroke-dashoffset: 40; animation: estimator-check-draw .5s ease-out forwards; }
-                @media (prefers-reduced-motion: reduce) { .estimator-check { animation: none; stroke-dashoffset: 0; } }
-            </style>
-        </div>
-    @endif
-
     @php
+        $backUrl ??= route('estimator.requests.index');
         $itemStatusColors = [
             'pending' => 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
             'answered' => 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
@@ -32,6 +13,27 @@
         $contactSuppliers = $isEstimator
             ? $estimatorRequest->items->pluck('supplier')->filter()->unique('id')->values()
             : collect();
+        $keepDates = [
+            '3d' => now()->timezone('Asia/Jakarta')->addDays(3)->format('Y-m-d'),
+            '7d' => now()->timezone('Asia/Jakarta')->addDays(7)->format('Y-m-d'),
+            '14d' => now()->timezone('Asia/Jakarta')->addDays(14)->format('Y-m-d'),
+            '1m' => now()->timezone('Asia/Jakarta')->addMonth()->format('Y-m-d'),
+        ];
+        $waItemLines = $estimatorRequest->items->values()->map(function ($it, $idx) {
+            $qty = rtrim(rtrim(number_format((float) $it->quantity, 2, '.', ''), '0'), '.');
+
+            return ($idx + 1).'. '.$it->description.' - '.$qty.' '.$it->unit;
+        })->implode("\n");
+        $estimatorName = auth()->user()->name;
+        $waSuppliers = $suppliers->map(fn ($s) => [
+            'id' => (string) $s->id,
+            'name' => $s->name,
+            'contact' => $s->contact_person ?: $s->name,
+            'phone' => preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', (string) $s->phone)),
+        ])->values()->all();
+        $defaultWaSupplierId = (string) ($estimatorRequest->items->pluck('supplier_id')->filter()->first()
+            ?? collect($waSuppliers)->firstWhere('phone', '!=', '')['id']
+            ?? ($waSuppliers[0]['id'] ?? ''));
     @endphp
 
     <div>
@@ -52,7 +54,7 @@
                     @endif
                 </p>
             </div>
-            <x-back-button :href="route('estimator.requests.index')" />
+            <x-back-button :href="$backUrl" />
         </div>
 
         @if($estimatorRequest->status === 'revision')
@@ -159,10 +161,23 @@
         </section>
 
         <section class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800"
-                 x-data="{ editing: {{ $formOpen ? 'true' : 'false' }}, sending: false }" aria-labelledby="estimator-requested-items">
+                 x-data="{
+                     editing: {{ $formOpen ? 'true' : 'false' }},
+                     waSuppliers: @js($waSuppliers),
+                     waSupplierId: @js($defaultWaSupplierId),
+                     waItems: @js($waItemLines),
+                     estimatorName: @js($estimatorName),
+                     waUrl() {
+                         const sup = this.waSuppliers.find(s => String(s.id) === String(this.waSupplierId));
+                         const name = sup ? sup.contact : 'Supplier';
+                         const phone = sup && sup.phone ? sup.phone : '';
+                         const msg = `Halo ${name}, saya ${this.estimatorName} dari 3DY. Mau cek stok dan harga modal untuk barang berikut ya:\n${this.waItems}\nApakah ready stok atau indent? Dan harga ini bisa di-keep sampai kapan ya? Terima kasih.`;
+                         return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+                     }
+                 }" aria-labelledby="estimator-requested-items">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
                 <h2 id="estimator-requested-items" class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Requested Items') }}</h2>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <span class="text-xs text-slate-500 dark:text-slate-400">{{ trans_choice(':count item|:count items', $estimatorRequest->items->count(), ['count' => $estimatorRequest->items->count()]) }}</span>
                     @if($canAnswer && $estimatorRequest->status === 'answered')
                         <x-icon-button type="button" icon="edit" label="{{ __('Edit Prices') }}" title="{{ __('Edit Prices') }}" x-on:click="editing = true" />
@@ -171,8 +186,26 @@
             </div>
 
             @if($canAnswer)
+                <div x-show="editing" x-cloak style="{{ $formOpen ? '' : 'display: none' }}"
+                     class="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-emerald-900 dark:text-emerald-200">{{ __('Ask Supplier via WhatsApp') }}</p>
+                        <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80">{{ __('Choose a distributor to generate a ready-to-send WhatsApp message with all requested items.') }}</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select x-model="waSupplierId" aria-label="{{ __('Select supplier') }}"
+                                class="h-10 rounded-xl border-emerald-200 bg-white text-xs font-medium text-slate-700 focus:border-emerald-500 focus:ring-emerald-500 dark:border-emerald-800 dark:bg-slate-800 dark:text-slate-200">
+                            <option value="">{{ __('Select supplier') }}</option>
+                            @foreach($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}">{{ $supplier->name }}{{ $supplier->phone ? ' ('.$supplier->phone.')' : '' }}</option>
+                            @endforeach
+                        </select>
+                        <x-icon-button as="a" icon="whatsapp" x-bind:href="waUrl()" target="_blank" rel="noopener" label="{{ __('Ask Supplier via WhatsApp') }}" title="{{ __('Ask Supplier via WhatsApp') }}" />
+                    </div>
+                </div>
+
                 <form action="{{ route('estimator.requests.answer', $estimatorRequest) }}" method="POST"
-                      x-show="editing" x-cloak x-on:submit="sending = true"
+                      x-show="editing" x-cloak
                       style="{{ $formOpen ? '' : 'display: none' }}">
                     @csrf
                     <div class="overflow-x-auto">
@@ -190,12 +223,42 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                                 @foreach($estimatorRequest->items as $index => $item)
+                                    @php
+                                        $lastLog = $item->product?->latestCostLog;
+                                        $lastLogPayload = $lastLog ? [
+                                            'supplier_id' => $lastLog->supplier_id ? (string) $lastLog->supplier_id : '',
+                                            'price' => (float) $lastLog->price,
+                                            'stock_status' => $lastLog->stock_status ?: 'ready',
+                                            'stock_eta' => $lastLog->stock_eta ?: '',
+                                            'warranty_info' => $lastLog->warranty_info ?: '',
+                                            'valid_until' => $lastLog->valid_until && ! $lastLog->valid_until->isPast() ? $lastLog->valid_until->format('Y-m-d') : '',
+                                        ] : null;
+                                    @endphp
                                     <tr class="align-top">
                                         <td class="px-4 py-3">
                                             <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                             <p class="font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
                                             <p class="mt-0.5 text-[11px] text-slate-400">{{ $item->product?->sku ?: '-' }} &middot; {{ $item->quantity }} {{ $item->unit }}</p>
                                             @if($item->notes)<p class="mt-0.5 text-[11px] text-slate-400">{{ $item->notes }}</p>@endif
+                                            @if($lastLog)
+                                                <div class="mt-2 rounded-xl border border-teal-200 bg-teal-50/70 p-2 text-[11px] text-teal-900 dark:border-teal-800/60 dark:bg-teal-950/30 dark:text-teal-200">
+                                                    <p class="font-semibold">
+                                                        {{ __('Last price') }}: Rp {{ number_format((float) $lastLog->price, 0, ',', '.') }}
+                                                        @if($lastLog->supplier)
+                                                            &middot; {{ $lastLog->supplier->name }}
+                                                        @endif
+                                                    </p>
+                                                    @if($lastLog->valid_until)
+                                                        <p class="mt-0.5 text-[10px] text-teal-700 dark:text-teal-300">
+                                                            {{ __('Valid until :date', ['date' => $lastLog->valid_until->format('d M Y')]) }}
+                                                        </p>
+                                                    @endif
+                                                    <button type="button" onclick="useLastPrice({{ $index }}, @js($lastLogPayload))"
+                                                            class="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-teal-700 active:scale-95">
+                                                        {{ __('Use Last Price') }}
+                                                    </button>
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="px-4 py-3">
                                             <select name="items[{{ $index }}][supplier_id]" class="w-full min-w-[150px] rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
@@ -220,6 +283,12 @@
                                         </td>
                                         <td class="px-4 py-3">
                                             <input type="date" name="items[{{ $index }}][valid_until]" value="{{ old("items.{$index}.valid_until", $item->valid_until?->format('Y-m-d')) }}" class="w-36 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                            <div class="mt-1.5 flex flex-wrap gap-1">
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['3d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+3 Days') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['7d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Week') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['14d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+2 Weeks') }}</button>
+                                                <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['1m'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Month') }}</button>
+                                            </div>
                                         </td>
                                         <td class="px-4 py-3">
                                             <input type="text" name="items[{{ $index }}][notes]" maxlength="255" value="{{ old("items.{$index}.notes", $item->notes) }}" placeholder="{{ __('Vendor / MOQ note') }}" class="w-36 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
@@ -242,15 +311,6 @@
                         <x-icon-button variant="solid" type="submit" icon="upload" label="{{ __('Send Prices') }}" title="{{ __('Send Prices') }}" />
                     </div>
                 </form>
-
-                <div x-show="sending" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/55 p-4" role="status" aria-live="polite">
-                    <div class="flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-xl dark:bg-slate-800">
-                        <svg class="h-10 w-10 animate-spin text-accent-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                    </div>
-                </div>
             @endif
 
             <div x-show="!editing" x-cloak class="overflow-x-auto">
@@ -308,7 +368,15 @@
                     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                         <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Review Prices') }}</h2>
                         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Accept the prices or ask Estimator for a revision.') }}</p>
-                        <form action="{{ route('estimator.requests.accept', $estimatorRequest) }}" method="POST" class="mt-4" onsubmit="return confirm('{{ __('Accept these prices as final?') }}')">
+                        <form action="{{ route('estimator.requests.accept', $estimatorRequest) }}" method="POST" class="mt-4"
+                              data-confirm="{{ __('The prices are locked and used for the customer quotation.') }}"
+                              data-confirm-title="{{ __('Accept these prices as final?') }}"
+                              data-confirm-tone="success"
+                              data-confirm-label="{{ __('Yes, accept prices') }}"
+                              data-confirm-details="{{ json_encode([
+                                  ['label' => __('Customer'), 'value' => $estimatorRequest->customer?->name ?? '-'],
+                                  ['label' => __('Request'), 'value' => '#'.$estimatorRequest->id],
+                              ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                             @csrf
                             <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept Prices') }}" title="{{ __('Accept Prices') }}" />
                         </form>
@@ -329,6 +397,11 @@
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Supplier Contacts') }}</h2>
                     <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-700/60">
                         @foreach($contactSuppliers as $supplier)
+                            @php
+                                $supPhone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', (string) $supplier->phone));
+                                $supContact = $supplier->contact_person ?: $supplier->name;
+                                $supWaMsg = "Halo {$supContact}, saya {$estimatorName} dari 3DY. Mau cek stok dan harga modal untuk barang berikut ya:\n{$waItemLines}\nApakah ready stok atau indent? Dan harga ini bisa di-keep sampai kapan ya? Terima kasih.";
+                            @endphp
                             <div class="flex flex-wrap items-center justify-between gap-2 py-3">
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $supplier->name }}</p>
@@ -336,7 +409,7 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     @if($supplier->phone)
-                                        <x-icon-button as="a" icon="whatsapp" href="https://wa.me/{{ preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $supplier->phone)) }}" target="_blank" rel="noopener" title="{{ __('WhatsApp') }}" />
+                                        <x-icon-button as="a" icon="whatsapp" href="https://wa.me/{{ $supPhone }}?text={{ rawurlencode($supWaMsg) }}" target="_blank" rel="noopener" title="{{ __('WhatsApp') }}" />
                                     @endif
                                     @if($supplier->email)
                                         <x-icon-button as="a" icon="mail" href="mailto:{{ $supplier->email }}" title="{{ __('Email') }}" />
@@ -351,7 +424,15 @@
             @can('cancel', $estimatorRequest)
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Cancel Request') }}</h2>
-                    <form action="{{ route('estimator.requests.cancel', $estimatorRequest) }}" method="POST" class="mt-3" onsubmit="return confirm('{{ __('Cancel this request?') }}')">
+                    <form action="{{ route('estimator.requests.cancel', $estimatorRequest) }}" method="POST" class="mt-3"
+                          data-confirm="{{ __('This request is closed and cannot be resumed.') }}"
+                          data-confirm-title="{{ __('Cancel this request?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, cancel request') }}"
+                          data-confirm-details="{{ json_encode([
+                              ['label' => __('Customer'), 'value' => $estimatorRequest->customer?->name ?? '-'],
+                              ['label' => __('Request'), 'value' => '#'.$estimatorRequest->id],
+                          ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Cancel Request') }}" title="{{ __('Cancel Request') }}" />
                     </form>
@@ -359,4 +440,29 @@
             @endcan
         </div>
     </div>
+
+    @once
+        <script>
+            function setFieldValue(index, field, value) {
+                const el = document.querySelector(`[name="items[${index}][${field}]"]`);
+                if (!el || value === null || value === undefined || value === '') return;
+                el.value = value;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            function useLastPrice(index, log) {
+                setFieldValue(index, 'supplier_id', log.supplier_id);
+                setFieldValue(index, 'price', log.price);
+                setFieldValue(index, 'stock_status', log.stock_status);
+                setFieldValue(index, 'stock_eta', log.stock_eta);
+                setFieldValue(index, 'warranty_info', log.warranty_info);
+                setFieldValue(index, 'valid_until', log.valid_until);
+            }
+
+            function setKeepDate(index, dateStr) {
+                setFieldValue(index, 'valid_until', dateStr);
+            }
+        </script>
+    @endonce
 </x-app-layout>

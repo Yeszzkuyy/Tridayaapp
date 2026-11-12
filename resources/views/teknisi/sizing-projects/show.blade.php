@@ -29,12 +29,6 @@
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="mb-4 px-4 py-3 rounded-xl bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>

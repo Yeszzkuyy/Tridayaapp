@@ -79,6 +79,15 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringContainsString(__('Product Price'), $html);
     }
 
+    public function test_sales_estimator_queue_url_redirects_to_product_price_tab(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $this->actingAs($sales)
+            ->get(route('estimator.requests.index'))
+            ->assertRedirect(route('sales.requests.index', ['tab' => 'product-price']));
+    }
+
     public function test_product_price_tab_lists_only_own_estimator_requests(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
@@ -104,8 +113,7 @@ class SalesRequestHubTest extends TestCase
             ->get(route('sales.requests.index', ['tab' => 'product-price']))
             ->assertOk()
             ->assertSee('PT Tab Produk')
-            ->assertSee(__('Product Price'))
-            ->assertSee(__('New Request'));
+            ->assertSee(__('Product Price'));
 
         $response->assertViewHas('estimatorRequests', fn ($paginator) => $paginator->total() === 1
             && (int) $paginator->first()->requested_by === (int) $sales->id);

@@ -19,7 +19,7 @@ class CustomerSubmitTest extends TestCase
         return $u;
     }
 
-    public function test_store_redirects_with_success_card_flag(): void
+    public function test_store_redirects_with_success_flash(): void
     {
         $this->actingAs($this->user())
             ->post(route('customers.store'), [
@@ -27,8 +27,7 @@ class CustomerSubmitTest extends TestCase
                 'pt_group' => 'NTI',
             ])
             ->assertRedirect(route('customers.index'))
-            ->assertSessionHas('success')
-            ->assertSessionHas('success_card', true);
+            ->assertSessionHas('success');
 
         $this->assertSame(1, Customer::where('name', 'PT Maju Jaya')->count());
     }
@@ -72,7 +71,7 @@ class CustomerSubmitTest extends TestCase
         $this->assertNull($customer->financeContact());
     }
 
-    public function test_update_redirects_with_success_card_flag(): void
+    public function test_update_redirects_with_success_flash(): void
     {
         $customer = Customer::create(['name' => 'PT Lama', 'pt_group' => 'NTI']);
 
@@ -82,8 +81,7 @@ class CustomerSubmitTest extends TestCase
                 'pt_group' => 'MGK',
             ])
             ->assertRedirect(route('customers.index'))
-            ->assertSessionHas('success')
-            ->assertSessionHas('success_card', true);
+            ->assertSessionHas('success');
 
         $this->assertSame('MGK', $customer->fresh()->pt_group);
     }

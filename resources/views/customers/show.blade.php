@@ -1,8 +1,5 @@
 <x-app-layout>
     @include('partials.live-feed')
-    @if(session('success'))
-        <x-status-card :message="session('success')" />
-    @endif
     <div class="px-4 sm:px-6 lg:px-8">
         
         {{-- Header ringkas (open header, tanpa banner dekoratif) --}}
@@ -261,7 +258,7 @@
                                             @can('update', $customer)
                                                 <form action="{{ route('customer-contacts.destroy', $contact) }}"
                                                       method="POST"
-                                                      onsubmit="return confirm('{{ __('Delete this PIC?') }}')"
+                                                      data-confirm="{{ __('Delete this PIC?') }}" data-confirm-tone="danger"
                                                       class="inline-block align-middle ml-2">
                                                     @csrf
                                                     @method('DELETE')

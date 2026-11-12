@@ -40,6 +40,15 @@ class EstimatorRequestController extends Controller
             403
         );
 
+        // Sales memakai tab Product Price di menu Request; halaman Queue
+        // berdiri sendiri hanya untuk Estimator/Management.
+        if (! ($user->can('manage-price-requests')
+            || $user->can('manage-sales-leads')
+            || $user->can('manage-admin')
+            || $user->hasRole('ceo'))) {
+            return redirect()->route('sales.requests.index', ['tab' => 'product-price']);
+        }
+
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
             'status' => 'nullable|in:open,'.implode(',', EstimatorRequest::STATUSES),
@@ -128,6 +137,14 @@ class EstimatorRequestController extends Controller
         $user = $request->user();
         $this->authorize('create', EstimatorRequest::class);
 
+        $backUrl = $request->filled('proposal_id')
+            ? route('sales.proposals.show', (int) $request->query('proposal_id'))
+            : ($request->filled('lead_id')
+                ? route('leads.show', (int) $request->query('lead_id'))
+                : ($request->filled('project_id')
+                    ? route('projects.show', (int) $request->query('project_id'))
+                    : route('estimator.requests.index')));
+
         return view('estimator.requests.create', [
             'customers' => $this->customerOptions($user),
             'products' => Product::saleable()->orderBy('name')->limit(500)->get(['id', 'sku', 'name', 'unit']),
@@ -135,7 +152,7 @@ class EstimatorRequestController extends Controller
             'presetLeadId' => $request->query('lead_id'),
             'presetProjectId' => $request->query('project_id'),
             'presetProposalId' => $request->query('proposal_id'),
-            'backUrl' => route('estimator.requests.index'),
+            'backUrl' => $backUrl,
         ]);
     }
 
@@ -229,8 +246,7 @@ class EstimatorRequestController extends Controller
         Notification::send($recipients, new EstimatorRequestCreatedNotification($estimatorRequest));
 
         return redirect()->route('estimator.requests.show', $estimatorRequest)
-            ->with('success', __('Product price request sent to Estimator.'))
-            ->with('success_card', true);
+            ->with('success', __('Product price request sent to Estimator.'));
     }
 
     public function show(Request $request, EstimatorRequest $estimatorRequest)
@@ -240,14 +256,29 @@ class EstimatorRequestController extends Controller
         $estimatorRequest->load([
             'customer', 'lead', 'project', 'proposal',
             'requester', 'handler',
-            'items.product', 'items.supplier', 'items.answeredBy',
+            'items.product.latestCostLog.supplier', 'items.supplier', 'items.answeredBy',
         ]);
 
-        $suppliers = $request->user()->can('answer', $estimatorRequest)
+        $user = $request->user();
+        $suppliers = $user->can('answer', $estimatorRequest)
             ? Supplier::active()->orderBy('name')->get(['id', 'name', 'contact_person', 'phone', 'email'])
             : collect();
 
-        return view('estimator.requests.show', compact('estimatorRequest', 'suppliers'));
+        $backUrl = $user->can('manage-price-requests')
+            || $user->can('manage-sales-leads')
+            || $user->can('manage-admin')
+            || $user->hasRole('ceo')
+            ? route('estimator.requests.index')
+            : route('sales.requests.index', ['tab' => 'product-price']);
+        $backUrl = $estimatorRequest->proposal_id
+            ? route('sales.proposals.show', $estimatorRequest->proposal_id)
+            : ($estimatorRequest->lead_id
+                ? route('leads.show', $estimatorRequest->lead_id)
+                : ($estimatorRequest->project_id
+                    ? route('projects.show', $estimatorRequest->project_id)
+                    : $backUrl));
+
+        return view('estimator.requests.show', compact('estimatorRequest', 'suppliers', 'backUrl'));
     }
 
     /**
@@ -372,7 +403,7 @@ class EstimatorRequestController extends Controller
             $estimatorRequest->requester->notify(new EstimatorRequestAnsweredNotification($estimatorRequest));
         }
 
-        return back()->with('price_sent', true);
+        return back()->with('success', __('Prices sent to Sales for review.'));
     }
 
     public function accept(Request $request, EstimatorRequest $estimatorRequest)
@@ -388,7 +419,7 @@ class EstimatorRequestController extends Controller
             $estimatorRequest->items()->update(['status' => 'accepted']);
         });
 
-        return back()->with('success', __('Product prices accepted.'))->with('success_card', true);
+        return back()->with('success', __('Product prices accepted.'));
     }
 
     public function revision(Request $request, EstimatorRequest $estimatorRequest)
@@ -416,7 +447,7 @@ class EstimatorRequestController extends Controller
             Notification::send($recipients, new EstimatorRequestRevisionNotification($estimatorRequest));
         }
 
-        return back()->with('success', __('Revision request sent to Estimator.'))->with('success_card', true);
+        return back()->with('success', __('Revision request sent to Estimator.'));
     }
 
     public function cancel(EstimatorRequest $estimatorRequest)
@@ -425,7 +456,7 @@ class EstimatorRequestController extends Controller
 
         $estimatorRequest->update(['status' => 'cancelled']);
 
-        return back()->with('success', __('Product price request cancelled.'))->with('success_card', true);
+        return back()->with('success', __('Product price request cancelled.'));
     }
 
     public function downloadAttachment(Request $request, EstimatorRequest $estimatorRequest)

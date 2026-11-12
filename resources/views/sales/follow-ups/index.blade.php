@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $tabs = [
             ['key' => 'all', 'label' => __('All Open')],

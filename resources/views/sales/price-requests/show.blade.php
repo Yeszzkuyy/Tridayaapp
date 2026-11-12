@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $user = auth()->user();
         $isTech = $user?->can('manage-technician') ?? false;
@@ -237,7 +233,15 @@
                                     @csrf
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Take Request') }}" title="{{ __('Take Request') }}" />
                                 </form>
-                                <form action="{{ route('sales.price-requests.reject', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}" onsubmit="return confirm('{{ __('Reject this request?') }}')">
+                                <form action="{{ route('sales.price-requests.reject', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}"
+                                      data-confirm="{{ __('The request will be closed and the requester is notified.') }}"
+                                      data-confirm-title="{{ __('Reject this request?') }}"
+                                      data-confirm-tone="danger"
+                                      data-confirm-label="{{ __('Yes, reject request') }}"
+                                      data-confirm-details="{{ json_encode([
+                                          ['label' => __('Customer'), 'value' => $priceRequest->customer?->name ?? '-'],
+                                          ['label' => __('Request'), 'value' => '#'.$priceRequest->id],
+                                      ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                                     @csrf
                                     <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
                                 </form>
@@ -295,12 +299,25 @@
                             <h2 id="price-request-sales-decision-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Review Price') }}</h2>
                             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Choose the latest calculation or send a revision request.') }}</p>
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <form action="{{ route('sales.price-requests.accept', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}" onsubmit="return confirm('{{ __('Accept this price as final?') }}')">
+                                <form action="{{ route('sales.price-requests.accept', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}"
+                                      data-confirm="{{ __('The accepted price is locked and will be used in the customer quotation.') }}"
+                                      data-confirm-title="{{ __('Accept this price as final?') }}"
+                                      data-confirm-tone="success"
+                                      data-confirm-label="{{ __('Yes, accept price') }}"
+                                      data-confirm-details="{{ json_encode([
+                                          ['label' => __('Customer'), 'value' => $priceRequest->customer?->name ?? '-'],
+                                          ['label' => __('Request'), 'value' => '#'.$priceRequest->id],
+                                          ['label' => __('Quotation'), 'value' => $priceRequest->proposal?->proposal_number ?? __('Not created yet')],
+                                      ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                                     @csrf
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept Price') }}" title="{{ __('Accept Price') }}" />
                                 </form>
                             </div>
-                            <form action="{{ route('sales.price-requests.revision', $priceRequest) }}" method="POST" class="mt-5 border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Sending…') }}" onsubmit="return confirm('{{ __('Send this revision request to the Pricing Engineer?') }}')">
+                            <form action="{{ route('sales.price-requests.revision', $priceRequest) }}" method="POST" class="mt-5 border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Sending…') }}"
+                                  data-confirm="{{ __('Your note is sent to the Pricing Engineer and added to the discussion.') }}"
+                                  data-confirm-title="{{ __('Send this revision request?') }}"
+                                  data-confirm-tone="info"
+                                  data-confirm-label="{{ __('Yes, send revision') }}">
                                 @csrf
                                 <label for="revision-reason" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Revision / negotiation details') }}</label>
                                 <textarea id="revision-reason" name="reason" rows="3" required maxlength="2000" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('reason') }}</textarea>
@@ -315,7 +332,15 @@
                 @endcan
 
                 @can('cancel', $priceRequest)
-                    <form action="{{ route('sales.price-requests.cancel', $priceRequest) }}" method="POST" data-loading-text="{{ __('Cancelling…') }}" onsubmit="return confirm('{{ __('Cancel this request?') }}')">
+                    <form action="{{ route('sales.price-requests.cancel', $priceRequest) }}" method="POST" data-loading-text="{{ __('Cancelling…') }}"
+                          data-confirm="{{ __('The engineer calculation stays saved, but this request is closed and cannot be resumed.') }}"
+                          data-confirm-title="{{ __('Cancel this request?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, cancel request') }}"
+                          data-confirm-details="{{ json_encode([
+                              ['label' => __('Customer'), 'value' => $priceRequest->customer?->name ?? '-'],
+                              ['label' => __('Request'), 'value' => '#'.$priceRequest->id],
+                          ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Cancel Request') }}" title="{{ __('Cancel Request') }}" />
                     </form>

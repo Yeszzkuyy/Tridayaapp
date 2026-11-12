@@ -130,8 +130,7 @@ class SalesMeetingController extends Controller
         app(\App\Services\SalesService::class)->completeMeetingReport($meeting);
 
         return redirect()->route('sales.meetings.show', $meeting)
-            ->with('success', __('Meeting saved and daily report sent.'))
-            ->with('success_card', true);
+            ->with('success', __('Meeting saved and daily report sent.'));
     }
 
     public function show(FollowUp $followUp)
@@ -172,8 +171,7 @@ class SalesMeetingController extends Controller
         }
 
         return redirect()->route('sales.meetings.show', $followUp)
-            ->with('success', __('Daily report sent to Management.'))
-            ->with('success_card', true);
+            ->with('success', __('Daily report sent to Management.'));
     }
 
     /** Boleh lihat/isi: pemilik meeting atau management. */

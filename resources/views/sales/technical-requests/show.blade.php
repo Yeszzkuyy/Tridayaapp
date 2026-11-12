@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $user = auth()->user();
         $fromTasks = $fromTasks ?? false;
@@ -366,7 +362,7 @@
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                                 </form>
                                 <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}"
-                                      onsubmit="return confirm('{{ __('Reject this request?') }}')">
+                                      data-confirm="{{ __('Reject this request?') }}" data-confirm-tone="danger">
                                     @csrf
                                     <input type="hidden" name="decision" value="rejected">
                                     <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
@@ -499,7 +495,7 @@
                                 </form>
 
                                 <form action="{{ route('sales.technical-requests.complete', $technicalRequest) }}" method="POST" class="border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Completing…') }}"
-                                      onsubmit="return confirm('{{ __('Complete this job?') }}')">
+                                      data-confirm="{{ __('Complete this job?') }}" data-confirm-tone="success">
                                     @csrf
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Complete') }}" title="{{ __('Complete') }}" />
                                 </form>
@@ -508,7 +504,7 @@
 
                         @if($canCancel)
                             <form action="{{ route('sales.technical-requests.cancel', $technicalRequest) }}" method="POST" class="border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Cancelling…') }}"
-                                  onsubmit="return confirm('{{ __('Cancel this request?') }}')">
+                                  data-confirm="{{ __('Cancel this request?') }}" data-confirm-tone="danger">
                                 @csrf
                                 <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />
                             </form>

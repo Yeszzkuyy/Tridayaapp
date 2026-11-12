@@ -154,7 +154,11 @@
                                             @endforeach
                                         @endif
                                         <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
-                                        <form action="{{ route('sales.follow-ups.destroy', $fu) }}" method="POST" data-ajax data-ajax-remove="tr" onsubmit="return confirm('{{ __('Delete this follow up?') }}')">
+                                        <form action="{{ route('sales.follow-ups.destroy', $fu) }}" method="POST" data-ajax data-ajax-remove="tr"
+                                              data-confirm="{{ __('Delete this follow up?') }}"
+                                              data-confirm-title="{{ __('Delete follow up') }}"
+                                              data-confirm-tone="danger"
+                                              data-confirm-label="{{ __('Delete') }}">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
                                                 <x-icon name="trash" class="h-4 w-4 shrink-0" />

@@ -1,25 +1,28 @@
 <x-app-layout>
     <div>
-        @php($isEstimatorPricelist = auth()->user()->can('manage-price-requests') && ! auth()->user()->can('manage-sales') && ! auth()->user()->can('manage-admin'))
-        <div class="flex items-center justify-between mb-6">
+        @php
+            $isEstimatorPricelist = auth()->user()->can('manage-price-requests') && ! auth()->user()->can('manage-sales') && ! auth()->user()->can('manage-admin');
+            $backHref = $isEstimatorPricelist ? route('estimator.requests.index') : route('sales.dashboard');
+        @endphp
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isEstimatorPricelist ? __('Pricelist') : __('Product Catalog') }}</h1>
                 @unless($isEstimatorPricelist)
-                    <p class="text-slate-500 mt-1">{{ __('Master goods & services for proposal BOQ.') }}</p>
+                    <p class="mt-1 text-slate-500">{{ __('Master goods & services for proposal BOQ.') }}</p>
                 @endunless
             </div>
-            <div class="flex items-center gap-2">
-                <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
-                @canany(['manage-sales', 'manage-admin'])
-                    <x-icon-button as="a" icon="add" href="{{ route('products.create') }}" title="{{ __('Add') }}" />
+            <div class="flex flex-wrap items-center gap-2">
+                <x-back-button :href="$backHref" />
+                @canany(['manage-sales', 'manage-admin', 'manage-products'])
+                    <x-icon-button variant="solid" as="a" icon="add" href="{{ route('products.create') }}" label="{{ __('Add Product') }}" title="{{ __('Add') }}" />
                 @endcanany
             </div>
         </div>
 
-        <form method="GET" action="{{ route('products.index') }}" class="flex flex-wrap items-center gap-2 mb-4">
+        <form method="GET" action="{{ route('products.index') }}" class="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search name / SKU...') }}"
-                   class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-            <select name="category" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                   class="h-10 min-w-[220px] flex-1 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+            <select name="category" class="h-10 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
                 <option value="">{{ __('All categories') }}</option>
                 @foreach(\App\Models\Product::SALE_CATEGORIES as $cat)
                     <option value="{{ $cat }}" @selected(request('category') === $cat)>{{ \App\Models\Product::saleCategoryLabel($cat) }}</option>
@@ -41,57 +44,108 @@
             @endif
         @endcan
 
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4">
-            @forelse($products as $product)
-                <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 {{ !$loop->last ? 'border-b border-slate-100 dark:border-slate-700' : '' }}">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                            {{ $product->name }}
-                            @unless($product->is_active)
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300">{{ __('Nonaktif') }}</span>
-                            @endunless
-                            @can('manageCost', \App\Models\Product::class)
-                                @if($product->cost_price !== null && (float) $product->default_price === (float) $product->cost_price)
-                                    <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Review Price') }}</span>
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                @forelse($products as $product)
+                    @php
+                        $log = $product->latestCostLog;
+                        $validUntil = $log?->valid_until;
+                        $isExpired = $validUntil ? $validUntil->copy()->endOfDay()->isPast() : false;
+                    @endphp
+                    <div class="flex flex-col gap-4 p-4 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                        <div class="min-w-0 flex-1 space-y-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</p>
+                                @unless($product->is_active)
+                                    <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-600 dark:text-slate-300">{{ __('Nonaktif') }}</span>
+                                @endunless
+                                @can('manageCost', \App\Models\Product::class)
+                                    @if($product->cost_price !== null && (float) $product->default_price === (float) $product->cost_price)
+                                        <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Review Price') }}</span>
+                                    @endif
+                                @endcan
+                                @can('viewCost', \App\Models\Product::class)
+                                    @if($validUntil)
+                                        @if($isExpired)
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+                                                <span class="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true"></span>
+                                                {{ __('Expired :date - Needs Recheck', ['date' => $validUntil->format('d M Y')]) }}
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                                                <span class="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                                                {{ __('Valid until :date', ['date' => $validUntil->format('d M Y')]) }}
+                                            </span>
+                                        @endif
+                                    @endif
+                                @endcan
+                            </div>
+
+                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }}
+                                @unless($isEstimatorPricelist)
+                                    • {{ __('Selling Price') }}: <span class="font-semibold text-slate-700 dark:text-slate-200">Rp {{ number_format($product->default_price, 0, ',', '.') }}</span>
+                                @endunless
+                            </p>
+
+                            @can('viewCost', \App\Models\Product::class)
+                                @if($log)
+                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/40 dark:text-slate-200">
+                                        <span>
+                                            <span class="text-slate-500 dark:text-slate-400">{{ __('Cost') }}:</span>
+                                            <strong class="font-bold tabular-nums text-slate-900 dark:text-slate-100">Rp {{ number_format((float) $log->price, 0, ',', '.') }}</strong>
+                                        </span>
+                                        @if($log->supplier)
+                                            <span>
+                                                <span class="text-slate-500 dark:text-slate-400">{{ __('Supplier') }}:</span>
+                                                <strong class="font-semibold">{{ $log->supplier->name }}</strong>
+                                            </span>
+                                        @endif
+                                        @if($log->stock_status)
+                                            <span>
+                                                <span class="text-slate-500 dark:text-slate-400">{{ __('Stock') }}:</span>
+                                                <strong class="font-semibold">{{ $log->stock_status === 'indent' ? __('Indent').($log->stock_eta ? ' ('.$log->stock_eta.')' : '') : __('Ready') }}</strong>
+                                            </span>
+                                        @endif
+                                        @if($log->warranty_info)
+                                            <span>
+                                                <span class="text-slate-500 dark:text-slate-400">{{ __('Warranty') }}:</span>
+                                                <strong class="font-semibold">{{ $log->warranty_info }}</strong>
+                                            </span>
+                                        @endif
+                                        <span class="text-slate-400 dark:text-slate-500">
+                                            {{ __('Updated') }} {{ $log->created_at?->format('d M Y') }}
+                                        </span>
+                                    </div>
+                                @else
+                                    <p class="text-xs italic text-slate-400 dark:text-slate-500">{{ __('No cost price recorded yet.') }}</p>
                                 @endif
                             @endcan
-                        </p>
-                        <p class="text-xs text-slate-500">
-                            {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }} • Rp {{ number_format($product->default_price, 0, ',', '.') }}
-                        </p>
-                        @can('viewCost', \App\Models\Product::class)
-                            @if($product->latestCostLog)
-                                <p class="text-[11px] text-slate-400 dark:text-slate-500">
-                                    {{ __('Cost') }}: Rp {{ number_format((float) $product->latestCostLog->price, 0, ',', '.') }}
-                                    @if($product->latestCostLog->supplier)
-                                        • {{ $product->latestCostLog->supplier->name }}
-                                    @endif
-                                    • {{ $product->latestCostLog->created_at?->format('d M Y') }}
-                                    @if($product->latestCostLog->valid_until)
-                                        • {{ __('Valid until :date', ['date' => $product->latestCostLog->valid_until->format('d M Y')]) }}
-                                    @endif
-                                </p>
-                            @endif
-                        @endcan
+                        </div>
+
+                        <div class="flex shrink-0 flex-wrap items-center gap-2">
+                            @can('manageCost', \App\Models\Product::class)
+                                <x-icon-button as="a" icon="upload" href="{{ route('products.price.edit', $product) }}" label="{{ __('Update Price') }}" title="{{ __('Update Price') }}" />
+                            @endcan
+                            @canany(['manage-sales', 'manage-admin'])
+                                <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" />
+                                @if($product->is_active)
+                                    <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
+                                          data-confirm="{{ __('Deactivate this product?') }}" data-confirm-tone="warning">
+                                        @csrf @method('DELETE')
+                                        <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
+                                    </form>
+                                @endif
+                            @endcanany
+                        </div>
                     </div>
-                    @can('manageCost', \App\Models\Product::class)
-                        <x-icon-button as="a" icon="upload" href="{{ route('products.price.edit', $product) }}" label="{{ __('Update Price') }}" title="{{ __('Update Price') }}" />
-                    @endcan
-                    @canany(['manage-sales', 'manage-admin'])
-                        <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" />
-                        @if($product->is_active)
-                            <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
-                                  onsubmit="return confirm('{{ __('Deactivate this product?') }}')">
-                                @csrf @method('DELETE')
-                                <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
-                            </form>
-                        @endif
-                    @endcanany
-                </div>
-            @empty
-                <p class="text-slate-500 text-center py-8">{{ __('No products yet.') }}</p>
-            @endforelse
-            <div class="mt-4">{{ $products->links() }}</div>
+                @empty
+                    <p class="py-10 text-center text-sm text-slate-500">{{ __('No products yet.') }}</p>
+                @endforelse
+            </div>
         </div>
+        @if($products->hasPages())
+            <div class="mt-4">{{ $products->links() }}</div>
+        @endif
     </div>
 </x-app-layout>

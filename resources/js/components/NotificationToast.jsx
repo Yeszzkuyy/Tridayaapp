@@ -3,46 +3,51 @@ import { motion, useReducedMotion } from 'motion/react';
 import { dismissToast } from '../toast-store.js';
 
 /**
- * Kartu pop up notifikasi — tampilan disalin dari template 21st.dev
- * ("arunachalam/toast"): ikon kecil kiri, judul tebal + keterangan,
- * tombol aksi opsional, dan tombol silang di kanan.
+ * Kartu pop up notifikasi (pojok kanan bawah).
+ *
+ * Tampilannya mengikuti item panel lonceng: ikon dalam kotak kecil
+ * berwarna, judul tebal + keterangan, tombol aksi opsional, dan tombol
+ * silang. Warna aksen notifikasi memakai `accent` dari NotificationCenter
+ * supaya jenis kabar tetap dikenali (lead, jadwal, price request, dst.).
  *
  * Posisi & tumpukan diatur ToastViewport (kartu ini hanya menggambar satu
  * kartu dan melaporkan tingginya untuk perhitungan tumpukan).
  */
 
-const CARD_STYLES = {
+const CARD_TONES = {
     default: {
-        card: 'border-slate-200 bg-white text-slate-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-slate-100',
+        chip: 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-slate-300',
         title: 'text-slate-900 dark:text-white',
-        icon: 'text-slate-500 dark:text-slate-300',
+    },
+    info: {
+        chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/60 dark:text-sky-300',
+        title: 'text-slate-900 dark:text-white',
     },
     success: {
-        card: 'border-green-600/50 bg-white text-slate-800 dark:border-green-500/50 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-green-700 dark:text-green-400',
-        icon: 'text-green-600 dark:text-green-400',
-    },
-    error: {
-        card: 'border-red-600/50 bg-white text-slate-800 dark:border-red-500/50 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-red-700 dark:text-red-400',
-        icon: 'text-red-600 dark:text-red-400',
+        chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+        title: 'text-slate-900 dark:text-white',
     },
     warning: {
-        card: 'border-amber-600/50 bg-white text-slate-800 dark:border-amber-500/50 dark:bg-zinc-900 dark:text-slate-100',
-        title: 'text-amber-700 dark:text-amber-400',
-        icon: 'text-amber-600 dark:text-amber-400',
+        chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+        title: 'text-slate-900 dark:text-white',
+    },
+    error: {
+        chip: 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300',
+        title: 'text-slate-900 dark:text-white',
     },
 };
 
 const ACTION_STYLES = {
     default:
         'border-slate-300 text-slate-700 hover:bg-slate-700 hover:text-white dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 dark:hover:text-white',
+    info:
+        'border-sky-600 text-sky-700 hover:bg-sky-600 hover:text-white dark:border-sky-400 dark:text-sky-400 dark:hover:bg-sky-600 dark:hover:text-white',
     success:
-        'border-green-600 text-green-700 hover:bg-green-600 hover:text-white dark:border-green-400 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white',
-    error:
-        'border-red-600 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-400 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white',
+        'border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white dark:border-emerald-400 dark:text-emerald-400 dark:hover:bg-emerald-600 dark:hover:text-white',
     warning:
         'border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-white dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-600 dark:hover:text-white',
+    error:
+        'border-red-600 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-400 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white',
 };
 
 const ICON_PROPS = {
@@ -54,6 +59,19 @@ const ICON_PROPS = {
     viewBox: '0 0 24 24',
     'aria-hidden': true,
 };
+
+const TITLES =
+    (typeof window !== 'undefined' && window.notifCenter?.i18n?.toastTitles) || {};
+
+function tint(hex, alpha) {
+    const value = String(hex || '#64748b').replace('#', '');
+    const n = parseInt(value, 16);
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 function VariantIcon({ variant, className }) {
     switch (variant) {
@@ -93,8 +111,9 @@ const DISMISS_LABEL =
 
 export default function NotificationToast({ toast, paused, depth = 0, y = 0, scale = 1, zIndex = 1, clickable = true, onHeight }) {
     const reduceMotion = useReducedMotion();
-    const meta = CARD_STYLES[toast.variant] || CARD_STYLES.default;
+    const meta = CARD_TONES[toast.variant] || CARD_TONES.default;
     const cardRef = useRef(null);
+    const title = toast.title || TITLES[toast.variant] || TITLES.default || '';
 
     // Laporkan tinggi asli kartu ke ToastViewport untuk menghitung tumpukan
     // (dan tinggi panggung saat mengembang).
@@ -135,20 +154,24 @@ export default function NotificationToast({ toast, paused, depth = 0, y = 0, sca
         }
     };
 
+    const accent = toast.accent
+        ? { backgroundColor: tint(toast.accent, 0.14), color: toast.accent }
+        : undefined;
+
     const body = (
         <>
             <span
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center ${meta.icon}`}
-                style={toast.accent ? { color: toast.accent } : undefined}
+                className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.chip}`}
+                style={accent}
             >
                 {toast.icon || <VariantIcon variant={toast.variant} className="h-5 w-5" />}
             </span>
-            <div className="min-w-0 space-y-1">
-                {toast.title ? (
-                    <h3 className={`text-sm font-semibold leading-snug ${meta.title}`}>{toast.title}</h3>
+            <div className="min-w-0 flex-1 space-y-1">
+                {title ? (
+                    <h3 className={`text-sm font-semibold leading-snug ${meta.title}`}>{title}</h3>
                 ) : null}
                 {toast.message ? (
-                    <p className="text-sm leading-relaxed text-slate-700 line-clamp-3 dark:text-slate-200">
+                    <p className="text-sm leading-relaxed text-slate-600 line-clamp-3 dark:text-slate-300">
                         {toast.message}
                     </p>
                 ) : null}
@@ -169,14 +192,14 @@ export default function NotificationToast({ toast, paused, depth = 0, y = 0, sca
                 transformOrigin: 'bottom center',
                 pointerEvents: clickable ? 'auto' : 'none',
             }}
-            className={`absolute inset-x-0 bottom-0 flex w-full max-w-[420px] items-center justify-between gap-3 rounded-xl border p-4 shadow-md ${meta.card}`}
+            className="absolute inset-x-0 bottom-0 flex w-full max-w-[420px] items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/40"
         >
             {interactive ? (
-                <button type="button" onClick={openCard} className="flex min-w-0 items-start gap-2.5 text-left">
+                <button type="button" onClick={openCard} className="flex min-w-0 flex-1 items-start gap-3 text-left">
                     {body}
                 </button>
             ) : (
-                <div className="flex min-w-0 items-start gap-2.5">{body}</div>
+                <div className="flex min-w-0 flex-1 items-start gap-3">{body}</div>
             )}
 
             <div className="flex shrink-0 items-center gap-2">
@@ -208,7 +231,7 @@ export default function NotificationToast({ toast, paused, depth = 0, y = 0, sca
                     onClick={() => dismissToast(toast.id)}
                     aria-label={DISMISS_LABEL}
                     title={DISMISS_LABEL}
-                    className="rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 active:scale-95 dark:text-slate-300 dark:hover:text-white"
+                    className="rounded-xl p-1.5 text-slate-400 transition-colors hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 active:scale-95 dark:text-slate-500 dark:hover:text-white"
                 >
                     <svg {...ICON_PROPS} className="h-3.5 w-3.5">
                         <path d="M18 6 6 18M6 6l12 12" />

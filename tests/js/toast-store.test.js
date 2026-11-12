@@ -28,6 +28,15 @@ test('pushToast menambah kartu dan subscribe langsung menerima isi antrean', () 
     unsubscribe();
 });
 
+test('nama varian lama dinormalkan: danger jadi error', () => {
+    dismissAllToasts();
+
+    const id = pushToast({ variant: 'danger', message: 'gagal' });
+    const toast = getToasts().find((item) => item.id === id);
+
+    assert.equal(toast.variant, 'error');
+});
+
 test('varian tidak dikenal jatuh ke default dan durasi bawaan 8 detik', () => {
     dismissAllToasts();
 

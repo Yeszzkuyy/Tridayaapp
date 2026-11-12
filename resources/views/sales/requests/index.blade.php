@@ -1,7 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
     @php
         $user = auth()->user();
         $canCreateInsideSales = $user && ($user->can('manage-sales') || $user->can('manage-sales-leads') || $user->can('manage-marketing'));
@@ -97,7 +94,7 @@
                         </p>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $openTask) }}" onclick="showHubLoading()" title="{{ __('View details') }}" />
+                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $openTask) }}" title="{{ __('View details') }}" />
                         <x-icon-button as="a" icon="back" href="{{ route('sales.requests.index', ['tab' => 'inside-sales']) }}" title="{{ __('Close discussion') }}" />
                     </div>
                 </div>
@@ -417,24 +414,4 @@
                 <div class="mt-4 p-4">{{ $estimatorRequests->links() }}</div>
             @endif
         @endif
-    <div id="hub-loading" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4" role="status" aria-live="polite">
-        <div class="w-full max-w-sm rounded-2xl bg-white px-10 py-8 text-center shadow-xl dark:bg-slate-800">
-            <svg class="mx-auto h-8 w-8 animate-spin text-accent-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            <p class="mt-4 font-semibold text-slate-800 dark:text-slate-100">{{ __('Loading…') }}</p>
-        </div>
-    </div>
-
-    @once
-    <script>
-        function showHubLoading() {
-            const overlay = document.getElementById('hub-loading');
-            if (!overlay) return;
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
-        }
-    </script>
-    @endonce
 </x-app-layout>

@@ -112,7 +112,7 @@ class InsideSalesQuotationController extends Controller
                 'updated' => $updated,
                 'missing' => $missing,
             ])
-        )->with('success_card', true);
+        );
     }
 
     public function store(Request $request, LeadTask $leadTask, QuotationPdfService $pdfService)
@@ -219,8 +219,7 @@ class InsideSalesQuotationController extends Controller
 
         return redirect()
             ->route('lead-tasks.show', $leadTask)
-            ->with('success', __('Quotation :number and PDF created successfully.', ['number' => $proposal->proposal_number]))
-            ->with('success_card', true);
+            ->with('success', __('Quotation :number and PDF created successfully.', ['number' => $proposal->proposal_number]));
     }
 
     public function pdf(LeadTask $leadTask)

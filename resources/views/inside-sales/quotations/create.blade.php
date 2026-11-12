@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $subtotal = (float) $items->sum('subtotal');
         $cost = $items->filter(fn ($item) => $item->unit_cost !== null)

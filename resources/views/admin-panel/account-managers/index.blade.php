@@ -28,7 +28,7 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.account-managers.edit', $am) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.account-managers.destroy', $am) }}" 
                                               method="POST" 
-                                              onsubmit="return confirm('{{ __('Delete this Account Manager?') }}')"
+                                              data-confirm="{{ __('Delete this Account Manager?') }}" data-confirm-tone="danger"
                                               class="inline">
                                             @csrf
                                             @method('DELETE')

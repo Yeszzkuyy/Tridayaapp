@@ -92,7 +92,7 @@
                                     @can('manage-technician')
                                     <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="{{ __('Edit') }}" />
                                     <form action="{{ route('teknisi.instalasis.destroy', $instalasi) }}" method="POST"
-                                          onsubmit="return confirm('{{ __('Delete this installation?') }}')">
+                                          data-confirm="{{ __('Delete this installation?') }}" data-confirm-tone="danger">
                                         @csrf
                                         @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />

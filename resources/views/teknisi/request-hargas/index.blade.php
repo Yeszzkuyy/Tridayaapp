@@ -89,7 +89,7 @@
                                         <x-icon-button as="a" icon="view" href="{{ route('teknisi.request-hargas.show', $requestHarga) }}" title="{{ __('View detail') }}" />
                                         <x-icon-button as="a" icon="edit" href="{{ route('teknisi.request-hargas.edit', $requestHarga) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('teknisi.request-hargas.destroy', $requestHarga) }}" method="POST"
-                                              onsubmit="return confirm('{{ __('Delete this price request?') }}')">
+                                              data-confirm="{{ __('Delete this price request?') }}" data-confirm-tone="danger">
                                             @csrf
                                             @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
