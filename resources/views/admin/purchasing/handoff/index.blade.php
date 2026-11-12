@@ -8,6 +8,7 @@
             'project_created' => __('Project Created'),
             'bast_closed' => __('BAST & Closed'),
         ];
+        $resetUrl = route('admin.purchasing.index').($stage !== 'all' ? '?stage='.$stage : '');
         $tabUrl = function (string $key) use ($filters) {
             $query = array_filter([
                 'stage' => $key !== 'all' ? $key : null,
@@ -37,7 +38,9 @@
     </nav>
 
     <form method="GET" action="{{ route('admin.purchasing.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
-        <input type="hidden" name="stage" value="{{ $stage }}">
+        @if($stage !== 'all')
+            <input type="hidden" name="stage" value="{{ $stage }}">
+        @endif
         <div>
             <label for="q" class="mb-1 block text-xs text-slate-500">{{ __('Search') }}</label>
             <input id="q" type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ __('Quotation / PO number / customer') }}"
@@ -53,7 +56,7 @@
             </select>
         </div>
         <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
-        <x-icon-button as="a" icon="reset" href="{{ $tabUrl($stage) }}" title="{{ __('Reset') }}" />
+        <x-icon-button as="a" icon="reset" href="{{ $resetUrl }}" title="{{ __('Reset filters') }}" />
     </form>
 
     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
