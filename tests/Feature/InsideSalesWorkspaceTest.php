@@ -357,6 +357,8 @@ class InsideSalesWorkspaceTest extends TestCase
         $this->assertSame('draft', $proposal->status);
         $this->assertSame(2240000.0, (float) $proposal->grand_total);
         $this->assertCount(1, $proposal->items()->get());
+        $this->assertSame(1, $proposal->versions()->count());
+        $this->assertSame($inside->id, (int) $proposal->versions()->first()->changed_by);
         $this->assertNotNull($proposal->pdf_path);
         Storage::disk('private')->assertExists($proposal->pdf_path);
         $this->assertSame('done', $task->fresh()->status);

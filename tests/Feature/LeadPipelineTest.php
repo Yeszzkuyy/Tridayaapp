@@ -25,7 +25,13 @@ class LeadPipelineTest extends TestCase
 
     private function makeLead(array $attributes = []): Lead
     {
-        $customer = Customer::create(['name' => 'PT Pipeline']);
+        $customer = Customer::create([
+            'name' => 'PT Pipeline',
+            'address' => 'Jl. Pipeline No. 1',
+            'contact_person' => 'Budi Pipeline',
+            'whatsapp' => '081234567890',
+            'email' => 'budi@pipeline.test',
+        ]);
 
         $lead = Lead::create(array_merge([
             'customer_id' => $customer->id,
@@ -368,6 +374,26 @@ class LeadPipelineTest extends TestCase
     {
         $user = $this->userWithRole('sales');
         $lead = $this->makeLead(['assigned_to' => $user->id]);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
+        ])->assertStatus(422);
+
+        $this->assertSame('cool', $lead->fresh()->status);
+    }
+
+    public function test_cannot_move_to_warm_when_client_identity_is_incomplete(): void
+    {
+        $user = $this->userWithRole('sales');
+        $customer = Customer::create(['name' => 'PT Tanpa Identitas']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'cool',
+            'assigned_to' => $user->id,
+        ]);
+        $this->addDar($lead);
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
             'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],

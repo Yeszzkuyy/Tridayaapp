@@ -62,6 +62,10 @@ class LeadLifecycleTest extends TestCase
         $this->actingAs($marketing)->post(route('leads.store'), [
             'customer_mode' => 'new',
             'customer_name' => 'PT Lifecycle',
+            'customer_address' => 'Jl. Lifecycle No. 1',
+            'customer_contact_person' => 'Andi Lifecycle',
+            'customer_whatsapp' => '081234567893',
+            'customer_email' => 'andi@lifecycle.test',
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'CCTV 8 channel + instalasi.',

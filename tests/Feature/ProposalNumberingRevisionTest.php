@@ -126,6 +126,12 @@ class ProposalNumberingRevisionTest extends TestCase
         $version = $proposal->fresh()->versions->last();
         $this->assertNotNull($version->total_before);
         $this->assertSame(10000000.0, (float) $version->total_after);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.show', $proposal))
+            ->assertOk()
+            ->assertSee('Revision History')
+            ->assertSee('v2');
     }
 
     public function test_second_quotation_for_same_lead_is_blocked(): void

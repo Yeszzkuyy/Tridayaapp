@@ -9,11 +9,15 @@ use App\Models\LeadTaskItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\QuotationNumberService;
+use App\Services\QuotationVersionService;
 use Illuminate\Http\Request;
 
 class LeadTaskController extends Controller
 {
-    public function __construct(private QuotationNumberService $numbers) {}
+    public function __construct(
+        private QuotationNumberService $numbers,
+        private QuotationVersionService $versions,
+    ) {}
 
     /** Boleh request/kelola task: management, marketing, atau sales pemilik lead. */
     private function authorizeTaskRequest(Lead $lead): void
@@ -442,6 +446,8 @@ class LeadTaskController extends Controller
 
             return $proposal;
         });
+
+        $this->versions->record($proposal, null, __('Initial quotation'), auth()->id());
 
         // Kabari Inside Sales bahwa file-nya sudah diterima.
         $assignee = $leadTask->assignee;

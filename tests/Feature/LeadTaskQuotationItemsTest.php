@@ -137,6 +137,8 @@ class LeadTaskQuotationItemsTest extends TestCase
         $this->assertCount(2, $proposal->items()->get());
         $this->assertSame(345000.0, (float) $proposal->grand_total);
         $this->assertCount(1, $proposal->attachments()->get());
+        $this->assertSame(1, $proposal->versions()->count());
+        $this->assertSame($sales->id, (int) $proposal->versions()->first()->changed_by);
     }
 
     public function test_accepting_file_requires_at_least_one_item(): void

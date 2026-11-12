@@ -29,7 +29,13 @@ class LeadOutcomeTest extends TestCase
 
     private function makeLead(array $overrides = []): Lead
     {
-        $customer = Customer::create(['name' => 'PT Outcome']);
+        $customer = Customer::create([
+            'name' => 'PT Outcome',
+            'address' => 'Jl. Outcome No. 1',
+            'contact_person' => 'Dewi Outcome',
+            'whatsapp' => '081234567892',
+            'email' => 'dewi@outcome.test',
+        ]);
 
         return Lead::create(array_merge([
             'customer_id' => $customer->id,

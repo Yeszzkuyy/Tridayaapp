@@ -5020,5 +5020,9 @@
     "Accepted Quotation": "Accepted Quotation",
     "Project delivery address (separate from office billing address).": "Project delivery address (separate from office billing address).",
     "A PO document already exists. Upload a new file only to replace it.": "A PO document already exists. Upload a new file only to replace it.",
-    "PDF or image, maximum 10 MB.": "PDF or image, maximum 10 MB."
+    "PDF or image, maximum 10 MB.": "PDF or image, maximum 10 MB.",
+    "Revision History": "Revision History",
+    "Initial quotation": "Initial quotation",
+    "Previous": "Previous",
+    "Complete the client identity before moving the lead to this stage: :fields.": "Complete the client identity before moving the lead to this stage: :fields."
 }

@@ -35,7 +35,13 @@ class LeadTimelineTest extends TestCase
 
     private function makeLead(?User $assignee = null): Lead
     {
-        $customer = Customer::create(['name' => 'PT Timeline']);
+        $customer = Customer::create([
+            'name' => 'PT Timeline',
+            'address' => 'Jl. Timeline No. 1',
+            'contact_person' => 'Sari Timeline',
+            'whatsapp' => '081234567891',
+            'email' => 'sari@timeline.test',
+        ]);
         LeadActivity::query()->delete();
 
         return Lead::create([

@@ -7,13 +7,17 @@ use App\Models\Proposal;
 use App\Notifications\QuotationGeneratedNotification;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationPdfService;
+use App\Services\QuotationVersionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class InsideSalesQuotationController extends Controller
 {
-    public function __construct(private QuotationNumberService $numbers) {}
+    public function __construct(
+        private QuotationNumberService $numbers,
+        private QuotationVersionService $versions,
+    ) {}
     public function create(LeadTask $leadTask)
     {
         $this->authorizeTask($leadTask);
@@ -84,8 +88,7 @@ class InsideSalesQuotationController extends Controller
         $salesOwner = $leadTask->lead?->assignee ?? $leadTask->creator;
         $proposalNumber = $this->numbers->generate($validated['letterhead_pt'], $salesOwner ?? auth()->user());
 
-        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber) {
-            $proposal = Proposal::create([
+        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber) {            $proposal = Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
                 'proposal_number' => $proposalNumber,
@@ -131,6 +134,8 @@ class InsideSalesQuotationController extends Controller
 
             return $proposal;
         });
+
+        $this->versions->record($proposal, null, __('Initial quotation'), auth()->id());
 
         if ($salesOwner && (int) $salesOwner->id !== (int) auth()->id()) {
             try {

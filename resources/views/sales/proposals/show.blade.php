@@ -127,6 +127,31 @@
                 </div>
             @endif
 
+            @if($proposal->versions->isNotEmpty())
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Revision History') }}</p>
+                    <ul class="mt-3 space-y-2">
+                        @foreach($proposal->versions as $version)
+                            <li class="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40">
+                                <span class="inline-flex shrink-0 items-center rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-200">{{ $version->label ?? 'v'.$version->version }}</span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $version->change_summary ?: __('Initial quotation') }}</p>
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        {{ $version->created_at?->translatedFormat('d M Y H:i') }} · {{ $version->changer?->name ?? __('System') }}
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        {{ __('Total') }}: Rp {{ number_format((float) $version->total_after, 0, ',', '.') }}
+                                        @if($version->total_before !== null)
+                                            · {{ __('Previous') }}: Rp {{ number_format((float) $version->total_before, 0, ',', '.') }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="flex flex-wrap gap-2 pt-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
                 @if($proposal->pdf_path)

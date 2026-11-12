@@ -23,6 +23,7 @@ use App\Rules\SecureFile;
 use App\Services\CustomerLifecycleService;
 use App\Services\Project\ProjectWorkflowService;
 use App\Services\QuotationNumberService;
+use App\Services\QuotationVersionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,10 @@ use Illuminate\Validation\ValidationException;
 
 class ProposalController extends Controller
 {
-    public function __construct(private QuotationNumberService $numbers) {}
+    public function __construct(
+        private QuotationNumberService $numbers,
+        private QuotationVersionService $versions,
+    ) {}
 
     private function log(Lead $lead, string $action, array $changes = []): void
     {
@@ -242,33 +246,6 @@ class ProposalController extends Controller
             || $request->user()?->can('manage-sales-leads'),
             403
         );
-    }
-
-    /**
-     * Simpan snapshot versi quotation agar riwayat revisi bisa dibaca.
-     * `total_before` = total versi sebelumnya (null untuk versi pertama).
-     */
-    private function recordVersion(Proposal $proposal, ?float $totalBefore = null, ?string $summary = null): void
-    {
-        $items = $proposal->items()->get();
-        $next = ((int) $proposal->versions()->max('version')) + 1;
-
-        $proposal->versions()->create([
-            'version' => $next,
-            'label' => 'v'.$next,
-            'snapshot' => $items->map(fn (ProposalItem $item) => [
-                'description' => $item->description,
-                'quantity' => (float) $item->quantity,
-                'unit' => $item->unit,
-                'unit_price' => (float) $item->unit_price,
-                'unit_cost' => $item->unit_cost !== null ? (float) $item->unit_cost : null,
-                'subtotal' => (float) $item->subtotal,
-            ])->values()->all(),
-            'total_before' => $totalBefore,
-            'total_after' => (float) $proposal->grand_total,
-            'change_summary' => $summary,
-            'changed_by' => auth()->id(),
-        ]);
     }
 
     private function itemRules(): array
@@ -574,7 +551,7 @@ class ProposalController extends Controller
 
         $this->storeQuotationFile($request, $proposal);
 
-        $this->recordVersion($proposal);
+        $this->versions->record($proposal, null, __('Initial quotation'));
 
         $this->log($lead, 'proposal_created', ['number' => $proposal->proposal_number]);
 
@@ -584,7 +561,7 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest', 'attachments']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest', 'attachments', 'versions.changer']);
         $this->authorizeView($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
@@ -675,7 +652,7 @@ class ProposalController extends Controller
         $this->storeQuotationFile($request, $proposal);
 
         $proposal->refresh();
-        $this->recordVersion($proposal, $totalBefore, __('Quotation revised.'));
+        $this->versions->record($proposal, $totalBefore, __('Quotation revised.'));
 
         return redirect()->route('sales.proposals.show', $proposal)
             ->with('success', __('Proposal updated successfully.'));
@@ -823,7 +800,7 @@ class ProposalController extends Controller
 
         $proposal->update(['status' => 'revision']);
         $this->log($proposal->lead, 'proposal_revised', ['number' => $proposal->proposal_number]);
-        $this->recordVersion($proposal, (float) $proposal->grand_total, __('Requested revision from customer.'));
+        $this->versions->record($proposal, (float) $proposal->grand_total, __('Requested revision from customer.'));
 
         return back()->with('success', __('Proposal returned for revision.'));
     }

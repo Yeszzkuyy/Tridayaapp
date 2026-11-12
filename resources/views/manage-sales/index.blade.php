@@ -6,9 +6,12 @@
     @endif
     <div class="lynk-enter flex flex-col gap-3 pt-1 mb-6 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Manage Sales') }}</h1>
-        <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
-            <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
-            <span>{{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
+        <div class="flex flex-wrap items-center gap-2">
+            <x-icon-button as="a" icon="calendar" href="{{ route('sales.schedules.index') }}" label="{{ __('Sales Agenda') }}" title="{{ __('Sales Agenda') }}" />
+            <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
+                <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
+                <span>{{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
+            </div>
         </div>
     </div>
 

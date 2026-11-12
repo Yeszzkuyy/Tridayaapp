@@ -42,7 +42,9 @@ class ManageSalesTest extends TestCase
         $this->actingAs($this->loginAs('management'))
             ->get(route('manage-sales.index'))
             ->assertOk()
-            ->assertSee('Manage Sales');
+            ->assertSee('Manage Sales')
+            ->assertSee(route('sales.schedules.index'), false)
+            ->assertSee(__('Sales Agenda'));
     }
 
     public function test_marketing_and_sales_cannot_open_manage_sales(): void
