@@ -57,11 +57,11 @@
     </form>
 
     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-        <div>
-            <table class="w-full table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[820px] table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
+                        <th class="w-[13%] px-2.5 py-3.5 whitespace-nowrap text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
                         <th class="w-[16%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
                         <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Sales Owner') }}</th>
                         <th class="w-[15%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
