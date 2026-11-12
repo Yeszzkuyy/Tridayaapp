@@ -145,6 +145,7 @@ Testing:
 | `/home/yeski/3dyapp-management` | `feature/management` | Management (Activity Log, assign lead) |
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
+| `/home/raafi/3dyapp-sales` | `feature/sales-workspace` | Sales workspace (My Leads, Follow Up, DAR) |
 | `/home/yeski/3dyapp-inside` | `feature/sales-inside` | Inside Sales (dashboard, quotation, PDF per PT) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
 | `/home/raafi/3dyapp-notifpop` | `feature/sys-notif-popup` | Pop up notifikasi pojok layar (gaya toast 21st.dev) |

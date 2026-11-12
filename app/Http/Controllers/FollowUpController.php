@@ -21,10 +21,26 @@ class FollowUpController extends Controller
 
     public function index(Request $request)
     {
-        $followUps = $this->salesService->getFollowUps($request->only(['search', 'customer_id', 'lead_id', 'overdue']));
+        $filters = $request->only([
+            'search', 'customer', 'customer_id', 'lead_id', 'stage',
+            'status', 'activity_type', 'date_from', 'date_to', 'tab', 'overdue',
+        ]);
+
+        $followUps = $this->salesService->getFollowUps($filters);
+        $counts = $this->salesService->followUpCounts($filters);
+        $activeTab = $request->input('tab') ?: match ((string) $request->input('overdue')) {
+            'today' => 'due_today',
+            'upcoming' => 'upcoming',
+            'completed' => 'completed',
+            '1', 'due' => 'overdue',
+            default => 'all',
+        };
+
+        $stages = LeadController::STATUSES;
+        $types = FollowUp::ACTIVITY_TYPES;
 
         return $this->ajaxPartial($request, 'sales.follow-ups._table',
-            compact('followUps'),
+            compact('followUps', 'counts', 'activeTab', 'stages', 'types'),
             'sales.follow-ups.index');
     }
 
@@ -56,15 +72,22 @@ class FollowUpController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
             'description' => 'required|string',
-            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
+            'type' => 'nullable|in:'.implode(',', FollowUp::ALLOWED_TYPES),
             'follow_up_date' => 'nullable|date',
             'activity_time' => 'nullable|date_format:H:i',
             'location' => 'nullable|string|max:150',
             'next_follow_up_date' => 'nullable|date',
+            'next_follow_up_time' => 'nullable|date_format:H:i',
         ]);
 
         $this->assertConsistentRelations($validated);
         $this->lockLeadLink($validated);
+
+        // Log Follow Up di detail lead = interaksi yang sudah terjadi.
+        // Form antrean: tanggal lampau juga dianggap sudah terjadi.
+        if ($request->input('return') === 'lead') {
+            $validated['status'] = 'completed';
+        }
 
         $followUp = $this->salesService->createFollowUp($validated);
 
@@ -138,7 +161,7 @@ class FollowUpController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'lead_id' => 'nullable|exists:leads,id',
             'description' => 'required|string',
-            'type' => 'nullable|in:'.implode(',', array_merge(FollowUp::CONTACT_TYPES, FollowUp::LEGACY_TYPES, FollowUp::LOG_TYPES)),
+            'type' => 'nullable|in:'.implode(',', FollowUp::ALLOWED_TYPES),
             'follow_up_date' => 'nullable|date',
             'activity_time' => 'nullable|date_format:H:i',
             'location' => 'nullable|string|max:150',
@@ -188,7 +211,13 @@ class FollowUpController extends Controller
             return redirect()->route('sales.meetings.report', array_merge([$followUp], $params));
         }
 
-        $this->salesService->completeFollowUp($followUp);
+        $validated = $request->validate([
+            'outcome' => 'nullable|string|max:2000',
+            'next_follow_up_date' => 'nullable|date|after_or_equal:today',
+            'next_follow_up_time' => 'nullable|date_format:H:i',
+        ]);
+
+        $this->salesService->completeFollowUp($followUp, $validated);
 
         // Drawer detail di jadwal sales minta balik ke kalendernya.
         if ($request->input('return') === 'schedule') {
@@ -197,7 +226,9 @@ class FollowUpController extends Controller
         }
 
         return $this->ajaxOrRedirect($request, 'sales.follow-ups.index',
-            __('Follow up completed.'), ['redirect' => route('sales.follow-ups.index')]);
+            __('Follow up completed.'), [
+                'redirect' => route('sales.follow-ups.index', $request->only('tab')),
+            ]);
     }
 
     public function reopen(Request $request, FollowUp $followUp)

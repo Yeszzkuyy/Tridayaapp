@@ -56,6 +56,15 @@ class LeadPipelineService
                 ]);
             }
         }
+
+        // Won harus punya dasar transaksi: quotation yang sudah Accepted.
+        // Perubahan ke Won dari quotation tetap lewat ProposalController.
+        if ($newStatus === 'won' && $lead->status !== 'won'
+            && ! $lead->proposals()->where('status', 'accepted')->exists()) {
+            throw ValidationException::withMessages([
+                'status' => __('A lead can only be WON from an accepted quotation.'),
+            ]);
+        }
     }
 
     /**

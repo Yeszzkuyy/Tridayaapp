@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Proposal;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -255,6 +256,17 @@ class LeadPipelineTest extends TestCase
         $user = $this->userWithRole('sales');
         $lead = $this->makeLead(['assigned_to' => $user->id]);
         $this->addDar($lead);
+
+        // Won hanya dari quotation Accepted (satu pintu transaksi).
+        Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/WON/'.uniqid(),
+            'created_by' => $user->id,
+            'proposal_date' => now(),
+            'customer' => 'PT Pipeline',
+            'status' => 'accepted',
+        ]);
+
         $this->assertNull($lead->closed_at);
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [

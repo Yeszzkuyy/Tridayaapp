@@ -54,6 +54,23 @@
                 <p class="text-slate-700 whitespace-pre-wrap">{{ $followUp->description }}</p>
             </div>
 
+            <dl class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs text-slate-400">{{ __('Follow Up Status') }}</dt>
+                    <dd class="mt-1">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold {{ \App\Models\FollowUp::statusBadgeClasses($followUp->status ?? ($followUp->isCompleted() ? 'completed' : 'pending')) }}">
+                            {{ \App\Models\FollowUp::statusLabel($followUp->status ?? ($followUp->isCompleted() ? 'completed' : 'pending')) }}
+                        </span>
+                    </dd>
+                </div>
+                @if($followUp->outcome)
+                    <div>
+                        <dt class="text-xs text-slate-400">{{ __('Outcome') }}</dt>
+                        <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $followUp->outcome }}</dd>
+                    </div>
+                @endif
+            </dl>
+
             @if($followUp->type === 'meeting')
                 <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                     <div class="flex items-center justify-between mb-4">

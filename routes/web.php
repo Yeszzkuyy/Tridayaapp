@@ -44,6 +44,7 @@ use App\Http\Controllers\PurchasingReportController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RequestHargaController;
 use App\Http\Controllers\SalesFinanceController;
+use App\Http\Controllers\SalesDarController;
 use App\Http\Controllers\SalesMeetingController;
 use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
@@ -834,6 +835,26 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/dashboard', [ManageSalesController::class, 'dashboard'])->name('sales.dashboard');
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/my-leads/export', [ManageSalesController::class, 'exportMyLeads'])->name('sales.my-leads.export');
     Route::middleware('permission:view-sales|manage-sales')->get('/sales/my-leads', [ManageSalesController::class, 'myLeads'])->name('sales.my-leads');
+
+    // Aksi cepat My Leads: catatan inline, jadwal berikutnya, dan klik kontak.
+    Route::middleware('permission:view-sales|manage-sales')->prefix('sales/my-leads/{lead}')->name('sales.my-leads.')->group(function () {
+        Route::patch('note', [ManageSalesController::class, 'updateLeadNote'])
+            ->middleware('throttle:30,1')->name('note');
+        Route::patch('next-follow-up', [ManageSalesController::class, 'updateLeadNextFollowUp'])
+            ->middleware('throttle:30,1')->name('next-follow-up');
+        Route::post('contact', [ManageSalesController::class, 'logLeadContact'])
+            ->middleware('throttle:60,1')->name('contact');
+    });
+
+    // ============================================
+    // SALES — DAR (Daily Activity Report)
+    // ============================================
+    Route::middleware('permission:view-sales|manage-sales|manage-sales-leads')
+        ->prefix('sales')->name('sales.')->group(function () {
+            Route::get('dar', [SalesDarController::class, 'index'])->name('dar.index');
+            Route::post('dar', [SalesDarController::class, 'store'])
+                ->middleware('permission:manage-sales')->name('dar.store');
+        });
 
     // ============================================
     // INSIDE SALES TASK — request bantuan untuk lead
