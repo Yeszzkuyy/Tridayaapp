@@ -190,7 +190,7 @@
                             <span class="text-sm font-semibold text-slate-800 dark:text-slate-100 tabular-nums">Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}</span>
                             @if($canManageAttachment)
                                 <form action="{{ route('lead-tasks.items.destroy', [$task, $item]) }}" method="POST"
-                                      onsubmit="return confirm('{{ __('Delete this quotation item?') }}')">
+                                      data-confirm="{{ __('Delete this quotation item?') }}" data-confirm-tone="danger">
                                     @csrf
                                     @method('DELETE')
                                     <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
@@ -392,7 +392,7 @@
                             <x-icon-button as="a" icon="download" href="{{ route('lead-tasks.attachments.download', [$task, $attachment]) }}" title="{{ __('Download') }}" />
                             @if($canManageAttachment)
                                 <form action="{{ route('lead-tasks.attachments.destroy', [$task, $attachment]) }}" method="POST"
-                                      onsubmit="return confirm('{{ __('Delete this quotation file?') }}')">
+                                      data-confirm="{{ __('Delete this quotation file?') }}" data-confirm-tone="danger">
                                     @csrf
                                     @method('DELETE')
                                     <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />

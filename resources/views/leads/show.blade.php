@@ -34,10 +34,10 @@
                     title="{{ __('Edit lead') }}" />
             @endcanany
             @can('manage-marketing')
-                <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline-flex">
+                <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline-flex"
+                      data-confirm="{{ __('Delete this lead?') }}" data-confirm-tone="danger">
                     @csrf @method('DELETE')
                     <x-icon-button icon="delete" type="submit"
-                            onclick="return confirm('{{ __('Delete this lead?') }}')"
                             title="{{ __('Delete lead') }}" />
                 </form>
             @endcan
@@ -626,7 +626,7 @@
                                     <x-icon-button as="a" icon="download" href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="{{ __('Download') }}" />
                                     @can('manage-marketing')
                                         <form action="{{ route('leads.attachments.destroy', [$lead, $doc]) }}" method="POST"
-                                              onsubmit="return confirm('{{ __('Delete this attachment?') }}')" class="inline-flex">
+                                              data-confirm="{{ __('Delete this attachment?') }}" data-confirm-tone="danger" class="inline-flex">
                                             @csrf
                                             @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />

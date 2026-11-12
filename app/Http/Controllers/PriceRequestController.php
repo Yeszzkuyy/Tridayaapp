@@ -97,8 +97,7 @@ class PriceRequestController extends Controller
         Notification::send($recipients, new PriceRequestCreatedNotification($priceRequest));
 
         return redirect()->route('sales.price-requests.show', $priceRequest)
-            ->with('success', __('Price request dikirim ke tim Engineer.'))
-            ->with('success_card', true);
+            ->with('success', __('Price request dikirim ke tim Engineer.'));
     }
 
     public function show(Request $request, PriceRequest $priceRequest)
@@ -127,7 +126,7 @@ class PriceRequestController extends Controller
         $priceRequest->loadMissing(['customer', 'assignee']);
         $this->notifyAssignedEngineer($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'cancelled'));
 
-        return back()->with('success', __('Price request canceled.'))->with('success_card', true);
+        return back()->with('success', __('Price request canceled.'));
     }
 
     /** Fallback only: a lead technician may claim a request if Amir is unavailable. */
@@ -148,7 +147,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'in_progress'));
 
-        return back()->with('success', __('Price request diambil untuk dikerjakan.'))->with('success_card', true);
+        return back()->with('success', __('Price request diambil untuk dikerjakan.'));
     }
 
     /** Fallback only: a lead technician may reject an unassigned request. */
@@ -161,7 +160,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'rejected'));
 
-        return back()->with('success', __('Price request ditolak.'))->with('success_card', true);
+        return back()->with('success', __('Price request ditolak.'));
     }
 
     /** Fallback only: review requests when the configured pricing engineer is unavailable. */
@@ -181,7 +180,7 @@ class PriceRequestController extends Controller
         );
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
 
-        return back()->with('success', __('Price request telah di-'.$validated['decision'].'.'))->with('success_card', true);
+        return back()->with('success', __('Price request telah di-'.$validated['decision'].'.'));
     }
 
     /** Fallback only: assign a technician when the configured pricing engineer is unavailable. */
@@ -208,7 +207,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'assigned'));
 
-        return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
+        return back()->with('success', __('Technician assigned successfully.'));
     }
 
     /** Upload a new immutable calculation version and return the request to Sales review. */
@@ -269,7 +268,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestCompletedNotification($priceRequest));
 
-        return back()->with('success', __('Price calculation sent to Sales for review.'))->with('success_card', true);
+        return back()->with('success', __('Price calculation sent to Sales for review.'));
     }
 
     /** Sales accepts the latest calculation as the final price. */
@@ -309,7 +308,7 @@ class PriceRequestController extends Controller
         $priceRequest->refresh()->load(['customer', 'assignee']);
         $this->notifyAssignedEngineer($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'accepted'));
 
-        return back()->with('success', __('Price accepted as final.'))->with('success_card', true);
+        return back()->with('success', __('Price accepted as final.'));
     }
 
     /** Sales asks the assigned engineer to revise/renegotiate the latest calculation. */
@@ -354,7 +353,7 @@ class PriceRequestController extends Controller
         $priceRequest->refresh()->load(['customer', 'assignee']);
         $this->notifyAssignedEngineer($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'revision'));
 
-        return back()->with('success', __('Revision request sent to the Pricing Engineer.'))->with('success_card', true);
+        return back()->with('success', __('Revision request sent to the Pricing Engineer.'));
     }
 
     public function downloadQuotation(Request $request, PriceRequest $priceRequest)

@@ -24,12 +24,6 @@
         <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('teknisi.sizing-projects.create') }}" label="{{ __('Add Sizing') }}" title="{{ __('Add Sizing') }}" />
     </div>
 
-    @if (session('success'))
-        <div class="mb-4 px-4 py-3 rounded-xl bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     {{-- Filter --}}
     <form method="GET" action="{{ route('teknisi.sizing-projects.index') }}"
           class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 mb-4 flex flex-wrap items-end gap-3">
@@ -104,7 +98,7 @@
                                     <x-icon-button as="a" icon="view" href="{{ route('teknisi.sizing-projects.show', $sizing) }}" title="{{ __('View') }}" />
                                     <x-icon-button as="a" icon="edit" href="{{ route('teknisi.sizing-projects.edit', $sizing) }}" title="{{ __('Edit') }}" />
                                     <form action="{{ route('teknisi.sizing-projects.destroy', $sizing) }}" method="POST"
-                                          onsubmit="return confirm('{{ __('Delete this sizing project?') }}');">
+                                          data-confirm="{{ __('Delete this sizing project?') }}" data-confirm-tone="danger">
                                         @csrf
                                         @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />

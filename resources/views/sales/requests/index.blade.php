@@ -1,7 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
     @php
         $user = auth()->user();
         $canCreateInsideSales = $user && ($user->can('manage-sales') || $user->can('manage-sales-leads') || $user->can('manage-marketing'));

@@ -1,16 +1,6 @@
 <x-app-layout>
     @include('partials.lynk-dashboard-motion')
 
-    @if(session('success'))
-        <div class="mb-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-emerald-800 dark:text-emerald-200 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-white font-bold">✓</span>
-                <p class="font-medium text-sm">{{ session('success') }}</p>
-            </div>
-            <button type="button" @click="$el.parentElement.remove()" class="text-emerald-600 hover:text-emerald-800 text-lg font-bold px-2">&times;</button>
-        </div>
-    @endif
-
     <div x-data="{
         editModalOpen: false,
         modalUser: '',

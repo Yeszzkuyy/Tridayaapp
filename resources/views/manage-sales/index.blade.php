@@ -1,9 +1,6 @@
     <x-app-layout>
     @include('partials.lynk-dashboard-motion')
 
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
     <div class="lynk-enter flex flex-col gap-3 pt-1 mb-6 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Manage Sales') }}</h1>
         <div class="flex flex-wrap items-center gap-2">

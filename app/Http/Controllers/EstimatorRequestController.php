@@ -229,8 +229,7 @@ class EstimatorRequestController extends Controller
         Notification::send($recipients, new EstimatorRequestCreatedNotification($estimatorRequest));
 
         return redirect()->route('estimator.requests.show', $estimatorRequest)
-            ->with('success', __('Product price request sent to Estimator.'))
-            ->with('success_card', true);
+            ->with('success', __('Product price request sent to Estimator.'));
     }
 
     public function show(Request $request, EstimatorRequest $estimatorRequest)
@@ -388,7 +387,7 @@ class EstimatorRequestController extends Controller
             $estimatorRequest->items()->update(['status' => 'accepted']);
         });
 
-        return back()->with('success', __('Product prices accepted.'))->with('success_card', true);
+        return back()->with('success', __('Product prices accepted.'));
     }
 
     public function revision(Request $request, EstimatorRequest $estimatorRequest)
@@ -416,7 +415,7 @@ class EstimatorRequestController extends Controller
             Notification::send($recipients, new EstimatorRequestRevisionNotification($estimatorRequest));
         }
 
-        return back()->with('success', __('Revision request sent to Estimator.'))->with('success_card', true);
+        return back()->with('success', __('Revision request sent to Estimator.'));
     }
 
     public function cancel(EstimatorRequest $estimatorRequest)
@@ -425,7 +424,7 @@ class EstimatorRequestController extends Controller
 
         $estimatorRequest->update(['status' => 'cancelled']);
 
-        return back()->with('success', __('Product price request cancelled.'))->with('success_card', true);
+        return back()->with('success', __('Product price request cancelled.'));
     }
 
     public function downloadAttachment(Request $request, EstimatorRequest $estimatorRequest)

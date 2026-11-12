@@ -6,6 +6,7 @@ import DOMPurify from 'dompurify';
 import { mountLoginGalaxy } from './galaxy.js';
 import { applyAppearanceDom } from './appearance.js';
 import { installLegacyToast } from './toast-store.js';
+import { installConfirmInterceptor, registerConfirmStore } from './confirm-dialog.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -167,6 +168,8 @@ window.WebPush = {
 window.WebPush.init();
 
 document.addEventListener('alpine:init', () => {
+    registerConfirmStore(Alpine);
+
     Alpine.store('appearance', {
         mode: window.__appearanceMode || 'system',
         accent: window.__appearanceAccent || 'ocean',
@@ -275,9 +278,29 @@ document.addEventListener('livewire:navigated', () => syncSidebarGroups());
      redirect?}; tanpa redirect + data-ajax-remove="tr" → hapus
      baris terdekat + toast. Sukses + redirect → pindah sekali.
    - 422: kotak error inline di atas form. Gagal total: submit biasa.
-   - Diabaikan bila event sudah di-cancel (mis. confirm() batal).
+   - Diabaikan bila event sudah di-cancel (mis. kartu konfirmasi dibatalkan).
    ============================================================ */
 installLegacyToast();
+
+/* ============================================================
+   Kartu konfirmasi standar (pengganti confirm() bawaan browser).
+   Store Alpine dirender oleh <x-confirm-dialog> di layouts/app.blade.php;
+   penangkap global menangani form/tautan/tombol ber-atribut `data-confirm`.
+   ============================================================ */
+installConfirmInterceptor();
+
+/* Livewire memakai pop up yang sama: komponen cukup
+   $this->dispatch('toast', message: '...', type: 'success'). */
+window.addEventListener('toast', (event) => {
+    const detail = event.detail || {};
+    const message = detail.message || (Array.isArray(detail) ? detail[0] : '');
+
+    if (!message) return;
+
+    if (typeof window.toast === 'function') {
+        window.toast(message, detail.type !== 'error' && detail.ok !== false);
+    }
+});
 
 function ajaxShowErrors(form, errors) {
     form.querySelector('[data-ajax-errors]')?.remove();

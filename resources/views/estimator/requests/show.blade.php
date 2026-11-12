@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @if(session('price_sent'))
         <div x-data="{ show: true }" x-show="show" x-cloak x-init="setTimeout(() => show = false, 1600)"
              class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/55 p-4" role="status" aria-live="polite">
@@ -308,7 +304,15 @@
                     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                         <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Review Prices') }}</h2>
                         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Accept the prices or ask Estimator for a revision.') }}</p>
-                        <form action="{{ route('estimator.requests.accept', $estimatorRequest) }}" method="POST" class="mt-4" onsubmit="return confirm('{{ __('Accept these prices as final?') }}')">
+                        <form action="{{ route('estimator.requests.accept', $estimatorRequest) }}" method="POST" class="mt-4"
+                              data-confirm="{{ __('The prices are locked and used for the customer quotation.') }}"
+                              data-confirm-title="{{ __('Accept these prices as final?') }}"
+                              data-confirm-tone="success"
+                              data-confirm-label="{{ __('Yes, accept prices') }}"
+                              data-confirm-details="{{ json_encode([
+                                  ['label' => __('Customer'), 'value' => $estimatorRequest->customer?->name ?? '-'],
+                                  ['label' => __('Request'), 'value' => '#'.$estimatorRequest->id],
+                              ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                             @csrf
                             <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept Prices') }}" title="{{ __('Accept Prices') }}" />
                         </form>
@@ -351,7 +355,15 @@
             @can('cancel', $estimatorRequest)
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Cancel Request') }}</h2>
-                    <form action="{{ route('estimator.requests.cancel', $estimatorRequest) }}" method="POST" class="mt-3" onsubmit="return confirm('{{ __('Cancel this request?') }}')">
+                    <form action="{{ route('estimator.requests.cancel', $estimatorRequest) }}" method="POST" class="mt-3"
+                          data-confirm="{{ __('This request is closed and cannot be resumed.') }}"
+                          data-confirm-title="{{ __('Cancel this request?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, cancel request') }}"
+                          data-confirm-details="{{ json_encode([
+                              ['label' => __('Customer'), 'value' => $estimatorRequest->customer?->name ?? '-'],
+                              ['label' => __('Request'), 'value' => '#'.$estimatorRequest->id],
+                          ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Cancel Request') }}" title="{{ __('Cancel Request') }}" />
                     </form>

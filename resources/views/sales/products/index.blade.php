@@ -81,7 +81,7 @@
                         <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" />
                         @if($product->is_active)
                             <form action="{{ route('products.destroy', $product) }}" method="POST" class="inline"
-                                  onsubmit="return confirm('{{ __('Deactivate this product?') }}')">
+                                  data-confirm="{{ __('Deactivate this product?') }}" data-confirm-tone="warning">
                                 @csrf @method('DELETE')
                                 <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
                             </form>

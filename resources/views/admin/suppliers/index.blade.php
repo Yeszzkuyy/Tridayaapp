@@ -70,7 +70,7 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.suppliers.edit', $supplier) }}" title="{{ __('Edit supplier') }}" />
                                         @if($supplier->is_active)
                                             <form action="{{ route('admin.suppliers.destroy', $supplier) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('{{ __('Deactivate this supplier?') }}')">
+                                                  data-confirm="{{ __('Deactivate this supplier?') }}" data-confirm-tone="warning">
                                                 @csrf @method('DELETE')
                                                 <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
                                             </form>

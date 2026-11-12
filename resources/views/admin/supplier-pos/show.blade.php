@@ -23,7 +23,7 @@
                 @endif
                 @if(in_array($supplierPurchaseOrder->status, ['draft', 'ordered']))
                     <form action="{{ route('admin.supplier-pos.cancel', $supplierPurchaseOrder) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Cancel this purchase order?') }}')">
+                          data-confirm="{{ __('Cancel this purchase order?') }}" data-confirm-tone="danger">
                         @csrf
                         <x-icon-button icon="delete" type="submit" label="{{ __('Cancel PO') }}" title="{{ __('Cancel PO') }}" />
                     </form>

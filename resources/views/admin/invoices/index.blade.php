@@ -43,7 +43,7 @@
                                             <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $inv->id]) }}" title="{{ __('Record Payment') }}" />
                                         @endif
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $inv) }}" title="{{ __('Edit invoice') }}" />
-                                        <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" onsubmit="return confirm('{{ __('Delete this invoice?') }}')" class="inline">
+                                        <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" data-confirm="{{ __('Delete this invoice?') }}" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete invoice') }}" />
                                         </form>

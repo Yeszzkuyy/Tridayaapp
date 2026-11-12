@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $pageDocs = $documents->getCollection();
         $categoryCount = $pageDocs->pluck('document_category_id')->filter()->unique()->count();
