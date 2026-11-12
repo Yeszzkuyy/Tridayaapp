@@ -26,13 +26,6 @@
                 'create' => route('sales.technical-requests.create'),
                 'can_create' => $canCreateEngineer,
             ],
-            'product-price' => [
-                'label' => __('Product Price'),
-                'icon' => 'cube',
-                'desc' => __('Ask Estimator for product cost, stock, and warranty.'),
-                'create' => route('estimator.requests.create'),
-                'can_create' => $user && ($user->can('manage-sales') || $user->can('manage-sales-leads')),
-            ],
         ];
         $taskColors = [
             'todo' => 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-700/60 dark:text-slate-200 dark:border-slate-600',
@@ -257,7 +250,7 @@
             @if($priceRequests->hasPages())
                 <div class="mt-4 p-4">{{ $priceRequests->links() }}</div>
             @endif
-        @elseif($tab === 'engineer')
+        @else
             <div class="overflow-x-auto">
                 <table class="w-full border-separate border-spacing-y-2 text-left">
                     <thead>
@@ -343,75 +336,6 @@
 
             @if($engineerRequests->hasPages())
                 <div class="mt-4 p-4">{{ $engineerRequests->links() }}</div>
-            @endif
-        @else
-            <div class="overflow-x-auto">
-                <table class="w-full border-separate border-spacing-y-2 text-left">
-                    <thead>
-                        <tr class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            <th class="px-5 py-3 first:rounded-l-xl last:rounded-r-xl bg-slate-50/80 dark:bg-slate-800/50">{{ __('Customer / PT') }}</th>
-                            <th class="px-5 py-3 first:rounded-l-xl last:rounded-r-xl bg-slate-50/80 dark:bg-slate-800/50">{{ __('Requested by') }}</th>
-                            <th class="px-5 py-3 first:rounded-l-xl last:rounded-r-xl bg-slate-50/80 dark:bg-slate-800/50 text-center">{{ __('Items') }}</th>
-                            <th class="px-5 py-3 first:rounded-l-xl last:rounded-r-xl bg-slate-50/80 dark:bg-slate-800/50">{{ __('Status') }}</th>
-                            <th class="px-5 py-3 first:rounded-l-xl last:rounded-r-xl bg-slate-50/80 dark:bg-slate-800/50">{{ __('Last Update') }}</th>
-                            <th class="px-5 py-3 first:rounded-l-xl last:rounded-r-xl bg-slate-50/80 dark:bg-slate-800/50 text-right">{{ __('Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($estimatorRequests as $req)
-                            <tr class="group rounded-xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800 dark:hover:border-slate-600">
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl font-medium text-slate-800 dark:text-slate-100">
-                                    <a href="{{ route('estimator.requests.show', $req) }}" class="hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
-                                        {{ $req->customer?->name ?? '-' }}
-                                    </a>
-                                    <p class="text-xs text-slate-400 font-normal mt-0.5">{{ __('Product Price') }} #{{ $req->id }}</p>
-                                </td>
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-sm text-slate-600 dark:text-slate-300">
-                                    <div class="flex items-center gap-2">
-                                        @if($req->requester)
-                                            <x-user-avatar :user="$req->requester" size="w-6 h-6" text="text-[10px]" :clickable="false" />
-                                        @endif
-                                        <span class="truncate max-w-[140px]">{{ $req->requester?->name ?? '-' }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-center text-sm tabular-nums text-slate-600 dark:text-slate-300">
-                                    {{ $req->answered_items_count }}/{{ $req->items_count }}
-                                </td>
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl">
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ \App\Models\EstimatorRequest::statusColor($req->status) }}">
-                                        {{ \App\Models\EstimatorRequest::statusLabel($req->status) }}
-                                    </span>
-                                </td>
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-sm text-slate-600 dark:text-slate-300 tabular-nums">
-                                    {{ $req->updated_at?->timezone('Asia/Jakarta')->format('d M Y, H:i') ?? '-' }}
-                                </td>
-                                <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-right">
-                                    <x-icon-button as="a" icon="view" href="{{ route('estimator.requests.show', $req) }}" title="{{ __('View details') }}" />
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-5 py-12 text-center">
-                                    <x-empty-state label="{{ __('product price requests') }}" description="{{ __('No product price requests yet - ask Estimator for the latest cost, stock, and warranty.') }}">
-                                        @if($tabs['product-price']['can_create'])
-                                            <a href="{{ $tabs['product-price']['create'] }}"
-                                               class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-accent-500/20 transition-all duration-300 hover:bg-accent-700 hover:shadow-md hover:brightness-105 active:scale-95">
-                                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                                </svg>
-                                                <span>{{ __('New Request') }}</span>
-                                            </a>
-                                        @endif
-                                    </x-empty-state>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            @if($estimatorRequests->hasPages())
-                <div class="mt-4 p-4">{{ $estimatorRequests->links() }}</div>
             @endif
         @endif
     <div id="hub-loading" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-900/55 p-4" role="status" aria-live="polite">

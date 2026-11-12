@@ -1,5 +1,13 @@
 <x-app-layout>
-    <div class="mx-auto max-w-3xl">
+    @php
+        $keepDates = [
+            '3d' => now()->timezone('Asia/Jakarta')->addDays(3)->format('Y-m-d'),
+            '7d' => now()->timezone('Asia/Jakarta')->addDays(7)->format('Y-m-d'),
+            '14d' => now()->timezone('Asia/Jakarta')->addDays(14)->format('Y-m-d'),
+            '1m' => now()->timezone('Asia/Jakarta')->addMonth()->format('Y-m-d'),
+        ];
+    @endphp
+    <div>
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Update Cost Price') }}</h1>
@@ -18,7 +26,12 @@
             </div>
         @endif
 
-        <form action="{{ route('products.price.update', $product) }}" method="POST" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <form action="{{ route('products.price.update', $product) }}" method="POST"
+              x-data="{
+                  validUntil: @js(old('valid_until', $product->latestCostLog?->valid_until?->format('Y-m-d') ?? '')),
+                  setKeepDate(dateStr) { this.validUntil = dateStr; }
+              }"
+              class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             @csrf
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -42,8 +55,14 @@
 
                 <div>
                     <label for="price-valid" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Valid Until') }}</label>
-                    <input id="price-valid" type="date" name="valid_until" value="{{ old('valid_until', $product->latestCostLog?->valid_until?->format('Y-m-d')) }}"
+                    <input id="price-valid" type="date" name="valid_until" x-model="validUntil"
                            class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                        <button type="button" @click="setKeepDate('{{ $keepDates['3d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+3 Days') }}</button>
+                        <button type="button" @click="setKeepDate('{{ $keepDates['7d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Week') }}</button>
+                        <button type="button" @click="setKeepDate('{{ $keepDates['14d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+2 Weeks') }}</button>
+                        <button type="button" @click="setKeepDate('{{ $keepDates['1m'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Month') }}</button>
+                    </div>
                     @error('valid_until') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
 

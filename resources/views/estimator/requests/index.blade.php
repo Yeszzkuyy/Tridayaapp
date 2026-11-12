@@ -4,8 +4,11 @@
             <div class="min-w-0">
                 <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ auth()->user()->can('manage-price-requests') ? __('Estimator Queue') : __('Product Price Requests') }}</h1>
             </div>
-            <div class="flex shrink-0 items-center gap-2">
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
                 <x-back-button :href="route('dashboard')" />
+                @can('export', \App\Models\EstimatorRequest::class)
+                    <x-icon-button as="a" icon="download" :href="route('estimator.requests.export-excel', request()->only(['status', 'date_from', 'date_to']))" label="{{ __('Export Excel') }}" title="{{ __('Export Excel') }}" />
+                @endcan
                 @can('create', \App\Models\EstimatorRequest::class)
                     <x-icon-button variant="solid" as="a" icon="add" href="{{ route('estimator.requests.create') }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />
                 @endcan

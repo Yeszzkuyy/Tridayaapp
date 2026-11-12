@@ -513,6 +513,88 @@ class EstimatorRequestTest extends TestCase
             ->assertSee(__('Valid until :date', ['date' => '31 Dec 2026']));
     }
 
+    public function test_pricelist_shows_expired_badge_when_valid_until_is_past(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+        $product = $this->product(['name' => 'Kamera Kadaluarsa']);
+        $supplier = Supplier::create(['name' => 'Vendor Lama']);
+
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 450000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '1 year',
+            'valid_until' => '2026-01-10',
+            'updated_by' => $estimator->id,
+        ]);
+
+        $this->actingAs($estimator)->get(route('products.index'))
+            ->assertOk()
+            ->assertSee(__('Expired :date - Needs Recheck', ['date' => '10 Jan 2026']));
+    }
+
+    public function test_detail_shows_whatsapp_generator_keep_buttons_and_use_last_price(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $supplier = Supplier::create([
+            'name' => 'PT Distributor Utama',
+            'contact_person' => 'Rina',
+            'phone' => '08129876543',
+        ]);
+        $product = $this->product(['name' => 'NVR 16 Channel']);
+
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 3200000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '2 years official',
+            'valid_until' => '2026-12-31',
+            'updated_by' => $estimator->id,
+        ]);
+
+        $request = $this->makeRequest($sales, ['status' => 'submitted']);
+        $request->items()->create([
+            'product_id' => $product->id,
+            'description' => 'NVR 16 Channel',
+            'quantity' => 2,
+            'unit' => 'unit',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Ask Supplier via WhatsApp'))
+            ->assertSee(__('Use Last Price'))
+            ->assertSee(__('+3 Days'))
+            ->assertSee(__('+1 Week'))
+            ->assertSee(__('+2 Weeks'))
+            ->assertSee(__('+1 Month'));
+    }
+
+    public function test_create_form_is_full_width_with_searchable_picker_and_queue_has_export_button(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+
+        $this->actingAs($sales)
+            ->get(route('estimator.requests.create'))
+            ->assertOk()
+            ->assertDontSee('max-w-4xl')
+            ->assertSee(__('Search product name / SKU (optional)...'));
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.index'))
+            ->assertOk()
+            ->assertSee(__('Export Excel'));
+    }
+
     public function test_sales_cannot_answer_and_estimator_cannot_accept(): void
     {
         $sales = $this->userWithRole('sales');

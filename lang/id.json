@@ -5223,5 +5223,19 @@
     "The proposal is closed as rejected.": "Proposal ditutup sebagai ditolak.",
     "Mark as rejected by the customer?": "Tandai ditolak customer?",
     "Yes, mark rejected": "Ya, Tandai Ditolak",
-    "Yes, reject request": "Ya, Tolak Request"
+    "Yes, reject request": "Ya, Tolak Request",
+    "Export Excel": "Export Excel",
+    "Search product name / SKU (optional)...": "Cari nama produk / SKU (opsional)...",
+    "Clear product": "Hapus pilihan produk",
+    "No matching catalog product - fill description manually.": "Tidak ada produk katalog yang cocok - isi deskripsi secara manual.",
+    "Ask Supplier via WhatsApp": "Tanya Supplier via WhatsApp",
+    "Choose a distributor to generate a ready-to-send WhatsApp message with all requested items.": "Pilih distributor untuk membuat pesan WhatsApp siap kirim berisi semua item yang diminta.",
+    "Last price": "Harga terakhir",
+    "Use Last Price": "Pakai Data Terakhir",
+    "+3 Days": "+3 Hari",
+    "+1 Week": "+1 Minggu",
+    "+2 Weeks": "+2 Minggu",
+    "+1 Month": "+1 Bulan",
+    "Expired :date - Needs Recheck": "Kadaluarsa :date - Perlu Cek Ulang",
+    "No cost price recorded yet.": "Belum ada harga modal yang tercatat."
 }

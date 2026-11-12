@@ -5223,5 +5223,19 @@
     "The proposal is closed as rejected.": "The proposal is closed as rejected.",
     "Mark as rejected by the customer?": "Mark as rejected by the customer?",
     "Yes, mark rejected": "Yes, mark rejected",
-    "Yes, reject request": "Yes, reject request"
+    "Yes, reject request": "Yes, reject request",
+    "Export Excel": "Export Excel",
+    "Search product name / SKU (optional)...": "Search product name / SKU (optional)...",
+    "Clear product": "Clear product",
+    "No matching catalog product - fill description manually.": "No matching catalog product - fill description manually.",
+    "Ask Supplier via WhatsApp": "Ask Supplier via WhatsApp",
+    "Choose a distributor to generate a ready-to-send WhatsApp message with all requested items.": "Choose a distributor to generate a ready-to-send WhatsApp message with all requested items.",
+    "Last price": "Last price",
+    "Use Last Price": "Use Last Price",
+    "+3 Days": "+3 Days",
+    "+1 Week": "+1 Week",
+    "+2 Weeks": "+2 Weeks",
+    "+1 Month": "+1 Month",
+    "Expired :date - Needs Recheck": "Expired :date - Needs Recheck",
+    "No cost price recorded yet.": "No cost price recorded yet."
 }
