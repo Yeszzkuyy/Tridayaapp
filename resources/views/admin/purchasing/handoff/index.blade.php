@@ -8,6 +8,45 @@
             'project_created' => __('Project Created'),
             'bast_closed' => __('BAST & Closed'),
         ];
+        // Warna tab mengikuti makna tahap (sama dengan badge stepper).
+        $stageTones = [
+            'all' => [
+                'active' => 'border-accent-600 bg-accent-600 text-white shadow-sm shadow-accent-600/30',
+                'hover' => 'hover:border-accent-400 dark:hover:border-accent-500',
+                'countOn' => 'bg-white text-accent-700',
+                'countOff' => 'bg-accent-50 text-accent-700 dark:bg-accent-950/50 dark:text-accent-300',
+            ],
+            'waiting_po' => [
+                'active' => 'border-slate-500 bg-slate-600 text-white shadow-sm shadow-slate-500/30',
+                'hover' => 'hover:border-slate-400 dark:hover:border-slate-500',
+                'countOn' => 'bg-white text-slate-700',
+                'countOff' => 'bg-slate-100 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300',
+            ],
+            'po_received' => [
+                'active' => 'border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-500/30',
+                'hover' => 'hover:border-indigo-400 dark:hover:border-indigo-500',
+                'countOn' => 'bg-white text-indigo-700',
+                'countOff' => 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300',
+            ],
+            'in_purchasing' => [
+                'active' => 'border-amber-500 bg-amber-500 text-amber-950 shadow-sm shadow-amber-500/30',
+                'hover' => 'hover:border-amber-400 dark:hover:border-amber-500',
+                'countOn' => 'bg-white text-amber-800',
+                'countOff' => 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
+            ],
+            'project_created' => [
+                'active' => 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-500/30',
+                'hover' => 'hover:border-blue-400 dark:hover:border-blue-500',
+                'countOn' => 'bg-white text-blue-700',
+                'countOff' => 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200',
+            ],
+            'bast_closed' => [
+                'active' => 'border-teal-700 bg-teal-700 text-white shadow-sm shadow-teal-600/30',
+                'hover' => 'hover:border-teal-400 dark:hover:border-teal-500',
+                'countOn' => 'bg-white text-teal-700',
+                'countOff' => 'bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-200',
+            ],
+        ];
         $resetUrl = route('admin.purchasing.index').($stage !== 'all' ? '?stage='.$stage : '');
         $tabUrl = function (string $key) use ($filters) {
             $query = array_filter([
@@ -27,10 +66,12 @@
     {{-- Tab tahap handoff beserta jumlahnya --}}
     <nav class="mb-4 flex flex-wrap items-center gap-2" aria-label="{{ __('Handoff Stages') }}">
         @foreach ($stageTabs as $key => $label)
+            @php $tone = $stageTones[$key] ?? $stageTones['all']; @endphp
             <a href="{{ $tabUrl($key) }}"
-               class="inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-200 {{ $stage === $key ? 'border-accent-600 bg-accent-600 text-white shadow-sm shadow-accent-600/30' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:border-accent-400 dark:border-slate-700 dark:text-slate-300' }}">
+               @if($stage === $key) aria-current="page" @endif
+               class="inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all duration-200 {{ $stage === $key ? $tone['active'] : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 dark:border-slate-700 dark:text-slate-300 '.$tone['hover'] }}">
                 {{ $label }}
-                <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums {{ $stage === $key ? 'bg-white text-accent-700' : 'bg-accent-600 text-white' }}">
+                <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums {{ $stage === $key ? $tone['countOn'] : $tone['countOff'] }}">
                     {{ $stageCounts[$key] ?? 0 }}
                 </span>
             </a>
@@ -158,7 +199,7 @@
                                 <div class="flex items-center justify-end gap-1">
                                     {{-- Aksi utama sesuai tahap: proses PO supplier, atau buka detail --}}
                                     @if($canProcessPo)
-                                        <x-icon-button as="a" icon="add" variant="solid" :label="__('Process PO')"
+                                        <x-flow-button as="a" size="sm" icon="add" :label="__('Process PO')"
                                                        href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}"
                                                        title="{{ __('Process PO') }}" />
                                     @else
