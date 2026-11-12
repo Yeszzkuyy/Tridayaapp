@@ -46,7 +46,9 @@
                 ['sales.proposals',                 ['Sales', 'Quotation']],
                 ['sales.requests',                  ['Sales', 'Request']],
                 ['estimator.price-history',         ['Estimator', 'Price History']],
-                ['estimator',                       ['Estimator', 'Queue']],
+                ['estimator.suppliers',             ['Estimator', 'Suppliers']],
+                ['estimator',                       [auth()->user()->can('manage-price-requests') ? 'Estimator' : 'Sales', auth()->user()->can('manage-price-requests') ? 'Queue' : 'Request']],
+                ['products',                        [auth()->user()->can('manage-price-requests') && ! auth()->user()->can('manage-sales') && ! auth()->user()->can('manage-admin') ? 'Pricelist' : 'Products']],
                 ['sales.technical-requests',        ['Sales', 'Technical Request']],
                 ['sales',                           ['Sales']],
                 ['leads.pipeline',                  ['Sales', 'Pipeline']],
@@ -93,6 +95,7 @@
             $plainActions = ['index', 'store', 'update', 'destroy', 'login', 'logout'];
             $actionLabels = [
                 'create' => 'Add', 'edit' => 'Edit', 'show' => 'Detail',
+                'price.edit' => 'Update Price',
                 'import' => 'Import', 'import.execute' => 'Import',
                 'preview' => 'Preview', 'convert' => 'Convert', 'export' => 'Export',
             ];

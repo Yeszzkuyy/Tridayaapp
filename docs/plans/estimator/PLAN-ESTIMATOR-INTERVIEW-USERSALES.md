@@ -208,3 +208,30 @@ Mengacu ke `docs/archive/WAWANCARA-USER-SALES.md` bagian 2A:
 Implementasi modul sudah ada di branch `feature/sales-inside` dan sudah
 melewati test terkait. Status plan menjadi **Selesai** setelah di-merge ke
 `main` dan dicek user di layar.
+
+## 10. Umpan balik user (12 November 2026)
+
+Perbaikan lanjutan setelah pengecekan di layar:
+
+1. **Sales Request jadi satu pintu.** Tab ke-4 **Product Price** masuk ke menu
+   Request; sub-menu Product Price di sidebar dihapus. Estimator Queue tetap
+   menjadi workspace Estimator.
+2. **Customer PO bukan notifikasi Estimator.** Kartu lama dibersihkan dari
+   inbox Estimator; pengiriman baru tetap hanya ke Admin/Purchasing.
+3. **Queue Estimator lebih jelas.** Request baru tampil sebagai kartu dengan
+   garis tepi menyala dan tombol **Process Request**; request yang sudah
+   dikerjakan memakai tombol **Continue** atau **Revise Prices**.
+4. **Detail full-width.** Kartu Requested by dan Estimator memakai avatar.
+   Kirim harga hanya menampilkan loader lalu centang; setelah terkirim tombol
+   berganti menjadi **Edit Prices** dan Sales mendapat notifikasi ulang.
+5. **Revisi lebih tegas.** Estimator melihat banner **Revision Required**
+   beserta alasan dan waktu permintaan revisi; Sales melihat status revisi
+   terkirim. Alasan revisi wajib diisi.
+6. **Products menjadi Pricelist untuk Estimator.** Harga modal bisa diperbarui
+   langsung dari Pricelist dengan supplier, stok, garansi, dan tanggal
+   **berlaku sampai**; harga jual default tidak tersentuh.
+7. **Supplier bisa dihubungi.** Estimator mendapat halaman Supplier Directory
+   dan tombol WhatsApp/email dari detail request.
+
+Status: sudah diimplementasikan di branch `feature/sales-inside`, menunggu
+verifikasi user sebelum merge dan penandaan **Selesai**.

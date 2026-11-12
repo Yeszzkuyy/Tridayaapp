@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NotificationDeleted;
+use App\Events\NotificationRead;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
+use App\Notifications\PurchasingHandoffNotification;
 use App\Support\NotificationPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -47,7 +50,7 @@ class NotificationController extends Controller
         $user->unreadNotifications()->update(['read_at' => now()]);
 
         if ($ids !== []) {
-            \App\Events\NotificationRead::dispatch($user->id, $ids, 0, 'all');
+            NotificationRead::dispatch($user->id, $ids, 0, 'all');
         }
 
         return $request->wantsJson()
@@ -61,7 +64,7 @@ class NotificationController extends Controller
         $user->notifications()->findOrFail($notification)->markAsRead();
         $unread = $user->unreadNotifications()->count();
 
-        \App\Events\NotificationRead::dispatch($user->id, [$notification], $unread, 'single');
+        NotificationRead::dispatch($user->id, [$notification], $unread, 'single');
 
         return response()->json(['unread' => $unread]);
     }
@@ -72,7 +75,7 @@ class NotificationController extends Controller
         $user->notifications()->findOrFail($notification)->delete();
         $unread = $user->unreadNotifications()->count();
 
-        \App\Events\NotificationDeleted::dispatch($user->id, [$notification], $unread, 'single');
+        NotificationDeleted::dispatch($user->id, [$notification], $unread, 'single');
 
         return response()->json(['unread' => $unread]);
     }
@@ -83,7 +86,7 @@ class NotificationController extends Controller
         $user = $request->user();
         $deleted = $user->notifications()->delete();
 
-        \App\Events\NotificationDeleted::dispatch($user->id, [], 0, 'all');
+        NotificationDeleted::dispatch($user->id, [], 0, 'all');
 
         return response()->json(['unread' => 0, 'deleted' => $deleted]);
     }
@@ -146,6 +149,14 @@ class NotificationController extends Controller
             // Notifikasi lead-baru untuk management yang nyasar ke user
             // tanpa permission manage-sales-leads (mis. sales): buang.
             if ($row->type === NewLeadNotification::class && ! $canManageLeads) {
+                $stale[] = $row->id;
+
+                continue;
+            }
+
+            // Customer PO bukan urusan Estimator. Notifikasi lama yang
+            // terlanjur masuk (sebelum role berubah) dibersihkan.
+            if ($row->type === PurchasingHandoffNotification::class && ! $user->can('view-admin-hub')) {
                 $stale[] = $row->id;
 
                 continue;

@@ -1,0 +1,87 @@
+<x-app-layout>
+    <div class="mx-auto max-w-3xl">
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Update Cost Price') }}</h1>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $product->name }}{{ $product->sku ? ' · '.$product->sku : '' }}</p>
+            </div>
+            <x-back-button :href="route('products.index')" />
+        </div>
+
+        @if($product->latestCostLog)
+            <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+                {{ __('Latest cost: Rp :price', ['price' => number_format((float) $product->latestCostLog->price, 0, ',', '.')]) }}
+                @if($product->latestCostLog->supplier)
+                    &middot; {{ $product->latestCostLog->supplier->name }}
+                @endif
+                &middot; {{ $product->latestCostLog->created_at?->timezone('Asia/Jakarta')->format('d M Y, H:i') }}
+            </div>
+        @endif
+
+        <form action="{{ route('products.price.update', $product) }}" method="POST" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            @csrf
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label for="price-supplier" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Supplier') }} <span class="text-rose-500">*</span></label>
+                    <select id="price-supplier" name="supplier_id" required class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                        <option value="">{{ __('Select supplier') }}</option>
+                        @foreach($suppliers as $supplier)
+                            <option value="{{ $supplier->id }}" @selected((int) old('supplier_id', $product->latestCostLog?->supplier_id) === $supplier->id)>{{ $supplier->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('supplier_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="price-cost" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Cost Price (Rp)') }} <span class="text-rose-500">*</span></label>
+                    <input id="price-cost" type="number" name="price" min="0.01" step="0.01" required value="{{ old('price', $product->latestCostLog?->price) }}"
+                           class="h-10 w-full rounded-xl border-slate-300 text-sm tabular-nums focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('price') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="price-valid" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Valid Until') }}</label>
+                    <input id="price-valid" type="date" name="valid_until" value="{{ old('valid_until', $product->latestCostLog?->valid_until?->format('Y-m-d')) }}"
+                           class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('valid_until') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="price-stock" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Stock') }} <span class="text-rose-500">*</span></label>
+                    <select id="price-stock" name="stock_status" required class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                        <option value="ready" @selected(old('stock_status', $product->latestCostLog?->stock_status ?: 'ready') === 'ready')>{{ __('Ready') }}</option>
+                        <option value="indent" @selected(old('stock_status', $product->latestCostLog?->stock_status) === 'indent')>{{ __('Indent') }}</option>
+                    </select>
+                    @error('stock_status') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="price-eta" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Stock Estimate') }}</label>
+                    <input id="price-eta" type="text" name="stock_eta" maxlength="100" value="{{ old('stock_eta', $product->latestCostLog?->stock_eta) }}" placeholder="{{ __('e.g. 2-3 weeks') }}"
+                           class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('stock_eta') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="price-warranty" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Warranty') }} <span class="text-rose-500">*</span></label>
+                    <input id="price-warranty" type="text" name="warranty_info" required maxlength="255" value="{{ old('warranty_info', $product->latestCostLog?->warranty_info) }}" placeholder="{{ __('e.g. 1 year official distributor warranty') }}"
+                           class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('warranty_info') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="price-notes" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Note') }}</label>
+                    <input id="price-notes" type="text" name="notes" maxlength="255" value="{{ old('notes') }}" placeholder="{{ __('Vendor / MOQ note') }}"
+                           class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('notes') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-700/60">
+                <x-secondary-button as="a" :href="route('products.index')">{{ __('Cancel') }}</x-secondary-button>
+                <x-primary-button type="submit">{{ __('Save') }}</x-primary-button>
+            </div>
+        </form>
+    </div>
+</x-app-layout>

@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\User;
 use App\Notifications\EstimatorRequestAnsweredNotification;
 use App\Notifications\EstimatorRequestCreatedNotification;
+use App\Notifications\EstimatorRequestRevisionNotification;
 use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\InvoicePaidSalesNotification;
 use App\Notifications\LeadAssignedNotification;
@@ -96,6 +97,7 @@ final class NotificationPresenter
             PriceRequestCommentNotification::class => 'price_request_comment',
             EstimatorRequestCreatedNotification::class => 'estimator_request_created',
             EstimatorRequestAnsweredNotification::class => 'estimator_request_answered',
+            EstimatorRequestRevisionNotification::class => 'estimator_request_revision',
             ProjectConvertedNotification::class => 'project_converted',
             MeetingReportReminderNotification::class => 'meeting_report_reminder',
             SurveyCreatedNotification::class => 'survey_created',
@@ -247,6 +249,12 @@ final class NotificationPresenter
             'estimator_request_answered' => [
                 'app' => __('Estimator'),
                 'title' => __('Product price reply is available'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'estimator_request_revision' => [
+                'app' => __('Estimator'),
+                'title' => __('Product price revision requested'),
                 'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],

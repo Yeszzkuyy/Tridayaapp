@@ -14,6 +14,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Notifications\EstimatorRequestAnsweredNotification;
 use App\Notifications\EstimatorRequestCreatedNotification;
+use App\Notifications\EstimatorRequestRevisionNotification;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -90,6 +91,23 @@ class EstimatorRequestController extends Controller
             'completed' => (clone $query)->where('status', 'completed')->count(),
         ];
 
+        $isEstimator = $user->can('manage-price-requests');
+
+        // Antrean baru dipisah ke kartu sendiri supaya langsung terlihat
+        // oleh Estimator; tabel di bawah khusus request yang sudah dikerjakan.
+        $newRequests = $isEstimator
+            ? (clone $query)->where('status', 'submitted')
+                ->with(['customer:id,name,pt_group', 'requester:id,name'])
+                ->withCount('items')
+                ->orderBy('created_at')
+                ->limit(12)
+                ->get()
+            : collect();
+
+        if ($isEstimator) {
+            $query->where('status', '!=', 'submitted');
+        }
+
         $requests = $query
             ->orderByRaw("CASE WHEN status IN ('completed', 'rejected', 'cancelled') THEN 1 ELSE 0 END")
             ->orderBy('created_at')
@@ -98,6 +116,8 @@ class EstimatorRequestController extends Controller
 
         return view('estimator.requests.index', [
             'requests' => $requests,
+            'newRequests' => $newRequests,
+            'isEstimator' => $isEstimator,
             'statuses' => EstimatorRequest::STATUSES,
             'summary' => $summary,
         ]);
@@ -224,10 +244,43 @@ class EstimatorRequestController extends Controller
         ]);
 
         $suppliers = $request->user()->can('answer', $estimatorRequest)
-            ? Supplier::active()->orderBy('name')->get(['id', 'name'])
+            ? Supplier::active()->orderBy('name')->get(['id', 'name', 'contact_person', 'phone', 'email'])
             : collect();
 
         return view('estimator.requests.show', compact('estimatorRequest', 'suppliers'));
+    }
+
+    /**
+     * Direktori supplier untuk Estimator: kontak lengkap supaya bisa
+     * langsung menghubungi vendor/distributor saat mengecek harga.
+     */
+    public function suppliers(Request $request)
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('manage-price-requests')
+            || $user->can('manage-admin')
+            || $user->can('manage-sales-leads'),
+            403
+        );
+
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+        ]);
+
+        $suppliers = Supplier::query()
+            ->withCount('products')
+            ->when($validated['q'] ?? null, fn ($query, string $term) => $query->where(
+                fn ($search) => $search->whereLike('name', "%{$term}%")
+                    ->orWhereLike('contact_person', "%{$term}%")
+                    ->orWhereLike('phone', "%{$term}%")
+                    ->orWhereLike('email', "%{$term}%")
+            ))
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('estimator.suppliers.index', compact('suppliers'));
     }
 
     public function answer(Request $request, EstimatorRequest $estimatorRequest)
@@ -242,6 +295,7 @@ class EstimatorRequestController extends Controller
             'items.*.stock_status' => 'required|in:ready,indent',
             'items.*.stock_eta' => 'nullable|string|max:100',
             'items.*.warranty_info' => 'required|string|max:255',
+            'items.*.valid_until' => 'nullable|date',
             'items.*.notes' => 'nullable|string|max:255',
         ]);
 
@@ -277,6 +331,7 @@ class EstimatorRequestController extends Controller
                         'stock_status' => $data['stock_status'],
                         'stock_eta' => $data['stock_eta'] ?? null,
                         'warranty_info' => $data['warranty_info'],
+                        'valid_until' => $data['valid_until'] ?? null,
                         'estimator_request_item_id' => $item->id,
                         'updated_by' => $request->user()->id,
                         'notes' => $data['notes'] ?? null,
@@ -291,6 +346,7 @@ class EstimatorRequestController extends Controller
                     'stock_status' => $data['stock_status'],
                     'stock_eta' => $data['stock_eta'] ?? null,
                     'warranty_info' => $data['warranty_info'],
+                    'valid_until' => $data['valid_until'] ?? null,
                     'notes' => $data['notes'] ?? $item->notes,
                     'status' => 'answered',
                     'answered_by' => $request->user()->id,
@@ -305,6 +361,8 @@ class EstimatorRequestController extends Controller
                 'handled_by' => $request->user()->id,
                 'status' => $allAnswered ? 'answered' : 'in_progress',
                 'completed_at' => null,
+                'revision_reason' => $allAnswered ? null : $locked->revision_reason,
+                'revision_requested_at' => $allAnswered ? null : $locked->revision_requested_at,
             ]);
         });
 
@@ -314,7 +372,7 @@ class EstimatorRequestController extends Controller
             $estimatorRequest->requester->notify(new EstimatorRequestAnsweredNotification($estimatorRequest));
         }
 
-        return back()->with('success', __('Prices sent to Sales for review.'))->with('success_card', true);
+        return back()->with('price_sent', true);
     }
 
     public function accept(Request $request, EstimatorRequest $estimatorRequest)
@@ -344,9 +402,19 @@ class EstimatorRequestController extends Controller
 
         $estimatorRequest->update([
             'status' => 'revision',
-            'notes' => trim(($estimatorRequest->notes ? $estimatorRequest->notes."\n\n" : '').__('Revision').': '.$validated['reason']),
+            'revision_reason' => $validated['reason'],
+            'revision_requested_at' => now(),
         ]);
         $estimatorRequest->items()->where('status', 'answered')->update(['status' => 'revision']);
+
+        $estimatorRequest->refresh()->load(['customer', 'requester']);
+        $recipients = User::permission('manage-price-requests')
+            ->where('id', '!=', $request->user()->id)
+            ->get();
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new EstimatorRequestRevisionNotification($estimatorRequest));
+        }
 
         return back()->with('success', __('Revision request sent to Estimator.'))->with('success_card', true);
     }
@@ -471,6 +539,9 @@ class EstimatorRequestController extends Controller
                 }
                 if ($item->warranty_info) {
                     $details .= ' ['.__('Warranty').': '.$item->warranty_info.']';
+                }
+                if ($item->valid_until) {
+                    $details .= ' ['.__('Valid Until').': '.$item->valid_until->format('d/m/Y').']';
                 }
 
                 return $details;

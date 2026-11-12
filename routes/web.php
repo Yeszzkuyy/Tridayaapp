@@ -299,6 +299,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [EstimatorRequestController::class, 'index'])->name('dashboard');
             Route::get('requests', [EstimatorRequestController::class, 'index'])->name('requests.index');
             Route::get('price-history', [EstimatorRequestController::class, 'priceHistory'])->name('price-history');
+            Route::get('suppliers', [EstimatorRequestController::class, 'suppliers'])->name('suppliers');
             Route::get('requests/export-excel', [EstimatorRequestController::class, 'exportExcel'])->name('requests.export-excel');
             Route::get('requests/{estimatorRequest}', [EstimatorRequestController::class, 'show'])->name('requests.show');
             Route::get('requests/{estimatorRequest}/attachment', [EstimatorRequestController::class, 'downloadAttachment'])->name('requests.attachment');
@@ -327,6 +328,12 @@ Route::middleware('auth')->group(function () {
         Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+    });
+
+    // Update harga modal langsung dari Pricelist (Estimator/Purchasing).
+    Route::middleware('permission:manage-price-requests|manage-admin')->group(function () {
+        Route::get('products/{product}/price', [ProductController::class, 'editPrice'])->name('products.price.edit');
+        Route::post('products/{product}/price', [ProductController::class, 'updatePrice'])->name('products.price.update');
     });
 
     Route::middleware('permission:view-sales|manage-sales|view-admin|manage-admin|view-products')->group(function () {

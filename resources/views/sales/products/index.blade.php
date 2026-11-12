@@ -1,9 +1,12 @@
 <x-app-layout>
     <div>
+        @php($isEstimatorPricelist = auth()->user()->can('manage-price-requests') && ! auth()->user()->can('manage-sales') && ! auth()->user()->can('manage-admin'))
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Product Catalog') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Master goods & services for proposal BOQ.') }}</p>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $isEstimatorPricelist ? __('Pricelist') : __('Product Catalog') }}</h1>
+                @unless($isEstimatorPricelist)
+                    <p class="text-slate-500 mt-1">{{ __('Master goods & services for proposal BOQ.') }}</p>
+                @endunless
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
@@ -64,10 +67,16 @@
                                         • {{ $product->latestCostLog->supplier->name }}
                                     @endif
                                     • {{ $product->latestCostLog->created_at?->format('d M Y') }}
+                                    @if($product->latestCostLog->valid_until)
+                                        • {{ __('Valid until :date', ['date' => $product->latestCostLog->valid_until->format('d M Y')]) }}
+                                    @endif
                                 </p>
                             @endif
                         @endcan
                     </div>
+                    @can('manageCost', \App\Models\Product::class)
+                        <x-icon-button as="a" icon="upload" href="{{ route('products.price.edit', $product) }}" label="{{ __('Update Price') }}" title="{{ __('Update Price') }}" />
+                    @endcan
                     @canany(['manage-sales', 'manage-admin'])
                         <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit') }}" />
                         @if($product->is_active)

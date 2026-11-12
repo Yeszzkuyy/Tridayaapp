@@ -20,6 +20,7 @@ class ProductPriceLog extends Model
         'stock_status',
         'stock_eta',
         'warranty_info',
+        'valid_until',
         'price_request_id',
         'estimator_request_item_id',
         'updated_by',
@@ -28,6 +29,7 @@ class ProductPriceLog extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'valid_until' => 'date',
     ];
 
     public function product()

@@ -14,7 +14,8 @@
     // (user only melihat item yang boleh ia akses).
     $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*') || request()->routeIs('estimator.*');
     $adminActive = request()->routeIs('admin.hub') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.purchasing.*') || request()->routeIs('admin.supplier-pos.*') || request()->routeIs('admin.suppliers.*') || request()->routeIs('admin.goods-receipts.*') || request()->routeIs('admin.goods-deliveries.*') || request()->routeIs('admin.supplier-invoices.*') || request()->routeIs('admin.bast.*');
-    $estimatorActive = request()->routeIs('estimator.*');
+    $estimatorActive = request()->routeIs('estimator.*')
+        || (auth()->user()->can('manage-price-requests') && request()->routeIs('products*'));
     $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
     $roleName = auth()->user()->roles->first()?->name ?? 'User';
@@ -24,11 +25,6 @@
 
     // Sub-menu Sales dirakit dari item yang benar-benar boleh diakses user ini.
     $canViewSales = auth()->user()->can('view-sales');
-    $canEstimatorQueue = auth()->user()->can('manage-sales')
-        || auth()->user()->can('manage-sales-leads')
-        || auth()->user()->can('manage-price-requests')
-        || auth()->user()->can('manage-admin')
-        || auth()->user()->hasRole('ceo');
     $salesItems = array_values(array_filter([
         $canViewSales ? ['route' => route('sales.dashboard'), 'match' => 'sales.dashboard', 'label' => 'Dashboard', 'dot' => 'bg-violet-400'] : null,
         $canViewSales ? ['route' => route('sales.my-leads'), 'match' => 'sales.my-leads', 'label' => 'My Leads', 'dot' => 'bg-amber-400'] : null,
@@ -38,10 +34,9 @@
         (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.proposals.index'), 'match' => 'sales.proposals.*', 'label' => 'Quotation', 'dot' => 'bg-lime-400'] : null,
         $canViewSales ? ['route' => route('leads.pipeline'), 'match' => 'leads.pipeline', 'label' => 'Pipeline', 'dot' => 'bg-sky-400'] : null,
         $hasSalesProject ? ['route' => route('projects.index'), 'match' => 'projects*', 'label' => 'Project', 'dot' => 'bg-cyan-400'] : null,
-        // Sales (dan admin read-only): satu pintu Request (3 tab). Inside-sales
+        // Sales (dan admin read-only): satu pintu Request (empat tab). Inside-sales
         // murni tanpa view-sales tetap memakai menu kerja Inside Sales.
         $canViewSales ? ['route' => route('sales.requests.index'), 'match' => 'sales.requests*', 'label' => 'Request', 'dot' => 'bg-fuchsia-400'] : null,
-        $canEstimatorQueue ? ['route' => route('estimator.requests.index'), 'match' => 'estimator.*', 'label' => 'Product Price', 'dot' => 'bg-indigo-400'] : null,
         auth()->user()->can('manage-inside-sales') ? ['route' => route('inside-sales.dashboard'), 'match' => 'inside-sales.*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
     ]));
     // Header grup harus menuju halaman pertama yang boleh dibuka user ini (mis. inside-sales).
@@ -442,7 +437,13 @@
                                            aria-current="{{ request()->routeIs('products*') ? 'page' : 'false' }}"
                                            class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('products*') ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-400" aria-hidden="true"></span>
-                                            <span>{{ __('Products') }}</span>
+                                            <span>{{ __('Pricelist') }}</span>
+                                        </a>
+                                        <a wire:navigate.hover href="{{ route('estimator.suppliers') }}"
+                                           aria-current="{{ request()->routeIs('estimator.suppliers') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('estimator.suppliers') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-sky-400" aria-hidden="true"></span>
+                                            <span>{{ __('Suppliers') }}</span>
                                         </a>
                                     </div>
                                 </div>

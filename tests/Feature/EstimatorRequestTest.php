@@ -11,11 +11,14 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Notifications\EstimatorRequestAnsweredNotification;
 use App\Notifications\EstimatorRequestCreatedNotification;
+use App\Notifications\EstimatorRequestRevisionNotification;
+use App\Notifications\PurchasingHandoffNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class EstimatorRequestTest extends TestCase
@@ -207,6 +210,7 @@ class EstimatorRequestTest extends TestCase
                     'price' => 725000,
                     'stock_status' => 'ready',
                     'warranty_info' => '1 year distributor',
+                    'valid_until' => '2026-12-31',
                     'notes' => 'Ready',
                 ],
                 [
@@ -230,6 +234,7 @@ class EstimatorRequestTest extends TestCase
         $this->assertSame($supplier->id, $productItem->supplier_id);
         $this->assertSame('ready', $productItem->stock_status);
         $this->assertSame('1 year distributor', $productItem->warranty_info);
+        $this->assertSame('2026-12-31', $productItem->valid_until?->format('Y-m-d'));
         $this->assertSame('answered', $productItem->status);
 
         $manualItem->refresh();
@@ -326,6 +331,8 @@ class EstimatorRequestTest extends TestCase
 
     public function test_sales_requests_revision(): void
     {
+        Notification::fake();
+
         $sales = $this->userWithRole('sales');
         $estimator = $this->userWithRole('estimator');
         $request = $this->makeRequest($sales, ['status' => 'answered']);
@@ -341,8 +348,169 @@ class EstimatorRequestTest extends TestCase
             'reason' => 'Harga masih di atas target.',
         ])->assertRedirect();
 
-        $this->assertSame('revision', $request->fresh()->status);
+        $request->refresh();
+        $this->assertSame('revision', $request->status);
+        $this->assertSame('Harga masih di atas target.', $request->revision_reason);
+        $this->assertNotNull($request->revision_requested_at);
         $this->assertSame('revision', $item->fresh()->status);
+        Notification::assertSentTo($estimator, EstimatorRequestRevisionNotification::class);
+
+        $this->actingAs($estimator)->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Revision Required'))
+            ->assertSee('Harga masih di atas target.')
+            ->assertSee(__('Send Prices'));
+    }
+
+    public function test_estimator_queue_separates_new_requests_with_process_action(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $newRequest = $this->makeRequest($sales, [
+            'customer_id' => $this->customer('PT Antrean Baru')->id,
+        ]);
+        $newRequest->items()->create([
+            'description' => 'Kamera Antrean',
+            'quantity' => 1,
+            'unit' => 'pcs',
+        ]);
+        $answered = $this->makeRequest($sales, [
+            'customer_id' => $this->customer('PT Sudah Dikerjakan')->id,
+            'status' => 'answered',
+        ]);
+        $answered->items()->create([
+            'description' => 'Kamera Selesai',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'price' => 100000,
+            'status' => 'answered',
+        ]);
+
+        $this->actingAs($estimator)->get(route('estimator.requests.index'))
+            ->assertOk()
+            ->assertSee(__('New Requests'))
+            ->assertSee('PT Antrean Baru')
+            ->assertSee(__('Process Request'))
+            ->assertSee('PT Sudah Dikerjakan');
+    }
+
+    public function test_estimator_updates_cost_price_from_pricelist_without_touching_selling_price(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+        $sales = $this->userWithRole('sales');
+        $supplier = Supplier::create(['name' => 'Vendor Pricelist Baru']);
+        $product = $this->product([
+            'name' => 'Kamera Pricelist Baru',
+            'cost_price' => 600000,
+            'default_price' => 1000000,
+        ]);
+
+        $this->actingAs($estimator)->get(route('products.price.edit', $product))
+            ->assertOk()
+            ->assertSee(__('Update Cost Price'));
+
+        $this->actingAs($estimator)->post(route('products.price.update', $product), [
+            'supplier_id' => $supplier->id,
+            'price' => 555000,
+            'stock_status' => 'indent',
+            'stock_eta' => '3 weeks',
+            'warranty_info' => '1 year distributor',
+            'valid_until' => '2027-01-31',
+            'notes' => 'Update vendor',
+        ])->assertRedirect(route('products.index'));
+
+        $product->refresh();
+        $this->assertSame(555000.0, (float) $product->cost_price);
+        $this->assertSame(1000000.0, (float) $product->default_price);
+
+        $log = ProductPriceLog::where('product_id', $product->id)->latest('id')->first();
+        $this->assertNotNull($log);
+        $this->assertSame('cost', $log->price_type);
+        $this->assertNull($log->estimator_request_item_id);
+        $this->assertSame($supplier->id, $log->supplier_id);
+        $this->assertSame('2027-01-31', $log->valid_until?->format('Y-m-d'));
+        $this->assertSame($estimator->id, $log->updated_by);
+
+        $this->actingAs($sales)->get(route('products.price.edit', $product))->assertForbidden();
+    }
+
+    public function test_answered_request_shows_edit_prices_instead_of_send_button(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $request = $this->makeRequest($sales, ['status' => 'answered']);
+        $request->items()->create([
+            'description' => 'Kamera Edit',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'price' => 90000,
+            'status' => 'answered',
+        ]);
+
+        $this->actingAs($estimator)->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Edit Prices'))
+            ->assertSee('style="display: none"', false);
+    }
+
+    public function test_estimator_can_open_supplier_directory_but_sales_cannot(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        Supplier::create([
+            'name' => 'Vendor Kontak',
+            'contact_person' => 'Budi',
+            'phone' => '08123456789',
+            'email' => 'budi@vendor.test',
+        ]);
+
+        $this->actingAs($estimator)->get(route('estimator.suppliers'))
+            ->assertOk()
+            ->assertSee('Vendor Kontak')
+            ->assertSee('Budi')
+            ->assertSee('budi@vendor.test');
+
+        $this->actingAs($sales)->get(route('estimator.suppliers'))->assertForbidden();
+    }
+
+    public function test_customer_po_notifications_are_hidden_from_estimator(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+
+        $estimator->notifications()->create([
+            'id' => (string) Str::uuid(),
+            'type' => PurchasingHandoffNotification::class,
+            'data' => ['type' => 'purchasing_handoff', 'title' => 'PT PO Lama'],
+            'read_at' => null,
+        ]);
+
+        $this->assertSame([], NotificationController::itemsFor($estimator));
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_estimator_sees_pricelist_title_and_latest_valid_until(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+        $product = $this->product(['name' => 'Kamera Pricelist']);
+        $supplier = Supplier::create(['name' => 'Vendor Pricelist']);
+
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 450000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '1 year',
+            'valid_until' => '2026-12-31',
+            'updated_by' => $estimator->id,
+        ]);
+
+        $this->actingAs($estimator)->get(route('products.index'))
+            ->assertOk()
+            ->assertSee(__('Pricelist'))
+            ->assertSee('Vendor Pricelist')
+            ->assertSee(__('Valid until :date', ['date' => '31 Dec 2026']));
     }
 
     public function test_sales_cannot_answer_and_estimator_cannot_accept(): void

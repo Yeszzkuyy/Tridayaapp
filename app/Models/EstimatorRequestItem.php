@@ -19,6 +19,7 @@ class EstimatorRequestItem extends Model
         'stock_status',
         'stock_eta',
         'warranty_info',
+        'valid_until',
         'notes',
         'status',
         'answered_by',
@@ -28,6 +29,7 @@ class EstimatorRequestItem extends Model
     protected $casts = [
         'quantity' => 'decimal:2',
         'price' => 'decimal:2',
+        'valid_until' => 'date',
         'answered_at' => 'datetime',
     ];
 

@@ -39,6 +39,52 @@
             </div>
         </div>
 
+        @if($isEstimator && $newRequests->isNotEmpty())
+            <section class="mb-5" aria-labelledby="estimator-new-requests">
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 id="estimator-new-requests" class="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-accent-700 dark:text-accent-300">
+                        <span class="relative flex h-2.5 w-2.5" aria-hidden="true">
+                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-400 opacity-75 motion-reduce:hidden"></span>
+                            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent-500"></span>
+                        </span>
+                        {{ __('New Requests') }}
+                        <span class="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-accent-700 dark:bg-accent-900/40 dark:text-accent-300">{{ $newRequests->count() }}</span>
+                    </h2>
+                    <span class="text-xs text-slate-400">{{ __('Waiting for your price') }}</span>
+                </div>
+                <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    @foreach($newRequests as $newRequest)
+                        <article class="relative overflow-hidden rounded-2xl border-2 border-accent-500/60 bg-white p-5 shadow-lg shadow-accent-500/10 ring-4 ring-accent-500/10 dark:border-accent-400/60 dark:bg-slate-800">
+                            <div class="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-accent-500/15 blur-2xl" aria-hidden="true"></div>
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="truncate font-semibold text-slate-900 dark:text-slate-100">{{ $newRequest->customer?->name ?? '-' }}</p>
+                                    <p class="mt-0.5 text-[11px] text-slate-400">
+                                        {{ $newRequest->customer?->pt_group ?: '-' }} &middot; #{{ $newRequest->id }} &middot; {{ $newRequest->created_at?->diffForHumans() }}
+                                    </p>
+                                </div>
+                                <span class="shrink-0 rounded-full bg-accent-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">{{ __('New') }}</span>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                @if($newRequest->requester)
+                                    <x-user-avatar :user="$newRequest->requester" size="w-6 h-6" text="text-[10px]" :clickable="false" />
+                                @endif
+                                <span class="truncate">{{ $newRequest->requester?->name ?? '-' }}</span>
+                                <span aria-hidden="true">&middot;</span>
+                                <span>{{ trans_choice(':count item|:count items', $newRequest->items_count, ['count' => $newRequest->items_count]) }}</span>
+                            </div>
+                            @if($newRequest->notes)
+                                <p class="mt-3 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ $newRequest->notes }}</p>
+                            @endif
+                            <div class="mt-4 flex items-center justify-end">
+                                <x-icon-button variant="solid" as="a" icon="tools" href="{{ route('estimator.requests.show', $newRequest) }}" label="{{ __('Process Request') }}" title="{{ __('Process Request') }}" />
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         <form method="GET" action="{{ route('estimator.requests.index') }}" class="mb-4 flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <div class="min-w-[220px] flex-1">
                 <label for="estimator-queue-q" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('Search') }}</label>
@@ -122,7 +168,13 @@
                                     {{ trans_choice(':count day|:count days', $ageDays, ['count' => $ageDays]) }}
                                 </td>
                                 <td class="px-5 py-4 text-right">
-                                    <x-icon-button as="a" icon="view" href="{{ route('estimator.requests.show', $estimatorRequest) }}" title="{{ __('View details') }}" />
+                                    @if($isEstimator && $estimatorRequest->status === 'revision')
+                                        <x-icon-button as="a" icon="edit" href="{{ route('estimator.requests.show', $estimatorRequest) }}" label="{{ __('Revise Prices') }}" title="{{ __('Revise Prices') }}" />
+                                    @elseif($isEstimator && $estimatorRequest->status === 'in_progress')
+                                        <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.show', $estimatorRequest) }}" label="{{ __('Continue') }}" title="{{ __('Continue') }}" />
+                                    @else
+                                        <x-icon-button as="a" icon="view" href="{{ route('estimator.requests.show', $estimatorRequest) }}" title="{{ __('View details') }}" />
+                                    @endif
                                 </td>
                             </tr>
                         @empty

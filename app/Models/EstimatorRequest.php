@@ -24,12 +24,15 @@ class EstimatorRequest extends Model
         'handled_by',
         'status',
         'notes',
+        'revision_reason',
+        'revision_requested_at',
         'attachment_path',
         'completed_at',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'revision_requested_at' => 'datetime',
     ];
 
     public function customer()

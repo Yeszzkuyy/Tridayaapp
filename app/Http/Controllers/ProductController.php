@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductPriceLog;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class ProductController extends Controller
@@ -184,7 +185,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'part_number' => 'nullable|string|max:120',
             'description' => 'nullable|string|max:2000',
-            'category' => 'required|in:' . implode(',', Product::SALE_CATEGORIES),
+            'category' => 'required|in:'.implode(',', Product::SALE_CATEGORIES),
             'unit' => 'nullable|string|max:16',
             'has_serial_number' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
@@ -230,11 +231,11 @@ class ProductController extends Controller
         );
 
         $rules = [
-            'sku' => 'nullable|string|max:255|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|max:255|unique:products,sku,'.$product->id,
             'name' => 'required|string|max:255',
             'part_number' => 'nullable|string|max:120',
             'description' => 'nullable|string|max:2000',
-            'category' => 'required|in:' . implode(',', Product::SALE_CATEGORIES),
+            'category' => 'required|in:'.implode(',', Product::SALE_CATEGORIES),
             'unit' => 'nullable|string|max:16',
             'has_serial_number' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
@@ -275,6 +276,56 @@ class ProductController extends Controller
         $product->update(['is_active' => false]);
 
         return redirect()->route('products.index')->with('success', __('Product deactivated.'));
+    }
+
+    /**
+     * Form update harga modal dari Pricelist. Estimator mencatat supplier,
+     * stok, garansi, dan masa berlaku tanpa menyentuh harga jual default.
+     */
+    public function editPrice(Product $product)
+    {
+        Gate::authorize('manageCost', $product);
+
+        return view('sales.products.price', [
+            'product' => $product->loadMissing('latestCostLog.supplier', 'latestCostLog.updater'),
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function updatePrice(Request $request, Product $product)
+    {
+        Gate::authorize('manageCost', $product);
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'price' => 'required|numeric|min:0.01|max:999999999999',
+            'stock_status' => 'required|in:ready,indent',
+            'stock_eta' => 'required_if:stock_status,indent|nullable|string|max:100',
+            'warranty_info' => 'required|string|max:255',
+            'valid_until' => 'nullable|date',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        DB::transaction(function () use ($request, $product, $validated): void {
+            ProductPriceLog::create([
+                'product_id' => $product->id,
+                'supplier_id' => $validated['supplier_id'],
+                'price' => $validated['price'],
+                'price_type' => 'cost',
+                'currency' => 'IDR',
+                'stock_status' => $validated['stock_status'],
+                'stock_eta' => $validated['stock_eta'] ?? null,
+                'warranty_info' => $validated['warranty_info'],
+                'valid_until' => $validated['valid_until'] ?? null,
+                'updated_by' => $request->user()->id,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            $product->update(['cost_price' => $validated['price']]);
+        });
+
+        return redirect()->route('products.index')
+            ->with('success', __('Cost price updated.'));
     }
 
     /**

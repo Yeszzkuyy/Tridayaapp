@@ -49,6 +49,7 @@
                             <th class="px-5 py-3 text-right">{{ __('Cost') }}</th>
                             <th class="px-5 py-3">{{ __('Stock') }}</th>
                             <th class="px-5 py-3">{{ __('Warranty') }}</th>
+                            <th class="px-5 py-3">{{ __('Valid Until') }}</th>
                             <th class="px-5 py-3">{{ __('Customer / PT') }}</th>
                             <th class="px-5 py-3">{{ __('Estimator') }}</th>
                         </tr>
@@ -74,12 +75,13 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->warranty_info ?: '-' }}</td>
+                                <td class="px-5 py-3 whitespace-nowrap tabular-nums text-slate-600 dark:text-slate-300">{{ $log->valid_until?->format('d M Y') ?? '-' }}</td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->estimatorRequestItem?->estimatorRequest?->customer?->name ?? '-' }}</td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->updater?->name ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-12 text-center">
+                                <td colspan="9" class="px-5 py-12 text-center">
                                     <x-empty-state label="{{ __('price history') }}" description="{{ __('No cost price history matches this filter.') }}" />
                                 </td>
                             </tr>
