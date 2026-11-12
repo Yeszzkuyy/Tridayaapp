@@ -50,6 +50,47 @@ class SalesLeadCreateTest extends TestCase
         ], $overrides);
     }
 
+    public function test_sales_can_add_dar_from_pipeline_and_return_to_pipeline(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $customer = Customer::create([
+            'name' => 'PT DAR Pipeline',
+            'created_by' => $sales->id,
+            'status' => 'lead',
+        ]);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+            'project_name' => 'Proyek DAR',
+            'need_type' => 'cctv',
+        ]);
+
+        $this->actingAs($sales)
+            ->get(route('leads.pipeline'))
+            ->assertOk()
+            ->assertSee('+ DAR')
+            ->assertSee('return=pipeline', false);
+
+        $this->actingAs($sales)
+            ->post(route('sales.follow-ups.store'), [
+                'customer_id' => $customer->id,
+                'lead_id' => $lead->id,
+                'description' => 'Telpon customer, minta spesifikasi.',
+                'type' => 'whatsapp',
+                'follow_up_date' => now()->toDateString(),
+                'return' => 'pipeline',
+            ])
+            ->assertRedirect(route('leads.pipeline'));
+
+        $this->assertDatabaseHas('follow_ups', [
+            'lead_id' => $lead->id,
+            'description' => 'Telpon customer, minta spesifikasi.',
+        ]);
+    }
+
     public function test_sales_can_open_and_submit_new_lead_for_themselves(): void
     {
         $sales = $this->userWithRole('sales');

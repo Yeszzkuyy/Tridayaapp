@@ -265,6 +265,8 @@
                 fallbackClass: 'kanban-fallback',
                 fallbackTolerance: 4,
                 draggable: salesOnly ? '.kanban-card[data-mine="1"]' : '.kanban-card',
+                filter: 'a, button',
+                preventOnFilter: false,
                 onEnd: function (evt) {
                     var leadId = evt.item.dataset.leadId;
                     var newStatus = evt.to.dataset.status;

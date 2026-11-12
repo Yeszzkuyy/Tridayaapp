@@ -20,8 +20,17 @@
         <span class="text-[11px] text-slate-500">
             {{ $lead->segment ? \App\Http\Controllers\LeadController::label($lead->segment) : '' }}
         </span>
-        <span class="text-[11px] font-medium text-slate-600">
-            {{ $lead->assignee?->name }}
-        </span>
+        <div class="flex items-center gap-1.5">
+            @can('manage-sales')
+                <a href="{{ route('sales.follow-ups.create', ['lead_id' => $lead->id, 'return' => 'pipeline']) }}"
+                   class="inline-flex items-center rounded-md bg-accent-50 px-1.5 py-0.5 text-[11px] font-semibold text-accent-700 transition hover:bg-accent-600 hover:text-white dark:bg-accent-500/10 dark:text-accent-300"
+                   title="{{ __('Fill DAR Update') }}" draggable="false" onclick="event.stopPropagation()">
+                    + DAR
+                </a>
+            @endcan
+            <span class="text-[11px] font-medium text-slate-600">
+                {{ $lead->assignee?->name }}
+            </span>
+        </div>
     </div>
 </div>

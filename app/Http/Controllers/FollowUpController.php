@@ -74,6 +74,12 @@ class FollowUpController extends Controller
                 ->with('success', __('Follow up logged successfully.'));
         }
 
+        // DAR cepat dari pipeline minta balik ke pipeline.
+        if ($request->input('return') === 'pipeline') {
+            return redirect()->route('leads.pipeline')
+                ->with('success', __('Follow up logged successfully.'));
+        }
+
         // Modal tambah jadwal di Weekly Strip minta balik ke kalendernya.
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
