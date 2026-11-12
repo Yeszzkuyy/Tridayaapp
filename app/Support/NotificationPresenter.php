@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Notifications\EstimatorRequestAnsweredNotification;
+use App\Notifications\EstimatorRequestCreatedNotification;
 use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\InvoicePaidSalesNotification;
 use App\Notifications\LeadAssignedNotification;
@@ -10,8 +12,8 @@ use App\Notifications\LeadTaskNotification;
 use App\Notifications\MeetingReportReminderNotification;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\NewUserPendingApprovalNotification;
-use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCommentNotification;
+use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
 use App\Notifications\ProjectConvertedNotification;
@@ -92,6 +94,8 @@ final class NotificationPresenter
             PriceRequestReviewedNotification::class => 'price_request_reviewed',
             PriceRequestCompletedNotification::class => 'price_request_completed',
             PriceRequestCommentNotification::class => 'price_request_comment',
+            EstimatorRequestCreatedNotification::class => 'estimator_request_created',
+            EstimatorRequestAnsweredNotification::class => 'estimator_request_answered',
             ProjectConvertedNotification::class => 'project_converted',
             MeetingReportReminderNotification::class => 'meeting_report_reminder',
             SurveyCreatedNotification::class => 'survey_created',
@@ -232,6 +236,18 @@ final class NotificationPresenter
                 'app' => __('Price Request'),
                 'title' => __('New message in Price Request'),
                 'body' => trim((string) ($data['sender_name'] ?? '').': '.(string) ($data['preview'] ?? '')),
+                'chips' => [],
+            ],
+            'estimator_request_created' => [
+                'app' => __('Estimator'),
+                'title' => __('New product price request'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'estimator_request_answered' => [
+                'app' => __('Estimator'),
+                'title' => __('Product price reply is available'),
+                'body' => (string) ($data['title'] ?? ''),
                 'chips' => [],
             ],
             'project_converted' => [

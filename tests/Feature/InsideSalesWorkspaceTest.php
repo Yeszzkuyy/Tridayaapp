@@ -6,7 +6,11 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadTask;
 use App\Models\LeadTaskItem;
+use App\Models\EstimatorRequest;
+use App\Models\Product;
+use App\Models\ProductPriceLog;
 use App\Models\Proposal;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Notifications\QuotationGeneratedNotification;
 use App\Support\NotificationPresenter;
@@ -101,6 +105,8 @@ class InsideSalesWorkspaceTest extends TestCase
             'contact_phone' => '+62 899 1599 319',
             'project_description' => 'Raised floor untuk data center.',
             'payment_terms_text' => 'TT in Advance',
+            'delivery_terms' => 'Ready stock; Indent 2-3 weeks',
+            'warranty_terms' => '1 year official distributor',
             'letterhead_pt' => 'WANI',
         ];
     }
@@ -292,7 +298,8 @@ class InsideSalesWorkspaceTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Estimator')
-            ->assertSee('Price Request');
+            ->assertSee('Queue')
+            ->assertSee('Price History');
     }
 
     public function test_inside_sales_request_hub_does_not_list_assigned_task(): void
@@ -368,6 +375,110 @@ class InsideSalesWorkspaceTest extends TestCase
                 (new QuotationGeneratedNotification($proposal))->toDatabase($sales)
             )
         );
+    }
+
+    public function test_generate_quotation_copies_stock_and_warranty_snapshot(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $task = $this->makeTask($sales, $inside);
+        $this->makeItem($task, [
+            'stock_status' => 'indent',
+            'stock_eta' => '2-3 weeks',
+            'warranty_info' => '1 year distributor',
+        ]);
+
+        $payload = $this->quotationPayload($task);
+        $payload['delivery_terms'] = 'Indent 2-3 weeks';
+        $payload['warranty_terms'] = '1 year distributor';
+
+        $this->actingAs($inside)
+            ->post(route('inside-sales.quotations.store', $task), $payload)
+            ->assertRedirect();
+
+        $proposal = Proposal::query()->firstOrFail();
+        $this->assertSame('Indent 2-3 weeks', $proposal->delivery_terms);
+        $this->assertSame('1 year distributor', $proposal->warranty_terms);
+
+        $item = $proposal->items()->firstOrFail();
+        $this->assertSame('indent', $item->stock_status);
+        $this->assertSame('2-3 weeks', $item->stock_eta);
+        $this->assertSame('1 year distributor', $item->warranty_info);
+    }
+
+    public function test_pull_latest_price_updates_task_item_stock_and_warranty(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $estimator = $this->userWithRole('estimator');
+        $task = $this->makeTask($sales, $inside);
+
+        $product = Product::create([
+            'name' => 'Switch PoE 24 Port',
+            'category' => 'barang',
+            'unit' => 'pcs',
+            'default_price' => 5000000,
+            'cost_price' => 4000000,
+            'is_active' => true,
+            'status' => Product::STATUS_APPROVED,
+        ]);
+        $supplier = Supplier::create(['name' => 'Vendor Switch']);
+
+        $estimatorRequest = EstimatorRequest::create([
+            'customer_id' => $task->lead->customer_id,
+            'requested_by' => $sales->id,
+            'status' => 'completed',
+        ]);
+        $requestItem = $estimatorRequest->items()->create([
+            'product_id' => $product->id,
+            'description' => 'Switch PoE 24 Port',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'status' => 'answered',
+        ]);
+
+        $log = ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 3850000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'indent',
+            'stock_eta' => '3 weeks',
+            'warranty_info' => '1 year distributor',
+            'estimator_request_item_id' => $requestItem->id,
+            'updated_by' => $estimator->id,
+        ]);
+
+        $item = $this->makeItem($task, [
+            'product_id' => $product->id,
+            'unit_cost' => null,
+        ]);
+
+        $this->actingAs($inside)
+            ->post(route('inside-sales.quotations.pull-prices', $task))
+            ->assertRedirect();
+
+        $item->refresh();
+        $this->assertSame($log->id, $item->product_price_log_id);
+        $this->assertSame(3850000.0, (float) $item->unit_cost);
+        $this->assertSame('indent', $item->stock_status);
+        $this->assertSame('3 weeks', $item->stock_eta);
+        $this->assertSame('1 year distributor', $item->warranty_info);
+    }
+
+    public function test_sales_cannot_pull_prices_into_inside_sales_task(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $task = $this->makeTask($sales, $inside);
+
+        $this->actingAs($sales)
+            ->post(route('inside-sales.quotations.pull-prices', $task))
+            ->assertForbidden();
     }
 
     public function test_generate_quotation_requires_items(): void

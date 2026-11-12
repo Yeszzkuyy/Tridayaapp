@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\PriceRequest;
 use App\Models\Product;
+use App\Models\ProductPriceLog;
 use App\Models\Project;
 use App\Models\ProjectStatus;
 use App\Models\Proposal;
@@ -245,6 +246,10 @@ class ProposalController extends Controller
             'items.*.unit' => 'nullable|string|max:16',
             'items.*.unit_price' => 'required|numeric|min:0|max:999999999999',
             'items.*.unit_cost' => 'nullable|numeric|min:0|max:999999999999',
+            'items.*.product_price_log_id' => 'nullable|integer|exists:product_price_logs,id',
+            'items.*.stock_status' => 'nullable|in:ready,indent',
+            'items.*.stock_eta' => 'nullable|string|max:100',
+            'items.*.warranty_info' => 'nullable|string|max:255',
             'items.*.discount' => 'nullable|numeric|min:0|max:999999999999',
         ];
     }
@@ -258,6 +263,7 @@ class ProposalController extends Controller
             'term_days' => 'nullable|required_if:payment_scheme,tempo|integer|min:1|max:365',
             'payment_terms' => 'nullable|string|max:255',
             'delivery_terms' => 'nullable|string|max:255',
+            'warranty_terms' => 'nullable|string|max:255',
         ];
     }
 
@@ -292,7 +298,13 @@ class ProposalController extends Controller
         $existing = [];
         foreach ($proposal->items()->get() as $old) {
             $key = $old->product_id ? 'p'.$old->product_id : 'd'.$old->description;
-            $existing[$key] = $old->unit_cost;
+            $existing[$key] = [
+                'unit_cost' => $old->unit_cost,
+                'product_price_log_id' => $old->product_price_log_id,
+                'stock_status' => $old->stock_status,
+                'stock_eta' => $old->stock_eta,
+                'warranty_info' => $old->warranty_info,
+            ];
         }
 
         $proposal->items()->delete();
@@ -302,15 +314,28 @@ class ProposalController extends Controller
             $price = (float) $item['unit_price'];
             $disc = (float) ($item['discount'] ?? 0);
             $key = ! empty($item['product_id']) ? 'p'.$item['product_id'] : 'd'.$item['description'];
+            $previous = $existing[$key] ?? null;
+
+            $priceLog = null;
+            if (! empty($item['product_price_log_id'])) {
+                $priceLog = ProductPriceLog::query()
+                    ->whereKey($item['product_price_log_id'])
+                    ->where('price_type', 'cost')
+                    ->when(! empty($item['product_id']), fn ($query) => $query
+                        ->where('product_id', $item['product_id']))
+                    ->first();
+            }
 
             if ($canManageCost
                 && array_key_exists('unit_cost', $item)
                 && $item['unit_cost'] !== null && $item['unit_cost'] !== '') {
                 // Pembaruan eksplisit oleh yang berwenang.
                 $cost = round((float) $item['unit_cost'], 2);
-            } elseif (array_key_exists($key, $existing)) {
+            } elseif ($priceLog) {
+                $cost = round((float) $priceLog->price, 2);
+            } elseif ($previous) {
                 // Item lama: pertahankan snapshot apa adanya (termasuk null).
-                $cost = $existing[$key] === null ? null : round((float) $existing[$key], 2);
+                $cost = $previous['unit_cost'] === null ? null : round((float) $previous['unit_cost'], 2);
             } else {
                 // Item baru: snapshot harga modal produk saat ini.
                 $cost = ! empty($item['product_id'])
@@ -320,13 +345,27 @@ class ProposalController extends Controller
                     : null;
             }
 
+            $stockStatus = filled($item['stock_status'] ?? null)
+                ? $item['stock_status']
+                : ($priceLog?->stock_status ?? $previous['stock_status'] ?? null);
+            $stockEta = filled($item['stock_eta'] ?? null)
+                ? $item['stock_eta']
+                : ($priceLog?->stock_eta ?? $previous['stock_eta'] ?? null);
+            $warrantyInfo = filled($item['warranty_info'] ?? null)
+                ? $item['warranty_info']
+                : ($priceLog?->warranty_info ?? $previous['warranty_info'] ?? null);
+
             $proposal->items()->create([
                 'product_id' => $item['product_id'] ?? null,
+                'product_price_log_id' => $priceLog?->id ?? $previous['product_price_log_id'] ?? null,
                 'description' => $item['description'],
                 'quantity' => $qty,
                 'unit' => $item['unit'] ?? 'pcs',
                 'unit_price' => $price,
                 'unit_cost' => $cost,
+                'stock_status' => $stockStatus,
+                'stock_eta' => $stockStatus === 'indent' ? $stockEta : null,
+                'warranty_info' => $warrantyInfo,
                 'discount' => $disc,
                 'subtotal' => ProposalItem::subtotalFor($qty, $price, $disc),
             ]);
@@ -504,6 +543,7 @@ class ProposalController extends Controller
                     'term_days' => $validated['term_days'] ?? null,
                     'payment_terms' => $validated['payment_terms'] ?? null,
                     'delivery_terms' => $validated['delivery_terms'] ?? null,
+                    'warranty_terms' => $validated['warranty_terms'] ?? null,
                     'status' => 'draft',
                 ]);
 
@@ -611,6 +651,7 @@ class ProposalController extends Controller
                 'term_days' => $validated['term_days'] ?? null,
                 'payment_terms' => $validated['payment_terms'] ?? null,
                 'delivery_terms' => $validated['delivery_terms'] ?? null,
+                'warranty_terms' => $validated['warranty_terms'] ?? null,
             ]);
             if ($items !== []) {
                 $this->persistItems($proposal, $items, $canManageCost);
@@ -856,6 +897,7 @@ class ProposalController extends Controller
             'term_days' => $validated['term_days'] ?? $proposal->term_days,
             'payment_terms' => $validated['payment_terms'] ?? $proposal->payment_terms,
             'delivery_terms' => $validated['delivery_terms'] ?? $proposal->delivery_terms,
+            'warranty_terms' => $validated['warranty_terms'] ?? $proposal->warranty_terms,
         ];
 
         if ($request->hasFile('po_file')) {

@@ -300,9 +300,14 @@
                         @endif
                     </h2>
                     @if($canSalesWrite)
-                        <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
-                            <x-icon name="receipt" class="h-5 w-5" />
-                        </x-icon-button>
+                        <div class="flex shrink-0 items-center gap-2">
+                            @can('create', \App\Models\EstimatorRequest::class)
+                                <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Request Product Price') }}" />
+                            @endcan
+                            <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
+                                <x-icon name="receipt" class="h-5 w-5" />
+                            </x-icon-button>
+                        </div>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">

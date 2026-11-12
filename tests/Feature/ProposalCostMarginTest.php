@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\Product;
+use App\Models\ProductPriceLog;
 use App\Models\Project;
 use App\Models\Proposal;
 use App\Models\ProposalItem;
+use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -172,6 +174,52 @@ class ProposalCostMarginTest extends TestCase
         $this->assertEqualsWithDelta(1000.0, (float) $p->fresh()->total_cost, 0.01);
     }
 
+    public function test_sales_can_select_price_log_snapshot_with_stock_and_warranty(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $product = Product::create(['name' => 'Kamera Snapshot', 'cost_price' => 700, 'default_price' => 1200, 'status' => Product::STATUS_APPROVED]);
+        $supplier = Supplier::create(['name' => 'Vendor Snapshot']);
+        $log = ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 650,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'indent',
+            'stock_eta' => '3 weeks',
+            'warranty_info' => '1 year distributor',
+            'updated_by' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+            'lead_id' => $lead->id,
+            'proposal_date' => now()->toDateString(),
+            'delivery_terms' => 'Indent 3 weeks',
+            'warranty_terms' => '1 year distributor',
+            'items' => [[
+                'product_id' => $product->id,
+                'product_price_log_id' => $log->id,
+                'description' => 'Kamera Snapshot',
+                'quantity' => 1,
+                'unit' => 'pcs',
+                'unit_price' => 1200,
+                'discount' => 0,
+            ]],
+        ])->assertRedirect();
+
+        $proposal = Proposal::where('lead_id', $lead->id)->firstOrFail();
+        $item = $proposal->items()->firstOrFail();
+
+        $this->assertSame($log->id, $item->product_price_log_id);
+        $this->assertEqualsWithDelta(650.0, (float) $item->unit_cost, 0.01);
+        $this->assertSame('indent', $item->stock_status);
+        $this->assertSame('3 weeks', $item->stock_eta);
+        $this->assertSame('1 year distributor', $item->warranty_info);
+        $this->assertSame('Indent 3 weeks', $proposal->delivery_terms);
+        $this->assertSame('1 year distributor', $proposal->warranty_terms);
+    }
+
     // ============================================================
     // HAK AKSES (backend, bukan sekadar UI)
     // ============================================================
@@ -248,12 +296,18 @@ class ProposalCostMarginTest extends TestCase
             'name' => 'Router', 'category' => 'barang', 'default_price' => 2000, 'cost_price' => 1,
         ])->assertForbidden();
 
+        // Sales tidak boleh mengubah harga jual default lewat master produk.
+        $this->actingAs($sales)->put(route('products.update', $product), [
+            'name' => 'Router', 'category' => 'barang', 'default_price' => 2500,
+        ])->assertForbidden();
+
         // Sales tetap boleh mengubah data non-harga.
         $this->actingAs($sales)->put(route('products.update', $product), [
-            'name' => 'Router v2', 'category' => 'barang', 'default_price' => 2100,
+            'name' => 'Router v2', 'category' => 'barang',
         ])->assertRedirect();
         $this->assertSame('Router v2', $product->fresh()->name);
         $this->assertEqualsWithDelta(1500.0, (float) $product->fresh()->cost_price, 0.01);
+        $this->assertEqualsWithDelta(2000.0, (float) $product->fresh()->default_price, 0.01);
     }
 
     // ============================================================

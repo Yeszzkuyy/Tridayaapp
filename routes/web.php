@@ -4,19 +4,22 @@ use App\Http\Controllers\AccountManagerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminPanelController;
 use App\Http\Controllers\BastController;
-use App\Http\Controllers\GoodsDeliveryController;
-use App\Http\Controllers\GoodsReceiptController;
-use App\Http\Controllers\PurchasingReportController;
-use App\Http\Controllers\SupplierInvoiceController;
-use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CustomerContactController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DevWorkLogController;
 use App\Http\Controllers\DocumentCategoryController;
+use App\Http\Controllers\DocumentCenterController;
+use App\Http\Controllers\DocumentRepositoryController;
+use App\Http\Controllers\EstimatorRequestController;
+use App\Http\Controllers\FieldWorkController;
 use App\Http\Controllers\FollowUpController;
+use App\Http\Controllers\GoodsDeliveryController;
+use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\InsideSalesController;
 use App\Http\Controllers\InsideSalesQuotationController;
+use App\Http\Controllers\InstalasiController;
 use App\Http\Controllers\KnowledgeBaseController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LeadTaskController;
@@ -24,11 +27,11 @@ use App\Http\Controllers\ManageSalesController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OfficeAssistantController;
-use App\Http\Controllers\ProductKnowledgeController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PocController;
 use App\Http\Controllers\PriceRequestController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductKnowledgeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectDocumentController;
@@ -36,22 +39,29 @@ use App\Http\Controllers\ProjectStatusController;
 use App\Http\Controllers\ProjectSupportController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\PurchasingHandoffController;
+use App\Http\Controllers\PurchasingReportController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\RequestHargaController;
 use App\Http\Controllers\SalesMeetingController;
 use App\Http\Controllers\SalesRequestHubController;
 use App\Http\Controllers\SalesScheduleController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SizingProjectController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierInvoiceController;
+use App\Http\Controllers\SupplierPaymentController;
 use App\Http\Controllers\SupplierPurchaseOrderController;
+use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\TechnicalRequestController;
-use App\Http\Controllers\TechnicianTaskController;
-use App\Http\Controllers\TeknisiRequestController;
 use App\Http\Controllers\TechnicianDashboardController;
 use App\Http\Controllers\TechnicianScheduleController;
+use App\Http\Controllers\TechnicianTaskController;
+use App\Http\Controllers\TeknisiRequestController;
 use App\Http\Controllers\TrashController;
-use App\Http\Controllers\WorkTypeController;
 use App\Http\Controllers\WhatsAppCenterController;
-use App\Http\Controllers\DevWorkLogController;
+use App\Http\Controllers\WorkResultController;
+use App\Http\Controllers\WorkTypeController;
 use App\Livewire\ProjectStatusList;
 use Illuminate\Support\Facades\Route;
 
@@ -169,15 +179,15 @@ Route::middleware('auth')->group(function () {
     // Document Center lintas modul. Semua role punya view-customer, tetapi
     // isi hasil dibatasi per sumber sesuai izin endpoint aslinya.
     Route::middleware('permission:view-customer')->group(function () {
-        Route::get('/documents', [\App\Http\Controllers\DocumentCenterController::class, 'index'])->name('documents.index');
+        Route::get('/documents', [DocumentCenterController::class, 'index'])->name('documents.index');
 
         // Ubah label kategori (metadata) — tetap dijaga policy update dokumen.
-        Route::patch('/documents/{document}/category', [\App\Http\Controllers\DocumentCenterController::class, 'updateCategory'])
+        Route::patch('/documents/{document}/category', [DocumentCenterController::class, 'updateCategory'])
             ->name('documents.update-category');
 
         // Ubah jenis dokumen (general/invoice/PO) — menentukan batas akses,
         // jadi hanya manage-admin.
-        Route::patch('/documents/{document}/type', [\App\Http\Controllers\DocumentCenterController::class, 'updateType'])
+        Route::patch('/documents/{document}/type', [DocumentCenterController::class, 'updateType'])
             ->middleware('permission:manage-admin')
             ->name('documents.update-type');
     });
@@ -268,6 +278,41 @@ Route::middleware('auth')->group(function () {
     });
 
     // ============================================
+    // ESTIMATOR — permintaan harga modal produk (terpisah dari Price Request instalasi)
+    // ============================================
+    Route::middleware('permission:manage-sales|manage-sales-leads')
+        ->prefix('estimator')->name('estimator.')
+        ->group(function () {
+            Route::get('requests/create', [EstimatorRequestController::class, 'create'])->name('requests.create');
+            Route::post('requests', [EstimatorRequestController::class, 'store'])->name('requests.store');
+        });
+
+    Route::middleware('permission:manage-sales|view-sales|manage-sales-leads|manage-price-requests|manage-admin')
+        ->prefix('estimator')->name('estimator.')
+        ->group(function () {
+            Route::get('/', [EstimatorRequestController::class, 'index'])->name('dashboard');
+            Route::get('requests', [EstimatorRequestController::class, 'index'])->name('requests.index');
+            Route::get('price-history', [EstimatorRequestController::class, 'priceHistory'])->name('price-history');
+            Route::get('requests/export-excel', [EstimatorRequestController::class, 'exportExcel'])->name('requests.export-excel');
+            Route::get('requests/{estimatorRequest}', [EstimatorRequestController::class, 'show'])->name('requests.show');
+            Route::get('requests/{estimatorRequest}/attachment', [EstimatorRequestController::class, 'downloadAttachment'])->name('requests.attachment');
+        });
+
+    Route::middleware('permission:manage-price-requests')
+        ->prefix('estimator')->name('estimator.')
+        ->group(function () {
+            Route::post('requests/{estimatorRequest}/answer', [EstimatorRequestController::class, 'answer'])->name('requests.answer');
+        });
+
+    Route::middleware('permission:manage-sales|manage-sales-leads')
+        ->prefix('estimator')->name('estimator.')
+        ->group(function () {
+            Route::post('requests/{estimatorRequest}/accept', [EstimatorRequestController::class, 'accept'])->name('requests.accept');
+            Route::post('requests/{estimatorRequest}/revision', [EstimatorRequestController::class, 'revision'])->name('requests.revision');
+            Route::post('requests/{estimatorRequest}/cancel', [EstimatorRequestController::class, 'cancel'])->name('requests.cancel');
+        });
+
+    // ============================================
     // MASTER PRODUK (katalog BOQ proposal)
     // ============================================
     Route::middleware('permission:manage-sales|manage-admin|manage-products')->group(function () {
@@ -283,7 +328,7 @@ Route::middleware('auth')->group(function () {
         Route::get('products/picker', [ProductController::class, 'picker'])->name('products.picker');
     });
 
-    Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician|manage-price-requests')->prefix('sales')->name('sales.')->group(function () {
+    Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
         Route::get('requests', [SalesRequestHubController::class, 'index'])->name('requests.index');
         Route::get('schedules', [SalesScheduleController::class, 'index'])->name('schedules.index');
         Route::get('schedules/api', [SalesScheduleController::class, 'getSchedulesApi'])->name('schedules.api');
@@ -291,7 +336,6 @@ Route::middleware('auth')->group(function () {
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
         Route::get('technical-requests/{technicalRequest}/attachment/preview', [TechnicalRequestController::class, 'previewAttachment'])->name('technical-requests.attachment.preview');
-        Route::get('price-requests/export-excel', [PriceRequestController::class, 'exportExcel'])->name('price-requests.export-excel');
         Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
         Route::get('price-requests/{priceRequest}/quotation/preview', [PriceRequestController::class, 'previewQuotation'])->name('price-requests.quotation.preview');
@@ -308,7 +352,7 @@ Route::middleware('auth')->group(function () {
         Route::get('proposals/{proposal}/po', [ProposalController::class, 'downloadPo'])->name('proposals.download-po');
     });
 
-    Route::middleware('permission:manage-technician|manage-price-requests')->prefix('sales')->name('sales.')->group(function () {
+    Route::middleware('permission:manage-technician')->prefix('sales')->name('sales.')->group(function () {
         Route::post('technical-requests/{technicalRequest}/review', [TechnicalRequestController::class, 'review'])->name('technical-requests.review');
         Route::post('technical-requests/{technicalRequest}/assign', [TechnicalRequestController::class, 'assign'])->name('technical-requests.assign');
         Route::post('technical-requests/{technicalRequest}/progress', [TechnicalRequestController::class, 'progress'])->name('technical-requests.progress');
@@ -417,67 +461,67 @@ Route::middleware('auth')->group(function () {
         Route::get('/tugas-saya', [TechnicianTaskController::class, 'index'])->name('tasks.index');
         Route::get('/tugas-saya/{technicalRequest}', [TechnicianTaskController::class, 'show'])->name('tasks.show');
         // Field Work: satu daftar untuk Instalasi + Survey, terlihat semua role teknisi.
-        Route::get('/field-work', [\App\Http\Controllers\FieldWorkController::class, 'index'])->name('field-work.index');
+        Route::get('/field-work', [FieldWorkController::class, 'index'])->name('field-work.index');
         // Detail request dalam konteks Teknisi: notifikasi sales→teknisi mendarat
         // di menu Teknisi (sidebar Teknisi aktif), bukan di menu Sales.
         Route::get('/price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('/technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('/technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
         Route::get('/technical-requests/{technicalRequest}/attachment/preview', [TechnicalRequestController::class, 'previewAttachment'])->name('technical-requests.attachment.preview');
-        Route::get('/surveys/create', [\App\Http\Controllers\SurveyController::class, 'create'])->name('surveys.create');
-        Route::get('/sizing-projects', [\App\Http\Controllers\SizingProjectController::class, 'index'])->name('sizing-projects.index');
-        Route::get('/sizing-projects/create', [\App\Http\Controllers\SizingProjectController::class, 'create'])->name('sizing-projects.create');
-        Route::get('/sizing-projects/{sizingProject}', [\App\Http\Controllers\SizingProjectController::class, 'show'])->name('sizing-projects.show');
-        Route::get('/request-hargas', [\App\Http\Controllers\RequestHargaController::class, 'index'])->name('request-hargas.index');
-        Route::get('/request-hargas/create', [\App\Http\Controllers\RequestHargaController::class, 'create'])->name('request-hargas.create');
-        Route::get('/request-hargas/{requestHarga}', [\App\Http\Controllers\RequestHargaController::class, 'show'])->name('request-hargas.show');
-        Route::get('/instalasis', [\App\Http\Controllers\InstalasiController::class, 'index'])->name('instalasis.index');
-        Route::get('/instalasis/create', [\App\Http\Controllers\InstalasiController::class, 'create'])->name('instalasis.create');
-        Route::get('/instalasis/{instalasi}', [\App\Http\Controllers\InstalasiController::class, 'show'])->name('instalasis.show');
-        Route::get('/instalasis/{instalasi}/report', [\App\Http\Controllers\InstalasiController::class, 'viewReport'])->name('instalasis.report.view');
-        Route::get('/instalasis/{instalasi}/report/download', [\App\Http\Controllers\InstalasiController::class, 'downloadReport'])->name('instalasis.report.download');
-        Route::get('/documents', [\App\Http\Controllers\DocumentRepositoryController::class, 'index'])->name('documents.index');
+        Route::get('/surveys/create', [SurveyController::class, 'create'])->name('surveys.create');
+        Route::get('/sizing-projects', [SizingProjectController::class, 'index'])->name('sizing-projects.index');
+        Route::get('/sizing-projects/create', [SizingProjectController::class, 'create'])->name('sizing-projects.create');
+        Route::get('/sizing-projects/{sizingProject}', [SizingProjectController::class, 'show'])->name('sizing-projects.show');
+        Route::get('/request-hargas', [RequestHargaController::class, 'index'])->name('request-hargas.index');
+        Route::get('/request-hargas/create', [RequestHargaController::class, 'create'])->name('request-hargas.create');
+        Route::get('/request-hargas/{requestHarga}', [RequestHargaController::class, 'show'])->name('request-hargas.show');
+        Route::get('/instalasis', [InstalasiController::class, 'index'])->name('instalasis.index');
+        Route::get('/instalasis/create', [InstalasiController::class, 'create'])->name('instalasis.create');
+        Route::get('/instalasis/{instalasi}', [InstalasiController::class, 'show'])->name('instalasis.show');
+        Route::get('/instalasis/{instalasi}/report', [InstalasiController::class, 'viewReport'])->name('instalasis.report.view');
+        Route::get('/instalasis/{instalasi}/report/download', [InstalasiController::class, 'downloadReport'])->name('instalasis.report.download');
+        Route::get('/documents', [DocumentRepositoryController::class, 'index'])->name('documents.index');
     });
 
     // Baca Survey dibuka untuk Sales (dan sales-pt) yang memegang project tsb
     // (read-only; kepemilikan dijaga di controller). Tulis tetap manage-technician.
     Route::middleware('permission:view-technician|manage-technician|view-sales')->prefix('teknisi')->name('teknisi.')->group(function () {
-        Route::get('/surveys', [\App\Http\Controllers\SurveyController::class, 'index'])->name('surveys.index');
-        Route::get('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'show'])->name('surveys.show');
-        Route::get('/surveys/{survey}/report', [\App\Http\Controllers\SurveyController::class, 'viewReport'])->name('surveys.report.view');
-        Route::get('/surveys/{survey}/report/download', [\App\Http\Controllers\SurveyController::class, 'downloadReport'])->name('surveys.report.download');
+        Route::get('/surveys', [SurveyController::class, 'index'])->name('surveys.index');
+        Route::get('/surveys/{survey}', [SurveyController::class, 'show'])->name('surveys.show');
+        Route::get('/surveys/{survey}/report', [SurveyController::class, 'viewReport'])->name('surveys.report.view');
+        Route::get('/surveys/{survey}/report/download', [SurveyController::class, 'downloadReport'])->name('surveys.report.download');
     });
 
     // Hasil pekerjaan lintas role (read-only): survey + instalasi.
     Route::middleware('permission:view-technician|manage-technician|view-sales|view-admin|manage-admin')
         ->prefix('teknisi')->name('teknisi.')
         ->group(function () {
-            Route::get('/work-results', [\App\Http\Controllers\WorkResultController::class, 'index'])->name('work-results.index');
+            Route::get('/work-results', [WorkResultController::class, 'index'])->name('work-results.index');
         });
 
     Route::middleware('permission:manage-technician')->prefix('teknisi')->name('teknisi.')->group(function () {
-        Route::post('/surveys', [\App\Http\Controllers\SurveyController::class, 'store'])->name('surveys.store');
-        Route::post('/surveys/{survey}/report', [\App\Http\Controllers\SurveyController::class, 'uploadReport'])->name('surveys.report.upload');
-        Route::put('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'update'])->name('surveys.update');
-        Route::delete('/surveys/{survey}', [\App\Http\Controllers\SurveyController::class, 'destroy'])->name('surveys.destroy');
-        Route::get('/surveys/{survey}/edit', [\App\Http\Controllers\SurveyController::class, 'edit'])->name('surveys.edit');
-        Route::post('/sizing-projects', [\App\Http\Controllers\SizingProjectController::class, 'store'])->name('sizing-projects.store');
-        Route::put('/sizing-projects/{sizingProject}', [\App\Http\Controllers\SizingProjectController::class, 'update'])->name('sizing-projects.update');
-        Route::delete('/sizing-projects/{sizingProject}', [\App\Http\Controllers\SizingProjectController::class, 'destroy'])->name('sizing-projects.destroy');
-        Route::get('/sizing-projects/{sizingProject}/edit', [\App\Http\Controllers\SizingProjectController::class, 'edit'])->name('sizing-projects.edit');
-        Route::post('/request-hargas', [\App\Http\Controllers\RequestHargaController::class, 'store'])->name('request-hargas.store');
-        Route::put('/request-hargas/{requestHarga}', [\App\Http\Controllers\RequestHargaController::class, 'update'])->name('request-hargas.update');
-        Route::delete('/request-hargas/{requestHarga}', [\App\Http\Controllers\RequestHargaController::class, 'destroy'])->name('request-hargas.destroy');
-        Route::get('/request-hargas/{requestHarga}/edit', [\App\Http\Controllers\RequestHargaController::class, 'edit'])->name('request-hargas.edit');
-        Route::post('/instalasis', [\App\Http\Controllers\InstalasiController::class, 'store'])->name('instalasis.store');
-        Route::put('/instalasis/{instalasi}', [\App\Http\Controllers\InstalasiController::class, 'update'])->name('instalasis.update');
-        Route::delete('/instalasis/{instalasi}', [\App\Http\Controllers\InstalasiController::class, 'destroy'])->name('instalasis.destroy');
-        Route::get('/instalasis/{instalasi}/edit', [\App\Http\Controllers\InstalasiController::class, 'edit'])->name('instalasis.edit');
+        Route::post('/surveys', [SurveyController::class, 'store'])->name('surveys.store');
+        Route::post('/surveys/{survey}/report', [SurveyController::class, 'uploadReport'])->name('surveys.report.upload');
+        Route::put('/surveys/{survey}', [SurveyController::class, 'update'])->name('surveys.update');
+        Route::delete('/surveys/{survey}', [SurveyController::class, 'destroy'])->name('surveys.destroy');
+        Route::get('/surveys/{survey}/edit', [SurveyController::class, 'edit'])->name('surveys.edit');
+        Route::post('/sizing-projects', [SizingProjectController::class, 'store'])->name('sizing-projects.store');
+        Route::put('/sizing-projects/{sizingProject}', [SizingProjectController::class, 'update'])->name('sizing-projects.update');
+        Route::delete('/sizing-projects/{sizingProject}', [SizingProjectController::class, 'destroy'])->name('sizing-projects.destroy');
+        Route::get('/sizing-projects/{sizingProject}/edit', [SizingProjectController::class, 'edit'])->name('sizing-projects.edit');
+        Route::post('/request-hargas', [RequestHargaController::class, 'store'])->name('request-hargas.store');
+        Route::put('/request-hargas/{requestHarga}', [RequestHargaController::class, 'update'])->name('request-hargas.update');
+        Route::delete('/request-hargas/{requestHarga}', [RequestHargaController::class, 'destroy'])->name('request-hargas.destroy');
+        Route::get('/request-hargas/{requestHarga}/edit', [RequestHargaController::class, 'edit'])->name('request-hargas.edit');
+        Route::post('/instalasis', [InstalasiController::class, 'store'])->name('instalasis.store');
+        Route::put('/instalasis/{instalasi}', [InstalasiController::class, 'update'])->name('instalasis.update');
+        Route::delete('/instalasis/{instalasi}', [InstalasiController::class, 'destroy'])->name('instalasis.destroy');
+        Route::get('/instalasis/{instalasi}/edit', [InstalasiController::class, 'edit'])->name('instalasis.edit');
     });
 
     // BAST instalasi (project & non-project) — lead engineer atau admin.
     Route::middleware('permission:manage-technician|manage-admin')->prefix('teknisi')->name('teknisi.')->group(function () {
-        Route::put('/instalasis/{instalasi}/bast', [\App\Http\Controllers\InstalasiController::class, 'updateBast'])->name('instalasis.bast');
+        Route::put('/instalasis/{instalasi}/bast', [InstalasiController::class, 'updateBast'])->name('instalasis.bast');
     });
 
     // ============================================
@@ -553,8 +597,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/bast/{project}', [BastController::class, 'update'])->name('bast.update');
 
         // Verifikasi & Return Customer PO pada Handoff
-        Route::post('/purchasing/{proposal}/verify-po', [\App\Http\Controllers\PurchasingHandoffController::class, 'verifyPo'])->name('purchasing.verify-po');
-        Route::post('/purchasing/{proposal}/return-po', [\App\Http\Controllers\PurchasingHandoffController::class, 'returnPo'])->name('purchasing.return-po');
+        Route::post('/purchasing/{proposal}/verify-po', [PurchasingHandoffController::class, 'verifyPo'])->name('purchasing.verify-po');
+        Route::post('/purchasing/{proposal}/return-po', [PurchasingHandoffController::class, 'returnPo'])->name('purchasing.return-po');
     });
 
     Route::middleware('permission:view-admin|manage-admin')->prefix('admin')->name('admin.')->group(function () {
@@ -577,8 +621,8 @@ Route::middleware('auth')->group(function () {
 
         // Handoff Sales → Purchasing (read-only). Syarat antrean: quotation
         // accepted + customer PO terunggah. Tidak ada tulis/duplikasi data.
-        Route::get('/purchasing', [\App\Http\Controllers\PurchasingHandoffController::class, 'index'])->name('purchasing.index');
-        Route::get('/purchasing/{proposal}', [\App\Http\Controllers\PurchasingHandoffController::class, 'show'])->name('purchasing.show');
+        Route::get('/purchasing', [PurchasingHandoffController::class, 'index'])->name('purchasing.index');
+        Route::get('/purchasing/{proposal}', [PurchasingHandoffController::class, 'show'])->name('purchasing.show');
 
         // Master pemasok + Supplier PO — baca saja untuk view-only.
         // Master pemasok berisi kontak/termin pemasok, jadi ikut izin
@@ -623,9 +667,9 @@ Route::middleware('auth')->group(function () {
         // Tahap 5 — daftar BAST & closing.
         Route::get('/bast', [BastController::class, 'index'])->name('bast.index');
         Route::get('/bast/{project}/document', [BastController::class, 'document'])->name('bast.document');
-        Route::get('/instalasi-bast/{instalasi}', [\App\Http\Controllers\InstalasiController::class, 'show'])->name('instalasi-bast.show');
-        Route::get('/instalasi-bast/{instalasi}/report', [\App\Http\Controllers\InstalasiController::class, 'viewReport'])->name('instalasi-bast.report');
-        Route::get('/instalasi-bast/{instalasi}/report/download', [\App\Http\Controllers\InstalasiController::class, 'downloadReport'])->name('instalasi-bast.report.download');
+        Route::get('/instalasi-bast/{instalasi}', [InstalasiController::class, 'show'])->name('instalasi-bast.show');
+        Route::get('/instalasi-bast/{instalasi}/report', [InstalasiController::class, 'viewReport'])->name('instalasi-bast.report');
+        Route::get('/instalasi-bast/{instalasi}/report/download', [InstalasiController::class, 'downloadReport'])->name('instalasi-bast.report.download');
     });
 
     // ============================================
@@ -803,6 +847,7 @@ Route::middleware('auth')->group(function () {
         ->prefix('inside-sales')->name('inside-sales.')->group(function () {
             Route::get('/', [InsideSalesController::class, 'dashboard'])->name('dashboard');
             Route::get('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'create'])->name('quotations.create');
+            Route::post('/tasks/{leadTask}/quotation/pull-prices', [InsideSalesQuotationController::class, 'pullPrices'])->name('quotations.pull-prices');
             Route::post('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'store'])->name('quotations.store');
             Route::get('/tasks/{leadTask}/quotation/pdf', [InsideSalesQuotationController::class, 'pdf'])->name('quotations.pdf');
         });

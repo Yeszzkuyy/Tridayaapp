@@ -101,7 +101,6 @@ class ProposalModuleTest extends TestCase
             'name' => 'Kamera Test',
             'category' => 'barang',
             'unit' => 'unit',
-            'default_price' => 500000,
         ])->assertRedirect(route('products.index'));
 
         $product = Product::where('sku', 'CAM-T1')->firstOrFail();

@@ -17,6 +17,9 @@
                 @endif
             </div>
             <div class="flex items-center gap-2">
+                @can('create', \App\Models\EstimatorRequest::class)
+                    <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $proposal->lead?->customer_id, 'lead_id' => $proposal->lead_id, 'proposal_id' => $proposal->id]) }}" title="{{ __('Request Product Price') }}" />
+                @endcan
                 <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
@@ -263,6 +266,9 @@
                     @if($proposal->delivery_terms)
                         <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_terms }}</span></p>
                     @endif
+                    @if($proposal->warranty_terms)
+                        <p class="text-slate-500">{{ __('Warranty Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->warranty_terms }}</span></p>
+                    @endif
 
                     @if(session('success'))
                         <div class="rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-200 my-2 flex items-center justify-between shadow-sm">
@@ -335,6 +341,7 @@
                                 <div>
                                     <label class="block text-xs text-slate-500 mb-1">{{ __('Delivery Terms') }}</label>
                                     <input type="text" name="delivery_terms" maxlength="255" value="{{ old('delivery_terms', $proposal->delivery_terms) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                    <input type="text" name="warranty_terms" maxlength="255" value="{{ old('warranty_terms', $proposal->warranty_terms) }}" placeholder="{{ __('Warranty Terms') }}" class="mt-2 w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                                 </div>
                             </div>
 
