@@ -26,6 +26,6 @@ class AvatarLightboxTest extends TestCase
         $this->assertStringContainsString('view-avatar', $html);          // tombol klik avatar
         $this->assertStringContainsString('storage/avatars/test.jpg', $html);
         $this->assertStringContainsString('view-avatar.window', $html);  // lightbox terpasang
-        $this->assertStringContainsString($other->name, $html);          // foto orang lain tampil di daftar
+        $this->assertStringContainsString(e($other->name), $html);      // foto orang lain tampil di daftar
     }
 }
