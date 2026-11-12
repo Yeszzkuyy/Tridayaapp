@@ -35,6 +35,7 @@ $icons = [
 
     // ============ TAMBAHKAN INI ============
     'chart-bar' => '<path d="M4 20h16M6 16l4-8 4 4 4-6" />',
+    'download' => '<path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />',
 
     // Papan kolom (pipeline/kanban), Heroicons outline view-columns
     'view-columns' => '<path d="M9 4.5v15m6-15v15m-10.5 0h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H4.5a2.25 2.25 0 0 0-2.25 2.25v10.5a2.25 2.25 0 0 0 2.25 2.25Z" />',

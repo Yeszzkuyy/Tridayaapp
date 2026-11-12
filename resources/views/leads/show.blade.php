@@ -320,10 +320,17 @@
                             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rp {{ number_format($proposalsList->sum('grand_total'), 0, ',', '.') }}</span>
                         @endif
                     </h2>
-                    @if($canCreateQuotation)
-                        <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
-                            <x-icon name="receipt" class="h-5 w-5" />
-                        </x-icon-button>
+                    @if($canSalesWrite || $canCreateQuotation)
+                        <div class="flex shrink-0 items-center gap-2">
+                            @can('create', \App\Models\EstimatorRequest::class)
+                                <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Request Product Price') }}" />
+                            @endcan
+                            @if($canCreateQuotation)
+                                <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
+                                    <x-icon name="receipt" class="h-5 w-5" />
+                                </x-icon-button>
+                            @endif
+                        </div>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">

@@ -10,13 +10,13 @@
     name     : nama file asli, dipakai untuk menentukan jenis pratinjau.
     label    : isi bila tombol perlu teks di samping ikon.
 --}}
-@props(['url', 'download' => null, 'name' => '', 'label' => null])
+@props(['url', 'download' => null, 'name' => '', 'label' => null, 'icon' => 'view'])
 
 @php
     $kind = \App\Rules\SecureFile::previewKind((string) $name);
 @endphp
 
-<x-icon-button icon="view" :label="$label" title="{{ __('View') }}"
+<x-icon-button :icon="$icon" :label="$label" title="{{ __('View') }}"
     data-doc-open
     data-kind="{{ $kind }}"
     data-url="{{ $url }}"

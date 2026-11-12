@@ -1,11 +1,11 @@
 # PLAN-ESTIMATOR-INTERVIEW-USERSALES: Sumber Harga Modal & Riwayat Harga
 
-**Status Pengerjaan:** Belum Dikerjakan
+**Status Pengerjaan:** Siap Dikerjakan
 **Work:** INTERVIEW-USERSALES
 **PIC:** Yeski
-**Menu:** Estimator (Price Request, Products, Riwayat Harga)
+**Menu:** Estimator (Queue, Riwayat Harga, Products, Review Prices)
 **Sumber:** Wawancara Sales User Adi Santosa
-**Terakhir diperbarui:** 2026-11-11
+**Terakhir diperbarui:** 2026-11-12
 
 ---
 
@@ -83,16 +83,47 @@ Mengacu ke `docs/archive/WAWANCARA-USER-SALES.md` bagian 2A:
 
 ---
 
-## 4. Ruang lingkup
+## 4. Keputusan final (12 November 2026)
+
+1. **Price Request tetap khusus harga instalasi ke Teknisi.**
+   - File quotation dari Sales tetap wajib.
+   - Balasan Teknisi tetap berupa file perhitungan + catatan.
+   - Tab di Sales diganti label menjadi **Installation Price** supaya tidak
+     tertukar dengan permintaan harga produk.
+
+2. **Estimator menjadi modul sendiri.**
+   - Tabel baru: `estimator_requests` dan `estimator_request_items`.
+   - Sales membuat permintaan dari Lead/Quotation (tombol Request Product
+     Price) atau dari menu Estimator.
+   - File permintaan opsional; minimal satu item.
+   - Balasan Estimator wajib memuat supplier, harga modal, status stok
+     (Ready/Indent + estimasi), dan garansi.
+   - Harga modal disimpan ke `products.cost_price` dan
+     `product_price_logs`; `products.default_price` tidak disentuh.
+   - Harga jual default hanya boleh diubah Admin/Purchasing lewat Master
+     Produk.
+
+3. **Antrean per PT dan riwayat harga.**
+   - Antrean menampilkan status Menunggu Estimator / Harga Sudah Diinput,
+     jumlah item terjawab, umur request, dan tanggal update otomatis.
+   - Riwayat harga modal per produk, supplier, dan customer.
+   - Report Excel Estimator tetap tersedia.
+
+4. **Stok dan garansi terbawa ke quotation.**
+   - Disimpan per item dan diringkas di header quotation
+     (`delivery_terms`, `warranty_terms`).
+
+## 5. Ruang lingkup
 
 ### Termasuk
 
-- Memisahkan harga modal dan harga jual.
-- File Price Request/balasan menjadi opsional.
-- Validasi harga item dan supplier.
-- Riwayat harga terbaru dan tampilan tanggal.
+- Modul Estimator terpisah dari Price Request instalasi.
+- Pemisahan harga modal dan harga jual.
+- Permintaan produk tanpa file, balasan tanpa file.
+- Validasi supplier, stok, dan garansi pada balasan Estimator.
+- Riwayat harga terbaru dan tampilan tanggal otomatis.
 - Report mingguan Estimator.
-- Peninjauan data produk yang terdampak.
+- Peninjauan data produk yang terdampak lewat daftar Review Prices.
 
 ### Tidak termasuk
 
@@ -100,124 +131,80 @@ Mengacu ke `docs/archive/WAWANCARA-USER-SALES.md` bagian 2A:
 - Nomor quotation.
 - Pembelian ke supplier dan purchasing saving (Admin/Purchasing).
 
----
+## 6. Langkah pengerjaan
 
-## 5. Langkah pengerjaan
+### A. Modul Estimator
 
-### A. Pisahkan harga modal dan harga jual
+1. Sales membuat permintaan berisi customer/PT, lead/project/quotation
+   opsional, catatan, dan daftar item.
+2. Estimator membalas per item dengan supplier, harga modal, stok, dan
+   garansi.
+3. Sales menerima atau meminta revisi; status dan tanggal update tercatat
+   otomatis.
+4. Notifikasi dikirim ke Estimator saat request baru dan ke Sales saat harga
+   sudah diisi.
 
-1. Harga yang diinput Estimator disimpan ke:
-   - riwayat harga produk (`ProductPriceLog`),
-   - `products.cost_price` sebagai harga modal terbaru.
-2. `products.default_price` **tidak boleh** diubah oleh input Estimator.
-3. Harga jual default hanya boleh diubah lewat Master Produk oleh role yang
-   berwenang (Sales/Admin/Estimator bila disetujui).
-4. Inside Sales membaca:
-   - harga modal dari riwayat Estimator terbaru,
-   - harga jual dari `default_price` produk.
-5. Tampilkan di Master Produk:
-   - Harga Jual Default.
-   - Harga Modal Terbaru.
-   - Supplier dan tanggal update terakhir.
+### B. Harga modal dan harga jual
 
-### B. Permintaan harga lebih fleksibel
+1. Harga Estimator masuk ke riwayat harga produk dan `products.cost_price`.
+2. `products.default_price` tidak boleh diubah oleh input Estimator.
+3. Master Produk menampilkan harga jual default dan harga modal terbaru
+   secara terpisah.
 
-1. Price Request dari Sales:
-   - File quotation/BOQ menjadi opsional.
-   - Minimal isi customer/PT, kebutuhan, dan daftar barang yang diminta.
-2. Balasan Estimator:
-   - File menjadi opsional.
-   - Wajib isi minimal satu harga item ATAU satu file.
-   - Validasi: tidak boleh mengirim balasan kosong.
-   - Setelah balasan dikirim, Sales peminta mendapat notifikasi bahwa harga
-     modal sudah tersedia.
-3. Harga item:
-   - Produk wajib dipilih.
-   - Supplier dianjurkan wajib untuk harga baru.
-   - Harga harus lebih dari 0.
-   - Catatan vendor/MOQ opsional.
+### C. Riwayat dan report
 
-### C. Riwayat harga
-
-1. Setiap input menghasilkan baris riwayat:
-   - produk, supplier, harga, tanggal otomatis, user, catatan.
+1. Setiap harga menghasilkan baris riwayat: produk, supplier, harga,
+   tanggal otomatis, user, stok, garansi, dan catatan.
 2. Riwayat ditampilkan dari terbaru ke terlama.
-3. Tandai jelas “harga modal” agar tidak tertukar dengan harga jual.
-4. Jika ada harga baru, harga terbaru menjadi acuan, tetapi riwayat lama tetap
-   tersimpan.
+3. Export Excel memuat peminta, PT, item, harga, supplier, Estimator,
+   tanggal selesai, dan status.
 
-### D. Report mingguan
+### D. Peninjauan data lama
 
-1. Pertahankan export Excel yang sudah ada.
-2. Pastikan kolom:
-   - tanggal request,
-   - Sales/AM peminta,
-   - customer/PT,
-   - project/kebutuhan,
-   - item dan harga modal,
-   - supplier,
-   - Estimator,
-   - tanggal selesai,
-   - status.
-3. Default periode minggu berjalan; bisa ganti rentang tanggal.
+1. Produk yang harga jualnya sama dengan harga modal terbaru masuk daftar
+   Review Prices.
+2. Perbaikan harga jual dilakukan manual, tidak ada reset otomatis.
 
-### E. Peninjauan data lama
+## 7. Dependensi
 
-1. Cari produk yang `default_price` sama dengan harga modal terbaru dan
-   kemungkinan tertimpa.
-2. Tampilkan daftar tinjauan ke Admin/Estimator; jangan reset otomatis.
-3. Setelah disetujui, harga jual default diperbaiki manual atau lewat
-   persetujuan.
-
----
-
-## 6. Dependensi
-
-- **Inside Sales:** memakai harga modal dan harga jual terpisah.
+- **Inside Sales:** menarik harga modal Estimator ke item quotation, lalu
+  memakai harga jual default produk.
 - **Sales:** memakai harga modal untuk menyusun margin quotation.
-- **Admin/Purchasing:** supplier dan harga beli aktual.
+- **Admin/Purchasing:** mengubah harga jual default dan meninjau Review
+  Prices.
 
----
-
-## 7. Kriteria selesai & cara verifikasi
+## 8. Kriteria selesai & cara verifikasi
 
 ### Kriteria selesai
 
 - Input harga Estimator tidak mengubah harga jual default.
 - Harga modal terbaru muncul saat Inside Sales memilih produk.
-- Price Request dan balasan bisa dikirim tanpa file, asalkan harga item diisi.
+- Permintaan dan balasan Estimator bisa dikirim tanpa file, asalkan item
+  harga terisi.
 - Sales peminta mendapat notifikasi saat harga modal selesai diisi.
-- Riwayat harga menampilkan supplier, tanggal, dan user.
+- Riwayat harga menampilkan supplier, tanggal, stok, garansi, dan user.
 - Report mingguan tetap bisa diexport.
-- Tidak ada produk yang otomatis berubah harga jual karena input Estimator.
+- Price Request instalasi tetap berjalan seperti sebelumnya.
 
 ### Cara testing
 
-1. Login Sales → buat Price Request tanpa file, isi customer dan kebutuhan.
-   - **Hasil:** request tersimpan.
-2. Login Estimator Vanesha → balas dengan 2 harga item tanpa file.
-   - **Hasil:** balasan tersimpan; tidak ada error wajib file; Sales peminta
-     mendapat notifikasi.
-3. Buka Master Produk:
-   - **Hasil:** harga modal terbaru berubah; harga jual default tetap.
-4. Login Inside Sales → pilih produk tersebut.
-   - **Hasil:** harga modal terisi dari Estimator; harga jual memakai default
-     produk.
-5. Isi harga jual lebih tinggi:
-   - **Hasil:** margin muncul, bukan 0.
-6. Buka riwayat produk:
-   - **Hasil:** harga lama dan baru tampil dari terbaru ke terlama.
-7. Export Report Estimator:
-   - **Hasil:** berisi peminta, PT/customer, item, harga, dan tanggal.
+1. Login Sales → Lead/Quotation → **Request Product Price**.
+   - **Hasil:** form permintaan produk terbuka dan terkirim ke Estimator.
+2. Login Estimator → **Estimator → Queue** → buka request.
+   - **Hasil:** item bisa diisi supplier, harga modal, stok, dan garansi.
+3. Login Sales → buka request yang sudah dijawab.
+   - **Hasil:** harga tampil dan Sales bisa menerima atau minta revisi.
+4. Login Inside Sales → buat quotation → pilih produk.
+   - **Hasil:** harga modal terisi dari Estimator; harga jual memakai
+     default produk; stok dan garansi ikut ke quotation.
+5. Login Admin/Purchasing → Master Produk → Review Prices.
+   - **Hasil:** harga jual default bisa diperbaiki tanpa mengubah harga
+     modal.
+6. Buka **Estimator → Price History** dan export report.
+   - **Hasil:** riwayat dan report memuat data yang benar.
 
----
+## 9. Catatan status
 
-## 8. Keputusan yang perlu dijawab
-
-1. Apakah supplier wajib diisi untuk setiap harga modal baru?
-2. Siapa saja yang boleh mengubah harga jual default produk: Sales, Admin,
-   Estimator, atau hanya Super Admin?
-3. Untuk produk lama yang harga jualnya sudah tertimpa, apakah harga jual
-   dikembalikan manual satu per satu atau ada persetujuan khusus?
-4. Apakah Price Request tetap perlu file untuk kasus tertentu, atau selalu
-   opsional?
+Implementasi modul sudah ada di branch `feature/sales-inside` dan sudah
+melewati test terkait. Status plan menjadi **Selesai** setelah di-merge ke
+`main` dan dicek user di layar.

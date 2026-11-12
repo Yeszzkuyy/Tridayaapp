@@ -123,18 +123,12 @@ class SalesRequestHubController extends Controller
     }
 
     /**
-     * Request Harga (sistem terpisah): pemilik melihat miliknya sendiri,
-     * management (manage-sales-leads) melihat semua.
+     * Request harga instalasi: pemilik melihat miliknya sendiri, management
+     * (manage-sales-leads) melihat semua.
      */
     private function priceRequestsFor($user)
     {
         $query = PriceRequest::with(['customer', 'requester', 'assignee', 'handledBy'])->latest();
-
-        // Estimator memegang seluruh antrean harga (termasuk yang belum
-        // di-assign) supaya bisa mengambil tiket sendiri.
-        if ($user && $user->can('manage-price-requests')) {
-            return $query;
-        }
 
         if (!($user && $user->can('manage-sales-leads'))) {
             $query->where('requested_by', $user->id);

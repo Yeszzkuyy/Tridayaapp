@@ -1,4 +1,8 @@
 <x-app-layout>
+    @if(session('success') && session('success_card'))
+        <x-status-card :message="session('success')" />
+    @endif
+
     @php
         $subtotal = (float) $items->sum('subtotal');
         $cost = $items->filter(fn ($item) => $item->unit_cost !== null)
@@ -14,7 +18,13 @@
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Create Quotation') }}</h1>
             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $task->title }} · {{ $task->lead?->customer?->name ?? '-' }}</p>
         </div>
-        <x-back-button :href="route('lead-tasks.show', $task)" />
+        <div class="flex shrink-0 items-center gap-2">
+            <form action="{{ route('inside-sales.quotations.pull-prices', $task) }}" method="POST" data-loading-text="{{ __('Pulling…') }}">
+                @csrf
+                <x-icon-button type="submit" icon="reset" label="{{ __('Pull Latest Price') }}" title="{{ __('Pull Latest Price') }}" />
+            </form>
+            <x-back-button :href="route('lead-tasks.show', $task)" />
+        </div>
     </div>
 
     @if($errors->any())
@@ -91,6 +101,18 @@
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
                 </div>
                 <div>
+                    <label for="delivery_terms" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Delivery Terms') }}</label>
+                    <input id="delivery_terms" type="text" name="delivery_terms" maxlength="255"
+                           value="{{ old('delivery_terms', $prefill['delivery_terms']) }}" placeholder="{{ __('Ready stock / indent estimate') }}"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div>
+                    <label for="warranty_terms" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Warranty Terms') }}</label>
+                    <input id="warranty_terms" type="text" name="warranty_terms" maxlength="255"
+                           value="{{ old('warranty_terms', $prefill['warranty_terms']) }}" placeholder="{{ __('Warranty from distributor') }}"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div>
                     <label for="letterhead_pt" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Company / Kop') }} <span class="text-rose-500">*</span></label>
                     <select id="letterhead_pt" name="letterhead_pt" required
                             class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
@@ -124,7 +146,19 @@
                         @foreach($items as $item)
                             <tr>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $item->scope_of_supply ?: ($item->product?->sku ?: '-') }}</td>
-                                <td class="px-5 py-3 text-slate-800 dark:text-slate-100">{{ $item->description }}</td>
+                                <td class="px-5 py-3 text-slate-800 dark:text-slate-100">
+                                    {{ $item->description }}
+                                    @if($item->stock_status || $item->warranty_info)
+                                        <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-400">
+                                            @if($item->stock_status)
+                                                <span>{{ __('Stock') }}: {{ $item->stock_status === 'indent' ? __('Indent') : __('Ready') }}{{ $item->stock_status === 'indent' && $item->stock_eta ? ' '.$item->stock_eta : '' }}</span>
+                                            @endif
+                                            @if($item->warranty_info)
+                                                <span>{{ __('Warranty') }}: {{ $item->warranty_info }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $item->lead_time ?: '-' }}</td>
                                 <td class="px-5 py-3 text-right tabular-nums">{{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }}</td>
                                 <td class="px-5 py-3">{{ $item->unit }}</td>

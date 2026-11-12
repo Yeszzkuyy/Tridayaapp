@@ -75,18 +75,13 @@ class PriceRequest extends Model
         return $this->belongsTo(Project::class);
     }
 
-    /** Estimator penanggung jawab (kolom baru; assigned_to tetap mesin status). */
+    /** Engineer penanggung jawab (kolom baru; assigned_to tetap mesin status). */
     public function handledBy()
     {
         return $this->belongsTo(User::class, 'handled_by');
     }
 
-    /** Harga yang dicatat saat request ini diselesaikan. */
-    public function priceLogs()
-    {
-        return $this->hasMany(ProductPriceLog::class)->orderByDesc('created_at');
-    }
-
+    /** Diskusi request. */
     public function comments()
     {
         return $this->hasMany(PriceRequestComment::class)->orderBy('id');

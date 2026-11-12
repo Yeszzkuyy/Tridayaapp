@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeadTask;
+use App\Models\ProductPriceLog;
 use App\Models\Proposal;
 use App\Notifications\QuotationGeneratedNotification;
 use App\Services\QuotationNumberService;
@@ -34,6 +35,8 @@ class InsideSalesQuotationController extends Controller
 
         $customer = $leadTask->lead?->customer;
         $previewPt = strtoupper((string) ($customer?->pt_group ?? $leadTask->lead?->pt_group ?? 'WANI'));
+        $deliveryTerms = $this->stockSummary($leadTask->items);
+        $warrantyTerms = $this->warrantySummary($leadTask->items);
 
         return view('inside-sales.quotations.create', [
             'task' => $leadTask,
@@ -49,9 +52,67 @@ class InsideSalesQuotationController extends Controller
                 'contact_phone' => $customer?->picPhone(),
                 'project_description' => $leadTask->lead?->kebutuhan ?: $leadTask->description,
                 'payment_terms_text' => '',
+                'delivery_terms' => $deliveryTerms,
+                'warranty_terms' => $warrantyTerms,
                 'letterhead_pt' => $previewPt,
             ],
         ]);
+    }
+
+    /** Tarik harga modal + stok + garansi terbaru dari price request ke item task. */
+    public function pullPrices(LeadTask $leadTask)
+    {
+        $this->authorizeTask($leadTask);
+
+        $leadTask->load(['lead.customer', 'items']);
+        $customerId = $leadTask->lead?->customer_id;
+        $updated = 0;
+        $missing = 0;
+
+        foreach ($leadTask->items as $item) {
+            if (! $item->product_id) {
+                $missing++;
+                continue;
+            }
+
+            $query = ProductPriceLog::query()
+                ->where('product_id', $item->product_id)
+                ->where('price_type', 'cost');
+
+            $log = $customerId
+                ? (clone $query)
+                    ->whereNotNull('estimator_request_item_id')
+                    ->whereHas('estimatorRequestItem.estimatorRequest', fn ($request) => $request->where('customer_id', $customerId))
+                    ->latest('created_at')
+                    ->latest('id')
+                    ->first()
+                : null;
+
+            $log ??= (clone $query)->whereNotNull('estimator_request_item_id')->latest('created_at')->latest('id')->first();
+            $log ??= (clone $query)->latest('created_at')->latest('id')->first();
+
+            if (! $log) {
+                $missing++;
+                continue;
+            }
+
+            $item->update([
+                'product_price_log_id' => $log->id,
+                'unit_cost' => $log->price,
+                'stock_status' => $log->stock_status ?: $item->stock_status,
+                'stock_eta' => $log->stock_eta ?: $item->stock_eta,
+                'warranty_info' => $log->warranty_info ?: $item->warranty_info,
+            ]);
+            $updated++;
+        }
+
+        return back()->with(
+            'success',
+            __(':updated items updated from the latest price. :missing items have no price yet.', [
+                'updated' => $updated,
+                'missing' => $missing,
+            ])
+        )->with('success_card', true);
     }
 
     public function store(Request $request, LeadTask $leadTask, QuotationPdfService $pdfService)
@@ -69,6 +130,8 @@ class InsideSalesQuotationController extends Controller
             'contact_phone' => 'nullable|string|max:50',
             'project_description' => 'nullable|string|max:3000',
             'payment_terms_text' => 'nullable|string|max:255',
+            'delivery_terms' => 'nullable|string|max:255',
+            'warranty_terms' => 'nullable|string|max:255',
             'letterhead_pt' => 'required|in:'.implode(',', $companies),
         ]);
 
@@ -85,10 +148,13 @@ class InsideSalesQuotationController extends Controller
             __('This lead already has a quotation. Revise the existing quotation instead of creating a new one.')
         );
 
+        $deliveryTerms = $validated['delivery_terms'] ?? $this->stockSummary($items);
+        $warrantyTerms = $validated['warranty_terms'] ?? $this->warrantySummary($items);
         $salesOwner = $leadTask->lead?->assignee ?? $leadTask->creator;
         $proposalNumber = $this->numbers->generate($validated['letterhead_pt'], $salesOwner ?? auth()->user());
 
-        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber) {            $proposal = Proposal::create([
+        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber, $deliveryTerms, $warrantyTerms) {
+            $proposal = Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
                 'proposal_number' => $proposalNumber,
@@ -101,6 +167,8 @@ class InsideSalesQuotationController extends Controller
                 'contact_phone' => $validated['contact_phone'] ?? null,
                 'project_description' => $validated['project_description'] ?? null,
                 'payment_terms_text' => $validated['payment_terms_text'] ?? null,
+                'delivery_terms' => $deliveryTerms,
+                'warranty_terms' => $warrantyTerms,
                 'letterhead_pt' => $validated['letterhead_pt'],
                 'status' => 'draft',
                 'internal_notes' => __('Created from Inside Sales task #:task.', ['task' => $leadTask->id]),
@@ -109,9 +177,13 @@ class InsideSalesQuotationController extends Controller
             foreach ($items as $item) {
                 $proposal->items()->create([
                     'product_id' => $item->product_id,
+                    'product_price_log_id' => $item->product_price_log_id,
                     'description' => $item->description,
                     'scope_of_supply' => $item->scope_of_supply,
                     'lead_time' => $item->lead_time,
+                    'stock_status' => $item->stock_status,
+                    'stock_eta' => $item->stock_eta,
+                    'warranty_info' => $item->warranty_info,
                     'section' => $item->section ?: 'MATERIAL',
                     'quantity' => $item->quantity,
                     'unit' => $item->unit,
@@ -163,6 +235,31 @@ class InsideSalesQuotationController extends Controller
             $proposal->pdf_path,
             preg_replace('/[^A-Za-z0-9._-]/', '_', $proposal->proposal_number).'.pdf'
         );
+    }
+
+    private function stockSummary($items): ?string
+    {
+        $groups = $items
+            ->filter(fn ($item) => filled($item->stock_status))
+            ->groupBy('stock_status');
+
+        if ($groups->isEmpty()) {
+            return null;
+        }
+
+        return $groups->map(function ($group, $status): string {
+            $label = $status === 'indent' ? __('Indent') : __('Ready Stock');
+            $eta = $group->pluck('stock_eta')->filter()->unique()->implode(', ');
+
+            return $eta !== '' ? $label.' '.$eta : $label;
+        })->values()->implode('; ');
+    }
+
+    private function warrantySummary($items): ?string
+    {
+        $warranty = $items->pluck('warranty_info')->filter()->unique()->implode('; ');
+
+        return $warranty !== '' ? $warranty : null;
     }
 
     private function authorizeTask(LeadTask $task): void

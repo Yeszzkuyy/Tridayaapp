@@ -23,9 +23,12 @@ use Illuminate\Validation\ValidationException;
  */
 class PurchasingHandoffController extends Controller
 {
+    /** Daftar tahap handoff yang bisa difilter lewat tab. */
+    public const STAGE_FILTERS = ['all', 'waiting_po', 'po_received', 'in_purchasing', 'project_created', 'bast_closed'];
+
     public function index(Request $request)
     {
-        $filters = $request->only(['q', 'pt_group']);
+        $filters = $request->only(['q', 'pt_group', 'stage']);
         $user = $request->user();
 
         $base = Proposal::query()
@@ -60,14 +63,19 @@ class PurchasingHandoffController extends Controller
             });
         }
 
-        // Siap diproses Purchasing = accepted + customer PO sudah diunggah.
-        $readyQuery = (clone $base)->whereNotNull('po_document_path');
-        $waitingQuery = (clone $base)->whereNull('po_document_path');
+        $requestedStage = $filters['stage'] ?? 'all';
+        $stage = in_array($requestedStage, self::STAGE_FILTERS, true) ? $requestedStage : 'all';
 
-        $readyCount = (clone $readyQuery)->count();
-        $waitingCount = (clone $waitingQuery)->count();
+        // Jumlah per tab dihitung dari query yang sama (ikut filter q & PT)
+        // supaya angka di tab selalu konsisten dengan isi tabel.
+        $stageCounts = [];
+        foreach (self::STAGE_FILTERS as $key) {
+            $stageCounts[$key] = $key === 'all'
+                ? (clone $base)->count()
+                : self::applyStageFilter(clone $base, $key)->count();
+        }
 
-        $proposals = $readyQuery
+        $proposals = self::applyStageFilter(clone $base, $stage)
             ->orderByDesc('po_date')
             ->latest('id')
             ->paginate(15)
@@ -76,10 +84,29 @@ class PurchasingHandoffController extends Controller
         return view('admin.purchasing.handoff.index', [
             'proposals' => $proposals,
             'filters' => $filters,
-            'readyCount' => $readyCount,
-            'waitingCount' => $waitingCount,
+            'stage' => $stage,
+            'stageCounts' => $stageCounts,
             'ptGroups' => Lead::PT_GROUPS,
         ]);
+    }
+
+    /**
+     * Persempit query quotation accepted ke satu tahap handoff.
+     */
+    private static function applyStageFilter($query, string $stage)
+    {
+        return match ($stage) {
+            'waiting_po' => $query->whereNull('po_document_path'),
+            'po_received' => $query->whereNotNull('po_document_path')
+                ->whereDoesntHave('supplierPurchaseOrders')
+                ->whereDoesntHave('project'),
+            'in_purchasing' => $query->whereNotNull('po_document_path')
+                ->whereHas('supplierPurchaseOrders')
+                ->whereDoesntHave('project'),
+            'project_created' => $query->whereHas('project', fn ($project) => $project->whereNull('bast_ready_at')),
+            'bast_closed' => $query->whereHas('project', fn ($project) => $project->whereNotNull('bast_ready_at')),
+            default => $query,
+        };
     }
 
     public function show(Request $request, Proposal $proposal)

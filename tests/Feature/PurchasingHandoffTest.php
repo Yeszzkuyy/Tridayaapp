@@ -108,16 +108,27 @@ class PurchasingHandoffTest extends TestCase
     // SYARAT ANTREAN
     // ============================================================
 
-    public function test_accepted_without_customer_po_is_not_in_ready_queue(): void
+    public function test_accepted_without_customer_po_only_in_waiting_stage(): void
     {
         $sales = $this->userWithRole('sales');
         $admin = $this->userWithRole('admin');
         $withoutPo = $this->makeProposal($this->makeLead($sales->id), 'accepted', $sales->id);
 
+        // Tab "All" menampilkan seluruh quotation accepted, termasuk menunggu PO.
         $this->actingAs($admin)->get(route('admin.purchasing.index'))
             ->assertOk()
+            ->assertSee($withoutPo->proposal_number);
+
+        // Tab tahap PO Received tidak menampilkan quotation tanpa PO.
+        $this->actingAs($admin)->get(route('admin.purchasing.index', ['stage' => 'po_received']))
+            ->assertOk()
             ->assertDontSee($withoutPo->proposal_number)
-            ->assertSee(__('No quotations are ready for Purchasing yet.'));
+            ->assertSee(__('No quotations match this view.'));
+
+        // Tab Waiting for Customer PO menampilkannya.
+        $this->actingAs($admin)->get(route('admin.purchasing.index', ['stage' => 'waiting_po']))
+            ->assertOk()
+            ->assertSee($withoutPo->proposal_number);
 
         // Detail handoff juga tidak boleh dibuka untuk quotation tanpa PO.
         $this->actingAs($admin)->get(route('admin.purchasing.show', $withoutPo))->assertNotFound();

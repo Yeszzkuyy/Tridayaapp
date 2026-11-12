@@ -33,7 +33,7 @@
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ __('Price Request') }}</h1>
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ __('Installation Price Request') }}</h1>
                     <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">#{{ $priceRequest->id }}</span>
                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusColors[$priceRequest->status] ?? 'bg-slate-200 text-slate-700' }}">{{ \App\Models\PriceRequest::statusLabel($priceRequest->status) }}</span>
                 </div>
@@ -42,7 +42,7 @@
                     <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $priceRequest->customer?->name ?? '-' }}</span>
                 </p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
+            <x-back-button :href="$backUrl" />
         </div>
 
         @php
@@ -277,39 +277,6 @@
                                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                     @error('reply') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
-
-                                @if(($products ?? collect())->isNotEmpty())
-                                    <div x-data="{ rows: [{ product_id: '', supplier_id: '', price: '', notes: '' }] }" class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-900/40">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <div>
-                                                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ __('Item & Price (optional)') }}</p>
-                                                <p class="mt-0.5 text-[11px] text-slate-400">{{ __('Filled prices are saved to product price history automatically.') }}</p>
-                                            </div>
-                                            <button type="button" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:border-accent-500 hover:text-accent-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300" @click="rows.push({ product_id: '', supplier_id: '', price: '', notes: '' })">+ {{ __('Add') }}</button>
-                                        </div>
-
-                                        <template x-for="(row, index) in rows" :key="index">
-                                            <div class="mt-2 grid grid-cols-12 gap-2">
-                                                <select :name="`price_items[${index}][product_id]`" x-model="row.product_id" class="col-span-12 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-4">
-                                                    <option value="">{{ __('Select product') }}</option>
-                                                    @foreach($products as $product)
-                                                        <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <select :name="`price_items[${index}][supplier_id]`" x-model="row.supplier_id" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-3">
-                                                    <option value="">{{ __('Supplier') }}</option>
-                                                    @foreach($suppliers ?? collect() as $supplier)
-                                                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <input type="number" min="0" step="0.01" :name="`price_items[${index}][price]`" x-model="row.price" placeholder="{{ __('Price') }}" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-2">
-                                                <input type="text" maxlength="255" :name="`price_items[${index}][notes]`" x-model="row.notes" placeholder="{{ __('Vendor / MOQ note') }}" class="col-span-10 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-2">
-                                                <button type="button" class="col-span-2 rounded-lg text-xs font-semibold text-red-500 hover:text-red-600 sm:col-span-1" @click="rows.splice(index, 1)">{{ __('Remove') }}</button>
-                                            </div>
-                                        </template>
-                                        @error('price_items.*.price') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                                    </div>
-                                @endif
 
                                 <div>
                                     <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Reply Notes (optional)') }}</label>

@@ -12,10 +12,9 @@
     $marketingActive = (request()->routeIs(['leads*', 'partners*', 'marketing.dashboard', 'whatsapp-center*']) && !request()->routeIs('leads.pipeline'));
     // Grup Sales tampil juga untuk role inside-sales; sub-menu dirakit per-item di bawah
     // (user only melihat item yang boleh ia akses).
-    $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
+    $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*') || request()->routeIs('estimator.*');
     $adminActive = request()->routeIs('admin.hub') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.purchasing.*') || request()->routeIs('admin.supplier-pos.*') || request()->routeIs('admin.suppliers.*') || request()->routeIs('admin.goods-receipts.*') || request()->routeIs('admin.goods-deliveries.*') || request()->routeIs('admin.supplier-invoices.*') || request()->routeIs('admin.bast.*');
-    $estimatorActive = request()->routeIs('products*')
-        || (request()->routeIs('sales.requests*') && request()->query('tab') === 'price');
+    $estimatorActive = request()->routeIs('estimator.*');
     $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
     $roleName = auth()->user()->roles->first()?->name ?? 'User';
@@ -25,6 +24,11 @@
 
     // Sub-menu Sales dirakit dari item yang benar-benar boleh diakses user ini.
     $canViewSales = auth()->user()->can('view-sales');
+    $canEstimatorQueue = auth()->user()->can('manage-sales')
+        || auth()->user()->can('manage-sales-leads')
+        || auth()->user()->can('manage-price-requests')
+        || auth()->user()->can('manage-admin')
+        || auth()->user()->hasRole('ceo');
     $salesItems = array_values(array_filter([
         $canViewSales ? ['route' => route('sales.dashboard'), 'match' => 'sales.dashboard', 'label' => 'Dashboard', 'dot' => 'bg-violet-400'] : null,
         $canViewSales ? ['route' => route('sales.my-leads'), 'match' => 'sales.my-leads', 'label' => 'My Leads', 'dot' => 'bg-amber-400'] : null,
@@ -37,6 +41,7 @@
         // Sales (dan admin read-only): satu pintu Request (3 tab). Inside-sales
         // murni tanpa view-sales tetap memakai menu kerja Inside Sales.
         $canViewSales ? ['route' => route('sales.requests.index'), 'match' => 'sales.requests*', 'label' => 'Request', 'dot' => 'bg-fuchsia-400'] : null,
+        $canEstimatorQueue ? ['route' => route('estimator.requests.index'), 'match' => 'estimator.*', 'label' => 'Product Price', 'dot' => 'bg-indigo-400'] : null,
         auth()->user()->can('manage-inside-sales') ? ['route' => route('inside-sales.dashboard'), 'match' => 'inside-sales.*', 'label' => 'Inside Sales', 'dot' => 'bg-fuchsia-400'] : null,
     ]));
     // Header grup harus menuju halaman pertama yang boleh dibuka user ini (mis. inside-sales).
@@ -406,7 +411,7 @@
                         @can('manage-price-requests')
                             <div x-data="{ open: {{ $estimatorActive ? 'true' : 'false' }} }" class="sb-group"{{ $estimatorActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="estimator">
                                 <div class="sb-head {{ $navLink }} group w-full {{ $estimatorActive ? $navActive.' sb-active' : $navInactive }}">
-                                    <a wire:navigate.hover href="{{ route('sales.requests.index', ['tab' => 'price']) }}"
+                                    <a wire:navigate.hover href="{{ route('estimator.requests.index') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="tools" class="h-5 w-5 shrink-0" />
                                         <span>{{ __('Estimator') }}</span>
@@ -421,11 +426,17 @@
                                 </div>
                                 <div id="sidebar-estimator-menu" class="sb-sub sidebar-hide">
                                     <div class="sb-sub-list">
-                                        <a wire:navigate.hover href="{{ route('sales.requests.index', ['tab' => 'price']) }}"
-                                           aria-current="{{ request()->routeIs('sales.requests*') && request()->query('tab') === 'price' ? 'page' : 'false' }}"
-                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('sales.requests*') && request()->query('tab') === 'price' ? $navActive : $navInactive }}">
+                                        <a wire:navigate.hover href="{{ route('estimator.requests.index') }}"
+                                           aria-current="{{ request()->routeIs('estimator.requests.*', 'estimator.dashboard') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('estimator.requests.*', 'estimator.dashboard') ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-400" aria-hidden="true"></span>
-                                            <span>{{ __('Price Request') }}</span>
+                                            <span>{{ __('Queue') }}</span>
+                                        </a>
+                                        <a wire:navigate.hover href="{{ route('estimator.price-history') }}"
+                                           aria-current="{{ request()->routeIs('estimator.price-history') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('estimator.price-history') ? $navActive : $navInactive }}">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden="true"></span>
+                                            <span>{{ __('Price History') }}</span>
                                         </a>
                                         <a wire:navigate.hover href="{{ route('products.index') }}"
                                            aria-current="{{ request()->routeIs('products*') ? 'page' : 'false' }}"

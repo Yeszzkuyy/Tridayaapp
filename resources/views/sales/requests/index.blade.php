@@ -16,9 +16,9 @@
                 'can_create' => $canCreateInsideSales,
             ],
             'price' => [
-                'label' => __('Price'),
+                'label' => __('Installation Price'),
                 'icon' => 'receipt',
-                'desc' => __('Attach your quotation — Engineering replies with the installation price.'),
+                'desc' => __('Attach your quotation - Engineering replies with the installation price.'),
                 'create' => route('sales.price-requests.create'),
                 'can_create' => $canCreatePrice,
             ],
@@ -52,7 +52,7 @@
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">{{ __('Request') }}</h1>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('One place for all your requests — Inside Sales, Price, and Engineer.') }}</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('One place for all your requests - Inside Sales, Price, and Engineer.') }}</p>
             </div>
             @if($tabs[$tab]['can_create'])
                 <x-icon-button as="a" variant="solid" reveal icon="add"
@@ -156,7 +156,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="px-5 py-12 text-center">
-                                    <x-empty-state label="{{ __('inside sales requests') }}" description="{{ __('No quotation requests yet — ask Inside Sales to prepare one for your customer.') }}">
+                                    <x-empty-state label="{{ __('inside sales requests') }}" description="{{ __('No quotation requests yet - ask Inside Sales to prepare one for your customer.') }}">
                                         @if($tabs['inside-sales']['can_create'])
                                             <a href="{{ $tabs['inside-sales']['create'] }}"
                                                class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-accent-500/20 transition-all duration-300 hover:bg-accent-700 hover:shadow-md hover:brightness-105 active:scale-95">
@@ -178,29 +178,6 @@
                 <div class="mt-4 p-4">{{ $tasks->links() }}</div>
             @endif
         @elseif($tab === 'price')
-            @if(auth()->user()->can('manage-price-requests') || auth()->user()->can('manage-sales-leads'))
-                <form method="GET" action="{{ route('sales.price-requests.export-excel') }}" class="mb-3 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-                    <div>
-                        <label for="export-from" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('From') }}</label>
-                        <input id="export-from" type="date" name="date_from" value="{{ now()->startOfWeek()->toDateString() }}" class="h-9 rounded-lg border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-900">
-                    </div>
-                    <div>
-                        <label for="export-to" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('To') }}</label>
-                        <input id="export-to" type="date" name="date_to" value="{{ now()->endOfWeek()->toDateString() }}" class="h-9 rounded-lg border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-900">
-                    </div>
-                    <div>
-                        <label for="export-status" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</label>
-                        <select id="export-status" name="status" class="h-9 rounded-lg border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-900">
-                            <option value="">{{ __('All') }}</option>
-                            @foreach(\App\Models\PriceRequest::STATUSES as $status)
-                                <option value="{{ $status }}">{{ \App\Models\PriceRequest::statusLabel($status) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <x-icon-button icon="download" type="submit" label="{{ __('Export Report Estimator (.xlsx)') }}" title="{{ __('Export Report Estimator (.xlsx)') }}" />
-                </form>
-            @endif
-
             <div class="overflow-x-auto">
                 <table class="w-full border-separate border-spacing-y-2 text-left">
                     <thead>
@@ -220,7 +197,7 @@
                                     <a href="{{ route('sales.price-requests.show', $req) }}" class="hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
                                         {{ $req->customer?->name ?? '-' }}
                                     </a>
-                                    <p class="text-xs text-slate-400 font-normal mt-0.5">{{ __('Price Request') }} #{{ $req->id }}</p>
+                                    <p class="text-xs text-slate-400 font-normal mt-0.5">{{ __('Installation Price') }} #{{ $req->id }}</p>
                                 </td>
                                 <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-sm text-slate-600 dark:text-slate-300">
                                     <div class="flex items-center gap-2">
@@ -255,7 +232,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="px-5 py-12 text-center">
-                                    <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet — attach your quotation and Engineering will reply with the price.') }}">
+                                    <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet - attach your quotation and Engineering will reply with the price.') }}">
                                         @if($tabs['price']['can_create'])
                                             <a href="{{ $tabs['price']['create'] }}"
                                                class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-accent-500/20 transition-all duration-300 hover:bg-accent-700 hover:shadow-md hover:brightness-105 active:scale-95">
@@ -342,7 +319,7 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="px-5 py-12 text-center">
-                                    <x-empty-state label="{{ __('engineer requests') }}" description="{{ __('No engineer requests yet — need a survey, installation, or troubleshooting visit? Start here.') }}">
+                                    <x-empty-state label="{{ __('engineer requests') }}" description="{{ __('No engineer requests yet - need a survey, installation, or troubleshooting visit? Start here.') }}">
                                         @if($tabs['engineer']['can_create'])
                                             <a href="{{ $tabs['engineer']['create'] }}"
                                                class="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-accent-500/20 transition-all duration-300 hover:bg-accent-700 hover:shadow-md hover:brightness-105 active:scale-95">
