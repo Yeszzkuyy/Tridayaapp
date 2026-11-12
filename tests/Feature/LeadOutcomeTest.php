@@ -106,6 +106,13 @@ class LeadOutcomeTest extends TestCase
         $res->assertSee('Kemahalan 20%.');
 
         // pindah keluar dari lost membersihkan alasan
+        \App\Models\FollowUp::create([
+            'lead_id' => $lead->id,
+            'customer_id' => $lead->customer_id,
+            'description' => 'Follow-up',
+            'follow_up_date' => now()->toDateString(),
+        ]);
+
         $this->actingAs($user)->patch(route('leads.update-status', $lead), ['status' => 'hot'])
             ->assertNoContent();
         $lead->refresh();

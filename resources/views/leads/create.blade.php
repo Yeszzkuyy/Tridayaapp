@@ -178,6 +178,38 @@
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('kebutuhan', $prefill['kebutuhan'] ?? '') }}</textarea>
                     @error('kebutuhan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
+
+                <div>
+                    <label for="project_name" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Project Name') }} <span class="text-red-500">*</span>
+                        <x-info-tip tip="{{ __('Name of the project this lead refers to, e.g. Warehouse CCTV Installation.') }}" />
+                    </label>
+                    <input type="text" name="project_name" id="project_name" required maxlength="255"
+                           value="{{ old('project_name', $prefill['project_name'] ?? '') }}"
+                           placeholder="{{ __('e.g. Warehouse CCTV Installation') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('project_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Need Type') }} <span class="text-red-500">*</span>
+                        <x-info-tip tip="{{ __('What the customer needs: CCTV, PABX, Video Conference, Network, or others.') }}" />
+                    </label>
+                    <x-glide-select name="need_type" :label="__('Need Type')" required
+                        :options="collect(\App\Models\Lead::NEED_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\Lead::needTypeLabel($t)])->all()"
+                        :value="old('need_type', '')" :placeholder="__('Select Need Type')" :error="$errors->first('need_type')" />
+                </div>
+
+                <div>
+                    <label for="procurement_status" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Procurement Status') }}
+                        <x-info-tip tip="{{ __('Whether this is a new installation or a replacement of existing units.') }}" />
+                    </label>
+                    <x-glide-select name="procurement_status" :label="__('Procurement Status')"
+                        :options="collect(\App\Models\Lead::PROCUREMENT_STATUSES)->map(fn ($s) => ['value' => $s, 'label' => \App\Models\Lead::procurementStatusLabel($s)])->all()"
+                        :value="old('procurement_status', '')" :placeholder="__('Select')" />
+                </div>
             </div>
         </section>
 

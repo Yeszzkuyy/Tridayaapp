@@ -104,6 +104,8 @@ class LeadFormTest extends TestCase
                 'segment' => 'system_integrator',
                 'source' => 'canvasing',
                 'kebutuhan' => 'Instalasi jaringan 3 lantai',
+                'project_name' => 'Proyek Jaringan Kantor',
+                'need_type' => 'network',
                 'incoming_date' => '2026-08-24',
                 'assigned_to' => $sales->id,
             ])
@@ -195,6 +197,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'x',
+            'project_name' => 'Proyek Soft Deleted',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $user->id,
         ]);
@@ -214,6 +218,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Instalasi CCTV',
+            'project_name' => 'Proyek CCTV',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $user->id,
         ])->assertRedirect(route('leads.index'));
@@ -226,6 +232,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'TPS',
             'segment' => 'end_user',
             'kebutuhan' => 'Instalasi CCTV',
+            'project_name' => 'Proyek CCTV',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $user->id,
         ])->assertRedirect(route('leads.index'));
@@ -283,6 +291,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Butuh review assign.',
+            'project_name' => 'Proyek Assign',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $technician->id,
         ])->assertStatus(422);
@@ -310,6 +320,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Butuh review akses.',
+            'project_name' => 'Proyek Akses',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
         ])->assertForbidden();
 

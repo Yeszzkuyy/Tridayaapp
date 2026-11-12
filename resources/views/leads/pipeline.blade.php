@@ -148,6 +148,36 @@
             z-index: 9999 !important;
         }
     </style>
+
+    {{-- Modal alasan Lost saat kartu digeser ke kolom Lost --}}
+    <div id="lost-reason-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60" data-lost-close></div>
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-5 shadow-2xl">
+            <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">{{ __('Mark as Lost') }}</h3>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Choose a reason and add a short note.') }}</p>
+            <div class="mt-4 space-y-3">
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Lost Reason') }}</label>
+                    <select id="lost-reason-select" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-900 text-sm focus:border-accent-500 focus:ring-accent-500">
+                        <option value="">{{ __('-- Select a reason --') }}</option>
+                        @foreach(\App\Models\Lead::LOST_REASONS as $reason)
+                            <option value="{{ $reason }}">{{ \App\Models\Lead::lostReasonLabel($reason) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Note') }}</label>
+                    <input id="lost-note-input" type="text" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-900 text-sm focus:border-accent-500 focus:ring-accent-500" placeholder="{{ __('e.g. Customer chose a competitor') }}">
+                </div>
+                <p id="lost-modal-error" class="hidden text-xs text-red-600"></p>
+            </div>
+            <div class="mt-5 flex justify-end gap-2">
+                <button type="button" data-lost-close class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-sm font-medium text-slate-600 dark:text-slate-200">{{ __('Cancel') }}</button>
+                <button type="button" id="lost-confirm-btn" class="px-4 py-2 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium">{{ __('Confirm') }}</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     function initPipelineDnD(retry) {
         var board = document.querySelector('.kanban-board[data-editable]');
@@ -166,6 +196,68 @@
 
         var csrf = document.querySelector('meta[name="csrf-token"]')?.content;
         var pendingChanges = new Map();
+        var lostTarget = null; // { leadId, element, fromEl, toEl, oldStatus }
+
+        var lostModal = document.getElementById('lost-reason-modal');
+        var lostReasonSelect = document.getElementById('lost-reason-select');
+        var lostNoteInput = document.getElementById('lost-note-input');
+        var lostModalError = document.getElementById('lost-modal-error');
+
+        function recountLists(lists) {
+            lists.forEach(function (l) {
+                var col = l.closest('.w-72');
+                if (col) {
+                    var counter = col.querySelector('[data-count]');
+                    if (counter) counter.textContent = l.querySelectorAll('.kanban-card').length;
+                }
+            });
+        }
+
+        function openLostModal(leadId, element, fromEl, toEl, oldStatus) {
+            lostTarget = { leadId: leadId, element: element, fromEl: fromEl, toEl: toEl, oldStatus: oldStatus };
+            lostReasonSelect.value = '';
+            lostNoteInput.value = '';
+            lostModalError.classList.add('hidden');
+            lostModal.classList.remove('hidden');
+        }
+
+        function closeLostModal() {
+            if (lostTarget) {
+                // Kembalikan kartu ke kolom asalnya.
+                lostTarget.fromEl.appendChild(lostTarget.element);
+                recountLists([lostTarget.fromEl, lostTarget.toEl]);
+                lostTarget = null;
+            }
+            lostModal.classList.add('hidden');
+        }
+
+        function confirmLost() {
+            var reason = lostReasonSelect.value;
+            var note = lostNoteInput.value.trim();
+            if (!reason || !note) {
+                lostModalError.textContent = '{{ __('Both reason and note are required.') }}';
+                lostModalError.classList.remove('hidden');
+                return;
+            }
+            pendingChanges.set(lostTarget.leadId, {
+                newStatus: 'lost',
+                oldStatus: lostTarget.oldStatus,
+                element: lostTarget.element,
+                lostReason: reason,
+                lostNote: note,
+            });
+            lostModal.classList.add('hidden');
+            lostTarget = null;
+            updateSaveButton();
+        }
+
+        if (lostModal) {
+            var confirmBtn = document.getElementById('lost-confirm-btn');
+            if (confirmBtn) confirmBtn.addEventListener('click', confirmLost);
+            lostModal.querySelectorAll('[data-lost-close]').forEach(function (el) {
+                el.addEventListener('click', closeLostModal);
+            });
+        }
 
         board.querySelectorAll('.kanban-list').forEach(function (list) {
             // Idempoten: lewati list yang sudah di-init (navigasi SPA bisa
@@ -192,17 +284,13 @@
 
                     if (!newStatus || oldStatus === newStatus) {
                         pendingChanges.delete(leadId);
+                    } else if (newStatus === 'lost') {
+                        openLostModal(leadId, evt.item, evt.from, evt.to, oldStatus);
                     } else {
                         pendingChanges.set(leadId, { newStatus: newStatus, oldStatus: oldStatus, element: evt.item });
                     }
 
-                    [evt.from, evt.to].forEach(function (l) {
-                        var col = l.closest('.w-72');
-                        if (col) {
-                            var counter = col.querySelector('[data-count]');
-                            if (counter) counter.textContent = l.querySelectorAll('.kanban-card').length;
-                        }
-                    });
+                    recountLists([evt.from, evt.to]);
 
                     updateSaveButton();
                 },
@@ -239,7 +327,12 @@
             }
 
             var changes = Array.from(pendingChanges.entries()).map(function (entry) {
-                return { lead_id: parseInt(entry[0]), status: entry[1].newStatus };
+                var change = { lead_id: parseInt(entry[0]), status: entry[1].newStatus };
+                if (entry[1].lostReason) {
+                    change.lost_reason = entry[1].lostReason;
+                    change.lost_note = entry[1].lostNote;
+                }
+                return change;
             });
 
             fetch('{{ route('leads.batch-status') }}', {
@@ -251,16 +344,21 @@
                 },
                 body: JSON.stringify({ changes: changes }),
             }).then(function (res) {
-                if (!res.ok) throw new Error();
-                return res.json();
+                return res.json().then(function (data) {
+                    if (!res.ok) throw data;
+                    return data;
+                });
             }).then(function (data) {
                 pendingChanges.clear();
                 if (saveBtn) saveBtn.remove();
                 // Reload agar kartu pindah ke kolom yang benar
                 // (khususnya yang keluar dari kolom New).
                 window.location.reload();
-            }).catch(function () {
-                alert('{{ __('Failed to save changes. Please try again.') }}');
+            }).catch(function (err) {
+                var msg = (err && err.errors && err.errors.status && err.errors.status[0])
+                    ? err.errors.status[0]
+                    : '{{ __('Failed to save changes. Please try again.') }}';
+                alert(msg);
                 if (saveBtn) {
                     saveBtn.disabled = false;
                     updateSaveButton();

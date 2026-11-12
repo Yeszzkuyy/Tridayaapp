@@ -218,13 +218,33 @@
                 </section>
             @endif
 
-            @if($lead->notes || $lead->kebutuhan || $lead->solusi || $lead->progress_notes)
+            @if($lead->notes || $lead->kebutuhan || $lead->solusi || $lead->progress_notes || $lead->project_name || $lead->need_type || $lead->procurement_status)
                 <section aria-labelledby="card-kebutuhan" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                     <h2 id="card-kebutuhan" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="file-text" class="h-5 w-5 text-slate-400" />
                         {{ __('Requirements & Notes') }}
                     </h2>
                     <div class="mt-3 space-y-3">
+                        @if($lead->project_name || $lead->need_type || $lead->procurement_status)
+                            <div class="flex flex-wrap gap-2">
+                                @if($lead->project_name)
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                        <x-icon name="briefcase" class="h-4 w-4 text-slate-400" />
+                                        {{ $lead->project_name }}
+                                    </span>
+                                @endif
+                                @if($lead->need_type)
+                                    <span class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                        {{ \App\Models\Lead::needTypeLabel($lead->need_type) }}
+                                    </span>
+                                @endif
+                                @if($lead->procurement_status)
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                        {{ \App\Models\Lead::procurementStatusLabel($lead->procurement_status) }}
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
                         @if($lead->kebutuhan)
                             <div>
                                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Requirement') }}</p>

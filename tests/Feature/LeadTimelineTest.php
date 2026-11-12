@@ -53,6 +53,13 @@ class LeadTimelineTest extends TestCase
         $user = $this->marketingUser();
         $lead = $this->makeLead();
 
+        FollowUp::create([
+            'lead_id' => $lead->id,
+            'customer_id' => $lead->customer_id,
+            'description' => 'Follow-up awal',
+            'follow_up_date' => now()->toDateString(),
+        ]);
+
         $this->actingAs($user)->patch(route('leads.update-status', $lead), ['status' => 'warm'])
             ->assertNoContent();
 

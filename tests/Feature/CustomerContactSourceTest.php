@@ -218,6 +218,8 @@ class CustomerContactSourceTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Butuh CCTV',
+            'project_name' => 'Proyek Kontak',
+            'need_type' => 'cctv',
             'incoming_date' => '2026-01-05',
         ])->assertRedirect();
 

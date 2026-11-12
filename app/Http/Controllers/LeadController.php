@@ -20,6 +20,7 @@ use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use App\Services\CustomerContactService;
 use App\Services\CustomerLifecycleService;
+use App\Services\LeadPipelineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +33,10 @@ class LeadController extends Controller
     public const SOURCES = ['whatsapp', 'email', 'telpon', 'canvasing', 'event', 'website', 'referral', 'social_media', 'other'];
     public const STATUSES = ['cool', 'warm', 'hot', 'won', 'lost'];
 
-    public function __construct(private CustomerContactService $contacts) {}
+    public function __construct(
+        private CustomerContactService $contacts,
+        private LeadPipelineService $pipeline,
+    ) {}
 
     public static function label(string $value): string
     {
@@ -166,7 +170,16 @@ class LeadController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:'.implode(',', self::STATUSES),
+            'lost_reason' => 'nullable|in:'.implode(',', Lead::LOST_REASONS),
+            'lost_note' => 'nullable|string|max:2000',
         ]);
+
+        $this->pipeline->assertCanTransition(
+            $lead,
+            $validated['status'],
+            $validated['lost_reason'] ?? null,
+            $validated['lost_note'] ?? null,
+        );
 
         if ($validated['status'] !== $lead->status) {
             $old = $lead->status;
@@ -174,7 +187,10 @@ class LeadController extends Controller
             if ($lead->acknowledged_at === null) {
                 $payload['acknowledged_at'] = now();
             }
-            if ($validated['status'] !== 'lost') {
+            if ($validated['status'] === 'lost') {
+                $payload['lost_reason'] = $validated['lost_reason'] ?? $lead->lost_reason;
+                $payload['lost_note'] = $validated['lost_note'] ?? $lead->lost_note;
+            } else {
                 $payload['lost_reason'] = null;
                 $payload['lost_note'] = null;
             }
@@ -200,6 +216,8 @@ class LeadController extends Controller
             'changes' => 'required|array',
             'changes.*.lead_id' => 'required|exists:leads,id',
             'changes.*.status' => 'required|in:'.implode(',', self::STATUSES),
+            'changes.*.lost_reason' => 'nullable|in:'.implode(',', Lead::LOST_REASONS),
+            'changes.*.lost_note' => 'nullable|string|max:2000',
         ]);
 
         $results = [];
@@ -208,12 +226,22 @@ class LeadController extends Controller
             $this->authorizeLeadStatus($lead);
             $old = $lead->status;
 
+            $this->pipeline->assertCanTransition(
+                $lead,
+                $change['status'],
+                $change['lost_reason'] ?? null,
+                $change['lost_note'] ?? null,
+            );
+
             if ($old !== $change['status']) {
                 $payload = ['status' => $change['status']];
                 if ($lead->acknowledged_at === null) {
                     $payload['acknowledged_at'] = now();
                 }
-                if ($change['status'] !== 'lost') {
+                if ($change['status'] === 'lost') {
+                    $payload['lost_reason'] = $change['lost_reason'] ?? $lead->lost_reason;
+                    $payload['lost_note'] = $change['lost_note'] ?? $lead->lost_note;
+                } else {
                     $payload['lost_reason'] = null;
                     $payload['lost_note'] = null;
                 }
@@ -446,6 +474,9 @@ class LeadController extends Controller
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
             'kebutuhan' => 'required|string|max:2000',
+            'project_name' => 'required|string|max:255',
+            'need_type' => 'required|in:'.implode(',', Lead::NEED_TYPES),
+            'procurement_status' => 'nullable|in:'.implode(',', Lead::PROCUREMENT_STATUSES),
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
@@ -455,6 +486,8 @@ class LeadController extends Controller
         ], [
             'segment.required' => 'Kategori (Segment) wajib dipilih.',
             'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
+            'project_name.required' => 'Nama proyek wajib diisi.',
+            'need_type.required' => 'Jenis kebutuhan wajib dipilih.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
@@ -636,6 +669,9 @@ class LeadController extends Controller
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
             'kebutuhan' => 'required|string|max:2000',
+            'project_name' => 'required|string|max:255',
+            'need_type' => 'required|in:'.implode(',', Lead::NEED_TYPES),
+            'procurement_status' => 'nullable|in:'.implode(',', Lead::PROCUREMENT_STATUSES),
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
@@ -645,6 +681,8 @@ class LeadController extends Controller
         ], [
             'segment.required' => 'Kategori (Segment) wajib dipilih.',
             'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
+            'project_name.required' => 'Nama proyek wajib diisi.',
+            'need_type.required' => 'Jenis kebutuhan wajib dipilih.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
@@ -762,8 +800,11 @@ class LeadController extends Controller
         $this->authorizeLeadStatus($lead);
 
         $validated = $request->validate([
-            'lost_reason' => 'nullable|in:'.implode(',', Lead::LOST_REASONS),
-            'lost_note' => 'nullable|string|max:2000',
+            'lost_reason' => 'required|in:'.implode(',', Lead::LOST_REASONS),
+            'lost_note' => 'required|string|max:2000',
+        ], [
+            'lost_reason.required' => 'Alasan kalah wajib dipilih.',
+            'lost_note.required' => 'Catatan singkat wajib diisi.',
         ]);
 
         $lead->fill($validated);

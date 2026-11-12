@@ -226,6 +226,8 @@ class ManageSalesTest extends TestCase
             'pt_group' => 'MGK',
             'segment' => 'end_user',
             'kebutuhan' => 'Jaringan kantor',
+            'project_name' => 'Proyek Jaringan Tanpa Sales',
+            'need_type' => 'network',
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
 
