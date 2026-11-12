@@ -42,6 +42,9 @@
     @if($proposal->delivery_terms)
         <p><strong>{{ __('Delivery Terms') }}:</strong> {{ $proposal->delivery_terms }}</p>
     @endif
+    @if($proposal->warranty_terms)
+        <p><strong>{{ __('Warranty Terms') }}:</strong> {{ $proposal->warranty_terms }}</p>
+    @endif
     <table>
         <thead>
             <tr><th>{{ __('Description') }}</th><th class="num">{{ __('Qty') }}</th><th class="num">{{ __('Price') }}</th><th class="num">{{ __('Subtotal') }}</th></tr>

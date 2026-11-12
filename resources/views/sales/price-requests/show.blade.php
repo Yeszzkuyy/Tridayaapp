@@ -14,7 +14,9 @@
             : ($requesterRoles->contains('inside-sales') ? __('Inside Sales') : __('Sales'));
         $backUrl = $isTech
             ? route('teknisi.requests.index', ['tab' => 'price'])
-            : route('sales.requests.index', ['tab' => 'price']);
+            : ($user?->can('manage-price-requests')
+                ? route('sales.price-requests.index')
+                : route('sales.requests.index', ['tab' => 'price']));
         $statusColors = [
             'waiting_lead' => 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200',
             'accepted' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
@@ -163,6 +165,57 @@
                     @endif
                 </section>
 
+                @if($priceRequest->priceLogs->isNotEmpty())
+                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="price-request-items-heading">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h2 id="price-request-items-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Item Prices') }}</h2>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ trans_choice(':count item|:count items', $priceRequest->priceLogs->count(), ['count' => $priceRequest->priceLogs->count()]) }}</span>
+                        </div>
+                        <div class="mt-4 overflow-x-auto">
+                            <table class="min-w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+                                        <th class="py-2 pr-3">{{ __('Product') }}</th>
+                                        <th class="py-2 pr-3">{{ __('Supplier') }}</th>
+                                        <th class="py-2 pr-3 text-right">{{ __('Price') }}</th>
+                                        <th class="py-2 pr-3">{{ __('Stock') }}</th>
+                                        <th class="py-2 pr-3">{{ __('Warranty') }}</th>
+                                        <th class="py-2 pr-3">{{ __('Updated') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                                    @foreach($priceRequest->priceLogs as $log)
+                                        <tr class="align-top">
+                                            <td class="py-2.5 pr-3">
+                                                <p class="font-medium text-slate-800 dark:text-slate-100">{{ $log->product?->name ?? '-' }}</p>
+                                                @if($log->notes)
+                                                    <p class="mt-0.5 text-[11px] text-slate-400">{{ $log->notes }}</p>
+                                                @endif
+                                            </td>
+                                            <td class="py-2.5 pr-3 text-slate-600 dark:text-slate-300">{{ $log->supplier?->name ?? '-' }}</td>
+                                            <td class="py-2.5 pr-3 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-100">Rp {{ number_format((float) $log->price, 0, ',', '.') }}</td>
+                                            <td class="py-2.5 pr-3">
+                                                @if($log->stock_status)
+                                                    <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $log->stock_status === 'indent' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' }}">
+                                                        {{ $log->stock_status === 'indent' ? __('Indent') : __('Ready') }}
+                                                    </span>
+                                                    @if($log->stock_status === 'indent' && $log->stock_eta)
+                                                        <p class="mt-0.5 text-[11px] text-slate-400">{{ $log->stock_eta }}</p>
+                                                    @endif
+                                                @else
+                                                    <span class="text-slate-400">-</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-2.5 pr-3 text-slate-600 dark:text-slate-300">{{ $log->warranty_info ?: '-' }}</td>
+                                            <td class="py-2.5 pr-3 whitespace-nowrap text-slate-500 dark:text-slate-400">{{ $log->created_at?->timezone('Asia/Jakarta')->format('d M Y, H:i') ?? '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                @endif
+
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="price-request-history-heading">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <h2 id="price-request-history-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Calculation History') }}</h2>
@@ -173,7 +226,9 @@
                         <div class="mt-4 space-y-3">
                             @foreach($priceRequest->replies as $reply)
                                 @php
-                                    $replyFileName = preg_replace('/^(?:v\d+_)?\d+_/', '', basename($reply->file_path));
+                                    $replyFileName = $reply->file_path
+                                        ? preg_replace('/^(?:v\d+_)?\d+_/', '', basename($reply->file_path))
+                                        : null;
                                 @endphp
                                 <article class="rounded-xl border border-slate-200 p-4 dark:border-slate-600 {{ $loop->last ? 'bg-slate-50 dark:bg-slate-700/50' : '' }}">
                                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -193,14 +248,18 @@
                                             @if($reply->notes)
                                                 <p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700 dark:text-slate-200">{{ $reply->notes }}</p>
                                             @endif
-                                            <p class="mt-3 break-all text-xs text-slate-500 dark:text-slate-400">{{ $replyFileName }}</p>
+                                            @if($replyFileName)
+                                                <p class="mt-3 break-all text-xs text-slate-500 dark:text-slate-400">{{ $replyFileName }}</p>
+                                            @endif
                                         </div>
-                                        <div class="flex shrink-0 items-center gap-2">
-                                            <x-file-preview :url="route('sales.price-requests.replies.preview', ['priceRequest' => $priceRequest, 'reply' => $reply])"
-                                                            :download="route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply])"
-                                                            :name="$replyFileName" />
-                                            <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply]) }}" title="{{ __('Download version :number', ['number' => $reply->version]) }}" />
-                                        </div>
+                                        @if($replyFileName)
+                                            <div class="flex shrink-0 items-center gap-2">
+                                                <x-file-preview :url="route('sales.price-requests.replies.preview', ['priceRequest' => $priceRequest, 'reply' => $reply])"
+                                                                :download="route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply])"
+                                                                :name="$replyFileName" />
+                                                <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply]) }}" title="{{ __('Download version :number', ['number' => $reply->version]) }}" />
+                                            </div>
+                                        @endif
                                     </div>
                                 </article>
                             @endforeach
@@ -269,46 +328,62 @@
                 @can('reply', $priceRequest)
                     @if(in_array($priceRequest->status, ['in_progress', 'revision', 'accepted', 'assigned'], true))
                         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="price-request-upload-heading">
-                            <h2 id="price-request-upload-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ $priceRequest->status === 'revision' ? __('Upload Revised Calculation') : __('Upload Calculation') }}</h2>
+                            <h2 id="price-request-upload-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ $priceRequest->status === 'revision' ? __('Send Revised Calculation') : __('Send Calculation') }}</h2>
                             <form action="{{ route('sales.price-requests.reply.store', $priceRequest) }}" method="POST" enctype="multipart/form-data" class="mt-4 space-y-3" data-loading-text="{{ __('Uploading…') }}">
                                 @csrf
                                 <div>
-                                    <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Reply File (calculation / price)') }} <span class="text-red-500">*</span></label>
-                                    <input type="file" name="reply" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
+                                    <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Reply File (calculation / price, optional)') }}</label>
+                                    <input type="file" name="reply" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
                                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                    <p class="mt-1 text-[11px] text-slate-400">{{ __('Attach a file or fill at least one price item below.') }}</p>
                                     @error('reply') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
 
                                 @if(($products ?? collect())->isNotEmpty())
-                                    <div x-data="{ rows: [{ product_id: '', supplier_id: '', price: '', notes: '' }] }" class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-900/40">
+                                    <div x-data="{ rows: @js(old('price_items', [['product_id' => '', 'supplier_id' => '', 'price' => '', 'stock_status' => 'ready', 'stock_eta' => '', 'warranty_info' => '', 'notes' => '']])) }" class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-900/40">
                                         <div class="flex items-center justify-between gap-2">
                                             <div>
-                                                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ __('Item & Price (optional)') }}</p>
-                                                <p class="mt-0.5 text-[11px] text-slate-400">{{ __('Filled prices are saved to product price history automatically.') }}</p>
+                                                <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ __('Item, Price, Stock & Warranty') }}</p>
+                                                <p class="mt-0.5 text-[11px] text-slate-400">{{ __('Each item must include supplier, stock status, and warranty. Filled prices are saved to product price history.') }}</p>
                                             </div>
-                                            <button type="button" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:border-accent-500 hover:text-accent-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300" @click="rows.push({ product_id: '', supplier_id: '', price: '', notes: '' })">+ {{ __('Add') }}</button>
+                                            <button type="button" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:border-accent-500 hover:text-accent-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300" @click="rows.push({ product_id: '', supplier_id: '', price: '', stock_status: 'ready', stock_eta: '', warranty_info: '', notes: '' })">+ {{ __('Add') }}</button>
                                         </div>
 
                                         <template x-for="(row, index) in rows" :key="index">
-                                            <div class="mt-2 grid grid-cols-12 gap-2">
-                                                <select :name="`price_items[${index}][product_id]`" x-model="row.product_id" class="col-span-12 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-4">
-                                                    <option value="">{{ __('Select product') }}</option>
-                                                    @foreach($products as $product)
-                                                        <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <select :name="`price_items[${index}][supplier_id]`" x-model="row.supplier_id" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-3">
-                                                    <option value="">{{ __('Supplier') }}</option>
-                                                    @foreach($suppliers ?? collect() as $supplier)
-                                                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                                <input type="number" min="0" step="0.01" :name="`price_items[${index}][price]`" x-model="row.price" placeholder="{{ __('Price') }}" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-2">
-                                                <input type="text" maxlength="255" :name="`price_items[${index}][notes]`" x-model="row.notes" placeholder="{{ __('Vendor / MOQ note') }}" class="col-span-10 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-2">
-                                                <button type="button" class="col-span-2 rounded-lg text-xs font-semibold text-red-500 hover:text-red-600 sm:col-span-1" @click="rows.splice(index, 1)">{{ __('Remove') }}</button>
+                                            <div class="mt-2 space-y-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800">
+                                                <div class="grid grid-cols-12 gap-2">
+                                                    <select :name="`price_items[${index}][product_id]`" x-model="row.product_id" class="col-span-12 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-4">
+                                                        <option value="">{{ __('Select product') }}</option>
+                                                        @foreach($products as $product)
+                                                            <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <select :name="`price_items[${index}][supplier_id]`" x-model="row.supplier_id" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-3">
+                                                        <option value="">{{ __('Supplier') }}</option>
+                                                        @foreach($suppliers ?? collect() as $supplier)
+                                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <input type="number" min="0" step="0.01" :name="`price_items[${index}][price]`" x-model="row.price" placeholder="{{ __('Price') }}" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-2">
+                                                    <select :name="`price_items[${index}][stock_status]`" x-model="row.stock_status" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-3">
+                                                        <option value="ready">{{ __('Ready Stock') }}</option>
+                                                        <option value="indent">{{ __('Indent') }}</option>
+                                                    </select>
+                                                </div>
+                                                <div class="grid grid-cols-12 gap-2">
+                                                    <input type="text" maxlength="100" :name="`price_items[${index}][stock_eta]`" x-model="row.stock_eta" x-bind:required="row.stock_status === 'indent'" placeholder="{{ __('Indent estimate, e.g. 2-3 weeks') }}" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-3">
+                                                    <input type="text" maxlength="255" :name="`price_items[${index}][warranty_info]`" x-model="row.warranty_info" placeholder="{{ __('Warranty, e.g. 1 year distributor') }}" class="col-span-12 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-5">
+                                                    <input type="text" maxlength="255" :name="`price_items[${index}][notes]`" x-model="row.notes" placeholder="{{ __('Vendor / MOQ note') }}" class="col-span-6 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 sm:col-span-3">
+                                                    <button type="button" class="col-span-6 rounded-lg text-xs font-semibold text-red-500 hover:text-red-600 sm:col-span-1" @click="rows.splice(index, 1)">{{ __('Remove') }}</button>
+                                                </div>
                                             </div>
                                         </template>
-                                        @error('price_items.*.price') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                        @error('price_items') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                        @foreach($errors->keys() as $errorKey)
+                                            @if(str_starts_with($errorKey, 'price_items.'))
+                                                <p class="mt-1 text-xs text-red-500">{{ $errors->first($errorKey) }}</p>
+                                            @endif
+                                        @endforeach
                                     </div>
                                 @endif
 
@@ -317,7 +392,7 @@
                                     <textarea name="reply_notes" rows="3" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('reply_notes') }}</textarea>
                                     @error('reply_notes') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
-                                <x-icon-button type="submit" icon="upload" label="{{ __('Upload Calculation') }}" title="{{ __('Upload Calculation') }}" />
+                                <x-icon-button type="submit" icon="upload" label="{{ __('Send Calculation') }}" title="{{ __('Send Calculation') }}" />
                             </form>
                         </section>
                     @endif

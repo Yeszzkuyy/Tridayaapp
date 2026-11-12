@@ -48,6 +48,7 @@ class Proposal extends Model
         'term_days',
         'payment_terms',
         'delivery_terms',
+        'warranty_terms',
         'po_verified_at',
         'po_verified_by',
         'po_returned_at',

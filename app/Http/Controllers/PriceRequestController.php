@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Throwable;
@@ -44,7 +45,9 @@ class PriceRequestController extends Controller
             && ! $user->can('manage-inside-sales');
         $backUrl = $isTechOnly
             ? route('teknisi.requests.index', ['tab' => 'price'])
-            : route('sales.requests.index', ['tab' => 'price']);
+            : ($user->can('manage-price-requests') && ! $user->can('manage-sales')
+                ? route('sales.price-requests.index')
+                : route('sales.requests.index', ['tab' => 'price']));
 
         return view('sales.price-requests.create', [
             'customers' => $this->customerOptions($user),
@@ -59,8 +62,8 @@ class PriceRequestController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
-            'notes' => 'nullable|string|max:2000',
-            'quotation' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,
+            'notes' => 'required_without:quotation|nullable|string|max:2000',
+            'quotation' => 'nullable|file|max:10240|mimes:'.self::FILE_MIMES,
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
@@ -83,7 +86,9 @@ class PriceRequestController extends Controller
         ]);
 
         $priceRequest->update([
-            'quotation_path' => $this->storeFile($request->file('quotation'), 'price-requests/'.$priceRequest->id),
+            'quotation_path' => $request->hasFile('quotation')
+                ? $this->storeFile($request->file('quotation'), 'price-requests/'.$priceRequest->id)
+                : null,
         ]);
 
         $this->addSystemComment(
@@ -105,6 +110,72 @@ class PriceRequestController extends Controller
         return redirect()->route('sales.price-requests.show', $priceRequest)
             ->with('success', __('Price request dikirim ke tim Engineer.'))
             ->with('success_card', true);
+    }
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'status' => 'nullable|in:open,'.implode(',', PriceRequest::STATUSES),
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+        ]);
+
+        $query = PriceRequest::query()
+            ->with([
+                'customer:id,name,pt_group',
+                'requester:id,name',
+                'assignee:id,name',
+                'handledBy:id,name',
+                'latestPriceLog',
+            ])
+            ->withCount('priceLogs')
+            ->withMax('priceLogs', 'created_at')
+            ->withMax('replies', 'created_at')
+            ->when($validated['q'] ?? null, function ($query, string $term): void {
+                $query->where(function ($search) use ($term): void {
+                    $search->whereHas('customer', fn ($customer) => $customer->whereLike('name', "%{$term}%"));
+
+                    if (ctype_digit($term)) {
+                        $search->orWhere('id', (int) $term);
+                    }
+                });
+            })
+            ->when(($validated['status'] ?? null) === 'open', fn ($query) => $query
+                ->whereNotIn('status', ['completed', 'rejected', 'cancelled']))
+            ->when(($validated['status'] ?? null) && $validated['status'] !== 'open', fn ($query, string $status) => $query
+                ->where('status', $status))
+            ->when($validated['date_from'] ?? null, fn ($query, string $date) => $query
+                ->whereDate('created_at', '>=', $date))
+            ->when($validated['date_to'] ?? null, fn ($query, string $date) => $query
+                ->whereDate('created_at', '<=', $date));
+
+        if (! ($user->can('manage-price-requests')
+            || $user->can('manage-sales-leads')
+            || $user->hasRole('lead-technician'))) {
+            $query->where('requested_by', $user->id);
+        }
+
+        $summary = [
+            'waiting' => (clone $query)->whereIn('status', ['waiting_lead', 'accepted', 'assigned', 'in_progress'])->count(),
+            'received' => (clone $query)->where('status', 'waiting_sales_review')->count(),
+            'revision' => (clone $query)->where('status', 'revision')->count(),
+            'completed' => (clone $query)->where('status', 'completed')->count(),
+        ];
+
+        $priceRequests = $query
+            ->orderByRaw("CASE WHEN status IN ('completed', 'rejected', 'cancelled') THEN 1 ELSE 0 END")
+            ->orderBy('created_at')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('sales.price-requests.index', [
+            'priceRequests' => $priceRequests,
+            'statuses' => PriceRequest::STATUSES,
+            'summary' => $summary,
+        ]);
     }
 
     public function show(Request $request, PriceRequest $priceRequest)
@@ -231,15 +302,38 @@ class PriceRequestController extends Controller
     {
         $this->authorize('reply', $priceRequest);
 
+        // Baris harga kosong dari form dinamis tidak perlu divalidasi.
+        $priceItems = collect($request->input('price_items', []))
+            ->filter(fn ($row) => is_array($row) && (
+                filled($row['product_id'] ?? null)
+                || filled($row['price'] ?? null)
+                || filled($row['stock_status'] ?? null)
+                || filled($row['warranty_info'] ?? null)
+            ))
+            ->values()
+            ->all();
+        $request->merge(['price_items' => $priceItems]);
+
         $validated = $request->validate([
-            'reply' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,
+            'reply' => 'nullable|file|max:10240|mimes:'.self::FILE_MIMES,
             'reply_notes' => 'nullable|string|max:2000',
-            'price_items' => 'nullable|array|max:50',
-            'price_items.*.product_id' => 'nullable|exists:products,id',
-            'price_items.*.supplier_id' => 'nullable|exists:suppliers,id',
-            'price_items.*.price' => 'nullable|numeric|min:0|max:999999999999',
+            'price_items' => 'required_without:reply|array|max:50',
+            'price_items.*.product_id' => 'required|exists:products,id',
+            'price_items.*.supplier_id' => 'required|exists:suppliers,id',
+            'price_items.*.price' => 'required|numeric|min:0.01|max:999999999999',
+            'price_items.*.stock_status' => 'required|in:ready,indent',
+            'price_items.*.stock_eta' => 'nullable|string|max:100',
+            'price_items.*.warranty_info' => 'required|string|max:255',
             'price_items.*.notes' => 'nullable|string|max:255',
         ]);
+
+        foreach ($validated['price_items'] ?? [] as $index => $item) {
+            if ($item['stock_status'] === 'indent' && blank($item['stock_eta'] ?? null)) {
+                throw ValidationException::withMessages([
+                    "price_items.{$index}.stock_eta" => __('Stock estimate is required for indent items.'),
+                ]);
+            }
+        }
 
         $storedPath = null;
 
@@ -250,11 +344,13 @@ class PriceRequestController extends Controller
                 abort_unless(in_array($lockedRequest->status, ['in_progress', 'revision', 'accepted', 'assigned'], true), 422);
 
                 $version = ((int) $lockedRequest->replies()->max('version')) + 1;
-                $storedPath = $this->storeFile(
-                    $request->file('reply'),
-                    'price-requests/'.$lockedRequest->id.'/replies',
-                    $version,
-                );
+                $storedPath = $request->hasFile('reply')
+                    ? $this->storeFile(
+                        $request->file('reply'),
+                        'price-requests/'.$lockedRequest->id.'/replies',
+                        $version,
+                    )
+                    : null;
 
                 $reply = $lockedRequest->replies()->create([
                     'uploaded_by' => $request->user()->id,
@@ -271,27 +367,26 @@ class PriceRequestController extends Controller
                     'handled_by' => $request->user()->id,
                 ]);
 
-                // Harga terstruktur (opsional) langsung masuk histori produk
-                // dan menjadi harga default terbaru di Master Produk.
+                // Harga terstruktur masuk histori harga modal. Harga jual
+                // default produk tidak disentuh.
                 foreach ($validated['price_items'] ?? [] as $item) {
-                    $productId = (int) ($item['product_id'] ?? 0);
-                    $price = (float) ($item['price'] ?? 0);
-
-                    if ($productId <= 0 || $price <= 0) {
-                        continue;
-                    }
-
                     ProductPriceLog::create([
-                        'product_id' => $productId,
-                        'supplier_id' => $item['supplier_id'] ?? null,
-                        'price' => $price,
+                        'product_id' => $item['product_id'],
+                        'supplier_id' => $item['supplier_id'],
+                        'price' => $item['price'],
+                        'price_type' => 'cost',
                         'currency' => 'IDR',
+                        'stock_status' => $item['stock_status'],
+                        'stock_eta' => $item['stock_eta'] ?? null,
+                        'warranty_info' => $item['warranty_info'],
                         'price_request_id' => $lockedRequest->id,
                         'updated_by' => $request->user()->id,
                         'notes' => $item['notes'] ?? null,
                     ]);
 
-                    Product::whereKey($productId)->update(['default_price' => $price]);
+                    Product::whereKey($item['product_id'])->update([
+                        'cost_price' => $item['price'],
+                    ]);
                 }
 
                 $this->addSystemComment(
@@ -462,8 +557,12 @@ class PriceRequestController extends Controller
             $items = $priceRequest->priceLogs->map(function (ProductPriceLog $log) {
                 $name = $log->product?->name ?? __('Product');
                 $supplier = $log->supplier?->name ? ' ('.$log->supplier->name.')' : '';
+                $stock = $log->stock_status
+                    ? ' ['.($log->stock_status === 'indent' ? __('Indent') : __('Ready Stock')).($log->stock_status === 'indent' && $log->stock_eta ? ' '.$log->stock_eta : '').']'
+                    : '';
+                $warranty = $log->warranty_info ? ' ['.__('Warranty').': '.$log->warranty_info.']' : '';
 
-                return $name.': Rp '.number_format((float) $log->price, 0, ',', '.').$supplier;
+                return $name.': Rp '.number_format((float) $log->price, 0, ',', '.').$supplier.$stock.$warranty;
             })->implode("\n");
 
             $sheet->fromArray([
@@ -543,7 +642,7 @@ class PriceRequestController extends Controller
     {
         $this->authorize('view', $priceRequest);
         abort_unless((int) $reply->price_request_id === (int) $priceRequest->id, 404);
-        abort_unless(Storage::disk('private')->exists($reply->file_path), 404);
+        abort_unless($reply->file_path && Storage::disk('private')->exists($reply->file_path), 404);
 
         return Storage::disk('private')->download($reply->file_path);
     }
@@ -552,7 +651,7 @@ class PriceRequestController extends Controller
     {
         $this->authorize('view', $priceRequest);
         abort_unless((int) $reply->price_request_id === (int) $priceRequest->id, 404);
-        abort_unless(Storage::disk('private')->exists($reply->file_path), 404);
+        abort_unless($reply->file_path && Storage::disk('private')->exists($reply->file_path), 404);
 
         return SecureFile::fileResponse(
             'private',

@@ -39,11 +39,18 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Base Price (Rp)') }}</label>
-            <input type="number" name="default_price" min="0" step="0.01" value="{{ old('default_price', $product->default_price ?? 0) }}"
-                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+            @if(Gate::allows('manageSellingPrice', \App\Models\Product::class))
+                <input type="number" name="default_price" min="0" step="0.01" value="{{ old('default_price', $product->default_price ?? 0) }}"
+                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+            @else
+                <div class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-200">
+                    Rp {{ number_format((float) ($product->default_price ?? 0), 0, ',', '.') }}
+                </div>
+                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{{ __('Only Admin/Purchasing can change the base selling price.') }}</p>
+            @endif
             @if(!empty($latestPriceLog))
                 <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    {{ __('Last updated: :date by :name', ['date' => $latestPriceLog->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'), 'name' => $latestPriceLog->updater?->name ?? '-']) }}
+                    {{ __('Last cost update: :date by :name', ['date' => $latestPriceLog->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'), 'name' => $latestPriceLog->updater?->name ?? '-']) }}
                     &middot; Rp {{ number_format((float) $latestPriceLog->price, 0, ',', '.') }}
                     @if($latestPriceLog->supplier)
                         ({{ $latestPriceLog->supplier->name }})

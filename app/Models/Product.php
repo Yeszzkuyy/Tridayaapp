@@ -50,9 +50,25 @@ class Product extends Model
         return $this->hasMany(ProductPriceLog::class)->orderByDesc('created_at')->orderByDesc('id');
     }
 
+    /** Riwayat harga modal saja (bukan harga jual default). */
+    public function costLogs()
+    {
+        return $this->hasMany(ProductPriceLog::class)
+            ->where('price_type', 'cost')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
     public function latestPriceLog()
     {
         return $this->hasOne(ProductPriceLog::class)->latestOfMany();
+    }
+
+    public function latestCostLog()
+    {
+        return $this->hasOne(ProductPriceLog::class)
+            ->where('price_type', 'cost')
+            ->latestOfMany();
     }
 
     public function documents()

@@ -84,7 +84,55 @@ class PriceRequest extends Model
     /** Harga yang dicatat saat request ini diselesaikan. */
     public function priceLogs()
     {
-        return $this->hasMany(ProductPriceLog::class)->orderByDesc('created_at');
+        return $this->hasMany(ProductPriceLog::class)
+            ->where('price_type', 'cost')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    public function latestPriceLog()
+    {
+        return $this->hasOne(ProductPriceLog::class)
+            ->where('price_type', 'cost')
+            ->latestOfMany();
+    }
+
+    /** Waktu update harga terakhir, dipakai antrean Sales. */
+    public function getLastPriceUpdateAtAttribute(): ?\Illuminate\Support\Carbon
+    {
+        $dates = array_filter([
+            $this->price_logs_max_created_at ?? null,
+            $this->replies_max_created_at ?? null,
+        ]);
+
+        return $dates ? \Illuminate\Support\Carbon::parse(max($dates)) : null;
+    }
+
+    /** Label status yang ramah untuk antrean Sales/Estimator. */
+    public static function queueStatusLabel(?string $status): string
+    {
+        return match ($status) {
+            'waiting_lead', 'accepted', 'assigned', 'in_progress' => __('Waiting for Estimator'),
+            'waiting_sales_review' => __('Price Received'),
+            'revision' => __('Revision'),
+            'completed' => __('Completed'),
+            'rejected' => __('Rejected'),
+            'cancelled' => __('Cancelled'),
+            default => __('-'),
+        };
+    }
+
+    public static function queueStatusColor(?string $status): string
+    {
+        return match ($status) {
+            'waiting_lead', 'accepted', 'assigned', 'in_progress' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+            'waiting_sales_review' => 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
+            'revision' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+            'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+            'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
+            default => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+        };
     }
 
     public function comments()

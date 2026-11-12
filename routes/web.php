@@ -291,6 +291,7 @@ Route::middleware('auth')->group(function () {
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
         Route::get('technical-requests/{technicalRequest}/attachment/preview', [TechnicalRequestController::class, 'previewAttachment'])->name('technical-requests.attachment.preview');
+        Route::get('price-requests', [PriceRequestController::class, 'index'])->name('price-requests.index');
         Route::get('price-requests/export-excel', [PriceRequestController::class, 'exportExcel'])->name('price-requests.export-excel');
         Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
@@ -803,6 +804,7 @@ Route::middleware('auth')->group(function () {
         ->prefix('inside-sales')->name('inside-sales.')->group(function () {
             Route::get('/', [InsideSalesController::class, 'dashboard'])->name('dashboard');
             Route::get('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'create'])->name('quotations.create');
+            Route::post('/tasks/{leadTask}/quotation/pull-prices', [InsideSalesQuotationController::class, 'pullPrices'])->name('quotations.pull-prices');
             Route::post('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'store'])->name('quotations.store');
             Route::get('/tasks/{leadTask}/quotation/pdf', [InsideSalesQuotationController::class, 'pdf'])->name('quotations.pdf');
         });

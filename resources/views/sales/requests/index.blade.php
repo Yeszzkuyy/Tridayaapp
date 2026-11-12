@@ -199,6 +199,9 @@
                     </div>
                     <x-icon-button icon="download" type="submit" label="{{ __('Export Report Estimator (.xlsx)') }}" title="{{ __('Export Report Estimator (.xlsx)') }}" />
                 </form>
+                <div class="mb-3 flex justify-end">
+                    <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.index') }}" label="{{ __('Open Queue by PT') }}" title="{{ __('Open Queue by PT') }}" />
+                </div>
             @endif
 
             <div class="overflow-x-auto">

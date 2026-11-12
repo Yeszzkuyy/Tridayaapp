@@ -15,6 +15,7 @@
     $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*');
     $adminActive = request()->routeIs('admin.hub') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.purchasing.*') || request()->routeIs('admin.supplier-pos.*') || request()->routeIs('admin.suppliers.*') || request()->routeIs('admin.goods-receipts.*') || request()->routeIs('admin.goods-deliveries.*') || request()->routeIs('admin.supplier-invoices.*') || request()->routeIs('admin.bast.*');
     $estimatorActive = request()->routeIs('products*')
+        || request()->routeIs('sales.price-requests.*')
         || (request()->routeIs('sales.requests*') && request()->query('tab') === 'price');
     $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
@@ -406,7 +407,7 @@
                         @can('manage-price-requests')
                             <div x-data="{ open: {{ $estimatorActive ? 'true' : 'false' }} }" class="sb-group"{{ $estimatorActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="estimator">
                                 <div class="sb-head {{ $navLink }} group w-full {{ $estimatorActive ? $navActive.' sb-active' : $navInactive }}">
-                                    <a wire:navigate.hover href="{{ route('sales.requests.index', ['tab' => 'price']) }}"
+                                    <a wire:navigate.hover href="{{ route('sales.price-requests.index') }}"
                                             class="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/50">
                                         <x-icon name="tools" class="h-5 w-5 shrink-0" />
                                         <span>{{ __('Estimator') }}</span>
@@ -421,9 +422,9 @@
                                 </div>
                                 <div id="sidebar-estimator-menu" class="sb-sub sidebar-hide">
                                     <div class="sb-sub-list">
-                                        <a wire:navigate.hover href="{{ route('sales.requests.index', ['tab' => 'price']) }}"
-                                           aria-current="{{ request()->routeIs('sales.requests*') && request()->query('tab') === 'price' ? 'page' : 'false' }}"
-                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('sales.requests*') && request()->query('tab') === 'price' ? $navActive : $navInactive }}">
+                                        <a wire:navigate.hover href="{{ route('sales.price-requests.index') }}"
+                                           aria-current="{{ request()->routeIs('sales.price-requests.*') ? 'page' : 'false' }}"
+                                           class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('sales.price-requests.*') ? $navActive : $navInactive }}">
                                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-400" aria-hidden="true"></span>
                                             <span>{{ __('Price Request') }}</span>
                                         </a>

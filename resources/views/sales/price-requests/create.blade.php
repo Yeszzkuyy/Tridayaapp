@@ -39,16 +39,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quotation File') }} <span class="text-red-500">*</span></label>
-                    <input type="file" name="quotation" required accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip"
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quotation File (optional)') }}</label>
+                    <input type="file" name="quotation" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                    <p class="mt-1 text-xs text-slate-400">{{ __('PDF quotation — max 10 MB. Excel, Word, or image also allowed.') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Attach a quotation/BOQ if available, or describe the needed items in Notes. Max 10 MB.') }}</p>
                     @error('quotation') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes (optional)') }}</label>
-                    <textarea name="notes" rows="3" placeholder="{{ __('Anything else Engineering should know...') }}"
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes') }} <span class="text-red-500">*</span></label>
+                    <textarea name="notes" rows="3" required placeholder="{{ __('List the items or specify the requirement when no quotation file is attached.') }}"
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('notes') }}</textarea>
                     @error('notes') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
