@@ -89,9 +89,6 @@ class FollowUpController extends Controller
         $message = __('Follow up recorded successfully.');
 
         if ($request->wantsJson() || $request->ajax()) {
-            session()->flash('success', $message);
-            session()->flash('success_card', true);
-
             return response()->json([
                 'ok' => true,
                 'message' => $message,
@@ -100,8 +97,7 @@ class FollowUpController extends Controller
         }
 
         return redirect()->route('sales.follow-ups.index')
-            ->with('success', $message)
-            ->with('success_card', true);
+            ->with('success', $message);
     }
 
     public function show(FollowUp $followUp)

@@ -113,11 +113,17 @@
             'locale' => str_replace('_', '-', app()->getLocale()),
             // Pesan simpan/gagal dari form biasa (POST + redirect) ikut
             // ditampilkan sebagai pop up, bukan kotak hijau/merah di atas
-            // halaman. `success_card` = halaman itu punya tampilan sendiri.
+            // halaman. Semua aksi mutasi tanpa pesan khusus otomatis
+            // dilengkapi middleware FlashActionToast.
             'flash' => [
-                'success' => session('success') && ! session('success_card') ? (string) session('success') : null,
+                'success' => session('success') ? (string) session('success') : null,
                 'warning' => session('warning') ? (string) session('warning') : null,
-                'error' => session('error') ? (string) session('error') : null,
+                'info' => session('status') === 'google-linked'
+                    ? __('Your Google account has been successfully connected!')
+                    : null,
+                'error' => session('error')
+                    ? (string) session('error')
+                    : ($errors->any() ? __('Some fields need attention. Please review the highlighted inputs.') : null),
             ],
             'initial' => ['unread' => 0, 'unassigned' => 0, 'items' => [], 'next_cursor' => null, 'has_more' => false],
             'routes' => [
@@ -147,6 +153,21 @@
                 'unread' => __('unread'),
                 'sessionExpired' => __('Session expired, please log in again.'),
                 'loginAgain' => __('Log in again'),
+                'readFailedTitle' => __('Could not update notification'),
+                'readFailedBody' => __('The notification could not be marked as read.'),
+                'deleteFailedTitle' => __('Could not remove notification'),
+                'deleteFailedBody' => __('Something went wrong while removing the notification.'),
+                'markAllFailedTitle' => __('Could not mark all as read'),
+                'markAllFailedBody' => __('Not all notifications could be marked as read.'),
+                'clearFailedTitle' => __('Could not clear notifications'),
+                'clearFailedBody' => __('Something went wrong while clearing notifications.'),
+                'toastTitles' => [
+                    'success' => __('Saved'),
+                    'warning' => __('Attention'),
+                    'error' => __('Failed'),
+                    'info' => __('Information'),
+                    'default' => __('Information'),
+                ],
             ],
         ];
 
@@ -735,6 +756,8 @@
     </script>
     {{-- Jendela pratinjau file bersama (dipakai semua modul, tanpa unduh dulu). --}}
     <x-doc-lightbox />
+    {{-- Kartu konfirmasi standar: pengganti confirm() bawaan browser. --}}
+    <x-confirm-dialog />
     <script type="module" src="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/doc-thumbs.js') }}"></script>
 
     {{-- 3DY AI Chat V2 (pengganti floating lama; file lama dipertahankan tapi tidak di-mount) --}}

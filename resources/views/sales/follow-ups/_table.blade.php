@@ -133,7 +133,7 @@
                                             @endif
                                             <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
                                             <form action="{{ route('sales.follow-ups.destroy', $fu) }}"
-                                                  method="POST" data-ajax data-ajax-remove="tr" onsubmit="return confirm('{{ __('Delete this follow up?') }}')">
+                                                  method="POST" data-ajax data-ajax-remove="tr" data-confirm="{{ __('Delete this follow up?') }}" data-confirm-tone="danger">
                                                 @csrf @method('DELETE')
                                                 <button type="submit"
                                                         class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">

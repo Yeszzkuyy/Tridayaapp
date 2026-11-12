@@ -586,14 +586,12 @@ class LeadController extends Controller
         if ($request->user()->can('manage-marketing')) {
             return redirect()
                 ->route('leads.index')
-                ->with('success', __('Lead added successfully'))
-                ->with('success_card', true);
+                ->with('success', __('Lead added successfully'));
         }
 
         return redirect()
             ->route('leads.show', $lead)
-            ->with('success', __('Lead added successfully'))
-            ->with('success_card', true);
+            ->with('success', __('Lead added successfully'));
     }
 
     public function show(Lead $lead)

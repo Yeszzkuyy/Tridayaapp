@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     <div class="w-full space-y-6">
         {{-- Open header: judul + deskripsi singkat + CTA utama --}}
         <div class="flex flex-col gap-4 pt-1 sm:flex-row sm:items-center sm:justify-between">

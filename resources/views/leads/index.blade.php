@@ -1,7 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead / Opportunity List') }}</h1>
@@ -131,7 +128,7 @@
                                     @endcan
                                     @can('manage-marketing')
                                         <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="{{ __('Edit Lead') }}" />
-                                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Delete this lead?') }}')" class="inline">
+                                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" data-confirm="{{ __('Delete this lead?') }}" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete lead') }}" />
                                         </form>

@@ -18,7 +18,20 @@ const MAX_VISIBLE = 3;
 /** Lama kartu tampil sebelum hilang sendiri (ms). */
 const DEFAULT_DURATION = 8000;
 
-const VARIANTS = ['default', 'success', 'error', 'warning'];
+const VARIANTS = ['default', 'info', 'success', 'warning', 'error'];
+
+/** Nama lama yang masih dipakai beberapa pemanggil. */
+const VARIANT_ALIASES = {
+    danger: 'error',
+    failed: 'error',
+    ok: 'success',
+};
+
+function normalizeVariant(value) {
+    const variant = VARIANT_ALIASES[value] || value;
+
+    return VARIANTS.includes(variant) ? variant : 'default';
+}
 
 let toasts = [];
 let sequence = 0;
@@ -56,7 +69,7 @@ export function getToasts() {
  * @param {Function} [input.onDismiss] dipanggil saat kartu ditutup
  */
 export function pushToast(input = {}) {
-    const variant = VARIANTS.includes(input.variant) ? input.variant : 'default';
+    const variant = normalizeVariant(input.variant);
 
     const toast = {
         id: `toast-${++sequence}`,

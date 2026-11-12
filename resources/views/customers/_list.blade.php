@@ -89,7 +89,7 @@
                                 @endcan
 
                                 @can('delete', $customer)
-                                    <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Delete this customer?') }}')">
+                                    <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" data-confirm="{{ __('Delete this customer?') }}" data-confirm-tone="danger">
                                         @csrf
                                         @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete customer') }}" />

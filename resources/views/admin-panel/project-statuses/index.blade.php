@@ -42,7 +42,7 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.project-statuses.edit', $status) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.project-statuses.destroy', $status) }}" 
                                               method="POST" 
-                                              onsubmit="return confirm('{{ __('Delete this status?') }}')"
+                                              data-confirm="{{ __('Delete this status?') }}" data-confirm-tone="danger"
                                               class="inline">
                                             @csrf
                                             @method('DELETE')

@@ -141,7 +141,7 @@
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <form action="{{ route('knowledge-base.destroy', $document) }}" method="POST"
-                                          onsubmit="return confirm('{{ __('Delete this document from the Knowledge Base?') }}')" class="inline">
+                                          data-confirm="{{ __('Delete this document from the Knowledge Base?') }}" data-confirm-tone="danger" class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">

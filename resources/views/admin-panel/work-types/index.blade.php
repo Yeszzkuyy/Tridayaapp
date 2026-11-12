@@ -28,7 +28,7 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.work-types.edit', $workType) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.work-types.destroy', $workType) }}" 
                                               method="POST" 
-                                              onsubmit="return confirm('{{ __('Delete this Work Type?') }}')"
+                                              data-confirm="{{ __('Delete this Work Type?') }}" data-confirm-tone="danger"
                                               class="inline">
                                             @csrf
                                             @method('DELETE')

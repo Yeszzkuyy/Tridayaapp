@@ -284,7 +284,7 @@
                             </div>
                             <div class="flex shrink-0 gap-2">
                                 <x-icon-button as="a" icon="edit" href="{{ route('customer-contacts.edit', $contact) }}" title="{{ __('Edit PIC') }}" />
-                                <form action="{{ route('customer-contacts.destroy', $contact) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Delete this PIC?') }}')">
+                                <form action="{{ route('customer-contacts.destroy', $contact) }}" method="POST" class="inline-flex" data-confirm="{{ __('Delete this PIC?') }}" data-confirm-tone="danger">
                                     @csrf @method('DELETE')
                                     <x-icon-button icon="delete" type="submit" title="{{ __('Delete PIC') }}" />
                                 </form>

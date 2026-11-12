@@ -238,7 +238,7 @@ document.addEventListener('alpine:init', () => {
             <div class="flex flex-wrap items-center gap-3 pt-5 mt-5 border-t border-slate-100">
                 <x-icon-button type="button" icon="edit" label="{{ __('Edit') }}" title="{{ __('Edit') }}" @click="toEdit()" x-show="canManage" />
                 <form x-show="canManage" :action="deleteAction()" method="POST" class="inline"
-                      onsubmit="return confirm('{{ __('Are you sure you want to delete this schedule?') }}')">
+                      data-confirm="{{ __('Are you sure you want to delete this schedule?') }}" data-confirm-tone="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="_method" value="DELETE">
                     <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">
@@ -363,7 +363,7 @@ document.addEventListener('alpine:init', () => {
                 <div class="ml-auto flex items-center gap-3">
                     <span x-show="mode === 'edit' && connected" x-text="syncLabel()" class="text-xs text-slate-500"></span>
                     <form x-show="mode === 'edit' && canManage" :action="deleteAction()" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Are you sure you want to delete this schedule?') }}')">
+                          data-confirm="{{ __('Are you sure you want to delete this schedule?') }}" data-confirm-tone="danger">
                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">

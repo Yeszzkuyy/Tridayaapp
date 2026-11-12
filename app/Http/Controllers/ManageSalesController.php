@@ -123,8 +123,7 @@ class ManageSalesController extends Controller
 
         return redirect()
             ->route('manage-sales.index')
-            ->with('success', __('Lead berhasil diperbarui'))
-            ->with('success_card', true);
+            ->with('success', __('Lead berhasil diperbarui'));
     }
 
     public function assign(Request $request, Lead $lead)
@@ -154,8 +153,7 @@ class ManageSalesController extends Controller
 
         return redirect()
             ->route('manage-sales.index')
-            ->with('success', __('Lead assigned to') . ' ' . $salesUser->name)
-            ->with('success_card', true);
+            ->with('success', __('Lead assigned to') . ' ' . $salesUser->name);
     }
 
     public function dashboard(Request $request, SalesKpiService $salesKpiService, SalesReportStatusService $reportStatusService)

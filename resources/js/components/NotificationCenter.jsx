@@ -45,6 +45,17 @@ const TYPE_META = {
     technical_work_completed: { color: '#0d9488', icon: 'checkCircle' },
     survey_created: { color: '#e11d48', icon: 'camera' },
     survey_report_uploaded: { color: '#e11d48', icon: 'camera' },
+    price_request_created: { color: '#0d9488', icon: 'wrench' },
+    price_request_reviewed: { color: '#0d9488', icon: 'wrench' },
+    price_request_completed: { color: '#16a34a', icon: 'checkCircle' },
+    price_request_comment: { color: '#0d9488', icon: 'message' },
+    estimator_request_created: { color: '#7c3aed', icon: 'clipboard' },
+    estimator_request_answered: { color: '#7c3aed', icon: 'clipboard' },
+    estimator_request_revision: { color: '#7c3aed', icon: 'clipboard' },
+    project_converted: { color: '#16a34a', icon: 'checkCircle' },
+    meeting_report_reminder: { color: '#d97706', icon: 'clipboard' },
+    user_pending_approval: { color: '#0284c7', icon: 'userPlus' },
+    invoice_paid: { color: '#059669', icon: 'file' },
     generic: { color: '#64748b', icon: 'bell' },
 };
 
@@ -55,6 +66,9 @@ const CHIP_TONES = {
     warning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
     danger: 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300',
 };
+
+/** Pengingat diberi waktu baca lebih lama supaya tidak terlewat. */
+const REMINDER_TYPES = new Set(['followup', 'task', 'schedule_reminder', 'meeting_report_reminder']);
 
 const ICON_PROPS = {
     fill: 'none',
@@ -289,10 +303,16 @@ export default function NotificationCenter() {
 
         flashShown = true;
 
-        ['success', 'warning', 'error'].forEach((variant) => {
+        ['success', 'info', 'warning', 'error'].forEach((variant) => {
             const message = CONFIG.flash?.[variant];
 
-            if (message) pushToast({ variant, message });
+            if (message) {
+                pushToast({
+                    variant,
+                    title: I18N.toastTitles?.[variant] || I18N.toastTitles?.default,
+                    message,
+                });
+            }
         });
     }, []);
 
@@ -497,6 +517,7 @@ export default function NotificationCenter() {
                         message: item.body || '',
                         accent: meta.color,
                         icon: <TypeIcon name={meta.icon} className="h-5 w-5" />,
+                        duration: REMINDER_TYPES.has(item.type) ? 12000 : undefined,
                         onOpen: () => openItemRef.current?.(item),
                     });
                 }
@@ -670,9 +691,9 @@ export default function NotificationCenter() {
                 setItems((previous) => previous.map((known) => (known.id === item.id ? { ...known, read: false } : known)));
                 setUnread((previous) => previous + 1);
                 pushToast({
-                    variant: 'danger',
-                    title: 'Gagal Memperbarui Notifikasi',
-                    message: 'Tidak dapat menandai notifikasi sebagai dibaca.',
+                    variant: 'error',
+                    title: I18N.readFailedTitle,
+                    message: I18N.readFailedBody,
                 });
 
                 return;
@@ -717,9 +738,9 @@ export default function NotificationCenter() {
                 setItems((previous) => [removedItem, ...previous]);
                 if (!wasRead) setUnread((previous) => previous + 1);
                 pushToast({
-                    variant: 'danger',
-                    title: 'Gagal Menghapus Notifikasi',
-                    message: 'Terjadi kendala saat menghapus notifikasi.',
+                    variant: 'error',
+                    title: I18N.deleteFailedTitle,
+                    message: I18N.deleteFailedBody,
                 });
 
                 return;
@@ -743,9 +764,9 @@ export default function NotificationCenter() {
             setItems(previousItems);
             setUnread(previousUnread);
             pushToast({
-                variant: 'danger',
-                title: 'Gagal Menandai Semua',
-                message: 'Tidak dapat menandai semua notifikasi sebagai dibaca.',
+                variant: 'error',
+                title: I18N.markAllFailedTitle,
+                message: I18N.markAllFailedBody,
             });
 
             return;
@@ -774,9 +795,9 @@ export default function NotificationCenter() {
             setCursor(previousCursor);
             setHasMore(previousHasMore);
             pushToast({
-                variant: 'danger',
-                title: 'Gagal Menghapus Semua',
-                message: 'Tidak dapat menghapus semua notifikasi.',
+                variant: 'error',
+                title: I18N.clearFailedTitle,
+                message: I18N.clearFailedBody,
             });
 
             return;

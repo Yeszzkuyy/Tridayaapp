@@ -108,8 +108,8 @@
                                                 <x-dropdown-link :href="route('teknisi.surveys.show', $survey)">{{ __('View details') }}</x-dropdown-link>
                                                 <x-dropdown-link :href="route('teknisi.surveys.edit', $survey)">{{ __('Edit') }}</x-dropdown-link>
                                                 <hr class="my-1 border-slate-200 dark:border-slate-600">
-                                                <form action="{{ route('teknisi.surveys.destroy', $survey) }}" method="POST" x-data
-                                                      @submit.prevent="if(confirm('{{ __('Delete this survey?') }}')) $el.submit()">
+                                                <form action="{{ route('teknisi.surveys.destroy', $survey) }}" method="POST"
+                                                      data-confirm="{{ __('Delete this survey?') }}" data-confirm-tone="danger">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"

@@ -16,7 +16,7 @@ function getOverlay(document) {
 
     overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
-    overlay.className = 'status-card-backdrop';
+    overlay.className = 'gs-overlay-backdrop';
     overlay.style.display = 'none';
     overlay.innerHTML = `<div data-card>${LOADER_HTML}</div>`;
     document.body.appendChild(overlay);

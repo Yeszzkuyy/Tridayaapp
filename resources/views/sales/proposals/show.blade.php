@@ -169,12 +169,18 @@
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Ready') }}" title="{{ __('Ready') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.submit-technical', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Submit this draft to the technical team?') }}')">
+                          data-confirm="{{ __('The draft is sent to the technical team for review.') }}"
+                          data-confirm-title="{{ __('Submit this draft?') }}"
+                          data-confirm-tone="success"
+                          data-confirm-label="{{ __('Yes, submit draft') }}">
                         @csrf
                         <x-icon-button type="submit" icon="mail" label="{{ __('To Technical') }}" title="{{ __('To Technical') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.cancel', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Cancel this proposal?') }}')">
+                          data-confirm="{{ __('The proposal is closed and cannot continue.') }}"
+                          data-confirm-title="{{ __('Cancel this proposal?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, cancel proposal') }}">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />
                     </form>
@@ -194,7 +200,10 @@
                 @endif
                 @if($isOwner && $proposal->status === 'ready')
                     <form action="{{ route('sales.proposals.send', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Mark this proposal as sent?') }}')">
+                          data-confirm="{{ __('The proposal status changes to sent and the customer can respond.') }}"
+                          data-confirm-title="{{ __('Mark this proposal as sent?') }}"
+                          data-confirm-tone="success"
+                          data-confirm-label="{{ __('Yes, mark as sent') }}">
                         @csrf
                         <x-icon-button type="submit" icon="mail" label="{{ __('Mark as Sent') }}" title="{{ __('Mark as Sent (confirmation only, does not send email)') }}" />
                     </form>
@@ -241,13 +250,19 @@
                         <x-icon-button type="submit" icon="edit" label="{{ __('Revision') }}" title="{{ __('Revision') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Mark this proposal as accepted by the customer?') }}')">
+                          data-confirm="{{ __('The proposal is locked as accepted and the next step can continue.') }}"
+                          data-confirm-title="{{ __('Mark as accepted by the customer?') }}"
+                          data-confirm-tone="success"
+                          data-confirm-label="{{ __('Yes, mark accepted') }}">
                         @csrf
                         <input type="hidden" name="decision" value="accepted">
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Mark this proposal as rejected by the customer?') }}')">
+                          data-confirm="{{ __('The proposal is closed as rejected.') }}"
+                          data-confirm-title="{{ __('Mark as rejected by the customer?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, mark rejected') }}">
                         @csrf
                         <input type="hidden" name="decision" value="rejected">
                         <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
@@ -293,24 +308,6 @@
                     @endif
                     @if($proposal->warranty_terms)
                         <p class="text-slate-500">{{ __('Warranty Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->warranty_terms }}</span></p>
-                    @endif
-
-                    @if(session('success'))
-                        <div class="rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-200 my-2 flex items-center justify-between shadow-sm">
-                            <span class="font-semibold flex items-center gap-1.5">
-                                <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                {{ session('success') }}
-                            </span>
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 my-2 shadow-sm">
-                            <span class="font-semibold flex items-center gap-1.5">
-                                <svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                {{ session('error') }}
-                            </span>
-                        </div>
                     @endif
 
                     @if($proposal->isPoReturned())

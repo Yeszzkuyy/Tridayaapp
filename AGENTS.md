@@ -155,6 +155,7 @@ Testing:
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
 | `/home/raafi/3dyapp-tekflow` | `feature/tek-project-workflow` | Integrasi workflow project + engineer (survey, sizing, price request, instalasi, BAST) |
+| `/home/yeski/3dyapp-sys` | `feature/sys-ui-feedback` | Toast + kartu konfirmasi standar (lintas divisi) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
@@ -483,6 +484,76 @@ wall, bento, scroll-stacking, dan scroll cue **tidak berlaku** di repo ini. §7
 6. Cek tombol mengikuti §7 (radius, ikon, hierarki CTA).
 7. Cek tidak ada kartu bersarang, 3 kartu identik, atau section theme flip.
 8. Jalankan `npm run build` dari `/var/www/3dyapp` bila ada kelas Tailwind baru.
+
+## 7.3 Standar Feedback Aksi: Toast & Kartu Konfirmasi
+
+Satu sistem feedback untuk seluruh aplikasi. Tujuannya: setiap aksi user
+langsung terlihat hasilnya, dan setiap aksi berisiko selalu minta persetujuan
+dengan tampilan yang sama.
+
+### A. Toast (pop up pojok kanan bawah)
+
+1. **Satu antrean, satu tampilan.** Semua pesan aksi memakai
+   `resources/js/toast-store.js` + `ToastViewport` + `NotificationToast`
+   (dipasang lewat Notification Center di header). Dilarang membuat pop up
+   sendiri, `alert()`, atau kotak pesan hijau/merah di atas halaman untuk
+   konfirmasi aksi.
+2. **Sumber pesan yang sah:**
+   - `session('success' | 'warning' | 'error')` dari controller.
+   - Middleware `FlashActionToast` untuk aksi mutasi yang belum punya pesan
+     (otomatis: "Saved successfully.", "Deleted successfully.", dst.).
+   - `window.toast(message, ok, action)` untuk respons AJAX.
+   - Notifikasi baru & pengingat dari server (kartu yang sama, ikon berwarna
+     sesuai jenis, klik membuka halaman terkait).
+3. **Isi kartu:** ikon dalam kotak `h-10 w-10 rounded-xl` berwarna lembut,
+   judul tebal per jenis (Berhasil / Gagal / Peringatan / Informasi),
+   keterangan maksimal 3 baris, tombol aksi opsional, tombol silang.
+4. **Perilaku:** maksimal 3 kartu menumpuk ala Sonner, hover mengembang dan
+   menghentikan hitungan hilang, pengingat tampil 12 detik, hormati
+   `prefers-reduced-motion`.
+5. **Gaya kartu wajib selaras panel lonceng:** `rounded-2xl`, border slate,
+   `shadow-2xl`, mode gelap `zinc-900`. Jangan memakai warna border tebal
+   berbeda-beda per jenis; warna cukup pada ikon/judul.
+
+### B. Kartu konfirmasi (pengganti `confirm()`)
+
+1. Semua aksi yang butuh persetujuan (hapus, batal, tolak, terima, kirim,
+   arsip, pindah ke Trash, ubah status) **wajib** memakai
+   `<x-confirm-dialog>` yang dipasang sekali di `layouts/app.blade.php`.
+2. **Dilarang** memakai `window.confirm()`, `confirm()`, atau
+   `onclick="return confirm(...)"` di view mana pun. Interceptor global ada di
+   `resources/js/confirm-dialog.js`.
+3. **Cara pakai:** beri atribut pada `<form>`, `<a>`, atau tombol ber-aksi:
+
+   ```blade
+   <form action="..." method="POST"
+         data-confirm="{{ __('The accepted price is locked and will be used in the quotation.') }}"
+         data-confirm-title="{{ __('Accept this price as final?') }}"
+         data-confirm-tone="success"
+         data-confirm-label="{{ __('Yes, accept price') }}"
+         data-confirm-details="{{ json_encode([
+             ['label' => __('Customer'), 'value' => $customer->name],
+             ['label' => __('Request'), 'value' => '#'.$request->id],
+         ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
+   ```
+
+   | Atribut | Isi |
+   |---|---|
+   | `data-confirm` | penjelasan akibat aksi (wajib) |
+   | `data-confirm-title` | judul singkat, biasanya pertanyaan |
+   | `data-confirm-tone` | `success` (terima), `danger` (hapus/batal/tolak), `warning` (arsip/pindah), `info` |
+   | `data-confirm-label` | label tombol aksi, mis. "Yes, accept price" |
+   | `data-confirm-cancel` | label tombol batal (opsional) |
+   | `data-confirm-details` | JSON baris rincian data penting |
+
+4. **Isi wajib:** judul singkat, penjelasan akibat, rincian data penting
+   (customer, nomor request, nominal) bila ada, dan label tombol yang
+   menyebut aksinya, bukan "OK".
+5. **Perilaku wajib:** fokus awal di tombol batal, Esc & klik latar = batal,
+   Tab terkunci di dua tombol, anti dobel-submit, dan setelah disetujui aksi
+   berjalan seperti biasa (submit loader tetap tampil).
+6. **Verifikasi:** `php artisan test --filter=UiFeedbackStandardTest` menolak
+   view yang masih memakai `confirm()` atau `x-status-card`.
 
 ## 8. Database Safety Rules
 

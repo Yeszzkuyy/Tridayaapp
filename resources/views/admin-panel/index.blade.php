@@ -14,18 +14,6 @@
         </div>
     </div>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-800">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800">
-            {{ session('error') }}
-        </div>
-    @endif
-
     {{-- Users --}}
     <div>
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -83,7 +71,7 @@
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.users.edit', $user) }}" title="{{ __('Edit user') }}" />
                                 @if($user->id !== auth()->id())
-                                    <form action="{{ route('admin-panel.users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Delete this user?') }}')">
+                                    <form action="{{ route('admin-panel.users.destroy', $user) }}" method="POST" class="inline" data-confirm="{{ __('Delete this user?') }}" data-confirm-tone="danger">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete user') }}" />
                                     </form>

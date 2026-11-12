@@ -37,7 +37,7 @@
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $pm) }}" title="{{ __('Payment detail') }}" />
                                     @can('manage-admin')
-                                        <form action="{{ route('admin.payments.destroy', $pm) }}" method="POST" onsubmit="return confirm('{{ __('Delete this payment?') }}')" class="inline">
+                                        <form action="{{ route('admin.payments.destroy', $pm) }}" method="POST" data-confirm="{{ __('Delete this payment?') }}" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete payment') }}" />
                                         </form>
