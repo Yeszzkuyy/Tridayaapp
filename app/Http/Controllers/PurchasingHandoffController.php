@@ -63,9 +63,8 @@ class PurchasingHandoffController extends Controller
             });
         }
 
-        $stage = in_array($filters['stage'] ?? 'all', self::STAGE_FILTERS, true)
-            ? $filters['stage']
-            : 'all';
+        $requestedStage = $filters['stage'] ?? 'all';
+        $stage = in_array($requestedStage, self::STAGE_FILTERS, true) ? $requestedStage : 'all';
 
         // Jumlah per tab dihitung dari query yang sama (ikut filter q & PT)
         // supaya angka di tab selalu konsisten dengan isi tabel.
