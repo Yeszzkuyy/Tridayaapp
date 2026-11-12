@@ -4954,5 +4954,9 @@
     "My Income This Month": "Income Saya Bulan Ini",
     "Order to Supplier": "Pesan ke Supplier",
     "Receive & Deliver": "Terima & Kirim",
-    "Invoice & Close": "Tagihan & Tutup"
+    "Invoice & Close": "Tagihan & Tutup",
+    "BAST & Closed": "BAST & Tutup",
+    "Due in :days days": "Jatuh tempo dalam :days hari",
+    "No quotations match this view.": "Tidak ada quotation yang cocok pada tampilan ini.",
+    "Handoff Stages": "Tahap Handoff"
 }

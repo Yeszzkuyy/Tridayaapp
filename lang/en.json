@@ -4954,5 +4954,9 @@
     "My Income This Month": "My Income This Month",
     "Order to Supplier": "Order to Supplier",
     "Receive & Deliver": "Receive & Deliver",
-    "Invoice & Close": "Invoice & Close"
+    "Invoice & Close": "Invoice & Close",
+    "BAST & Closed": "BAST & Closed",
+    "Due in :days days": "Due in :days days",
+    "No quotations match this view.": "No quotations match this view.",
+    "Handoff Stages": "Handoff Stages"
 }
