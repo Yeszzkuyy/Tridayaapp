@@ -9,7 +9,18 @@
         <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
     </div>
 
-    <form action="{{ route('leads.store') }}" method="POST" enctype="multipart/form-data"
+    @if($errors->any())
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+            <p class="font-semibold">{{ __('Please fix the following:') }}</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('leads.store') }}" method="POST" enctype="multipart/form-data" novalidate
           data-loading-text="Saving…"
           class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
         @csrf
