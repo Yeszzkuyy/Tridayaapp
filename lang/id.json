@@ -4999,5 +4999,9 @@
     "New Installation": "Pemasangan Baru",
     "Replacement": "Penggantian",
     "Record at least one follow-up before moving the lead to this stage.": "Catat minimal satu follow-up sebelum memindahkan lead ke tahap ini.",
-    "Choose a loss reason and add a short note before marking the lead as lost.": "Pilih alasan kalah dan isi catatan singkat sebelum menandai lead sebagai kalah."
+    "Choose a loss reason and add a short note before marking the lead as lost.": "Pilih alasan kalah dan isi catatan singkat sebelum menandai lead sebagai kalah.",
+    "Auto-generated from company and sales initials.": "Dibuat otomatis dari PT dan inisial sales.",
+    "This lead already has a quotation. Revise the existing quotation instead of creating a new one.": "Lead ini sudah punya quotation. Revisi quotation yang ada, jangan buat yang baru.",
+    "Quotation revised.": "Quotation direvisi.",
+    "Requested revision from customer.": "Revisi diminta oleh customer."
 }

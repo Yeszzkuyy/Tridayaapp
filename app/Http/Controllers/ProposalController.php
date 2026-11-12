@@ -22,6 +22,7 @@ use App\Notifications\PurchasingHandoffNotification;
 use App\Rules\SecureFile;
 use App\Services\CustomerLifecycleService;
 use App\Services\Project\ProjectWorkflowService;
+use App\Services\QuotationNumberService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,8 @@ use Illuminate\Validation\ValidationException;
 
 class ProposalController extends Controller
 {
+    public function __construct(private QuotationNumberService $numbers) {}
+
     private function log(Lead $lead, string $action, array $changes = []): void
     {
         LeadActivity::create([
@@ -219,20 +222,38 @@ class ProposalController extends Controller
         $this->authorizeManage($proposal);
     }
 
-    private function generateNumber(): string
+    private function generateNumber(Lead $lead): string
     {
-        $prefix = 'Q/'.now()->format('Y/m').'/';
+        $pt = $lead->pt_group ?: $lead->customer?->pt_group ?: 'WANI';
 
-        for ($attempt = 0; $attempt < 5; $attempt++) {
-            $seq = Proposal::where('proposal_number', 'like', $prefix.'%')->count() + 1 + $attempt;
-            $number = $prefix.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+        return $this->numbers->generate($pt, auth()->user());
+    }
 
-            if (! Proposal::where('proposal_number', $number)->exists()) {
-                return $number;
-            }
-        }
+    /**
+     * Simpan snapshot versi quotation agar riwayat revisi bisa dibaca.
+     * `total_before` = total versi sebelumnya (null untuk versi pertama).
+     */
+    private function recordVersion(Proposal $proposal, ?float $totalBefore = null, ?string $summary = null): void
+    {
+        $items = $proposal->items()->get();
+        $next = ((int) $proposal->versions()->max('version')) + 1;
 
-        return $prefix.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        $proposal->versions()->create([
+            'version' => $next,
+            'label' => 'v'.$next,
+            'snapshot' => $items->map(fn (ProposalItem $item) => [
+                'description' => $item->description,
+                'quantity' => (float) $item->quantity,
+                'unit' => $item->unit,
+                'unit_price' => (float) $item->unit_price,
+                'unit_cost' => $item->unit_cost !== null ? (float) $item->unit_cost : null,
+                'subtotal' => (float) $item->subtotal,
+            ])->values()->all(),
+            'total_before' => $totalBefore,
+            'total_after' => (float) $proposal->grand_total,
+            'change_summary' => $summary,
+            'changed_by' => auth()->id(),
+        ]);
     }
 
     private function itemRules(): array
@@ -474,6 +495,13 @@ class ProposalController extends Controller
             ]);
         }
 
+        // Satu lead = satu quotation. Revisi memakai nomor yang sama.
+        if ($lead->hasActiveProposal()) {
+            return back()->withInput()->withErrors([
+                'lead_id' => __('This lead already has a quotation. Revise the existing quotation instead of creating a new one.'),
+            ]);
+        }
+
         $priceRequest = null;
         if (! empty($validated['price_request_id'])) {
             $priceRequest = PriceRequest::findOrFail($validated['price_request_id']);
@@ -490,11 +518,12 @@ class ProposalController extends Controller
             $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost, $priceRequest, $items) {
                 $proposal = Proposal::create([
                     'lead_id' => $lead->id,
-                    'proposal_number' => $this->generateNumber(),
+                    'proposal_number' => $this->generateNumber($lead),
                     'created_by' => auth()->id(),
                     'proposal_date' => $validated['proposal_date'],
                     'valid_until' => $validated['valid_until'] ?? null,
                     'customer' => $lead->customer?->name ?? '-',
+                    'letterhead_pt' => $lead->pt_group ?: $lead->customer?->pt_group,
                     'discount' => $validated['discount'] ?? 0,
                     'tax' => $validated['tax'] ?? 0,
                     'notes' => $validated['notes'] ?? null,
@@ -522,6 +551,8 @@ class ProposalController extends Controller
         }
 
         $this->storeQuotationFile($request, $proposal);
+
+        $this->recordVersion($proposal);
 
         $this->log($lead, 'proposal_created', ['number' => $proposal->proposal_number]);
 
@@ -598,6 +629,8 @@ class ProposalController extends Controller
         $items = $validated['items'] ?? [];
         $this->assertNoCostTampering($items, $canManageCost);
 
+        $totalBefore = (float) $proposal->grand_total;
+
         DB::transaction(function () use ($proposal, $validated, $canManageCost, $items) {
             $proposal->update([
                 'proposal_date' => $validated['proposal_date'],
@@ -618,6 +651,9 @@ class ProposalController extends Controller
         });
 
         $this->storeQuotationFile($request, $proposal);
+
+        $proposal->refresh();
+        $this->recordVersion($proposal, $totalBefore, __('Quotation revised.'));
 
         return redirect()->route('sales.proposals.show', $proposal)
             ->with('success', __('Proposal updated successfully.'));
@@ -765,6 +801,7 @@ class ProposalController extends Controller
 
         $proposal->update(['status' => 'revision']);
         $this->log($proposal->lead, 'proposal_revised', ['number' => $proposal->proposal_number]);
+        $this->recordVersion($proposal, (float) $proposal->grand_total, __('Requested revision from customer.'));
 
         return back()->with('success', __('Proposal returned for revision.'));
     }

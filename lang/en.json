@@ -4999,5 +4999,9 @@
     "New Installation": "New Installation",
     "Replacement": "Replacement",
     "Record at least one follow-up before moving the lead to this stage.": "Record at least one follow-up before moving the lead to this stage.",
-    "Choose a loss reason and add a short note before marking the lead as lost.": "Choose a loss reason and add a short note before marking the lead as lost."
+    "Choose a loss reason and add a short note before marking the lead as lost.": "Choose a loss reason and add a short note before marking the lead as lost.",
+    "Auto-generated from company and sales initials.": "Auto-generated from company and sales initials.",
+    "This lead already has a quotation. Revise the existing quotation instead of creating a new one.": "This lead already has a quotation. Revise the existing quotation instead of creating a new one.",
+    "Quotation revised.": "Quotation revised.",
+    "Requested revision from customer.": "Requested revision from customer."
 }

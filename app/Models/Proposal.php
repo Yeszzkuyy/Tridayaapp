@@ -111,6 +111,12 @@ class Proposal extends Model
         return $this->hasMany(ProposalItem::class);
     }
 
+    /** Riwayat revisi quotation (versi per perubahan). */
+    public function versions()
+    {
+        return $this->hasMany(ProposalVersion::class)->orderBy('version');
+    }
+
     /**
      * File quotation dari Inside Sales yang di-accept menjadi quotation ini
      * (dipakai untuk menampilkan lampiran di halaman detail quotation).

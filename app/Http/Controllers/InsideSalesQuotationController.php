@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LeadTask;
 use App\Models\Proposal;
 use App\Notifications\QuotationGeneratedNotification;
+use App\Services\QuotationNumberService;
 use App\Services\QuotationPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 
 class InsideSalesQuotationController extends Controller
 {
+    public function __construct(private QuotationNumberService $numbers) {}
     public function create(LeadTask $leadTask)
     {
         $this->authorizeTask($leadTask);
@@ -27,13 +29,14 @@ class InsideSalesQuotationController extends Controller
         }
 
         $customer = $leadTask->lead?->customer;
+        $previewPt = strtoupper((string) ($customer?->pt_group ?? $leadTask->lead?->pt_group ?? 'WANI'));
 
         return view('inside-sales.quotations.create', [
             'task' => $leadTask,
             'items' => $leadTask->items,
             'companies' => array_keys(config('companies')),
             'prefill' => [
-                'proposal_number' => '',
+                'proposal_number' => $this->numbers->generate($previewPt, $leadTask->lead?->assignee ?? auth()->user()),
                 'proposal_date' => today()->toDateString(),
                 'customer' => $customer?->name ?? '-',
                 'customer_address' => $customer?->billingAddress(),
@@ -42,7 +45,7 @@ class InsideSalesQuotationController extends Controller
                 'contact_phone' => $customer?->picPhone(),
                 'project_description' => $leadTask->lead?->kebutuhan ?: $leadTask->description,
                 'payment_terms_text' => '',
-                'letterhead_pt' => strtoupper((string) ($customer?->pt_group ?? $leadTask->lead?->pt_group ?? 'WANI')),
+                'letterhead_pt' => $previewPt,
             ],
         ]);
     }
@@ -54,7 +57,6 @@ class InsideSalesQuotationController extends Controller
         $companies = array_keys(config('companies'));
 
         $validated = $request->validate([
-            'proposal_number' => 'required|string|max:100|unique:proposals,proposal_number',
             'proposal_date' => 'required|date',
             'customer' => 'required|string|max:255',
             'customer_address' => 'nullable|string|max:2000',
@@ -73,14 +75,20 @@ class InsideSalesQuotationController extends Controller
             422,
             __('This task already has a quotation.')
         );
+        abort_if(
+            $leadTask->lead?->hasActiveProposal(),
+            422,
+            __('This lead already has a quotation. Revise the existing quotation instead of creating a new one.')
+        );
 
         $salesOwner = $leadTask->lead?->assignee ?? $leadTask->creator;
+        $proposalNumber = $this->numbers->generate($validated['letterhead_pt'], $salesOwner ?? auth()->user());
 
-        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner) {
+        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber) {
             $proposal = Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
-                'proposal_number' => $validated['proposal_number'],
+                'proposal_number' => $proposalNumber,
                 'created_by' => $salesOwner?->id ?? auth()->id(),
                 'proposal_date' => $validated['proposal_date'],
                 'customer' => $validated['customer'],

@@ -87,7 +87,7 @@ class PriceRequestQuotationLinkTest extends TestCase
                 'unit_price' => 5000,
                 'discount' => 0,
             ]],
-        ])->assertStatus(422);
+        ])->assertSessionHasErrors('lead_id');
 
         $this->assertSame(1, Proposal::count());
     }

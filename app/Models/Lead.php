@@ -211,4 +211,13 @@ class Lead extends Model
     {
         return $this->hasMany(Proposal::class);
     }
+
+    /**
+     * Satu lead = satu quotation (wawancara Adi Santosa). true bila lead ini
+     * sudah punya quotation aktif (belum soft-delete), apapun statusnya.
+     */
+    public function hasActiveProposal(): bool
+    {
+        return $this->proposals()->exists();
+    }
 }

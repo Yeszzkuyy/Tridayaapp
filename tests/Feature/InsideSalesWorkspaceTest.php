@@ -352,7 +352,7 @@ class InsideSalesWorkspaceTest extends TestCase
         $proposal = Proposal::query()->firstOrFail();
         $this->assertSame($task->id, $proposal->lead_task_id);
         $this->assertSame($sales->id, $proposal->created_by);
-        $this->assertSame('217R6-FE-WANI-2026', $proposal->proposal_number);
+        $this->assertMatchesRegularExpression('#^WANI/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
         $this->assertSame('WANI', $proposal->letterhead_pt);
         $this->assertSame('draft', $proposal->status);
         $this->assertSame(2240000.0, (float) $proposal->grand_total);
@@ -381,7 +381,7 @@ class InsideSalesWorkspaceTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_quotation_number_must_be_unique(): void
+    public function test_second_quotation_for_same_lead_is_blocked(): void
     {
         Storage::fake('private');
 
@@ -392,7 +392,7 @@ class InsideSalesWorkspaceTest extends TestCase
 
         Proposal::create([
             'lead_id' => $task->lead_id,
-            'proposal_number' => '217R6-FE-WANI-2026',
+            'proposal_number' => 'WANI/999/XX/2026',
             'created_by' => $sales->id,
             'proposal_date' => today()->toDateString(),
             'customer' => 'PT Lain',
@@ -401,7 +401,7 @@ class InsideSalesWorkspaceTest extends TestCase
 
         $this->actingAs($inside)
             ->post(route('inside-sales.quotations.store', $task), $this->quotationPayload($task))
-            ->assertSessionHasErrors('proposal_number');
+            ->assertStatus(422);
     }
 
     public function test_sales_can_download_generated_pdf(): void

@@ -7,7 +7,9 @@
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
-                <x-icon-button as="a" icon="add" href="{{ route('sales.proposals.create') }}" title="{{ __('Add') }}" />
+                @can('manage-sales-leads')
+                    <x-icon-button as="a" icon="add" href="{{ route('sales.proposals.create') }}" title="{{ __('Add') }}" />
+                @endcan
             </div>
         </div>
 
