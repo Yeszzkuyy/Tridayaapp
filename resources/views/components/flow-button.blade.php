@@ -47,7 +47,8 @@ $palettes = [
 ];
 $palette = $palettes[$variant];
 
-// Ukuran: md untuk CTA halaman, sm untuk aksi di dalam baris tabel.
+// Ukuran: md untuk CTA halaman, compact untuk aksi di baris tabel
+// (tinggi dan ukuran font sama, hanya padding horizontal yang lebih rapat).
 $sizes = [
     'md' => [
         'base' => 'h-10 gap-1 px-8 text-sm',
@@ -57,16 +58,16 @@ $sizes = [
         'circle' => 'group-hover:h-[220px] group-hover:w-[220px]',
         'text' => '-translate-x-3 group-hover:translate-x-3',
     ],
-    'sm' => [
-        'base' => 'h-9 gap-1 px-4 text-xs',
-        'iconLeft' => 'left-[-30%] group-hover:left-3',
-        'iconRight' => 'right-3 group-hover:right-[-30%]',
-        'icon' => 'h-3.5 w-3.5',
-        'circle' => 'group-hover:h-[150px] group-hover:w-[150px]',
+    'compact' => [
+        'base' => 'h-10 gap-1 px-5 text-sm',
+        'iconLeft' => 'left-[-40%] group-hover:left-3',
+        'iconRight' => 'right-3 group-hover:right-[-40%]',
+        'icon' => 'h-4 w-4',
+        'circle' => 'group-hover:h-[180px] group-hover:w-[180px]',
         'text' => '-translate-x-2 group-hover:translate-x-2',
     ],
 ];
-$size = in_array($size, ['md', 'sm'], true) ? $size : 'md';
+$size = in_array($size, ['md', 'compact'], true) ? $size : 'md';
 $s = $sizes[$size];
 
 $base = 'group relative inline-flex '.$s['base'].' cursor-pointer items-center justify-center overflow-hidden rounded-[100px] border-[1.5px] bg-transparent font-semibold transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:rounded-xl hover:border-transparent active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2 motion-reduce:transition-none '.$palette['button'];
