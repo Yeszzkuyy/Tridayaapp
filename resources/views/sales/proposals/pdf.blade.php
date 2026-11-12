@@ -125,6 +125,18 @@
                         <td class="label">Payment</td><td class="sep">:</td>
                         <td>{{ $proposal->payment_terms_text ?: $proposal->payment_terms ?: '-' }}</td>
                     </tr>
+                    @if($proposal->delivery_terms)
+                        <tr>
+                            <td class="label">Delivery</td><td class="sep">:</td>
+                            <td>{{ $proposal->delivery_terms }}</td>
+                        </tr>
+                    @endif
+                    @if($proposal->warranty_terms)
+                        <tr>
+                            <td class="label">Warranty</td><td class="sep">:</td>
+                            <td>{{ $proposal->warranty_terms }}</td>
+                        </tr>
+                    @endif
                     <tr>
                         <td class="label">Date</td><td class="sep">:</td>
                         <td>{{ $proposal->proposal_date?->format('d F Y') ?? '-' }}</td>
@@ -165,7 +177,18 @@
                     <tr>
                         <td class="center">{{ $rowNo }}</td>
                         <td>{{ $item->scope_of_supply ?: ($item->product?->sku ?: '-') }}</td>
-                        <td>{!! nl2br(e($item->description)) !!}</td>
+                        <td>{!! nl2br(e($item->description)) !!}
+                            @if($item->stock_status || $item->warranty_info)
+                                <div class="muted" style="font-size: 7.5px; margin-top: 2px;">
+                                    @if($item->stock_status)
+                                        Stock: {{ $item->stock_status === 'indent' ? 'Indent' : 'Ready' }}{{ $item->stock_status === 'indent' && $item->stock_eta ? ' '.$item->stock_eta : '' }}
+                                    @endif
+                                    @if($item->warranty_info)
+                                        @if($item->stock_status) · @endif Warranty: {{ $item->warranty_info }}
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
                         <td>{{ $item->lead_time ?: '-' }}</td>
                         <td class="num">{{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }}</td>
                         <td>{{ $item->unit }}</td>

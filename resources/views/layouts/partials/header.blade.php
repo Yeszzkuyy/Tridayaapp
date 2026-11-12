@@ -45,6 +45,8 @@
                 ['sales.schedules',                 ['Sales', 'Schedule']],
                 ['sales.proposals',                 ['Sales', 'Quotation']],
                 ['sales.requests',                  ['Sales', 'Request']],
+                ['estimator.price-history',         ['Estimator', 'Price History']],
+                ['estimator',                       ['Estimator', 'Queue']],
                 ['sales.technical-requests',        ['Sales', 'Technical Request']],
                 ['sales',                           ['Sales']],
                 ['leads.pipeline',                  ['Sales', 'Pipeline']],
@@ -97,6 +99,7 @@
             $groupIconMap = [
                 'Management' => 'briefcase', 'Teknisi' => 'tools', 'Marketing' => 'megaphone',
                 'Sales' => 'calendar', 'Admin' => 'receipt', 'Admin Panel' => 'settings',
+                'Estimator' => 'tools',
                 'Customer' => 'users', 'Monitoring' => 'activity', 'Dashboard' => 'grid',
                 'Documents' => 'folder',
                 'Trash' => 'trash', 'Knowledge Base' => 'book', 'Product KB' => 'cube',

@@ -2,9 +2,9 @@
     @php
         $tabs = [
             'price' => [
-                'label' => __('Price'),
+                'label' => __('Installation Price'),
                 'icon' => 'receipt',
-                'desc' => __('Price quotations (PDF/file) shared with Sales — same table, connected.'),
+                'desc' => __('Installation price requests (quotation/file) shared with Sales - same table, connected.'),
             ],
             'engineer' => [
                 'label' => __('Engineer'),
@@ -28,9 +28,9 @@
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">{{ __('Request Sales') }}</h1>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Incoming requests — take one to process or reply. You can also create a price request with the same file form.') }}</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Incoming requests - take one to process or reply. You can also create an installation price request with the same file form.') }}</p>
         </div>
-        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Price Request') }}" title="{{ __('New Price Request') }}" class="shrink-0" />
+        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Installation Price') }}" title="{{ __('New Installation Price') }}" class="shrink-0" />
     </div>
 
     <x-request-hub-tabs :tabs="$tabs" :active="$tab" :counts="$openCounts" route-name="teknisi.requests.index" />
@@ -41,11 +41,11 @@
     </div>
 
     @if($tab === 'price')
-        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800" aria-label="{{ __('Price') }}">
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800" aria-label="{{ __('Installation Price') }}">
             @forelse($priceRequests as $req)
                 <x-request-list-item
                     :title="$req->customer?->name ?? '-'"
-                    :subtitle="__('Price Request').' #'.$req->id"
+                    :subtitle="__('Installation Price').' #'.$req->id"
                     :status="\App\Models\PriceRequest::statusLabel($req->status)"
                     :status-class="$requestColors[$req->status] ?? 'bg-slate-200 text-slate-700'"
                     :href="route('teknisi.price-requests.show', $req)"
@@ -70,8 +70,8 @@
                     </x-request-meta>
                 </x-request-list-item>
             @empty
-                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No price requests yet — attach a quotation PDF and Engineering will reply with the price.') }}">
-                    <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Price Request') }}" title="{{ __('New Price Request') }}" />
+                <x-empty-state label="{{ __('price requests') }}" description="{{ __('No installation price requests yet - attach a quotation PDF and Engineering will reply with the price.') }}">
+                    <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Installation Price') }}" title="{{ __('New Installation Price') }}" />
                 </x-empty-state>
             @endforelse
 

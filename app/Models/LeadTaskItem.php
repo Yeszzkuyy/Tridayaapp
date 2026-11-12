@@ -9,9 +9,13 @@ class LeadTaskItem extends Model
     protected $fillable = [
         'lead_task_id',
         'product_id',
+        'product_price_log_id',
         'description',
         'scope_of_supply',
         'lead_time',
+        'stock_status',
+        'stock_eta',
+        'warranty_info',
         'section',
         'quantity',
         'unit',
@@ -37,6 +41,11 @@ class LeadTaskItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function priceLog()
+    {
+        return $this->belongsTo(ProductPriceLog::class, 'product_price_log_id');
     }
 
     public static function subtotalFor(float $quantity, float $unitPrice, float $discount): float

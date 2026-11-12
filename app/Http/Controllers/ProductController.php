@@ -13,24 +13,34 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $products = Product::query()
+            ->with('latestCostLog.supplier')
             ->when($request->filled('search'), fn ($q) => $q->where(
                 fn ($w) => $w->whereLike('name', "%{$request->search}%")
                     ->orWhereLike('sku', "%{$request->search}%")
                     ->orWhereLike('part_number', "%{$request->search}%")
             ))
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category))
+            ->when($request->boolean('price_review'), fn ($q) => $q
+                ->whereNotNull('cost_price')
+                ->whereColumn('default_price', 'cost_price'))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        return view('sales.products.index', compact('products'));
+        return view('sales.products.index', [
+            'products' => $products,
+            'needsPriceReviewCount' => Product::query()
+                ->whereNotNull('cost_price')
+                ->whereColumn('default_price', 'cost_price')
+                ->count(),
+        ]);
     }
 
     /** JSON untuk picker BOQ di form proposal (hanya produk aktif). */
     public function picker(Request $request)
     {
         $items = Product::saleable()
-            ->with(['priceLogs' => fn ($q) => $q->with('supplier')->limit(6)])
+            ->with(['costLogs' => fn ($q) => $q->with('supplier')->limit(6)])
             ->when($request->filled('q'), fn ($q) => $q->where(
                 fn ($w) => $w->whereLike('name', "%{$request->q}%")
                     ->orWhereLike('sku', "%{$request->q}%")
@@ -46,10 +56,13 @@ class ProductController extends Controller
             'category' => $product->category,
             'unit' => $product->unit,
             'default_price' => (float) $product->default_price,
-            'price_history' => $product->priceLogs->map(fn (ProductPriceLog $log) => [
+            'price_history' => $product->costLogs->map(fn (ProductPriceLog $log) => [
                 'id' => $log->id,
                 'price' => (float) $log->price,
                 'supplier' => $log->supplier?->name,
+                'stock_status' => $log->stock_status,
+                'stock_eta' => $log->stock_eta,
+                'warranty_info' => $log->warranty_info,
                 'date' => $log->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'),
                 'notes' => $log->notes,
             ])->values(),
@@ -138,7 +151,7 @@ class ProductController extends Controller
         $canManageSuppliers = auth()->user()?->can('manage-admin') ?? false;
 
         if ($product) {
-            $product->loadMissing(['priceLogs.supplier', 'priceLogs.updater']);
+            $product->loadMissing(['latestCostLog.supplier', 'latestCostLog.updater']);
         }
 
         return [
@@ -149,15 +162,22 @@ class ProductController extends Controller
                 ? $product->suppliers()->pluck('suppliers.id')->all()
                 : [],
             'primarySupplierId' => $product?->primarySupplier()?->id,
-            'latestPriceLog' => $product?->priceLogs->first(),
+            'latestPriceLog' => $product?->latestCostLog,
         ];
     }
 
     public function store(Request $request)
     {
         $canManageCost = Gate::allows('manageCost', Product::class);
+        $canManageSellingPrice = Gate::allows('manageSellingPrice', Product::class);
         $this->assertCostTampering($request, $canManageCost);
         $this->assertSupplierTampering($request);
+
+        abort_if(
+            $request->has('default_price') && ! $canManageSellingPrice,
+            403,
+            __('Only Admin/Purchasing can change the selling price.')
+        );
 
         $rules = [
             'sku' => 'nullable|string|max:255|unique:products,sku',
@@ -166,10 +186,12 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:2000',
             'category' => 'required|in:' . implode(',', Product::SALE_CATEGORIES),
             'unit' => 'nullable|string|max:16',
-            'default_price' => 'nullable|numeric|min:0|max:999999999999',
             'has_serial_number' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ];
+        if ($canManageSellingPrice) {
+            $rules['default_price'] = 'nullable|numeric|min:0|max:999999999999';
+        }
         if ($canManageCost) {
             $rules['cost_price'] = 'nullable|numeric|min:0|max:999999999999';
         }
@@ -181,7 +203,10 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
         $this->syncSuppliers($request, $product);
-        $this->logPriceChange($product, (float) ($validated['default_price'] ?? 0));
+        $this->logPriceChange($product, (float) ($validated['default_price'] ?? 0), 'selling');
+        if ($canManageCost && array_key_exists('cost_price', $validated)) {
+            $this->logPriceChange($product, (float) ($validated['cost_price'] ?? 0), 'cost');
+        }
 
         return redirect()->route('products.index')->with('success', __('Product added successfully.'));
     }
@@ -194,8 +219,15 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $canManageCost = Gate::allows('manageCost', $product);
+        $canManageSellingPrice = Gate::allows('manageSellingPrice', $product);
         $this->assertCostTampering($request, $canManageCost);
         $this->assertSupplierTampering($request);
+
+        abort_if(
+            $request->has('default_price') && ! $canManageSellingPrice,
+            403,
+            __('Only Admin/Purchasing can change the selling price.')
+        );
 
         $rules = [
             'sku' => 'nullable|string|max:255|unique:products,sku,' . $product->id,
@@ -204,10 +236,12 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:2000',
             'category' => 'required|in:' . implode(',', Product::SALE_CATEGORIES),
             'unit' => 'nullable|string|max:16',
-            'default_price' => 'nullable|numeric|min:0|max:999999999999',
             'has_serial_number' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
         ];
+        if ($canManageSellingPrice) {
+            $rules['default_price'] = 'nullable|numeric|min:0|max:999999999999';
+        }
         if ($canManageCost) {
             $rules['cost_price'] = 'nullable|numeric|min:0|max:999999999999';
         }
@@ -215,13 +249,21 @@ class ProductController extends Controller
         $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
         $validated['has_serial_number'] = (bool) ($validated['has_serial_number'] ?? false);
 
-        $before = (float) $product->default_price;
+        $beforeSelling = (float) $product->default_price;
+        $beforeCost = $product->cost_price === null ? null : (float) $product->cost_price;
         $product->update($validated);
         $this->syncSuppliers($request, $product);
 
-        $newPrice = (float) ($validated['default_price'] ?? $product->default_price);
-        if (abs($newPrice - $before) > 0.0001) {
-            $this->logPriceChange($product, $newPrice);
+        if ($canManageSellingPrice) {
+            $newSelling = (float) ($validated['default_price'] ?? $product->default_price);
+            if (abs($newSelling - $beforeSelling) > 0.0001) {
+                $this->logPriceChange($product, $newSelling, 'selling');
+            }
+        }
+
+        $newCost = $product->cost_price === null ? null : (float) $product->cost_price;
+        if ($canManageCost && $newCost !== null && ($beforeCost === null || abs($newCost - $beforeCost) > 0.0001)) {
+            $this->logPriceChange($product, $newCost, 'cost');
         }
 
         return redirect()->route('products.index')->with('success', __('Product updated successfully.'));
@@ -239,7 +281,7 @@ class ProductController extends Controller
      * Catat harga baru ke riwayat. Harga 0 tidak dicatat supaya tidak
      * membanjiri log dengan baris kosong.
      */
-    private function logPriceChange(Product $product, float $price, ?int $priceRequestId = null, ?string $notes = null): void
+    private function logPriceChange(Product $product, float $price, string $type = 'selling', ?int $priceRequestId = null, ?string $notes = null): void
     {
         $userId = auth()->id();
 
@@ -251,6 +293,7 @@ class ProductController extends Controller
             'product_id' => $product->id,
             'supplier_id' => $product->primarySupplier()?->id,
             'price' => $price,
+            'price_type' => $type,
             'currency' => 'IDR',
             'price_request_id' => $priceRequestId,
             'updated_by' => $userId,

@@ -12,7 +12,6 @@ class PriceRequestPolicy
         if ((int) $priceRequest->requested_by === (int) $user->id
             || (int) $priceRequest->assigned_to === (int) $user->id
             || $user->can('manage-sales-leads')
-            || $user->can('manage-price-requests')
             || $user->hasRole('lead-technician')) {
             return true;
         }
@@ -29,7 +28,6 @@ class PriceRequestPolicy
             || (int) $priceRequest->assigned_to === (int) $user->id
             || $user->can('manage-sales-leads')
             || $user->hasRole('super-admin')
-            || $user->can('manage-price-requests')
             || ($priceRequest->status === 'waiting_lead' && $user->hasRole('lead-technician'));
 
         return $isParticipant && !$priceRequest->isClosed();
@@ -37,34 +35,34 @@ class PriceRequestPolicy
 
     public function review(User $user, PriceRequest $priceRequest): bool
     {
-        return ($user->hasRole('lead-technician') || $user->can('manage-price-requests'))
+        return $user->hasRole('lead-technician')
             && $priceRequest->status === 'waiting_lead'
             && $priceRequest->assigned_to === null;
     }
 
     public function assign(User $user, PriceRequest $priceRequest): bool
     {
-        return ($user->hasRole('lead-technician') || $user->can('manage-price-requests'))
+        return $user->hasRole('lead-technician')
             && in_array($priceRequest->status, ['accepted', 'assigned'], true);
     }
 
     public function take(User $user, PriceRequest $priceRequest): bool
     {
-        return ($user->hasRole('lead-technician') || $user->can('manage-price-requests'))
+        return $user->hasRole('lead-technician')
             && $priceRequest->status === 'waiting_lead'
             && $priceRequest->assigned_to === null;
     }
 
     public function reject(User $user, PriceRequest $priceRequest): bool
     {
-        return ($user->hasRole('lead-technician') || $user->can('manage-price-requests'))
+        return $user->hasRole('lead-technician')
             && $priceRequest->status === 'waiting_lead'
             && $priceRequest->assigned_to === null;
     }
 
     public function reply(User $user, PriceRequest $priceRequest): bool
     {
-        return ($user->can('manage-technician') || $user->can('manage-price-requests'))
+        return $user->can('manage-technician')
             && (int) $priceRequest->assigned_to === (int) $user->id
             && in_array($priceRequest->status, ['in_progress', 'revision', 'accepted', 'assigned'], true);
     }

@@ -3,7 +3,7 @@
 **Status Pengerjaan:** Belum Dikerjakan
 **Work:** INTERVIEW-USERSALES
 **Sumber:** `docs/archive/WAWANCARA-USER-SALES.md`
-**Terakhir diperbarui:** 2026-11-11
+**Terakhir diperbarui:** 2026-11-12
 
 ## Pembagian tugas
 
@@ -36,4 +36,5 @@
 - Semua file di atas memakai penanda **INTERVIEW-USERSALES** agar jelas
   masih satu paket pekerjaan.
 - Plan lama sudah dipindahkan ke folder divisinya masing-masing.
-- Plan ini belum mengubah kode apa pun.
+- Plan Estimator sudah diimplementasikan di branch `feature/sales-inside`
+  dan menunggu verifikasi user sebelum merge ke `main`.

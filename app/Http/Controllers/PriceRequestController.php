@@ -6,10 +6,7 @@ use App\Models\Customer;
 use App\Models\PriceRequest;
 use App\Models\PriceRequestComment;
 use App\Models\PriceRequestReply;
-use App\Models\Product;
-use App\Models\ProductPriceLog;
 use App\Models\Project;
-use App\Models\Supplier;
 use App\Models\User;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
@@ -20,9 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Throwable;
 
 /**
@@ -113,22 +107,13 @@ class PriceRequestController extends Controller
         $priceRequest->load([
             'customer', 'proposal', 'requester.roles', 'assignee', 'handledBy',
             'replies.uploader', 'replies.acceptedBy',
-            'priceLogs.product', 'priceLogs.supplier',
         ]);
 
         $technicians = ($request->user()->hasRole('lead-technician') || $request->user()->hasRole('super-admin'))
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
             : collect();
 
-        // Katalog + supplier untuk mencatat harga saat Estimator membalas.
-        $products = $request->user()->can('reply', $priceRequest)
-            ? Product::saleable()->orderBy('name')->get(['id', 'sku', 'name'])
-            : collect();
-        $suppliers = $request->user()->can('reply', $priceRequest)
-            ? Supplier::orderBy('name')->get(['id', 'name'])
-            : collect();
-
-        return view('sales.price-requests.show', compact('priceRequest', 'technicians', 'products', 'suppliers'));
+        return view('sales.price-requests.show', compact('priceRequest', 'technicians'));
     }
 
     /** Sales pemilik (atau management) membatalkan request yang belum selesai. */
@@ -234,11 +219,6 @@ class PriceRequestController extends Controller
         $validated = $request->validate([
             'reply' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,
             'reply_notes' => 'nullable|string|max:2000',
-            'price_items' => 'nullable|array|max:50',
-            'price_items.*.product_id' => 'nullable|exists:products,id',
-            'price_items.*.supplier_id' => 'nullable|exists:suppliers,id',
-            'price_items.*.price' => 'nullable|numeric|min:0|max:999999999999',
-            'price_items.*.notes' => 'nullable|string|max:255',
         ]);
 
         $storedPath = null;
@@ -270,29 +250,6 @@ class PriceRequestController extends Controller
                     'completed_at' => null,
                     'handled_by' => $request->user()->id,
                 ]);
-
-                // Harga terstruktur (opsional) langsung masuk histori produk
-                // dan menjadi harga default terbaru di Master Produk.
-                foreach ($validated['price_items'] ?? [] as $item) {
-                    $productId = (int) ($item['product_id'] ?? 0);
-                    $price = (float) ($item['price'] ?? 0);
-
-                    if ($productId <= 0 || $price <= 0) {
-                        continue;
-                    }
-
-                    ProductPriceLog::create([
-                        'product_id' => $productId,
-                        'supplier_id' => $item['supplier_id'] ?? null,
-                        'price' => $price,
-                        'currency' => 'IDR',
-                        'price_request_id' => $lockedRequest->id,
-                        'updated_by' => $request->user()->id,
-                        'notes' => $item['notes'] ?? null,
-                    ]);
-
-                    Product::whereKey($productId)->update(['default_price' => $price]);
-                }
 
                 $this->addSystemComment(
                     $lockedRequest,
@@ -400,105 +357,6 @@ class PriceRequestController extends Controller
         return back()->with('success', __('Revision request sent to the Pricing Engineer.'))->with('success_card', true);
     }
 
-    /**
-     * Laporan mingguan Estimator (file .xlsx): siapa meminta harga, untuk
-     * customer mana, item apa, siapa estimator-nya, dan status akhirnya.
-     */
-    public function exportExcel(Request $request)
-    {
-        $user = $request->user();
-        abort_unless(
-            $user->can('manage-price-requests')
-                || $user->can('manage-sales-leads'),
-            403
-        );
-
-        $validated = $request->validate([
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date|after_or_equal:date_from',
-            'requested_by' => 'nullable|exists:users,id',
-            'customer_id' => 'nullable|exists:customers,id',
-            'status' => 'nullable|in:'.implode(',', PriceRequest::STATUSES),
-        ]);
-
-        $from = $validated['date_from'] ?? now()->startOfWeek()->toDateString();
-        $to = $validated['date_to'] ?? now()->endOfWeek()->toDateString();
-
-        $requests = PriceRequest::with([
-            'customer', 'requester', 'assignee', 'handledBy',
-            'priceLogs.product', 'priceLogs.supplier',
-        ])
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
-            ->when($validated['requested_by'] ?? null, fn ($q, $id) => $q->where('requested_by', $id))
-            ->when($validated['customer_id'] ?? null, fn ($q, $id) => $q->where('customer_id', $id))
-            ->when($validated['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
-            ->orderBy('created_at')
-            ->get();
-
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle(__('Estimator Report'));
-
-        $headers = [
-            __('No'),
-            __('Request Date'),
-            __('Requested by'),
-            __('Customer'),
-            __('Project / Requirement'),
-            __('Item & Estimated Price'),
-            __('Estimator'),
-            __('Completed Date'),
-            __('Status'),
-        ];
-
-        $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
-        $sheet->freezePane('A2');
-
-        $row = 2;
-
-        foreach ($requests as $index => $priceRequest) {
-            $items = $priceRequest->priceLogs->map(function (ProductPriceLog $log) {
-                $name = $log->product?->name ?? __('Product');
-                $supplier = $log->supplier?->name ? ' ('.$log->supplier->name.')' : '';
-
-                return $name.': Rp '.number_format((float) $log->price, 0, ',', '.').$supplier;
-            })->implode("\n");
-
-            $sheet->fromArray([
-                $index + 1,
-                $priceRequest->created_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i'),
-                $priceRequest->requester?->name ?? '-',
-                trim(($priceRequest->customer?->name ?? '-').($priceRequest->customer?->pt_group ? ' / '.$priceRequest->customer->pt_group : '')),
-                Str::limit((string) $priceRequest->notes, 180),
-                $items !== '' ? $items : ($priceRequest->reply_notes ?? '-'),
-                $priceRequest->handledBy?->name ?? $priceRequest->assignee?->name ?? '-',
-                $priceRequest->completed_at?->timezone('Asia/Jakarta')->format('d/m/Y H:i') ?? '-',
-                PriceRequest::statusLabel($priceRequest->status),
-            ], null, 'A'.$row);
-
-            $sheet->getRowDimension($row)->setRowHeight($items !== '' ? max(15, min(90, 15 * (substr_count($items, "\n") + 1))) : 15);
-            $row++;
-        }
-
-        $sheet->getStyle('A2:I'.max(2, $row - 1))->getAlignment()->setVertical('top');
-        $sheet->getStyle('F2:F'.max(2, $row - 1))->getAlignment()->setWrapText(true);
-
-        foreach (range('A', 'I') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-
-        $writer = new Xlsx($spreadsheet);
-        $filename = 'estimator-report-'.$from.'-'.$to.'.xlsx';
-
-        return response()->streamDownload(function () use ($writer): void {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
-    }
-
     public function downloadQuotation(Request $request, PriceRequest $priceRequest)
     {
         $this->authorize('view', $priceRequest);
@@ -561,6 +419,7 @@ class PriceRequestController extends Controller
         );
     }
 
+
     private function configuredPricingEngineer(): ?User
     {
         $email = strtolower(trim((string) config('services.price_request.pricing_engineer_email')));
@@ -597,6 +456,7 @@ class PriceRequestController extends Controller
             $requester->notify($notification);
         }
     }
+
 
     private function storeFile($file, string $dir, ?int $version = null): string
     {

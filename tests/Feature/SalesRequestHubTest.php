@@ -72,7 +72,7 @@ class SalesRequestHubTest extends TestCase
             ->assertOk()->getContent();
 
         $this->assertStringContainsString(__('Inside Sales'), $html);
-        $this->assertStringContainsString(__('Price'), $html);
+        $this->assertStringContainsString(__('Installation Price'), $html);
         $this->assertStringContainsString('Engineer', $html);
     }
 

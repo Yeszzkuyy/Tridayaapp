@@ -15,8 +15,13 @@ class ProductPriceLog extends Model
         'product_id',
         'supplier_id',
         'price',
+        'price_type',
         'currency',
+        'stock_status',
+        'stock_eta',
+        'warranty_info',
         'price_request_id',
+        'estimator_request_item_id',
         'updated_by',
         'notes',
     ];
@@ -43,5 +48,10 @@ class ProductPriceLog extends Model
     public function priceRequest()
     {
         return $this->belongsTo(PriceRequest::class);
+    }
+
+    public function estimatorRequestItem()
+    {
+        return $this->belongsTo(EstimatorRequestItem::class);
     }
 }
