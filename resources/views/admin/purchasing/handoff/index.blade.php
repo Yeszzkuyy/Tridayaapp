@@ -57,18 +57,18 @@
     </form>
 
     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-        <div class="overflow-x-auto lg:overflow-visible">
-            <table class="min-w-full divide-y divide-slate-100 text-sm dark:divide-slate-700">
+        <div>
+            <table class="w-full table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
-                        <th class="hidden px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 lg:table-cell">{{ __('Sales Owner') }}</th>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
-                        <th class="hidden px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 md:table-cell">{{ __('Items') }}</th>
-                        <th class="w-[170px] px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
-                        <th class="w-[190px] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Actions') }}</th>
+                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
+                        <th class="w-[16%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
+                        <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Sales Owner') }}</th>
+                        <th class="w-[15%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
+                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
+                        <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Items') }}</th>
+                        <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
+                        <th class="w-[84px] px-2.5 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -80,30 +80,33 @@
                             $itemSummary = $proposal->items->take(3)
                                 ->map(fn ($item) => rtrim(rtrim(number_format((float) $item->quantity, 2), '0'), '.').'× '.$item->description)
                                 ->implode(', ');
+                            $poName = $proposal->po_document_path ? basename((string) $proposal->po_document_path) : null;
+                            $poUrl = $proposal->po_document_path ? route('sales.proposals.download-po', $proposal) : null;
+                            $poKind = $poName ? \App\Rules\SecureFile::previewKind($poName) : null;
                         @endphp
                         <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
-                            <td class="px-3 py-3.5">
-                                <p class="whitespace-nowrap font-semibold tabular-nums text-slate-800 dark:text-slate-100">{{ $proposal->proposal_number }}</p>
+                            <td class="px-2.5 py-3.5">
+                                <p class="truncate font-semibold tabular-nums text-slate-800 dark:text-slate-100" title="{{ $proposal->proposal_number }}">{{ $proposal->proposal_number }}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ $proposal->proposal_date?->format('d M Y') ?? __('Not filled') }}</p>
                             </td>
-                            <td class="px-3 py-3.5 text-slate-700 dark:text-slate-300">
+                            <td class="px-2.5 py-3.5 text-slate-700 dark:text-slate-300">
                                 <p class="truncate" title="{{ $proposal->customer }}">{{ $proposal->customer }}</p>
                                 @if($proposal->lead?->pt_group)
                                     <span class="mt-0.5 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $proposal->lead->pt_group }}</span>
                                 @endif
                             </td>
-                            <td class="hidden px-3 py-3.5 text-slate-700 dark:text-slate-300 lg:table-cell">
+                            <td class="hidden px-2.5 py-3.5 text-slate-700 dark:text-slate-300 xl:table-cell">
                                 <span class="block truncate">{{ $proposal->lead?->assignee?->name ?? __('Not filled') }}</span>
                             </td>
-                            <td class="px-3 py-3.5 text-slate-700 dark:text-slate-300">
-                                <p class="whitespace-nowrap font-medium">{{ $proposal->po_number ?? __('Not filled') }}</p>
+                            <td class="px-2.5 py-3.5 text-slate-700 dark:text-slate-300">
+                                <p class="truncate font-medium" title="{{ $proposal->po_number ?? __('Not filled') }}">{{ $proposal->po_number ?? __('Not filled') }}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ $proposal->po_date?->format('d M Y') ?? __('Not filled') }}</p>
                                 <p class="line-clamp-1 text-xs text-slate-500 dark:text-slate-400" title="{{ $proposal->paymentTermsSummary() }}">
                                     {{ $proposal->paymentTermsSummary() }}
                                 </p>
                             </td>
-                            <td class="px-3 py-3.5 text-slate-700 dark:text-slate-300">
-                                <p class="whitespace-nowrap">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</p>
+                            <td class="px-2.5 py-3.5 text-slate-700 dark:text-slate-300">
+                                <p class="truncate">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</p>
                                 @if($deadlineDays !== null)
                                     @if($deadlineDays < 0)
                                         <span class="mt-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">
@@ -121,28 +124,65 @@
                                     <p class="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">{{ __(':count field(s) incomplete', ['count' => count($proposal->handoffWarnings())]) }}</p>
                                 @endif
                             </td>
-                            <td class="hidden px-3 py-3.5 text-slate-600 dark:text-slate-400 md:table-cell">
+                            <td class="hidden px-2.5 py-3.5 text-slate-600 dark:text-slate-400 xl:table-cell">
                                 <p class="text-xs">{{ $proposal->items->count() }} {{ __('item(s)') }}</p>
                                 <p class="line-clamp-2" title="{{ $itemSummary }}">{{ $itemSummary }}</p>
                             </td>
-                            <td class="px-3 py-3.5">
+                            <td class="px-2.5 py-3.5">
                                 <x-purchasing.status-stepper :proposal="$proposal" />
                             </td>
-                            <td class="px-3 py-3.5 text-right">
-                                <div class="flex flex-wrap items-center justify-end gap-1.5">
-                                    <x-icon-button as="a" icon="view" href="{{ route('admin.purchasing.show', $proposal) }}" title="{{ __('Handoff Detail') }}" />
-                                    @if($proposal->isReadyForSupplierPo())
-                                        @can('manage-admin')
-                                            <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}" title="{{ __('Create Supplier PO') }}" />
-                                        @endcan
+                            <td class="px-2.5 py-3.5 text-right">
+                                <div class="flex items-center justify-end gap-1">
+                                    {{-- Aksi utama: buka detail handoff (atau quotation bila PO belum ada) --}}
+                                    @if($proposal->po_document_path)
+                                        <x-icon-button as="a" icon="view" href="{{ route('admin.purchasing.show', $proposal) }}" title="{{ __('Handoff Detail') }}" />
+                                    @else
+                                        <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View Quotation') }}" />
                                     @endif
-                                    @if($proposal->project)
-                                        <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" title="{{ __('View Project') }}" />
-                                    @endif
-                                    <x-file-preview icon="file-text"
-                                                    :url="route('sales.proposals.download-po', $proposal)"
-                                                    :name="basename((string) $proposal->po_document_path)" />
-                                    <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" title="{{ __('Download PO') }}" />
+
+                                    {{-- Aksi lain dirapatkan ke menu agar baris tidak melebar --}}
+                                    <x-dropdown align="right" width="w-56" content-classes="py-1 bg-white dark:bg-slate-800">
+                                        <x-slot name="trigger">
+                                            <x-icon-button icon="more" title="{{ __('More actions') }}" />
+                                        </x-slot>
+                                        <x-slot name="content">
+                                            @if($proposal->isReadyForSupplierPo())
+                                                @can('manage-admin')
+                                                    <a href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}"
+                                                       class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                        <x-icon name="add" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                        {{ __('Create Supplier PO') }}
+                                                    </a>
+                                                @endcan
+                                            @endif
+                                            <a href="{{ route('sales.proposals.show', $proposal) }}"
+                                               class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                <x-icon name="file-text" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                {{ __('View Quotation') }}
+                                            </a>
+                                            @if($proposal->project)
+                                                <a href="{{ route('projects.show', $proposal->project) }}"
+                                                   class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                    <x-icon name="project" class="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                                                    {{ __('View Project') }}
+                                                </a>
+                                            @endif
+                                            @if($poUrl)
+                                                <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>
+                                                <button type="button"
+                                                        class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60"
+                                                        @click="window.openDocPreview({ kind: @js($poKind), url: @js($poUrl), filename: @js($poName), download: @js($poUrl) })">
+                                                    <x-icon name="file-text" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                    {{ __('Preview Customer PO') }}
+                                                </button>
+                                                <a href="{{ $poUrl }}"
+                                                   class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                    <x-icon name="download" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                    {{ __('Download Customer PO') }}
+                                                </a>
+                                            @endif
+                                        </x-slot>
+                                    </x-dropdown>
                                 </div>
                             </td>
                         </tr>
