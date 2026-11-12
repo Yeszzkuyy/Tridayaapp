@@ -205,6 +205,11 @@ class Customer extends Model
         return $this->hasMany(PurchaseOrder::class);
     }
 
+    public function goodsDeliveries()
+    {
+        return $this->hasMany(GoodsDelivery::class);
+    }
+
     public function leads()
     {
         return $this->hasMany(Lead::class);

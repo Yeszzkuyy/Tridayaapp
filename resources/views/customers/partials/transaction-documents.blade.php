@@ -6,7 +6,11 @@ Props:
   $custPayments    Collection payment customer
   $typedDocs       Collection dokumen transaksi dari ProjectDocument (groupBy doc_type)
 --}}
-@props(['custInvoices', 'custPos', 'custPayments', 'typedDocs', 'canUploadDocs' => false])
+@props(['custInvoices', 'custPos', 'custDeliveries', 'custPayments', 'typedDocs', 'canUploadDocs' => false])
+
+@php
+    $canViewAdmin = auth()->user()?->can('view-admin');
+@endphp
 
 <div class="space-y-6">
     <div class="border-t border-slate-200 pt-6 dark:border-slate-700">
@@ -18,10 +22,12 @@ Props:
         <div>
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Invoice') }}</span>
-                <a href="{{ route('admin.invoices.index') }}"
-                   class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                    {{ __('Lihat Semua Invoice') }} →
-                </a>
+                @can('view-admin')
+                    <a href="{{ route('admin.invoices.index') }}"
+                       class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                        {{ __('Lihat Semua Invoice') }} →
+                    </a>
+                @endcan
             </div>
 
             @if($custInvoices->isNotEmpty() || ($typedDocs->get('invoice', collect()))->isNotEmpty())
@@ -35,7 +41,7 @@ Props:
                             };
                             $invStatusLabel = $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid'));
                         @endphp
-                        <a href="{{ route('admin.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
+                        <a href="{{ auth()->user()?->can('view-admin') ? route('admin.invoices.show', $inv) : route('sales.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
                             <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                 <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,10 +84,12 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No invoices') }}</p>
-                    <a href="{{ route('admin.invoices.index') }}"
-                       class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                        {{ __('Buka Modul Invoice') }} →
-                    </a>
+                    @can('view-admin')
+                        <a href="{{ route('admin.invoices.index') }}"
+                           class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                            {{ __('Buka Modul Invoice') }} →
+                        </a>
+                    @endcan
                 </div>
             @endif
         </div>
@@ -90,10 +98,12 @@ Props:
         <div class="mt-6">
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Purchase Order') }}</span>
-                <a href="{{ route('admin.pos.index') }}"
-                   class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                    {{ __('Lihat Semua PO') }} →
-                </a>
+                @can('view-admin')
+                    <a href="{{ route('admin.pos.index') }}"
+                       class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                        {{ __('Lihat Semua PO') }} →
+                    </a>
+                @endcan
             </div>
 
             @if($custPos->isNotEmpty() || ($typedDocs->get('po', collect()))->isNotEmpty())
@@ -107,8 +117,12 @@ Props:
                                 default => 'slate',
                             };
                         @endphp
-                        <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
-                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                        @if($canViewAdmin)
+                            <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
+                               class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                        @else
+                            <div class="block overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50">
+                        @endif
                             <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
                                 <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -123,7 +137,11 @@ Props:
                                 </p>
                                 <p class="mt-0.5 truncate text-xs text-slate-400">{{ Str::limit($po->items, 60) }}</p>
                             </div>
-                        </a>
+                        @if($canViewAdmin)
+                            </a>
+                        @else
+                            </div>
+                        @endif
                     @endforeach
 
                     @foreach(($typedDocs->get('po', collect())) as $doc)
@@ -150,10 +168,52 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No purchase orders') }}</p>
-                    <a href="{{ route('admin.pos.index') }}"
-                       class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                        {{ __('Buka Modul Purchase Order') }} →
-                    </a>
+                    @can('view-admin')
+                        <a href="{{ route('admin.pos.index') }}"
+                           class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                            {{ __('Buka Modul Purchase Order') }} →
+                        </a>
+                    @endcan
+                </div>
+            @endif
+        </div>
+
+        {{-- Pengiriman Barang (status surat jalan) --}}
+        <div class="mt-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Delivery') }}</span>
+            </div>
+
+            @if($custDeliveries->isNotEmpty())
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($custDeliveries as $delivery)
+                        @php
+                            $deliveryBadgeColor = match($delivery->status) {
+                                'delivered' => 'green',
+                                'shipped' => 'blue',
+                                default => 'slate',
+                            };
+                        @endphp
+                        <div class="block overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7"/>
+                                </svg>
+                                <span class="absolute left-2 top-2 rounded bg-sky-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">DLV</span>
+                            </div>
+                            <div class="p-3">
+                                <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                    <span class="truncate">{{ $delivery->delivery_number }}</span>
+                                    <x-status-badge :color="$deliveryBadgeColor">{{ \App\Models\GoodsDelivery::statusLabel($delivery->status) }}</x-status-badge>
+                                </p>
+                                <p class="mt-0.5 text-xs text-slate-400">{{ $delivery->delivery_date?->format('d M Y') }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No deliveries yet') }}</p>
                 </div>
             @endif
         </div>

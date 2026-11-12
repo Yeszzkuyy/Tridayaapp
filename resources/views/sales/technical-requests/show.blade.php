@@ -38,7 +38,8 @@
             && in_array($technicalRequest->status, ['assigned', 'in_progress'], true);
         $canCancel = !in_array($technicalRequest->status, ['completed', 'cancelled'], true)
             && ((int) $technicalRequest->requested_by === (int) $user?->id || $user?->can('manage-sales-leads'));
-        $canCreateQuotation = $technicalRequest->status === 'completed' && ($user?->can('manage-sales') ?? false);
+        $canCreateQuotation = $technicalRequest->status === 'completed'
+            && (($user?->can('manage-inside-sales') ?? false) || ($user?->can('manage-sales-leads') ?? false));
         $hasActions = ! $readOnly && ($canReview || $canAssign || $canWork || $canCancel || $canCreateQuotation);
         $hasWorkDetails = collect([
             $technicalRequest->purpose,

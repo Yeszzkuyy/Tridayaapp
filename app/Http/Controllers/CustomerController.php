@@ -53,11 +53,14 @@ class CustomerController extends Controller
                 }
             })
             ->when($request->filled('pt_group') && ! $isRestricted, fn ($query) => $query->where('pt_group', $request->string('pt_group')))
-            // Lead/prospek tidak tampil di menu Customer sampai menjadi deal.
+            // Default: lead/prospek tidak tampil sampai menjadi deal.
+            // ?status=lead hanya prospek, ?status=all customer + prospek.
             ->when(
                 $request->string('status')->toString() === 'lead',
                 fn ($query) => $query->where('status', 'lead'),
-                fn ($query) => $query->where('status', '!=', 'lead'),
+                fn ($query) => $request->string('status')->toString() === 'all'
+                    ? $query
+                    : $query->where('status', '!=', 'lead'),
             )
             ->latest()
             ->paginate(15)
@@ -212,6 +215,7 @@ class CustomerController extends Controller
 
         $custInvoices = $customer->invoices()->latest('issue_date')->get();
         $custPos = $customer->purchaseOrders()->latest('issue_date')->get();
+        $custDeliveries = $customer->goodsDeliveries()->latest('delivery_date')->get();
         $custPayments = \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
             ->with('invoice')
             ->latest('payment_date')
@@ -256,6 +260,7 @@ class CustomerController extends Controller
             'typedDocs' => $this->typedDocuments($customer),
             'custInvoices' => $custInvoices,
             'custPos' => $custPos,
+            'custDeliveries' => $custDeliveries,
             'custPayments' => $custPayments,
             'customerDocuments' => $documentCenter->paginate($request->user(), $documentFilters, 'documents_page'),
             'customerDocumentFilters' => $documentFilters,

@@ -100,6 +100,7 @@ class PurchasingHandoffTest extends TestCase
     {
         $this->actingAs($sales)->post(route('sales.proposals.upload-po', $proposal), array_merge([
             'po_file' => UploadedFile::fake()->create('customer-po.pdf', 100, 'application/pdf'),
+            'delivery_address' => 'Jl. Pengiriman Uji No. 1, Jakarta',
         ], $extra))->assertRedirect();
     }
 

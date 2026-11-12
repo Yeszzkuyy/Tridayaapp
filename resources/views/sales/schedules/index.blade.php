@@ -168,7 +168,7 @@
                         <div class="relative flex items-start justify-between gap-3">
                             <button type="button" @click="openDrawer(event)" class="min-w-0 flex-1 text-left text-lg sm:text-xl font-bold tracking-tight text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400" x-text="event.description"></button>
                             <div class="flex shrink-0 items-center gap-1">
-                                <a x-show="canWrite && !event.completed" :href="followUpBase + '/' + event.id + '/edit'" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}"
+                                <a x-show="canWrite && !event.completed && event.edit_url" :href="event.edit_url" title="{{ __('Edit') }}" aria-label="{{ __('Edit') }}"
                                    class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-accent-500 dark:hover:text-slate-200 dark:hover:text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
                                 </a>
@@ -189,7 +189,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4 shrink-0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
                                     {{ __('View lead') }}
                                 </a>
-                                <form x-show="canWrite && !event.completed" method="POST" :action="followUpBase + '/' + event.id + '/complete'">
+                                <form x-show="canWrite && !event.completed && event.complete_url" method="POST" :action="event.complete_url">
                                     @csrf
                                     <input type="hidden" name="return" value="schedule">
                                     <input type="hidden" name="date" :value="activeDate">
@@ -334,6 +334,7 @@
                         <div class="flex-1 overflow-y-auto px-5 py-4">
                             <h3 class="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100" x-text="selectedEvent.customer"></h3>
                             <p class="mt-0.5 text-sm text-slate-500" x-text="selectedEvent.date + (selectedEvent.activity_time ? ', ' + selectedEvent.activity_time : '')"></p>
+                            <span class="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200" x-text="selectedEvent.type_label"></span>
 
                             <template x-if="selectedEvent.pic_name">
                                 <div class="mt-3 flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-700/50">
@@ -437,7 +438,7 @@
                             </div>
                         </div>
                         <div x-show="canWrite && !selectedEvent.completed" class="flex items-center justify-between gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-700">
-                            <div class="relative">
+                            <div class="relative" x-show="selectedEvent.snooze_url">
                                 <button type="button" @click="snoozeOpen = !snoozeOpen" title="{{ __('Postpone') }}" aria-label="{{ __('Postpone') }}"
                                         class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-accent-500 dark:hover:text-slate-200 dark:hover:text-white">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -655,7 +656,8 @@
 
                 cardColor(id) {
                     const keys = Object.keys(this.cardPalette);
-                    return this.cardPalette[keys[(id || 0) % keys.length]];
+                    const n = parseInt(String(id ?? '').replace(/\D/g, ''), 10) || 0;
+                    return this.cardPalette[keys[n % keys.length]];
                 },
 
                 init() {
@@ -938,6 +940,9 @@
 
                 followUpUrl(action) {
                     if (!this.selectedEvent) return '#';
+                    if (action === 'edit') return this.selectedEvent.edit_url || '#';
+                    if (action === 'complete') return this.selectedEvent.complete_url || '#';
+                    if (action === 'snooze') return this.selectedEvent.snooze_url || '#';
                     return String(this.followUpBase).replace(/\/follow-ups\/?$/, '/follow-ups/' + this.selectedEvent.id + '/' + action);
                 },
 

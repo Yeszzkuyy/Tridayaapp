@@ -18,7 +18,10 @@
     x-data="{
         darOpen: false,
         docOpen: false,
+        poOpen: false,
         target: { id: null, name: '', leadId: null },
+        poTarget: { name: '', quotations: [] },
+        poForm: { proposalId: '', poNumber: '', poDate: '{{ now()->toDateString() }}', deliveryDeadline: '', deliveryAddress: '' },
         openDar(data) {
             this.target = { id: data.customerId, name: data.customerName, leadId: data.leadId || null };
             this.darOpen = true;
@@ -26,6 +29,26 @@
         openDoc(data) {
             this.target = { id: data.customerId, name: data.customerName, leadId: data.leadId || null };
             this.docOpen = true;
+        },
+        openPo(data) {
+            const quotations = JSON.parse(data.quotations || '[]');
+            this.poTarget = { name: data.customerName, quotations };
+            this.applyQuotation(quotations[0]?.id || '');
+            this.poOpen = true;
+        },
+        applyQuotation(id) {
+            const quotation = this.poTarget.quotations.find((item) => String(item.id) === String(id));
+            this.poForm = {
+                proposalId: id || '',
+                poNumber: quotation?.po_number || '',
+                poDate: '{{ now()->toDateString() }}',
+                deliveryDeadline: quotation?.delivery_deadline || '',
+                deliveryAddress: quotation?.delivery_address || '',
+            };
+        },
+        selectedHasPo() {
+            const quotation = this.poTarget.quotations.find((item) => String(item.id) === String(this.poForm.proposalId));
+            return Boolean(quotation?.has_po);
         },
     }"
     class="lynk-enter mb-6 rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90"
@@ -55,6 +78,7 @@
             @if($hubSearch !== '' || $hubStage !== '')
                 <x-icon-button as="a" icon="reset" :href="$hubResetRoute ?? route('sales.dashboard')" title="{{ __('Reset') }}" />
             @endif
+            <x-icon-button as="a" icon="customer" href="{{ route('customers.index', ['status' => 'all']) }}" label="{{ __('See all') }}" title="{{ __('See all my customers') }}" />
         </form>
     </div>
 
@@ -77,6 +101,7 @@
                         data-customer-id="{{ $customer->id }}"
                         data-customer-name="{{ $customer->name }}"
                         data-lead-id="{{ $row['lead']?->id }}"
+                        data-quotations="{{ e($row['accepted_quotations']->toJson()) }}"
                     >
                         <td class="px-4 py-3">
                             <a href="{{ route('customers.show', $customer) }}" class="font-semibold text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">
@@ -106,6 +131,11 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1.5">
                                 <x-icon-button icon="add" x-on:click="openDar($el.closest('tr').dataset)" title="{{ __('Fill DAR Update') }}" />
+                                @can('manage-sales')
+                                    @if($row['accepted_quotations']->isNotEmpty())
+                                        <x-icon-button icon="receipt" x-on:click="openPo($el.closest('tr').dataset)" title="{{ __('Upload PO') }}" />
+                                    @endif
+                                @endcan
                                 <x-icon-button icon="upload" x-on:click="openDoc($el.closest('tr').dataset)" title="{{ __('Upload Document') }}" />
                             </div>
                         </td>
@@ -188,5 +218,67 @@
                 </div>
             </form>
         </div>
-    </div>
+    {{-- Modal: upload PO resmi ke quotation Accepted --}}
+    @can('manage-sales')
+        <div x-show="poOpen" x-cloak class="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true">
+            <div class="absolute inset-0 bg-slate-900/50" x-on:click="poOpen = false" aria-hidden="true"></div>
+            <div class="relative w-full max-w-lg rounded-2xl border border-slate-100 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800" x-on:keydown.escape.window="poOpen = false">
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ __('Upload Customer PO') }}</h3>
+                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400" x-text="poTarget.name"></p>
+
+                <form method="POST" x-bind:action="'{{ url('/sales/proposals') }}/' + poForm.proposalId + '/po'" enctype="multipart/form-data" class="mt-4 space-y-3">
+                    @csrf
+
+                    <div>
+                        <label for="hub-po-quotation" class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{{ __('Accepted Quotation') }}</label>
+                        <select id="hub-po-quotation" name="proposal_id" required
+                                x-model="poForm.proposalId" x-on:change="applyQuotation($event.target.value)"
+                                class="h-10 w-full rounded-xl border-slate-200 bg-white text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900">
+                            <template x-for="quotation in poTarget.quotations" :key="quotation.id">
+                                <option :value="quotation.id" x-text="quotation.number + ' - ' + quotation.total_label"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="hub-po-number" class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{{ __('PO Number') }}</label>
+                            <input id="hub-po-number" type="text" name="po_number" maxlength="100" x-model="poForm.poNumber"
+                                   class="h-10 w-full rounded-xl border-slate-200 bg-white text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900">
+                        </div>
+                        <div>
+                            <label for="hub-po-date" class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{{ __('PO Date') }}</label>
+                            <input id="hub-po-date" type="date" name="po_date" x-model="poForm.poDate"
+                                   class="h-10 w-full rounded-xl border-slate-200 bg-white text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="hub-po-deadline" class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{{ __('Delivery Deadline') }}</label>
+                        <input id="hub-po-deadline" type="date" name="delivery_deadline" x-model="poForm.deliveryDeadline"
+                               class="h-10 w-full rounded-xl border-slate-200 bg-white text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900">
+                    </div>
+
+                    <div>
+                        <label for="hub-po-address" class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{{ __('Delivery Address') }}</label>
+                        <textarea id="hub-po-address" name="delivery_address" rows="2" required maxlength="255" x-model="poForm.deliveryAddress"
+                                  class="w-full rounded-xl border-slate-200 bg-white text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900"
+                                  placeholder="{{ __('Project delivery address (separate from office billing address).') }}"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="hub-po-file" class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{{ __('PO File') }}</label>
+                        <input id="hub-po-file" type="file" name="po_file" accept=".pdf,.jpg,.jpeg,.png" x-bind:required="!selectedHasPo()"
+                               class="block w-full rounded-xl border border-slate-200 bg-white p-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-slate-700 dark:bg-slate-900">
+                        <p class="mt-1 text-[11px] text-slate-400" x-text="selectedHasPo() ? '{{ __('A PO document already exists. Upload a new file only to replace it.') }}' : '{{ __('PDF or image, maximum 10 MB.') }}'"></p>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-1">
+                        <x-secondary-button x-on:click="poOpen = false">{{ __('Cancel') }}</x-secondary-button>
+                        <x-primary-button>{{ __('Upload PO') }}</x-primary-button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
 </div>

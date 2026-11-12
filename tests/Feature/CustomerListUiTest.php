@@ -40,6 +40,30 @@ class CustomerListUiTest extends TestCase
             ->assertSee('bg-accent-600', false);
     }
 
+    public function test_customer_list_status_filter_can_include_prospects(): void
+    {
+        Customer::create(['name' => 'PT Sudah Deal', 'pt_group' => 'NTI', 'status' => 'deal']);
+        Customer::create(['name' => 'PT Masih Prospek', 'pt_group' => 'NTI', 'status' => 'lead']);
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('customers.index'))
+            ->assertOk()
+            ->assertSee('PT Sudah Deal')
+            ->assertDontSee('PT Masih Prospek');
+
+        $this->actingAs($admin)->get(route('customers.index', ['status' => 'lead']))
+            ->assertOk()
+            ->assertSee('PT Masih Prospek')
+            ->assertDontSee('PT Sudah Deal');
+
+        $this->actingAs($admin)->get(route('customers.index', ['status' => 'all']))
+            ->assertOk()
+            ->assertSee('PT Sudah Deal')
+            ->assertSee('PT Masih Prospek');
+    }
+
+
     public function test_customer_detail_uses_open_header_without_decorative_banner(): void
     {
         $customer = Customer::create(['name' => 'PT Detail Bersih', 'pt_group' => 'NTI', 'address' => 'Jakarta']);

@@ -5010,5 +5010,15 @@
     "Target vs Gross Margin": "Target vs Gross Margin",
     "Margin incomplete": "Margin incomplete",
     "Target Margin Kotor (Rp)": "Target Margin Kotor (Rp)",
-    "Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah.": "Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah."
+    "Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah.": "Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah.",
+    "No deliveries yet": "No deliveries yet",
+    "See all": "See all",
+    "See all my customers": "See all my customers",
+    "Fill in the delivery address before uploading the customer PO.": "Fill in the delivery address before uploading the customer PO.",
+    "Customers & Prospects": "Customers & Prospects",
+    "Upload Customer PO": "Upload Customer PO",
+    "Accepted Quotation": "Accepted Quotation",
+    "Project delivery address (separate from office billing address).": "Project delivery address (separate from office billing address).",
+    "A PO document already exists. Upload a new file only to replace it.": "A PO document already exists. Upload a new file only to replace it.",
+    "PDF or image, maximum 10 MB.": "PDF or image, maximum 10 MB."
 }

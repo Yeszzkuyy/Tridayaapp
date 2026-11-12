@@ -25,6 +25,11 @@ class ProposalNumberingRevisionTest extends TestCase
         return User::factory()->create()->assignRole('sales');
     }
 
+    private function managementUser(): User
+    {
+        return User::factory()->create()->assignRole('management');
+    }
+
     private function makeLead(User $sales): Lead
     {
         $customer = Customer::create(['name' => 'PT Number', 'pt_group' => 'MGK']);
@@ -68,7 +73,7 @@ class ProposalNumberingRevisionTest extends TestCase
         $sales->update(['name' => 'Adi Santosa', 'initials' => 'AS']);
         $lead = $this->makeLead($sales);
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), $this->storePayload($lead))
+        $this->actingAs($this->managementUser())->post(route('sales.proposals.store'), $this->storePayload($lead))
             ->assertRedirect();
 
         $proposal = Proposal::firstOrFail();
@@ -80,12 +85,13 @@ class ProposalNumberingRevisionTest extends TestCase
     {
         $sales = $this->salesUser();
         $sales->update(['initials' => 'AS']);
+        $management = $this->managementUser();
 
         $lead1 = $this->makeLead($sales);
-        $this->actingAs($sales)->post(route('sales.proposals.store'), $this->storePayload($lead1));
+        $this->actingAs($management)->post(route('sales.proposals.store'), $this->storePayload($lead1));
 
         $lead2 = $this->makeLead($sales);
-        $this->actingAs($sales)->post(route('sales.proposals.store'), $this->storePayload($lead2));
+        $this->actingAs($management)->post(route('sales.proposals.store'), $this->storePayload($lead2));
 
         $numbers = Proposal::orderBy('id')->pluck('proposal_number')->all();
         $this->assertStringContainsString('/001/', $numbers[0]);
@@ -98,7 +104,7 @@ class ProposalNumberingRevisionTest extends TestCase
         $sales->update(['initials' => 'AS']);
         $lead = $this->makeLead($sales);
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), $this->storePayload($lead))
+        $this->actingAs($this->managementUser())->post(route('sales.proposals.store'), $this->storePayload($lead))
             ->assertRedirect();
 
         $proposal = Proposal::firstOrFail();
@@ -127,14 +133,31 @@ class ProposalNumberingRevisionTest extends TestCase
         $sales = $this->salesUser();
         $sales->update(['initials' => 'AS']);
         $lead = $this->makeLead($sales);
+        $management = $this->managementUser();
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), $this->storePayload($lead))
+        $this->actingAs($management)->post(route('sales.proposals.store'), $this->storePayload($lead))
             ->assertRedirect();
 
         // Attempt kedua harus ditolak.
-        $this->actingAs($sales)->post(route('sales.proposals.store'), $this->storePayload($lead))
+        $this->actingAs($management)->post(route('sales.proposals.store'), $this->storePayload($lead))
             ->assertSessionHasErrors('lead_id');
 
         $this->assertSame(1, Proposal::count());
+    }
+
+    public function test_sales_cannot_create_quotation_directly(): void
+    {
+        $sales = $this->salesUser();
+        $lead = $this->makeLead($sales);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertForbidden();
+
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.store'), $this->storePayload($lead))
+            ->assertForbidden();
+
+        $this->assertSame(0, Proposal::count());
     }
 }

@@ -60,6 +60,7 @@
 
     @php
         $canSalesWrite = auth()->user()?->can('manage-sales') || auth()->user()?->can('manage-inside-sales');
+        $canCreateQuotation = auth()->user()?->can('manage-inside-sales') || auth()->user()?->can('manage-sales-leads');
         $techRequests = $techRequests ?? collect();
         $activeTechRequest = $activeTechRequest ?? null;
         $proposalsList = $proposalsList ?? collect();
@@ -319,7 +320,7 @@
                             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rp {{ number_format($proposalsList->sum('grand_total'), 0, ',', '.') }}</span>
                         @endif
                     </h2>
-                    @if($canSalesWrite)
+                    @if($canCreateQuotation)
                         <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
                             <x-icon name="receipt" class="h-5 w-5" />
                         </x-icon-button>

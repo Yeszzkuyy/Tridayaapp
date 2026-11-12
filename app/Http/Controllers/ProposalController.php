@@ -226,7 +226,22 @@ class ProposalController extends Controller
     {
         $pt = $lead->pt_group ?: $lead->customer?->pt_group ?: 'WANI';
 
-        return $this->numbers->generate($pt, auth()->user());
+        // Inisial pada nomor quotation milik Sales pemilik lead, bukan
+        // pembuat draf (Inside Sales / Management).
+        return $this->numbers->generate($pt, $lead->assignee ?? auth()->user());
+    }
+
+    /**
+     * Sales lapangan tidak lagi membuat quotation langsung. Draf disusun
+     * Inside Sales lewat task; Management tetap punya jalur darurat.
+     */
+    private function authorizeQuotationDraft(Request $request): void
+    {
+        abort_unless(
+            $request->user()?->can('manage-inside-sales')
+            || $request->user()?->can('manage-sales-leads'),
+            403
+        );
     }
 
     /**
@@ -411,6 +426,8 @@ class ProposalController extends Controller
 
     public function create(Request $request)
     {
+        $this->authorizeQuotationDraft($request);
+
         $priceRequest = null;
         if ($request->filled('price_request_id')) {
             $priceRequest = PriceRequest::with('customer')->findOrFail($request->integer('price_request_id'));
@@ -428,7 +445,10 @@ class ProposalController extends Controller
                 $query->where('customer_id', $priceRequest->customer_id);
             }
 
-            if (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
+            if ($user->can('manage-inside-sales')) {
+                // Inside Sales memilih lead dari task yang di-assign kepadanya.
+                $query->whereHas('tasks', fn ($task) => $task->where('assigned_to', $user->id));
+            } elseif (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
                 $query->where('assigned_to', $user->id);
             }
 
@@ -462,6 +482,8 @@ class ProposalController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeQuotationDraft($request);
+
         $request->merge(['items' => $this->normalizedItems($request->input('items'))]);
 
         $validated = $request->validate(array_merge([
@@ -882,6 +904,15 @@ class ProposalController extends Controller
             'delivery_deadline' => 'nullable|date',
             'delivery_address' => 'nullable|string|max:255',
         ], $this->paymentRules()));
+
+        // Alamat pengiriman wajib sebelum PO masuk handoff (dipisah dari
+        // alamat tagihan kantor, sesuai wawancara Sales).
+        $effectiveAddress = trim((string) ($validated['delivery_address'] ?? $proposal->delivery_address ?? ''));
+        if ($effectiveAddress === '') {
+            return back()->withInput()->withErrors([
+                'delivery_address' => __('Fill in the delivery address before uploading the customer PO.'),
+            ]);
+        }
 
         $payload = [
             'po_number' => $validated['po_number'] ?? $proposal->po_number,

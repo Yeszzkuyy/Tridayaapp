@@ -197,14 +197,15 @@ class ProposalCostMarginTest extends TestCase
         $this->assertFalse($this->userWithRole('ceo')->can('updateCost', Proposal::class));
     }
 
-    public function test_sales_cannot_submit_unit_cost_and_snapshot_is_preserved(): void
+    public function test_quotation_creator_cannot_submit_unit_cost_and_snapshot_is_preserved(): void
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $management = $this->userWithRole('management');
         $product = Product::create(['name' => 'Switch', 'cost_price' => 700, 'default_price' => 1200, 'status' => Product::STATUS_APPROVED]);
 
-        // Sales membuat quotation: harga modal = snapshot produk.
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        // Management membuat draf quotation: harga modal = snapshot produk.
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'items' => [['product_id' => $product->id, 'description' => 'Switch', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 1200, 'discount' => 0]],

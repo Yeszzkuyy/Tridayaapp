@@ -44,6 +44,30 @@ class SalesDrilldownTest extends TestCase
             ->assertSee(route('sales.my-leads', ['won_month' => 1]), false);
     }
 
+    public function test_customer_hub_offers_po_upload_for_accepted_quotation(): void
+    {
+        $sales = $this->loginAsSales();
+        $lead = $this->makeLead($sales, 'hot', 'PT Hub PO');
+
+        \App\Models\Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/HUB/001',
+            'created_by' => $sales->id,
+            'proposal_date' => now()->toDateString(),
+            'customer' => 'PT Hub PO',
+            'grand_total' => 7500000,
+            'status' => 'accepted',
+        ]);
+
+        $this->actingAs($sales)
+            ->get(route('sales.dashboard'))
+            ->assertOk()
+            ->assertSee('PT Hub PO')
+            ->assertSee('Upload PO')
+            ->assertSee('Accepted Quotation')
+            ->assertSee('data-quotations', false);
+    }
+
     public function test_my_leads_sort_oldest_and_customer(): void
     {
         $sales = $this->loginAsSales();

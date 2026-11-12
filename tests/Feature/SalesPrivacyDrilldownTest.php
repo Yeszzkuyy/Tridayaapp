@@ -86,8 +86,9 @@ class SalesPrivacyDrilldownTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->leadFor($sales);
+        $management = $this->userWithRole('management');
 
-        $response = $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $response = $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'items' => [[
