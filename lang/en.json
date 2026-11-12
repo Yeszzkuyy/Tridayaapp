@@ -4980,5 +4980,9 @@
     "For non-project jobs, choose the customer. If a project is selected, the customer follows the project.": "For non-project jobs, choose the customer. If a project is selected, the customer follows the project.",
     "Open tasks": "Open tasks",
     "Sales requests and schedules assigned to engineers will appear here.": "Sales requests and schedules assigned to engineers will appear here.",
-    "Tasks and schedules assigned by your Lead Technician will appear here.": "Tasks and schedules assigned by your Lead Technician will appear here."
+    "Tasks and schedules assigned by your Lead Technician will appear here.": "Tasks and schedules assigned by your Lead Technician will appear here.",
+    "BAST & Closed": "BAST & Closed",
+    "Due in :days days": "Due in :days days",
+    "No quotations match this view.": "No quotations match this view.",
+    "Handoff Stages": "Handoff Stages"
 }

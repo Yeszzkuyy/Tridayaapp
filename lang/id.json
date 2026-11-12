@@ -4980,5 +4980,9 @@
     "For non-project jobs, choose the customer. If a project is selected, the customer follows the project.": "Untuk pekerjaan non-project, pilih customernya. Bila project dipilih, customer otomatis mengikuti project.",
     "Open tasks": "Buka tugas",
     "Sales requests and schedules assigned to engineers will appear here.": "Request Sales dan jadwal yang ditugaskan ke engineer akan tampil di sini.",
-    "Tasks and schedules assigned by your Lead Technician will appear here.": "Tugas dan jadwal dari Lead Engineer Anda akan tampil di sini."
+    "Tasks and schedules assigned by your Lead Technician will appear here.": "Tugas dan jadwal dari Lead Engineer Anda akan tampil di sini.",
+    "BAST & Closed": "BAST & Tutup",
+    "Due in :days days": "Jatuh tempo dalam :days hari",
+    "No quotations match this view.": "Tidak ada quotation yang cocok pada tampilan ini.",
+    "Handoff Stages": "Tahap Handoff"
 }
