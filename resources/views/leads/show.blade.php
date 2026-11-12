@@ -230,12 +230,10 @@
                     <div class="mt-3 space-y-3">
                         @if($lead->project_name || $lead->need_type || $lead->procurement_status)
                             <div class="flex flex-wrap gap-2">
-                                @if($lead->project_name)
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                        <x-icon name="briefcase" class="h-4 w-4 text-slate-400" />
-                                        {{ $lead->project_name }}
-                                    </span>
-                                @endif
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                    <x-icon name="briefcase" class="h-4 w-4 text-slate-400" />
+                                    {{ $lead->project_name ?: __('Installation') }}
+                                </span>
                                 @if($lead->need_type)
                                     <span class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
                                         {{ \App\Models\Lead::needTypeLabel($lead->need_type) }}

@@ -182,10 +182,10 @@
 
                 <div>
                     <label for="project_name" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                        {{ __('Project Name') }} <span class="text-red-500">*</span>
+                        {{ __('Project Name') }} <span class="text-xs font-normal text-slate-400">({{ __('Optional') }})</span>
                         <x-info-tip tip="{{ __('Name of the project this lead refers to, e.g. Warehouse CCTV Installation.') }}" />
                     </label>
-                    <input type="text" name="project_name" id="project_name" required maxlength="255"
+                    <input type="text" name="project_name" id="project_name" maxlength="255"
                            value="{{ old('project_name', $prefill['project_name'] ?? '') }}"
                            placeholder="{{ __('e.g. Warehouse CCTV Installation') }}"
                            class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">

@@ -483,7 +483,7 @@ class LeadController extends Controller
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
             'kebutuhan' => 'required|string|max:2000',
-            'project_name' => 'required|string|max:255',
+            'project_name' => 'nullable|string|max:255',
             'need_type' => 'required|in:'.implode(',', Lead::NEED_TYPES),
             'procurement_status' => 'nullable|in:'.implode(',', Lead::PROCUREMENT_STATUSES),
             'solusi' => 'nullable|string|max:2000',
@@ -495,7 +495,6 @@ class LeadController extends Controller
         ], [
             'segment.required' => 'Kategori (Segment) wajib dipilih.',
             'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
-            'project_name.required' => 'Nama proyek wajib diisi.',
             'need_type.required' => 'Jenis kebutuhan wajib dipilih.',
         ]);
 
@@ -694,7 +693,7 @@ class LeadController extends Controller
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
             'kebutuhan' => 'required|string|max:2000',
-            'project_name' => 'required|string|max:255',
+            'project_name' => 'nullable|string|max:255',
             'need_type' => 'required|in:'.implode(',', Lead::NEED_TYPES),
             'procurement_status' => 'nullable|in:'.implode(',', Lead::PROCUREMENT_STATUSES),
             'solusi' => 'nullable|string|max:2000',
@@ -706,7 +705,6 @@ class LeadController extends Controller
         ], [
             'segment.required' => 'Kategori (Segment) wajib dipilih.',
             'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
-            'project_name.required' => 'Nama proyek wajib diisi.',
             'need_type.required' => 'Jenis kebutuhan wajib dipilih.',
         ]);
 

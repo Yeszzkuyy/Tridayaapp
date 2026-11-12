@@ -74,6 +74,24 @@ class SalesLeadCreateTest extends TestCase
             ->assertSee('Proyek CCTV Gudang');
     }
 
+    public function test_sales_can_create_lead_without_project_name_for_regular_installation(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $this->actingAs($sales)
+            ->post(route('leads.store'), $this->payload(['project_name' => null]))
+            ->assertRedirect();
+
+        $lead = Lead::whereHas('customer', fn ($q) => $q->where('name', 'PT Prospek Sales'))->firstOrFail();
+        $this->assertNull($lead->project_name);
+        $this->assertSame('cctv', $lead->need_type);
+
+        $this->actingAs($sales)
+            ->get(route('leads.show', $lead))
+            ->assertOk()
+            ->assertSee(__('Installation'));
+    }
+
     public function test_sales_can_edit_own_lead_but_not_another_sales_lead(): void
     {
         $sales = $this->userWithRole('sales');
