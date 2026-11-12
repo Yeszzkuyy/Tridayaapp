@@ -62,10 +62,10 @@
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
                         <th class="w-[13%] px-2.5 py-3.5 whitespace-nowrap text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
-                        <th class="w-[16%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
+                        <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
                         <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Sales Owner') }}</th>
                         <th class="w-[15%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
-                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
+                        <th class="w-[12%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
                         <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Items') }}</th>
                         <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
                         <th class="w-[84px] px-2.5 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Actions') }}</th>
@@ -150,7 +150,7 @@
                                                 @can('manage-admin')
                                                     <a href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}"
                                                        class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
-                                                        <x-icon name="add" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                        <x-icon name="receipt" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                                         {{ __('Create Supplier PO') }}
                                                     </a>
                                                 @endcan
@@ -163,7 +163,7 @@
                                             @if($proposal->project)
                                                 <a href="{{ route('projects.show', $proposal->project) }}"
                                                    class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
-                                                    <x-icon name="project" class="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                                                    <x-icon name="briefcase" class="h-4 w-4 text-violet-600 dark:text-violet-400" />
                                                     {{ __('View Project') }}
                                                 </a>
                                             @endif
@@ -172,7 +172,7 @@
                                                 <button type="button"
                                                         class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60"
                                                         @click="window.openDocPreview({ kind: @js($poKind), url: @js($poUrl), filename: @js($poName), download: @js($poUrl) })">
-                                                    <x-icon name="file-text" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                                    <x-icon name="eye" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                                     {{ __('Preview Customer PO') }}
                                                 </button>
                                                 <a href="{{ $poUrl }}"
