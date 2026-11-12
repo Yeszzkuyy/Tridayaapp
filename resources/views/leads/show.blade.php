@@ -29,9 +29,11 @@
                     <x-icon name="briefcase" class="h-5 w-5" />
                 </x-icon-button>
             @endif
-            @can('manage-marketing')
+            @canany(['manage-marketing', 'manage-sales'])
                 <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}"
                     title="{{ __('Edit lead') }}" />
+            @endcanany
+            @can('manage-marketing')
                 <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline-flex">
                     @csrf @method('DELETE')
                     <x-icon-button icon="delete" type="submit"

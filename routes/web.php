@@ -689,11 +689,15 @@ Route::middleware('auth')->group(function () {
     // ============================================
     // MARKETING — manage
     // ============================================
-    Route::middleware('permission:manage-marketing')->group(function () {
+    // Sales boleh membuat & mengubah lead miliknya sendiri (prospek lapangan).
+    Route::middleware('permission:manage-marketing|manage-sales')->group(function () {
         Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
         Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
         Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
         Route::put('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+    });
+
+    Route::middleware('permission:manage-marketing')->group(function () {
         Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
         Route::get('/leads/import', [LeadController::class, 'importForm'])->name('leads.import');
         // Parse xlsx di memori: throttle agar tidak di-DoS.
@@ -739,6 +743,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
         Route::get('/marketing/dashboard', [LeadController::class, 'dashboard'])->name('marketing.dashboard');
         Route::get('/leads/activities', [LeadController::class, 'activities'])->name('leads.activities');
+        Route::get('/partners', [PartnerController::class, 'index'])->name('partners.index');
+    });
+
+    // Dokumen & lampiran lead: Marketing dan Sales pemilik lead (dicek di controller).
+    Route::middleware('permission:view-marketing|manage-marketing|view-sales|manage-sales')->group(function () {
         Route::get('/leads/{lead}/documents/{document}/preview', [LeadController::class, 'previewDocument'])->name('leads.documents.preview');
         Route::get('/leads/{lead}/documents/{document}/download', [LeadController::class, 'downloadDocument'])->name('leads.documents.download');
 
@@ -751,8 +760,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('/leads/{lead}/attachments/{document}/category', [LeadController::class, 'categorizeAttachment'])
             ->middleware('permission:manage-marketing')
             ->name('leads.attachments.category');
-
-        Route::get('/partners', [PartnerController::class, 'index'])->name('partners.index');
     });
 
     // Detail lead — HARUS di bawah semua /leads/* spesifik agar tidak memangsa
