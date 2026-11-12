@@ -37,7 +37,7 @@
         @endforeach
     </nav>
 
-    <form method="GET" action="{{ route('admin.purchasing.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
+    <form method="GET" action="{{ route('admin.purchasing.index') }}" class="mb-4 flex flex-wrap items-end gap-3">
         @if($stage !== 'all')
             <input type="hidden" name="stage" value="{{ $stage }}">
         @endif
@@ -64,14 +64,14 @@
             <table class="w-full min-w-[820px] table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="w-[13%] px-2.5 py-3.5 whitespace-nowrap text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
-                        <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
-                        <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Sales Owner') }}</th>
-                        <th class="w-[15%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
-                        <th class="w-[12%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
-                        <th class="hidden w-[10%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Items') }}</th>
+                        <th class="w-[14%] px-2.5 py-3.5 whitespace-nowrap text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Quotation No.') }}</th>
+                        <th class="w-[13%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer') }}</th>
+                        <th class="hidden w-[9%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Sales Owner') }}</th>
+                        <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Customer PO') }}</th>
+                        <th class="w-[11%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Delivery Deadline') }}</th>
+                        <th class="hidden w-[9%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 xl:table-cell">{{ __('Items') }}</th>
                         <th class="w-[14%] px-2.5 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
-                        <th class="w-[84px] px-2.5 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Actions') }}</th>
+                        <th class="w-[176px] px-2.5 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -86,11 +86,18 @@
                             $poName = $proposal->po_document_path ? basename((string) $proposal->po_document_path) : null;
                             $poUrl = $proposal->po_document_path ? route('sales.proposals.download-po', $proposal) : null;
                             $poKind = $poName ? \App\Rules\SecureFile::previewKind($poName) : null;
+                            $warningCount = count($proposal->handoffWarnings());
+                            $canProcessPo = $proposal->handoffStage() === 'po_received' && auth()->user()?->can('manage-admin');
                         @endphp
                         <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                             <td class="px-2.5 py-3.5">
                                 <p class="truncate font-semibold tabular-nums text-slate-800 dark:text-slate-100" title="{{ $proposal->proposal_number }}">{{ $proposal->proposal_number }}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ $proposal->proposal_date?->format('d M Y') ?? __('Not filled') }}</p>
+                                @if((float) $proposal->grand_total > 0)
+                                    <p class="mt-0.5 truncate text-xs font-medium text-slate-600 dark:text-slate-400" title="{{ __('Quotation Value') }}">
+                                        Rp {{ number_format((float) $proposal->grand_total, 0, ',', '.') }}
+                                    </p>
+                                @endif
                             </td>
                             <td class="px-2.5 py-3.5 text-slate-700 dark:text-slate-300">
                                 <p class="truncate" title="{{ $proposal->customer }}">{{ $proposal->customer }}</p>
@@ -113,18 +120,31 @@
                                 @if($deadlineDays !== null)
                                     @if($deadlineDays < 0)
                                         <span class="mt-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">
-                                            {{ __('Overdue by :days days', ['days' => abs($deadlineDays)]) }}
+                                            {{ trans_choice('Overdue by :days day|Overdue by :days days', abs($deadlineDays), ['days' => abs($deadlineDays)]) }}
+                                        </span>
+                                    @elseif($deadlineDays === 0)
+                                        <span class="mt-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                                            {{ __('Due today') }}
+                                        </span>
+                                    @elseif($deadlineDays === 1)
+                                        <span class="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
+                                            {{ __('Due tomorrow') }}
                                         </span>
                                     @elseif($deadlineDays <= 7)
                                         <span class="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">
-                                            {{ __('Due in :days days', ['days' => $deadlineDays]) }}
+                                            {{ trans_choice('Due in :days day|Due in :days days', $deadlineDays, ['days' => $deadlineDays]) }}
                                         </span>
                                     @else
-                                        <span class="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">{{ __(':days days left', ['days' => $deadlineDays]) }}</span>
+                                        <span class="mt-1 block text-[11px] text-slate-400 dark:text-slate-500">{{ trans_choice(':days day left|:days days left', $deadlineDays, ['days' => $deadlineDays]) }}</span>
                                     @endif
                                 @endif
-                                @if($proposal->handoffWarnings())
-                                    <p class="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">{{ __(':count field(s) incomplete', ['count' => count($proposal->handoffWarnings())]) }}</p>
+                                @if($warningCount > 0)
+                                    <span class="mt-1 inline-flex items-center gap-1 rounded border border-amber-200/70 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300">
+                                        <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 3.5h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                        </svg>
+                                        {{ trans_choice(':count field incomplete|:count fields incomplete', $warningCount, ['count' => $warningCount]) }}
+                                    </span>
                                 @endif
                             </td>
                             <td class="hidden px-2.5 py-3.5 text-slate-600 dark:text-slate-400 xl:table-cell">
@@ -136,11 +156,15 @@
                             </td>
                             <td class="px-2.5 py-3.5 text-right">
                                 <div class="flex items-center justify-end gap-1">
-                                    {{-- Aksi utama: buka detail handoff (atau quotation bila PO belum ada) --}}
-                                    @if($proposal->po_document_path)
-                                        <x-icon-button as="a" icon="view" href="{{ route('admin.purchasing.show', $proposal) }}" title="{{ __('Handoff Detail') }}" />
+                                    {{-- Aksi utama sesuai tahap: proses PO supplier, atau buka detail --}}
+                                    @if($canProcessPo)
+                                        <x-icon-button as="a" icon="add" variant="solid" :label="__('Process PO')"
+                                                       href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}"
+                                                       title="{{ __('Process PO') }}" />
                                     @else
-                                        <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View Quotation') }}" />
+                                        <x-icon-button as="a" icon="view" :label="__('View Detail')"
+                                                       href="{{ $proposal->po_document_path ? route('admin.purchasing.show', $proposal) : route('sales.proposals.show', $proposal) }}"
+                                                       title="{{ __('View Detail') }}" />
                                     @endif
 
                                     {{-- Aksi lain dirapatkan ke menu agar baris tidak melebar --}}
@@ -149,7 +173,7 @@
                                             <x-icon-button icon="more" title="{{ __('More actions') }}" />
                                         </x-slot>
                                         <x-slot name="content">
-                                            @if($proposal->isReadyForSupplierPo())
+                                            @if(! $canProcessPo && $proposal->isReadyForSupplierPo())
                                                 @can('manage-admin')
                                                     <a href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}"
                                                        class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">

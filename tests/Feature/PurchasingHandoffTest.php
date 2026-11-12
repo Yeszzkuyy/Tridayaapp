@@ -159,6 +159,34 @@ class PurchasingHandoffTest extends TestCase
             ->assertSee($proposal->lead->assignee->name);
     }
 
+    public function test_row_shows_quotation_value_and_readable_sla_text(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+
+        $dueTomorrow = $this->makeProposal($this->makeLead($sales->id, 'PT Besok'), 'accepted', $sales->id);
+        $this->uploadPo($dueTomorrow, $sales, [
+            'po_number' => 'PO-BESOK-001',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDay()->toDateString(),
+        ]);
+
+        $overdue = $this->makeProposal($this->makeLead($sales->id, 'PT Lewat'), 'accepted', $sales->id);
+        $this->uploadPo($overdue, $sales, [
+            'po_number' => 'PO-LEWAT-001',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->subDays(2)->toDateString(),
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.purchasing.index'))
+            ->assertOk()
+            ->assertSee('Rp 4.500.000')
+            ->assertSee(__('Due tomorrow'))
+            ->assertSee(__('Overdue by :days days', ['days' => 2]))
+            ->assertDontSee('Due in 1 days');
+    }
+
     public function test_po_info_can_be_updated_without_reuploading_file(): void
     {
         Storage::fake('private');

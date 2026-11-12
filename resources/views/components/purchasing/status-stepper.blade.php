@@ -6,6 +6,28 @@
     $current = $proposal->handoffStage();
     $index = $current !== null ? array_search($current, $keys, true) : null;
     $total = count($keys);
+
+    // Warna semantik per tahap: abu = menunggu, indigo = butuh tindakan,
+    // biru = proyek jalan, kuning = sedang diproses, teal = BAST, hijau = selesai.
+    $badgeTone = match ($current) {
+        'waiting_po' => 'border border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-300',
+        'po_received' => 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/30',
+        'project_created' => 'border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300',
+        'in_purchasing' => 'border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+        'bast' => 'border border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-300',
+        'closed' => 'border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300',
+        default => 'bg-accent-600 text-white',
+    };
+
+    $activeBar = match ($current) {
+        'waiting_po' => 'bg-slate-400',
+        'po_received' => 'bg-indigo-600',
+        'project_created' => 'bg-blue-500',
+        'in_purchasing' => 'bg-amber-500',
+        'bast' => 'bg-teal-500',
+        'closed' => 'bg-emerald-500',
+        default => 'bg-accent-600',
+    };
 @endphp
 
 @if ($current === null)
@@ -45,16 +67,20 @@
          @scroll.window.capture="open = false"
          @resize.window="open = false">
         <div class="flex items-center justify-between gap-2">
-            <span class="inline-flex max-w-full truncate rounded-full bg-accent-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+            <span class="inline-flex max-w-full items-center truncate rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $badgeTone }}">
                 {{ $stages[$current] }}
+                @if ($current === 'po_received')
+                    {{-- Penanda diam: menonjol tanpa animasi berulang. --}}
+                    <span class="ml-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-white ring-2 ring-white/40" aria-hidden="true"></span>
+                @endif
             </span>
             <span class="shrink-0 text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">{{ $index + 1 }}/{{ $total }}</span>
         </div>
 
-        {{-- Bar progres 6 tahap: selesai hijau, aktif aksen, sisanya netral --}}
+        {{-- Bar progres 6 tahap: selesai hijau, aktif sesuai warna tahap, sisanya netral --}}
         <div class="flex gap-1" aria-hidden="true">
             @foreach ($keys as $i => $key)
-                <span class="h-1.5 flex-1 rounded-full {{ $i < $index ? 'bg-emerald-500' : ($i === $index ? 'bg-accent-600' : 'bg-slate-200 dark:bg-slate-600') }}"></span>
+                <span class="h-1.5 flex-1 rounded-full {{ $i < $index ? 'bg-emerald-500' : ($i === $index ? $activeBar : 'bg-slate-200 dark:bg-slate-600') }}"></span>
             @endforeach
         </div>
 
