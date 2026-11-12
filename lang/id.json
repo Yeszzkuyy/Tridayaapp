@@ -5133,5 +5133,13 @@
     "View Quotation": "Lihat Quotation",
     "Preview Customer PO": "Pratinjau PO Customer",
     "Download Customer PO": "Unduh PO Customer",
-    "Reset filters": "Atur ulang filter"
+    "Reset filters": "Atur ulang filter",
+    "Overdue by :days day|Overdue by :days days": "Terlambat :days hari|Terlambat :days hari",
+    "Due in :days day|Due in :days days": "Jatuh tempo dalam :days hari|Jatuh tempo dalam :days hari",
+    ":days day left|:days days left": ":days hari lagi|:days hari lagi",
+    ":count field incomplete|:count fields incomplete": ":count field belum lengkap|:count field belum lengkap",
+    "Due today": "Jatuh tempo hari ini",
+    "Due tomorrow": "Jatuh tempo besok",
+    "Quotation Value": "Nilai Quotation",
+    "Process PO": "Proses PO"
 }

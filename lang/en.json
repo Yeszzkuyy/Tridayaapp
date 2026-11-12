@@ -5133,5 +5133,13 @@
     "View Quotation": "View Quotation",
     "Preview Customer PO": "Preview Customer PO",
     "Download Customer PO": "Download Customer PO",
-    "Reset filters": "Reset filters"
+    "Reset filters": "Reset filters",
+    "Overdue by :days day|Overdue by :days days": "Overdue by :days day|Overdue by :days days",
+    "Due in :days day|Due in :days days": "Due in :days day|Due in :days days",
+    ":days day left|:days days left": ":days day left|:days days left",
+    ":count field incomplete|:count fields incomplete": ":count field incomplete|:count fields incomplete",
+    "Due today": "Due today",
+    "Due tomorrow": "Due tomorrow",
+    "Quotation Value": "Quotation Value",
+    "Process PO": "Process PO"
 }
