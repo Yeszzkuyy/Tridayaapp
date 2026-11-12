@@ -16,6 +16,7 @@ class SalesKpiService
     /** Nilai target default jika belum diset oleh Management */
     public const DEFAULT_TARGET_REVENUE = 50000000; // Rp 50.000.000
     public const DEFAULT_TARGET_DEALS = 3; // 3 closing deal
+    public const DEFAULT_TARGET_MARGIN = 5000000; // Rp 5.000.000 (10% dari default omzet)
 
     /**
      * Hitung KPI personal seorang user sales untuk bulan dan tahun tertentu.
@@ -32,6 +33,9 @@ class SalesKpiService
 
         $targetRevenue = $targetRecord ? (float) $targetRecord->target_revenue : (float) self::DEFAULT_TARGET_REVENUE;
         $targetDeals = $targetRecord ? (int) $targetRecord->target_deals : (int) self::DEFAULT_TARGET_DEALS;
+        $targetMargin = $targetRecord && $targetRecord->target_margin !== null
+            ? (float) $targetRecord->target_margin
+            : (float) self::DEFAULT_TARGET_MARGIN;
         $isCustomTarget = $targetRecord !== null;
 
         // 2. Deal / PO Masuk: proposal accepted yang PO-nya sudah diverifikasi.
@@ -61,16 +65,20 @@ class SalesKpiService
 
         $actualDeals = $closed['deals'];
         $actualRevenue = $closed['revenue'];
+        $actualMargin = $closed['margin'];
+        $marginIncomplete = $closed['margin_incomplete'];
 
         // 4. Persentase pencapaian
         $revenuePct = $targetRevenue > 0 ? round(($actualRevenue / $targetRevenue) * 100, 1) : 0;
         $dealsPct = $targetDeals > 0 ? round(($actualDeals / $targetDeals) * 100, 1) : 0;
+        $marginPct = $targetMargin > 0 ? round(($actualMargin / $targetMargin) * 100, 1) : 0;
 
         // Overall progress (rata-rata terbobot omset & deal)
         $overallPct = round(($revenuePct * 0.6) + ($dealsPct * 0.4), 1);
 
         $revenueShortfall = max(0, $targetRevenue - $actualRevenue);
         $dealsShortfall = max(0, $targetDeals - $actualDeals);
+        $marginShortfall = max(0, $targetMargin - $actualMargin);
 
         // 4. Statistik pipeline pendukung
         $activeLeadsCount = Lead::where('assigned_to', $user->id)
@@ -98,18 +106,23 @@ class SalesKpiService
             'period_year' => $year,
             'target_revenue' => $targetRevenue,
             'target_deals' => $targetDeals,
+            'target_margin' => $targetMargin,
             'is_custom_target' => $isCustomTarget,
             'target_notes' => $targetRecord?->notes,
             'actual_revenue' => $actualRevenue,
             'actual_deals' => $actualDeals,
+            'actual_margin' => $actualMargin,
+            'margin_incomplete' => $marginIncomplete,
             'verified_po_revenue' => $verifiedPoRevenue,
             'verified_po_deals' => $verifiedPoDeals,
             'paid_revenue' => $paidRevenue,
             'revenue_pct' => $revenuePct,
             'deals_pct' => $dealsPct,
+            'margin_pct' => $marginPct,
             'overall_pct' => $overallPct,
             'revenue_shortfall' => $revenueShortfall,
             'deals_shortfall' => $dealsShortfall,
+            'margin_shortfall' => $marginShortfall,
             'active_leads' => $activeLeadsCount,
             'conversion_rate' => $conversionRate,
             'celebration' => $celebration,
@@ -155,9 +168,9 @@ class SalesKpiService
     {
         $candidates = Invoice::query()
             ->with([
-                'proposal:id,grand_total',
+                'proposal:id,grand_total,gross_profit',
                 'project:id,proposal_id',
-                'project.proposal:id,grand_total',
+                'project.proposal:id,grand_total,gross_profit',
             ])
             ->where('status', 'paid')
             ->whereBetween('paid_at', [$startOfMonth, $endOfMonth])
@@ -178,6 +191,8 @@ class SalesKpiService
 
         $revenue = 0.0;
         $deals = 0;
+        $margin = 0.0;
+        $marginIncomplete = false;
 
         foreach ($groups as $key => $invoices) {
             [$type, $id] = explode(':', (string) $key, 2);
@@ -209,9 +224,20 @@ class SalesKpiService
 
             $revenue += $expectedValue > 0 ? $expectedValue : $paidTotal;
             $deals++;
+
+            if ($proposal && $proposal->gross_profit !== null) {
+                $margin += (float) $proposal->gross_profit;
+            } else {
+                $marginIncomplete = true;
+            }
         }
 
-        return ['revenue' => round($revenue, 2), 'deals' => $deals];
+        return [
+            'revenue' => round($revenue, 2),
+            'deals' => $deals,
+            'margin' => round($margin, 2),
+            'margin_incomplete' => $marginIncomplete,
+        ];
     }
 
     /** Invoice dianggap milik Sales lewat quotation, project, atau lead-nya. */
@@ -269,9 +295,12 @@ class SalesKpiService
         $totalActualRevenue = (float) $leaderboard->sum('actual_revenue');
         $totalTargetDeals = (int) $leaderboard->sum('target_deals');
         $totalActualDeals = (int) $leaderboard->sum('actual_deals');
+        $totalTargetMargin = (float) $leaderboard->sum('target_margin');
+        $totalActualMargin = (float) $leaderboard->sum('actual_margin');
 
         $teamRevenuePct = $totalTargetRevenue > 0 ? round(($totalActualRevenue / $totalTargetRevenue) * 100, 1) : 0;
         $teamDealsPct = $totalTargetDeals > 0 ? round(($totalActualDeals / $totalTargetDeals) * 100, 1) : 0;
+        $teamMarginPct = $totalTargetMargin > 0 ? round(($totalActualMargin / $totalTargetMargin) * 100, 1) : 0;
         $teamOverallPct = round(($teamRevenuePct * 0.6) + ($teamDealsPct * 0.4), 1);
 
         $topPerformer = $leaderboard->first();
@@ -283,6 +312,9 @@ class SalesKpiService
             'total_target_deals' => $totalTargetDeals,
             'total_actual_deals' => $totalActualDeals,
             'team_deals_pct' => $teamDealsPct,
+            'total_target_margin' => $totalTargetMargin,
+            'total_actual_margin' => $totalActualMargin,
+            'team_margin_pct' => $teamMarginPct,
             'team_overall_pct' => $teamOverallPct,
             'top_performer' => $topPerformer,
             'total_sales_count' => $leaderboard->count(),

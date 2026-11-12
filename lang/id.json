@@ -5003,5 +5003,12 @@
     "Auto-generated from company and sales initials.": "Dibuat otomatis dari PT dan inisial sales.",
     "This lead already has a quotation. Revise the existing quotation instead of creating a new one.": "Lead ini sudah punya quotation. Revisi quotation yang ada, jangan buat yang baru.",
     "Quotation revised.": "Quotation direvisi.",
-    "Requested revision from customer.": "Revisi diminta oleh customer."
+    "Requested revision from customer.": "Revisi diminta oleh customer.",
+    "Margin not yet complete - cost price is missing on some items.": "Margin belum lengkap - harga modal belum diisi pada sebagian item.",
+    "Margin target achieved!": "Target margin tercapai!",
+    "Margin:": "Margin:",
+    "Target vs Gross Margin": "Target vs Margin Kotor",
+    "Margin incomplete": "Margin belum lengkap",
+    "Target Margin Kotor (Rp)": "Target Margin Kotor (Rp)",
+    "Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah.": "Target laba kotor bulan ini, misal 5000000 untuk 5 Juta Rupiah."
 }

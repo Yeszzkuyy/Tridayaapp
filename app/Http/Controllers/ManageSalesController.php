@@ -558,6 +558,7 @@ class ManageSalesController extends Controller
             'period_month' => 'required|integer|between:1,12',
             'period_year' => 'required|integer|min:2020|max:2100',
             'target_revenue' => 'required|numeric|min:0',
+            'target_margin' => 'nullable|numeric|min:0',
             'target_deals' => 'required|integer|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -575,6 +576,7 @@ class ManageSalesController extends Controller
             ],
             [
                 'target_revenue' => $validated['target_revenue'],
+                'target_margin' => $validated['target_margin'] ?? null,
                 'target_deals' => $validated['target_deals'],
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => auth()->id(),
