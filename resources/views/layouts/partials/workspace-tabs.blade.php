@@ -130,6 +130,7 @@
 
     {{-- Tombol Split View: hanya desktop, butuh minimal 2 tab --}}
     <button type="button"
+            data-workspace-split-toggle
             x-show="$store.workspace.tabs.length > 1"
             x-cloak
             @click="$store.workspace.splitMode ? $store.workspace.closeSplit() : $store.workspace.openSplit()"
