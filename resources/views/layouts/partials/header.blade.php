@@ -7,7 +7,7 @@
     $lastCrumb = count($crumbs) - 1;
 @endphp
 <header class="app-header sticky top-0 z-30 border-b border-slate-200/70 bg-white/85 px-4 py-2.5 backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-900 sm:px-8 lg:h-20 lg:py-0 lg:px-8 flex flex-wrap lg:flex-nowrap items-center justify-between gap-2">
-    <div class="flex min-w-0 items-center gap-3 {{ $workspaceEnabled ? 'lg:flex-1 lg:order-1' : 'flex-1' }}">
+    <div class="flex min-w-0 items-center gap-3 {{ $workspaceEnabled ? 'lg:hidden' : 'flex-1' }}">
         {{-- Hamburger, hanya tampil di mobile --}}
         <button id="hamburgerBtn" type="button"
                 class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-all duration-300 hover:scale-105 hover:bg-accent-500/10 hover:text-accent-600 active:scale-95 lg:hidden dark:text-slate-300 dark:hover:bg-accent-500 dark:hover:text-white"
@@ -42,7 +42,7 @@
     @if ($workspaceEnabled)
         {{-- Baris tab menggantikan pill lokasi: sebaris di desktop, baris
              kedua di HP agar ruang tidak sesak. --}}
-        <div class="order-3 w-full min-w-0 lg:order-2 lg:flex-1 lg:w-auto lg:mr-3">
+        <div class="order-3 w-full min-w-0 lg:order-1 lg:flex-1 lg:w-auto lg:mr-4">
             @include('layouts.partials.workspace-tabs')
         </div>
     @endif

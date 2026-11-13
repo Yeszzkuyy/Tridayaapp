@@ -387,7 +387,21 @@ export function registerWorkspaceStore(Alpine) {
             if (document.__workspaceSidebarBound) return;
             document.__workspaceSidebarBound = true;
 
-            document.addEventListener(
+            // Hapus atribut wire:navigate pada link sidebar supaya Livewire
+            // tidak ikut menavigasi ulang halaman induk (yang akan menghancurkan
+            // iframe tab yang sedang hidup).
+            document.querySelectorAll('#sidebar a').forEach((a) => {
+                [...a.attributes].forEach((attr) => {
+                    if (attr.name === 'wire:navigate' || attr.name.startsWith('wire:navigate.')) {
+                        a.removeAttribute(attr.name);
+                    }
+                });
+            });
+
+            // Hentikan progress bar palsu milik full-reload ketika link sidebar diklik.
+            const stopNavBar = () => document.getElementById('navigate-progress')?.removeAttribute('data-run');
+
+            window.addEventListener(
                 'click',
                 (e) => {
                     if (!this.enabled) return;
@@ -415,6 +429,7 @@ export function registerWorkspaceStore(Alpine) {
 
                     e.preventDefault();
                     e.stopPropagation();
+                    stopNavBar();
 
                     const meta = metaFromSidebarLink(link);
                     this.openByUrl(url.pathname + url.search, meta);
@@ -429,6 +444,15 @@ export function registerWorkspaceStore(Alpine) {
         },
 
         bindPopState() {
+            document.addEventListener(
+                'livewire:navigating',
+                (e) => {
+                    if (this.enabled && document.getElementById('workspace-stage')) {
+                        e.preventDefault();
+                    }
+                },
+                true,
+            );
             window.addEventListener('popstate', () => {
                 if (!this.enabled) return;
                 const path = normalizePath(window.location.href);
