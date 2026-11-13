@@ -35,6 +35,7 @@
                             {{ $lead->customer?->name ?? '-' }}
                         </a>
                         <div class="mt-1 flex flex-wrap items-center gap-1">
+                            @include('sales.my-leads._color-picker')
                             @if($lead->pt_group)
                                 <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700' }}">{{ $lead->pt_group }}</span>
                             @endif
