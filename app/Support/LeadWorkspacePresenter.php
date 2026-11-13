@@ -11,7 +11,7 @@ use App\Models\Lead;
  */
 class LeadWorkspacePresenter
 {
-    public static function row(Lead $lead): array
+    public static function row(Lead $lead, array $notes = []): array
     {
         $next = $lead->activeFollowUp;
         $latestNote = $lead->latestNoteFollowUp;
@@ -30,6 +30,8 @@ class LeadWorkspacePresenter
             'assignmentOverdue' => $lead->isAssignmentOverdue(),
             'overdueLabel' => __('Overdue'),
             'note' => (string) ($latestNote?->description ?? ''),
+            'notes' => $notes,
+            'viewAllNotesUrl' => route('leads.show', $lead).'#card-riwayat',
             'hasAcceptedProposal' => (bool) ($lead->has_accepted_proposal ?? false),
             'noteUrl' => route('sales.my-leads.note', $lead),
             'nextUrl' => route('sales.my-leads.next-follow-up', $lead),

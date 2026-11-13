@@ -1,6 +1,6 @@
 @forelse($leads as $lead)
     @php
-        $cfg = \App\Support\LeadWorkspacePresenter::row($lead);
+        $cfg = \App\Support\LeadWorkspacePresenter::row($lead, $notesByLead[$lead->id] ?? []);
         $contact = \App\Support\LeadWorkspacePresenter::contactLinks($lead);
         $last = $lead->latestActivityFollowUp;
         $reasonOptions = collect(\App\Models\Lead::LOST_REASONS)

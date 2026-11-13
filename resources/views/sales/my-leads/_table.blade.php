@@ -16,7 +16,7 @@
     <tbody class="bg-[var(--card-bg)] dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
         @forelse($leads as $lead)
             @php
-                $cfg = \App\Support\LeadWorkspacePresenter::row($lead);
+                $cfg = \App\Support\LeadWorkspacePresenter::row($lead, $notesByLead[$lead->id] ?? []);
                 $contact = \App\Support\LeadWorkspacePresenter::contactLinks($lead);
                 $last = $lead->latestActivityFollowUp;
                 $next = $lead->activeFollowUp;
