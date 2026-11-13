@@ -199,6 +199,56 @@ class MyLeadsWorkspaceTest extends TestCase
         $this->assertStringNotContainsString('Proyek Nanti', $html);
     }
 
+    public function test_lead_color_can_be_changed_and_cleared(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+
+        $this->actingAs($sales)
+            ->patchJson(route('sales.my-leads.color', $lead), ['color_tag' => 'red'])
+            ->assertOk()
+            ->assertJsonPath('color', 'red');
+
+        $this->assertSame('red', $lead->fresh()->color_tag);
+
+        $this->actingAs($sales)
+            ->patchJson(route('sales.my-leads.color', $lead), ['color_tag' => null])
+            ->assertOk()
+            ->assertJsonPath('color', '');
+
+        $this->assertNull($lead->fresh()->color_tag);
+    }
+
+    public function test_only_owner_can_change_lead_color_and_invalid_color_is_rejected(): void
+    {
+        $sales = $this->sales();
+        $other = $this->sales();
+        $lead = $this->lead($sales);
+
+        $this->actingAs($other)
+            ->patchJson(route('sales.my-leads.color', $lead), ['color_tag' => 'green'])
+            ->assertForbidden();
+
+        $this->actingAs($sales)
+            ->patchJson(route('sales.my-leads.color', $lead), ['color_tag' => 'blue'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['color_tag']);
+
+        $this->assertNull($lead->fresh()->color_tag);
+    }
+
+    public function test_my_leads_shows_note_form_below_existing_note_and_color_picker(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales, ['color_tag' => 'yellow']);
+
+        $html = $this->actingAs($sales)->get(route('sales.my-leads'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('x-show="editingNote"', $html);
+        $this->assertStringContainsString('Lead color', $html);
+        $this->assertStringContainsString('bg-amber-400', $html);
+    }
+
     public function test_won_is_rejected_without_accepted_quotation(): void
     {
         $sales = $this->sales();

@@ -24,7 +24,10 @@
                     ->map(fn ($reason) => ['value' => $reason, 'label' => \App\Models\Lead::lostReasonLabel($reason)]);
             @endphp
             <tr x-data="myLeadsRow({{ json_encode($cfg) }})" class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
-                <td class="px-3 py-3 text-xs text-slate-400 whitespace-nowrap">{{ $leads->firstItem() + $loop->index }}</td>
+                <td class="relative px-3 py-3 text-xs text-slate-400 whitespace-nowrap">
+                    <span class="absolute inset-y-0 left-0 w-1" :class="colorDotClass()" aria-hidden="true"></span>
+                    {{ $leads->firstItem() + $loop->index }}
+                </td>
 
                 <td class="px-4 py-3">
                     <div class="min-w-[170px]">

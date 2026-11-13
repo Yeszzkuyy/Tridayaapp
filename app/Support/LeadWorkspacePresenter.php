@@ -18,6 +18,14 @@ class LeadWorkspacePresenter
 
         return [
             'stage' => $lead->status,
+            'color' => $lead->color_tag,
+            'colorUrl' => route('sales.my-leads.color', $lead),
+            'colorClasses' => [
+                'default' => 'bg-slate-300 dark:bg-slate-600',
+                'red' => 'bg-red-500',
+                'yellow' => 'bg-amber-400',
+                'green' => 'bg-emerald-500',
+            ],
             'stageLabel' => ucfirst($lead->status),
             'assignmentOverdue' => $lead->isAssignmentOverdue(),
             'overdueLabel' => __('Overdue'),
@@ -44,6 +52,7 @@ class LeadWorkspacePresenter
             'wonNeedsQuotation' => __('WON needs an accepted quotation.'),
             'lostRequired' => __('Loss reason and note are required.'),
             'dateRequired' => __('Choose a date first.'),
+            'colorSaved' => __('Color saved.'),
         ];
     }
 

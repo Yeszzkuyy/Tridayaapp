@@ -17,6 +17,9 @@ class Lead extends Model
 
     public const PROCUREMENT_STATUSES = ['new', 'replacement'];
 
+    /** Warna penanda lead (null = default). */
+    public const COLOR_TAGS = ['red', 'yellow', 'green'];
+
     public static function needTypeLabel(?string $needType): string
     {
         return match ($needType) {
@@ -121,6 +124,27 @@ class Lead extends Model
         };
     }
 
+    /** Warna titik/penanda lead. */
+    public static function colorDotClasses(?string $color): string
+    {
+        return match ($color) {
+            'red' => 'bg-red-500',
+            'yellow' => 'bg-amber-400',
+            'green' => 'bg-emerald-500',
+            default => 'bg-slate-300 dark:bg-slate-600',
+        };
+    }
+
+    public static function colorLabel(?string $color): string
+    {
+        return match ($color) {
+            'red' => __('Red'),
+            'yellow' => __('Yellow'),
+            'green' => __('Green'),
+            default => __('Default'),
+        };
+    }
+
     public const PT_COLORS = [
         'NTI' => 'bg-sky-500 text-white',
         'MGK' => 'bg-blue-900 text-white',
@@ -135,6 +159,7 @@ class Lead extends Model
         'pt_group',
         'segment',
         'status',
+        'color_tag',
         'source',
         'kebutuhan',
         'project_name',

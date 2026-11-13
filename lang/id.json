@@ -5325,5 +5325,10 @@
     "This lead was assigned more than 24 hours ago and has not been followed up:": "Lead ini sudah di-assign lebih dari 24 jam dan belum ditindaklanjuti:",
     "Open My Leads": "Buka My Leads",
     "Please contact the customer or move the lead stage.": "Silakan hubungi customer atau pindahkan tahap lead.",
-    "Follow up reminder": "Pengingat follow up"
+    "Follow up reminder": "Pengingat follow up",
+    "Lead color": "Warna lead",
+    "Red": "Merah",
+    "Yellow": "Kuning",
+    "Green": "Hijau",
+    "Color saved.": "Warna disimpan."
 }

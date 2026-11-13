@@ -772,6 +772,24 @@ class ManageSalesController extends Controller
         ]);
     }
 
+    public function updateLeadColor(Request $request, Lead $lead)
+    {
+        $this->authorize('update', $lead);
+
+        $validated = $request->validate([
+            'color_tag' => 'nullable|in:'.implode(',', Lead::COLOR_TAGS),
+        ]);
+
+        $color = $validated['color_tag'] ?: null;
+        $lead->update(['color_tag' => $color]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => __('Color saved.'),
+            'color' => $color ?? '',
+        ]);
+    }
+
     /**
      * Catat klik kanal kontak. Bukan status "terkirim"; hanya audit bahwa
      * Sales mulai menghubungi customer.

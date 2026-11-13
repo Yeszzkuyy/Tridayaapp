@@ -6,7 +6,8 @@
         $reasonOptions = collect(\App\Models\Lead::LOST_REASONS)
             ->map(fn ($reason) => ['value' => $reason, 'label' => \App\Models\Lead::lostReasonLabel($reason)]);
     @endphp
-    <div x-data="myLeadsRow({{ json_encode($cfg) }})" class="rounded-2xl border border-slate-200 bg-[var(--card-bg)] p-4 dark:border-slate-600 dark:bg-slate-800">
+    <div x-data="myLeadsRow({{ json_encode($cfg) }})" class="relative overflow-hidden rounded-2xl border border-slate-200 bg-[var(--card-bg)] p-4 dark:border-slate-600 dark:bg-slate-800">
+        <span class="absolute inset-y-0 left-0 w-1" :class="colorDotClass()" aria-hidden="true"></span>
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
                 <a href="{{ route('leads.show', $lead) }}" class="font-semibold text-slate-900 dark:text-slate-100">{{ $lead->customer?->name ?? '-' }}</a>

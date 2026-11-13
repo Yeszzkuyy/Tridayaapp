@@ -5325,5 +5325,10 @@
     "This lead was assigned more than 24 hours ago and has not been followed up:": "This lead was assigned more than 24 hours ago and has not been followed up:",
     "Open My Leads": "Open My Leads",
     "Please contact the customer or move the lead stage.": "Please contact the customer or move the lead stage.",
-    "Follow up reminder": "Follow up reminder"
+    "Follow up reminder": "Follow up reminder",
+    "Lead color": "Lead color",
+    "Red": "Red",
+    "Yellow": "Yellow",
+    "Green": "Green",
+    "Color saved.": "Color saved."
 }

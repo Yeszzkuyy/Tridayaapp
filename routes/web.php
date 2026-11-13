@@ -840,6 +840,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-sales|manage-sales')->prefix('sales/my-leads/{lead}')->name('sales.my-leads.')->group(function () {
         Route::patch('note', [ManageSalesController::class, 'updateLeadNote'])
             ->middleware('throttle:30,1')->name('note');
+        Route::patch('color', [ManageSalesController::class, 'updateLeadColor'])
+            ->middleware('throttle:60,1')->name('color');
         Route::patch('next-follow-up', [ManageSalesController::class, 'updateLeadNextFollowUp'])
             ->middleware('throttle:30,1')->name('next-follow-up');
         Route::post('contact', [ManageSalesController::class, 'logLeadContact'])
