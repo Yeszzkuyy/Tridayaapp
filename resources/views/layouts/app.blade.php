@@ -730,6 +730,12 @@
                 }
             }else if(head){swap(head,true,'sb-active');}
             else{swap(best,true);}
+
+            // Pastikan menu aktif terlihat di sidebar yang bisa digulir.
+            try{
+                var scroller=best.closest('nav')||document.getElementById('sidebar-navigation');
+                if(scroller&&scroller.contains(best))best.scrollIntoView({block:'nearest'});
+            }catch(e){}
         }
         window.__syncSidebarPath=function(p){try{syncSidebarActive(p);}catch(e){}};
         document.addEventListener('livewire:navigated',function(){try{syncSidebarActive();}catch(e){}});
