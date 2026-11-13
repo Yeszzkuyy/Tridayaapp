@@ -134,7 +134,7 @@ final class NotificationPresenter
             ],
             'followup' => [
                 'app' => __('Follow Up'),
-                'title' => (string) ($data['title'] ?? __('Follow up overdue')),
+                'title' => (string) ($data['title'] ?? __('Follow up reminder')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
                 'chips' => [self::chip(__('Due'), 'danger')],
             ],

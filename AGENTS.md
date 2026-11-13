@@ -145,6 +145,7 @@ Testing:
 | `/home/yeski/3dyapp-management` | `feature/management` | Management (Activity Log, assign lead) |
 | `/var/www/3dyapp-sec` | `feature/security-hardening` | Security hardening |
 | `/var/www/3dyapp-sales` | `feature/sales-flow` | Sales (dashboard, my-leads, meeting, follow-up) |
+| `/home/raafi/3dyapp-sales` | `feature/sales-workspace` | Sales workspace (My Leads, Follow Up, DAR) |
 | `/home/yeski/3dyapp-inside` | `feature/sales-inside` | Inside Sales (dashboard, quotation, PDF per PT) |
 | `/var/www/3dyapp-notif` | `feature/sys-notif-center` | Notification Center (kartu, realtime Reverb, bell semua role) |
 | `/home/raafi/3dyapp-notifpop` | `feature/sys-notif-popup` | Pop up notifikasi pojok layar (gaya toast 21st.dev) |
@@ -155,7 +156,7 @@ Testing:
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
 | `/home/raafi/3dyapp-tekflow` | `feature/tek-project-workflow` | Integrasi workflow project + engineer (survey, sizing, price request, instalasi, BAST) |
-| `/home/yeski/3dyapp-sys` | `feature/sys-ui-feedback` | Toast + kartu konfirmasi standar (lintas divisi) |
+| `/home/yeski/3dyapp-sys` | `feature/sys-dropdown-standard` | Toast, konfirmasi, dropdown standar (lintas divisi) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
@@ -554,6 +555,86 @@ dengan tampilan yang sama.
    berjalan seperti biasa (submit loader tetap tampil).
 6. **Verifikasi:** `php artisan test --filter=UiFeedbackStandardTest` menolak
    view yang masih memakai `confirm()` atau `x-status-card`.
+
+## 7.4 Standar Dropdown & Menu Aksi (WAJIB)
+
+Berlaku untuk semua dropdown pilihan (form, filter, sort) dan menu aksi
+(tombol tiga titik). Gaya baku ini sudah disetujui user; jangan mengubah
+warna, ukuran, atau animasinya per halaman.
+
+### A. Komponen wajib
+
+| Kebutuhan | Komponen |
+|---|---|
+| Pilih satu nilai di form, filter, atau sort | `<x-glide-select>` |
+| Menu aksi baris (View/Edit/Hapus/dll) | `<x-dropdown>` + `<x-dropdown-link>` |
+| Menu aksi beranimasi khusus (mis. template BAST) | `<x-dropdown>` + pill accent yang sudah ada |
+
+Dilarang membuat dropdown baru dari `div absolute` + `x-show`. Dilarang
+memakai `<select>` native untuk dropdown baru; pilihan native lama dimigrasi
+bertahap setiap file itu disentuh.
+
+### B. Spesifikasi visual baku
+
+| Bagian | Token | Light | Dark |
+|---|---|---|---|
+| Trigger normal | `--input-bg` | `#f1f5f9` | `#1e2640` |
+| Trigger hover/terbuka | `--input-bg-hover` | `#e2e8f0` | `#2a3350` |
+| Permukaan menu | `--card-bg` | `#ffffff` | `#232b3e` |
+| Garis menu | `--card-border` | `#e2e8f0` | `#334070` |
+| Sorotan baris | `--menu-hover-bg` | `#eef2f7` | `#2f3a58` |
+| Teks utama | `--text-primary` | `#1e293b` | `#f2f6ff` |
+| Item terpilih | `--accent-*` | accent tema | accent tema |
+
+- Tinggi trigger mengikuti size komponen: `md` 32px (bawaan) dan `field` 40px
+  agar sejajar input `h-10`.
+- Menu radius 10px, padding 4px, lebar bawaan 176px (`menuWidth` bisa diubah),
+  jarak antar baris 1px.
+- Baris opsi: tinggi 30px (`md`), font 13px, radius 6px, padding kiri-kanan.
+- Sorotan baris **wajib** memakai `--menu-hover-bg`. Dilarang `#f8fafc`,
+  `--card-bg-hover`, `hover:bg-gray-100`, atau `hover:bg-slate-50` karena
+  menyatu dengan kartu putih.
+- Item terpilih memakai latar accent lembut + ikon centang accent; sorotan
+  hover hanya menandai posisi kursor/keyboard.
+
+### C. Perilaku & aksesibilitas
+
+1. Klik trigger membuka menu; klik luar, Esc, scroll, atau resize menutup.
+2. Panel di-teleport ke `body` dan diposisikan `fixed` supaya tidak terpotong
+   tabel/overflow; posisi digeser agar tidak keluar viewport (jarak 8px).
+3. Keyboard `<x-glide-select>`: panah atas/bawah, Home/End, Enter/Space
+   memilih, Esc/Tab menutup, dan huruf pertama untuk lompat (type-ahead).
+4. Focus ring wajib terlihat. Trigger memakai `<button type="button">`, bukan
+   `div` yang bisa diklik.
+5. Hormati `prefers-reduced-motion`: animasi pill/panel dimatikan.
+6. Aksi destruktif di menu memakai warna merah dan wajib lewat
+   `<x-confirm-dialog>` (§7.3), bukan langsung dijalankan.
+
+### D. Contoh pemakaian
+
+```blade
+{{-- Dropdown pilihan --}}
+<x-glide-select name="status" :options="$statuses" :value="request('status')"
+    :empty-label="__('All Stages')" autosubmit />
+
+{{-- Menu aksi --}}
+<x-dropdown align="right" width="w-60">
+    <x-slot name="trigger">
+        <x-icon-button icon="more" title="{{ __('More actions') }}" />
+    </x-slot>
+    <x-slot name="content">
+        <x-dropdown-link :href="route('sales.follow-ups.show', $fu)">{{ __('View') }}</x-dropdown-link>
+    </x-slot>
+</x-dropdown>
+```
+
+### E. Checklist sebelum merge
+
+1. Light & dark: baris hover terlihat, tidak menyatu; trigger terasa aktif.
+2. Keyboard dan Esc jalan; klik luar menutup.
+3. Tidak ada `<select>` native baru atau dropdown buatan sendiri.
+4. `php artisan test --filter=UiFeedbackStandardTest` lulus.
+5. `npm run build` dari `/var/www/3dyapp` setelah merge ke `main`.
 
 ## 8. Database Safety Rules
 

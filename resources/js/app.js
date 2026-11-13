@@ -7,6 +7,8 @@ import { mountLoginGalaxy } from './galaxy.js';
 import { applyAppearanceDom } from './appearance.js';
 import { installLegacyToast } from './toast-store.js';
 import { installConfirmInterceptor, registerConfirmStore } from './confirm-dialog.js';
+import { registerWorkspaceStore } from './workspace-tabs.js';
+import { initWorkspaceEmbed } from './workspace-embed.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -169,6 +171,7 @@ window.WebPush.init();
 
 document.addEventListener('alpine:init', () => {
     registerConfirmStore(Alpine);
+    registerWorkspaceStore(Alpine);
 
     Alpine.store('appearance', {
         mode: window.__appearanceMode || 'system',
@@ -288,6 +291,7 @@ installLegacyToast();
    penangkap global menangani form/tautan/tombol ber-atribut `data-confirm`.
    ============================================================ */
 installConfirmInterceptor();
+initWorkspaceEmbed();
 
 /* Livewire memakai pop up yang sama: komponen cukup
    $this->dispatch('toast', message: '...', type: 'success'). */

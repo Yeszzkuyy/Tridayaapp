@@ -95,8 +95,13 @@
     @if(!($isFirstTime ?? false))
     <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Next Follow-up (optional)') }}</label>
-        <x-datepicker name="next_follow_up_date" value="{{ old('next_follow_up_date', isset($followUp) && $followUp->next_follow_up_date ? $followUp->next_follow_up_date->format('Y-m-d') : '') }}"></x-datepicker>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <x-datepicker name="next_follow_up_date" value="{{ old('next_follow_up_date', isset($followUp) && $followUp->next_follow_up_date ? $followUp->next_follow_up_date->format('Y-m-d') : '') }}"></x-datepicker>
+            <input type="time" name="next_follow_up_time" value="{{ old('next_follow_up_time') }}" aria-label="{{ __('Next follow up time') }}"
+                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+        </div>
         @error('next_follow_up_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        @error('next_follow_up_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
     @endif
 

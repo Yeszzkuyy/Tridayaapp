@@ -1,9 +1,8 @@
 <x-app-layout>
     <div x-data="{ tips: localStorage.getItem('sales_followup_tips') !== 'off' }">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('My Leads') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Leads assigned to you by Management') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('My Leads') }}</h1>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
             <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" label="{{ __('Add Lead') }}" title="{{ __('Add Lead') }}" />
@@ -14,13 +13,13 @@
                            title="{{ __('Add Follow Up') }}" />
             <button type="button"
                     @click="tips = true; localStorage.setItem('sales_followup_tips', 'on')"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-500 transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-[var(--card-bg)] text-slate-500 transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                     title="{{ __('Show guide') }}">
                 <span class="text-sm font-bold">?</span>
                 <span class="sr-only">{{ __('Show guide') }}</span>
             </button>
-            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'status', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
-            <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Sales Dashboard') }}" />
+            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
+            <x-back-button :href="route('sales.dashboard')" :label="__('Back')" />
         </div>
     </div>
 
@@ -32,17 +31,17 @@
             <div class="min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-200">
                 <p class="font-semibold">{{ __('Quick guide: 3 steps to follow up') }}</p>
                 <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div class="rounded-xl border border-accent-200/70 bg-white/70 px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
+                    <div class="rounded-xl border border-accent-200/70 bg-[var(--card-bg)] px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
                         <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">1</span>
                         <p class="mt-0.5">{{ __('Pick a prospect from the table.') }}</p>
                     </div>
-                    <div class="rounded-xl border border-accent-200/70 bg-white/70 px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
+                    <div class="rounded-xl border border-accent-200/70 bg-[var(--card-bg)] px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
                         <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">2</span>
-                        <p class="mt-0.5">{{ __('Click the + Follow Up button in the Actions column.') }}</p>
+                        <p class="mt-0.5">{{ __('Contact the PIC or write the latest note.') }}</p>
                     </div>
-                    <div class="rounded-xl border border-accent-200/70 bg-white/70 px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
+                    <div class="rounded-xl border border-accent-200/70 bg-[var(--card-bg)] px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
                         <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">3</span>
-                        <p class="mt-0.5">{{ __('Fill the interaction result and save it to the timeline.') }}</p>
+                        <p class="mt-0.5">{{ __('Set the next follow up and update the stage.') }}</p>
                     </div>
                 </div>
                 @if($newLeadCount > 0)
@@ -50,7 +49,7 @@
                 @endif
             </div>
             <button type="button" @click="localStorage.setItem('sales_followup_tips', 'off'); tips = false"
-                    class="rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                    class="rounded-xl p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
                     title="{{ __('Dismiss') }}">
                 <span class="sr-only">{{ __('Dismiss') }}</span>
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -58,148 +57,232 @@
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600">
-        <div class="p-5 border-b dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-t-2xl">
-            <form method="GET" action="{{ route('sales.my-leads') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                @if(request()->filled('active'))
-                    <input type="hidden" name="active" value="{{ request('active') }}">
-                @endif
-                @if(request()->filled('won_month'))
-                    <input type="hidden" name="won_month" value="{{ request('won_month') }}">
-                @endif
-                <div>
-                    <label for="my-leads-search" class="text-sm font-medium text-slate-500">{{ __('Search customer') }}</label>
-                    <input id="my-leads-search" type="text" name="search" value="{{ request('search') }}" placeholder="{{ __('Search customer...') }}"
-                           class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                </div>
-                <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Status') }}</label>
-                    <x-glide-select name="status" class="mt-1" :label="__('Status')"
-                        :options="collect($statuses ?? [])->map(fn ($s) => ['value' => $s, 'label' => ucfirst($s)])->all()"
-                        :value="request('status', '')" :empty-label="__('All Statuses')" autosubmit />
-                </div>
-                <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Activity') }}</label>
-                    <x-glide-select name="touched" class="mt-1" :label="__('Activity')"
-                        :options="[['value' => 'yes', 'label' => __('Touched')], ['value' => 'no', 'label' => __('Untouched')]]"
-                        :value="request('touched', '')" :empty-label="__('All Activity')" autosubmit />
-                </div>
-                <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Sort by') }}</label>
-                    <x-glide-select name="sort" class="mt-1" :label="__('Sort by')"
-                        :options="[['value' => 'oldest', 'label' => __('Oldest')], ['value' => 'customer', 'label' => __('Customer A-Z')]]"
-                        :value="request('sort', '')" :empty-label="__('Newest')" autosubmit />
-                </div>
-                <div class="sm:col-span-2 lg:col-span-1 flex items-end gap-2">
-                    <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
-                    @if(request('search') || request('status') || request('touched') || request('active') || request('won_month') || request('sort'))
-                        <x-icon-button as="a" icon="reset" href="{{ route('sales.my-leads') }}" title="{{ __('Reset') }}" />
-                    @endif
-                </div>
-            </form>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
-                <thead class="bg-slate-50 dark:bg-slate-700">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider whitespace-nowrap">{{ __('Follow Up') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Needs / Progress') }}</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider whitespace-nowrap">{{ __('Entry Date') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
-                    @forelse($leads as $lead)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
-                            <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900">{{ $lead->customer->name ?? 'N/A' }}</div>
-                                <div class="text-sm text-slate-500">
-                                    @if($lead->pt_group)<span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-[11px] font-semibold mr-1">{{ $lead->pt_group }}</span>@endif
-                                    {{ $lead->customer?->picName() ? 'PIC: '.$lead->customer->picName() : '' }}
-                                </div>
-                                <div class="mt-1">
-                                    @if($lead->has_done_fu)
-                                        <span class="inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{{ __('Done') }}</span>
-                                    @else
-                                        <span class="inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Pending FU') }}</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap
-                                    @switch($lead->status)
-                                        @case('cool') bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 @break
-                                        @case('warm') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 @break
-                                        @case('hot') bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 @break
-                                        @case('won') bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 @break
-                                        @case('lost') bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 @break
-                                        @default bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200
-                                    @endswitch
-                                ">
-                                    {{ \App\Models\Lead::salesStatusLabel($lead->status) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap {{ $lead->follow_ups_count > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300' }}">
-                                    {{ $lead->follow_ups_count }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="min-w-[220px] max-w-[340px]">
-                                    @if($lead->kebutuhan)
-                                        <p class="text-sm text-slate-700 line-clamp-2" title="{{ $lead->kebutuhan }}">{{ $lead->kebutuhan }}</p>
-                                    @endif
-                                    @if($lead->solusi)
-                                        <p class="mt-1 text-xs text-slate-500 line-clamp-1" title="{{ $lead->solusi }}">{{ __('Solution') }}: {{ $lead->solusi }}</p>
-                                    @endif
-                                    @if($lead->progress_notes)
-                                        <p class="mt-1 text-xs text-slate-500 line-clamp-1" title="{{ $lead->progress_notes }}">{{ __('Progress') }}: {{ $lead->progress_notes }}</p>
-                                    @endif
-                                    @if(!$lead->kebutuhan && !$lead->solusi && !$lead->progress_notes)
-                                        <span class="text-slate-400">-</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-center whitespace-nowrap">
-                                @if($lead->incoming_date)
-                                    <span class="text-sm text-slate-700">{{ $lead->incoming_date->format('d M Y') }}</span>
-                                @else
-                                    <span class="text-slate-400">-</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-right whitespace-nowrap">
-                                <div class="flex justify-end gap-2">
-                                    <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View details') }}" />
-                                    @if($lead->has_done_fu)
-                                        <x-icon-button as="a" icon="mail" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
-                                    @else
-                                        <span @if($loop->first) data-tour="followup" @endif>
-                                            <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
-                                        </span>
-                                    @endif
-                        </tr>
-                    @empty
-                        <tr>
-                                <td colspan="6" class="px-6 py-12 text-center">
-                                <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300">
-                                    <x-icon name="briefcase" class="h-6 w-6" />
-                                </span>
-                                <p class="mt-4 text-sm font-medium text-slate-500">{{ __('No leads assigned to you yet.') }}</p>
-                                <p class="mt-1 text-xs text-slate-400">{{ __('New leads from Management will appear here.') }}</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <div class="bg-[var(--card-bg)] dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600">
+        @include('sales.my-leads._filters')
+
+        <div class="hidden lg:block overflow-x-auto">
+            @include('sales.my-leads._table')
         </div>
 
-        <div class="px-6 py-4 border-t">
-            {{ $leads->links() }}
+        <div class="lg:hidden p-3 space-y-3">
+            @include('sales.my-leads._cards')
         </div>
+
+        @if($leads->hasPages())
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-600">
+                {{ $leads->links() }}
+            </div>
+        @endif
     </div>
     </div>
+
+    @include('sales.partials.contact-tracking')
+
+    <script>
+        window.myLeadsRow = function (config) {
+            const jsonHeaders = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            };
+            const token = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (token) jsonHeaders['X-CSRF-TOKEN'] = token;
+
+            return {
+                stage: config.stage,
+                savedStage: config.stage,
+                note: config.note || '',
+                draftNote: config.note || '',
+                editingNote: false,
+                savingNote: false,
+                noteError: '',
+                lostOpen: false,
+                lostReason: '',
+                lostNote: '',
+                stageSaving: false,
+                nextOpen: false,
+                nextDate: config.nextDate || '',
+                nextTime: config.nextTime || '',
+                nextLabel: config.nextLabel || '',
+                nextState: config.nextState || 'upcoming',
+                nextSaving: false,
+                hasAcceptedProposal: !!config.hasAcceptedProposal,
+                color: config.color || '',
+                colorSaving: false,
+                colorDotClass() {
+                    const map = config.colorClasses || {};
+                    return map[this.color || 'default'] || map.default || 'bg-slate-300 dark:bg-slate-600';
+                },
+                setColor(value) {
+                    const color = value === 'default' ? '' : value;
+                    if (color === (this.color || '')) return;
+
+                    this.colorSaving = true;
+                    fetch(config.colorUrl, {
+                        method: 'PATCH',
+                        headers: jsonHeaders,
+                        body: JSON.stringify({ color_tag: color || null }),
+                    })
+                        .then(async (response) => {
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error((data.errors && data.errors.color_tag && data.errors.color_tag[0]) || data.message || config.genericError);
+                            }
+                            return data;
+                        })
+                        .then((data) => {
+                            this.color = data.color || '';
+                            if (window.toast) window.toast(data.message || config.colorSaved, true);
+                        })
+                        .catch((error) => {
+                            if (window.toast) window.toast(error.message, false);
+                        })
+                        .finally(() => { this.colorSaving = false; });
+                },
+                startNote() {
+                    this.draftNote = this.note;
+                    this.noteError = '';
+                    this.editingNote = true;
+                },
+                cancelNote() {
+                    this.editingNote = false;
+                    this.noteError = '';
+                },
+                saveNote() {
+                    const text = this.draftNote.trim();
+                    if (!text) {
+                        this.noteError = config.requiredNote;
+                        return;
+                    }
+                    this.savingNote = true;
+                    this.noteError = '';
+                    fetch(config.noteUrl, { method: 'PATCH', headers: jsonHeaders, body: JSON.stringify({ note: text }) })
+                        .then(async (response) => {
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error((data.errors && data.errors.note && data.errors.note[0]) || data.message || config.genericError);
+                            }
+                            return data;
+                        })
+                        .then((data) => {
+                            this.note = data.note || text;
+                            this.draftNote = '';
+                            this.editingNote = false;
+                            if (window.toast) window.toast(data.message || config.savedNote, true);
+                        })
+                        .catch((error) => {
+                            this.noteError = error.message;
+                            if (window.toast) window.toast(error.message, false);
+                        })
+                        .finally(() => { this.savingNote = false; });
+                },
+                stageChanged(value) {
+                    if (value === 'lost') {
+                        this.stage = this.savedStage;
+                        this.lostOpen = true;
+                        return;
+                    }
+                    if (value === 'won' && !this.hasAcceptedProposal) {
+                        this.stage = this.savedStage;
+                        if (window.toast) window.toast(config.wonNeedsQuotation, false);
+                        return;
+                    }
+                    this.patchStage(value, {});
+                },
+                patchStage(value, extra) {
+                    this.stageSaving = true;
+                    fetch(config.statusUrl, {
+                        method: 'PATCH',
+                        headers: jsonHeaders,
+                        body: JSON.stringify(Object.assign({ status: value }, extra)),
+                    })
+                        .then(async (response) => {
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error((data.errors && data.errors.status && data.errors.status[0]) || data.message || config.genericError);
+                            }
+                            return data;
+                        })
+                        .then(() => {
+                            this.savedStage = value;
+                            this.stage = value;
+                            this.lostOpen = false;
+                            if (window.toast) window.toast(config.stageSaved, true);
+                        })
+                        .catch((error) => {
+                            this.stage = this.savedStage;
+                            if (window.toast) window.toast(error.message, false);
+                        })
+                        .finally(() => { this.stageSaving = false; });
+                },
+                confirmLost() {
+                    if (!this.lostReason || !this.lostNote.trim()) {
+                        if (window.toast) window.toast(config.lostRequired, false);
+                        return;
+                    }
+                    this.patchStage('lost', { lost_reason: this.lostReason, lost_note: this.lostNote.trim() });
+                },
+                cancelLost() {
+                    this.lostOpen = false;
+                    this.lostReason = '';
+                    this.lostNote = '';
+                    this.stage = this.savedStage;
+                },
+                openNext() {
+                    this.nextOpen = true;
+                    if (!this.nextDate) this.nextDate = config.today;
+                },
+                cancelNext() {
+                    this.nextOpen = false;
+                },
+                saveNext() {
+                    if (!this.nextDate) {
+                        if (window.toast) window.toast(config.dateRequired, false);
+                        return;
+                    }
+                    this.nextSaving = true;
+                    fetch(config.nextUrl, {
+                        method: 'PATCH',
+                        headers: jsonHeaders,
+                        body: JSON.stringify({
+                            next_follow_up_date: this.nextDate,
+                            next_follow_up_time: this.nextTime || null,
+                        }),
+                    })
+                        .then(async (response) => {
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error((data.errors && data.errors.next_follow_up_date && data.errors.next_follow_up_date[0]) || data.message || config.genericError);
+                            }
+                            return data;
+                        })
+                        .then((data) => {
+                            this.nextLabel = data.date;
+                            this.nextTime = data.time || '';
+                            this.nextState = data.state;
+                            this.nextOpen = false;
+                            if (window.toast) window.toast(data.message, true);
+                        })
+                        .catch((error) => {
+                            if (window.toast) window.toast(error.message, false);
+                        })
+                        .finally(() => { this.nextSaving = false; });
+                },
+                nextClass() {
+                    return {
+                        due: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                        overdue: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                        today: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+                        completed: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                        upcoming: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+                    }[this.nextState] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                },
+                nextStateText() {
+                    return config.stateLabels[this.nextState] || config.stateLabels.upcoming;
+                },
+            };
+        };
+    </script>
 
     @if($leads->isNotEmpty())
         <script type="module" src="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/leads-tour.js') }}"></script>

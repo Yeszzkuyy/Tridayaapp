@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Proposal;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -255,6 +256,17 @@ class LeadPipelineTest extends TestCase
         $user = $this->userWithRole('sales');
         $lead = $this->makeLead(['assigned_to' => $user->id]);
         $this->addDar($lead);
+
+        // Won hanya dari quotation Accepted (satu pintu transaksi).
+        Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/WON/'.uniqid(),
+            'created_by' => $user->id,
+            'proposal_date' => now(),
+            'customer' => 'PT Pipeline',
+            'status' => 'accepted',
+        ]);
+
         $this->assertNull($lead->closed_at);
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
@@ -382,7 +394,7 @@ class LeadPipelineTest extends TestCase
         $this->assertSame('cool', $lead->fresh()->status);
     }
 
-    public function test_cannot_move_to_warm_when_client_identity_is_incomplete(): void
+    public function test_can_move_to_warm_without_complete_client_identity(): void
     {
         $user = $this->userWithRole('sales');
         $customer = Customer::create(['name' => 'PT Tanpa Identitas']);
@@ -397,9 +409,9 @@ class LeadPipelineTest extends TestCase
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
             'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
-        ])->assertStatus(422);
+        ])->assertOk();
 
-        $this->assertSame('cool', $lead->fresh()->status);
+        $this->assertSame('warm', $lead->fresh()->status);
     }
 
     public function test_cannot_mark_lost_without_reason_and_note(): void

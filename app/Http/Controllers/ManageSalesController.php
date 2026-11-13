@@ -13,12 +13,15 @@ use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
 use App\Services\SalesKpiService;
 use App\Services\SalesReportStatusService;
+use App\Services\SalesService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
 
 class ManageSalesController extends Controller
 {
+    public function __construct(private SalesService $salesService) {}
+
     public function index(Request $request)
     {
         $query = Lead::with(['customer.contacts', 'assignee', 'partner'])
@@ -47,8 +50,7 @@ class ManageSalesController extends Controller
             'lost_month' => Lead::where('status', 'lost')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)->count(),
-            'overdue' => FollowUp::whereNotNull('follow_up_date')
-                ->whereDate('follow_up_date', '<', today())->count(),
+            'overdue' => Lead::assignmentOverdue()->count(),
         ];
         $bySales = Lead::selectRaw('assigned_to, count(*) as total')
             ->whereNotNull('assigned_to')
@@ -230,10 +232,7 @@ class ManageSalesController extends Controller
             'won_month' => $mine()->where('status', 'won')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)->count(),
-            'overdue' => FollowUp::where($ownActivity)
-                ->whereNull('completed_at')
-                ->whereNotNull('follow_up_date')
-                ->whereDate('follow_up_date', '<', today())->count(),
+            'overdue' => $mine()->assignmentOverdue()->count(),
             'followups_today' => FollowUp::where($ownActivity)
                 ->whereNull('completed_at')
                 ->whereDate('follow_up_date', today())->count(),
@@ -622,9 +621,9 @@ class ManageSalesController extends Controller
         return response()->streamDownload(function () use ($request) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF"); // BOM agar Excel baca UTF-8.
-            fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Follow Up', 'Follow Up Terakhir']);
+            fputcsv($handle, ['Customer', 'PT', 'PIC', 'Telepon', 'Status', 'Kebutuhan', 'Solusi', 'Progres', 'Tgl Masuk', 'Jml Follow Up', 'Follow Up Terakhir', 'Proyek', 'Aktivitas Terakhir', 'Next Follow Up']);
             $this->myLeadsQuery($request)
-                ->with(['customer.contacts'])
+                ->with(['customer.contacts', 'latestActivityFollowUp', 'activeFollowUp'])
                 ->withMax('followUps as last_follow_up_at', 'follow_up_date')
                 ->chunk(1000, function ($leads) use ($handle) {
                     foreach ($leads as $lead) {
@@ -642,6 +641,9 @@ class ManageSalesController extends Controller
                             $lead->incoming_date?->format('Y-m-d') ?? '-',
                             $lead->follow_ups_count,
                             $lead->last_follow_up_at ?? '-',
+                            $safe($lead->project_name ?? '-'),
+                            $lead->latestActivityFollowUp?->follow_up_date?->format('Y-m-d') ?? '-',
+                            $lead->activeFollowUp?->follow_up_date?->format('Y-m-d') ?? '-',
                         ]);
                     }
                 });
@@ -651,13 +653,50 @@ class ManageSalesController extends Controller
 
     private function myLeadsQuery(Request $request)
     {
-        $query = Lead::with(['customer.contacts', 'partner'])
+        $activeQueue = fn ($q) => $q->whereNull('completed_at')
+            ->where(fn ($s) => $s->whereNull('status')->orWhere('status', '!=', 'completed'))
+            ->where(fn ($t) => $t->whereNull('type')->orWhere('type', '!=', 'meeting'));
+
+        $query = Lead::with(['customer.contacts', 'partner', 'activeFollowUp', 'latestNoteFollowUp', 'latestActivityFollowUp'])
             ->withCount(['followUps'])
+            ->withExists(['followUps as has_follow_up_since_assignment' => fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')
+                ->where(fn ($x) => $x->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome'))])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
+            ->withExists(['proposals as has_accepted_proposal' => fn ($q) => $q->where('status', 'accepted')])
             ->where('assigned_to', auth()->id())
-            ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
-                fn ($c) => $c->whereLike('name', $request->search)))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $like = '%'.$request->search.'%';
+                $q->where(function ($w) use ($like) {
+                    $w->whereHas('customer', fn ($c) => $c->whereLike('name', $like)->orWhereLike('company', $like))
+                        ->orWhereLike('project_name', $like);
+                });
+            })
+            ->when($request->filled('company'), fn ($q) => $q->whereHas('customer',
+                fn ($c) => $c->whereLike('name', '%'.$request->company.'%')))
+            ->when($request->filled('pic'), fn ($q) => $q->whereHas('customer.contacts',
+                fn ($c) => $c->whereLike('name', '%'.$request->pic.'%')))
+            ->when($request->filled('project'), fn ($q) => $q->whereLike('project_name', '%'.$request->project.'%'))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->when($request->filled('last_activity'), function ($q) use ($request) {
+                match ($request->last_activity) {
+                    'today' => $q->whereHas('followUps', fn ($f) => $f->whereDate('follow_up_date', today())),
+                    'week' => $q->whereHas('followUps', fn ($f) => $f->whereDate('follow_up_date', '>=', now()->startOfWeek())),
+                    'month' => $q->whereHas('followUps', fn ($f) => $f->whereDate('follow_up_date', '>=', now()->startOfMonth())),
+                    'none' => $q->whereDoesntHave('followUps'),
+                    default => $q,
+                };
+            })
+            ->when($request->filled('next_follow_up'), function ($q) use ($request, $activeQueue) {
+                match ($request->next_follow_up) {
+                    'today' => $q->whereHas('followUps', fn ($f) => $activeQueue($f)->whereDate('follow_up_date', today())),
+                    'upcoming' => $q->whereHas('followUps', fn ($f) => $activeQueue($f)->whereDate('follow_up_date', '>', today())),
+                    'none' => $q->whereDoesntHave('followUps', $activeQueue),
+                    default => $q,
+                };
+            })
+            ->when($request->boolean('overdue'), fn ($q) => $q->assignmentOverdue())
             ->when($request->filled('active'), fn ($q) => $q->whereNotIn('status', ['won', 'lost']))
             ->when($request->filled('won_month'), fn ($q) => $q->where('status', 'won')
                 ->whereMonth('updated_at', now()->month)
@@ -674,6 +713,109 @@ class ManageSalesController extends Controller
             )->latest('leads.id'),
             default => $query->latest(),
         };
+    }
+
+    /**
+     * Simpan Latest Note langsung dari tabel My Leads. Catatan lama tidak
+     * dihapus: setiap simpanan menjadi baris riwayat baru.
+     */
+    public function updateLeadNote(Request $request, Lead $lead)
+    {
+        $this->authorize('update', $lead);
+
+        $validated = $request->validate([
+            'note' => 'required|string|max:2000',
+        ]);
+
+        $note = trim($validated['note']);
+        $duplicate = FollowUp::where('lead_id', $lead->id)
+            ->where('created_by', auth()->id())
+            ->where('source', 'manual')
+            ->where('type', 'note')
+            ->where('description', $note)
+            ->where('created_at', '>=', now()->subSeconds(10))
+            ->latest()
+            ->first();
+
+        $followUp = $duplicate ?: $this->salesService->appendNote($lead, $note);
+
+        return response()->json([
+            'ok' => true,
+            'message' => __('Note saved.'),
+            'note' => $followUp?->description ?? $note,
+            'time' => $followUp?->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'),
+        ]);
+    }
+
+    public function updateLeadNextFollowUp(Request $request, Lead $lead)
+    {
+        $this->authorize('update', $lead);
+
+        $validated = $request->validate([
+            'next_follow_up_date' => 'required|date|after_or_equal:today',
+            'next_follow_up_time' => 'nullable|date_format:H:i',
+        ]);
+
+        $followUp = $this->salesService->setNextFollowUp(
+            $lead,
+            $validated['next_follow_up_date'],
+            $validated['next_follow_up_time'] ?? null
+        );
+
+        return response()->json([
+            'ok' => true,
+            'message' => __('Next follow up saved.'),
+            'date' => $followUp->follow_up_date?->format('d M Y'),
+            'time' => $followUp->activity_time ? substr((string) $followUp->activity_time, 0, 5) : null,
+            'state' => $followUp->scheduleState(),
+            'state_label' => FollowUp::scheduleStateLabel($followUp->scheduleState()),
+        ]);
+    }
+
+    public function updateLeadColor(Request $request, Lead $lead)
+    {
+        $this->authorize('update', $lead);
+
+        $validated = $request->validate([
+            'color_tag' => 'nullable|in:'.implode(',', Lead::COLOR_TAGS),
+        ]);
+
+        $color = $validated['color_tag'] ?: null;
+        $lead->update(['color_tag' => $color]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => __('Color saved.'),
+            'color' => $color ?? '',
+        ]);
+    }
+
+    /**
+     * Catat klik kanal kontak. Bukan status "terkirim"; hanya audit bahwa
+     * Sales mulai menghubungi customer.
+     */
+    public function logLeadContact(Request $request, Lead $lead)
+    {
+        $this->authorize('update', $lead);
+
+        $validated = $request->validate([
+            'channel' => 'required|in:whatsapp,email,call',
+            'follow_up_id' => 'nullable|exists:follow_ups,id',
+        ]);
+
+        $followUp = null;
+        if (! empty($validated['follow_up_id'])) {
+            $followUp = FollowUp::findOrFail($validated['follow_up_id']);
+            abort_unless((int) $followUp->lead_id === (int) $lead->id, 404);
+        }
+
+        $result = $this->salesService->logContactInitiated($lead, $validated['channel'], $followUp);
+
+        return response()->json([
+            'ok' => true,
+            'duplicate' => $result['duplicate'],
+            'message' => $result['duplicate'] ? __('Contact already recorded.') : __('Contact started.'),
+        ]);
     }
 
     public function activityLog(Request $request)
@@ -727,6 +869,7 @@ class ManageSalesController extends Controller
         $lead->assigned_to = $assignedTo;
         $lead->assigned_by = $assignedTo ? auth()->id() : null;
         $lead->assigned_at = $assignedTo ? now() : null;
+        $lead->assignment_overdue_notified_at = null;
         // Assign (baru/reassign) = belum ditangani -> kembali ke kolom New pipeline.
         $lead->acknowledged_at = $assignedTo ? null : $lead->acknowledged_at;
     }

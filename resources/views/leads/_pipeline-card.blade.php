@@ -9,6 +9,12 @@
         @endif
         <span class="text-[11px] text-slate-400">{{ $cardDate?->format('d M y') }}</span>
     </div>
+    @if($lead->isAssignmentOverdue())
+        <span class="mb-1 inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+            <x-icon name="clock" class="h-3 w-3" />
+            {{ __('Overdue') }}
+        </span>
+    @endif
     <a href="{{ route('leads.show', $lead) }}"
        class="block font-semibold text-slate-800 hover:text-accent-600 leading-snug">
         {{ $lead->customer->name ?? 'N/A' }}

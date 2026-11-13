@@ -17,6 +17,9 @@ class Lead extends Model
 
     public const PROCUREMENT_STATUSES = ['new', 'replacement'];
 
+    /** Warna penanda lead (null = default). */
+    public const COLOR_TAGS = ['red', 'yellow', 'green'];
+
     public static function needTypeLabel(?string $needType): string
     {
         return match ($needType) {
@@ -108,6 +111,40 @@ class Lead extends Model
         };
     }
 
+    /** Warna stage khusus workspace Sales: Cool abu-abu, Warm kuning, Hot oranye. */
+    public static function workspaceStageClasses(?string $status): string
+    {
+        return match ($status) {
+            'cool' => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+            'warm' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+            'hot' => 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+            'won' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+            'lost' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+            default => 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+        };
+    }
+
+    /** Warna titik/penanda lead. */
+    public static function colorDotClasses(?string $color): string
+    {
+        return match ($color) {
+            'red' => 'bg-red-500',
+            'yellow' => 'bg-amber-400',
+            'green' => 'bg-emerald-500',
+            default => 'bg-slate-300 dark:bg-slate-600',
+        };
+    }
+
+    public static function colorLabel(?string $color): string
+    {
+        return match ($color) {
+            'red' => __('Red'),
+            'yellow' => __('Yellow'),
+            'green' => __('Green'),
+            default => __('Default'),
+        };
+    }
+
     public const PT_COLORS = [
         'NTI' => 'bg-sky-500 text-white',
         'MGK' => 'bg-blue-900 text-white',
@@ -122,6 +159,7 @@ class Lead extends Model
         'pt_group',
         'segment',
         'status',
+        'color_tag',
         'source',
         'kebutuhan',
         'project_name',
@@ -138,12 +176,14 @@ class Lead extends Model
         'lost_note',
         'closed_at',
         'closing_note',
+        'assignment_overdue_notified_at',
     ];
 
     protected $casts = [
         'incoming_date' => 'date',
         'assigned_at' => 'datetime',
         'acknowledged_at' => 'datetime',
+        'assignment_overdue_notified_at' => 'datetime',
         'closed_at' => 'datetime',
     ];
 
@@ -192,6 +232,51 @@ class Lead extends Model
         return $this->hasMany(FollowUp::class);
     }
 
+    /** Catatan terakhir (untuk kolom Latest Note di My Leads). */
+    public function latestFollowUp()
+    {
+        return $this->hasOne(FollowUp::class)->latestOfMany();
+    }
+
+    /** Catatan terakhir yang benar-benar berisi (baris antrean boleh kosong). */
+    public function latestNoteFollowUp()
+    {
+        return $this->hasOne(FollowUp::class)->ofMany(
+            ['id' => 'max'],
+            fn ($query) => $query->where('description', '!=', '')
+                ->where(fn ($t) => $t->whereNull('type')->orWhere('type', '!=', 'meeting'))
+        );
+    }
+
+    /** Aktivitas terakhir menurut tanggal aktivitas (kolom Last Activity). */
+    public function latestActivityFollowUp()
+    {
+        return $this->hasOne(FollowUp::class)->ofMany([
+            'follow_up_date' => 'max',
+            'id' => 'max',
+        ]);
+    }
+
+    /**
+     * Follow-up yang masih menjadi antrean: belum selesai dan bukan meeting.
+     * Satu lead + satu owner hanya punya satu antrean aktif.
+     */
+    public function activeFollowUp()
+    {
+        return $this->hasOne(FollowUp::class)->ofMany(
+            ['follow_up_date' => 'min', 'id' => 'min'],
+            function ($query) {
+                $query->whereNull('completed_at')
+                    ->where(function ($q) {
+                        $q->whereNull('status')->orWhere('status', '!=', 'completed');
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('type')->orWhere('type', '!=', 'meeting');
+                    });
+            }
+        );
+    }
+
     public function tasks()
     {
         return $this->hasMany(LeadTask::class);
@@ -210,6 +295,69 @@ class Lead extends Model
     public function proposals()
     {
         return $this->hasMany(Proposal::class);
+    }
+
+    /**
+     * Overdue baru: lead di-assign lebih dari 24 jam, belum diakui/dipindah
+     * tahap, dan belum ada follow-up sejak assignment.
+     */
+    public function isAssignmentOverdue(): bool
+    {
+        if (! $this->assigned_to || ! $this->assigned_at) {
+            return false;
+        }
+
+        if ($this->acknowledged_at !== null || in_array($this->status, ['won', 'lost'], true)) {
+            return false;
+        }
+
+        if ($this->assigned_at->gt(now()->subHours(24))) {
+            return false;
+        }
+
+        if (array_key_exists('has_follow_up_since_assignment', $this->attributes)) {
+            return ! (bool) $this->attributes['has_follow_up_since_assignment'];
+        }
+
+        return ! $this->followUps()
+            ->where('created_at', '>=', $this->assigned_at)
+            ->where(function ($q) {
+                $q->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome');
+            })
+            ->exists();
+    }
+
+    /** Scope untuk filter, KPI, dan notifikasi overdue assignment. */
+    public function scopeAssignmentOverdue($query)
+    {
+        return $query->whereNotNull('assigned_to')
+            ->whereNotNull('assigned_at')
+            ->where('assigned_at', '<=', now()->subHours(24))
+            ->whereNull('acknowledged_at')
+            ->whereNotIn('status', ['won', 'lost'])
+            ->whereDoesntHave('followUps', function ($q) {
+                $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')
+                    ->where(function ($x) {
+                        $x->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                            ->orWhereNotNull('completed_at')
+                            ->orWhereNotNull('outcome');
+                    });
+            });
+    }
+
+    /** Apakah ada follow-up nyata (bukan sekadar jadwal kosong) setelah assign. */
+    public function followUpSinceAssignmentExists(): bool
+    {
+        return $this->followUps()
+            ->where('created_at', '>=', $this->assigned_at)
+            ->where(function ($q) {
+                $q->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome');
+            })
+            ->exists();
     }
 
     /**

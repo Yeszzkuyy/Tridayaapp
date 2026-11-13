@@ -56,12 +56,12 @@
 
 @media (hover: hover) and (pointer: fine) {
   .glide-select__trigger:not(:disabled):hover {
-    background: color-mix(in srgb, var(--gs-highlight) 60%, var(--gs-surface));
+    background: var(--gs-trigger-hover, var(--gs-highlight));
   }
 }
 
 .glide-select__trigger[aria-expanded='true'] {
-  background: color-mix(in srgb, var(--gs-highlight) 60%, var(--gs-surface));
+  background: var(--gs-trigger-hover, var(--gs-highlight));
 }
 
 .glide-select__trigger:not(:disabled):active {

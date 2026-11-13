@@ -119,6 +119,7 @@ export function dismissAllToasts() {
  * ({label, href}) tampil sebagai tombol di kanan kartu.
  */
 export function installLegacyToast() {
+    window.pushToast = pushToast;
     window.toast = function toast(message, ok = true, action = null) {
         pushToast({
             variant: ok ? 'success' : 'error',

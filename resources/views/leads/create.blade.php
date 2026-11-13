@@ -1,6 +1,6 @@
 <x-app-layout>
     @php($prefill = $prefill ?? [])
-    @php($backUrl = auth()->user()?->can('manage-marketing') ? route('leads.index') : route('leads.pipeline'))
+    @php($backUrl = auth()->user()?->can('manage-marketing') ? route('leads.index') : route('sales.my-leads'))
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Add New Lead / Opportunity') }}</h1>

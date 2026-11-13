@@ -1,168 +1,192 @@
-{{-- Partial tabel: dipakai full view + refresh AJAX filter (tanpa reload). --}}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
-            <thead class="bg-slate-50 dark:bg-slate-700">
-                <tr>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Description') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Follow Up Date') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Location') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Related Lead') }}</th>
-                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('By') }}</th>
-                    <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
-                @forelse($followUps as $fu)
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition {{ $fu->completed_at ? 'opacity-60' : '' }}">
-                        <td class="px-6 py-4">
-                            <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $fu->customer?->name ?? '-' }}</span>
-                            @if($fu->type)
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ \App\Models\FollowUp::typeLabel($fu->type) }}</span>
+{{-- Antrean Follow Up: satu baris = satu pekerjaan yang butuh tindakan. --}}
+<div class="overflow-x-auto">
+    <table class="min-w-[1280px] w-full divide-y divide-slate-200 dark:divide-slate-600">
+        <thead class="bg-slate-50 dark:bg-slate-700">
+            <tr>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Customer') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('PIC') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('WhatsApp') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Project') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Pipeline Stage') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Latest Note') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Last Activity') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Next Follow Up') }}</th>
+                <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Follow Up Status') }}</th>
+                <th class="px-4 py-3 text-right text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
+            </tr>
+        </thead>
+        <tbody class="bg-[var(--card-bg)] dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
+            @forelse($followUps as $fu)
+                @php
+                    $lead = $fu->lead;
+                    $customer = $fu->customer;
+                    $status = $fu->status ?? ($fu->isCompleted() ? 'completed' : 'pending');
+                    $schedule = $fu->scheduleState();
+                    $note = $fu->description ?: ($lead?->latestNoteFollowUp?->description ?? '');
+                    $leadNote = $lead?->latestNoteFollowUp?->description;
+                    $lastActivity = $lead?->latestActivityFollowUp?->follow_up_date ?? $fu->follow_up_date;
+                    $waMessage = __('Follow up on :project', ['project' => $lead?->project_name ?: ($customer?->name ?? '')]);
+                    $waLink = $customer?->waLink($waMessage);
+                    $email = $customer?->picEmail();
+                    $phone = $customer?->picPhone() ?: $customer?->phone;
+                    $contactUrl = $lead ? route('sales.my-leads.contact', $lead) : null;
+                @endphp
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition {{ $fu->isCompleted() ? 'bg-slate-50/40 dark:bg-slate-800/40' : '' }}">
+                    <td class="px-4 py-3">
+                        <div class="min-w-[170px]">
+                            <span class="font-semibold text-slate-800 dark:text-slate-100">{{ $customer?->name ?? '-' }}</span>
+                            <div class="mt-1 flex items-center gap-1">
+                                @if($lead?->pt_group)
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700' }}">{{ $lead->pt_group }}</span>
+                                @endif
+                                @if($fu->type)
+                                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ \App\Models\FollowUp::typeLabel($fu->type) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                        <div class="min-w-[110px]">{{ $customer?->picName() ?? '-' }}</div>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                        {{ $customer?->picWhatsapp() ?? $customer?->picPhone() ?? '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                        <div class="min-w-[130px] max-w-[200px] truncate" title="{{ $lead?->project_name }}">{{ $lead?->project_name ?: '-' }}</div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        @if($lead)
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold {{ \App\Models\Lead::workspaceStageClasses($lead->status) }}">{{ ucfirst($lead->status) }}</span>
+                        @else
+                            <span class="text-xs text-slate-400">-</span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="min-w-[190px] max-w-[280px]">
+                            <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 line-clamp-3" title="{{ $note }}">{{ $note ?: __('No note yet') }}</p>
+                            @if($leadNote && $leadNote !== $note)
+                                <p class="mt-1 text-[11px] text-slate-400 line-clamp-2" title="{{ $leadNote }}">{{ __('Latest note') }}: {{ $leadNote }}</p>
                             @endif
-                            @if($fu->completed_at)
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{{ __('Done') }}</span>
+                            @if($fu->isCompleted() && $fu->outcome)
+                                <p class="mt-1 text-[11px] font-medium text-green-700 dark:text-green-400">{{ __('Outcome') }}: {{ \Illuminate\Support\Str::limit($fu->outcome, 90) }}</p>
                             @endif
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 max-w-xs truncate">
-                            {{ Str::limit($fu->description, 100) }}
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            {{ $fu->follow_up_date ? $fu->follow_up_date->format('d M Y') : '-' }}
-                            @if($fu->activity_time)
-                                <span class="block mt-0.5 text-[11px] text-slate-500">{{ substr((string) $fu->activity_time, 0, 5) }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">
+                        {{ $lastActivity?->format('d M Y') ?? '-' }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ $fu->follow_up_date?->format('d M Y') ?? __('Not scheduled') }}</p>
+                        @if($fu->activity_time)
+                            <p class="text-[11px] text-slate-400">{{ substr((string) $fu->activity_time, 0, 5) }}</p>
+                        @endif
+                        <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ \App\Models\FollowUp::scheduleStateClasses($schedule) }}">{{ \App\Models\FollowUp::scheduleStateLabel($schedule) }}</span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold {{ \App\Models\FollowUp::statusBadgeClasses($status) }}">{{ \App\Models\FollowUp::statusLabel($status) }}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-wrap items-center justify-end gap-1.5">
+                            @if($waLink)
+                                <x-icon-button as="a" icon="whatsapp" href="{{ $waLink }}" target="_blank" rel="noopener" title="{{ __('WhatsApp') }}"
+                                               data-contact-channel="whatsapp" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
                             @endif
-                            @if(!$fu->completed_at && $fu->follow_up_date && $fu->follow_up_date->isBefore(today()))
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">{{ __('Overdue') }}</span>
+                            @if($email)
+                                <x-icon-button as="a" icon="mail" href="mailto:{{ $email }}?subject={{ rawurlencode(__('Follow up')) }}" title="{{ __('Email') }}"
+                                               data-contact-channel="email" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
                             @endif
-                            @if($fu->next_follow_up_date)
-                                <span class="block mt-1 text-[11px] text-slate-500">{{ __('Next:') }} {{ $fu->next_follow_up_date->format('d M Y') }}</span>
+                            @if($phone)
+                                <x-icon-button as="a" icon="phone" href="tel:{{ preg_replace('/[^0-9+]/', '', $phone) }}" title="{{ __('Call') }}"
+                                               data-contact-channel="call" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
                             @endif
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            <x-location-link :location="$fu->location" compact />
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            @if($fu->lead)
-                                <span class="text-slate-800 dark:text-slate-100">#{{ $fu->lead->id }}</span>
-                                <span class="ml-1 inline-flex px-1.5 py-0.5 rounded text-[11px] font-semibold {{ \App\Models\Lead::statusBadgeClasses($fu->lead->status) }}">{{ ucfirst($fu->lead->status) }}</span>
+                            @if($lead)
+                                <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View Lead') }}" />
+                            @endif
+                            @if(!$fu->isCompleted())
+                                @can('manage-sales')
+                                    @php($completeData = json_encode([
+                                        'action' => route('sales.follow-ups.complete', $fu),
+                                        'customer' => $customer?->name ?? '',
+                                    ]))
+                                    <x-icon-button
+                                        icon="check-circle"
+                                        title="{{ __('Complete') }}"
+                                        x-on:click="openComplete({{ $completeData }})" />
+                                @endcan
                             @else
-                                -
+                                <span class="text-[10px] font-semibold text-slate-400">{{ $fu->completed_at?->format('d M Y') }}</span>
                             @endif
-                        </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ $fu->creator?->name ?? '-' }}</td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center justify-end gap-2">
-                                @php
-                                    $fuWaMessage = 'Halo ' . ($fu->customer?->picName() ?: ($fu->customer?->name ?? ''))
-                                        . ', izin follow up "' . Str::limit($fu->description, 60) . '".';
-                                    $fuWaLink = $fu->customer?->waLink($fuWaMessage);
-                                    $fuMailLink = $fu->customer?->email
-                                        ? 'mailto:'.$fu->customer->email.'?subject='.rawurlencode(__('Follow up: :name', ['name' => $fu->customer?->name ?? ''])).'&body='.rawurlencode(Str::limit($fu->description, 200))
-                                        : null;
-                                @endphp
-                                @if($fuWaLink)
-                                    <x-icon-button as="a" href="{{ $fuWaLink }}" target="_blank" title="{{ __('Follow Up via WA') }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true">
-                                            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m5.83 14.12c-.25.7-1.45 1.33-2.02 1.42-.52.08-1.17.12-1.89-.12-.44-.15-1-.39-1.71-.75-3.03-1.39-5-4.63-5.15-4.84-.15-.21-1.23-1.64-1.23-3.13 0-1.49.78-2.22 1.06-2.52.28-.3.61-.38.81-.38l.58.01c.19.01.44-.07.69.53.25.61.86 2.11.94 2.26.08.15.13.33.03.53-.1.2-.15.33-.3.51l-.45.53c-.15.15-.31.31-.13.61.18.3.8 1.32 1.71 2.14 1.18 1.06 2.17 1.39 2.48 1.55.3.15.48.13.66-.08l1.1-1.28c.2-.26.42-.22.71-.13.3.09 1.9.9 2.23 1.06.38.2.53.44.5.65-.27.69-.52.98-.73 1.23"/>
-                                        </svg>
-                                    </x-icon-button>
-                                @endif
-                                @if($fuMailLink)
-                                    <x-icon-button as="a" icon="mail" href="{{ $fuMailLink }}" title="{{ __('Send Email') }}" />
-                                @endif
-                                <x-dropdown align="right" width="w-52">
-                                    <x-slot name="trigger">
-                                        <x-icon-button icon="more" title="{{ __('Actions') }}" />
-                                    </x-slot>
-                                    <x-slot name="content">
-                                        <a href="{{ route('sales.follow-ups.show', $fu) }}"
-                                           class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                            <x-icon name="eye" class="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
-                                            {{ __('View follow up detail') }}
+
+                            <x-dropdown align="right" width="w-60">
+                                <x-slot name="trigger">
+                                    <x-icon-button icon="more" title="{{ __('More actions') }}" />
+                                </x-slot>
+                                <x-slot name="content">
+                                    <a href="{{ route('sales.follow-ups.show', $fu) }}"
+                                       class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
+                                        <x-icon name="eye" class="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
+                                        {{ __('View follow up detail') }}
+                                    </a>
+                                    @can('manage-sales')
+                                        <a href="{{ route('sales.follow-ups.edit', $fu) }}"
+                                           class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
+                                            <x-icon name="edit" class="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
+                                            {{ __('Edit follow up') }}
                                         </a>
-                                        @can('manage-sales')
-                                            <a href="{{ route('sales.follow-ups.edit', $fu) }}"
-                                               class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                <x-icon name="edit" class="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
-                                                {{ __('Edit follow up') }}
-                                            </a>
-                                        @endcan
-                                        <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
-                                        @can('manage-sales')
-                                            @if($fu->completed_at)
-                                                <form action="{{ route('sales.follow-ups.reopen', $fu) }}"
-                                                      method="POST" data-ajax>
-                                                    @csrf
-                                                    <button type="submit"
-                                                            class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                        <x-icon name="restore" class="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
-                                                        {{ __('Reopen follow up') }}
-                                                    </button>
-                                                </form>
-                                            @else
-                                                <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
-                                                <div @click.stop x-data="{ openResched: false }">
-                                                    <button type="button" @click="openResched = !openResched"
-                                                            class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-300" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M12 7.5V12l3 2" /></svg>
-                                                        <span class="flex-1">{{ __('Reschedule') }}</span>
-                                                        <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200" ::class="openResched && 'rotate-90'" />
-                                                    </button>
-                                                    <div x-show="openResched" class="space-y-2 px-4 pb-2 pt-1">
-                                                        <form action="{{ route('sales.follow-ups.snooze', $fu) }}" method="POST" class="flex items-center gap-2">
-                                                            @csrf
-                                                            <span class="text-sm text-slate-500 dark:text-slate-400">+</span>
-                                                            <input type="number" name="days" min="1" max="60" value="3" required
-                                                                   aria-label="{{ __('Reschedule') }}"
-                                                                   class="h-8 w-16 rounded-lg border-slate-300 bg-white text-center text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
-                                                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ __('days') }}</span>
-                                                            <button type="submit"
-                                                                    class="group/btn relative inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white">{{ __('OK') }}</button>
-                                                        </form>
-                                                        <form action="{{ route('sales.follow-ups.snooze', $fu) }}" method="POST" class="flex items-center gap-2">
-                                                            @csrf
-                                                            <input type="date" name="date" min="{{ date('Y-m-d') }}" required
-                                                                   aria-label="{{ __('Reschedule') }}"
-                                                                   class="h-8 min-w-0 flex-1 rounded-lg border-slate-300 bg-white text-sm text-slate-800 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
-                                                            <button type="submit"
-                                                                    class="group/btn relative inline-flex h-8 shrink-0 items-center gap-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-accent-600 transition-all duration-300 hover:scale-105 hover:border-accent-600 hover:bg-accent-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-accent-400 dark:hover:border-accent-500 dark:hover:bg-accent-500 dark:hover:text-white">{{ __('OK') }}</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            @endif
-                                            <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
-                                            <form action="{{ route('sales.follow-ups.destroy', $fu) }}"
-                                                  method="POST" data-ajax data-ajax-remove="tr" data-confirm="{{ __('Delete this follow up?') }}" data-confirm-tone="danger">
-                                                @csrf @method('DELETE')
-                                                <button type="submit"
-                                                        class="flex w-full items-center gap-3 px-4 py-1.5 text-start text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
-                                                    <x-icon name="trash" class="h-4 w-4 shrink-0" />
-                                                    {{ __('Delete follow up') }}
+                                        @if($fu->isCompleted())
+                                            <form action="{{ route('sales.follow-ups.reopen', $fu) }}" method="POST" data-ajax>
+                                                @csrf
+                                                <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
+                                                    <x-icon name="restore" class="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
+                                                    {{ __('Reopen follow up') }}
                                                 </button>
                                             </form>
-                                        @endcan
-                                    </x-slot>
-                                </x-dropdown>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
-                            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300">
-                                <x-icon name="chat" class="h-6 w-6" />
-                            </span>
-                            <p class="mt-4 text-sm font-medium text-slate-500">{{ __('No follow ups yet.') }}</p>
-                            <p class="mt-1 text-xs text-slate-400">{{ __('Record the first follow up from the button above.') }}</p>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                                        @else
+                                            @foreach([3, 7] as $days)
+                                                <form action="{{ route('sales.follow-ups.snooze', $fu) }}" method="POST" data-ajax>
+                                                    @csrf
+                                                    <input type="hidden" name="days" value="{{ $days }}">
+                                                    <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
+                                                        <x-icon name="clock" class="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-300" />
+                                                        {{ __('Postpone :days days', ['days' => $days]) }}
+                                                    </button>
+                                                </form>
+                                            @endforeach
+                                        @endif
+                                        <div class="my-1 border-t border-slate-200 dark:border-slate-600"></div>
+                                        <form action="{{ route('sales.follow-ups.destroy', $fu) }}" method="POST" data-ajax data-ajax-remove="tr"
+                                              data-confirm="{{ __('Delete this follow up?') }}"
+                                              data-confirm-title="{{ __('Delete follow up') }}"
+                                              data-confirm-tone="danger"
+                                              data-confirm-label="{{ __('Delete') }}">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
+                                                <x-icon name="trash" class="h-4 w-4 shrink-0" />
+                                                {{ __('Delete follow up') }}
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </x-slot>
+                            </x-dropdown>
+                        </div>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="10" class="px-6 py-14 text-center">
+                        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300">
+                            <x-icon name="chat" class="h-6 w-6" />
+                        </span>
+                        <p class="mt-4 text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('Nothing in this tab.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('New follow ups appear here when a lead is given a schedule.') }}</p>
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+@if($followUps->hasPages())
+    <div class="p-4 border-t border-slate-200 dark:border-slate-600">
+        {{ $followUps->links() }}
     </div>
-    @if($followUps->hasPages())
-        <div class="p-4 border-t border-slate-200 dark:border-slate-600">
-            {{ $followUps->links() }}
-        </div>
-    @endif
+@endif

@@ -66,9 +66,43 @@ class LeadActivity extends Model
             'followup_created' => __('Logged a follow up'),
             'followup_completed' => __('Completed a follow up'),
             'followup_snoozed' => __('Postponed a follow up'),
+            'contact_initiated' => __('Started contacting the customer'),
             'task_created' => __('Created an inside sales task'),
             'task_status_changed' => __('Updated inside sales task status'),
             default => $this->action,
         };
+    }
+
+    /**
+     * Ringkasan untuk tabel DAR. Perubahan pipeline ditulis sebagai
+     * "Warm to Hot" agar terbaca tanpa membuka detail lead.
+     */
+    public function summary(): ?string
+    {
+        // `$this->changes` adalah properti internal Eloquent (syncChanges),
+        // jadi baca lewat getAttribute agar cast array dipakai.
+        $changes = $this->getAttribute('changes');
+
+        if ($this->action === 'status_changed' && is_array($changes)) {
+            $status = $changes['status'] ?? null;
+            $old = is_array($status) ? ($status['old'] ?? null) : null;
+            $new = is_array($status) ? ($status['new'] ?? null) : null;
+
+            if ($new) {
+                return $old
+                    ? __('Pipeline: :old to :new', ['old' => ucfirst((string) $old), 'new' => ucfirst((string) $new)])
+                    : __('Pipeline: :new', ['new' => ucfirst((string) $new)]);
+            }
+        }
+
+        if ($this->action === 'contact_initiated' && is_array($changes)) {
+            $channel = $changes['channel'] ?? null;
+
+            return $channel
+                ? __('Started contact via :channel', ['channel' => ucfirst((string) $channel)])
+                : __('Started contacting the customer');
+        }
+
+        return null;
     }
 }

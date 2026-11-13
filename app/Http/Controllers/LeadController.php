@@ -86,6 +86,10 @@ class LeadController extends Controller
         // Tiap kolom kanban diambil langsung di level SQL (tanpa get() +
         // filter Collection in-memory) agar tidak memuat seluruh lead sekaligus.
         $base = Lead::with(['customer.contacts', 'assignee', 'partner'])
+            ->withExists(['followUps as has_follow_up_since_assignment' => fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')
+                ->where(fn ($x) => $x->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome'))])
             ->where('assigned_to', $request->user()->id);
 
         // Kolom New (virtual, bukan status DB): lead yang di-assign ke sales
@@ -574,6 +578,7 @@ class LeadController extends Controller
             $lead->forceFill([
                 'assigned_by' => auth()->id(),
                 'assigned_at' => now(),
+                'assignment_overdue_notified_at' => null,
             ])->saveQuietly();
             $this->notifyAssignee($lead, null);
         } else {
