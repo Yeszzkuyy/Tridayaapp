@@ -394,7 +394,7 @@ class LeadPipelineTest extends TestCase
         $this->assertSame('cool', $lead->fresh()->status);
     }
 
-    public function test_cannot_move_to_warm_when_client_identity_is_incomplete(): void
+    public function test_can_move_to_warm_without_complete_client_identity(): void
     {
         $user = $this->userWithRole('sales');
         $customer = Customer::create(['name' => 'PT Tanpa Identitas']);
@@ -409,9 +409,9 @@ class LeadPipelineTest extends TestCase
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
             'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
-        ])->assertStatus(422);
+        ])->assertOk();
 
-        $this->assertSame('cool', $lead->fresh()->status);
+        $this->assertSame('warm', $lead->fresh()->status);
     }
 
     public function test_cannot_mark_lost_without_reason_and_note(): void

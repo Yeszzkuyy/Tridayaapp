@@ -31,21 +31,6 @@ class LeadPipelineService
             ]);
         }
 
-        // Identitas klien wajib lengkap sebelum lead masuk pipeline aktif.
-        // Lead lama yang sudah Warm/Hot tidak diblokir saat mundur tahap.
-        if (in_array($newStatus, self::STAGES_REQUIRING_DAR, true)
-            && ! in_array($lead->status, self::STAGES_REQUIRING_DAR, true)) {
-            $missing = $this->identityIssues($lead);
-
-            if ($missing !== []) {
-                throw ValidationException::withMessages([
-                    'status' => __('Complete the client identity before moving the lead to this stage: :fields.', [
-                        'fields' => implode(', ', $missing),
-                    ]),
-                ]);
-            }
-        }
-
         if ($newStatus === 'lost') {
             $reason = trim((string) ($lostReason ?? $lead->lost_reason ?? ''));
             $note = trim((string) ($lostNote ?? $lead->lost_note ?? ''));
@@ -65,42 +50,5 @@ class LeadPipelineService
                 'status' => __('A lead can only be WON from an accepted quotation.'),
             ]);
         }
-    }
-
-    /**
-     * Daftar identitas klien yang belum lengkap. Kosong = siap masuk pipeline.
-     *
-     * @return array<int, string>
-     */
-    private function identityIssues(Lead $lead): array
-    {
-        $customer = $lead->customer;
-
-        if (! $customer) {
-            return [__('Company Name'), __('Address'), __('PIC'), __('PIC WhatsApp'), __('Email'), __('Category')];
-        }
-
-        $missing = [];
-
-        if (! filled($customer->company) && ! filled($customer->name)) {
-            $missing[] = __('Company Name');
-        }
-        if (! filled($customer->address)) {
-            $missing[] = __('Address');
-        }
-        if (! filled($customer->picName())) {
-            $missing[] = __('PIC');
-        }
-        if (! filled($customer->picWhatsapp())) {
-            $missing[] = __('PIC WhatsApp');
-        }
-        if (! filled($customer->picEmail())) {
-            $missing[] = __('Email');
-        }
-        if (! filled($lead->segment)) {
-            $missing[] = __('Category');
-        }
-
-        return $missing;
     }
 }
