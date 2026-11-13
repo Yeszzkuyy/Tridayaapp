@@ -265,15 +265,16 @@ class EstimatorRequestController extends Controller
         ]);
 
         $user = $request->user();
-        $suppliers = $user->can('answer', $estimatorRequest)
+        $allSuppliers = $user->can('answer', $estimatorRequest)
             ? Supplier::active()->orderBy('name')->get(['id', 'name', 'contact_person', 'phone', 'email'])
             : collect();
+        $suppliers = $allSuppliers;
 
         $backUrl = $user->can('manage-price-requests')
             || $user->can('manage-sales-leads')
             || $user->can('manage-admin')
             || $user->hasRole('ceo')
-            ? route('estimator.requests.index')
+            ? route('estimator.dashboard')
             : route('sales.requests.index', ['tab' => 'product-price']);
         $backUrl = $estimatorRequest->proposal_id
             ? route('sales.proposals.show', $estimatorRequest->proposal_id)
@@ -283,7 +284,7 @@ class EstimatorRequestController extends Controller
                     ? route('projects.show', $estimatorRequest->project_id)
                     : $backUrl));
 
-        return view('estimator.requests.show', compact('estimatorRequest', 'suppliers', 'backUrl'));
+        return view('estimator.requests.show', compact('estimatorRequest', 'suppliers', 'allSuppliers', 'backUrl'));
     }
 
     /**

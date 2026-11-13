@@ -517,7 +517,30 @@ class EstimatorRequestTest extends TestCase
             ->assertOk()
             ->assertSee(__('Pricelist'))
             ->assertSee('Vendor Pricelist')
-            ->assertSee(__('Valid until :date', ['date' => '31 Dec 2026']));
+            ->assertSee(__('Active (Valid until :date)', ['date' => '31 Dec 2026']));
+    }
+
+    public function test_pricelist_shows_needs_recheck_badge_when_valid_until_is_missing(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+        $product = $this->product(['name' => 'Kamera Tanpa Masa Berlaku']);
+        $supplier = Supplier::create(['name' => 'Vendor Tanpa Masa']);
+
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 450000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '1 year',
+            'valid_until' => null,
+            'updated_by' => $estimator->id,
+        ]);
+
+        $this->actingAs($estimator)->get(route('products.index'))
+            ->assertOk()
+            ->assertSee(__('Needs Recheck'));
     }
 
     public function test_pricelist_shows_expired_badge_when_valid_until_is_past(): void
@@ -585,6 +608,50 @@ class EstimatorRequestTest extends TestCase
             ->assertSee(__('+1 Month'))
             ->assertSee('onclick="useLastPrice(0,', false)
             ->assertDontSee('data-loading-text');
+    }
+
+    public function test_show_page_provides_active_suppliers_for_whatsapp_inquiry(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $supplier = Supplier::create([
+            'name' => 'Distributor Baru',
+            'contact_person' => 'Dewi',
+            'phone' => '08120001111',
+        ]);
+        $request = $this->makeRequest($sales);
+        $request->items()->create([
+            'description' => 'Kamera Baru',
+            'quantity' => 1,
+            'unit' => 'pcs',
+        ]);
+
+        $response = $this->actingAs($estimator)->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Ask Supplier via WhatsApp'))
+            ->assertSee('Distributor Baru');
+
+        $response->assertViewHas('allSuppliers', fn ($suppliers) => $suppliers->contains('id', $supplier->id));
+    }
+
+    public function test_estimator_detail_has_apply_all_valid_until_button_and_sales_back_url(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $request = $this->makeRequest($sales);
+        $request->items()->create([
+            'description' => 'Kamera Back',
+            'quantity' => 1,
+            'unit' => 'pcs',
+        ]);
+
+        $this->actingAs($estimator)->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Apply Valid Until to All'));
+
+        $this->actingAs($sales)->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertViewHas('backUrl', route('sales.requests.index', ['tab' => 'product-price']));
     }
 
     public function test_create_form_is_full_width_with_searchable_picker_and_queue_has_export_button(): void

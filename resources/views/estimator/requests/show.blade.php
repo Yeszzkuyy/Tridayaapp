@@ -10,14 +10,15 @@
         $canAnswer = auth()->user()->can('answer', $estimatorRequest);
         $isEstimator = auth()->user()->can('manage-price-requests');
         $formOpen = $canAnswer && ! in_array($estimatorRequest->status, ['answered', 'completed'], true);
+        $itemSuppliers = $estimatorRequest->items->pluck('supplier')->filter()->unique('id')->values();
         $contactSuppliers = $isEstimator
-            ? $estimatorRequest->items->pluck('supplier')->filter()->unique('id')->values()
+            ? ($itemSuppliers->isNotEmpty() ? $itemSuppliers : $allSuppliers)
             : collect();
         $ptGroup = $estimatorRequest->customer?->pt_group;
         $ptColor = $ptGroup
             ? (\App\Models\Lead::PT_COLORS[$ptGroup] ?? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200')
             : null;
-        $supplierOptions = $suppliers->map(fn ($supplier) => [
+        $supplierOptions = $allSuppliers->map(fn ($supplier) => [
             'value' => (string) $supplier->id,
             'label' => $supplier->name.($supplier->contact_person ? ' · '.$supplier->contact_person : ''),
         ])->values()->all();
@@ -37,7 +38,7 @@
             return ($idx + 1).'. '.$it->description.' - '.$qty.' '.$it->unit;
         })->implode("\n");
         $estimatorName = auth()->user()->name;
-        $waSuppliers = $suppliers->map(fn ($s) => [
+        $waSuppliers = $allSuppliers->map(fn ($s) => [
             'id' => (string) $s->id,
             'name' => $s->name,
             'contact' => $s->contact_person ?: $s->name,
@@ -214,6 +215,11 @@
                 <h2 id="estimator-requested-items" class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Requested Items') }}</h2>
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="text-xs text-slate-500 dark:text-slate-400">{{ trans_choice(':count item|:count items', $estimatorRequest->items->count(), ['count' => $estimatorRequest->items->count()]) }}</span>
+                    @if($canAnswer)
+                        <x-icon-button type="button" icon="calendar" label="{{ __('Apply Valid Until to All') }}"
+                                       title="{{ __('Copy the first item valid until to all items') }}"
+                                       x-show="editing" onclick="copyFirstValidUntilToAll()" />
+                    @endif
                     @if($canAnswer && $estimatorRequest->status === 'answered')
                         <x-icon-button type="button" icon="edit" label="{{ __('Edit Prices') }}" title="{{ __('Edit Prices') }}" x-on:click="editing = true" />
                     @endif
@@ -455,7 +461,7 @@
             @if($isEstimator && $contactSuppliers->isNotEmpty())
                 <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800">
                     <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Supplier Contacts') }}</h2>
-                    <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-700/60">
+                    <div class="mt-3 max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-700/60">
                         @foreach($contactSuppliers as $supplier)
                             @php
                                 $supPhone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', (string) $supplier->phone));
@@ -613,6 +619,17 @@
                         { duration: 800, easing: 'ease-out' },
                     );
                 }
+            }
+
+            function copyFirstValidUntilToAll() {
+                const first = document.querySelector('[data-estimator-row] input[name$="[valid_until]"]');
+                if (!first || !first.value) return;
+
+                document.querySelectorAll('[data-estimator-row] input[name$="[valid_until]"]').forEach((input) => {
+                    input.value = first.value;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
             }
 
             function setKeepDate(index, dateStr) {

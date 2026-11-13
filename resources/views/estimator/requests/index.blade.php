@@ -7,7 +7,7 @@
             <div class="flex shrink-0 flex-wrap items-center gap-2">
                 <x-back-button :href="route('dashboard')" />
                 @can('export', \App\Models\EstimatorRequest::class)
-                    <x-icon-button as="a" icon="download" :href="route('estimator.requests.export-excel', request()->only(['status', 'date_from', 'date_to']))" label="{{ __('Export Excel') }}" title="{{ __('Export Excel') }}" />
+                    <x-icon-button as="a" icon="download" :href="route('estimator.requests.export-excel', request()->query())" label="{{ __('Export Excel') }}" title="{{ __('Export Excel') }}" />
                 @endcan
                 @can('create', \App\Models\EstimatorRequest::class)
                     <x-icon-button variant="solid" as="a" icon="add" href="{{ route('estimator.requests.create') }}" label="{{ __('New Request') }}" title="{{ __('New Request') }}" />

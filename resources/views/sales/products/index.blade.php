@@ -2,7 +2,7 @@
     <div>
         @php
             $isEstimatorPricelist = auth()->user()->can('manage-price-requests') && ! auth()->user()->can('manage-sales') && ! auth()->user()->can('manage-admin');
-            $backHref = $isEstimatorPricelist ? route('estimator.requests.index') : route('sales.dashboard');
+            $backHref = $isEstimatorPricelist ? route('estimator.dashboard') : route('sales.dashboard');
         @endphp
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -65,18 +65,21 @@
                                     @endif
                                 @endcan
                                 @can('viewCost', \App\Models\Product::class)
-                                    @if($validUntil)
-                                        @if($isExpired)
-                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
-                                                <span class="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true"></span>
-                                                {{ __('Expired :date - Needs Recheck', ['date' => $validUntil->format('d M Y')]) }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
-                                                <span class="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
-                                                {{ __('Valid until :date', ['date' => $validUntil->format('d M Y')]) }}
-                                            </span>
-                                        @endif
+                                    @if($validUntil && ! $isExpired)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                                            <span class="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                                            {{ __('Active (Valid until :date)', ['date' => $validUntil->format('d M Y')]) }}
+                                        </span>
+                                    @elseif($validUntil)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+                                            <span class="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true"></span>
+                                            {{ __('Expired :date - Needs Recheck', ['date' => $validUntil->format('d M Y')]) }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                                            <span class="h-2 w-2 rounded-full bg-slate-400" aria-hidden="true"></span>
+                                            {{ __('Needs Recheck') }}
+                                        </span>
                                     @endif
                                 @endcan
                             </div>
@@ -90,7 +93,7 @@
 
                             @can('viewCost', \App\Models\Product::class)
                                 @if($log)
-                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-2 text-xs text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/40 dark:text-slate-200">
+                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-slate-100 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-700 dark:border-slate-700/70 dark:bg-slate-900/40 dark:text-slate-200">
                                         <span>
                                             <span class="text-slate-500 dark:text-slate-400">{{ __('Cost') }}:</span>
                                             <strong class="font-bold tabular-nums text-slate-900 dark:text-slate-100">Rp {{ number_format((float) $log->price, 0, ',', '.') }}</strong>
@@ -113,7 +116,7 @@
                                                 <strong class="font-semibold">{{ $log->warranty_info }}</strong>
                                             </span>
                                         @endif
-                                        <span class="text-slate-400 dark:text-slate-500">
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">
                                             {{ __('Updated') }} {{ $log->created_at?->format('d M Y') }}
                                         </span>
                                     </div>
