@@ -83,7 +83,7 @@
                 <input type="hidden" name="status" value="{{ $filters['status'] }}">
             @endif
             <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ __('Search document name') }}"
-                   class="px-4 py-2 border border-slate-300 rounded-xl text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100" />
+                   class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 sm:w-auto sm:min-w-[240px]" />
             <x-icon-button icon="search" type="submit" title="{{ __('Search') }}" />
             @if(filled($filters['q'] ?? null))
                 <x-icon-button as="a" icon="reset" href="{{ route('knowledge-base.index', array_filter(['category' => $filters['category'] ?? null, 'status' => $filters['status'] ?? null])) }}" title="{{ __('Reset') }}" />

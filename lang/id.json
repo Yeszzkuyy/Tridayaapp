@@ -5353,5 +5353,8 @@
     "Close All Tabs": "Tutup Semua Tab",
     "Maximum tabs open. Please close an unused tab first.": "Jumlah tab sudah maksimal. Silakan tutup tab yang tidak dipakai terlebih dahulu.",
     "Close this tab?": "Tutup tab ini?",
-    "This tab has unsaved input. Closing it will discard your changes.": "Tab ini memiliki isian yang belum disimpan. Menutup tab akan menghapus perubahan tersebut."
+    "This tab has unsaved input. Closing it will discard your changes.": "Tab ini memiliki isian yang belum disimpan. Menutup tab akan menghapus perubahan tersebut.",
+    "Scroll tabs left": "Geser tab ke kiri",
+    "Scroll tabs right": "Geser tab ke kanan",
+    "Open tabs": "Tab terbuka"
 }

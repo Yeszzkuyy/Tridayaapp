@@ -422,6 +422,19 @@
         .workspace-pane iframe{flex:1;min-height:calc(100vh - 5rem);width:100%}
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        /* Barisan tab: geser horizontal tanpa scrollbar, dengan pudar tepi
+           dan panah yang hanya tampil saat masih ada tab tersembunyi. */
+        #workspace-tablist{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain;scroll-behavior:smooth}
+        #workspace-tablist::-webkit-scrollbar{display:none}
+        #workspace-tabbar[data-overflow="left"] #workspace-tablist{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 24px);mask-image:linear-gradient(to right,transparent 0,#000 24px)}
+        #workspace-tabbar[data-overflow="right"] #workspace-tablist{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to right,#000 calc(100% - 24px),transparent 100%)}
+        #workspace-tabbar[data-overflow="both"] #workspace-tablist{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%)}
+        .ws-scroll-btn{opacity:0;pointer-events:none;transition:opacity .15s ease}
+        #workspace-tabbar[data-overflow="left"] .ws-scroll-btn-left,
+        #workspace-tabbar[data-overflow="both"] .ws-scroll-btn-left,
+        #workspace-tabbar[data-overflow="right"] .ws-scroll-btn-right,
+        #workspace-tabbar[data-overflow="both"] .ws-scroll-btn-right{opacity:1;pointer-events:auto}
+        @media(prefers-reduced-motion:reduce){#workspace-tablist{scroll-behavior:auto}}
         #navigate-progress[data-run]{opacity:1;animation:nav-progress-slide 1.1s ease-in-out infinite}
         @keyframes nav-progress-slide{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
         @media(prefers-reduced-motion:reduce){#navigate-progress{display:none}}
