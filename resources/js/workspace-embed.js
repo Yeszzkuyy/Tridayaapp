@@ -151,6 +151,17 @@ export function initWorkspaceEmbed() {
         }
     });
 
+    // Beri tahu shell panel mana yang sedang dipakai (untuk split view).
+    let lastFocusSent = 0;
+    const reportFocus = () => {
+        const now = Date.now();
+        if (now - lastFocusSent < 400) return;
+        lastFocusSent = now;
+        send('focus');
+    };
+    document.addEventListener('pointerdown', reportFocus, true);
+    document.addEventListener('focusin', reportFocus, true);
+
     reportMeta();
     reportFlash();
     document.addEventListener('livewire:navigated', () => {

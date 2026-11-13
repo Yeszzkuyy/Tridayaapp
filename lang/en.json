@@ -5352,5 +5352,14 @@
     "This tab has unsaved input. Closing it will discard your changes.": "This tab has unsaved input. Closing it will discard your changes.",
     "Scroll tabs left": "Scroll tabs left",
     "Scroll tabs right": "Scroll tabs right",
-    "Open tabs": "Open tabs"
+    "Open tabs": "Open tabs",
+    "Split view": "Split view",
+    "Close split": "Close split",
+    "Split right": "Split right",
+    "Drop here to split right": "Drop here to split right",
+    "Swap panes": "Swap panes",
+    "Left pane": "Left pane",
+    "Right pane": "Right pane",
+    "Select tab": "Select tab",
+    "Resize split panes": "Resize split panes"
 }
