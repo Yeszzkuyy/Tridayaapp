@@ -18,7 +18,7 @@
                 <span class="text-sm font-bold">?</span>
                 <span class="sr-only">{{ __('Show guide') }}</span>
             </button>
-            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
+            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
             <x-back-button :href="route('sales.dashboard')" :label="__('Back')" />
         </div>
     </div>
@@ -237,6 +237,7 @@
                 },
                 nextClass() {
                     return {
+                        due: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
                         overdue: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
                         today: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
                         completed: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',

@@ -5317,5 +5317,13 @@
     "Choose a date first.": "Choose a date first.",
     "the project": "the project",
     "There is already an active follow up for this lead.": "There is already an active follow up for this lead.",
-    "Postpone :days days": "Postpone :days days"
+    "Postpone :days days": "Postpone :days days",
+    "Overdue (>24 hours)": "Overdue (>24 hours)",
+    "Overdue Leads": "Overdue Leads",
+    "Follow up due": "Follow up due",
+    "Lead has not been followed up": "Lead has not been followed up",
+    "This lead was assigned more than 24 hours ago and has not been followed up:": "This lead was assigned more than 24 hours ago and has not been followed up:",
+    "Open My Leads": "Open My Leads",
+    "Please contact the customer or move the lead stage.": "Please contact the customer or move the lead stage.",
+    "Follow up reminder": "Follow up reminder"
 }

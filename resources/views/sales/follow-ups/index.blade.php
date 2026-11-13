@@ -2,9 +2,8 @@
     @php
         $tabs = [
             ['key' => 'all', 'label' => __('All Open')],
-            ['key' => 'due_today', 'label' => __('Due Today')],
+            ['key' => 'due_today', 'label' => __('Due')],
             ['key' => 'upcoming', 'label' => __('Upcoming')],
-            ['key' => 'overdue', 'label' => __('Overdue')],
             ['key' => 'completed', 'label' => __('Completed')],
         ];
         $tabUrl = fn (string $key) => route('sales.follow-ups.index', array_merge(
@@ -42,7 +41,7 @@
 
         <form method="GET" action="{{ route('sales.follow-ups.index') }}" data-submit-guarded="ajax" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
             <input type="hidden" name="tab" value="{{ $activeTab ?? 'all' }}">
-            {{-- Kompatibilitas tautan lama (?overdue=today/upcoming/1). --}}
+            {{-- Kompatibilitas tautan lama (?overdue=today/upcoming/1) → tab Due. --}}
             <input type="hidden" name="overdue" value="{{ request('overdue') }}">
 
             <div class="lg:col-span-2">

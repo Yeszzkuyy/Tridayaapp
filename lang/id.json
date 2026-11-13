@@ -5317,5 +5317,13 @@
     "Choose a date first.": "Pilih tanggal dulu.",
     "the project": "proyek tersebut",
     "There is already an active follow up for this lead.": "Sudah ada follow up aktif untuk lead ini.",
-    "Postpone :days days": "Tunda :days hari"
+    "Postpone :days days": "Tunda :days hari",
+    "Overdue (>24 hours)": "Overdue (lebih dari 24 jam)",
+    "Overdue Leads": "Lead Overdue",
+    "Follow up due": "Follow up jatuh tempo",
+    "Lead has not been followed up": "Lead belum ditindaklanjuti",
+    "This lead was assigned more than 24 hours ago and has not been followed up:": "Lead ini sudah di-assign lebih dari 24 jam dan belum ditindaklanjuti:",
+    "Open My Leads": "Buka My Leads",
+    "Please contact the customer or move the lead stage.": "Silakan hubungi customer atau pindahkan tahap lead.",
+    "Follow up reminder": "Pengingat follow up"
 }

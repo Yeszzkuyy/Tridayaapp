@@ -5,7 +5,7 @@
 **PIC:** Raafi
 **Menu:** Sales / My Leads, Follow Up, DAR
 **Branch:** feature/sales-workspace
-**Terakhir diperbarui:** 2026-11-12
+**Terakhir diperbarui:** 2026-11-13
 
 ## 1. Tujuan & hasil akhir
 
@@ -53,6 +53,16 @@ Completed), dan DAR menjadi riwayat aktivitas yang tercatat otomatis.
 4. Bangun antrean Follow Up (tab, status, Complete + next follow up).
 5. Bangun DAR (gabungan aktivitas + Add Activity + filter + otorisasi).
 6. Jalankan test, cek dark mode dan mobile, lalu minta verifikasi user.
+
+## 4a. Aturan Overdue (revisi 13 Nov 2026)
+
+- Overdue = lead yang di-assign lebih dari 24 jam, belum diakui/dipindah
+  tahap, dan belum ada follow-up sejak assignment.
+- Tampil sebagai badge di My Leads dan Pipeline, angka KPI, dan pengingat
+  sekali ke Sales.
+- Overdue berbasis tanggal follow-up dihapus. Jadwal follow-up yang sudah
+  lewat masuk tab **Due** (bukan Overdue).
+- Reassign mereset timer 24 jam dan penanda pengingat.
 
 ## 5. Kriteria selesai & verifikasi
 

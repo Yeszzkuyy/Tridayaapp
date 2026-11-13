@@ -38,6 +38,12 @@
                             @if($lead->acknowledged_at === null)
                                 <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300">{{ __('New') }}</span>
                             @endif
+                            @if($lead->isAssignmentOverdue())
+                                <span class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                    <x-icon name="clock" class="h-3 w-3" />
+                                    {{ __('Overdue') }}
+                                </span>
+                            @endif
                             <span class="text-[10px] text-slate-400">{{ \App\Http\Controllers\LeadController::label((string) $lead->segment) }}</span>
                         </div>
                     </div>
@@ -134,7 +140,7 @@
                     </span>
                     <p class="mt-4 text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('No leads match this filter.') }}</p>
                     <p class="mt-1 text-xs text-slate-400">{{ __('New leads from Management appear here. Clear the filter to see all your leads.') }}</p>
-                    @if(request()->anyFilled(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'touched', 'active', 'won_month', 'sort']))
+                    @if(request()->anyFilled(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort']))
                         <a href="{{ route('sales.my-leads') }}" class="mt-3 inline-flex h-9 items-center rounded-xl border border-slate-200 px-4 text-xs font-semibold text-accent-600 transition hover:bg-slate-50 dark:border-slate-600 dark:text-accent-400 dark:hover:bg-slate-700">{{ __('Reset filter') }}</a>
                     @endif
                 </td>

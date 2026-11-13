@@ -29,10 +29,9 @@ class FollowUpController extends Controller
         $followUps = $this->salesService->getFollowUps($filters);
         $counts = $this->salesService->followUpCounts($filters);
         $activeTab = $request->input('tab') ?: match ((string) $request->input('overdue')) {
-            'today' => 'due_today',
             'upcoming' => 'upcoming',
             'completed' => 'completed',
-            '1', 'due' => 'overdue',
+            'today', '1', 'due', 'overdue' => 'due_today',
             default => 'all',
         };
 

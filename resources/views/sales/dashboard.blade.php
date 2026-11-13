@@ -75,6 +75,10 @@
             \App\Models\FollowUp::where('created_by', $uid),
             'created_at'
         );
+        $overdueSeries = \App\Support\SparklineBuilder::monthlyCounts(
+            \App\Models\Lead::where('assigned_to', $uid)->assignmentOverdue(),
+            'assigned_at'
+        );
 
         $salesKpiCards = [
             [
@@ -102,21 +106,21 @@
                 'spark' => \App\Support\SparklineBuilder::fromSeries($wonSeries, (int) ($kpi['won_month'] ?? 0)),
             ],
             [
-                'label' => __('Overdue Follow Ups'),
+                'label' => __('Overdue Leads'),
                 'value' => (int) ($kpi['overdue'] ?? 0),
-                'url' => route('sales.follow-ups.index', ['overdue' => 1]),
+                'url' => route('sales.my-leads', ['overdue' => 1]),
                 'icon' => 'phone',
                 'ambient' => 'bg-rose-500/15 dark:bg-rose-500/20',
                 'iconBg' => 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300',
                 'borderHover' => 'hover:border-rose-400/50 dark:hover:border-rose-500/40',
                 'color' => '#f43f5e',
                 'gradId' => 'sales-spark-3',
-                'spark' => \App\Support\SparklineBuilder::fromSeries($fuSeries, (int) ($kpi['overdue'] ?? 0)),
+                'spark' => \App\Support\SparklineBuilder::fromSeries($overdueSeries, (int) ($kpi['overdue'] ?? 0)),
             ],
             [
                 'label' => __('Follow Up Hari Ini'),
                 'value' => (int) ($kpi['followups_today'] ?? 0),
-                'url' => route('sales.follow-ups.index', ['overdue' => 'today']),
+                'url' => route('sales.follow-ups.index', ['tab' => 'due_today']),
                 'icon' => 'chat',
                 'ambient' => 'bg-amber-500/15 dark:bg-amber-500/20',
                 'iconBg' => 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
@@ -128,7 +132,7 @@
             [
                 'label' => __('Upcoming Follow Ups'),
                 'value' => (int) ($kpi['followups_upcoming'] ?? 0),
-                'url' => route('sales.follow-ups.index', ['overdue' => 'upcoming']),
+                'url' => route('sales.follow-ups.index', ['tab' => 'upcoming']),
                 'icon' => 'activity',
                 'ambient' => 'bg-pink-500/15 dark:bg-pink-500/20',
                 'iconBg' => 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',

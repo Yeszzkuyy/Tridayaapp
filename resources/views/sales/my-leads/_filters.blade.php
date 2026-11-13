@@ -24,7 +24,6 @@
                 <label class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('Next Follow Up') }}</label>
                 <x-glide-select name="next_follow_up" class="mt-1" :label="__('Next Follow Up')"
                     :options="[
-                        ['value' => 'overdue', 'label' => __('Overdue')],
                         ['value' => 'today', 'label' => __('Due Today')],
                         ['value' => 'upcoming', 'label' => __('Upcoming')],
                         ['value' => 'none', 'label' => __('Not Scheduled')],
@@ -55,7 +54,7 @@
                 <summary class="cursor-pointer select-none text-sm font-medium text-slate-500 transition hover:text-accent-600 dark:text-slate-300 dark:hover:text-accent-400">
                     {{ __('More filters') }}
                 </summary>
-                <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
                         <label for="my-leads-company" class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Company') }}</label>
                         <input id="my-leads-company" type="text" name="company" value="{{ request('company') }}" placeholder="{{ __('Company name...') }}"
@@ -71,12 +70,20 @@
                         <input id="my-leads-project" type="text" name="project" value="{{ request('project') }}" placeholder="{{ __('Project name...') }}"
                                class="mt-1 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                     </div>
+                    <div>
+                        <label for="my-leads-overdue" class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Follow Up') }}</label>
+                        <select id="my-leads-overdue" name="overdue"
+                                class="mt-1 h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                            <option value="">{{ __('All') }}</option>
+                            <option value="1" @selected(request('overdue'))>{{ __('Overdue (>24 hours)') }}</option>
+                        </select>
+                    </div>
                 </div>
             </details>
 
             <div class="flex items-center gap-2">
                 <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
-                @if(request()->anyFilled(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'touched', 'active', 'won_month', 'sort']))
+                @if(request()->anyFilled(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort']))
                     <x-icon-button as="a" icon="reset" href="{{ route('sales.my-leads') }}" title="{{ __('Reset') }}" />
                 @endif
             </div>

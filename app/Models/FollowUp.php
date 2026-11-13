@@ -155,13 +155,13 @@ class FollowUp extends Model
             return 'today';
         }
 
-        return $this->follow_up_date->isPast() ? 'overdue' : 'upcoming';
+        return $this->follow_up_date->isPast() ? 'due' : 'upcoming';
     }
 
     public static function scheduleStateLabel(string $state): string
     {
         return match ($state) {
-            'overdue' => __('Overdue'),
+            'due' => __('Due'),
             'today' => __('Due Today'),
             'completed' => __('Completed'),
             default => __('Upcoming'),
@@ -171,7 +171,7 @@ class FollowUp extends Model
     public static function scheduleStateClasses(string $state): string
     {
         return match ($state) {
-            'overdue' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+            'due' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
             'today' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
             'completed' => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
             default => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',

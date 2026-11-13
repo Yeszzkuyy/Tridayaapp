@@ -19,6 +19,8 @@ class LeadWorkspacePresenter
         return [
             'stage' => $lead->status,
             'stageLabel' => ucfirst($lead->status),
+            'assignmentOverdue' => $lead->isAssignmentOverdue(),
+            'overdueLabel' => __('Overdue'),
             'note' => (string) ($latestNote?->description ?? ''),
             'hasAcceptedProposal' => (bool) ($lead->has_accepted_proposal ?? false),
             'noteUrl' => route('sales.my-leads.note', $lead),
@@ -29,7 +31,7 @@ class LeadWorkspacePresenter
             'nextLabel' => $next?->follow_up_date?->format('d M Y') ?? '',
             'nextState' => $next?->scheduleState() ?? 'upcoming',
             'stateLabels' => [
-                'overdue' => __('Overdue'),
+                'due' => __('Due'),
                 'today' => __('Due Today'),
                 'completed' => __('Completed'),
                 'upcoming' => __('Upcoming'),

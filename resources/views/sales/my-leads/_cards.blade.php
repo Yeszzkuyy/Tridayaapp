@@ -14,6 +14,12 @@
                     @if($lead->pt_group)
                         <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700' }}">{{ $lead->pt_group }}</span>
                     @endif
+                    @if($lead->isAssignmentOverdue())
+                        <span class="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                            <x-icon name="clock" class="h-3 w-3" />
+                            {{ __('Overdue') }}
+                        </span>
+                    @endif
                     <span class="text-[10px] text-slate-400">{{ $lead->project_name ?: '-' }}</span>
                 </div>
             </div>

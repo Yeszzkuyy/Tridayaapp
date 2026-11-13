@@ -63,14 +63,14 @@ class FollowUpQueueTest extends TestCase
         ], $overrides));
     }
 
-    public function test_tabs_split_due_today_upcoming_overdue_completed(): void
+    public function test_tabs_split_due_upcoming_and_completed(): void
     {
         $sales = $this->sales();
         $lead = $this->lead($sales);
 
         $today = $this->followUp($sales, $lead, ['description' => 'FU hari ini']);
         $upcoming = $this->followUp($sales, $lead, ['description' => 'FU nanti', 'follow_up_date' => today()->addDays(2)->toDateString()]);
-        $overdue = $this->followUp($sales, $lead, ['description' => 'FU lewat', 'follow_up_date' => today()->subDays(2)->toDateString()]);
+        $past = $this->followUp($sales, $lead, ['description' => 'FU lewat', 'follow_up_date' => today()->subDays(2)->toDateString()]);
         $completed = $this->followUp($sales, $lead, [
             'description' => 'FU selesai',
             'follow_up_date' => today()->subDay()->toDateString(),
@@ -83,7 +83,8 @@ class FollowUpQueueTest extends TestCase
             ->assertOk()
             ->json('html');
 
-        $this->assertTrue(str_contains($html('due_today'), 'FU hari ini'), 'due_today harus memuat FU hari ini');
+        $this->assertTrue(str_contains($html('due_today'), 'FU hari ini'), 'tab Due harus memuat FU hari ini');
+        $this->assertTrue(str_contains($html('due_today'), 'FU lewat'), 'tab Due harus memuat jadwal yang sudah lewat');
         $this->assertTrue(str_contains($html('due_today'), 'x-on:click="openComplete('), 'tombol Complete harus terhubung ke modal');
 
         $admin = $this->sales('admin');
@@ -92,11 +93,9 @@ class FollowUpQueueTest extends TestCase
             ->assertOk()
             ->json('html');
         $this->assertFalse(str_contains($adminHtml, 'openComplete('), 'role read-only tidak boleh melihat tombol Complete');
-        $this->assertFalse(str_contains($html('due_today'), 'FU nanti'), 'due_today tidak boleh memuat FU nanti');
-        $this->assertFalse(str_contains($html('due_today'), 'FU lewat'), 'due_today tidak boleh memuat FU lewat');
+        $this->assertFalse(str_contains($html('due_today'), 'FU nanti'), 'tab Due tidak boleh memuat jadwal mendatang');
 
         $this->assertTrue(str_contains($html('upcoming'), 'FU nanti'), 'upcoming harus memuat FU nanti');
-        $this->assertTrue(str_contains($html('overdue'), 'FU lewat'), 'overdue harus memuat FU lewat');
         $this->assertTrue(str_contains($html('completed'), 'FU selesai'), 'completed harus memuat FU selesai');
         $this->assertFalse(str_contains($html('completed'), 'FU hari ini'), 'completed tidak boleh memuat FU hari ini');
 

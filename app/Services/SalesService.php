@@ -29,7 +29,7 @@ class SalesService
                 'today' => 'due_today',
                 'upcoming' => 'upcoming',
                 'completed' => 'completed',
-                default => 'overdue',
+                default => 'due_today',
             };
         }
 
@@ -39,12 +39,10 @@ class SalesService
             $query->active();
 
             if ($tab === 'due_today') {
-                $query->whereDate('follow_up_date', today());
+                $query->whereNotNull('follow_up_date')
+                    ->whereDate('follow_up_date', '<=', today());
             } elseif ($tab === 'upcoming') {
                 $query->whereDate('follow_up_date', '>', today());
-            } elseif ($tab === 'overdue') {
-                $query->whereNotNull('follow_up_date')
-                    ->whereDate('follow_up_date', '<', today());
             }
 
             $query->orderBy('follow_up_date')->orderBy('activity_time');
@@ -70,9 +68,8 @@ class SalesService
 
         return [
             'all' => (clone $base)->active()->count(),
-            'due_today' => (clone $base)->active()->whereDate('follow_up_date', today())->count(),
+            'due_today' => (clone $base)->active()->whereNotNull('follow_up_date')->whereDate('follow_up_date', '<=', today())->count(),
             'upcoming' => (clone $base)->active()->whereDate('follow_up_date', '>', today())->count(),
-            'overdue' => (clone $base)->active()->whereNotNull('follow_up_date')->whereDate('follow_up_date', '<', today())->count(),
             'completed' => (clone $base)->completed()->count(),
         ];
     }

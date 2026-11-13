@@ -151,12 +151,14 @@ class Lead extends Model
         'lost_note',
         'closed_at',
         'closing_note',
+        'assignment_overdue_notified_at',
     ];
 
     protected $casts = [
         'incoming_date' => 'date',
         'assigned_at' => 'datetime',
         'acknowledged_at' => 'datetime',
+        'assignment_overdue_notified_at' => 'datetime',
         'closed_at' => 'datetime',
     ];
 
@@ -268,6 +270,50 @@ class Lead extends Model
     public function proposals()
     {
         return $this->hasMany(Proposal::class);
+    }
+
+    /**
+     * Overdue baru: lead di-assign lebih dari 24 jam, belum diakui/dipindah
+     * tahap, dan belum ada follow-up sejak assignment.
+     */
+    public function isAssignmentOverdue(): bool
+    {
+        if (! $this->assigned_to || ! $this->assigned_at) {
+            return false;
+        }
+
+        if ($this->acknowledged_at !== null || in_array($this->status, ['won', 'lost'], true)) {
+            return false;
+        }
+
+        if ($this->assigned_at->gt(now()->subHours(24))) {
+            return false;
+        }
+
+        if (array_key_exists('has_follow_up_since_assignment', $this->attributes)) {
+            return ! (bool) $this->attributes['has_follow_up_since_assignment'];
+        }
+
+        return ! $this->followUps()
+            ->where('created_at', '>=', $this->assigned_at)
+            ->exists();
+    }
+
+    /** Scope untuk filter, KPI, dan notifikasi overdue assignment. */
+    public function scopeAssignmentOverdue($query)
+    {
+        return $query->whereNotNull('assigned_to')
+            ->whereNotNull('assigned_at')
+            ->where('assigned_at', '<=', now()->subHours(24))
+            ->whereNull('acknowledged_at')
+            ->whereNotIn('status', ['won', 'lost'])
+            ->whereDoesntHave('followUps', fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at'));
+    }
+
+    /** Apakah ada follow-up yang dibuat setelah lead ini di-assign. */
+    public function followUpSinceAssignmentExists(): bool
+    {
+        return $this->followUps()->where('created_at', '>=', $this->assigned_at)->exists();
     }
 
     /**

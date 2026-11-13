@@ -50,8 +50,7 @@ class ManageSalesController extends Controller
             'lost_month' => Lead::where('status', 'lost')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)->count(),
-            'overdue' => FollowUp::whereNotNull('follow_up_date')
-                ->whereDate('follow_up_date', '<', today())->count(),
+            'overdue' => Lead::assignmentOverdue()->count(),
         ];
         $bySales = Lead::selectRaw('assigned_to, count(*) as total')
             ->whereNotNull('assigned_to')
@@ -233,10 +232,7 @@ class ManageSalesController extends Controller
             'won_month' => $mine()->where('status', 'won')
                 ->whereMonth('updated_at', now()->month)
                 ->whereYear('updated_at', now()->year)->count(),
-            'overdue' => FollowUp::where($ownActivity)
-                ->whereNull('completed_at')
-                ->whereNotNull('follow_up_date')
-                ->whereDate('follow_up_date', '<', today())->count(),
+            'overdue' => $mine()->assignmentOverdue()->count(),
             'followups_today' => FollowUp::where($ownActivity)
                 ->whereNull('completed_at')
                 ->whereDate('follow_up_date', today())->count(),
@@ -663,6 +659,7 @@ class ManageSalesController extends Controller
 
         $query = Lead::with(['customer.contacts', 'partner', 'activeFollowUp', 'latestNoteFollowUp', 'latestActivityFollowUp'])
             ->withCount(['followUps'])
+            ->withExists(['followUps as has_follow_up_since_assignment' => fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
             ->withExists(['proposals as has_accepted_proposal' => fn ($q) => $q->where('status', 'accepted')])
             ->where('assigned_to', auth()->id())
@@ -690,13 +687,13 @@ class ManageSalesController extends Controller
             })
             ->when($request->filled('next_follow_up'), function ($q) use ($request, $activeQueue) {
                 match ($request->next_follow_up) {
-                    'overdue' => $q->whereHas('followUps', fn ($f) => $activeQueue($f)->whereNotNull('follow_up_date')->whereDate('follow_up_date', '<', today())),
                     'today' => $q->whereHas('followUps', fn ($f) => $activeQueue($f)->whereDate('follow_up_date', today())),
                     'upcoming' => $q->whereHas('followUps', fn ($f) => $activeQueue($f)->whereDate('follow_up_date', '>', today())),
                     'none' => $q->whereDoesntHave('followUps', $activeQueue),
                     default => $q,
                 };
             })
+            ->when($request->boolean('overdue'), fn ($q) => $q->assignmentOverdue())
             ->when($request->filled('active'), fn ($q) => $q->whereNotIn('status', ['won', 'lost']))
             ->when($request->filled('won_month'), fn ($q) => $q->where('status', 'won')
                 ->whereMonth('updated_at', now()->month)
@@ -851,6 +848,7 @@ class ManageSalesController extends Controller
         $lead->assigned_to = $assignedTo;
         $lead->assigned_by = $assignedTo ? auth()->id() : null;
         $lead->assigned_at = $assignedTo ? now() : null;
+        $lead->assignment_overdue_notified_at = null;
         // Assign (baru/reassign) = belum ditangani -> kembali ke kolom New pipeline.
         $lead->acknowledged_at = $assignedTo ? null : $lead->acknowledged_at;
     }

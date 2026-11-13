@@ -99,7 +99,7 @@
                     <x-icon name="phone" class="h-5 w-5" />
                 </span>
                 <div class="min-w-0">
-                    <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Overdue Follow Ups') }}</p>
+                    <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Overdue Leads') }}</p>
                     <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white"
                        data-countup="{{ (int) ($stats['overdue'] ?? 0) }}" data-countup-delay="440">{{ $stats['overdue'] ?? 0 }}</p>
                 </div>
