@@ -556,27 +556,85 @@ dengan tampilan yang sama.
 6. **Verifikasi:** `php artisan test --filter=UiFeedbackStandardTest` menolak
    view yang masih memakai `confirm()` atau `x-status-card`.
 
-## 7.4 Standar Dropdown & Menu Aksi
+## 7.4 Standar Dropdown & Menu Aksi (WAJIB)
 
-1. **Komponen wajib.** Dropdown pilihan (filter, sort, status, form) memakai
-   `<x-glide-select>`. Menu aksi (tombol tiga titik) memakai `<x-dropdown>` +
-   `<x-dropdown-link>`. Jangan membuat dropdown baru dari nol bila komponen
-   ini cukup.
-2. **Warna sorotan wajib terlihat.** Baris menu memakai token
-   `--menu-hover-bg` (light `#eef2f7`, dark `#2f3a58`). Dilarang memakai
-   `hover:bg-gray-100`, `hover:bg-slate-50`, atau `--card-bg-hover`
-   (`#f8fafc`) untuk baris menu karena menyatu dengan kartu putih.
-3. **Trigger dropdown** memakai `--input-bg-hover` saat hover/terbuka agar
-   terasa seperti field aktif.
-4. **Item terpilih** dibedakan dengan ikon centang accent; pill hover hanya
-   menandai posisi kursor/keyboard.
-5. **Radius & mode gelap.** Trigger dan panel mengikuti field (`rounded-xl`),
-   baris opsi `rounded-lg`. Mode gelap memakai token yang sama, bukan hex
-   acak.
-6. **Keyboard wajib:** panah atas/bawah, Enter memilih, Esc menutup, Tab
-   keluar, dan focus ring terlihat.
-7. **Dropdown baru dilarang memakai `<select>` native.** Pilihan native lama
-   dimigrasi bertahap setiap file itu disentuh.
+Berlaku untuk semua dropdown pilihan (form, filter, sort) dan menu aksi
+(tombol tiga titik). Gaya baku ini sudah disetujui user; jangan mengubah
+warna, ukuran, atau animasinya per halaman.
+
+### A. Komponen wajib
+
+| Kebutuhan | Komponen |
+|---|---|
+| Pilih satu nilai di form, filter, atau sort | `<x-glide-select>` |
+| Menu aksi baris (View/Edit/Hapus/dll) | `<x-dropdown>` + `<x-dropdown-link>` |
+| Menu aksi beranimasi khusus (mis. template BAST) | `<x-dropdown>` + pill accent yang sudah ada |
+
+Dilarang membuat dropdown baru dari `div absolute` + `x-show`. Dilarang
+memakai `<select>` native untuk dropdown baru; pilihan native lama dimigrasi
+bertahap setiap file itu disentuh.
+
+### B. Spesifikasi visual baku
+
+| Bagian | Token | Light | Dark |
+|---|---|---|---|
+| Trigger normal | `--input-bg` | `#f1f5f9` | `#1e2640` |
+| Trigger hover/terbuka | `--input-bg-hover` | `#e2e8f0` | `#2a3350` |
+| Permukaan menu | `--card-bg` | `#ffffff` | `#232b3e` |
+| Garis menu | `--card-border` | `#e2e8f0` | `#334070` |
+| Sorotan baris | `--menu-hover-bg` | `#eef2f7` | `#2f3a58` |
+| Teks utama | `--text-primary` | `#1e293b` | `#f2f6ff` |
+| Item terpilih | `--accent-*` | accent tema | accent tema |
+
+- Tinggi trigger mengikuti size komponen: `md` 32px (bawaan) dan `field` 40px
+  agar sejajar input `h-10`.
+- Menu radius 10px, padding 4px, lebar bawaan 176px (`menuWidth` bisa diubah),
+  jarak antar baris 1px.
+- Baris opsi: tinggi 30px (`md`), font 13px, radius 6px, padding kiri-kanan.
+- Sorotan baris **wajib** memakai `--menu-hover-bg`. Dilarang `#f8fafc`,
+  `--card-bg-hover`, `hover:bg-gray-100`, atau `hover:bg-slate-50` karena
+  menyatu dengan kartu putih.
+- Item terpilih memakai latar accent lembut + ikon centang accent; sorotan
+  hover hanya menandai posisi kursor/keyboard.
+
+### C. Perilaku & aksesibilitas
+
+1. Klik trigger membuka menu; klik luar, Esc, scroll, atau resize menutup.
+2. Panel di-teleport ke `body` dan diposisikan `fixed` supaya tidak terpotong
+   tabel/overflow; posisi digeser agar tidak keluar viewport (jarak 8px).
+3. Keyboard `<x-glide-select>`: panah atas/bawah, Home/End, Enter/Space
+   memilih, Esc/Tab menutup, dan huruf pertama untuk lompat (type-ahead).
+4. Focus ring wajib terlihat. Trigger memakai `<button type="button">`, bukan
+   `div` yang bisa diklik.
+5. Hormati `prefers-reduced-motion`: animasi pill/panel dimatikan.
+6. Aksi destruktif di menu memakai warna merah dan wajib lewat
+   `<x-confirm-dialog>` (§7.3), bukan langsung dijalankan.
+
+### D. Contoh pemakaian
+
+```blade
+{{-- Dropdown pilihan --}}
+<x-glide-select name="status" :options="$statuses" :value="request('status')"
+    :empty-label="__('All Stages')" autosubmit />
+
+{{-- Menu aksi --}}
+<x-dropdown align="right" width="w-60">
+    <x-slot name="trigger">
+        <x-icon-button icon="more" title="{{ __('More actions') }}" />
+    </x-slot>
+    <x-slot name="content">
+        <x-dropdown-link :href="route('sales.follow-ups.show', $fu)">{{ __('View') }}</x-dropdown-link>
+    </x-slot>
+</x-dropdown>
+```
+
+### E. Checklist sebelum merge
+
+1. Light & dark: baris hover terlihat, tidak menyatu; trigger terasa aktif.
+2. Keyboard dan Esc jalan; klik luar menutup.
+3. Tidak ada `<select>` native baru atau dropdown buatan sendiri.
+4. `php artisan test --filter=UiFeedbackStandardTest` lulus.
+5. `npm run build` dari `/var/www/3dyapp` setelah merge ke `main`.
 
 ## 8. Database Safety Rules
 
