@@ -25,11 +25,13 @@
 
     // Sub-menu Sales dirakit dari item yang benar-benar boleh diakses user ini.
     $canViewSales = auth()->user()->can('view-sales');
+    $showFollowUpMenu = (bool) auth()->user()->preference('menu_follow_up', true);
+    $showDarMenu = (bool) auth()->user()->preference('menu_dar', true);
     $salesItems = array_values(array_filter([
         $canViewSales ? ['route' => route('sales.dashboard'), 'match' => 'sales.dashboard', 'label' => 'Dashboard', 'dot' => 'bg-violet-400'] : null,
         $canViewSales ? ['route' => route('sales.my-leads'), 'match' => 'sales.my-leads', 'label' => 'My Leads', 'dot' => 'bg-amber-400'] : null,
-        $canViewSales ? ['route' => route('sales.follow-ups.index'), 'match' => 'sales.follow-ups.*', 'label' => 'Follow Up', 'dot' => 'bg-green-400'] : null,
-        $canViewSales ? ['route' => route('sales.dar.index'), 'match' => 'sales.dar.*', 'label' => 'DAR', 'dot' => 'bg-orange-400'] : null,
+        ($canViewSales && $showFollowUpMenu) ? ['route' => route('sales.follow-ups.index'), 'match' => 'sales.follow-ups.*', 'label' => 'Follow Up', 'dot' => 'bg-green-400'] : null,
+        ($canViewSales && $showDarMenu) ? ['route' => route('sales.dar.index'), 'match' => 'sales.dar.*', 'label' => 'DAR', 'dot' => 'bg-orange-400'] : null,
         $canViewSales ? ['route' => route('sales.meetings.index'), 'match' => 'sales.meetings.*', 'label' => 'Meeting', 'dot' => 'bg-rose-400'] : null,
         (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.schedules.index'), 'match' => 'sales.schedules.*', 'label' => 'Schedule', 'dot' => 'bg-teal-400'] : null,
         (auth()->user()->can('manage-inside-sales') || $canViewSales) ? ['route' => route('sales.proposals.index'), 'match' => 'sales.proposals.*', 'label' => 'Quotation', 'dot' => 'bg-lime-400'] : null,

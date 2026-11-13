@@ -32,6 +32,8 @@ class SettingsController extends Controller
             'notify_email' => ['sometimes', 'boolean'],
             'notify_system' => ['sometimes', 'boolean'],
             'notify_push' => ['sometimes', 'boolean'],
+            'menu_follow_up' => ['sometimes', 'boolean'],
+            'menu_dar' => ['sometimes', 'boolean'],
         ]);
 
         $user = $request->user();
@@ -41,6 +43,8 @@ class SettingsController extends Controller
             'notify_email' => $request->boolean('notify_email'),
             'notify_system' => $request->boolean('notify_system'),
             'notify_push' => $request->boolean('notify_push'),
+            'menu_follow_up' => $request->boolean('menu_follow_up'),
+            'menu_dar' => $request->boolean('menu_dar'),
             'accent' => $data['accent'] ?? $user->preference('accent', 'ocean'),
         ]);
         $user->save();

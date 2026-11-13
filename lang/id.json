@@ -5333,5 +5333,12 @@
     "Color saved.": "Warna disimpan.",
     "Change lead color": "Ubah warna lead",
     "Color": "Warna",
-    "Add note": "Tambah catatan"
+    "Add note": "Tambah catatan",
+    "Sales Menu": "Menu Sales",
+    "Show or hide these menus from the sidebar. Pages and data stay available through their links.": "Tampilkan atau sembunyikan menu ini dari sidebar. Halaman dan datanya tetap bisa dibuka lewat tautan.",
+    "Follow Up Menu": "Menu Follow Up",
+    "Show Follow Up in the Sales sidebar.": "Tampilkan Follow Up di sidebar Sales.",
+    "DAR Menu": "Menu DAR",
+    "Show DAR in the Sales sidebar.": "Tampilkan DAR di sidebar Sales.",
+    "Back to My Leads": "Kembali ke My Leads"
 }
