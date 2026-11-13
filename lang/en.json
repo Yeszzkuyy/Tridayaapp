@@ -5340,5 +5340,14 @@
     "Show Follow Up in the Sales sidebar.": "Show Follow Up in the Sales sidebar.",
     "DAR Menu": "DAR Menu",
     "Show DAR in the Sales sidebar.": "Show DAR in the Sales sidebar.",
-    "Back to My Leads": "Back to My Leads"
+    "Back to My Leads": "Back to My Leads",
+    "Workspace tabs": "Workspace tabs",
+    "Unsaved changes": "Unsaved changes",
+    "Close tab": "Close tab",
+    "Tab options": "Tab options",
+    "Close Other Tabs": "Close Other Tabs",
+    "Close All Tabs": "Close All Tabs",
+    "Maximum tabs open. Please close an unused tab first.": "Maximum tabs open. Please close an unused tab first.",
+    "Close this tab?": "Close this tab?",
+    "This tab has unsaved input. Closing it will discard your changes.": "This tab has unsaved input. Closing it will discard your changes."
 }

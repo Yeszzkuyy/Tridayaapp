@@ -196,6 +196,26 @@
         }
     @endphp
     <script>window.notifCenter = @json($notifCenter);</script>
+    @php
+        $workspaceEnabled = (bool) config('workspace.enabled', true);
+        $workspaceConfig = [
+            'enabled' => $workspaceEnabled,
+            'userId' => auth()->id(),
+            'appName' => config('app.name', 'Tridaya App'),
+            'dashboardUrl' => route('dashboard', [], false),
+            'maxDesktop' => (int) config('workspace.max_tabs_desktop', 8),
+            'maxMobile' => (int) config('workspace.max_tabs_mobile', 6),
+            'initialPage' => \App\Support\PageContext::forRequest(request()),
+            'i18n' => [
+                'dashboard' => __('Dashboard'),
+                'limitReached' => __('Maximum tabs open. Please close an unused tab first.'),
+                'unsavedTitle' => __('Close this tab?'),
+                'unsavedMessage' => __('This tab has unsaved input. Closing it will discard your changes.'),
+                'closeAnyway' => __('Close tab'),
+            ],
+        ];
+    @endphp
+    <script>window.__workspaceConfig = @json($workspaceConfig);</script>
     @auth
     <script>window.vapidPublicKey = @json(config('webpush.vapid.public_key'));</script>
     @endauth
@@ -396,6 +416,12 @@
         /* Progress bar pindah menu (wire:navigate): strip accent meluncur
            kiri-ke-kanan selama navigating; hormati reduced-motion. */
         #navigate-progress{position:fixed;top:0;left:0;height:3px;width:35%;z-index:1002;opacity:0;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgb(var(--accent-500)/0),rgb(var(--accent-500)),rgb(var(--accent-400)));box-shadow:0 0 12px rgb(var(--accent-500)/.7);transform:translateX(-110%);transition:opacity .25s ease}
+        .workspace-stage{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
+        .workspace-pane{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
+        .workspace-pane.hidden{display:none!important}
+        .workspace-pane iframe{flex:1;min-height:calc(100vh - 5rem);width:100%}
+        .no-scrollbar::-webkit-scrollbar{display:none}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         #navigate-progress[data-run]{opacity:1;animation:nav-progress-slide 1.1s ease-in-out infinite}
         @keyframes nav-progress-slide{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
         @media(prefers-reduced-motion:reduce){#navigate-progress{display:none}}
@@ -417,27 +443,32 @@
             @include('layouts.partials.header')
             @include('partials.avatar-lightbox')
 
-            <div class="px-4 sm:px-6 lg:px-8 pt-5">
-                {{-- Pesan simpan/gagal (session success/warning/error) tidak lagi
-                     dirender sebagai kotak di sini; sudah jadi pop up pojok
-                     kanan bawah lewat Notification Center. Error validasi form
-                     tetap inline di bawah agar bisa dibaca sambil memperbaiki. --}}
-                @if($errors->any())
-                    <x-toast type="error">
-                        <p class="font-semibold mb-1">{{ __('There were errors in the form:') }}</p>
-                        <ul class="list-disc list-inside text-sm">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </x-toast>
-                @endif
-            </div>
+            @if($workspaceEnabled)
+                <div id="workspace-stage" class="workspace-stage"></div>
+            @endif
 
-            <main class="relative flex-1 px-4 sm:px-6 lg:px-8 pb-8">
-                @isset($header)<div class="mb-6">{{ $header }}</div>@endisset
-                {{ $slot }}
-            </main>
+            {{-- Saat workspace aktif di browser, konten di bawah disembunyikan
+                 karena halaman dimuat lewat iframe tab. Di test server-side
+                 (tanpa JS) bagian ini tetap ada di HTML respons. --}}
+            <div id="workspace-fallback" class="{{ $workspaceEnabled ? 'hidden' : 'flex flex-1 flex-col' }}">
+                <div class="px-4 sm:px-6 lg:px-8 pt-5">
+                    @if($errors->any())
+                        <x-toast type="error">
+                            <p class="font-semibold mb-1">{{ __('There were errors in the form:') }}</p>
+                            <ul class="list-disc list-inside text-sm">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </x-toast>
+                    @endif
+                </div>
+
+                <main class="relative flex-1 px-4 sm:px-6 lg:px-8 pb-8">
+                    @isset($header)<div class="mb-6">{{ $header }}</div>@endisset
+                    {{ $slot }}
+                </main>
+            </div>
 
             <footer class="px-4 sm:px-6 lg:px-8 pb-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
                 Tridayaapp.com
@@ -643,12 +674,13 @@
         // (highlight + grup terbuka) harus disinkron manual tiap navigasi.
         // Hanya class/aria yang disentuh — node tidak diganti, animasi tak replay.
         // (AI Assistant sengaja full reload; server me-render statusnya segar.)
-        function syncSidebarActive(){
+        function syncSidebarActive(customPath){
             var nav=document.getElementById('sidebar-navigation');if(!nav)return;
             var active=(nav.dataset.navActive||'').split(' ').filter(Boolean);
             var inactive=(nav.dataset.navInactive||'').split(' ').filter(Boolean);
             if(!active.length&&!inactive.length)return;
-            var here=window.location.pathname.replace(/\/+$/,'')||'/';
+            var rawPath=(typeof customPath==='string'&&customPath)?customPath:window.location.pathname;
+            var here=rawPath.replace(/\/+$/,'')||'/';
             function swap(el,on,extra){
                 active.forEach(function(c){el.classList.toggle(c,on);});
                 inactive.forEach(function(c){el.classList.toggle(c,!on);});
@@ -686,6 +718,7 @@
             }else if(head){swap(head,true,'sb-active');}
             else{swap(best,true);}
         }
+        window.__syncSidebarPath=function(p){try{syncSidebarActive(p);}catch(e){}};
         document.addEventListener('livewire:navigated',function(){try{syncSidebarActive();}catch(e){}});
         // Penanda aktif navbar (breadcrumb + badge halaman): mainkan ulang
         // animasi fade tiap navigasi. Hanya elemen penanda — sisa navbar diam.

@@ -5340,5 +5340,14 @@
     "Show Follow Up in the Sales sidebar.": "Tampilkan Follow Up di sidebar Sales.",
     "DAR Menu": "Menu DAR",
     "Show DAR in the Sales sidebar.": "Tampilkan DAR di sidebar Sales.",
-    "Back to My Leads": "Kembali ke My Leads"
+    "Back to My Leads": "Kembali ke My Leads",
+    "Workspace tabs": "Tab ruang kerja",
+    "Unsaved changes": "Perubahan belum disimpan",
+    "Close tab": "Tutup tab",
+    "Tab options": "Opsi tab",
+    "Close Other Tabs": "Tutup Tab Lain",
+    "Close All Tabs": "Tutup Semua Tab",
+    "Maximum tabs open. Please close an unused tab first.": "Jumlah tab sudah maksimal. Silakan tutup tab yang tidak dipakai terlebih dahulu.",
+    "Close this tab?": "Tutup tab ini?",
+    "This tab has unsaved input. Closing it will discard your changes.": "Tab ini memiliki isian yang belum disimpan. Menutup tab akan menghapus perubahan tersebut."
 }
