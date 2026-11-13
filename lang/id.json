@@ -5357,5 +5357,8 @@
     "Active (Valid until :date)": "Aktif (Berlaku s/d :date)",
     "Needs Recheck": "Perlu Cek Ulang",
     "Apply Valid Until to All": "Samakan Masa Berlaku ke Semua Item",
-    "Copy the first item valid until to all items": "Salin tanggal berlaku item pertama ke semua item"
+    "Copy the first item valid until to all items": "Salin tanggal berlaku item pertama ke semua item",
+    "Scroll tabs left": "Geser tab ke kiri",
+    "Scroll tabs right": "Geser tab ke kanan",
+    "Open tabs": "Tab terbuka"
 }

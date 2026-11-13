@@ -5357,5 +5357,8 @@
     "Active (Valid until :date)": "Active (Valid until :date)",
     "Needs Recheck": "Needs Recheck",
     "Apply Valid Until to All": "Apply Valid Until to All",
-    "Copy the first item valid until to all items": "Copy the first item valid until to all items"
+    "Copy the first item valid until to all items": "Copy the first item valid until to all items",
+    "Scroll tabs left": "Scroll tabs left",
+    "Scroll tabs right": "Scroll tabs right",
+    "Open tabs": "Open tabs"
 }
