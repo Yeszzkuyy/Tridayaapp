@@ -563,8 +563,8 @@
                     <div x-show="$store.workspace.resizingSplit" class="absolute inset-0 cursor-col-resize"></div>
                     <div x-show="$store.workspace.draggingTabId"
                          class="absolute inset-y-0 right-0 w-1/2 p-6"
+                         @dragenter.prevent="$store.workspace.dragRightHover = true"
                          @dragover.prevent="$store.workspace.dragRightHover = true"
-                         @dragleave="$store.workspace.dragRightHover = false"
                          @drop.prevent="$store.workspace.dropToRight()">
                         <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
                              :class="$store.workspace.dragRightHover
