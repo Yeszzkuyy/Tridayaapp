@@ -49,10 +49,7 @@
                 </form>
             @endif
             @if(auth()->user()->can('view-sales') || auth()->user()->can('manage-sales'))
-                <x-icon-button as="a" href="{{ route('leads.pipeline') }}"
-                   title="{{ __('Back to Pipeline') }}">
-                    <x-icon name="view-columns" class="h-5 w-5" />
-                </x-icon-button>
+                <x-back-button :href="route('sales.my-leads')" :label="__('Back to My Leads')" />
             @endif
             <x-icon-button as="a" icon="back"
                 href="{{ (auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing')) ? route('leads.index') : route('sales.my-leads') }}"
