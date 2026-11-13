@@ -6,8 +6,6 @@
         $notifyEmail = (bool) $user->preference('notify_email', true);
         $notifySystem = (bool) $user->preference('notify_system', true);
         $notifyPush = (bool) $user->preference('notify_push', true);
-        $showFollowUpMenu = (bool) $user->preference('menu_follow_up', true);
-        $showDarMenu = (bool) $user->preference('menu_dar', true);
 
         $themeOptions = [
             ['value' => 'light', 'label' => __('Light'), 'icon' => 'sun'],
@@ -92,40 +90,6 @@
                         @endforeach
                     </div>
                     <x-input-error class="mt-2" :messages="$errors->get('accent')" />
-                </div>
-            </section>
-
-            {{-- Menu Sales --}}
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-                <header>
-                    <h2 class="text-lg font-bold text-slate-800">{{ __('Sales Menu') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Show or hide these menus from the sidebar. Pages and data stay available through their links.') }}</p>
-                </header>
-
-                <div class="mt-5 divide-y divide-slate-100 dark:divide-slate-700">
-                    <label class="flex cursor-pointer items-center justify-between gap-4 py-4 first:pt-0">
-                        <span class="min-w-0">
-                            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Follow Up Menu') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Show Follow Up in the Sales sidebar.') }}</span>
-                        </span>
-                        <span class="relative inline-flex shrink-0 items-center">
-                            <input type="checkbox" name="menu_follow_up" value="1" class="peer sr-only" @checked($showFollowUpMenu)>
-                            <span class="toggle-track h-6 w-11 rounded-full transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent-500 peer-focus-visible:ring-offset-2"></span>
-                            <span class="toggle-knob pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition peer-checked:translate-x-5"></span>
-                        </span>
-                    </label>
-
-                    <label class="flex cursor-pointer items-center justify-between gap-4 py-4 last:pb-0">
-                        <span class="min-w-0">
-                            <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('DAR Menu') }}</span>
-                            <span class="mt-0.5 block text-xs text-slate-500">{{ __('Show DAR in the Sales sidebar.') }}</span>
-                        </span>
-                        <span class="relative inline-flex shrink-0 items-center">
-                            <input type="checkbox" name="menu_dar" value="1" class="peer sr-only" @checked($showDarMenu)>
-                            <span class="toggle-track h-6 w-11 rounded-full transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent-500 peer-focus-visible:ring-offset-2"></span>
-                            <span class="toggle-knob pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition peer-checked:translate-x-5"></span>
-                        </span>
-                    </label>
                 </div>
             </section>
 
