@@ -5349,5 +5349,8 @@
     "Close All Tabs": "Close All Tabs",
     "Maximum tabs open. Please close an unused tab first.": "Maximum tabs open. Please close an unused tab first.",
     "Close this tab?": "Close this tab?",
-    "This tab has unsaved input. Closing it will discard your changes.": "This tab has unsaved input. Closing it will discard your changes."
+    "This tab has unsaved input. Closing it will discard your changes.": "This tab has unsaved input. Closing it will discard your changes.",
+    "Scroll tabs left": "Scroll tabs left",
+    "Scroll tabs right": "Scroll tabs right",
+    "Open tabs": "Open tabs"
 }

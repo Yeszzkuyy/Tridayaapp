@@ -73,6 +73,7 @@ class PageContext
             ['sales.requests',                  ['Sales', 'Request']],
             ['estimator.price-history',         ['Estimator', 'Price History']],
             ['estimator.suppliers',             ['Estimator', 'Suppliers']],
+            ['estimator.requests',              [$canPrice ? 'Estimator' : 'Sales', $canPrice ? 'Queue' : 'Request']],
             ['estimator',                       [$canPrice ? 'Estimator' : 'Sales', $canPrice ? 'Queue' : 'Request']],
             ['products',                        [$canPrice && ! $canSales && ! $canAdmin ? 'Pricelist' : 'Products']],
             ['sales.technical-requests',        ['Sales', 'Technical Request']],
@@ -146,10 +147,11 @@ class PageContext
         ];
 
         $matched = null;
+        $matchedLen = -1;
         foreach ($crumbMap as $entry) {
-            if ($currentRoute !== '' && str_starts_with($currentRoute, $entry[0])) {
+            if ($currentRoute !== '' && str_starts_with($currentRoute, $entry[0]) && strlen($entry[0]) > $matchedLen) {
                 $matched = $entry;
-                break;
+                $matchedLen = strlen($entry[0]);
             }
         }
 
@@ -162,7 +164,7 @@ class PageContext
             }
             $rest = ltrim(substr($currentRoute, strlen($prefix)), '.');
             $hasActionCrumb = false;
-            if ($rest !== '' && ! in_array($rest, $plainActions, true)) {
+            if ($rest !== '' && ! in_array($rest, $plainActions, true) && ! str_contains($rest, '.')) {
                 $action = $actionLabels[$rest] ?? Str::headline(str_replace(['-', '_'], ' ', $rest));
                 $crumbs[] = ['label' => __($action), 'url' => null];
                 $hasActionCrumb = true;
@@ -196,10 +198,39 @@ class PageContext
 
         $dept = $deptShortMap[$groupRaw] ?? null;
         $leaf = count($crumbs) > 0 ? $crumbs[count($crumbs) - 1]['label'] : $sectionLabel;
-        if (count($crumbs) >= 2) {
-            $leaf = $crumbs[0]['label'].' / '.$crumbs[count($crumbs) - 1]['label'];
+
+        // Kode & nama divisi untuk badge tab (dipisah dari judul halaman).
+        $deptMeta = [
+            'Management' => ['MGMT', 'Management'],
+            'Teknisi' => ['ENG', 'Engineer'],
+            'Marketing' => ['MKT', 'Marketing'],
+            'Sales' => ['SALES', 'Sales'],
+            'Estimator' => ['EST', 'Estimator'],
+            'Admin' => ['ADM', 'Admin'],
+            'Admin Panel' => ['PANEL', 'Admin Panel'],
+            'Customer' => ['CUST', 'Customer'],
+            'Documents' => ['DOC', 'Documents'],
+            'Monitoring' => ['MON', 'Monitoring'],
+            'Dashboard' => ['DASH', 'Dashboard'],
+            'Trash' => ['SYS', 'Trash'],
+            'Pricelist' => ['EST', 'Estimator'],
+            'Knowledge Base' => ['KB', 'Knowledge Base'],
+            'Product KB' => ['KB', 'Product KB'],
+            'AI Assistant' => ['AI', 'AI Assistant'],
+            'Settings' => ['SYS', 'System'],
+            'Profile' => ['SYS', 'System'],
+        ][$sectionLabel] ?? null;
+
+        $deptCode = $deptMeta[0] ?? null;
+        $deptName = $deptMeta[1] ?? null;
+        $tabLabel = $leaf;
+
+        // Dashboard selalu menyebut divisinya supaya tab tidak tertukar.
+        if ($deptName !== null && $deptCode !== 'DASH' && mb_strtolower($tabLabel) === 'dashboard') {
+            $tabLabel = 'Dashboard '.$deptName;
         }
-        $tabTitle = $dept && $leaf !== $sectionLabel ? $dept.' • '.$leaf : $leaf;
+
+        $tabTitle = $deptCode !== null ? $deptCode.' • '.$tabLabel : $tabLabel;
 
         return [
             'route' => $currentRoute,
@@ -209,7 +240,10 @@ class PageContext
             'sectionIcon' => $sectionIcon,
             'crumbs' => $crumbs,
             'tabTitle' => $tabTitle,
+            'tabLabel' => $tabLabel,
             'dept' => $dept,
+            'deptCode' => $deptCode,
+            'deptName' => $deptName,
         ];
     }
 }

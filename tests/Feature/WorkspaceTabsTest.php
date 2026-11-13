@@ -105,6 +105,24 @@ class WorkspaceTabsTest extends TestCase
             ->assertDontSee('data-embed="1"', false);
     }
 
+    public function test_page_context_never_leaks_route_suffix_into_tab_label(): void
+    {
+        $estimator = User::factory()->create();
+        $estimator->assignRole('estimator');
+
+        $req = Request::create('/estimator/requests', 'GET');
+        $req->setUserResolver(fn () => $estimator);
+        $route = app('router')->getRoutes()->match($req);
+        $req->setRouteResolver(fn () => $route);
+
+        $ctx = PageContext::forRequest($req);
+
+        $this->assertSame('Queue', $ctx['tabLabel']);
+        $this->assertSame('EST', $ctx['deptCode']);
+        $this->assertSame('EST • Queue', $ctx['tabTitle']);
+        $this->assertStringNotContainsString('Requests.index', $ctx['tabTitle']);
+    }
+
     public function test_page_context_builds_contextual_department_tab_title(): void
     {
         $admin = $this->adminUser();
@@ -115,7 +133,7 @@ class WorkspaceTabsTest extends TestCase
 
         $ctx = PageContext::forRequest($req);
 
-        $this->assertSame('Admin • '.__('Customer PO'), $ctx['tabTitle']);
+        $this->assertSame('ADM • '.__('Customer PO'), $ctx['tabTitle']);
         $this->assertSame('receipt', $ctx['sectionIcon']);
     }
 }
