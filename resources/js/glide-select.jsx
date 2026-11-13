@@ -23,12 +23,15 @@ function themeProps() {
         if (raw) accent = `rgb(${raw.replace(/\s+/g, ', ')})`;
     }
     // Warna mengikuti token tema aplikasi (light & dark), bukan hex hardcode:
-    // trigger = input, menu = card, highlight = card hover, teks = text-primary.
+    // trigger = input, menu = card, highlight = token hover menu, teks = text-primary.
     return {
         accentColor: accent,
         triggerColor: cssVar('--input-bg', dark ? '#1e2640' : '#f1f5f9'),
         surfaceColor: cssVar('--card-bg', dark ? '#232b3e' : '#ffffff'),
-        highlightColor: cssVar('--card-bg-hover', dark ? '#2a3350' : '#f8fafc'),
+        // Sorotan baris memakai token khusus menu (--menu-hover-bg) supaya
+        // terlihat di light mode; --card-bg-hover terlalu dekat dengan putih.
+        highlightColor: cssVar('--menu-hover-bg', dark ? '#2f3a58' : '#eef2f7'),
+        triggerHoverColor: cssVar('--input-bg-hover', dark ? '#2a3350' : '#e2e8f0'),
         textColor: cssVar('--text-primary', dark ? '#f2f6ff' : '#1e293b'),
     };
 }

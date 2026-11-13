@@ -123,20 +123,20 @@
                                 </x-slot>
                                 <x-slot name="content">
                                     <a href="{{ route('sales.follow-ups.show', $fu) }}"
-                                       class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                       class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                         <x-icon name="eye" class="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
                                         {{ __('View follow up detail') }}
                                     </a>
                                     @can('manage-sales')
                                         <a href="{{ route('sales.follow-ups.edit', $fu) }}"
-                                           class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                           class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                             <x-icon name="edit" class="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
                                             {{ __('Edit follow up') }}
                                         </a>
                                         @if($fu->isCompleted())
                                             <form action="{{ route('sales.follow-ups.reopen', $fu) }}" method="POST" data-ajax>
                                                 @csrf
-                                                <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                                     <x-icon name="restore" class="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
                                                     {{ __('Reopen follow up') }}
                                                 </button>
@@ -146,7 +146,7 @@
                                                 <form action="{{ route('sales.follow-ups.snooze', $fu) }}" method="POST" data-ajax>
                                                     @csrf
                                                     <input type="hidden" name="days" value="{{ $days }}">
-                                                    <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                    <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                                         <x-icon name="clock" class="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-300" />
                                                         {{ __('Postpone :days days', ['days' => $days]) }}
                                                     </button>

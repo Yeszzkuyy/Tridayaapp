@@ -60,6 +60,24 @@ class UiFeedbackStandardTest extends TestCase
         $this->assertStringContainsString('<x-toast type="error">', $layout, 'Error validasi tetap tampil inline.');
     }
 
+    public function test_dropdown_hover_uses_the_visible_menu_token(): void
+    {
+        $css = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertStringContainsString('--menu-hover-bg: #eef2f7;', $css, 'Token hover menu light mode hilang.');
+        $this->assertStringContainsString('--menu-hover-bg: #2f3a58;', $css, 'Token hover menu dark mode hilang.');
+
+        $glide = file_get_contents(resource_path('js/glide-select.jsx'));
+
+        $this->assertStringContainsString("cssVar('--menu-hover-bg'", $glide);
+        $this->assertStringNotContainsString("cssVar('--card-bg-hover'", $glide, 'Sorotan dropdown tidak boleh memakai --card-bg-hover.');
+
+        $link = file_get_contents(resource_path('views/components/dropdown-link.blade.php'));
+
+        $this->assertStringContainsString('hover:bg-[var(--menu-hover-bg)]', $link);
+        $this->assertStringNotContainsString('hover:bg-gray-100', $link);
+    }
+
     /**
      * @return list<string>
      */
