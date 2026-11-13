@@ -71,12 +71,10 @@
                                class="mt-1 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                     </div>
                     <div>
-                        <label for="my-leads-overdue" class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Follow Up') }}</label>
-                        <select id="my-leads-overdue" name="overdue"
-                                class="mt-1 h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                            <option value="">{{ __('All') }}</option>
-                            <option value="1" @selected(request('overdue'))>{{ __('Overdue (>24 hours)') }}</option>
-                        </select>
+                        <label class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Follow Up') }}</label>
+                        <x-glide-select name="overdue" class="mt-1" :label="__('Follow Up')"
+                            :options="[['value' => '1', 'label' => __('Overdue (>24 hours)')]]"
+                            :value="request('overdue', '')" :empty-label="__('All')" autosubmit />
                     </div>
                 </div>
             </details>
