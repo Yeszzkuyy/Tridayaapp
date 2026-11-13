@@ -6,7 +6,7 @@
 **Menu:** Lintas Divisi (Top Navbar + semua menu sidebar)
 **Branch:** `feature/div-panel`
 **Worktree:** `/home/yeski/3dyapp-panel` (perlu entry baru di tabel AGENTS §1)
-**Terakhir diperbarui:** 2026-11-13 (revisi pemolesan)
+**Terakhir diperbarui:** 2026-11-13 (revisi drag & split)
 
 ---
 
@@ -500,3 +500,44 @@ Bagian ini mengalahkan detail tampilan di §5 bila terjadi perbedaan.
 - `PageContext` memakai pencocokan prefix terpanjang dan tidak lagi
   menjadikan sisa route bertitik (mis. `requests.index`) sebagai nama
   halaman.
+
+
+---
+
+## 15. Revisi Drag & Drop Reorder + Split View (2026-11-13)
+
+### 15.1 Perilaku tab seperti browser
+
+- Tab non-pinned bisa digeser untuk mengubah urutan (desktop). Dashboard
+  tetap di posisi pertama, tidak bisa digeser, dan tidak menerima drop.
+- Urutan tab disimpan di `sessionStorage` dan pulih setelah refresh.
+- Menutup tab aktif berpindah ke **tab kanan** lebih dulu, lalu ke kiri bila
+  sudah tidak ada.
+- Tidak ada buka tab di belakang layar, middle-click, tombol `+`, menu
+  klik-kanan, atau spinner loading (sesuai keputusan User).
+
+### 15.2 Split View
+
+- Diaktifkan dari tombol split di navbar, menu **Split right** pada daftar
+  tab, atau menarik tab ke separuh kanan layar.
+- Satu baris kontrol tipis di atas kedua panel: pilih tab kiri/kanan,
+  **Swap**, dan **Close split**.
+- Panel yang fokus ditandai garis aksen di tepi atas. Menu sidebar baru
+  masuk ke panel yang fokus; split tetap aktif.
+- Tab kiri/kanan diberi badge `L`/`R` di barisan tab.
+- Sidebar otomatis mengecil saat split dibuka dan kembali seperti semula
+  saat ditutup (jika sebelumnya terbuka).
+- Garis pembatas bisa digeser dengan batas 30%-70%; rasio disimpan.
+- Menutup panel kanan/kiri otomatis kembali ke layar penuh dengan panel yang
+  masih hidup. Memilih tab yang sama di panel sebelah menukar posisi.
+- Split hanya tersedia di desktop (>= 1024px); di layar kecil tombol
+  disembunyikan dan split ditutup otomatis.
+
+### 15.3 Anti-reset iframe
+
+- Iframe tetap berada di wadah datar yang sama; urutan tab dan split hanya
+  mengatur pane mana yang ditampilkan.
+- Saat drag/resize, lapisan pelindung transparan menutup area iframe agar
+  kursor tidak nyangkut dan event drag tetap diterima halaman induk.
+- Diverifikasi: isian form tetap ada setelah tab digeser, split dibuka,
+  dan split ditutup.
