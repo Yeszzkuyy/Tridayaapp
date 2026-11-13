@@ -5360,5 +5360,14 @@
     "Copy the first item valid until to all items": "Salin tanggal berlaku item pertama ke semua item",
     "Scroll tabs left": "Geser tab ke kiri",
     "Scroll tabs right": "Geser tab ke kanan",
-    "Open tabs": "Tab terbuka"
+    "Open tabs": "Tab terbuka",
+    "Split view": "Tampilan belah",
+    "Close split": "Tutup belah",
+    "Split right": "Belah ke kanan",
+    "Drop here to split right": "Lepas di sini untuk belah kanan",
+    "Swap panes": "Tukar panel",
+    "Left pane": "Panel kiri",
+    "Right pane": "Panel kanan",
+    "Select tab": "Pilih tab",
+    "Resize split panes": "Ubah lebar panel"
 }
