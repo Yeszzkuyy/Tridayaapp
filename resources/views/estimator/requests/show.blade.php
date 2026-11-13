@@ -230,7 +230,7 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="min-w-[240px]" @change="waSupplierId = $event.target.value">
                             <x-glide-select name="wa_supplier_id" :options="$supplierOptions" :value="$defaultWaSupplierId"
-                                            :placeholder="__('Select supplier')" size="field" :menu-width="280" />
+                                            :label="__('Supplier')" :placeholder="__('Select supplier')" size="field" :menu-width="280" />
                         </div>
                         <x-icon-button as="a" icon="whatsapp" x-bind:href="waUrl()" target="_blank" rel="noopener" label="{{ __('Ask Supplier via WhatsApp') }}" title="{{ __('Ask Supplier via WhatsApp') }}" />
                     </div>
@@ -304,6 +304,7 @@
                                                 <x-glide-select :name="'items['.$index.'][supplier_id]'"
                                                                 :options="$supplierOptions"
                                                                 :value="$supplierValue"
+                                                                :label="__('Supplier')"
                                                                 :placeholder="__('Select supplier')"
                                                                 :error="$errors->first('items.'.$index.'.supplier_id')"
                                                                 size="field" :menu-width="280" required />
@@ -321,6 +322,7 @@
                                                 <x-glide-select :name="'items['.$index.'][stock_status]'"
                                                                 :options="$stockOptions"
                                                                 :value="$stockValue"
+                                                                :label="__('Stock')"
                                                                 :placeholder="__('Stock')"
                                                                 size="field" />
                                             </div>

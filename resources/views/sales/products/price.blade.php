@@ -6,6 +6,14 @@
             '14d' => now()->timezone('Asia/Jakarta')->addDays(14)->format('Y-m-d'),
             '1m' => now()->timezone('Asia/Jakarta')->addMonth()->format('Y-m-d'),
         ];
+        $supplierOptions = $suppliers->map(fn ($supplier) => [
+            'value' => (string) $supplier->id,
+            'label' => $supplier->name,
+        ])->values()->all();
+        $stockOptions = [
+            ['value' => 'ready', 'label' => __('Ready')],
+            ['value' => 'indent', 'label' => __('Indent')],
+        ];
     @endphp
     <div>
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -37,13 +45,10 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="sm:col-span-2">
                     <label for="price-supplier" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Supplier') }} <span class="text-rose-500">*</span></label>
-                    <select id="price-supplier" name="supplier_id" required class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                        <option value="">{{ __('Select supplier') }}</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" @selected((int) old('supplier_id', $product->latestCostLog?->supplier_id) === $supplier->id)>{{ $supplier->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('supplier_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                    <x-glide-select id="price-supplier" name="supplier_id" :options="$supplierOptions"
+                                    :value="old('supplier_id', $product->latestCostLog?->supplier_id)"
+                                    :label="__('Supplier')" :placeholder="__('Select supplier')"
+                                    :error="$errors->first('supplier_id')" size="field" :menu-width="260" required />
                 </div>
 
                 <div>
@@ -68,11 +73,10 @@
 
                 <div>
                     <label for="price-stock" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Stock') }} <span class="text-rose-500">*</span></label>
-                    <select id="price-stock" name="stock_status" required class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                        <option value="ready" @selected(old('stock_status', $product->latestCostLog?->stock_status ?: 'ready') === 'ready')>{{ __('Ready') }}</option>
-                        <option value="indent" @selected(old('stock_status', $product->latestCostLog?->stock_status) === 'indent')>{{ __('Indent') }}</option>
-                    </select>
-                    @error('stock_status') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
+                    <x-glide-select id="price-stock" name="stock_status" :options="$stockOptions"
+                                    :value="old('stock_status', $product->latestCostLog?->stock_status ?: 'ready')"
+                                    :label="__('Stock')" :placeholder="__('Stock')"
+                                    :error="$errors->first('stock_status')" size="field" required />
                 </div>
 
                 <div>
