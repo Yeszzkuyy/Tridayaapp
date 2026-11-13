@@ -418,10 +418,10 @@
         #navigate-progress{position:fixed;top:0;left:0;height:3px;width:35%;z-index:1002;opacity:0;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgb(var(--accent-500)/0),rgb(var(--accent-500)),rgb(var(--accent-400)));box-shadow:0 0 12px rgb(var(--accent-500)/.7);transform:translateX(-110%);transition:opacity .25s ease}
         .workspace-stage{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
         .workspace-stage--split{flex-direction:row;align-items:stretch}
-        .workspace-pane{display:flex;flex-direction:column;flex:1;min-width:0;min-height:calc(100vh - 5rem)}
+        .workspace-pane{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:calc(100vh - 5rem)}
         .workspace-pane.hidden{display:none!important}
         .workspace-pane iframe{flex:1;min-height:calc(100vh - 5rem);width:100%}
-        .workspace-pane--focused{box-shadow:inset 0 2px 0 0 rgb(var(--accent-500)/.9)}
+        .workspace-pane--focused::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:rgb(var(--accent-500));z-index:2;pointer-events:none}
         #workspace-split-divider{display:none;order:2;flex:0 0 6px;margin:0 2px;border-radius:9999px;background:var(--card-border);cursor:col-resize;align-self:stretch;touch-action:none}
         .workspace-stage--split #workspace-split-divider{display:block}
         #workspace-split-divider:hover,#workspace-split-divider[data-resizing="1"]{background:rgb(var(--accent-500)/.75)}
