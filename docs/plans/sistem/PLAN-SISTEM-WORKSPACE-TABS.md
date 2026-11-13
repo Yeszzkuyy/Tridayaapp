@@ -6,7 +6,7 @@
 **Menu:** Lintas Divisi (Top Navbar + semua menu sidebar)
 **Branch:** `feature/div-panel`
 **Worktree:** `/home/yeski/3dyapp-panel` (perlu entry baru di tabel AGENTS §1)
-**Terakhir diperbarui:** 2026-11-13
+**Terakhir diperbarui:** 2026-11-13 (revisi pemolesan)
 
 ---
 
@@ -443,3 +443,60 @@ dan tidak ada koneksi Reverb di iframe. Jika melewati ambang, turunkan
 - Drag-and-drop urutan tab.
 - Split view / dua tab berdampingan.
 - Mengganti seluruh `wire:navigate` di aplikasi.
+
+
+---
+
+## 14. Revisi Pemolesan (2026-11-13)
+
+Bagian ini mengalahkan detail tampilan di §5 bila terjadi perbedaan.
+
+### 14.1 Nama tab = label menu sidebar
+
+- Nama tab **tidak lagi** diambil dari nama route atau `<title>` dokumen.
+- Saat tab dibuka, label diambil dari menu sidebar yang diklik; saat halaman
+  dimuat langsung/refresh, label dicari dari menu sidebar dengan URL paling
+  cocok.
+- Judul tab **tidak berubah** saat masuk halaman detail; tab tetap mewakili
+  menunya.
+- Dashboard selalu menyebut divisinya: `Dashboard Engineer`,
+  `Dashboard Admin`, `Dashboard Sales`, `Dashboard Marketing`.
+- Tab `Dashboard` yang dipin (halaman `/dashboard`) tetap berlabel
+  `Dashboard` tanpa badge divisi.
+
+### 14.2 Badge divisi & ikon menu
+
+- Badge dipisah dari judul: `ENG`, `EST`, `SALES`, `MKT`, `ADM`, `MGMT`,
+  `PANEL`, `CUST`, `DOC`, `MON`, `AI`, `KB`, `SYS`.
+- Warna badge per divisi memakai latar lembut + teks senada, tersedia versi
+  terang dan gelap.
+- Setiap tab menampilkan **ikon menu utama** (grid, tools, calendar,
+  megaphone, receipt, settings, users, folder, activity, message, book,
+  cube, trash).
+- Tab aktif tetap satu warna aksen yang mengikuti tema pengguna; warna
+  divisi hanya pada badge kecil.
+
+### 14.3 Geser tab (overflow)
+
+- Tab aktif otomatis digeser ke tengah barisan (halus, hormati
+  `prefers-reduced-motion`).
+- Roda mouse di atas barisan tab menggeser horizontal.
+- Tombol panah kiri/kanan muncul hanya saat masih ada tab tersembunyi;
+  tepi barisan diberi efek pudar.
+- Di HP/tablet, gestur swipe horizontal tetap berjalan; panah
+  disembunyikan.
+- Menu `v` menampilkan daftar semua tab (dengan badge divisi) dan
+  menyorot tab aktif; tetap ada `Close Other Tabs` dan `Close All Tabs`.
+
+### 14.4 Sinkronisasi sidebar
+
+- Saat tab di navbar diklik, sorotan sidebar berpindah ke menu yang sesuai.
+- Sidebar otomatis menggulir menu aktif ke area pandang.
+
+### 14.5 Perbaikan kecil
+
+- Kolom pencarian Knowledge Base memakai `w-full sm:w-auto sm:min-w-[240px]`
+  agar placeholder tidak terpotong dan tetap aman di HP.
+- `PageContext` memakai pencocokan prefix terpanjang dan tidak lagi
+  menjadikan sisa route bertitik (mis. `requests.index`) sebagai nama
+  halaman.

@@ -118,9 +118,11 @@
                 <p class="px-3.5 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {{ __('Open tabs') }}
                 </p>
-                <div class="max-h-64 overflow-y-auto">
+                <div class="max-h-64 overflow-y-auto"
+                     x-effect="if (open) { $nextTick(() => $el.querySelector('[data-tab-active=&quot;1&quot;]')?.scrollIntoView({ block: 'nearest' })) }">
                     <template x-for="tab in $store.workspace.tabs" :key="'menu-' + tab.id">
                         <button type="button"
+                                :data-tab-active="$store.workspace.activeId === tab.id ? '1' : '0'"
                                 @click="$store.workspace.activate(tab.id)"
                                 :class="$store.workspace.activeId === tab.id
                                     ? 'bg-[var(--menu-hover-bg)] text-slate-900 dark:text-slate-100'
