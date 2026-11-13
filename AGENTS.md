@@ -156,7 +156,7 @@ Testing:
 | `/home/raafi/3dyapp-doc` | `feature/sys-document-center` | Document Center lintas modul + tab Dokumen Customer |
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
 | `/home/raafi/3dyapp-tekflow` | `feature/tek-project-workflow` | Integrasi workflow project + engineer (survey, sizing, price request, instalasi, BAST) |
-| `/home/yeski/3dyapp-sys` | `feature/sys-ui-feedback` | Toast + kartu konfirmasi standar (lintas divisi) |
+| `/home/yeski/3dyapp-sys` | `feature/sys-dropdown-standard` | Toast, konfirmasi, dropdown standar (lintas divisi) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.
@@ -555,6 +555,28 @@ dengan tampilan yang sama.
    berjalan seperti biasa (submit loader tetap tampil).
 6. **Verifikasi:** `php artisan test --filter=UiFeedbackStandardTest` menolak
    view yang masih memakai `confirm()` atau `x-status-card`.
+
+## 7.4 Standar Dropdown & Menu Aksi
+
+1. **Komponen wajib.** Dropdown pilihan (filter, sort, status, form) memakai
+   `<x-glide-select>`. Menu aksi (tombol tiga titik) memakai `<x-dropdown>` +
+   `<x-dropdown-link>`. Jangan membuat dropdown baru dari nol bila komponen
+   ini cukup.
+2. **Warna sorotan wajib terlihat.** Baris menu memakai token
+   `--menu-hover-bg` (light `#eef2f7`, dark `#2f3a58`). Dilarang memakai
+   `hover:bg-gray-100`, `hover:bg-slate-50`, atau `--card-bg-hover`
+   (`#f8fafc`) untuk baris menu karena menyatu dengan kartu putih.
+3. **Trigger dropdown** memakai `--input-bg-hover` saat hover/terbuka agar
+   terasa seperti field aktif.
+4. **Item terpilih** dibedakan dengan ikon centang accent; pill hover hanya
+   menandai posisi kursor/keyboard.
+5. **Radius & mode gelap.** Trigger dan panel mengikuti field (`rounded-xl`),
+   baris opsi `rounded-lg`. Mode gelap memakai token yang sama, bukan hex
+   acak.
+6. **Keyboard wajib:** panah atas/bawah, Enter memilih, Esc menutup, Tab
+   keluar, dan focus ring terlihat.
+7. **Dropdown baru dilarang memakai `<select>` native.** Pilihan native lama
+   dimigrasi bertahap setiap file itu disentuh.
 
 ## 8. Database Safety Rules
 

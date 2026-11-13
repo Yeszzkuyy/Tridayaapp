@@ -177,20 +177,20 @@
                                             @if(! $canProcessPo && $proposal->isReadyForSupplierPo())
                                                 @can('manage-admin')
                                                     <a href="{{ route('admin.supplier-pos.create', ['proposal_id' => $proposal->id]) }}"
-                                                       class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                       class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                                         <x-icon name="receipt" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                                         {{ __('Create Supplier PO') }}
                                                     </a>
                                                 @endcan
                                             @endif
                                             <a href="{{ route('sales.proposals.show', $proposal) }}"
-                                               class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                               class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                                 <x-icon name="file-text" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                                                 {{ __('View Quotation') }}
                                             </a>
                                             @if($proposal->project)
                                                 <a href="{{ route('projects.show', $proposal->project) }}"
-                                                   class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                   class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                                     <x-icon name="briefcase" class="h-4 w-4 text-violet-600 dark:text-violet-400" />
                                                     {{ __('View Project') }}
                                                 </a>
@@ -198,13 +198,13 @@
                                             @if($poUrl)
                                                 <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>
                                                 <button type="button"
-                                                        class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60"
+                                                        class="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-[var(--menu-hover-bg)] dark:text-slate-200"
                                                         @click="window.openDocPreview({ kind: @js($poKind), url: @js($poUrl), filename: @js($poName), download: @js($poUrl) })">
                                                     <x-icon name="eye" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                                     {{ __('Preview Customer PO') }}
                                                 </button>
                                                 <a href="{{ $poUrl }}"
-                                                   class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700/60">
+                                                   class="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                                     <x-icon name="download" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
                                                     {{ __('Download Customer PO') }}
                                                 </a>

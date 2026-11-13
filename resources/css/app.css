@@ -58,6 +58,9 @@
     --card-bg: #fff;
     --card-border: #e2e8f0;
     --card-bg-hover: #f8fafc;
+    /* Sorotan baris dropdown/menu. Wajib terlihat di atas kartu putih,
+       tapi tetap lembut (bukan abu tua). */
+    --menu-hover-bg: #eef2f7;
     --input-bg: #f1f5f9;
     --input-bg-hover: #e2e8f0;
     --input-border: #cbd5e1;
@@ -113,6 +116,7 @@
     --card-bg: #232b3e;
     --card-border: #334070;
     --card-bg-hover: #2a3350;
+    --menu-hover-bg: #2f3a58;
     --input-bg: #1e2640;
     --input-bg-hover: #2a3350;
     --input-border: #334070;
