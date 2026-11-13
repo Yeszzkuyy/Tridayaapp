@@ -652,7 +652,8 @@ class EstimatorRequestTest extends TestCase
             ->assertOk()
             ->assertSee('NTI')
             ->assertSee('bg-sky-500')
-            ->assertSee(__('Search supplier...'))
+            ->assertSee('data-glide-mount', false)
+            ->assertSee(__('Select supplier'))
             ->assertSee(__('Estimated Total Cost'))
             ->assertSee('id="estimator-total-cost"', false)
             ->assertSee('px-5 py-3 text-center', false);

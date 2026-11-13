@@ -56,6 +56,7 @@ function mountGlider(node) {
             placeholder={node.dataset.placeholder || 'Pilih…'}
             showTags={node.dataset.tags === '1'}
             size={node.dataset.size || 'md'}
+            menuWidth={parseInt(node.dataset.menuWidth || '176', 10)}
             radius={10}
             ariaLabel={node.dataset.label || 'Pilih'}
             className={node.dataset.full === '1' ? 'glide-select--full' : ''}

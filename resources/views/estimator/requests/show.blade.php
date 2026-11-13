@@ -17,9 +17,14 @@
         $ptColor = $ptGroup
             ? (\App\Models\Lead::PT_COLORS[$ptGroup] ?? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200')
             : null;
-        $supplierOptions = $suppliers->mapWithKeys(fn ($supplier) => [
-            $supplier->id => $supplier->name.($supplier->contact_person ? ' · '.$supplier->contact_person : ''),
-        ])->all();
+        $supplierOptions = $suppliers->map(fn ($supplier) => [
+            'value' => (string) $supplier->id,
+            'label' => $supplier->name.($supplier->contact_person ? ' · '.$supplier->contact_person : ''),
+        ])->values()->all();
+        $stockOptions = [
+            ['value' => 'ready', 'label' => __('Ready')],
+            ['value' => 'indent', 'label' => __('Indent')],
+        ];
         $keepDates = [
             '3d' => now()->timezone('Asia/Jakarta')->addDays(3)->format('Y-m-d'),
             '7d' => now()->timezone('Asia/Jakarta')->addDays(7)->format('Y-m-d'),
@@ -223,13 +228,10 @@
                         <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80">{{ __('Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table.') }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <select x-model="waSupplierId" aria-label="{{ __('Select supplier') }}"
-                                class="h-10 rounded-xl border-emerald-200 bg-white text-xs font-medium text-slate-700 focus:border-emerald-500 focus:ring-emerald-500 dark:border-emerald-800 dark:bg-slate-800 dark:text-slate-200">
-                            <option value="">{{ __('Select supplier') }}</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}">{{ $supplier->name }}{{ $supplier->phone ? ' ('.$supplier->phone.')' : '' }}</option>
-                            @endforeach
-                        </select>
+                        <div class="min-w-[240px]" @change="waSupplierId = $event.target.value">
+                            <x-glide-select name="wa_supplier_id" :options="$supplierOptions" :value="$defaultWaSupplierId"
+                                            :placeholder="__('Select supplier')" size="field" :menu-width="280" />
+                        </div>
                         <x-icon-button as="a" icon="whatsapp" x-bind:href="waUrl()" target="_blank" rel="noopener" label="{{ __('Ask Supplier via WhatsApp') }}" title="{{ __('Ask Supplier via WhatsApp') }}" />
                     </div>
                 </div>
@@ -255,12 +257,8 @@
                                 @foreach($estimatorRequest->items as $index => $item)
                                     @php
                                         $lastLog = $item->product?->latestCostLog;
-                                        $lastSupplierLabel = $lastLog?->supplier
-                                            ? $lastLog->supplier->name.($lastLog->supplier->contact_person ? ' · '.$lastLog->supplier->contact_person : '')
-                                            : '';
                                         $lastLogPayload = $lastLog ? [
                                             'supplier_id' => $lastLog->supplier_id ? (string) $lastLog->supplier_id : '',
-                                            'supplier_name' => $lastSupplierLabel,
                                             'price' => (float) $lastLog->price,
                                             'stock_status' => $lastLog->stock_status ?: 'ready',
                                             'stock_eta' => $lastLog->stock_eta ?: '',
@@ -302,13 +300,13 @@
                                             @endif
                                         </td>
                                         <td class="px-5 py-4 text-left">
-                                            <div class="min-w-[190px]">
-                                                <x-searchable-select
-                                                    :name="'items['.$index.'][supplier_id]'"
-                                                    :options="$supplierOptions"
-                                                    :selected="$supplierValue"
-                                                    :placeholder="__('Search supplier...')"
-                                                    input-class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" />
+                                            <div class="min-w-[190px]" data-glide-field="supplier">
+                                                <x-glide-select :name="'items['.$index.'][supplier_id]'"
+                                                                :options="$supplierOptions"
+                                                                :value="$supplierValue"
+                                                                :placeholder="__('Select supplier')"
+                                                                :error="$errors->first('items.'.$index.'.supplier_id')"
+                                                                size="field" :menu-width="280" required />
                                             </div>
                                         </td>
                                         <td class="border-l border-slate-100 px-5 py-4 text-right dark:border-slate-700/60">
@@ -319,11 +317,13 @@
                                             </div>
                                         </td>
                                         <td class="px-5 py-4 text-center">
-                                            <select name="items[{{ $index }}][stock_status]" onchange="toggleStockEta(this)"
-                                                    class="mx-auto h-10 w-full max-w-[130px] rounded-xl border-slate-300 text-sm text-slate-900 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
-                                                <option value="ready" @selected($stockValue === 'ready')>{{ __('Ready') }}</option>
-                                                <option value="indent" @selected($stockValue === 'indent')>{{ __('Indent') }}</option>
-                                            </select>
+                                            <div class="mx-auto w-full max-w-[150px]" data-glide-field="stock" @change="toggleStockEtaFromEvent($event)">
+                                                <x-glide-select :name="'items['.$index.'][stock_status]'"
+                                                                :options="$stockOptions"
+                                                                :value="$stockValue"
+                                                                :placeholder="__('Stock')"
+                                                                size="field" />
+                                            </div>
                                             <div data-stock-eta class="{{ $stockValue === 'indent' ? '' : 'hidden' }} mt-1.5">
                                                 <input type="text" name="items[{{ $index }}][stock_eta]" maxlength="100" value="{{ $etaValue }}" placeholder="{{ __('e.g. 2-3 weeks') }}" @disabled($stockValue !== 'indent')
                                                        class="h-10 w-full max-w-[150px] rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
@@ -562,30 +562,46 @@
                 return true;
             }
 
+            function remountGlide(mount, value) {
+                if (!mount || typeof window.__glideRemount !== 'function') return false;
+                let options = [];
+                try {
+                    options = JSON.parse(mount.dataset.options || '[]');
+                } catch (error) {
+                    return false;
+                }
+                return window.__glideRemount(mount, options, String(value ?? ''));
+            }
+
+            function toggleStockEtaFromEvent(event) {
+                const row = event.target.closest('[data-estimator-row]');
+                const hidden = row?.querySelector('[name$="[stock_status]"]');
+                if (hidden) toggleStockEta(hidden);
+            }
+
             function useLastPrice(index, log) {
                 const priceInput = document.querySelector(`[name="items[${index}][price]"]`);
+                const row = priceInput?.closest('[data-estimator-row]');
                 setRupiahValue(priceInput, log.price);
 
-                if (log.supplier_id) {
-                    window.dispatchEvent(new CustomEvent('searchable-select-set', {
-                        detail: {
-                            name: `items[${index}][supplier_id]`,
-                            id: String(log.supplier_id),
-                            label: log.supplier_name || '',
-                        },
-                    }));
+                if (row && log.supplier_id) {
+                    remountGlide(row.querySelector('[data-glide-field="supplier"] [data-glide-mount]'), log.supplier_id);
                 }
 
-                fillRowField(index, 'stock_status', log.stock_status || 'ready');
-                const stockSelect = document.querySelector(`[name="items[${index}][stock_status]"]`);
-                if (stockSelect) toggleStockEta(stockSelect);
+                if (row) {
+                    const stockMount = row.querySelector('[data-glide-field="stock"] [data-glide-mount]');
+                    if (stockMount) {
+                        remountGlide(stockMount, log.stock_status || 'ready');
+                        const stockHidden = row.querySelector('[name$="[stock_status]"]');
+                        if (stockHidden) toggleStockEta(stockHidden);
+                    }
+                }
 
                 fillRowField(index, 'stock_eta', log.stock_eta || '');
                 fillRowField(index, 'warranty_info', log.warranty_info || '');
                 fillRowField(index, 'valid_until', log.valid_until || '');
                 recalcEstimatorTotal();
 
-                const row = priceInput?.closest('[data-estimator-row]');
                 if (row && row.animate) {
                     row.animate(
                         [
