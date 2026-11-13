@@ -608,33 +608,8 @@ class ManageSalesController extends Controller
             ->withQueryString();
 
         $statuses = LeadController::STATUSES;
-        $notesByLead = $this->recentNotesForLeads($leads->pluck('id')->all());
 
-        return view('sales.my-leads', compact('leads', 'statuses', 'notesByLead'));
-    }
-
-    /**
-     * Tiga catatan terbaru per lead untuk kolom Latest Note (satu query per
-     * halaman, bukan per baris). Urutan akhir: lama ke baru.
-     */
-    private function recentNotesForLeads(array $leadIds): \Illuminate\Support\Collection
-    {
-        if ($leadIds === []) {
-            return collect();
-        }
-
-        return FollowUp::query()
-            ->whereIn('lead_id', $leadIds)
-            ->whereNotNull('description')
-            ->where('description', '!=', '')
-            ->where(fn ($t) => $t->whereNull('type')->orWhere('type', '!=', 'meeting'))
-            ->orderByDesc('id')
-            ->get(['id', 'lead_id', 'description', 'created_at'])
-            ->groupBy('lead_id')
-            ->map(fn ($notes) => $notes->take(3)->reverse()->values()->map(fn ($note) => [
-                'text' => $note->description,
-                'time' => $note->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'),
-            ])->all());
+        return view('sales.my-leads', compact('leads', 'statuses'));
     }
 
     public function exportMyLeads(Request $request)

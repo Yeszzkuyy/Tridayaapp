@@ -249,34 +249,27 @@ class MyLeadsWorkspaceTest extends TestCase
         $this->assertStringContainsString('bg-amber-400', $html);
     }
 
-    public function test_latest_note_shows_three_recent_notes_in_chronological_order(): void
+    public function test_latest_note_keeps_multiline_text(): void
     {
         $sales = $this->sales();
         $lead = $this->lead($sales);
 
-        foreach (['Catatan satu', 'Catatan dua', 'Catatan tiga', 'Catatan empat'] as $text) {
-            FollowUp::create([
-                'customer_id' => $lead->customer_id,
-                'lead_id' => $lead->id,
-                'type' => 'note',
-                'description' => $text,
-                'follow_up_date' => today()->toDateString(),
-                'created_by' => $sales->id,
-            ]);
-        }
+        FollowUp::create([
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => 'note',
+            'description' => "Baris satu\nBaris dua\nBaris tiga",
+            'follow_up_date' => today()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
 
         $html = $this->actingAs($sales)->get(route('sales.my-leads'))->assertOk()->getContent();
 
-        $list = substr($html, strpos($html, 'x-ref="noteList"'));
-        $list = substr($list, 0, strpos($list, '</ul>'));
-
-        $this->assertStringNotContainsString('Catatan satu', $list);
-        $this->assertStringContainsString('Catatan dua', $list);
-        $this->assertStringContainsString('Catatan tiga', $list);
-        $this->assertStringContainsString('Catatan empat', $list);
-        $this->assertTrue(strpos($list, 'Catatan dua') < strpos($list, 'Catatan tiga'));
-        $this->assertTrue(strpos($list, 'Catatan tiga') < strpos($list, 'Catatan empat'));
-        $this->assertStringContainsString('View all', $html);
+        $this->assertStringContainsString('whitespace-pre-line', $html);
+        $this->assertStringContainsString('Baris satu', $html);
+        $this->assertTrue(strpos($html, 'Baris satu') < strpos($html, 'Baris dua'));
+        $this->assertTrue(strpos($html, 'Baris dua') < strpos($html, 'Baris tiga'));
+        $this->assertStringNotContainsString('View all', $html);
     }
 
     public function test_won_is_rejected_without_accepted_quotation(): void

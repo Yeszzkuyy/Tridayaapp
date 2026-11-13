@@ -140,38 +140,13 @@
                         .finally(() => { this.colorSaving = false; });
                 },
                 startNote() {
-                    this.draftNote = '';
+                    this.draftNote = this.note;
                     this.noteError = '';
                     this.editingNote = true;
                 },
                 cancelNote() {
                     this.editingNote = false;
                     this.noteError = '';
-                },
-                appendNoteRow(text, time) {
-                    const list = this.$refs.noteList;
-                    if (!list) return;
-
-                    list.querySelector('[data-empty-note]')?.remove();
-
-                    const item = document.createElement('li');
-                    item.className = 'flex gap-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300';
-                    if (time) item.title = time;
-
-                    const dash = document.createElement('span');
-                    dash.className = 'shrink-0 text-slate-400';
-                    dash.setAttribute('aria-hidden', 'true');
-                    dash.textContent = '-';
-
-                    const body = document.createElement('span');
-                    body.className = 'min-w-0 break-words';
-                    body.textContent = text;
-
-                    item.append(dash, body);
-                    list.appendChild(item);
-
-                    const items = Array.from(list.querySelectorAll('li:not([data-empty-note])'));
-                    while (items.length > 3) items.shift().remove();
                 },
                 saveNote() {
                     const text = this.draftNote.trim();
@@ -190,9 +165,7 @@
                             return data;
                         })
                         .then((data) => {
-                            const saved = data.note || text;
-                            this.note = saved;
-                            this.appendNoteRow(saved, data.time);
+                            this.note = data.note || text;
                             this.draftNote = '';
                             this.editingNote = false;
                             if (window.toast) window.toast(data.message || config.savedNote, true);
