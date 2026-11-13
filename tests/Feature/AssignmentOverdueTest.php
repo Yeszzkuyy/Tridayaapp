@@ -106,6 +106,25 @@ class AssignmentOverdueTest extends TestCase
         $this->assertSame(0, Lead::assignmentOverdue()->count());
     }
 
+    public function test_follow_up_schedule_only_does_not_clear_overdue(): void
+    {
+        $sales = $this->user();
+        $lead = $this->lead($sales);
+
+        FollowUp::create([
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => null,
+            'description' => '',
+            'follow_up_date' => today()->addDay()->toDateString(),
+            'status' => 'pending',
+            'created_by' => $sales->id,
+        ]);
+
+        $this->assertTrue($lead->fresh()->isAssignmentOverdue());
+        $this->assertSame(1, Lead::assignmentOverdue()->count());
+    }
+
     public function test_moving_stage_clears_overdue(): void
     {
         $sales = $this->user();

@@ -296,6 +296,11 @@ class Lead extends Model
 
         return ! $this->followUps()
             ->where('created_at', '>=', $this->assigned_at)
+            ->where(function ($q) {
+                $q->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome');
+            })
             ->exists();
     }
 
@@ -307,13 +312,27 @@ class Lead extends Model
             ->where('assigned_at', '<=', now()->subHours(24))
             ->whereNull('acknowledged_at')
             ->whereNotIn('status', ['won', 'lost'])
-            ->whereDoesntHave('followUps', fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at'));
+            ->whereDoesntHave('followUps', function ($q) {
+                $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')
+                    ->where(function ($x) {
+                        $x->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                            ->orWhereNotNull('completed_at')
+                            ->orWhereNotNull('outcome');
+                    });
+            });
     }
 
-    /** Apakah ada follow-up yang dibuat setelah lead ini di-assign. */
+    /** Apakah ada follow-up nyata (bukan sekadar jadwal kosong) setelah assign. */
     public function followUpSinceAssignmentExists(): bool
     {
-        return $this->followUps()->where('created_at', '>=', $this->assigned_at)->exists();
+        return $this->followUps()
+            ->where('created_at', '>=', $this->assigned_at)
+            ->where(function ($q) {
+                $q->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome');
+            })
+            ->exists();
     }
 
     /**

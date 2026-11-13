@@ -659,7 +659,10 @@ class ManageSalesController extends Controller
 
         $query = Lead::with(['customer.contacts', 'partner', 'activeFollowUp', 'latestNoteFollowUp', 'latestActivityFollowUp'])
             ->withCount(['followUps'])
-            ->withExists(['followUps as has_follow_up_since_assignment' => fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')])
+            ->withExists(['followUps as has_follow_up_since_assignment' => fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')
+                ->where(fn ($x) => $x->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome'))])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
             ->withExists(['proposals as has_accepted_proposal' => fn ($q) => $q->where('status', 'accepted')])
             ->where('assigned_to', auth()->id())
