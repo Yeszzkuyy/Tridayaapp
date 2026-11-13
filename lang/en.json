@@ -5237,5 +5237,9 @@
     "+2 Weeks": "+2 Weeks",
     "+1 Month": "+1 Month",
     "Expired :date - Needs Recheck": "Expired :date - Needs Recheck",
-    "No cost price recorded yet.": "No cost price recorded yet."
+    "No cost price recorded yet.": "No cost price recorded yet.",
+    "Old file name not recorded": "Old file name not recorded",
+    "Search supplier...": "Search supplier...",
+    "Estimated Total Cost": "Estimated Total Cost",
+    "Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table.": "Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table."
 }

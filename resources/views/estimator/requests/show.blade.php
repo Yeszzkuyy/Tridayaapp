@@ -13,6 +13,13 @@
         $contactSuppliers = $isEstimator
             ? $estimatorRequest->items->pluck('supplier')->filter()->unique('id')->values()
             : collect();
+        $ptGroup = $estimatorRequest->customer?->pt_group;
+        $ptColor = $ptGroup
+            ? (\App\Models\Lead::PT_COLORS[$ptGroup] ?? 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200')
+            : null;
+        $supplierOptions = $suppliers->mapWithKeys(fn ($supplier) => [
+            $supplier->id => $supplier->name.($supplier->contact_person ? ' · '.$supplier->contact_person : ''),
+        ])->all();
         $keepDates = [
             '3d' => now()->timezone('Asia/Jakarta')->addDays(3)->format('Y-m-d'),
             '7d' => now()->timezone('Asia/Jakarta')->addDays(7)->format('Y-m-d'),
@@ -31,9 +38,12 @@
             'contact' => $s->contact_person ?: $s->name,
             'phone' => preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', (string) $s->phone)),
         ])->values()->all();
-        $defaultWaSupplierId = (string) ($estimatorRequest->items->pluck('supplier_id')->filter()->first()
-            ?? collect($waSuppliers)->firstWhere('phone', '!=', '')['id']
-            ?? ($waSuppliers[0]['id'] ?? ''));
+        $firstPhoneSupplier = collect($waSuppliers)->first(fn ($supplier) => $supplier['phone'] !== '');
+        $defaultWaSupplierId = (string) (
+            $estimatorRequest->items->pluck('supplier_id')->filter()->first()
+            ?? ($firstPhoneSupplier['id'] ?? null)
+            ?? ($waSuppliers[0]['id'] ?? '')
+        );
     @endphp
 
     <div>
@@ -46,11 +56,11 @@
                         {{ \App\Models\EstimatorRequest::statusLabel($estimatorRequest->status) }}
                     </span>
                 </div>
-                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <p class="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                     {{ __('Customer') }}:
                     <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $estimatorRequest->customer?->name ?? '-' }}</span>
-                    @if($estimatorRequest->customer?->pt_group)
-                        &middot; {{ $estimatorRequest->customer->pt_group }}
+                    @if($ptGroup)
+                        <span class="inline-flex rounded-lg px-2 py-0.5 text-[11px] font-semibold {{ $ptColor }}">{{ $ptGroup }}</span>
                     @endif
                 </p>
             </div>
@@ -92,7 +102,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="estimator-request-details">
             <h2 id="estimator-request-details" class="mb-4 text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Request Details') }}</h2>
 
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div class="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700/50">
                     <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Requested by') }}</p>
                     <div class="mt-2 flex items-center gap-3">
@@ -123,12 +133,12 @@
                                 @endif
                             </div>
                         @else
-                            <span class="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-400 dark:border-slate-500 dark:bg-slate-800" aria-hidden="true">
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white text-slate-400 dark:border-slate-500 dark:bg-slate-800" aria-hidden="true">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
                                 </svg>
                             </span>
-                            <p class="text-sm italic text-slate-500 dark:text-slate-400">{{ __('Waiting for Estimator') }}</p>
+                            <p class="text-xs italic text-slate-500 dark:text-slate-400">{{ __('Not assigned yet') }}</p>
                         @endif
                     </div>
                 </div>
@@ -153,8 +163,28 @@
             @endif
 
             @if($estimatorRequest->attachment_path)
+                @php
+                    $attachmentExtension = strtoupper(pathinfo($estimatorRequest->attachment_path, PATHINFO_EXTENSION));
+                @endphp
                 <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600">
-                    <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ basename($estimatorRequest->attachment_path) }}</p>
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300" aria-hidden="true">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5A3.375 3.375 0 0010.125 2.25H8.25m0 11.25h7.5m-7.5 3h4.5m-9 3h13.5a1.5 1.5 0 001.5-1.5V6.75a1.5 1.5 0 00-1.5-1.5H8.25a1.5 1.5 0 00-1.5 1.5v13.5a1.5 1.5 0 001.5 1.5z"/>
+                            </svg>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">
+                                {{ $estimatorRequest->attachment_name ?: __('Old file name not recorded') }}
+                            </p>
+                            <p class="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                                {{ $attachmentExtension ?: __('File') }}
+                                @if($estimatorRequest->attachment_size)
+                                    &middot; {{ \Illuminate\Support\Number::fileSize($estimatorRequest->attachment_size) }}
+                                @endif
+                            </p>
+                        </div>
+                    </div>
                     <x-icon-button as="a" icon="download" href="{{ route('estimator.requests.attachment', $estimatorRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
                 </div>
             @endif
@@ -190,7 +220,7 @@
                      class="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-emerald-900 dark:text-emerald-200">{{ __('Ask Supplier via WhatsApp') }}</p>
-                        <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80">{{ __('Choose a distributor to generate a ready-to-send WhatsApp message with all requested items.') }}</p>
+                        <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80">{{ __('Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table.') }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <select x-model="waSupplierId" aria-label="{{ __('Select supplier') }}"
@@ -212,30 +242,41 @@
                         <table class="min-w-full text-left text-xs">
                             <thead class="bg-slate-50 uppercase tracking-wider text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
                                 <tr>
-                                    <th class="px-4 py-3">{{ __('Item') }}</th>
-                                    <th class="px-4 py-3">{{ __('Supplier') }}</th>
-                                    <th class="px-4 py-3 text-right">{{ __('Cost') }}</th>
-                                    <th class="px-4 py-3">{{ __('Stock') }}</th>
-                                    <th class="px-4 py-3">{{ __('Warranty') }}</th>
-                                    <th class="px-4 py-3">{{ __('Valid Until') }}</th>
-                                    <th class="px-4 py-3">{{ __('Note') }}</th>
+                                    <th class="px-5 py-3 text-center">{{ __('Item') }}</th>
+                                    <th class="px-5 py-3 text-center">{{ __('Supplier') }}</th>
+                                    <th class="border-l border-slate-200 px-5 py-3 text-center dark:border-slate-700/70">{{ __('Cost') }}</th>
+                                    <th class="px-5 py-3 text-center">{{ __('Stock') }}</th>
+                                    <th class="px-5 py-3 text-center">{{ __('Warranty') }}</th>
+                                    <th class="px-5 py-3 text-center">{{ __('Valid Until') }}</th>
+                                    <th class="px-5 py-3 text-center">{{ __('Note') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                                 @foreach($estimatorRequest->items as $index => $item)
                                     @php
                                         $lastLog = $item->product?->latestCostLog;
+                                        $lastSupplierLabel = $lastLog?->supplier
+                                            ? $lastLog->supplier->name.($lastLog->supplier->contact_person ? ' · '.$lastLog->supplier->contact_person : '')
+                                            : '';
                                         $lastLogPayload = $lastLog ? [
                                             'supplier_id' => $lastLog->supplier_id ? (string) $lastLog->supplier_id : '',
+                                            'supplier_name' => $lastSupplierLabel,
                                             'price' => (float) $lastLog->price,
                                             'stock_status' => $lastLog->stock_status ?: 'ready',
                                             'stock_eta' => $lastLog->stock_eta ?: '',
                                             'warranty_info' => $lastLog->warranty_info ?: '',
                                             'valid_until' => $lastLog->valid_until && ! $lastLog->valid_until->isPast() ? $lastLog->valid_until->format('Y-m-d') : '',
                                         ] : null;
+                                        $supplierValue = old("items.{$index}.supplier_id", $item->supplier_id);
+                                        $priceValue = old("items.{$index}.price", $item->price);
+                                        $priceDisplay = ($priceValue !== null && $priceValue !== '')
+                                            ? number_format((float) $priceValue, 0, ',', '.')
+                                            : '';
+                                        $stockValue = old("items.{$index}.stock_status", $item->stock_status) ?: 'ready';
+                                        $etaValue = old("items.{$index}.stock_eta", $item->stock_eta);
                                     @endphp
-                                    <tr class="align-top">
-                                        <td class="px-4 py-3">
+                                    <tr class="align-top" data-estimator-row data-qty="{{ $item->quantity }}">
+                                        <td class="px-5 py-4 text-left">
                                             <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                             <p class="font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
                                             <p class="mt-0.5 text-[11px] text-slate-400">{{ $item->product?->sku ?: '-' }} &middot; {{ $item->quantity }} {{ $item->unit }}</p>
@@ -260,38 +301,51 @@
                                                 </div>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3">
-                                            <select name="items[{{ $index }}][supplier_id]" class="w-full min-w-[150px] rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                                <option value="">{{ __('Select supplier') }}</option>
-                                                @foreach($suppliers as $supplier)
-                                                    <option value="{{ $supplier->id }}" @selected((int) old("items.{$index}.supplier_id", $item->supplier_id) === $supplier->id)>{{ $supplier->name }}</option>
-                                                @endforeach
+                                        <td class="px-5 py-4 text-left">
+                                            <div class="min-w-[190px]">
+                                                <x-searchable-select
+                                                    :name="'items['.$index.'][supplier_id]'"
+                                                    :options="$supplierOptions"
+                                                    :selected="$supplierValue"
+                                                    :placeholder="__('Search supplier...')"
+                                                    input-class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" />
+                                            </div>
+                                        </td>
+                                        <td class="border-l border-slate-100 px-5 py-4 text-right dark:border-slate-700/60">
+                                            <div class="relative min-w-[220px]">
+                                                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-300">Rp</span>
+                                                <input type="text" inputmode="numeric" name="items[{{ $index }}][price]" value="{{ $priceDisplay }}" oninput="formatRupiahInput(this)" aria-label="{{ __('Cost') }}"
+                                                       class="h-10 w-full rounded-xl border-slate-300 pl-9 pr-3 text-right text-sm font-semibold tabular-nums text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-4 text-center">
+                                            <select name="items[{{ $index }}][stock_status]" onchange="toggleStockEta(this)"
+                                                    class="mx-auto h-10 w-full max-w-[130px] rounded-xl border-slate-300 text-sm text-slate-900 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                                <option value="ready" @selected($stockValue === 'ready')>{{ __('Ready') }}</option>
+                                                <option value="indent" @selected($stockValue === 'indent')>{{ __('Indent') }}</option>
                                             </select>
+                                            <div data-stock-eta class="{{ $stockValue === 'indent' ? '' : 'hidden' }} mt-1.5">
+                                                <input type="text" name="items[{{ $index }}][stock_eta]" maxlength="100" value="{{ $etaValue }}" placeholder="{{ __('e.g. 2-3 weeks') }}" @disabled($stockValue !== 'indent')
+                                                       class="h-10 w-full max-w-[150px] rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
+                                            </div>
                                         </td>
-                                        <td class="px-4 py-3">
-                                            <input type="number" name="items[{{ $index }}][price]" min="0.01" step="0.01" value="{{ old("items.{$index}.price", $item->price) }}" class="w-32 rounded-lg border-slate-300 text-right text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                        <td class="px-5 py-4 text-left">
+                                            <input type="text" name="items[{{ $index }}][warranty_info]" maxlength="255" value="{{ old("items.{$index}.warranty_info", $item->warranty_info) }}" placeholder="{{ __('e.g. 1 year distributor') }}"
+                                                   class="h-10 w-full min-w-[170px] rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
                                         </td>
-                                        <td class="px-4 py-3">
-                                            <select name="items[{{ $index }}][stock_status]" class="w-24 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                                <option value="ready" @selected(old("items.{$index}.stock_status", $item->stock_status) === 'ready')>{{ __('Ready') }}</option>
-                                                <option value="indent" @selected(old("items.{$index}.stock_status", $item->stock_status) === 'indent')>{{ __('Indent') }}</option>
-                                            </select>
-                                            <input type="text" name="items[{{ $index }}][stock_eta]" maxlength="100" value="{{ old("items.{$index}.stock_eta", $item->stock_eta) }}" placeholder="{{ __('e.g. 2-3 weeks') }}" class="mt-1 w-28 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <input type="text" name="items[{{ $index }}][warranty_info]" maxlength="255" value="{{ old("items.{$index}.warranty_info", $item->warranty_info) }}" placeholder="{{ __('e.g. 1 year distributor') }}" class="w-36 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <input type="date" name="items[{{ $index }}][valid_until]" value="{{ old("items.{$index}.valid_until", $item->valid_until?->format('Y-m-d')) }}" class="w-36 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                            <div class="mt-1.5 flex flex-wrap gap-1">
+                                        <td class="px-5 py-4 text-center">
+                                            <input type="date" name="items[{{ $index }}][valid_until]" value="{{ old("items.{$index}.valid_until", $item->valid_until?->format('Y-m-d')) }}"
+                                                   class="mx-auto h-10 w-full max-w-[170px] rounded-xl border-slate-300 text-sm text-slate-900 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+                                            <div class="mt-1.5 flex flex-wrap justify-center gap-1">
                                                 <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['3d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+3 Days') }}</button>
                                                 <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['7d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Week') }}</button>
                                                 <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['14d'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+2 Weeks') }}</button>
                                                 <button type="button" onclick="setKeepDate({{ $index }}, '{{ $keepDates['1m'] }}')" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:border-accent-500 hover:bg-accent-50 hover:text-accent-700 active:scale-95 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('+1 Month') }}</button>
                                             </div>
                                         </td>
-                                        <td class="px-4 py-3">
-                                            <input type="text" name="items[{{ $index }}][notes]" maxlength="255" value="{{ old("items.{$index}.notes", $item->notes) }}" placeholder="{{ __('Vendor / MOQ note') }}" class="w-36 rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                        <td class="px-5 py-4 text-left">
+                                            <input type="text" name="items[{{ $index }}][notes]" maxlength="255" value="{{ old("items.{$index}.notes", $item->notes) }}" placeholder="{{ __('Vendor / MOQ note') }}"
+                                                   class="h-10 w-full min-w-[160px] rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
                                         </td>
                                     </tr>
                                 @endforeach
@@ -304,6 +358,10 @@
                             <p class="px-5 pb-2 text-xs text-rose-600 dark:text-rose-400">{{ $errors->first($errorKey) }}</p>
                         @endif
                     @endforeach
+                    <div class="flex flex-col gap-2 border-t border-slate-100 px-5 py-4 dark:border-slate-700/60 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Estimated Total Cost') }}</p>
+                        <p id="estimator-total-cost" aria-live="polite" class="text-lg font-extrabold tabular-nums text-slate-900 dark:text-slate-100">Rp 0</p>
+                    </div>
                     <div class="flex justify-end gap-2 border-t border-slate-100 px-5 py-4 dark:border-slate-700/60">
                         @if($estimatorRequest->status === 'answered')
                             <x-secondary-button type="button" x-on:click="editing = false">{{ __('Cancel') }}</x-secondary-button>
@@ -317,28 +375,28 @@
                 <table class="min-w-full text-left text-xs">
                     <thead class="bg-slate-50 uppercase tracking-wider text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
                         <tr>
-                            <th class="px-4 py-3">{{ __('Item') }}</th>
-                            <th class="px-4 py-3">{{ __('Supplier') }}</th>
-                            <th class="px-4 py-3 text-right">{{ __('Cost') }}</th>
-                            <th class="px-4 py-3">{{ __('Stock') }}</th>
-                            <th class="px-4 py-3">{{ __('Warranty') }}</th>
-                            <th class="px-4 py-3">{{ __('Valid Until') }}</th>
-                            <th class="px-4 py-3">{{ __('Status') }}</th>
+                            <th class="px-5 py-3 text-center">{{ __('Item') }}</th>
+                            <th class="px-5 py-3 text-center">{{ __('Supplier') }}</th>
+                            <th class="border-l border-slate-200 px-5 py-3 text-center dark:border-slate-700/70">{{ __('Cost') }}</th>
+                            <th class="px-5 py-3 text-center">{{ __('Stock') }}</th>
+                            <th class="px-5 py-3 text-center">{{ __('Warranty') }}</th>
+                            <th class="px-5 py-3 text-center">{{ __('Valid Until') }}</th>
+                            <th class="px-5 py-3 text-center">{{ __('Status') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                         @foreach($estimatorRequest->items as $item)
                             <tr class="align-top">
-                                <td class="px-4 py-3">
+                                <td class="px-5 py-4 text-left">
                                     <p class="font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
                                     <p class="mt-0.5 text-[11px] text-slate-400">{{ $item->product?->sku ?: '-' }} &middot; {{ $item->quantity }} {{ $item->unit }}</p>
                                     @if($item->product_id && (auth()->user()->can('manage-price-requests') || auth()->user()->can('manage-sales-leads') || auth()->user()->can('manage-admin') || auth()->user()->hasRole('ceo')))
                                         <a href="{{ route('estimator.price-history', ['product_id' => $item->product_id]) }}" class="mt-1 inline-block text-[11px] font-semibold text-accent-600 hover:underline dark:text-accent-400">{{ __('Price History') }}</a>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $item->supplier?->name ?? '-' }}</td>
-                                <td class="px-4 py-3 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-100">{{ $item->price !== null ? 'Rp '.number_format((float) $item->price, 0, ',', '.') : '-' }}</td>
-                                <td class="px-4 py-3">
+                                <td class="px-5 py-4 text-left text-slate-600 dark:text-slate-300">{{ $item->supplier?->name ?? '-' }}</td>
+                                <td class="border-l border-slate-100 px-5 py-4 text-right font-semibold tabular-nums text-slate-800 dark:border-slate-700/60 dark:text-slate-100">{{ $item->price !== null ? 'Rp '.number_format((float) $item->price, 0, ',', '.') : '-' }}</td>
+                                <td class="px-5 py-4 text-center">
                                     @if($item->stock_status)
                                         <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $item->stock_status === 'indent' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' }}">
                                             {{ $item->stock_status === 'indent' ? __('Indent') : __('Ready') }}
@@ -348,9 +406,9 @@
                                         -
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $item->warranty_info ?: '-' }}</td>
-                                <td class="px-4 py-3 whitespace-nowrap tabular-nums text-slate-600 dark:text-slate-300">{{ $item->valid_until?->format('d M Y') ?? '-' }}</td>
-                                <td class="px-4 py-3">
+                                <td class="px-5 py-4 text-left text-slate-600 dark:text-slate-300">{{ $item->warranty_info ?: '-' }}</td>
+                                <td class="px-5 py-4 whitespace-nowrap text-center tabular-nums text-slate-600 dark:text-slate-300">{{ $item->valid_until?->format('d M Y') ?? '-' }}</td>
+                                <td class="px-5 py-4 text-center">
                                     <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $itemStatusColors[$item->status] ?? 'bg-slate-100 text-slate-600' }}">
                                         {{ ucfirst($item->status) }}
                                     </span>
@@ -443,26 +501,108 @@
 
     @once
         <script>
-            function setFieldValue(index, field, value) {
+            function parseRupiah(value) {
+                return Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
+            }
+
+            function formatRupiah(value) {
+                const number = parseRupiah(value);
+                return number ? number.toLocaleString('id-ID') : '';
+            }
+
+            function formatRupiahInput(input) {
+                const caretFromEnd = input.value.length - (input.selectionStart ?? input.value.length);
+                const digits = input.value.replace(/[^0-9]/g, '');
+                input.value = digits ? Number(digits).toLocaleString('id-ID') : '';
+                const caret = Math.max(0, input.value.length - caretFromEnd);
+                input.setSelectionRange(caret, caret);
+                recalcEstimatorTotal();
+            }
+
+            function setRupiahValue(input, value) {
+                if (!input) return;
+                input.value = formatRupiah(value);
+                recalcEstimatorTotal();
+            }
+
+            function recalcEstimatorTotal() {
+                const totalEl = document.getElementById('estimator-total-cost');
+                if (!totalEl) return;
+
+                let total = 0;
+                document.querySelectorAll('[data-estimator-row]').forEach((row) => {
+                    const qty = parseFloat(row.dataset.qty || '0') || 0;
+                    const priceInput = row.querySelector('input[name$="[price]"]');
+                    total += qty * parseRupiah(priceInput?.value);
+                });
+
+                totalEl.textContent = 'Rp ' + (total ? total.toLocaleString('id-ID') : '0');
+            }
+
+            function toggleStockEta(select) {
+                const row = select.closest('[data-estimator-row]');
+                if (!row) return;
+
+                const wrapper = row.querySelector('[data-stock-eta]');
+                const input = wrapper?.querySelector('input[name$="[stock_eta]"]');
+                if (!wrapper || !input) return;
+
+                const isIndent = select.value === 'indent';
+                wrapper.classList.toggle('hidden', !isIndent);
+                input.disabled = !isIndent;
+                if (!isIndent) input.value = '';
+            }
+
+            function fillRowField(index, field, value) {
                 const el = document.querySelector(`[name="items[${index}][${field}]"]`);
-                if (!el || value === null || value === undefined || value === '') return;
-                el.value = value;
+                if (!el) return false;
+                el.value = value ?? '';
                 el.dispatchEvent(new Event('input', { bubbles: true }));
                 el.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
             }
 
             function useLastPrice(index, log) {
-                setFieldValue(index, 'supplier_id', log.supplier_id);
-                setFieldValue(index, 'price', log.price);
-                setFieldValue(index, 'stock_status', log.stock_status);
-                setFieldValue(index, 'stock_eta', log.stock_eta);
-                setFieldValue(index, 'warranty_info', log.warranty_info);
-                setFieldValue(index, 'valid_until', log.valid_until);
+                const priceInput = document.querySelector(`[name="items[${index}][price]"]`);
+                setRupiahValue(priceInput, log.price);
+
+                if (log.supplier_id) {
+                    window.dispatchEvent(new CustomEvent('searchable-select-set', {
+                        detail: {
+                            name: `items[${index}][supplier_id]`,
+                            id: String(log.supplier_id),
+                            label: log.supplier_name || '',
+                        },
+                    }));
+                }
+
+                fillRowField(index, 'stock_status', log.stock_status || 'ready');
+                const stockSelect = document.querySelector(`[name="items[${index}][stock_status]"]`);
+                if (stockSelect) toggleStockEta(stockSelect);
+
+                fillRowField(index, 'stock_eta', log.stock_eta || '');
+                fillRowField(index, 'warranty_info', log.warranty_info || '');
+                fillRowField(index, 'valid_until', log.valid_until || '');
+                recalcEstimatorTotal();
+
+                const row = priceInput?.closest('[data-estimator-row]');
+                if (row && row.animate) {
+                    row.animate(
+                        [
+                            { backgroundColor: 'rgba(16, 185, 129, 0.14)' },
+                            { backgroundColor: 'transparent' },
+                        ],
+                        { duration: 800, easing: 'ease-out' },
+                    );
+                }
             }
 
             function setKeepDate(index, dateStr) {
-                setFieldValue(index, 'valid_until', dateStr);
+                fillRowField(index, 'valid_until', dateStr);
             }
+
+            document.addEventListener('DOMContentLoaded', recalcEstimatorTotal);
+            recalcEstimatorTotal();
         </script>
     @endonce
 </x-app-layout>

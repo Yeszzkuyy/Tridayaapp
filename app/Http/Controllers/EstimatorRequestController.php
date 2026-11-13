@@ -201,7 +201,10 @@ class EstimatorRequestController extends Controller
         try {
             $estimatorRequest = DB::transaction(function () use ($request, $validated, $customer, $leadId, $projectId, $proposalId, &$storedPath) {
                 if ($request->hasFile('attachment')) {
-                    $storedPath = $request->file('attachment')->store('estimator-requests', 'private');
+                    $file = $request->file('attachment');
+                    $storedPath = $file->store('estimator-requests', 'private');
+                    $attachmentName = $file->getClientOriginalName();
+                    $attachmentSize = $file->getSize();
                 }
 
                 $estimatorRequest = EstimatorRequest::create([
@@ -213,6 +216,8 @@ class EstimatorRequestController extends Controller
                     'status' => 'submitted',
                     'notes' => $validated['notes'] ?? null,
                     'attachment_path' => $storedPath,
+                    'attachment_name' => $attachmentName ?? null,
+                    'attachment_size' => $attachmentSize ?? null,
                 ]);
 
                 foreach ($validated['items'] as $item) {
@@ -317,6 +322,28 @@ class EstimatorRequestController extends Controller
     public function answer(Request $request, EstimatorRequest $estimatorRequest)
     {
         $this->authorize('answer', $estimatorRequest);
+
+        // Harga dikirim dari form berformat ribuan (mis. 444.444.444).
+        // Bersihkan pemisah sebelum validasi agar tersimpan sebagai angka.
+        $request->merge([
+            'items' => collect($request->input('items', []))->map(function ($item) {
+                if (! is_array($item)) {
+                    return $item;
+                }
+
+                if (array_key_exists('price', $item)) {
+                    $item['price'] = is_scalar($item['price'])
+                        ? str_replace(['.', ' ', "\u{00A0}"], '', (string) $item['price'])
+                        : '';
+                }
+
+                if (($item['stock_status'] ?? null) === 'ready') {
+                    $item['stock_eta'] = null;
+                }
+
+                return $item;
+            })->all(),
+        ]);
 
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -467,7 +494,10 @@ class EstimatorRequestController extends Controller
             404
         );
 
-        return Storage::disk('private')->download($estimatorRequest->attachment_path);
+        return Storage::disk('private')->download(
+            $estimatorRequest->attachment_path,
+            $estimatorRequest->attachment_name ?: basename($estimatorRequest->attachment_path)
+        );
     }
 
     public function priceHistory(Request $request)

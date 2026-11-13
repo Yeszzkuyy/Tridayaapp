@@ -27,12 +27,15 @@ class EstimatorRequest extends Model
         'revision_reason',
         'revision_requested_at',
         'attachment_path',
+        'attachment_name',
+        'attachment_size',
         'completed_at',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
         'revision_requested_at' => 'datetime',
+        'attachment_size' => 'integer',
     ];
 
     public function customer()

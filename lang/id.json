@@ -5237,5 +5237,9 @@
     "+2 Weeks": "+2 Minggu",
     "+1 Month": "+1 Bulan",
     "Expired :date - Needs Recheck": "Kadaluarsa :date - Perlu Cek Ulang",
-    "No cost price recorded yet.": "Belum ada harga modal yang tercatat."
+    "No cost price recorded yet.": "Belum ada harga modal yang tercatat.",
+    "Old file name not recorded": "Nama file lama tidak tercatat",
+    "Search supplier...": "Cari supplier...",
+    "Estimated Total Cost": "Estimasi Total Harga Modal",
+    "Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table.": "Pilih distributor untuk membuka pesan WhatsApp siap kirim berisi semua item yang diminta. Tombol ini hanya membuka WhatsApp dan tidak mengisi tabel."
 }

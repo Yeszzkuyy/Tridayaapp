@@ -3,6 +3,7 @@
     'options' => [],
     'selected' => null,
     'placeholder' => __('Search & select...'),
+    'inputClass' => '',
 ])
 
 @php
@@ -11,6 +12,7 @@
 
 <div
     x-data="{
+        name: {{ json_encode($name) }},
         options: {{ json_encode($options, JSON_HEX_APOS | JSON_HEX_QUOT) }},
         selectedId: {{ $selected !== null ? json_encode($selected) : 'null' }},
         selectedLabel: {{ $selectedLabel !== null ? json_encode($selectedLabel, JSON_HEX_APOS | JSON_HEX_QUOT) : 'null' }},
@@ -26,9 +28,23 @@
             this.query = label;
             this.open = false;
             this.$dispatch('searchable-select:changed', { id, label });
+        },
+        setValue(id, label) {
+            if (! id) {
+                this.selectedId = null;
+                this.selectedLabel = null;
+                this.query = '';
+                return;
+            }
+            this.selectedId = String(id);
+            this.selectedLabel = label || '';
+            this.query = label || '';
+            this.open = false;
+            this.$dispatch('searchable-select:changed', { id: this.selectedId, label: this.selectedLabel });
         }
     }"
-    class="relative"
+    x-on:searchable-select-set.window="if ($event.detail.name === name) setValue($event.detail.id, $event.detail.label)"
+    {{ $attributes->merge(['class' => 'relative']) }}
 >
     <input type="hidden" name="{{ $name }}" x-model="selectedId">
     <input
@@ -40,7 +56,7 @@
         @blur="setTimeout(() => open = false, 150)"
         placeholder="{{ $placeholder }}"
         autocomplete="off"
-        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500"
+        class="{{ $inputClass ?: 'w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500' }}"
     >
     <div x-show="open" x-cloak x-transition
          class="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl shadow-lg max-h-60 overflow-y-auto divide-y divide-slate-200 dark:divide-slate-700">

@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -211,8 +212,9 @@ class EstimatorRequestTest extends TestCase
                 [
                     'id' => $productItem->id,
                     'supplier_id' => $supplier->id,
-                    'price' => 725000,
+                    'price' => '725.000',
                     'stock_status' => 'ready',
+                    'stock_eta' => 'stale estimate',
                     'warranty_info' => '1 year distributor',
                     'valid_until' => '2026-12-31',
                     'notes' => 'Ready',
@@ -220,7 +222,7 @@ class EstimatorRequestTest extends TestCase
                 [
                     'id' => $manualItem->id,
                     'supplier_id' => $supplier->id,
-                    'price' => 150000,
+                    'price' => '150.000',
                     'stock_status' => 'indent',
                     'stock_eta' => '2 weeks',
                     'warranty_info' => 'N/A',
@@ -237,6 +239,7 @@ class EstimatorRequestTest extends TestCase
         $this->assertSame(725000.0, (float) $productItem->price);
         $this->assertSame($supplier->id, $productItem->supplier_id);
         $this->assertSame('ready', $productItem->stock_status);
+        $this->assertNull($productItem->stock_eta);
         $this->assertSame('1 year distributor', $productItem->warranty_info);
         $this->assertSame('2026-12-31', $productItem->valid_until?->format('Y-m-d'));
         $this->assertSame('answered', $productItem->status);
@@ -599,6 +602,60 @@ class EstimatorRequestTest extends TestCase
             ->get(route('estimator.requests.index'))
             ->assertOk()
             ->assertSee(__('Export Excel'));
+    }
+
+    public function test_attachment_uses_original_name_and_size_with_fallback_for_old_files(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $request = $this->makeRequest($sales, [
+            'attachment_path' => 'estimator-requests/hash-name.xlsx',
+            'attachment_name' => 'BOQ_Project_A.xlsx',
+            'attachment_size' => 250880,
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee('BOQ_Project_A.xlsx')
+            ->assertSee(Number::fileSize(250880))
+            ->assertDontSee('hash-name.xlsx');
+
+        $oldRequest = $this->makeRequest($sales, [
+            'attachment_path' => 'estimator-requests/old-hash.xlsx',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $oldRequest))
+            ->assertOk()
+            ->assertSee(__('Old file name not recorded'))
+            ->assertDontSee('old-hash.xlsx');
+    }
+
+    public function test_detail_uses_company_color_and_total_cost_markup(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $customer = $this->customer('PT Warna Company');
+        $customer->update(['pt_group' => 'NTI']);
+        $request = $this->makeRequest($sales, ['customer_id' => $customer->id]);
+        $request->items()->create([
+            'description' => 'Kamera Warna',
+            'quantity' => 2,
+            'unit' => 'pcs',
+            'price' => 100000,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee('NTI')
+            ->assertSee('bg-sky-500')
+            ->assertSee(__('Search supplier...'))
+            ->assertSee(__('Estimated Total Cost'))
+            ->assertSee('id="estimator-total-cost"', false)
+            ->assertSee('px-5 py-3 text-center', false);
     }
 
     public function test_sales_cannot_answer_and_estimator_cannot_accept(): void
