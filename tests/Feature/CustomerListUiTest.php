@@ -78,6 +78,25 @@ class CustomerListUiTest extends TestCase
             ->assertSee('aria-label="Edit Customer"', false);
     }
 
+    public function test_overview_shows_billing_and_shipping_address_separate_from_main_address(): void
+    {
+        $customer = Customer::create([
+            'name' => 'PT Kirim',
+            'pt_group' => 'NTI',
+            'address' => 'Jl. Kantor Pusat No. 1, Jakarta',
+            'billing_address' => 'Jl. Penagihan No. 2, Bandung',
+            'shipping_address' => 'Gudang Blok C, Bekasi',
+        ]);
+
+        $this->actingAs($this->admin())->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee(__('Billing Address'))
+            ->assertSee('Jl. Penagihan No. 2, Bandung')
+            ->assertSee(__('Shipping Address'))
+            ->assertSee('Gudang Blok C, Bekasi')
+            ->assertSee('Jl. Kantor Pusat No. 1, Jakarta');
+    }
+
     public function test_legacy_pic_is_displayed_without_writing_contact_on_detail_open(): void
     {
         // Customer lama: PIC hanya ada di kolom legacy, belum ada baris kontak.

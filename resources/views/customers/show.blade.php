@@ -109,6 +109,8 @@
                             ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group],
                             ['icon' => 'user', 'label' => __('PIC'), 'value' => $customer->picName()],
                             ['icon' => 'map-pin', 'label' => __('Address'), 'value' => $customer->address],
+                            ['icon' => 'receipt', 'label' => __('Billing Address'), 'value' => $customer->billing_address],
+                            ['icon' => 'cube', 'label' => __('Shipping Address'), 'value' => $customer->shipping_address],
                             ['icon' => 'phone', 'label' => __('Telepon'), 'value' => \App\Support\PhoneFormatter::format($customer->phone)],
                             ['icon' => 'chat', 'label' => __('Company WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Company'), 'badgeColor' => 'blue'],
                             ['icon' => 'chat', 'label' => __('PIC WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->picWhatsapp()), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
