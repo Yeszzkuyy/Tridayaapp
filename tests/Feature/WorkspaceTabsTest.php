@@ -67,7 +67,7 @@ class WorkspaceTabsTest extends TestCase
             ->assertDontSee('id="sidebar"', false)
             ->assertDontSee('id="workspace-tabs"', false)
             ->assertDontSee('id="workspace-split-bar"', false)
-            ->assertDontSee('ws-embed-retry', false)
+            ->assertDontSee('workspace-nested', false)
             ->assertDontSee('data-notification-center', false)
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     }
