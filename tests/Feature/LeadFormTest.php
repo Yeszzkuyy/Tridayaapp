@@ -86,6 +86,37 @@ class LeadFormTest extends TestCase
         $this->assertStringContainsString('name="customer_name" id="customer_name" value=""', $response->getContent());
     }
 
+    public function test_create_form_submits_only_the_active_customer_mode_fields(): void
+    {
+        $html = $this->actingAs($this->marketingUser())
+            ->get(route('leads.create'))
+            ->assertOk()
+            ->getContent();
+
+        $dom = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $dom->loadHTML($html);
+        } finally {
+            libxml_use_internal_errors($previous);
+        }
+
+        $pics = (new \DOMXPath($dom))->query('//input[@name="customer_contact_person"]');
+
+        // Mode customer baru dan customer lama masing-masing punya kolom PIC.
+        // Keduanya tidak boleh terkirim bersamaan: kolom tersembunyi yang
+        // kosong akan menimpa PIC yang diketik user (bug PIC hilang).
+        $this->assertSame(2, $pics->length);
+
+        foreach ($pics as $pic) {
+            $this->assertTrue(
+                $pic->hasAttribute('x-bind:disabled'),
+                'Kolom PIC pada mode customer yang tidak aktif harus disabled.'
+            );
+        }
+    }
+
     public function test_store_creates_lead_with_customer_details(): void
     {
         // marketingUser() sudah seed; seed ganda akan me-wipe assignment role.
