@@ -28,7 +28,8 @@ class ButtonStyleStandardTest extends TestCase
         $this->assertStringNotContainsString('class="h-5 w-5 shrink-0"', $html);
 
         // Default: label selalu tampil (reveal tidak aktif).
-        $this->assertStringContainsString('<span class="">Add PIC</span>', $html);
+        $this->assertStringContainsString('<span class="" data-button-label>Add PIC</span>', $html);
+        $this->assertStringContainsString('data-saving-label="Saving..."', $html);
         $this->assertStringNotContainsString('group-hover/btn:max-w-44', $html);
     }
 
@@ -39,6 +40,14 @@ class ButtonStyleStandardTest extends TestCase
         $this->assertStringContainsString('class="h-5 w-5 shrink-0"', $html);
         $this->assertStringContainsString('stroke-width="2"', $html);
         $this->assertStringContainsString('h-10 w-10', $html);
+    }
+
+    public function test_primary_button_exposes_saving_state_hooks(): void
+    {
+        $html = $this->render('<x-primary-button>Save</x-primary-button>');
+
+        $this->assertStringContainsString('data-saving-label="Saving..."', $html);
+        $this->assertStringContainsString('<span data-button-label>Save</span>', $html);
     }
 
     public function test_solid_variant_renders_primary_cta_and_reveal_is_opt_in(): void

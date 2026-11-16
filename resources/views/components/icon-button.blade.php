@@ -180,6 +180,7 @@ $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -s
         </a>
     @else
         <button type="{{ $type }}" title="{{ $title ?: $label }}" aria-label="{{ $title ?: $label }}"
+                @if($label) data-saving-label="{{ __('Saving...') }}" @endif
                 {{ $attributes->merge(['class' => $btnClass]) }}>
             @if($slot->isNotEmpty())
                 {{ $slot }}
@@ -191,7 +192,7 @@ $shine = '<span class="pointer-events-none absolute inset-0 -translate-x-full -s
                 <x-icon :name="$icon" :stroke-width="$iconStroke" class="{{ $iconClass }}" />
             @endif
             @if($label)
-                <span class="{{ $labelSpanClass }}">{{ $label }}</span>
+                <span class="{{ $labelSpanClass }}" data-button-label>{{ $label }}</span>
             @endif
             {!! $shine !!}
         </button>
