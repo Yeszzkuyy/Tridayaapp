@@ -233,7 +233,7 @@
                                     </span>
                                 </td>
                                 <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-right">
-                                    <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.show', $req) }}" title="{{ __('View details') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('sales.price-requests.show', $req) }}" label="{{ __('View') }}" title="{{ __('View details') }}" />
                                 </td>
                             </tr>
                         @empty
@@ -320,7 +320,7 @@
                                     </span>
                                 </td>
                                 <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-right">
-                                    <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $req) }}" title="{{ __('View details') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $req) }}" label="{{ __('View') }}" title="{{ __('View details') }}" />
                                 </td>
                             </tr>
                         @empty
@@ -389,7 +389,7 @@
                                     {{ $req->updated_at?->timezone('Asia/Jakarta')->format('d M Y, H:i') ?? '-' }}
                                 </td>
                                 <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-right">
-                                    <x-icon-button as="a" icon="view" href="{{ route('estimator.requests.show', $req) }}" title="{{ __('View details') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ route('estimator.requests.show', $req) }}" label="{{ __('View') }}" title="{{ __('View details') }}" />
                                 </td>
                             </tr>
                         @empty
