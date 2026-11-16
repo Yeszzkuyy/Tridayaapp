@@ -15,8 +15,8 @@
 /** Maksimal kartu yang tampil bersamaan; yang tertua dibuang. */
 const MAX_VISIBLE = 3;
 
-/** Lama kartu tampil sebelum hilang sendiri (ms). */
-const DEFAULT_DURATION = 8000;
+/** Lama kartu aksi (simpan/konfirmasi/error) tampil sebelum hilang sendiri. */
+const DEFAULT_DURATION = 3000;
 
 const VARIANTS = ['default', 'info', 'success', 'warning', 'error'];
 

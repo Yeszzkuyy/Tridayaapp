@@ -31,6 +31,46 @@ function stripEmbedParam(rawUrl) {
     }
 }
 
+/** Pastikan URL same-origin tetap membawa penanda embed. */
+function withEmbedParam(rawUrl) {
+    try {
+        const u = new URL(rawUrl, window.location.origin);
+        if (u.origin !== window.location.origin) return rawUrl;
+        if (!u.searchParams.has('embed')) u.searchParams.set('embed', '1');
+        return u.toString();
+    } catch (e) {
+        return rawUrl;
+    }
+}
+
+/** Form GET diberi embed di action; form POST diberi input tersembunyi. */
+function prepareEmbedForm(form) {
+    if (!form) return;
+    const action = form.getAttribute('action') || window.location.href;
+    let url;
+    try {
+        url = new URL(action, window.location.origin);
+    } catch (e) {
+        return;
+    }
+    if (url.origin !== window.location.origin) return;
+
+    const method = (form.getAttribute('method') || 'get').toLowerCase();
+    if (method === 'get') {
+        url.searchParams.set('embed', '1');
+        form.setAttribute('action', url.toString());
+        return;
+    }
+
+    if (!form.querySelector('input[name="embed"]')) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'embed';
+        input.value = '1';
+        form.appendChild(input);
+    }
+}
+
 export function initWorkspaceEmbed() {
     if (!isEmbedded()) return;
 
@@ -59,6 +99,50 @@ export function initWorkspaceEmbed() {
         patched.__workspacePatched = true;
         window.fetch = patched;
     }
+
+    // 2b. Jangan bergantung pada header browser: link dan form di dalam tab
+    //     selalu membawa ?embed=1 agar halaman berikutnya tetap layout embed.
+    document.addEventListener(
+        'click',
+        (event) => {
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+            ) {
+                return;
+            }
+            const anchor = event.target?.closest?.('a[href]');
+            if (!anchor) return;
+            if (
+                anchor.target ||
+                anchor.hasAttribute('download') ||
+                anchor.hasAttribute('data-workspace-bypass')
+            ) {
+                return;
+            }
+            const href = anchor.getAttribute('href') || '';
+            if (!href || href.startsWith('#') || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+            const url = new URL(anchor.href, window.location.origin);
+            if (url.origin !== window.location.origin) return;
+            anchor.setAttribute('href', withEmbedParam(anchor.href));
+        },
+        true,
+    );
+
+    document.addEventListener(
+        'submit',
+        (event) => {
+            const form = event.target?.closest?.('form');
+            if (!form) return;
+            if (form.target && form.target !== '_self') return;
+            prepareEmbedForm(form);
+        },
+        true,
+    );
 
     // 3. Teruskan window.toast dari dalam tab ke shell luar supaya pop up
     //    muncul di pojok layar utama dan tidak hilang saat pindah tab.
@@ -138,18 +222,45 @@ export function initWorkspaceEmbed() {
         true,
     );
 
-    // 7. Sinkron tema dari shell luar bila user mengubah tampilan di tab lain.
+    // 7. Sinkron tema dua arah antara shell luar dan isi tab.
+    let applyingAppearanceFromHost = false;
+
     window.addEventListener('message', (event) => {
         if (event.origin !== window.location.origin) return;
         const data = event.data || {};
         if (data.source !== '3dy-workspace-host') return;
         if (data.type === 'appearance') {
+            applyingAppearanceFromHost = true;
             const root = document.documentElement;
             if (data.mode) root.setAttribute('data-mode', data.mode);
             if (data.accent) root.setAttribute('data-theme', data.accent);
             if (typeof window.__applyAppearance === 'function') window.__applyAppearance();
+            setTimeout(() => {
+                applyingAppearanceFromHost = false;
+            }, 0);
         }
     });
+
+    // Kirim perubahan tema dari dalam tab (mis. halaman Settings) ke shell
+    // supaya sidebar/navbar ikut berubah dan tab lain disamakan.
+    window.addEventListener('appearance:change', () => {
+        if (applyingAppearanceFromHost) return;
+        send('appearance', {
+            mode: document.documentElement.getAttribute('data-mode') || 'system',
+            accent: document.documentElement.getAttribute('data-theme') || 'ocean',
+        });
+    });
+
+    // Beri tahu shell panel mana yang sedang dipakai (untuk split view).
+    let lastFocusSent = 0;
+    const reportFocus = () => {
+        const now = Date.now();
+        if (now - lastFocusSent < 400) return;
+        lastFocusSent = now;
+        send('focus');
+    };
+    document.addEventListener('pointerdown', reportFocus, true);
+    document.addEventListener('focusin', reportFocus, true);
 
     reportMeta();
     reportFlash();

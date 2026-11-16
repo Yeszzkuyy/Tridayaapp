@@ -166,7 +166,7 @@
                 <div>
                     <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
                         {{ __('Need Type') }} <span class="text-red-500">*</span>
-                        <x-info-tip tip="{{ __('What the customer needs: CCTV, PABX, Video Conference, Network, or others.') }}" />
+                        <x-info-tip tip="{{ __('What the customer needs: CCTV, IP Phone, Video Conference, Network, or others.') }}" />
                     </label>
                     <x-glide-select name="need_type" :label="__('Need Type')" required
                         :options="collect(\App\Models\Lead::NEED_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\Lead::needTypeLabel($t)])->all()"

@@ -34,19 +34,36 @@
                             :data-workspace-tab="tab.id"
                             :aria-selected="$store.workspace.activeId === tab.id ? 'true' : 'false'"
                             :tabindex="$store.workspace.activeId === tab.id ? 0 : -1"
-                            @click="$store.workspace.activate(tab.id)"
+                            :draggable="!tab.pinned && $store.workspace.desktop"
+                            @click="$store.workspace.suppressClick ? ($store.workspace.suppressClick = false) : $store.workspace.activate(tab.id)"
                             @keydown="$store.workspace.onTabKeydown($event, tab.id)"
+                            @dragstart="$store.workspace.onDragStart($event, tab)"
+                            @dragover="$store.workspace.onDragOverTab($event, tab)"
+                            @drop="$store.workspace.onDropTab($event, tab)"
+                            @dragend="$store.workspace.onDragEnd()"
                             :title="$store.workspace.fullTitle(tab)"
-                            :class="$store.workspace.activeId === tab.id
-                                ? 'border-accent-500/50 bg-accent-500/12 text-accent-700 shadow-sm shadow-accent-500/10 dark:border-accent-400/40 dark:bg-accent-500/20 dark:text-accent-50'
-                                : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:bg-[var(--menu-hover-bg)] hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-800/45 dark:text-slate-400 dark:hover:bg-slate-800/90 dark:hover:text-slate-200'"
-                            class="relative inline-flex h-9 max-w-[190px] items-center gap-1.5 rounded-xl border pl-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:max-w-[220px]"
+                            :class="[
+                                $store.workspace.activeId === tab.id
+                                    ? 'border-accent-500/50 bg-accent-500/12 text-accent-700 shadow-sm shadow-accent-500/10 dark:border-accent-400/40 dark:bg-accent-500/20 dark:text-accent-50'
+                                    : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 hover:bg-[var(--menu-hover-bg)] hover:text-slate-900 dark:border-slate-700/60 dark:bg-slate-800/45 dark:text-slate-400 dark:hover:bg-slate-800/90 dark:hover:text-slate-200',
+                                !tab.pinned && $store.workspace.desktop ? 'cursor-grab active:cursor-grabbing' : '',
+                                $store.workspace.draggingTabId === tab.id ? 'opacity-60' : '',
+                            ]"
+                            class="relative inline-flex h-9 max-w-[200px] items-center gap-1.5 rounded-xl border pl-2.5 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 sm:max-w-[230px]"
                             :style="!tab.pinned ? 'padding-right: 1.9rem;' : 'padding-right: 0.65rem;'">
 
                         {{-- Garis bawah penanda tab aktif --}}
                         <span x-show="$store.workspace.activeId === tab.id"
                               aria-hidden="true"
                               class="pointer-events-none absolute inset-x-3 bottom-0.5 h-0.5 rounded-full bg-accent-600 dark:bg-accent-400"></span>
+
+                        {{-- Indikator posisi drop saat menggeser urutan tab --}}
+                        <span x-show="$store.workspace.dragOverTabId === tab.id && $store.workspace.dragSide === 'left'"
+                              aria-hidden="true"
+                              class="pointer-events-none absolute -left-1 bottom-1 top-1 w-0.5 rounded-full bg-accent-500 shadow-[0_0_6px_rgb(var(--accent-500)/.8)]"></span>
+                        <span x-show="$store.workspace.dragOverTabId === tab.id && $store.workspace.dragSide === 'right'"
+                              aria-hidden="true"
+                              class="pointer-events-none absolute -right-1 bottom-1 top-1 w-0.5 rounded-full bg-accent-500 shadow-[0_0_6px_rgb(var(--accent-500)/.8)]"></span>
 
                         {{-- Ikon menu utama sebagai ciri khas tab --}}
                         <span :class="$store.workspace.activeId === tab.id
@@ -60,6 +77,16 @@
                               x-text="tab.dept"
                               :class="$store.workspace.deptClass(tab.dept)"
                               class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
+
+                        {{-- Penanda panel kiri/kanan saat split view aktif --}}
+                        <span x-show="$store.workspace.splitMode && $store.workspace.leftTabId === tab.id"
+                              x-cloak
+                              title="{{ __('Left pane') }}"
+                              class="shrink-0 rounded bg-accent-500/15 px-1 py-0.5 text-[9px] font-bold uppercase text-accent-700 dark:text-accent-300">L</span>
+                        <span x-show="$store.workspace.splitMode && $store.workspace.rightTabId === tab.id"
+                              x-cloak
+                              title="{{ __('Right pane') }}"
+                              class="shrink-0 rounded bg-accent-500/15 px-1 py-0.5 text-[9px] font-bold uppercase text-accent-700 dark:text-accent-300">R</span>
 
                         <span class="truncate" x-text="tab.title"></span>
 
@@ -101,6 +128,24 @@
         </button>
     </div>
 
+    {{-- Tombol Split View: hanya desktop, butuh minimal 2 tab --}}
+    <button type="button"
+            data-workspace-split-toggle
+            x-show="$store.workspace.tabs.length > 1"
+            x-cloak
+            @click="$store.workspace.splitMode ? $store.workspace.closeSplit() : $store.workspace.openSplit()"
+            :title="$store.workspace.splitMode ? '{{ __('Close split') }}' : '{{ __('Split view') }}'"
+            :aria-label="$store.workspace.splitMode ? '{{ __('Close split') }}' : '{{ __('Split view') }}'"
+            :class="$store.workspace.splitMode
+                ? 'border-accent-500/50 bg-accent-500/15 text-accent-700 dark:text-accent-300'
+                : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-500 hover:bg-[var(--menu-hover-bg)] hover:text-slate-800 dark:border-slate-700 dark:text-slate-300'"
+            class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 lg:inline-flex">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path stroke-linecap="round" d="M12 5v14" />
+        </svg>
+    </button>
+
     {{-- Menu daftar tab + aksi tutup banyak tab --}}
     <div x-show="$store.workspace && $store.workspace.tabs.length > 1" x-cloak class="shrink-0">
         <x-dropdown align="right" width="w-72" content-classes="py-1 bg-[var(--card-bg)] border border-[var(--card-border)]">
@@ -120,29 +165,42 @@
                 </p>
                 <div>
                     <template x-for="tab in $store.workspace.tabs" :key="'menu-' + tab.id">
-                        <button type="button"
-                                :data-tab-active="$store.workspace.activeId === tab.id ? '1' : '0'"
-                                @click="$store.workspace.activate(tab.id)"
-                                :class="$store.workspace.activeId === tab.id
-                                    ? 'bg-[var(--menu-hover-bg)] text-slate-900 dark:text-slate-100'
-                                    : 'text-slate-600 dark:text-slate-300'"
-                                class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs transition hover:bg-[var(--menu-hover-bg)]">
-                            <span x-show="tab.dept"
-                                  x-text="tab.dept"
-                                  :class="$store.workspace.deptClass(tab.dept)"
-                                  class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
-                            <span class="min-w-0 flex-1 truncate" x-text="tab.title"></span>
-                            <span x-show="tab.dirty"
-                                  x-cloak
-                                  class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
-                                  aria-hidden="true"></span>
-                            <svg x-show="$store.workspace.activeId === tab.id"
-                                 x-cloak
-                                 class="h-3.5 w-3.5 shrink-0 text-accent-600 dark:text-accent-400"
-                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
-                            </svg>
-                        </button>
+                        <div class="flex items-center gap-1 px-1">
+                            <button type="button"
+                                    :data-tab-active="$store.workspace.activeId === tab.id ? '1' : '0'"
+                                    @click="$store.workspace.activate(tab.id)"
+                                    :class="$store.workspace.activeId === tab.id
+                                        ? 'bg-[var(--menu-hover-bg)] text-slate-900 dark:text-slate-100'
+                                        : 'text-slate-600 dark:text-slate-300'"
+                                    class="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition hover:bg-[var(--menu-hover-bg)]">
+                                <span x-show="tab.dept"
+                                      x-text="tab.dept"
+                                      :class="$store.workspace.deptClass(tab.dept)"
+                                      class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
+                                <span class="min-w-0 flex-1 truncate" x-text="tab.title"></span>
+                                <span x-show="tab.dirty"
+                                      x-cloak
+                                      class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
+                                      aria-hidden="true"></span>
+                                <svg x-show="$store.workspace.activeId === tab.id"
+                                     x-cloak
+                                     class="h-3.5 w-3.5 shrink-0 text-accent-600 dark:text-accent-400"
+                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+                                </svg>
+                            </button>
+                            <button type="button"
+                                    x-show="!tab.pinned"
+                                    @click.stop="$store.workspace.openSplit(tab.id)"
+                                    title="{{ __('Split right') }}"
+                                    aria-label="{{ __('Split right') }}"
+                                    class="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[var(--menu-hover-bg)] hover:text-accent-600 lg:inline-flex dark:hover:text-accent-300">
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                                    <path stroke-linecap="round" d="M12 5v14" />
+                                </svg>
+                            </button>
+                        </div>
                     </template>
                 </div>
                 <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>

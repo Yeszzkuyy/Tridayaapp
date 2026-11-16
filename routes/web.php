@@ -869,6 +869,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{leadTask}', [LeadTaskController::class, 'show'])->name('show');
             Route::get('/{leadTask}/edit', [LeadTaskController::class, 'edit'])->name('edit');
             Route::put('/{leadTask}', [LeadTaskController::class, 'update'])->name('update');
+            Route::patch('/{leadTask}/complete', [LeadTaskController::class, 'complete'])->name('complete');
             Route::delete('/{leadTask}', [LeadTaskController::class, 'destroy'])->name('destroy');
             Route::post('/{leadTask}/comments', [LeadTaskController::class, 'storeComment'])->name('comments.store');
 
@@ -882,6 +883,11 @@ Route::middleware('auth')->group(function () {
             Route::get('/{leadTask}/attachments/{attachment}/preview', [LeadTaskController::class, 'previewAttachment'])->name('attachments.preview');
             Route::delete('/{leadTask}/attachments/{attachment}', [LeadTaskController::class, 'destroyAttachment'])->name('attachments.destroy');
             Route::post('/{leadTask}/attachments/{attachment}/accept', [LeadTaskController::class, 'acceptAttachment'])->name('attachments.accept');
+
+            // Lampiran pendukung dari Sales (brief/requirement).
+            Route::post('/{leadTask}/request-files', [LeadTaskController::class, 'storeRequestFile'])->name('request-files.store');
+            Route::get('/{leadTask}/request-files/{requestFile}', [LeadTaskController::class, 'downloadRequestFile'])->name('request-files.download');
+            Route::delete('/{leadTask}/request-files/{requestFile}', [LeadTaskController::class, 'destroyRequestFile'])->name('request-files.destroy');
         });
 
     // ============================================

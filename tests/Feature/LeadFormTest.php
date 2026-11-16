@@ -36,6 +36,19 @@ class LeadFormTest extends TestCase
             ->assertDontSee('Nilai Opportunity');
     }
 
+    public function test_need_type_label_uses_ip_phone_instead_of_pabx(): void
+    {
+        // Nilai tersimpan tetap 'pabx' agar leads lama tidak rusak; hanya
+        // label yang tampil di UI yang berubah.
+        $this->assertSame('IP Phone', \App\Models\Lead::needTypeLabel('pabx'));
+
+        $this->actingAs($this->marketingUser())
+            ->get(route('leads.create'))
+            ->assertOk()
+            ->assertSee('IP Phone')
+            ->assertDontSee('PABX');
+    }
+
     public function test_create_prefills_company_and_pic_separately_from_whatsapp(): void
     {
         $account = \App\Models\WhatsappAccount::create([
@@ -84,6 +97,37 @@ class LeadFormTest extends TestCase
 
         // Kolom Perusahaan harus kosong — nama orang tidak boleh jadi nama company.
         $this->assertStringContainsString('name="customer_name" id="customer_name" value=""', $response->getContent());
+    }
+
+    public function test_create_form_submits_only_the_active_customer_mode_fields(): void
+    {
+        $html = $this->actingAs($this->marketingUser())
+            ->get(route('leads.create'))
+            ->assertOk()
+            ->getContent();
+
+        $dom = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $dom->loadHTML($html);
+        } finally {
+            libxml_use_internal_errors($previous);
+        }
+
+        $pics = (new \DOMXPath($dom))->query('//input[@name="customer_contact_person"]');
+
+        // Mode customer baru dan customer lama masing-masing punya kolom PIC.
+        // Keduanya tidak boleh terkirim bersamaan: kolom tersembunyi yang
+        // kosong akan menimpa PIC yang diketik user (bug PIC hilang).
+        $this->assertSame(2, $pics->length);
+
+        foreach ($pics as $pic) {
+            $this->assertTrue(
+                $pic->hasAttribute('x-bind:disabled'),
+                'Kolom PIC pada mode customer yang tidak aktif harus disabled.'
+            );
+        }
     }
 
     public function test_store_creates_lead_with_customer_details(): void

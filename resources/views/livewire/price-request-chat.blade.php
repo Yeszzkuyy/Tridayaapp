@@ -97,6 +97,7 @@
         @endforelse
     </div>
 
+    @can('comment', $priceRequest)
     <form wire:submit="send" class="border-t border-slate-200 bg-white p-3 dark:border-slate-600 dark:bg-slate-800 sm:p-4">
         <label for="price-request-chat-body" class="sr-only">{{ __('Message') }}</label>
         <div class="flex items-end gap-2">
@@ -116,4 +117,9 @@
             <p class="mt-2 text-xs text-red-600 dark:text-red-400" role="alert">{{ $message }}</p>
         @enderror
     </form>
+    @else
+        <div class="border-t border-slate-200 p-4 text-center text-xs text-slate-500 dark:border-slate-600 dark:text-slate-400">
+            {{ __('Discussion closed') }}
+        </div>
+    @endcan
 </div>

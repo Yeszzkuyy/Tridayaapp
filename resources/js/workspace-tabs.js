@@ -173,6 +173,21 @@ export function registerWorkspaceStore(Alpine) {
         i18n: cfg.i18n || {},
         initialized: false,
         hintTimer: null,
+        desktop: window.innerWidth >= 1024,
+        previousActiveId: null,
+        splitMode: false,
+        leftTabId: null,
+        rightTabId: null,
+        activePane: 'left',
+        splitRatio: 50,
+        resizingSplit: false,
+        sidebarAutoCollapsed: false,
+        draggingTabId: null,
+        dragOverTabId: null,
+        dragSide: null,
+        dragLeftHover: false,
+        dragRightHover: false,
+        suppressClick: false,
 
         maxTabs() {
             return window.innerWidth < 1024 ? this.maxMobile : this.maxDesktop;
@@ -254,7 +269,496 @@ export function registerWorkspaceStore(Alpine) {
             };
         },
 
+        leftTab() {
+            return this.tabs.find((tab) => tab.id === this.leftTabId) || null;
+        },
+
+        rightTab() {
+            return this.tabs.find((tab) => tab.id === this.rightTabId) || null;
+        },
+
+        paneTab(pane) {
+            return pane === 'right' ? this.rightTab() : this.leftTab();
+        },
+
+        paneTitle(pane) {
+            return this.paneTab(pane)?.title || this.i18n.selectTab || 'Select tab';
+        },
+
+        paneDept(pane) {
+            return this.paneTab(pane)?.dept || null;
+        },
+
+        canSplit() {
+            return this.desktop && this.tabs.length > 1;
+        },
+
+        setSidebarCollapsed(collapsed) {
+            if (typeof window.__workspaceSetSidebarCollapsed === 'function') {
+                window.__workspaceSetSidebarCollapsed(Boolean(collapsed));
+                return;
+            }
+            document.documentElement.classList.toggle('sidebar-collapsed', Boolean(collapsed));
+            try {
+                localStorage.setItem('sidebar-collapsed', collapsed ? '1' : '0');
+            } catch (e) {}
+        },
+
+        collapseForSplit() {
+            if (!this.desktop) return;
+            if (document.documentElement.classList.contains('sidebar-collapsed')) {
+                this.sidebarAutoCollapsed = false;
+                return;
+            }
+            this.sidebarAutoCollapsed = true;
+            this.setSidebarCollapsed(true);
+        },
+
+        restoreSidebar() {
+            if (!this.sidebarAutoCollapsed) return;
+            this.sidebarAutoCollapsed = false;
+            this.setSidebarCollapsed(false);
+        },
+
+        updateActiveUrl(push = true) {
+            const tab = this.tabs.find((item) => item.id === this.activeId);
+            if (!tab) return;
+            try {
+                const target = cleanUrl(tab.url);
+                if (window.location.pathname + window.location.search === target) return;
+                const state = { workspaceTabId: tab.id };
+                if (push) window.history.pushState(state, '', target);
+                else window.history.replaceState(state, '', target);
+            } catch (e) {}
+        },
+
+        syncPanes() {
+            const stage = document.getElementById('workspace-stage');
+            if (!stage) return;
+            const split = Boolean(this.splitMode && this.leftTabId && this.rightTabId);
+            const ids = split ? [this.leftTabId, this.rightTabId] : [this.activeId];
+
+            ids.forEach((id) => {
+                const tab = this.tabs.find((item) => item.id === id);
+                if (tab) this.ensureFrame(tab);
+            });
+
+            stage.querySelectorAll('[data-workspace-pane]').forEach((pane) => {
+                const id = pane.getAttribute('data-workspace-pane');
+                const on = ids.includes(id);
+                pane.classList.toggle('hidden', !on);
+
+                if (split && on) {
+                    const isLeft = id === this.leftTabId;
+                    pane.style.order = isLeft ? '1' : '3';
+                    pane.style.flex = isLeft
+                        ? `0 0 calc(${this.splitRatio}% - 3px)`
+                        : '1 1 0';
+                    pane.style.minWidth = '0';
+                    pane.classList.toggle(
+                        'workspace-pane--focused',
+                        (isLeft ? 'left' : 'right') === this.activePane,
+                    );
+                } else {
+                    pane.style.order = '';
+                    pane.style.flex = '';
+                    pane.style.minWidth = '';
+                    pane.classList.remove('workspace-pane--focused');
+                }
+            });
+
+            stage.classList.toggle('workspace-stage--split', split);
+            const divider = document.getElementById('workspace-split-divider');
+            if (divider) divider.dataset.resizing = this.resizingSplit ? '1' : '0';
+        },
+
+        focusPane(pane) {
+            if (!this.splitMode) return;
+            const tab = this.paneTab(pane);
+            if (!tab) return;
+            this.activePane = pane;
+            this.activeId = tab.id;
+            this.syncPanes();
+            this.updateActiveUrl(false);
+            document.title = `${this.fullTitle(tab)} — ${appName}`;
+            this.syncSidebar(tab.path || normalizePath(tab.url));
+            this.persist();
+        },
+
+        assignPane(pane, tabId, options = {}) {
+            if (!this.splitMode) return;
+            const tab = this.tabs.find((item) => item.id === tabId);
+            if (!tab) return;
+            const otherId = pane === 'left' ? this.rightTabId : this.leftTabId;
+            if (tabId === otherId) {
+                this.swapSplit();
+                return;
+            }
+            if (pane === 'left') this.leftTabId = tabId;
+            else this.rightTabId = tabId;
+            this.activePane = pane;
+            this.activeId = tabId;
+            this.syncPanes();
+            this.updateActiveUrl(options.pushState !== false);
+            document.title = `${this.fullTitle(tab)} — ${appName}`;
+            this.syncSidebar(tab.path || normalizePath(tab.url));
+            this.persist();
+            this.scrollActiveIntoView(tab);
+            this.scheduleOverflowHints();
+        },
+
+        openSplit(tabId = null) {
+            if (!this.desktop || this.tabs.length < 2) return false;
+
+            if (this.splitMode) {
+                if (tabId) this.assignPane('right', tabId);
+                return true;
+            }
+
+            let left = this.activeId;
+            let right = tabId && tabId !== left ? tabId : null;
+
+            if (!right && this.previousActiveId && this.previousActiveId !== left) {
+                right = this.previousActiveId;
+            }
+            if (right && !this.tabs.some((item) => item.id === right)) right = null;
+            if (!right) {
+                const start = Math.max(0, this.tabs.findIndex((tab) => tab.id === left));
+                const ordered = [...this.tabs.slice(start + 1), ...this.tabs.slice(0, start)];
+                right = ordered.find((tab) => tab.id !== left)?.id || null;
+            }
+            if (!right || right === left) return false;
+
+            this.splitMode = true;
+            this.leftTabId = left;
+            this.rightTabId = right;
+            this.activePane = 'left';
+            this.activeId = left;
+            this.collapseForSplit();
+            this.syncPanes();
+            this.updateActiveUrl(false);
+            document.title = `${this.fullTitle(this.leftTab())} — ${appName}`;
+            this.persist();
+            this.scrollActiveIntoView(this.leftTab());
+            this.scheduleOverflowHints();
+            return true;
+        },
+
+        /**
+         * Buka split dari tab yang dilepas pada separuh layar.
+         * `side` adalah panel tujuan: tab yang dilepas mengisi panel itu,
+         * tab yang tadinya aktif pindah ke panel sebelah. Saat split sudah
+         * aktif, panel tujuan diganti; bila tab itu sudah menempati panel
+         * sebelah, posisinya ditukar supaya kedua panel tidak pernah
+         * menampilkan tab yang sama.
+         */
+        openSplitFromDrag(tabId, side = 'right') {
+            if (!this.desktop || !tabId) return;
+            const target = side === 'left' ? 'left' : 'right';
+
+            if (this.splitMode) {
+                this.assignPane(target, tabId);
+                // assignPane menukar posisi bila tab sudah ada di panel
+                // sebelah; fokus tetap diarahkan ke tab yang barusan dilepas.
+                if (this.activeId !== tabId) {
+                    this.focusPane(this.leftTabId === tabId ? 'left' : 'right');
+                }
+                return;
+            }
+
+            if (this.tabs.length < 2) return;
+
+            const dropped = tabId;
+            let other = this.activeId;
+            if (other === dropped) {
+                other =
+                    this.previousActiveId && this.previousActiveId !== dropped
+                        ? this.previousActiveId
+                        : this.tabs.find((tab) => tab.id !== dropped)?.id;
+            }
+            if (!other || other === dropped) return;
+
+            const left = target === 'left' ? dropped : other;
+            const right = target === 'left' ? other : dropped;
+
+            this.splitMode = true;
+            this.leftTabId = left;
+            this.rightTabId = right;
+            this.activePane = target;
+            this.activeId = dropped;
+            this.collapseForSplit();
+            this.syncPanes();
+            this.updateActiveUrl(true);
+            const focused = this.paneTab(target);
+            document.title = `${this.fullTitle(focused)} — ${appName}`;
+            this.syncSidebar(focused?.path || '/');
+            this.persist();
+            this.scrollActiveIntoView(focused);
+            this.scheduleOverflowHints();
+        },
+
+        closeSplit() {
+            if (!this.splitMode) return;
+            const keep = this.leftTabId;
+            this.splitMode = false;
+            this.leftTabId = null;
+            this.rightTabId = null;
+            this.activePane = 'left';
+            if (keep && this.tabs.some((tab) => tab.id === keep)) this.activeId = keep;
+            this.restoreSidebar();
+            this.syncPanes();
+            this.updateActiveUrl(false);
+            const tab = this.tabs.find((item) => item.id === this.activeId);
+            if (tab) {
+                document.title = `${this.fullTitle(tab)} — ${appName}`;
+                this.syncSidebar(tab.path || normalizePath(tab.url));
+            }
+            this.persist();
+            this.scheduleOverflowHints();
+        },
+
+        swapSplit() {
+            if (!this.splitMode) return;
+            [this.leftTabId, this.rightTabId] = [this.rightTabId, this.leftTabId];
+            this.activePane = this.activePane === 'left' ? 'right' : 'left';
+            this.activeId = this.activePane === 'left' ? this.leftTabId : this.rightTabId;
+            this.syncPanes();
+            this.updateActiveUrl(false);
+            const tab = this.tabs.find((item) => item.id === this.activeId);
+            if (tab) {
+                document.title = `${this.fullTitle(tab)} — ${appName}`;
+                this.syncSidebar(tab.path || normalizePath(tab.url));
+            }
+            this.persist();
+            this.scrollActiveIntoView(tab);
+            this.scheduleOverflowHints();
+        },
+
+        startSplitResize(event) {
+            if (!this.splitMode || !this.desktop) return;
+            event.preventDefault();
+            const stage = document.getElementById('workspace-stage');
+            if (!stage) return;
+            this.resizingSplit = true;
+            this.syncPanes();
+            document.body.classList.add('workspace-resizing');
+
+            const onMove = (moveEvent) => {
+                const rect = stage.getBoundingClientRect();
+                if (rect.width <= 0) return;
+                const ratio = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+                this.splitRatio = Math.round(Math.min(70, Math.max(30, ratio)) * 10) / 10;
+                this.syncPanes();
+            };
+            const onUp = () => {
+                window.removeEventListener('pointermove', onMove);
+                window.removeEventListener('pointerup', onUp);
+                this.resizingSplit = false;
+                this.syncPanes();
+                document.body.classList.remove('workspace-resizing');
+                this.persist();
+            };
+            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointerup', onUp);
+        },
+
+        onDragStart(event, tab) {
+            if (tab.pinned || !this.desktop) {
+                event.preventDefault();
+                return;
+            }
+            this.draggingTabId = tab.id;
+            this.dragOverTabId = null;
+            this.dragSide = null;
+            this.clearDropHover();
+            this.suppressClick = true;
+            try {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', tab.id);
+            } catch (e) {}
+            document.body.classList.add('workspace-dragging');
+        },
+
+        onDragOverTab(event, tab) {
+            if (!this.draggingTabId || tab.pinned) return;
+            event.preventDefault();
+            const rect = event.currentTarget.getBoundingClientRect();
+            this.dragOverTabId = tab.id;
+            this.dragSide = event.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+            try {
+                event.dataTransfer.dropEffect = 'move';
+            } catch (e) {}
+        },
+
+        onDropTab(event, tab) {
+            if (!this.draggingTabId) return;
+            event.preventDefault();
+            const draggedId = this.draggingTabId;
+            if (draggedId === tab.id) {
+                this.onDragEnd();
+                return;
+            }
+            const from = this.tabs.findIndex((item) => item.id === draggedId);
+            if (from < 0) {
+                this.onDragEnd();
+                return;
+            }
+            const [moved] = this.tabs.splice(from, 1);
+            let to = this.tabs.findIndex((item) => item.id === tab.id);
+            if (to < 0) {
+                this.tabs.push(moved);
+            } else {
+                if (this.dragSide === 'right') to += 1;
+                this.tabs.splice(Math.max(1, to), 0, moved);
+            }
+            this.onDragEnd();
+            this.persist();
+            this.scheduleOverflowHints();
+        },
+
+        onDragEnd() {
+            this.draggingTabId = null;
+            this.dragOverTabId = null;
+            this.dragSide = null;
+            this.clearDropHover();
+            document.body.classList.remove('workspace-dragging');
+            setTimeout(() => {
+                this.suppressClick = false;
+            }, 200);
+        },
+
+        /** Sorot salah satu separuh layar sebagai tujuan split saat tab ditarik. */
+        setDropSide(side) {
+            this.dragLeftHover = side === 'left';
+            this.dragRightHover = side === 'right';
+        },
+
+        clearDropHover() {
+            this.dragLeftHover = false;
+            this.dragRightHover = false;
+        },
+
+        dropToLeft() {
+            const id = this.draggingTabId;
+            this.onDragEnd();
+            if (id) this.openSplitFromDrag(id, 'left');
+        },
+
+        dropToRight() {
+            const id = this.draggingTabId;
+            this.onDragEnd();
+            if (id) this.openSplitFromDrag(id, 'right');
+        },
+
+        /**
+         * Cari menu sidebar yang paling cocok untuk sebuah URL.
+         * Selain URL menu langsung, mendukung akar grup seperti /estimator
+         * (dipetakan ke link header grup, mis. /estimator/requests).
+         */
+        resolveMenuForUrl(rawUrl) {
+            const path = normalizePath(rawUrl);
+            const links = [...document.querySelectorAll('#sidebar a[href]')];
+            let best = null;
+            let bestLen = -1;
+            let groupHead = null;
+            let groupHeadLen = -1;
+
+            links.forEach((link) => {
+                const linkPath = normalizePath(link.href);
+
+                if (path === linkPath || path.startsWith(linkPath + '/')) {
+                    if (linkPath.length > bestLen) {
+                        best = link;
+                        bestLen = linkPath.length;
+                    }
+                    return;
+                }
+
+                if (path !== '/' && linkPath.startsWith(path + '/')) {
+                    if (link.closest('.sb-head') && (groupHead === null || linkPath.length < groupHeadLen)) {
+                        groupHead = link;
+                        groupHeadLen = linkPath.length;
+                    }
+                    if (best === null || linkPath.length < bestLen) {
+                        best = link;
+                        bestLen = linkPath.length;
+                    }
+                }
+            });
+
+            const chosen = groupHead || best;
+            if (!chosen) return null;
+
+            const menuPath = normalizePath(chosen.href);
+            const meta = this.resolveMetaForPath(menuPath);
+
+            return {
+                menuPath,
+                id: tabIdFromPath(menuPath),
+                title: meta?.title || 'Page',
+                dept: meta?.dept || null,
+                deptName: meta?.deptName || null,
+                icon: meta?.icon || 'grid',
+            };
+        },
+
+        /** Kembalikan iframe tab ke halaman menu asalnya. */
+        resetTabToHome(tab) {
+            const home = tab.homeUrl || tab.url;
+            if (!home) return;
+
+            tab.url = home;
+            tab.path = normalizePath(home);
+            tab.dirty = false;
+
+            const pane = document.querySelector(`[data-workspace-pane="${CSS.escape(tab.id)}"]`);
+            const frame = pane?.querySelector('iframe');
+            if (frame) {
+                try {
+                    frame.contentWindow.location.replace(embedUrl(home));
+                } catch (e) {
+                    frame.src = embedUrl(home);
+                }
+            }
+
+            this.persist();
+            this.scheduleOverflowHints();
+        },
+
+        /**
+         * Iframe pindah ke menu lain (mis. tombol Back ke Queue/Dashboard):
+         * tab asal dikembalikan ke menu rumahnya, lalu tab tujuan diaktifkan
+         * atau dibuka. Tab asal tidak boleh berubah jadi menu lain.
+         */
+        reconcileMenuNavigation(tab, targetMenu) {
+            if (!targetMenu) return;
+
+            const wasActive = this.activeId === tab.id;
+            const targetTab = this.tabs.find((item) => item.id === targetMenu.id);
+
+            this.resetTabToHome(tab);
+
+            if (targetTab) {
+                if (wasActive) this.activate(targetTab.id);
+                return;
+            }
+
+            this.openByUrl(
+                targetMenu.menuPath,
+                {
+                    title: targetMenu.title,
+                    dept: targetMenu.dept,
+                    deptName: targetMenu.deptName,
+                    icon: targetMenu.icon,
+                },
+                { activate: wasActive },
+            );
+        },
+
         init() {
+            // Layout penuh tidak boleh membuat workspace baru saat dimuat
+            // di dalam iframe (pemicu iframe bersarang).
+            if (window.self !== window.top) return;
             if (this.initialized || !this.enabled) return;
             if (!document.getElementById('workspace-stage')) return;
             this.initialized = true;
@@ -268,6 +772,7 @@ export function registerWorkspaceStore(Alpine) {
                 deptName: null,
                 url: dashUrl,
                 path: normalizePath(dashUrl),
+                homeUrl: dashUrl,
                 icon: 'grid',
                 pinned: true,
                 dirty: false,
@@ -275,9 +780,11 @@ export function registerWorkspaceStore(Alpine) {
             };
 
             let restored = [];
+            let restoredSplit = null;
             try {
                 const raw = sessionStorage.getItem(userKey);
                 const parsed = raw ? JSON.parse(raw) : null;
+                restoredSplit = parsed?.split || null;
                 if (Array.isArray(parsed?.tabs)) {
                     restored = parsed.tabs
                         .filter(
@@ -290,6 +797,7 @@ export function registerWorkspaceStore(Alpine) {
                         .slice(0, this.maxDesktop - 1)
                         .map((tab) => {
                             const resolved = this.resolveMetaForPath(tab.url);
+                            const homeMenu = this.resolveMenuForUrl(tab.id);
                             return {
                                 id: tab.id,
                                 title: resolved?.title || cleanStoredTitle(tab.title),
@@ -297,6 +805,7 @@ export function registerWorkspaceStore(Alpine) {
                                 deptName: resolved?.deptName || tab.deptName || null,
                                 url: cleanUrl(tab.url),
                                 path: normalizePath(tab.url),
+                                homeUrl: tab.homeUrl || homeMenu?.menuPath || cleanUrl(tab.url),
                                 icon: resolved?.icon || String(tab.icon || 'grid'),
                                 pinned: false,
                                 dirty: false,
@@ -310,6 +819,25 @@ export function registerWorkspaceStore(Alpine) {
 
             this.tabs = [dashTab, ...restored];
 
+            // Pulihkan mode split bila kedua tab masih ada dan layar cukup lebar.
+            if (restoredSplit?.leftTabId && restoredSplit?.rightTabId) {
+                const ids = new Set(this.tabs.map((tab) => tab.id));
+                const left = restoredSplit.leftTabId;
+                const right = restoredSplit.rightTabId;
+                if (this.desktop && left !== right && ids.has(left) && ids.has(right)) {
+                    this.splitMode = true;
+                    this.leftTabId = left;
+                    this.rightTabId = right;
+                    this.splitRatio = Math.min(
+                        70,
+                        Math.max(30, Number(restoredSplit.ratio) || 50),
+                    );
+                    this.activePane = restoredSplit.activePane === 'right' ? 'right' : 'left';
+                    this.activeId = this.activePane === 'left' ? left : right;
+                    this.collapseForSplit();
+                }
+            }
+
             const currentUrl = cleanUrl(initial.url || window.location.pathname + window.location.search);
             const currentPath = normalizePath(currentUrl);
             const currentId = tabIdFromPath(currentPath);
@@ -320,12 +848,25 @@ export function registerWorkspaceStore(Alpine) {
                 this.activate('dashboard', { pushState: false });
             } else {
                 const resolved = this.resolveMetaForPath(currentPath);
+                const homeMenu = this.resolveMenuForUrl(currentUrl);
+                const canonicalId = homeMenu?.id || currentId;
                 const fallback = this.metaFromInitial(initial);
-                const existing = this.tabs.find((tab) => tab.id === currentId || tab.path === currentPath);
+                const existing = this.tabs.find(
+                    (tab) =>
+                        tab.id === canonicalId ||
+                        tab.id === currentId ||
+                        tab.path === currentPath,
+                );
 
                 if (existing) {
                     existing.url = currentUrl;
                     existing.path = currentPath;
+                    if (!existing.homeUrl) {
+                        existing.homeUrl =
+                            this.resolveMenuForUrl(existing.id)?.menuPath ||
+                            homeMenu?.menuPath ||
+                            currentUrl;
+                    }
                     if (resolved) {
                         existing.title = resolved.title;
                         existing.dept = resolved.dept;
@@ -338,12 +879,13 @@ export function registerWorkspaceStore(Alpine) {
                         this.tabs.splice(1, 1);
                     }
                     const tab = {
-                        id: currentId,
+                        id: canonicalId,
                         title: resolved?.title || fallback.title,
                         dept: resolved?.dept || fallback.dept,
                         deptName: resolved?.deptName || fallback.deptName,
                         url: currentUrl,
                         path: currentPath,
+                        homeUrl: homeMenu?.menuPath || currentUrl,
                         icon: resolved?.icon || fallback.icon,
                         pinned: false,
                         dirty: false,
@@ -369,10 +911,25 @@ export function registerWorkspaceStore(Alpine) {
                     dept: tab.dept,
                     deptName: tab.deptName,
                     url: tab.url,
+                    homeUrl: tab.homeUrl || tab.url,
                     icon: tab.icon,
                     pinned: Boolean(tab.pinned),
                 }));
-                sessionStorage.setItem(userKey, JSON.stringify({ activeId: this.activeId, tabs: slim }));
+                sessionStorage.setItem(
+                    userKey,
+                    JSON.stringify({
+                        activeId: this.activeId,
+                        tabs: slim,
+                        split: this.splitMode
+                            ? {
+                                  leftTabId: this.leftTabId,
+                                  rightTabId: this.rightTabId,
+                                  ratio: this.splitRatio,
+                                  activePane: this.activePane,
+                              }
+                            : null,
+                    }),
+                );
             } catch (e) {}
         },
 
@@ -396,23 +953,25 @@ export function registerWorkspaceStore(Alpine) {
             return wrap;
         },
 
-        showActivePane() {
-            const stage = document.getElementById('workspace-stage');
-            if (!stage) return;
-            const active = this.tabs.find((tab) => tab.id === this.activeId) || this.tabs[0];
-            if (!active) return;
-            this.ensureFrame(active);
-            stage.querySelectorAll('[data-workspace-pane]').forEach((pane) => {
-                const on = pane.getAttribute('data-workspace-pane') === active.id;
-                pane.classList.toggle('hidden', !on);
-            });
-        },
-
         activate(id, options = {}) {
             const tab = this.tabs.find((item) => item.id === id);
             if (!tab) return;
+
+            if (this.splitMode && this.leftTabId && this.rightTabId) {
+                if (id === this.leftTabId) {
+                    this.activePane = 'left';
+                } else if (id === this.rightTabId) {
+                    this.activePane = 'right';
+                } else {
+                    // Tab ketiga: ganti panel yang sedang fokus, split tetap aktif.
+                    this.assignPane(this.activePane, id, options);
+                    return;
+                }
+            }
+
+            if (this.activeId !== tab.id) this.previousActiveId = this.activeId;
             this.activeId = tab.id;
-            this.showActivePane();
+            this.syncPanes();
 
             if (options.pushState !== false) {
                 try {
@@ -430,10 +989,11 @@ export function registerWorkspaceStore(Alpine) {
             this.scheduleOverflowHints();
         },
 
-        openByUrl(rawUrl, meta = {}) {
+        openByUrl(rawUrl, meta = {}, options = {}) {
             const url = cleanUrl(rawUrl);
             const path = normalizePath(url);
-            const id = tabIdFromPath(path);
+            const targetMenu = this.resolveMenuForUrl(url);
+            const id = targetMenu?.id || tabIdFromPath(path);
 
             const existing = this.tabs.find((tab) => tab.id === id || tab.path === path);
             if (existing) {
@@ -444,7 +1004,22 @@ export function registerWorkspaceStore(Alpine) {
                     existing.deptName = resolved.deptName;
                     existing.icon = resolved.icon;
                 }
-                this.activate(existing.id);
+
+                if (!existing.homeUrl) {
+                    existing.homeUrl =
+                        this.resolveMenuForUrl(existing.id)?.menuPath || existing.url;
+                }
+
+                // Tab lama yang sempat berpindah menu dikembalikan dulu.
+                const homeMenu = this.resolveMenuForUrl(existing.homeUrl);
+                const currentMenu = this.resolveMenuForUrl(existing.url);
+                if (homeMenu && (!currentMenu || currentMenu.id !== homeMenu.id)) {
+                    this.resetTabToHome(existing);
+                }
+
+                if (options.activate !== false) this.activate(existing.id);
+                else this.persist();
+
                 return existing;
             }
 
@@ -460,7 +1035,7 @@ export function registerWorkspaceStore(Alpine) {
                 return null;
             }
 
-            const resolved = this.resolveMetaForPath(path);
+            const resolved = this.resolveMetaForPath(path) || targetMenu;
             const tab = {
                 id,
                 title: resolved?.title || meta.title || 'Page',
@@ -468,13 +1043,15 @@ export function registerWorkspaceStore(Alpine) {
                 deptName: resolved?.deptName || meta.deptName || null,
                 url,
                 path,
+                homeUrl: targetMenu?.menuPath || url,
                 icon: resolved?.icon || meta.icon || 'grid',
                 pinned: false,
                 dirty: false,
                 loaded: false,
             };
             this.tabs.push(tab);
-            this.activate(tab.id);
+            if (options.activate !== false) this.activate(tab.id);
+            else this.persist();
             return tab;
         },
 
@@ -496,21 +1073,51 @@ export function registerWorkspaceStore(Alpine) {
                 if (!ok) return;
             }
 
+            const wasSplitPane =
+                this.splitMode && (id === this.leftTabId || id === this.rightTabId);
+            const survivor = wasSplitPane
+                ? id === this.rightTabId
+                    ? this.leftTabId
+                    : this.rightTabId
+                : null;
+
             this.destroyFrame(tab.id);
-            const wasActive = this.activeId === tab.id;
             this.tabs.splice(idx, 1);
 
-            if (wasActive) {
-                const next = this.tabs[Math.max(0, idx - 1)] || this.tabs[0];
+            if (wasSplitPane) {
+                // Tutup panel kiri/kanan: kembali ke layar penuh dengan panel
+                // yang masih hidup, tidak pernah menyisakan layar kosong.
+                this.splitMode = false;
+                this.leftTabId = null;
+                this.rightTabId = null;
+                this.activePane = 'left';
+                this.restoreSidebar();
+                const nextId =
+                    survivor && this.tabs.some((item) => item.id === survivor)
+                        ? survivor
+                        : (this.tabs[idx] || this.tabs[idx - 1] || this.tabs[0])?.id;
+                if (nextId) this.activate(nextId);
+            } else if (
+                this.activeId === id ||
+                !this.tabs.some((item) => item.id === this.activeId)
+            ) {
+                // Seperti browser: pindah ke tab kanan, lalu kiri bila sudah habis.
+                const next = this.tabs[idx] || this.tabs[idx - 1] || this.tabs[0];
                 if (next) this.activate(next.id);
             } else {
                 this.persist();
             }
+
+            this.syncPanes();
             this.scheduleOverflowHints();
         },
 
         async closeOthers() {
             const keep = new Set(['dashboard', this.activeId]);
+            if (this.splitMode) {
+                if (this.leftTabId) keep.add(this.leftTabId);
+                if (this.rightTabId) keep.add(this.rightTabId);
+            }
             const dirtyTargets = this.tabs.filter((tab) => !keep.has(tab.id) && tab.dirty);
             if (dirtyTargets.length > 0 && typeof window.askConfirm === 'function') {
                 const ok = await window.askConfirm({
@@ -527,6 +1134,13 @@ export function registerWorkspaceStore(Alpine) {
                 if (!keep.has(tab.id)) this.destroyFrame(tab.id);
             });
             this.tabs = this.tabs.filter((tab) => keep.has(tab.id));
+            if (this.splitMode && (!this.leftTabId || !this.rightTabId)) {
+                this.splitMode = false;
+                this.leftTabId = null;
+                this.rightTabId = null;
+                this.restoreSidebar();
+            }
+            this.syncPanes();
             this.persist();
             this.scheduleOverflowHints();
         },
@@ -544,11 +1158,18 @@ export function registerWorkspaceStore(Alpine) {
                 });
                 if (!ok) return;
             }
+            this.splitMode = false;
+            this.leftTabId = null;
+            this.rightTabId = null;
+            this.activePane = 'left';
+            this.restoreSidebar();
+
             this.tabs.forEach((tab) => {
                 if (!tab.pinned) this.destroyFrame(tab.id);
             });
             this.tabs = this.tabs.filter((tab) => tab.pinned);
             this.activate('dashboard');
+            this.syncPanes();
             this.scheduleOverflowHints();
         },
 
@@ -691,6 +1312,29 @@ export function registerWorkspaceStore(Alpine) {
                     return;
                 }
 
+                if (data.type === 'appearance') {
+                    // Tema diubah dari dalam tab: terapkan ke shell (sidebar,
+                    // navbar, tab bar), lalu teruskan ke semua tab lain.
+                    const mode = data.mode || 'system';
+                    const accent = data.accent || 'ocean';
+                    const root = document.documentElement;
+                    root.setAttribute('data-mode', mode);
+                    root.setAttribute('data-theme', accent);
+
+                    if (typeof window.__applyAppearance === 'function') {
+                        window.__applyAppearance();
+                    }
+
+                    const store = window.Alpine?.store?.('appearance');
+                    if (store) {
+                        store.mode = mode;
+                        store.accent = accent;
+                    }
+
+                    window.dispatchEvent(new CustomEvent('appearance:change'));
+                    return;
+                }
+
                 const stage = document.getElementById('workspace-stage');
                 if (!stage) return;
                 let ownerId = null;
@@ -702,6 +1346,13 @@ export function registerWorkspaceStore(Alpine) {
                 const tab = ownerId ? this.tabs.find((item) => item.id === ownerId) : null;
                 if (!tab) return;
 
+                if (data.type === 'focus') {
+                    if (!this.splitMode) return;
+                    if (tab.id === this.leftTabId) this.focusPane('left');
+                    else if (tab.id === this.rightTabId) this.focusPane('right');
+                    return;
+                }
+
                 if (data.type === 'dirty') {
                     tab.dirty = Boolean(data.dirty);
                     return;
@@ -709,8 +1360,23 @@ export function registerWorkspaceStore(Alpine) {
 
                 if (data.type === 'meta') {
                     if (data.url) {
-                        tab.url = cleanUrl(data.url);
-                        tab.path = normalizePath(tab.url);
+                        const nextUrl = cleanUrl(data.url);
+                        const nextPath = normalizePath(nextUrl);
+                        const nextMenu = this.resolveMenuForUrl(nextUrl);
+
+                        // Navigasi ke menu lain: jangan bajak tab ini.
+                        if (nextMenu && nextMenu.id !== tab.id) {
+                            this.reconcileMenuNavigation(tab, nextMenu);
+                            return;
+                        }
+
+                        tab.url = nextUrl;
+                        tab.path = nextPath;
+
+                        if (!tab.homeUrl) {
+                            tab.homeUrl =
+                                this.resolveMenuForUrl(tab.id)?.menuPath || nextUrl;
+                        }
                     }
                     tab.dirty = Boolean(data.dirty);
 
@@ -763,7 +1429,14 @@ export function registerWorkspaceStore(Alpine) {
                 document.__workspaceScrollBound = true;
 
                 list.addEventListener('scroll', () => this.updateOverflowHints(), { passive: true });
-                window.addEventListener('resize', () => this.updateOverflowHints());
+                window.addEventListener('resize', () => {
+                    const desktop = window.innerWidth >= 1024;
+                    if (desktop !== this.desktop) {
+                        this.desktop = desktop;
+                        if (!desktop && this.splitMode) this.closeSplit();
+                    }
+                    this.updateOverflowHints();
+                });
 
                 // Roda mouse vertikal di atas barisan tab = geser horizontal.
                 list.addEventListener(

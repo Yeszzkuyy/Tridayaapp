@@ -45,6 +45,12 @@ class WorkspaceTabsTest extends TestCase
         $res->assertOk()
             ->assertSee('id="workspace-tabs"', false)
             ->assertSee('id="workspace-stage"', false)
+            ->assertSee('id="workspace-split-bar"', false)
+            ->assertSee('id="workspace-split-divider"', false)
+            ->assertSee('id="workspace-drag-layer"', false)
+            ->assertSee('ws-embed-retry', false)
+            ->assertSee('workspace-nested', false)
+            ->assertSee(__('Split view'))
             ->assertSee('id="sidebar"', false)
             ->assertDontSee('class="app-header-badge', false);
     }
@@ -60,6 +66,8 @@ class WorkspaceTabsTest extends TestCase
             ->assertSee(__('Purchasing Handoff'))
             ->assertDontSee('id="sidebar"', false)
             ->assertDontSee('id="workspace-tabs"', false)
+            ->assertDontSee('id="workspace-split-bar"', false)
+            ->assertDontSee('workspace-nested', false)
             ->assertDontSee('data-notification-center', false)
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
     }

@@ -157,7 +157,8 @@
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-2">
-                                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $task) }}" title="{{ __('View details') }}" />
+                                        <x-task-complete-button :task="$task" />
+                                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $task) }}" label="{{ __('View') }}" title="{{ __('View details') }}" />
                                         @if(! $task->proposal && $task->items_count > 0)
                                             <x-icon-button as="a" icon="sparkles" href="{{ route('inside-sales.quotations.create', $task) }}" title="{{ __('Create Quotation') }}" />
                                         @endif

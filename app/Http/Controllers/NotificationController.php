@@ -7,6 +7,7 @@ use App\Events\NotificationRead;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadTaskNotification;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\PurchasingHandoffNotification;
 use App\Support\NotificationPresenter;
@@ -110,6 +111,8 @@ class NotificationController extends Controller
      */
     public static function pageFor(User $user, ?string $cursor = null): array
     {
+        self::collapseTaskReplyNotifications($user);
+
         $query = $user->notifications()
             ->orderByDesc('created_at')
             ->orderByDesc('id');
@@ -202,6 +205,49 @@ class NotificationController extends Controller
             ->pluck('assigned_to', 'id')
             ->map(fn ($owner) => (int) $owner)
             ->all();
+    }
+
+    /**
+     * Rapikan notifikasi balasan chat task yang menumpuk: untuk tiap task,
+     * cukup satu notifikasi belum dibaca (yang paling baru). Notifikasi
+     * jenis lain (task baru, status, quotation) tidak disentuh.
+     */
+    private static function collapseTaskReplyNotifications(User $user): void
+    {
+        $unread = $user->unreadNotifications()
+            ->where('type', LeadTaskNotification::class)
+            ->get()
+            ->sortByDesc(fn ($notification) => (string) $notification->created_at.'|'.$notification->id)
+            ->values();
+
+        $seenTasks = [];
+        $duplicates = [];
+
+        foreach ($unread as $notification) {
+            $data = $notification->data;
+
+            if (! LeadTaskNotification::isReplyData($data)) {
+                continue;
+            }
+
+            $taskId = (int) ($data['lead_task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                continue;
+            }
+
+            if (isset($seenTasks[$taskId])) {
+                $duplicates[] = $notification->id;
+
+                continue;
+            }
+
+            $seenTasks[$taskId] = true;
+        }
+
+        if ($duplicates !== []) {
+            $user->notifications()->whereIn('id', $duplicates)->delete();
+        }
     }
 
     private static function encodeCursor(DatabaseNotification $row): string

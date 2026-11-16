@@ -95,6 +95,7 @@
                         {{ __('Company') }} <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name', $prefill['customer_name'] ?? '') }}"
+                           x-bind:disabled="mode !== 'new'"
                            placeholder="{{ __('e.g. PT Koin Konstruksi') }}"
                            class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     @error('customer_name')
@@ -107,6 +108,7 @@
                         <label for="customer_address" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
                         <div class="flex items-start gap-2">
                             <textarea name="customer_address" id="customer_address" rows="2"
+                                      x-bind:disabled="mode !== 'new'"
                                       placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
                                       data-location-autocomplete
                                       class="w-full flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address') }}</textarea>
@@ -121,24 +123,28 @@
                             <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di perusahaan tersebut.') }}" />
                         </label>
                         <input type="text" name="customer_contact_person" id="customer_contact_person" value="{{ old('customer_contact_person', $prefill['customer_contact_person'] ?? '') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. Ms. Vita') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
                         <label for="customer_phone" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Office Phone') }}</label>
                         <input type="text" name="customer_phone" id="customer_phone" value="{{ old('customer_phone') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
                         <label for="customer_whatsapp" class="block text-sm font-medium text-slate-700 mb-1">{{ __('WhatsApp No.') }}</label>
                         <input type="text" name="customer_whatsapp" id="customer_whatsapp" value="{{ old('customer_whatsapp', $prefill['customer_whatsapp'] ?? '') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div class="md:col-span-2">
                         <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                         <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. vita@ptkoin.com') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @error('customer_email')
@@ -171,6 +177,7 @@
                         <x-info-tip tip="{{ __('Isi hanya jika ingin memperbarui nama PIC customer ini.') }}" />
                     </label>
                     <input type="text" name="customer_contact_person" id="customer_contact_person_existing" value="{{ old('customer_contact_person') }}"
+                           x-bind:disabled="mode !== 'existing'"
                            placeholder="{{ __('leave blank if unchanged') }}"
                            class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
@@ -206,7 +213,7 @@
                 <div>
                     <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
                         {{ __('Need Type') }} <span class="text-red-500">*</span>
-                        <x-info-tip tip="{{ __('What the customer needs: CCTV, PABX, Video Conference, Network, or others.') }}" />
+                        <x-info-tip tip="{{ __('What the customer needs: CCTV, IP Phone, Video Conference, Network, or others.') }}" />
                     </label>
                     <x-glide-select name="need_type" :label="__('Need Type')" required
                         :options="collect(\App\Models\Lead::NEED_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\Lead::needTypeLabel($t)])->all()"

@@ -54,6 +54,7 @@
         window.__workspacePage = @json($pageContext);
         window.__workspaceFlash = @json($embedFlash);
         document.documentElement.classList.add('js', 'sidebar-settled');
+        try { sessionStorage.removeItem('ws-embed-retry:' + location.pathname); } catch (e) {}
     </script>
 
     @livewireStyles

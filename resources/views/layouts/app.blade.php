@@ -14,6 +14,24 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
 <head>
+    <script>
+        // Jaring pengaman: layout penuh tidak boleh hidup di dalam iframe.
+        // Koreksi diri ke ?embed=1 agar tidak terbentuk iframe bersarang.
+        (function () {
+            if (window.self === window.top) return;
+            document.documentElement.classList.add('workspace-nested');
+            if (document.documentElement.getAttribute('data-embed') === '1') return;
+            try {
+                var key = 'ws-embed-retry:' + location.pathname;
+                var tries = Number(sessionStorage.getItem(key) || 0);
+                if (tries >= 2) return;
+                sessionStorage.setItem(key, String(tries + 1));
+                var url = new URL(location.href);
+                url.searchParams.set('embed', '1');
+                location.replace(url.toString());
+            } catch (e) {}
+        })();
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -417,9 +435,29 @@
            kiri-ke-kanan selama navigating; hormati reduced-motion. */
         #navigate-progress{position:fixed;top:0;left:0;height:3px;width:35%;z-index:1002;opacity:0;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgb(var(--accent-500)/0),rgb(var(--accent-500)),rgb(var(--accent-400)));box-shadow:0 0 12px rgb(var(--accent-500)/.7);transform:translateX(-110%);transition:opacity .25s ease}
         .workspace-stage{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
-        .workspace-pane{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
+        .workspace-stage--split{flex-direction:row;align-items:stretch}
+        .workspace-pane{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:calc(100vh - 5rem)}
         .workspace-pane.hidden{display:none!important}
         .workspace-pane iframe{flex:1;min-height:calc(100vh - 5rem);width:100%}
+        .workspace-pane--focused::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:rgb(var(--accent-500));z-index:2;pointer-events:none}
+        #workspace-split-divider{display:none;order:2;flex:0 0 6px;margin:0 2px;border-radius:9999px;background:var(--card-border);cursor:col-resize;align-self:stretch;touch-action:none}
+        .workspace-stage--split #workspace-split-divider{display:block}
+        #workspace-split-divider:hover,#workspace-split-divider[data-resizing="1"]{background:rgb(var(--accent-500)/.75)}
+        body.workspace-dragging,body.workspace-resizing{user-select:none;-webkit-user-select:none}
+        body.workspace-dragging *{cursor:grabbing!important}
+        body.workspace-resizing *{cursor:col-resize!important}
+        /* Fallback bila layout penuh terlanjur termuat di dalam iframe:
+           sembunyikan shell, tampilkan konten halaman saja. */
+        html.workspace-nested .sidebar,
+        html.workspace-nested .app-header,
+        html.workspace-nested #workspace-stage,
+        html.workspace-nested #workspace-split-bar,
+        html.workspace-nested #workspace-drag-layer,
+        html.workspace-nested #sidebarOverlay,
+        html.workspace-nested #sidebarRail,
+        html.workspace-nested .main-content > footer{display:none!important}
+        html.workspace-nested .main-content{margin-left:0!important;width:100%!important}
+        html.workspace-nested #workspace-fallback{display:flex!important;flex:1;flex-direction:column}
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         /* Barisan tab: geser horizontal tanpa scrollbar, dengan pudar tepi
@@ -457,7 +495,138 @@
             @include('partials.avatar-lightbox')
 
             @if($workspaceEnabled)
-                <div id="workspace-stage" class="workspace-stage"></div>
+                {{-- Bar kontrol split view: pilih tab kiri/kanan, swap, close. --}}
+                <div id="workspace-split-bar"
+                     x-data
+                     x-show="$store.workspace.splitMode"
+                     x-cloak
+                     class="hidden items-center gap-2 border-b border-slate-200/70 bg-white/70 px-4 py-1.5 backdrop-blur dark:border-slate-800 dark:bg-zinc-900/70 sm:px-6 lg:flex lg:px-8">
+                    <span class="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <x-icon name="view-columns" class="h-3.5 w-3.5" />
+                        {{ __('Split view') }}
+                    </span>
+
+                    {{-- Pilih tab panel kiri --}}
+                    <x-dropdown align="left" width="w-64" content-classes="py-1 bg-[var(--card-bg)] border border-[var(--card-border)]">
+                        <x-slot name="trigger">
+                            <button type="button"
+                                    title="{{ __('Left pane') }}"
+                                    class="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[var(--card-bg)] px-2 text-xs font-medium text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:border-slate-700 dark:text-slate-300">
+                                <span class="rounded bg-accent-500/15 px-1 text-[9px] font-bold uppercase text-accent-700 dark:text-accent-300">L</span>
+                                <span class="max-w-[120px] truncate" x-text="$store.workspace.paneTitle('left')"></span>
+                                <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <template x-for="tab in $store.workspace.tabs" :key="'split-left-' + tab.id">
+                                <button type="button"
+                                        @click="$store.workspace.assignPane('left', tab.id)"
+                                        class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-300">
+                                    <span x-show="tab.dept" x-text="tab.dept" :class="$store.workspace.deptClass(tab.dept)" class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
+                                    <span class="min-w-0 flex-1 truncate" x-text="tab.title"></span>
+                                    <svg x-show="$store.workspace.leftTabId === tab.id" class="h-3.5 w-3.5 shrink-0 text-accent-600 dark:text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+                                </button>
+                            </template>
+                        </x-slot>
+                    </x-dropdown>
+
+                    <button type="button"
+                            @click="$store.workspace.swapSplit()"
+                            title="{{ __('Swap panes') }}"
+                            aria-label="{{ __('Swap panes') }}"
+                            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-[var(--card-bg)] text-slate-500 transition hover:bg-[var(--menu-hover-bg)] hover:text-accent-600 dark:border-slate-700 dark:text-slate-300">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h11l-3-3m3 13H7l3 3" />
+                        </svg>
+                    </button>
+
+                    {{-- Pilih tab panel kanan --}}
+                    <x-dropdown align="left" width="w-64" content-classes="py-1 bg-[var(--card-bg)] border border-[var(--card-border)]">
+                        <x-slot name="trigger">
+                            <button type="button"
+                                    title="{{ __('Right pane') }}"
+                                    class="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[var(--card-bg)] px-2 text-xs font-medium text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:border-slate-700 dark:text-slate-300">
+                                <span class="rounded bg-accent-500/15 px-1 text-[9px] font-bold uppercase text-accent-700 dark:text-accent-300">R</span>
+                                <span class="max-w-[120px] truncate" x-text="$store.workspace.paneTitle('right')"></span>
+                                <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <template x-for="tab in $store.workspace.tabs" :key="'split-right-' + tab.id">
+                                <button type="button"
+                                        @click="$store.workspace.assignPane('right', tab.id)"
+                                        class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-300">
+                                    <span x-show="tab.dept" x-text="tab.dept" :class="$store.workspace.deptClass(tab.dept)" class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
+                                    <span class="min-w-0 flex-1 truncate" x-text="tab.title"></span>
+                                    <svg x-show="$store.workspace.rightTabId === tab.id" class="h-3.5 w-3.5 shrink-0 text-accent-600 dark:text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+                                </button>
+                            </template>
+                        </x-slot>
+                    </x-dropdown>
+
+                    <span class="min-w-0 flex-1"></span>
+
+                    <button type="button"
+                            @click="$store.workspace.closeSplit()"
+                            title="{{ __('Close split') }}"
+                            class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-red-200 px-2.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-500 hover:text-white dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500 dark:hover:text-white">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        {{ __('Close split') }}
+                    </button>
+                </div>
+
+                <div id="workspace-stage" class="workspace-stage" x-data>
+                    <div id="workspace-split-divider"
+                         data-resizing="0"
+                         role="separator"
+                         aria-orientation="vertical"
+                         aria-label="{{ __('Resize split panes') }}"
+                         @pointerdown="$store.workspace.startSplitResize($event)"></div>
+                </div>
+
+                {{-- Pelindung iframe saat drag/resize + zona drop split kiri/kanan. --}}
+                <div id="workspace-drag-layer"
+                     x-data
+                     x-show="$store.workspace.draggingTabId || $store.workspace.resizingSplit"
+                     x-cloak
+                     class="fixed inset-x-0 bottom-0 top-20 z-[34]">
+                    <div x-show="$store.workspace.resizingSplit" class="absolute inset-0 cursor-col-resize"></div>
+
+                    {{-- Saat tab ditarik, layar dibagi dua: lepas di separuh kiri
+                         atau kanan untuk membuka split view. --}}
+                    <div x-show="$store.workspace.draggingTabId"
+                         class="absolute inset-0 flex"
+                         @dragleave.prevent="if (!$event.currentTarget.contains($event.relatedTarget)) $store.workspace.clearDropHover()">
+                        <div class="w-1/2 p-4 sm:p-6"
+                             @dragenter.prevent="$store.workspace.setDropSide('left')"
+                             @dragover.prevent="$store.workspace.setDropSide('left')"
+                             @drop.prevent="$store.workspace.dropToLeft()">
+                            <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
+                                 :class="$store.workspace.dragLeftHover
+                                    ? 'border-accent-500 bg-accent-500/15'
+                                    : 'border-slate-300/70 bg-[var(--card-bg)]/70 dark:border-slate-600'">
+                                <div class="text-center">
+                                    <x-icon name="view-columns" class="mx-auto mb-2 h-6 w-6 text-accent-600 dark:text-accent-300" />
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Drop here to split left') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-1/2 p-4 sm:p-6"
+                             @dragenter.prevent="$store.workspace.setDropSide('right')"
+                             @dragover.prevent="$store.workspace.setDropSide('right')"
+                             @drop.prevent="$store.workspace.dropToRight()">
+                            <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
+                                 :class="$store.workspace.dragRightHover
+                                    ? 'border-accent-500 bg-accent-500/15'
+                                    : 'border-slate-300/70 bg-[var(--card-bg)]/70 dark:border-slate-600'">
+                                <div class="text-center">
+                                    <x-icon name="view-columns" class="mx-auto mb-2 h-6 w-6 text-accent-600 dark:text-accent-300" />
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Drop here to split right') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             @endif
 
             {{-- Saat workspace aktif di browser, konten di bawah disembunyikan
@@ -592,6 +761,8 @@
                 if(btn){btn.setAttribute('aria-expanded',String(!v));btn.setAttribute('aria-label',v?@json(__('Expand sidebar')):@json(__('Collapse sidebar')))}
             syncTitles();
             }
+            // Dipakai workspace split view untuk mengecilkan/mengembalikan sidebar.
+            window.__workspaceSetSidebarCollapsed=function(v){try{setCollapsed(Boolean(v))}catch(e){}};
             syncTitles();
             if(cb&&!cb.dataset.bound){cb.dataset.bound='1';cb.addEventListener('click',function(){
                 if(window.innerWidth<1024){close();return}

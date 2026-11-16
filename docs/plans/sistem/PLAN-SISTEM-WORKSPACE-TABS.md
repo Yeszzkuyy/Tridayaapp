@@ -6,7 +6,7 @@
 **Menu:** Lintas Divisi (Top Navbar + semua menu sidebar)
 **Branch:** `feature/div-panel`
 **Worktree:** `/home/yeski/3dyapp-panel` (perlu entry baru di tabel AGENTS §1)
-**Terakhir diperbarui:** 2026-11-13 (revisi pemolesan)
+**Terakhir diperbarui:** 2026-11-16 (rekonsiliasi tab saat Back)
 
 ---
 
@@ -500,3 +500,152 @@ Bagian ini mengalahkan detail tampilan di §5 bila terjadi perbedaan.
 - `PageContext` memakai pencocokan prefix terpanjang dan tidak lagi
   menjadikan sisa route bertitik (mis. `requests.index`) sebagai nama
   halaman.
+
+
+---
+
+## 15. Revisi Drag & Drop Reorder + Split View (2026-11-13)
+
+### 15.1 Perilaku tab seperti browser
+
+- Tab non-pinned bisa digeser untuk mengubah urutan (desktop). Dashboard
+  tetap di posisi pertama, tidak bisa digeser, dan tidak menerima drop.
+- Urutan tab disimpan di `sessionStorage` dan pulih setelah refresh.
+- Menutup tab aktif berpindah ke **tab kanan** lebih dulu, lalu ke kiri bila
+  sudah tidak ada.
+- Tidak ada buka tab di belakang layar, middle-click, tombol `+`, menu
+  klik-kanan, atau spinner loading (sesuai keputusan User).
+
+### 15.2 Split View
+
+- Diaktifkan dari tombol split di navbar, menu **Split right** pada daftar
+  tab, atau menarik tab ke separuh kiri/kanan layar. Tab yang dilepas mengisi
+  panel di sisi itu dan panel sebelah memakai tab lain, sehingga dua panel
+  tidak pernah menampilkan tab yang sama (bila tab sudah ada di panel sebelah,
+  posisinya ditukar).
+- Satu baris kontrol tipis di atas kedua panel: pilih tab kiri/kanan,
+  **Swap**, dan **Close split**.
+- Panel yang fokus ditandai garis aksen di tepi atas. Menu sidebar baru
+  masuk ke panel yang fokus; split tetap aktif.
+- Tab kiri/kanan diberi badge `L`/`R` di barisan tab.
+- Sidebar otomatis mengecil saat split dibuka dan kembali seperti semula
+  saat ditutup (jika sebelumnya terbuka).
+- Garis pembatas bisa digeser dengan batas 30%-70%; rasio disimpan.
+- Menutup panel kanan/kiri otomatis kembali ke layar penuh dengan panel yang
+  masih hidup. Memilih tab yang sama di panel sebelah menukar posisi.
+- Split hanya tersedia di desktop (>= 1024px); di layar kecil tombol
+  disembunyikan dan split ditutup otomatis.
+
+### 15.3 Anti-reset iframe
+
+- Iframe tetap berada di wadah datar yang sama; urutan tab dan split hanya
+  mengatur pane mana yang ditampilkan.
+- Saat drag/resize, lapisan pelindung transparan menutup area iframe agar
+  kursor tidak nyangkut dan event drag tetap diterima halaman induk.
+- Diverifikasi: isian form tetap ada setelah tab digeser, split dibuka,
+  dan split ditutup.
+
+
+---
+
+## 16. Perbaikan Iframe Bersarang (2026-11-16)
+
+### 16.1 Masalah
+
+Klik **Estimator > Queue > New Request > Process Request** bisa memuat layout
+penuh di dalam iframe. Layout penuh itu membuat wadah tab baru dan iframe
+lagi, sehingga frame bertambah setiap kali navigasi.
+
+Akar masalah: halaman detail dibuka tanpa `?embed=1`, dan penentuan mode
+embed hanya mengandalkan header `Sec-Fetch-Dest`. Header itu tidak selalu
+ada (browser lama, proxy, atau navigasi history), sehingga server merender
+layout penuh di dalam iframe.
+
+### 16.2 Perbaikan
+
+1. **Propagasi `embed=1` dari dalam tab**
+   - Klik link same-origin di dalam tab ditambahi `embed=1`.
+   - Form GET ditambahi `embed=1` pada action; form POST diberi input
+     tersembunyi `embed=1`.
+2. **Redirect tetap embed**
+   - Middleware `PropagateWorkspaceEmbed` menambahkan `embed=1` ke
+     `Location` redirect same-origin saat request berjalan dalam mode embed.
+   - Redirect domain lain (mis. OAuth) tidak diubah.
+3. **Jaring pengaman anti-frame**
+   - Layout penuh yang termuat di dalam iframe langsung mengoreksi diri ke
+     `?embed=1`.
+   - Shell (sidebar/navbar/wadah tab) disembunyikan selama koreksi.
+   - Workspace store menolak inisialisasi saat halaman berada di dalam iframe,
+     jadi tidak ada iframe baru yang dibuat.
+4. **Pengujian**
+   - Test middleware redirect embed (query dipertahankan, domain eksternal
+     tidak diubah).
+   - Test layout penuh memuat penanda jaring pengaman; layout embed tidak.
+   - Uji browser: alur Estimator Process Request berakhir di iframe
+     `?embed=1` tanpa frame bersarang; layout penuh yang dipaksa di iframe
+     mengoreksi diri.
+
+
+---
+
+## 17. Sinkronisasi Tema Shell ↔ Tab (2026-11-16)
+
+### 17.1 Masalah
+
+Halaman Settings berjalan di dalam iframe tab. Saat tema diubah di sana,
+hanya `<html>` iframe yang berubah; sidebar, navbar, dan tab bar di halaman
+luar tetap memakai tema lama karena event `appearance:change` tidak
+menyeberang batas iframe.
+
+### 17.2 Perbaikan
+
+- `workspace-embed.js` mengirim `mode` dan `accent` ke halaman luar setiap
+  kali tema berubah di dalam tab.
+- `workspace-tabs.js` menerima pesan itu, memperbarui `data-mode`,
+  `data-theme`, dan kelas `dark` pada `<html>` shell, lalu meneruskannya ke
+  semua iframe tab lain agar seluruh aplikasi seragam.
+- State Alpine `appearance` di shell ikut diperbarui.
+- Penanda `applyingAppearanceFromHost` mencegah pesan tema berbalas terus.
+- Perubahan aksen warna juga mengikuti jalur yang sama.
+
+### 17.3 Verifikasi
+
+- Settings di dalam tab: Dark → Light dan Light → Dark mengubah sidebar,
+  navbar, tab bar, dan seluruh isi tab tanpa reload.
+- Ganti aksen (Ocean/Terracotta/Purple/Emerald) ikut tersinkron ke shell
+  dan tab lain.
+- Tidak ada pesan berulang/loop.
+
+
+---
+
+## 18. Rekonsiliasi Tab Saat Back ke Menu Lain (2026-11-16)
+
+### 18.1 Masalah
+
+Tab Pricelist bisa berubah isi menjadi Queue/Dashboard saat tombol Back di
+halaman Pricelist ditekan. URL tab ikut berubah, tetapi judul tab tetap
+Pricelist. Klik menu Pricelist lagi hanya mengaktifkan tab yang sudah berisi
+menu lain, sehingga Pricelist tidak muncul sampai tab ditutup. Jika target
+Back adalah Dashboard, tab Dashboard bisa tampil dua kali.
+
+### 18.2 Perbaikan
+
+- Setiap tab menyimpan `homeUrl` (URL menu asal).
+- URL baru dari iframe dicocokkan ke menu sidebar:
+  - halaman detail dalam menu yang sama tetap di tab itu;
+  - akar grup seperti `/estimator` dipetakan ke menu header grup
+    (`/estimator/requests`).
+- Jika iframe pindah ke menu lain:
+  - tab asal dikembalikan ke `homeUrl`;
+  - tab menu tujuan diaktifkan bila sudah ada, atau dibuka sebagai tab baru.
+- Klik menu sidebar pada tab yang sempat berpindah menu akan memuat ulang
+  tab ke menu asalnya.
+- Navigasi dari tab latar belakang tidak memindahkan fokus tab aktif.
+
+### 18.3 Verifikasi
+
+- Pricelist → Back → Queue/Dashboard aktif, tab Pricelist tetap Pricelist.
+- Klik Pricelist lagi → Pricelist tampil normal.
+- Dashboard utama tidak terbuka dua kali.
+- Halaman detail dalam menu yang sama tidak memicu perpindahan tab.

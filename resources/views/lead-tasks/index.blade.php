@@ -126,7 +126,10 @@
                             </span>
                         </td>
                         <td class="px-5 py-4 first:rounded-l-xl last:rounded-r-xl text-right">
-                            <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $task) }}" title="{{ __('View details') }}" />
+                            <div class="flex items-center justify-end gap-2">
+                                <x-task-complete-button :task="$task" />
+                                <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $task) }}" label="{{ __('View') }}" title="{{ __('View details') }}" />
+                            </div>
                         </td>
                     </tr>
                 @empty
