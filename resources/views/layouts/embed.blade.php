@@ -3,6 +3,7 @@
     $accentPref = auth()->check() ? auth()->user()->preference('accent', 'ocean') : 'ocean';
     $initialDark = $themePref !== 'light';
     $pageContext = \App\Support\PageContext::forRequest(request());
+    $instantSave = \App\Support\InstantSave::enabledFor(request());
     $embedFlash = [
         'success' => session('success') ? (string) session('success') : null,
         'warning' => session('warning') ? (string) session('warning') : null,
@@ -15,7 +16,9 @@
     ];
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" data-embed="1" class="{{ $initialDark ? 'dark' : '' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" data-embed="1" class="{{ $initialDark ? 'dark' : '' }}"
+      data-instant-save-failed="{{ __('Failed to save. Please try again.') }}"
+      @if($instantSave) data-instant-save="1" @endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
