@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadReassignedNotification;
 use App\Notifications\NewLeadNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\SendQueuedNotifications;
@@ -393,7 +394,11 @@ class LeadNotificationTest extends TestCase
             ->post(route('manage-sales.assign', $lead), ['assigned_to' => $salesB->id])
             ->assertRedirect(route('manage-sales.index'));
 
-        $this->assertSame(0, $salesA->fresh()->notifications()->count());
+        // Notifikasi assign lama dibersihkan, diganti kabar "lead dipindahkan".
+        $this->assertSame(0, $salesA->fresh()->notifications()
+            ->where('type', LeadAssignedNotification::class)->count());
+        $this->assertSame(1, $salesA->fresh()->notifications()
+            ->where('type', LeadReassignedNotification::class)->count());
         $this->assertSame(1, $salesB->fresh()->notifications()
             ->where('type', LeadAssignedNotification::class)->count());
     }

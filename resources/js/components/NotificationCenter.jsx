@@ -32,6 +32,7 @@ const VIEWPORT_PAD = 12;
 const TYPE_META = {
     lead: { color: '#16a34a', icon: 'userPlus' },
     assigned: { color: '#0284c7', icon: 'userPlus' },
+    reassigned: { color: '#d97706', icon: 'userPlus' },
     followup: { color: '#d97706', icon: 'clock' },
     task: { color: '#7c3aed', icon: 'clipboard' },
     schedule_assigned: { color: '#4f46e5', icon: 'calendar' },

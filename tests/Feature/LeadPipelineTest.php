@@ -165,14 +165,39 @@ class LeadPipelineTest extends TestCase
         $this->assertNotNull($lead->fresh()->acknowledged_at);
     }
 
-    public function test_reassign_returns_lead_to_new_column(): void
+    public function test_reassign_keeps_progressed_lead_in_its_column(): void
     {
         $management = $this->userWithRole('management');
         $first = User::factory()->create();
         $first->assignRole('sales');
         $second = User::factory()->create();
         $second->assignRole('sales');
+        // Lead sudah diakui dan punya DAR: jangan dikembalikan ke New.
         $lead = $this->makeLead(['assigned_to' => $first->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($management)
+            ->post(route('manage-sales.assign', $lead), ['assigned_to' => $second->id])
+            ->assertRedirect();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+
+        $response = $this->actingAs($second)->get(route('leads.pipeline'))->assertOk();
+        $this->assertFalse($response->viewData('newLeads')->contains($lead->fresh()));
+        $this->assertSame(1, $response->viewData('leads')->where('status', 'cool')->count());
+    }
+
+    public function test_reassign_untouched_lead_still_returns_to_new_column(): void
+    {
+        $management = $this->userWithRole('management');
+        $first = User::factory()->create();
+        $first->assignRole('sales');
+        $second = User::factory()->create();
+        $second->assignRole('sales');
+        $lead = $this->makeLead([
+            'assigned_to' => $first->id,
+            'acknowledged_at' => null,
+        ]);
 
         $this->actingAs($management)
             ->post(route('manage-sales.assign', $lead), ['assigned_to' => $second->id])
@@ -181,7 +206,7 @@ class LeadPipelineTest extends TestCase
         $this->assertNull($lead->fresh()->acknowledged_at);
 
         $response = $this->actingAs($second)->get(route('leads.pipeline'))->assertOk();
-        $this->assertTrue($response->viewData('newLeads')->contains($lead));
+        $this->assertTrue($response->viewData('newLeads')->contains($lead->fresh()));
     }
 
     public function test_management_sees_no_mixed_customers(): void

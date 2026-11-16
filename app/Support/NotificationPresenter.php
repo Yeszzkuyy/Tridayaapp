@@ -9,6 +9,7 @@ use App\Notifications\EstimatorRequestRevisionNotification;
 use App\Notifications\FollowUpOverdueNotification;
 use App\Notifications\InvoicePaidSalesNotification;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadReassignedNotification;
 use App\Notifications\LeadTaskNotification;
 use App\Notifications\MeetingReportReminderNotification;
 use App\Notifications\NewLeadNotification;
@@ -78,6 +79,7 @@ final class NotificationPresenter
         return match ($class) {
             NewLeadNotification::class => 'lead',
             LeadAssignedNotification::class => 'assigned',
+            LeadReassignedNotification::class => 'reassigned',
             FollowUpOverdueNotification::class => 'followup',
             LeadTaskNotification::class => 'task',
             TechnicianScheduleAssignedNotification::class => 'schedule_assigned',
@@ -131,6 +133,12 @@ final class NotificationPresenter
                 'title' => __('Lead assigned to you'),
                 'body' => (string) ($data['customer'] ?? __('New lead')),
                 'chips' => [],
+            ],
+            'reassigned' => [
+                'app' => __('Lead'),
+                'title' => __('Lead moved to another sales'),
+                'body' => trim(($data['customer'] ?? __('Lead')).' · '.($data['new_assignee'] ?? ''), ' ·'),
+                'chips' => [self::chip(__('Moved'), 'warning')],
             ],
             'followup' => [
                 'app' => __('Follow Up'),

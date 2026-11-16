@@ -6,10 +6,12 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Proposal;
 use App\Models\SalesSchedule;
 use App\Models\SalesTarget;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadReassignedNotification;
 use App\Notifications\NewLeadNotification;
 use App\Services\SalesKpiService;
 use App\Services\SalesReportStatusService;
@@ -25,7 +27,11 @@ class ManageSalesController extends Controller
     public function index(Request $request)
     {
         $query = Lead::with(['customer.contacts', 'assignee', 'partner'])
-            ->withCount(['followUps'])
+            ->withCount(['followUps', 'salesSchedules', 'proposals', 'technicalRequests'])
+            ->addSelect(['latest_proposal_status' => Proposal::select('status')
+                ->whereColumn('proposals.lead_id', 'leads.id')
+                ->latest('updated_at')
+                ->limit(1)])
             ->withMax('followUps as last_follow_up_at', 'follow_up_date')
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
                 fn ($c) => $c->whereLike('name', $request->search)))
@@ -88,6 +94,13 @@ class ManageSalesController extends Controller
             }
         }
 
+        $assigneeChanged = $request->has('assigned_to')
+            && (int) ($validated['assigned_to'] ?? 0) !== (int) $lead->assigned_to;
+
+        if ($assigneeChanged) {
+            $this->abortIfLeadClosed($lead);
+        }
+
         $lead->fill($validated);
 
         if ($request->has('assigned_to')) {
@@ -105,6 +118,7 @@ class ManageSalesController extends Controller
         $lead->save();
 
         $this->notifyAssignee($lead, $previousAssignee);
+        $this->notifyPreviousAssignee($lead, $previousAssignee, $lead->assigned_to);
 
         if ($changes) {
             $this->logActivity($lead, 'updated', $changes);
@@ -130,6 +144,8 @@ class ManageSalesController extends Controller
 
     public function assign(Request $request, Lead $lead)
     {
+        $this->abortIfLeadClosed($lead);
+
         $validated = $request->validate([
             'assigned_to' => 'required|exists:users,id',
         ]);
@@ -145,6 +161,7 @@ class ManageSalesController extends Controller
         $lead->save();
 
         $this->notifyAssignee($lead, $previousAssignee);
+        $this->notifyPreviousAssignee($lead, $previousAssignee, $salesUser->id);
 
         // Assign pertama vs reassign dibedakan; old diambil sebelum save.
         $this->logActivity($lead, $previousAssignee ? 'reassigned' : 'assigned', [
@@ -870,8 +887,36 @@ class ManageSalesController extends Controller
         $lead->assigned_by = $assignedTo ? auth()->id() : null;
         $lead->assigned_at = $assignedTo ? now() : null;
         $lead->assignment_overdue_notified_at = null;
-        // Assign (baru/reassign) = belum ditangani -> kembali ke kolom New pipeline.
-        $lead->acknowledged_at = $assignedTo ? null : $lead->acknowledged_at;
+        // Assign baru = belum ditangani -> kembali ke kolom New pipeline.
+        // Lead yang sudah berprogress tetap di kolomnya supaya tidak terlihat
+        // seperti lead baru bagi sales penerima.
+        if ($assignedTo && ! $this->hasProgress($lead)) {
+            $lead->acknowledged_at = null;
+        }
+    }
+
+    /**
+     * Lead dianggap sudah berjalan bila pernah diakui, sudah melewati tahap
+     * awal, atau sudah punya follow-up/meeting/quotation/request engineer.
+     */
+    private function hasProgress(Lead $lead): bool
+    {
+        if ($lead->acknowledged_at !== null || in_array($lead->status, ['warm', 'hot', 'won', 'lost'], true)) {
+            return true;
+        }
+
+        return $lead->followUps()->exists()
+            || $lead->salesSchedules()->exists()
+            || $lead->proposals()->exists()
+            || $lead->technicalRequests()->exists();
+    }
+
+    /** Lead yang sudah Won/Lost tidak boleh dipindah ke sales lain. */
+    private function abortIfLeadClosed(Lead $lead): void
+    {
+        if (in_array($lead->status, ['won', 'lost'], true)) {
+            abort(422, __('This lead is already closed and cannot be reassigned.'));
+        }
     }
 
     /**
@@ -888,6 +933,29 @@ class ManageSalesController extends Controller
 
         try {
             User::find($lead->assigned_to)?->notify(new LeadAssignedNotification($lead));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Kabari sales lama bahwa lead-nya dipindahkan, supaya tidak lanjut
+     * menghubungi customer. Dilewati bila pemiliknya tidak berubah atau
+     * yang memindahkan adalah orang yang sama.
+     */
+    private function notifyPreviousAssignee(Lead $lead, mixed $previousAssignee, mixed $newAssignee): void
+    {
+        $previousId = (int) $previousAssignee;
+        $newId = (int) $newAssignee;
+
+        if (! $previousId || $previousId === $newId || $previousId === (int) auth()->id()) {
+            return;
+        }
+
+        try {
+            User::find($previousId)?->notify(
+                new LeadReassignedNotification($lead, User::find($newId)?->name)
+            );
         } catch (\Throwable $e) {
             report($e);
         }
