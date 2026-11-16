@@ -10,9 +10,12 @@
     // (script head saat load, hook onSwap saat navigasi) jadi tak ada kilatan
     // terbalik.
     $initialDark = $themePref !== 'light';
+    $instantSave = \App\Support\InstantSave::enabledFor(request());
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}"
+      data-instant-save-failed="{{ __('Failed to save. Please try again.') }}"
+      @if($instantSave) data-instant-save="1" @endif>
 <head>
     <script>
         // Jaring pengaman: layout penuh tidak boleh hidup di dalam iframe.

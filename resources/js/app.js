@@ -9,6 +9,7 @@ import { installLegacyToast } from './toast-store.js';
 import { installConfirmInterceptor, registerConfirmStore } from './confirm-dialog.js';
 import { registerWorkspaceStore } from './workspace-tabs.js';
 import { initWorkspaceEmbed } from './workspace-embed.js';
+import { installInstantSave } from './instant-save.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -292,6 +293,9 @@ installLegacyToast();
    ============================================================ */
 installConfirmInterceptor();
 initWorkspaceEmbed();
+
+/* Simpan cepat: toast tampil sebelum halaman berikutnya selesai dimuat. */
+installInstantSave();
 
 /* Livewire memakai pop up yang sama: komponen cukup
    $this->dispatch('toast', message: '...', type: 'success'). */

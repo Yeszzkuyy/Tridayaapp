@@ -154,6 +154,14 @@ export function initWorkspaceEmbed() {
         });
     };
 
+    // Jenis pesan dipertahankan (warning/info) untuk simpan cepat.
+    window.toastVariant = function (message, variant = 'success') {
+        send('toast', {
+            variant: String(variant || 'success'),
+            message: String(message ?? ''),
+        });
+    };
+
     // 4. Kirim metadata halaman saat ini ke shell luar.
     const reportMeta = () => {
         const meta = window.__workspacePage || {};

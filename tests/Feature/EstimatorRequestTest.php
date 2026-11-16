@@ -266,6 +266,70 @@ class EstimatorRequestTest extends TestCase
         Notification::assertSentTo($sales, EstimatorRequestAnsweredNotification::class);
     }
 
+    public function test_ajax_answer_returns_json_and_consumes_flash(): void
+    {
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $supplier = Supplier::create(['name' => 'Vendor Jawab Cepat']);
+        $request = $this->makeRequest($sales, ['status' => 'submitted']);
+        $item = $request->items()->create([
+            'description' => 'Item Jawab Cepat',
+            'quantity' => 1,
+            'unit' => 'pcs',
+        ]);
+
+        $response = $this->actingAs($estimator)
+            ->from(route('estimator.requests.show', $request))
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->post(route('estimator.requests.answer', $request), [
+                'items' => [[
+                    'id' => $item->id,
+                    'supplier_id' => $supplier->id,
+                    'price' => '125.000',
+                    'stock_status' => 'ready',
+                    'warranty_info' => '1 year',
+                ]],
+            ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'ok' => true,
+                'variant' => 'success',
+                'message' => __('Prices sent to Sales for review.'),
+            ])
+            ->assertJsonStructure(['redirect']);
+
+        $this->assertStringContainsString(
+            route('estimator.requests.show', $request),
+            $response->json('redirect')
+        );
+        // Flash dibaca middleware dan dihapus supaya tidak tampil dua kali.
+        $response->assertSessionMissing('success');
+
+        $this->assertSame('answered', $request->fresh()->status);
+    }
+
+    public function test_estimator_pages_are_marked_for_instant_save(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $this->actingAs($sales)
+            ->get(route('estimator.requests.create'))
+            ->assertOk()
+            ->assertSee('data-instant-save="1"', false)
+            ->assertSee('data-saving-label', false);
+
+        $this->actingAs($sales)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('data-instant-save="1"', false);
+    }
+
     public function test_answer_requires_supplier_stock_and_warranty(): void
     {
         $sales = $this->userWithRole('sales');
