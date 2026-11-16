@@ -19,6 +19,7 @@
     "The following lead has been moved to :sales:": "Lead berikut sudah dipindahkan ke :sales:",
     "This lead already has progress. Move it to the selected sales? History stays with the lead, but the new sales becomes the owner.": "Lead ini sudah ada progress. Pindahkan ke sales yang dipilih? Riwayat tetap di lead, tetapi pemiliknya menjadi sales baru.",
     "This lead is already closed and cannot be reassigned.": "Lead ini sudah selesai (Won/Lost) dan tidak bisa dipindahkan.",
+    "View customer detail": "Lihat detail customer",
     "Waiting for Customer PO": "Menunggu Customer PO",
     "Customer PO": "Customer PO",
     "PO Number": "Nomor PO",

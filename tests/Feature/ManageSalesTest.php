@@ -47,6 +47,20 @@ class ManageSalesTest extends TestCase
             ->assertSee(__('Sales Agenda'));
     }
 
+    public function test_actions_column_opens_customer_detail(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = $this->makeLead();
+
+        $res = $this->actingAs($management)
+            ->get(route('manage-sales.index'))
+            ->assertOk();
+
+        $res->assertSee(route('customers.show', $lead->customer), false);
+        $res->assertSee(__('View customer detail'));
+        $res->assertDontSee(route('manage-sales.edit', $lead), false);
+    }
+
     public function test_marketing_and_sales_cannot_open_manage_sales(): void
     {
         foreach (['marketing', 'sales'] as $role) {
