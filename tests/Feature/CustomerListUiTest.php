@@ -78,6 +78,19 @@ class CustomerListUiTest extends TestCase
             ->assertSee('aria-label="Edit Customer"', false);
     }
 
+    public function test_customer_edit_has_single_pic_entry_point(): void
+    {
+        $customer = Customer::create(['name' => 'PT Satu PIC', 'pt_group' => 'NTI']);
+
+        $html = $this->actingAs($this->admin())->get(route('customers.edit', $customer))->getContent();
+
+        // Hanya daftar kontak (dengan tombol Add PIC) yang tersisa; blok PIC
+        // utama paling atas dihapus karena tidak pernah ikut form.
+        $this->assertStringContainsString(__('PIC / Customer Contacts List'), $html);
+        $this->assertStringNotContainsString('name="contact_position"', $html);
+        $this->assertStringNotContainsString('id="contact_person"', $html);
+    }
+
     public function test_overview_shows_billing_and_shipping_address_separate_from_main_address(): void
     {
         $customer = Customer::create([
