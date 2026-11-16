@@ -425,12 +425,12 @@ function summaryMessage(template, labels) {
     return template.replace(':fields', fields);
 }
 
-function showSummary(labels, template) {
+function showSummary(labels, template, variant = 'error') {
     const message = summaryMessage(template || templates().summary, labels);
     if (!message) return;
 
     if (typeof window.toastVariant === 'function') {
-        window.toastVariant(message, 'error', 8000);
+        window.toastVariant(message, variant, 8000);
         return;
     }
 
@@ -467,7 +467,7 @@ export function validateForm(form) {
         showError(entry, templates().required.replace(':label', label));
     });
 
-    showSummary(missing.map((entry) => entry.label || 'This field'), templates().summary);
+    showSummary(missing.map((entry) => entry.label || 'This field'), templates().summary, 'warning');
     focusEntry(missing.find((entry) => isVisible(entry.focus || entry.field)));
 
     return false;
