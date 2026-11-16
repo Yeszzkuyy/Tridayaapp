@@ -130,6 +130,7 @@ export function installInstantSave(document = globalThis.document, window = glob
     const failedMessage =
         document.documentElement.getAttribute('data-instant-save-failed') ||
         'Failed to save. Please try again.';
+    const defaultSavingLabel = document.querySelector('meta[name="saving-label"]')?.content || '';
 
     document.addEventListener('submit', async (event) => {
         const form = event.target?.closest?.('form');
@@ -150,7 +151,7 @@ export function installInstantSave(document = globalThis.document, window = glob
             event.submitter && event.submitter.form === form
                 ? event.submitter
                 : form.querySelector('button[type="submit"]');
-        const label = form.dataset.loadingText || submitter?.dataset.savingLabel || '';
+        const label = form.dataset.loadingText || submitter?.dataset.savingLabel || defaultSavingLabel;
 
         markFormBusy(form, submitter, label);
         form.querySelector('[data-instant-save-errors]')?.remove();
