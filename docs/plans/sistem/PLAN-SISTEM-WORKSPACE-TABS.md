@@ -519,7 +519,10 @@ Bagian ini mengalahkan detail tampilan di §5 bila terjadi perbedaan.
 ### 15.2 Split View
 
 - Diaktifkan dari tombol split di navbar, menu **Split right** pada daftar
-  tab, atau menarik tab ke separuh kanan layar.
+  tab, atau menarik tab ke separuh kiri/kanan layar. Tab yang dilepas mengisi
+  panel di sisi itu dan panel sebelah memakai tab lain, sehingga dua panel
+  tidak pernah menampilkan tab yang sama (bila tab sudah ada di panel sebelah,
+  posisinya ditukar).
 - Satu baris kontrol tipis di atas kedua panel: pilih tab kiri/kanan,
   **Swap**, dan **Close split**.
 - Panel yang fokus ditandai garis aksen di tepi atas. Menu sidebar baru

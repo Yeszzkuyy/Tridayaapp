@@ -185,6 +185,7 @@ export function registerWorkspaceStore(Alpine) {
         draggingTabId: null,
         dragOverTabId: null,
         dragSide: null,
+        dragLeftHover: false,
         dragRightHover: false,
         suppressClick: false,
 
@@ -443,34 +444,56 @@ export function registerWorkspaceStore(Alpine) {
             return true;
         },
 
-        openSplitFromDrag(tabId) {
-            if (!this.desktop || this.tabs.length < 2 || !tabId) return;
+        /**
+         * Buka split dari tab yang dilepas pada separuh layar.
+         * `side` adalah panel tujuan: tab yang dilepas mengisi panel itu,
+         * tab yang tadinya aktif pindah ke panel sebelah. Saat split sudah
+         * aktif, panel tujuan diganti; bila tab itu sudah menempati panel
+         * sebelah, posisinya ditukar supaya kedua panel tidak pernah
+         * menampilkan tab yang sama.
+         */
+        openSplitFromDrag(tabId, side = 'right') {
+            if (!this.desktop || !tabId) return;
+            const target = side === 'left' ? 'left' : 'right';
+
             if (this.splitMode) {
-                this.assignPane('right', tabId);
+                this.assignPane(target, tabId);
+                // assignPane menukar posisi bila tab sudah ada di panel
+                // sebelah; fokus tetap diarahkan ke tab yang barusan dilepas.
+                if (this.activeId !== tabId) {
+                    this.focusPane(this.leftTabId === tabId ? 'left' : 'right');
+                }
                 return;
             }
-            const right = tabId;
-            let left = this.activeId;
-            if (left === right) {
-                left =
-                    this.previousActiveId && this.previousActiveId !== right
+
+            if (this.tabs.length < 2) return;
+
+            const dropped = tabId;
+            let other = this.activeId;
+            if (other === dropped) {
+                other =
+                    this.previousActiveId && this.previousActiveId !== dropped
                         ? this.previousActiveId
-                        : this.tabs.find((tab) => tab.id !== right)?.id;
+                        : this.tabs.find((tab) => tab.id !== dropped)?.id;
             }
-            if (!left || left === right) return;
+            if (!other || other === dropped) return;
+
+            const left = target === 'left' ? dropped : other;
+            const right = target === 'left' ? other : dropped;
 
             this.splitMode = true;
             this.leftTabId = left;
             this.rightTabId = right;
-            this.activePane = 'right';
-            this.activeId = right;
+            this.activePane = target;
+            this.activeId = dropped;
             this.collapseForSplit();
             this.syncPanes();
             this.updateActiveUrl(true);
-            document.title = `${this.fullTitle(this.rightTab())} — ${appName}`;
-            this.syncSidebar(this.rightTab()?.path || '/');
+            const focused = this.paneTab(target);
+            document.title = `${this.fullTitle(focused)} — ${appName}`;
+            this.syncSidebar(focused?.path || '/');
             this.persist();
-            this.scrollActiveIntoView(this.rightTab());
+            this.scrollActiveIntoView(focused);
             this.scheduleOverflowHints();
         },
 
@@ -547,6 +570,7 @@ export function registerWorkspaceStore(Alpine) {
             this.draggingTabId = tab.id;
             this.dragOverTabId = null;
             this.dragSide = null;
+            this.clearDropHover();
             this.suppressClick = true;
             try {
                 event.dataTransfer.effectAllowed = 'move';
@@ -596,17 +620,34 @@ export function registerWorkspaceStore(Alpine) {
             this.draggingTabId = null;
             this.dragOverTabId = null;
             this.dragSide = null;
-            this.dragRightHover = false;
+            this.clearDropHover();
             document.body.classList.remove('workspace-dragging');
             setTimeout(() => {
                 this.suppressClick = false;
             }, 200);
         },
 
+        /** Sorot salah satu separuh layar sebagai tujuan split saat tab ditarik. */
+        setDropSide(side) {
+            this.dragLeftHover = side === 'left';
+            this.dragRightHover = side === 'right';
+        },
+
+        clearDropHover() {
+            this.dragLeftHover = false;
+            this.dragRightHover = false;
+        },
+
+        dropToLeft() {
+            const id = this.draggingTabId;
+            this.onDragEnd();
+            if (id) this.openSplitFromDrag(id, 'left');
+        },
+
         dropToRight() {
             const id = this.draggingTabId;
             this.onDragEnd();
-            if (id) this.openSplitFromDrag(id);
+            if (id) this.openSplitFromDrag(id, 'right');
         },
 
         init() {
