@@ -3226,6 +3226,8 @@
     "Supported Header Formats:": "Format Header yang Didukung:",
     "Supporting Documents": "Dokumen Pendukung",
     "Supporting Attachments": "Lampiran Pendukung",
+    "Drop files here or click to browse": "Seret file ke sini atau klik untuk memilih",
+    "PDF, Word, Excel, CSV, image, or ZIP. Max :count files, 10 MB each.": "PDF, Word, Excel, CSV, gambar, atau ZIP. Maksimal :count file, 10 MB per file.",
     "Brief, requirement, or reference documents. Max 5 files, 10 MB each.": "Brief, kebutuhan, atau dokumen acuan. Maksimal 5 file, 10 MB per file.",
     "Supporting files uploaded.": "Lampiran pendukung berhasil diunggah.",
     "Supporting file deleted.": "Lampiran pendukung dihapus.",

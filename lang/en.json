@@ -3226,6 +3226,8 @@
     "Supported Header Formats:": "Supported Header Formats:",
     "Supporting Documents": "Supporting Documents",
     "Supporting Attachments": "Supporting Attachments",
+    "Drop files here or click to browse": "Drop files here or click to browse",
+    "PDF, Word, Excel, CSV, image, or ZIP. Max :count files, 10 MB each.": "PDF, Word, Excel, CSV, image, or ZIP. Max :count files, 10 MB each.",
     "Brief, requirement, or reference documents. Max 5 files, 10 MB each.": "Brief, requirement, or reference documents. Max 5 files, 10 MB each.",
     "Supporting files uploaded.": "Supporting files uploaded.",
     "Supporting file deleted.": "Supporting file deleted.",
