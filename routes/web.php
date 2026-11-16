@@ -869,6 +869,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{leadTask}', [LeadTaskController::class, 'show'])->name('show');
             Route::get('/{leadTask}/edit', [LeadTaskController::class, 'edit'])->name('edit');
             Route::put('/{leadTask}', [LeadTaskController::class, 'update'])->name('update');
+            Route::patch('/{leadTask}/complete', [LeadTaskController::class, 'complete'])->name('complete');
             Route::delete('/{leadTask}', [LeadTaskController::class, 'destroy'])->name('destroy');
             Route::post('/{leadTask}/comments', [LeadTaskController::class, 'storeComment'])->name('comments.store');
 

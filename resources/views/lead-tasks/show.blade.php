@@ -12,12 +12,13 @@
             || $backUser->can('manage-sales-leads')
         );
     @endphp
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ $task->title }}</h1>
             <p class="text-slate-500 mt-1">{{ $task->lead?->customer?->name ?? '-' }}</p>
         </div>
         <div class="flex gap-2">
+            <x-task-complete-button :task="$task" />
             @if($canManageTask)
                 <x-icon-button as="a" icon="edit" href="{{ route('lead-tasks.edit', $task) }}" title="{{ __('Edit') }}" />
             @endif

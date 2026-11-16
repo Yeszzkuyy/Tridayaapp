@@ -325,6 +325,28 @@ class LeadTaskController extends Controller
      * Upload file quotation baru dari Inside Sales. File lama TIDAK ditimpa —
      * setiap upload jadi versi baru supaya revisi tetap bisa diunduh.
      */
+    /**
+     * Request mulai dikerjakan begitu Inside Sales mengunggah file penawaran:
+     * status Todo naik otomatis ke On Progress (sekali saja, tidak menurunkan
+     * status Review/Done yang sudah lebih jauh).
+     */
+    private function markTaskInProgress(LeadTask $task): void
+    {
+        if (! in_array($task->status, [null, '', 'todo'], true)) {
+            return;
+        }
+
+        $oldStatus = $task->status;
+        $task->update(['status' => 'in_progress']);
+
+        LeadActivity::create([
+            'lead_id' => $task->lead_id,
+            'user_id' => auth()->id(),
+            'action' => 'task_status_changed',
+            'changes' => ['task_status' => ['old' => $oldStatus, 'new' => 'in_progress']],
+        ]);
+    }
+
     public function storeAttachment(Request $request, LeadTask $leadTask)
     {
         $this->authorizeTaskItems($leadTask);
@@ -352,6 +374,8 @@ class LeadTaskController extends Controller
             'uploaded_by' => auth()->id(),
         ]);
 
+        $this->markTaskInProgress($leadTask);
+
         // Beri tahu peminta (pembuat task) kalau yang upload bukan dia sendiri.
         $requester = $leadTask->creator;
         if ($requester && (int) $requester->id !== (int) auth()->id()) {
@@ -361,6 +385,38 @@ class LeadTaskController extends Controller
         return redirect()
             ->route('lead-tasks.show', $leadTask)
             ->with('success', __('Quotation file uploaded.'));
+    }
+
+    /**
+     * Tombol "Selesai": tutup request dari halaman detail maupun daftar.
+     * Hanya assignee Inside Sales atau management, sama seperti item quotation.
+     */
+    public function complete(LeadTask $leadTask)
+    {
+        $this->authorizeTaskItems($leadTask);
+
+        if ($leadTask->status === 'done') {
+            return redirect()->back()->with('info', __('This request is already marked as done.'));
+        }
+
+        $oldStatus = $leadTask->status;
+        $leadTask->update(['status' => 'done']);
+
+        LeadActivity::create([
+            'lead_id' => $leadTask->lead_id,
+            'user_id' => auth()->id(),
+            'action' => 'task_status_changed',
+            'changes' => ['task_status' => ['old' => $oldStatus, 'new' => 'done']],
+        ]);
+
+        // Status dipakai bersama oleh menu Sales dan Inside Sales.
+        foreach ([$leadTask->creator, $leadTask->assignee] as $recipient) {
+            if ($recipient && (int) $recipient->id !== (int) auth()->id()) {
+                $recipient->notify(new \App\Notifications\LeadTaskNotification($leadTask, 'status'));
+            }
+        }
+
+        return redirect()->back()->with('success', __('Request marked as done.'));
     }
 
     /**
