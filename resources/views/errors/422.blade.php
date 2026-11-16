@@ -10,15 +10,15 @@
 @endphp
 <x-guest-layout>
     <div class="flex flex-col items-center py-4 text-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M10.34 3.94 2.7 17.2A2.25 2.25 0 0 0 4.65 20.5h14.7a2.25 2.25 0 0 0 1.95-3.3L13.66 3.94a1.9 1.9 0 0 0-3.32 0Z" />
             </svg>
         </div>
 
-        <h1 class="mt-4 text-xl font-semibold text-gray-900">{{ __('Request Rejected') }}</h1>
-        <p class="mt-2 max-w-md text-sm text-gray-600">{{ $detail ?? __('This request could not be processed.') }}</p>
-        <p class="mt-1 text-xs text-gray-400">{{ __('Your access is fine — the data or status does not allow this action.') }}</p>
+        <h1 class="mt-4 text-xl font-semibold text-[var(--text-primary)]">{{ __('Request Rejected') }}</h1>
+        <p class="mt-2 max-w-md text-sm text-[var(--text-muted)]">{{ $detail ?? __('This request could not be processed.') }}</p>
+        <p class="mt-1 text-xs text-[var(--text-muted)]">{{ __('Your access is fine — the data or status does not allow this action.') }}</p>
 
         <div class="mt-6 flex items-center gap-3">
             <x-icon-button as="a" icon="back" href="{{ url()->previous() }}"
