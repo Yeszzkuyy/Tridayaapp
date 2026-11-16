@@ -610,6 +610,9 @@ export function registerWorkspaceStore(Alpine) {
         },
 
         init() {
+            // Layout penuh tidak boleh membuat workspace baru saat dimuat
+            // di dalam iframe (pemicu iframe bersarang).
+            if (window.self !== window.top) return;
             if (this.initialized || !this.enabled) return;
             if (!document.getElementById('workspace-stage')) return;
             this.initialized = true;

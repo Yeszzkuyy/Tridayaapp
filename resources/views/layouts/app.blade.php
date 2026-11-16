@@ -14,6 +14,24 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
 <head>
+    <script>
+        // Jaring pengaman: layout penuh tidak boleh hidup di dalam iframe.
+        // Koreksi diri ke ?embed=1 agar tidak terbentuk iframe bersarang.
+        (function () {
+            if (window.self === window.top) return;
+            document.documentElement.classList.add('workspace-nested');
+            if (document.documentElement.getAttribute('data-embed') === '1') return;
+            try {
+                var key = 'ws-embed-retry:' + location.pathname;
+                var tries = Number(sessionStorage.getItem(key) || 0);
+                if (tries >= 2) return;
+                sessionStorage.setItem(key, String(tries + 1));
+                var url = new URL(location.href);
+                url.searchParams.set('embed', '1');
+                location.replace(url.toString());
+            } catch (e) {}
+        })();
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -428,6 +446,18 @@
         body.workspace-dragging,body.workspace-resizing{user-select:none;-webkit-user-select:none}
         body.workspace-dragging *{cursor:grabbing!important}
         body.workspace-resizing *{cursor:col-resize!important}
+        /* Fallback bila layout penuh terlanjur termuat di dalam iframe:
+           sembunyikan shell, tampilkan konten halaman saja. */
+        html.workspace-nested .sidebar,
+        html.workspace-nested .app-header,
+        html.workspace-nested #workspace-stage,
+        html.workspace-nested #workspace-split-bar,
+        html.workspace-nested #workspace-drag-layer,
+        html.workspace-nested #sidebarOverlay,
+        html.workspace-nested #sidebarRail,
+        html.workspace-nested .main-content > footer{display:none!important}
+        html.workspace-nested .main-content{margin-left:0!important;width:100%!important}
+        html.workspace-nested #workspace-fallback{display:flex!important;flex:1;flex-direction:column}
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         /* Barisan tab: geser horizontal tanpa scrollbar, dengan pudar tepi
