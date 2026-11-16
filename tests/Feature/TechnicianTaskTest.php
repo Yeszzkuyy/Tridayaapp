@@ -55,6 +55,8 @@ class TechnicianTaskTest extends TestCase
             'title' => 'Survey Lokasi',
             'priority' => 'normal',
             'status' => 'assigned',
+            'target_date' => '2026-12-01',
+            'target_time' => '09:00',
         ], $overrides));
     }
 
