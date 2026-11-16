@@ -9,13 +9,40 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 /** Dikirim saat inside sales task dibuat/di-assign atau statusnya berubah. */
 class LeadTaskNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 
-    public function __construct(public LeadTask $task, public string $event = 'created') {}
+    public function __construct(
+        public LeadTask $task,
+        public string $event = 'created',
+        public ?string $senderName = null,
+        public ?string $message = null,
+    ) {}
+
+    /**
+     * Notifikasi balasan chat (event `comment`), termasuk baris lama yang
+     * hanya punya judul "Komentar baru" tanpa `event`.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function isReplyData(array $data): bool
+    {
+        if (($data['event'] ?? null) === 'comment') {
+            return true;
+        }
+
+        if (($data['event'] ?? null) !== null) {
+            return false;
+        }
+
+        $title = mb_strtolower((string) ($data['title'] ?? ''));
+
+        return str_contains($title, 'komentar') || str_contains($title, 'comment');
+    }
 
     public function via(object $notifiable): array
     {
@@ -38,19 +65,44 @@ class LeadTaskNotification extends Notification implements ShouldQueue
     {
         return [
             'type' => 'task',
-            'title' => match ($this->event) {
-                'created' => 'Task baru',
-                'comment' => 'Komentar baru',
-                'quotation' => 'Quotation baru',
-                'accepted' => 'Quotation diterima',
-                default => 'Status task',
-            },
+            'event' => $this->event,
+            'title' => $this->title(),
             'lead_id' => $this->task->lead_id,
             'lead_task_id' => $this->task->id,
+            'sender_name' => $this->event === 'comment' ? $this->senderName : null,
             'customer' => $this->task->lead?->customer?->name ?? 'Lead task',
-            'preview' => $this->task->title,
+            'preview' => $this->previewText(),
             'url' => $this->databaseUrl($notifiable),
         ];
+    }
+
+    /** Judul kartu/push: balasan chat menyebut nama task, bukan "Komentar baru". */
+    private function title(): string
+    {
+        return match ($this->event) {
+            'created' => 'Task baru',
+            'comment' => 'Balasan baru di task: '.$this->task->title,
+            'quotation' => 'Quotation baru',
+            'accepted' => 'Quotation diterima',
+            default => 'Status task',
+        };
+    }
+
+    /** Isi kartu: pengirim + potongan pesan untuk balasan chat. */
+    private function previewText(): string
+    {
+        if ($this->event !== 'comment') {
+            return $this->task->title;
+        }
+
+        $sender = trim((string) $this->senderName);
+        $message = Str::limit(trim((string) $this->message), 140);
+
+        if ($sender !== '' && $message !== '') {
+            return $sender.': '.$message;
+        }
+
+        return $sender !== '' ? $sender : $message;
     }
 
     /**
@@ -78,16 +130,23 @@ class LeadTaskNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject(match ($this->event) {
-                'created' => 'Inside Sales Task Baru',
-                'comment' => 'Komentar Baru di Task',
-                'quotation' => 'File Quotation Baru',
-                'accepted' => 'Quotation Diterima',
-                default => 'Status Task Berubah',
-            })
+        $mail = (new MailMessage)
+            ->subject($this->event === 'comment'
+                ? 'Balasan baru di task: '.$this->task->title
+                : match ($this->event) {
+                    'created' => 'Inside Sales Task Baru',
+                    'quotation' => 'File Quotation Baru',
+                    'accepted' => 'Quotation Diterima',
+                    default => 'Status Task Berubah',
+                })
             ->line('Task: ' . $this->task->title)
-            ->line('Lead: ' . ($this->task->lead?->customer?->name ?? '-'))
+            ->line('Lead: ' . ($this->task->lead?->customer?->name ?? '-'));
+
+        if ($this->event === 'comment' && $this->previewText() !== '') {
+            $mail->line($this->previewText());
+        }
+
+        return $mail
             ->action('Lihat Task', url(route('lead-tasks.show', $this->task->id)))
             ->line('Terima kasih.');
     }
@@ -95,14 +154,8 @@ class LeadTaskNotification extends Notification implements ShouldQueue
     protected function pushContent(): array
     {
         return [
-            'title' => match ($this->event) {
-                'created' => 'Inside sales task baru',
-                'comment' => 'Komentar baru di task',
-                'quotation' => 'File quotation baru',
-                'accepted' => 'Quotation diterima',
-                default => 'Status task berubah',
-            },
-            'body' => $this->task->title,
+            'title' => $this->title(),
+            'body' => $this->previewText(),
             'url' => route('lead-tasks.show', $this->task->id),
         ];
     }

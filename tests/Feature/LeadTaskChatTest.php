@@ -134,6 +134,83 @@ class LeadTaskChatTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_repeated_replies_keep_one_unread_notification_per_task(): void
+    {
+        [$sales, $inside, $task] = $this->makeTask();
+
+        foreach (['Pesan pertama', 'Pesan kedua', 'Pesan ketiga'] as $body) {
+            Livewire::actingAs($inside)
+                ->test(LeadTaskChat::class, ['task' => $task])
+                ->set('body', $body)
+                ->call('send');
+        }
+
+        // Chat beruntun tidak menumpuk: cukup satu notifikasi belum dibaca.
+        $unread = $sales->unreadNotifications()->get();
+        $this->assertCount(1, $unread);
+
+        $data = $unread->first()->data;
+        $this->assertSame('comment', $data['event']);
+        $this->assertSame('Balasan baru di task: '.$task->title, $data['title']);
+        $this->assertStringContainsString($inside->name, $data['preview']);
+        $this->assertStringContainsString('Pesan pertama', $data['preview']);
+    }
+
+    public function test_new_reply_notifies_again_after_previous_one_is_read(): void
+    {
+        [$sales, $inside, $task] = $this->makeTask();
+
+        Livewire::actingAs($inside)
+            ->test(LeadTaskChat::class, ['task' => $task])
+            ->set('body', 'Balasan pertama')
+            ->call('send');
+
+        $sales->unreadNotifications()->update(['read_at' => now()]);
+
+        Livewire::actingAs($inside)
+            ->test(LeadTaskChat::class, ['task' => $task])
+            ->set('body', 'Balasan kedua')
+            ->call('send');
+
+        $this->assertCount(1, $sales->unreadNotifications()->get());
+        $this->assertSame(2, $sales->notifications()->count());
+        $this->assertStringContainsString(
+            'Balasan kedua',
+            $sales->unreadNotifications()->first()->data['preview']
+        );
+    }
+
+    public function test_notification_center_collapses_stacked_task_reply_notifications(): void
+    {
+        [$sales, $inside, $task] = $this->makeTask();
+
+        foreach (['Paling lama', 'Tengah', 'Paling baru'] as $index => $preview) {
+            $sales->notifications()->create([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'type' => \App\Notifications\LeadTaskNotification::class,
+                'created_at' => now()->subMinutes(3 - $index),
+                'data' => [
+                    'type' => 'task',
+                    'event' => 'comment',
+                    'title' => 'Komentar baru',
+                    'lead_task_id' => $task->id,
+                    'preview' => $preview,
+                    'url' => '/lead-tasks/'.$task->id,
+                ],
+            ]);
+        }
+
+        $this->actingAs($sales)->get(route('notifications.status'))->assertOk();
+
+        $remaining = $sales->unreadNotifications()->get()->filter(
+            fn ($notification) => (int) ($notification->data['lead_task_id'] ?? 0) === $task->id
+        );
+
+        $this->assertCount(1, $remaining);
+        $this->assertSame('Paling baru', $remaining->first()->data['preview']);
+        $this->assertNotNull($inside);
+    }
+
     public function test_messages_render_in_chronological_order_oldest_first(): void
     {
         [$sales, $inside, $task] = $this->makeTask();
