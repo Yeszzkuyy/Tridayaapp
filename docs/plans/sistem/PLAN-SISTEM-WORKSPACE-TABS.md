@@ -6,7 +6,7 @@
 **Menu:** Lintas Divisi (Top Navbar + semua menu sidebar)
 **Branch:** `feature/div-panel`
 **Worktree:** `/home/yeski/3dyapp-panel` (perlu entry baru di tabel AGENTS §1)
-**Terakhir diperbarui:** 2026-11-16 (perbaikan iframe bersarang)
+**Terakhir diperbarui:** 2026-11-16 (sinkronisasi tema shell ↔ tab)
 
 ---
 
@@ -581,3 +581,34 @@ layout penuh di dalam iframe.
    - Uji browser: alur Estimator Process Request berakhir di iframe
      `?embed=1` tanpa frame bersarang; layout penuh yang dipaksa di iframe
      mengoreksi diri.
+
+
+---
+
+## 17. Sinkronisasi Tema Shell ↔ Tab (2026-11-16)
+
+### 17.1 Masalah
+
+Halaman Settings berjalan di dalam iframe tab. Saat tema diubah di sana,
+hanya `<html>` iframe yang berubah; sidebar, navbar, dan tab bar di halaman
+luar tetap memakai tema lama karena event `appearance:change` tidak
+menyeberang batas iframe.
+
+### 17.2 Perbaikan
+
+- `workspace-embed.js` mengirim `mode` dan `accent` ke halaman luar setiap
+  kali tema berubah di dalam tab.
+- `workspace-tabs.js` menerima pesan itu, memperbarui `data-mode`,
+  `data-theme`, dan kelas `dark` pada `<html>` shell, lalu meneruskannya ke
+  semua iframe tab lain agar seluruh aplikasi seragam.
+- State Alpine `appearance` di shell ikut diperbarui.
+- Penanda `applyingAppearanceFromHost` mencegah pesan tema berbalas terus.
+- Perubahan aksen warna juga mengikuti jalur yang sama.
+
+### 17.3 Verifikasi
+
+- Settings di dalam tab: Dark → Light dan Light → Dark mengubah sidebar,
+  navbar, tab bar, dan seluruh isi tab tanpa reload.
+- Ganti aksen (Ocean/Terracotta/Purple/Emerald) ikut tersinkron ke shell
+  dan tab lain.
+- Tidak ada pesan berulang/loop.
