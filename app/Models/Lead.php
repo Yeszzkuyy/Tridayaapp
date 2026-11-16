@@ -24,7 +24,7 @@ class Lead extends Model
     {
         return match ($needType) {
             'cctv' => __('CCTV'),
-            'pabx' => __('PABX'),
+            'pabx' => __('IP Phone'),
             'video_conference' => __('Video Conference'),
             'network' => __('Network'),
             'other' => __('Others'),

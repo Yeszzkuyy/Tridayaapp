@@ -36,6 +36,19 @@ class LeadFormTest extends TestCase
             ->assertDontSee('Nilai Opportunity');
     }
 
+    public function test_need_type_label_uses_ip_phone_instead_of_pabx(): void
+    {
+        // Nilai tersimpan tetap 'pabx' agar leads lama tidak rusak; hanya
+        // label yang tampil di UI yang berubah.
+        $this->assertSame('IP Phone', \App\Models\Lead::needTypeLabel('pabx'));
+
+        $this->actingAs($this->marketingUser())
+            ->get(route('leads.create'))
+            ->assertOk()
+            ->assertSee('IP Phone')
+            ->assertDontSee('PABX');
+    }
+
     public function test_create_prefills_company_and_pic_separately_from_whatsapp(): void
     {
         $account = \App\Models\WhatsappAccount::create([
