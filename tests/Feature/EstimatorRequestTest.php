@@ -686,7 +686,10 @@ class EstimatorRequestTest extends TestCase
             ->assertSee(__('Search product name / SKU (optional)...'))
             ->assertSee('text-base', false)
             ->assertSee('@keydown.arrow-down', false)
-            ->assertSee('moveActive', false);
+            ->assertSee('moveActive', false)
+            // x-data dibaca Alpine sebagai ekspresi JS: kutip ganda di dalam
+            // template literal akan memotong atribut dan mematikan Add Item.
+            ->assertSee("data-product-menu='\${index}'", false);
 
         $this->actingAs($estimator)
             ->get(route('estimator.requests.index'))
