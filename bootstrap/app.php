@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetSecurityHeaders::class,
             \App\Http\Middleware\EnsureUserHasRole::class,
             \App\Http\Middleware\FlashActionToast::class,
+            \App\Http\Middleware\PropagateWorkspaceEmbed::class,
         ]);
 
         // Percayai proxy (nginx/ngrok) agar Laravel melihat skema https asli
