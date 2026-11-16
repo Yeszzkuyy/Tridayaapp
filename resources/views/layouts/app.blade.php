@@ -152,9 +152,9 @@
                 'info' => session('status') === 'google-linked'
                     ? __('Your Google account has been successfully connected!')
                     : null,
-                'error' => session('error')
-                    ? (string) session('error')
-                    : ($errors->any() ? __('Some fields need attention. Please review the highlighted inputs.') : null),
+                // Error validasi kini dipetakan langsung ke isian + toast
+                // ringkasan oleh resources/js/form-validation.js.
+                'error' => session('error') ? (string) session('error') : null,
             ],
             'initial' => ['unread' => 0, 'unassigned' => 0, 'items' => [], 'next_cursor' => null, 'has_more' => false],
             'routes' => [
