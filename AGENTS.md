@@ -509,8 +509,10 @@ dengan tampilan yang sama.
 3. **Isi kartu:** ikon dalam kotak `h-10 w-10 rounded-xl` berwarna lembut,
    judul tebal per jenis (Berhasil / Gagal / Peringatan / Informasi),
    keterangan maksimal 3 baris, tombol aksi opsional, tombol silang.
-4. **Perilaku:** maksimal 3 kartu menumpuk ala Sonner, hover mengembang dan
-   menghentikan hitungan hilang, pengingat tampil 12 detik, hormati
+4. **Perilaku & durasi:** maksimal 3 kartu menumpuk ala Sonner, hover
+   mengembang dan menghentikan hitungan hilang. Toast hasil aksi
+   (simpan/konfirmasi berhasil dan gagal/error) tampil **3 detik**. Toast
+   notifikasi baru dan pengingat tampil **8 detik**. Hormati
    `prefers-reduced-motion`.
 5. **Gaya kartu wajib selaras panel lonceng:** `rounded-2xl`, border slate,
    `shadow-2xl`, mode gelap `zinc-900`. Jangan memakai warna border tebal

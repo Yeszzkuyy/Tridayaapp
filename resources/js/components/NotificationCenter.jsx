@@ -67,8 +67,8 @@ const CHIP_TONES = {
     danger: 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300',
 };
 
-/** Pengingat diberi waktu baca lebih lama supaya tidak terlewat. */
-const REMINDER_TYPES = new Set(['followup', 'task', 'schedule_reminder', 'meeting_report_reminder']);
+/** Notifikasi baru & pengingat tampil lebih lama daripada toast aksi. */
+const NOTIFICATION_DURATION = 8000;
 
 const ICON_PROPS = {
     fill: 'none',
@@ -517,7 +517,7 @@ export default function NotificationCenter() {
                         message: item.body || '',
                         accent: meta.color,
                         icon: <TypeIcon name={meta.icon} className="h-5 w-5" />,
-                        duration: REMINDER_TYPES.has(item.type) ? 12000 : undefined,
+                        duration: NOTIFICATION_DURATION,
                         onOpen: () => openItemRef.current?.(item),
                     });
                 }
