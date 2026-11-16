@@ -1171,6 +1171,29 @@ export function registerWorkspaceStore(Alpine) {
                     return;
                 }
 
+                if (data.type === 'appearance') {
+                    // Tema diubah dari dalam tab: terapkan ke shell (sidebar,
+                    // navbar, tab bar), lalu teruskan ke semua tab lain.
+                    const mode = data.mode || 'system';
+                    const accent = data.accent || 'ocean';
+                    const root = document.documentElement;
+                    root.setAttribute('data-mode', mode);
+                    root.setAttribute('data-theme', accent);
+
+                    if (typeof window.__applyAppearance === 'function') {
+                        window.__applyAppearance();
+                    }
+
+                    const store = window.Alpine?.store?.('appearance');
+                    if (store) {
+                        store.mode = mode;
+                        store.accent = accent;
+                    }
+
+                    window.dispatchEvent(new CustomEvent('appearance:change'));
+                    return;
+                }
+
                 const stage = document.getElementById('workspace-stage');
                 if (!stage) return;
                 let ownerId = null;
