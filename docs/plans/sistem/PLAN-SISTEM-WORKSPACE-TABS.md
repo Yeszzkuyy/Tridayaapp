@@ -6,7 +6,7 @@
 **Menu:** Lintas Divisi (Top Navbar + semua menu sidebar)
 **Branch:** `feature/div-panel`
 **Worktree:** `/home/yeski/3dyapp-panel` (perlu entry baru di tabel AGENTS §1)
-**Terakhir diperbarui:** 2026-11-13 (revisi drag & split)
+**Terakhir diperbarui:** 2026-11-16 (perbaikan iframe bersarang)
 
 ---
 
@@ -541,3 +541,43 @@ Bagian ini mengalahkan detail tampilan di §5 bila terjadi perbedaan.
   kursor tidak nyangkut dan event drag tetap diterima halaman induk.
 - Diverifikasi: isian form tetap ada setelah tab digeser, split dibuka,
   dan split ditutup.
+
+
+---
+
+## 16. Perbaikan Iframe Bersarang (2026-11-16)
+
+### 16.1 Masalah
+
+Klik **Estimator > Queue > New Request > Process Request** bisa memuat layout
+penuh di dalam iframe. Layout penuh itu membuat wadah tab baru dan iframe
+lagi, sehingga frame bertambah setiap kali navigasi.
+
+Akar masalah: halaman detail dibuka tanpa `?embed=1`, dan penentuan mode
+embed hanya mengandalkan header `Sec-Fetch-Dest`. Header itu tidak selalu
+ada (browser lama, proxy, atau navigasi history), sehingga server merender
+layout penuh di dalam iframe.
+
+### 16.2 Perbaikan
+
+1. **Propagasi `embed=1` dari dalam tab**
+   - Klik link same-origin di dalam tab ditambahi `embed=1`.
+   - Form GET ditambahi `embed=1` pada action; form POST diberi input
+     tersembunyi `embed=1`.
+2. **Redirect tetap embed**
+   - Middleware `PropagateWorkspaceEmbed` menambahkan `embed=1` ke
+     `Location` redirect same-origin saat request berjalan dalam mode embed.
+   - Redirect domain lain (mis. OAuth) tidak diubah.
+3. **Jaring pengaman anti-frame**
+   - Layout penuh yang termuat di dalam iframe langsung mengoreksi diri ke
+     `?embed=1`.
+   - Shell (sidebar/navbar/wadah tab) disembunyikan selama koreksi.
+   - Workspace store menolak inisialisasi saat halaman berada di dalam iframe,
+     jadi tidak ada iframe baru yang dibuat.
+4. **Pengujian**
+   - Test middleware redirect embed (query dipertahankan, domain eksternal
+     tidak diubah).
+   - Test layout penuh memuat penanda jaring pengaman; layout embed tidak.
+   - Uji browser: alur Estimator Process Request berakhir di iframe
+     `?embed=1` tanpa frame bersarang; layout penuh yang dipaksa di iframe
+     mengoreksi diri.
