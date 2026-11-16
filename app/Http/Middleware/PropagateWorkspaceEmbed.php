@@ -37,8 +37,15 @@ class PropagateWorkspaceEmbed
             return $response;
         }
 
-        // Redirect ke domain lain (mis. OAuth) tidak boleh diubah.
-        if (isset($parts['host']) && strcasecmp($parts['host'], $request->getHost()) !== 0) {
+        // Redirect ke domain lain (mis. OAuth) tidak boleh diubah. Domain
+        // aplikasi (APP_URL) tetap dianggap internal meskipun request datang
+        // lewat host lain (mis. localhost saat testing).
+        $internalHosts = array_filter([
+            strtolower($request->getHost()),
+            strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST)),
+        ]);
+
+        if (isset($parts['host']) && ! in_array(strtolower($parts['host']), $internalHosts, true)) {
             return $response;
         }
 
