@@ -786,3 +786,38 @@ html.doc-modal-open main .bg-white.shadow:hover {
         top: 80px;
     }
 }
+
+/* ============================================================
+   Validasi wajib-isi standar (resources/js/form-validation.js)
+   Hanya isian WAJIB yang ditandai; isian opsional tidak disentuh.
+   ============================================================ */
+.form-validation-invalid {
+    border-color: #dc2626 !important;
+}
+
+.form-validation-invalid:focus {
+    border-color: #dc2626 !important;
+    --tw-ring-color: #dc2626 !important;
+}
+
+input[type="checkbox"].form-validation-invalid,
+input[type="radio"].form-validation-invalid {
+    outline: 2px solid #dc2626;
+    outline-offset: 2px;
+}
+
+.glide-select-root.form-validation-invalid .glide-select__trigger,
+.glide-select__trigger.form-validation-invalid {
+    box-shadow: 0 0 0 2px rgb(220 38 38 / 0.35);
+}
+
+.form-validation-message {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    color: #dc2626;
+}
+
+.dark .form-validation-message {
+    color: #f87171;
+}

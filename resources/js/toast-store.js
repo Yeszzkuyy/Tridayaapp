@@ -128,10 +128,11 @@ export function installLegacyToast() {
         });
     };
     // Versi yang mempertahankan jenis pesan (warning/info), dipakai simpan cepat.
-    window.toastVariant = function toastVariant(message, variant = 'success') {
+    window.toastVariant = function toastVariant(message, variant = 'success', duration = null) {
         pushToast({
             variant: normalizeVariant(variant),
             message: String(message ?? ''),
+            ...(Number.isFinite(duration) ? { duration } : {}),
         });
     };
 }

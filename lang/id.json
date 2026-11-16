@@ -5432,5 +5432,9 @@
     "Left pane": "Panel kiri",
     "Right pane": "Panel kanan",
     "Select tab": "Pilih tab",
-    "Resize split panes": "Ubah lebar panel"
+    "Resize split panes": "Ubah lebar panel",
+    ":label is required.": ":label wajib diisi.",
+    "Please complete the required fields: :fields": "Lengkapi isian wajib berikut: :fields",
+    "Please fix the highlighted fields: :fields": "Perbaiki isian berikut: :fields",
+    "and :count more": "dan :count lainnya"
 }

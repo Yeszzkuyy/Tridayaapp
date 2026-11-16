@@ -4,6 +4,10 @@
     // Sama seperti layout utama: mode system dirender gelap dulu (optimistik),
     // lalu script head mengoreksi sesuai skema OS sebelum paint pertama.
     $initialDark = $themePref !== 'light';
+    $formErrors = collect($errors->getBag('default')->getMessages())
+        ->map(fn ($messages) => is_array($messages) ? ($messages[0] ?? null) : $messages)
+        ->filter()
+        ->all();
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
@@ -11,6 +15,11 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="validation-required" content="{{ __(':label is required.') }}">
+        <meta name="validation-summary" content="{{ __('Please complete the required fields: :fields') }}">
+        <meta name="validation-fix" content="{{ __('Please fix the highlighted fields: :fields') }}">
+        <meta name="validation-more" content="{{ __('and :count more') }}">
+        <script>window.__formErrors = @json($formErrors);</script>
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 

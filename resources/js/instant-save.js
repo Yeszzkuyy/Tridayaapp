@@ -1,4 +1,5 @@
 import { markFormBusy, releaseFormBusy } from './form-busy.js';
+import { applyServerErrors } from './form-validation.js';
 
 /**
  * Simpan cepat untuk modul Estimator, Produk/Pricelist, dan Sales Request.
@@ -60,10 +61,8 @@ function restorePendingToast() {
     }
 }
 
-function showErrors(form, errors) {
+function showUnmappedErrors(form, messages) {
     form.querySelector('[data-instant-save-errors]')?.remove();
-
-    const messages = Object.values(errors || {}).flat().filter(Boolean);
     if (!messages.length) return;
 
     const box = document.createElement('div');
@@ -173,7 +172,8 @@ export function installInstantSave(document = globalThis.document, window = glob
 
             if (response.status === 422) {
                 if (data?.errors) {
-                    showErrors(form, data.errors);
+                    const result = applyServerErrors(form, data.errors);
+                    if (result.unmapped.length) showUnmappedErrors(form, result.unmapped);
                 } else {
                     notify('error', data?.message || failedMessage);
                 }

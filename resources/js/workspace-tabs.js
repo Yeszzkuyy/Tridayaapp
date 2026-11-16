@@ -1305,6 +1305,7 @@ export function registerWorkspaceStore(Alpine) {
                             variant: data.variant || 'success',
                             message: data.message || '',
                             action: data.action || null,
+                            ...(Number.isFinite(data.duration) ? { duration: data.duration } : {}),
                         });
                     } else if (typeof window.toast === 'function') {
                         window.toast(data.message || '', data.variant !== 'error', data.action || null);
