@@ -62,7 +62,9 @@ export default function GlideSelect({
   rememberPosition = true,
   disabled = false,
   ariaLabel = 'Select',
-  className = ''
+  className = '',
+  searchable = false,
+  searchPlaceholder = ''
 }) {
   const items = options.map(norm);
   const [inner, setInner] = useState(defaultValue ?? '');
@@ -70,6 +72,12 @@ export default function GlideSelect({
   const selected = items.findIndex(it => it.value === current);
   const [phase, setPhase] = useState('closed');
   const [active, setActive] = useState(null);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredItems = searchable && normalizedQuery
+    ? items.filter(it => textOf(it).toLowerCase().includes(normalizedQuery))
+    : items;
   const [side, setSide] = useState(placement);
   const [menuPos, setMenuPos] = useState(null);
   const rootRef = useRef(null);
@@ -148,10 +156,12 @@ export default function GlideSelect({
     if (disabled) return;
     clearTimeout(closeTimer.current);
     instant.current = true;
+    if (searchable) setQuery('');
     setActive(selected >= 0 ? selected : viaKey ? 0 : null);
     setPhase('open');
   };
   const close = mode => {
+    if (searchable) setQuery('');
     setActive(null);
     clearTimeout(closeTimer.current);
     const el = menuRef.current;
@@ -165,7 +175,7 @@ export default function GlideSelect({
     closeTimer.current = setTimeout(() => setPhase('closed'), popOut + 20);
   };
   const pick = (i, viaKey) => {
-    const it = items[i];
+    const it = filteredItems[i];
     if (!it) {
       close('instant');
       return;
@@ -181,7 +191,7 @@ export default function GlideSelect({
 
   const onTriggerKey = e => {
     const k = e.key;
-    const n = items.length;
+    const n = filteredItems.length;
     const cur = active ?? Math.max(0, selected);
     if (phase !== 'open') {
       if (k === 'Enter' || k === ' ' || k === 'ArrowDown' || k === 'ArrowUp') {
@@ -204,7 +214,35 @@ export default function GlideSelect({
     } else if (k === 'Escape' || k === 'Tab') {
       if (k === 'Escape') e.preventDefault();
       close('instant');
-    } else if (k.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) go(typeaheadIndex(items, cur, k));
+    } else if (k.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) go(typeaheadIndex(filteredItems, cur, k));
+  };
+
+  const onSearchKey = e => {
+    const k = e.key;
+    const n = filteredItems.length;
+    const cur = active ?? 0;
+    const go = i => {
+      e.preventDefault();
+      instant.current = true;
+      kbdNav.current = true;
+      setActive(Math.min(n - 1, Math.max(0, i)));
+    };
+
+    if (k === 'ArrowDown' || k === 'ArrowUp') go(active === null ? cur : cur + (k === 'ArrowDown' ? 1 : -1));
+    else if (k === 'Home' || k === 'End') go(k === 'Home' ? 0 : n - 1);
+    else if (k === 'Enter') {
+      e.preventDefault();
+      if (n === 1) pick(0, true);
+      else if (active !== null) pick(active, true);
+    } else if (k === 'Escape') {
+      e.preventDefault();
+      close('instant');
+      triggerRef.current?.focus({ preventScroll: true });
+    } else if (k === 'Tab') {
+      e.preventDefault();
+      close('instant');
+      triggerRef.current?.focus({ preventScroll: true });
+    }
   };
 
   useEffect(() => {
@@ -217,6 +255,18 @@ export default function GlideSelect({
     return () => document.removeEventListener('pointerdown', onDown, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+  useEffect(() => {
+    if (phase === 'open' && searchable) {
+      searchRef.current?.focus({ preventScroll: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, searchable]);
+
+  useEffect(() => {
+    if (phase === 'open' && searchable && filteredItems.length === 0) setActive(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredItems.length, phase, searchable]);
+
   useEffect(() => {
     if (disabled && phase !== 'closed') close('instant');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -244,7 +294,7 @@ export default function GlideSelect({
     if (!list) return null;
     // Posisi + scroll dibaca live agar klik/drag tetap tepat walau list digulir.
     const i = Math.floor((y - list.getBoundingClientRect().top - PAD + list.scrollTop) / step);
-    return i >= 0 && i < items.length ? i : null;
+    return i >= 0 && i < filteredItems.length ? i : null;
   };
   const onListDown = e => {
     if (scrub.current) return;
@@ -338,6 +388,25 @@ export default function GlideSelect({
       {phase !== 'closed' ? createPortal(
         <div ref={menuRef} className="glide-select__menu glide-select__menu--portal" data-state="open" data-side={side} data-align={align}
              style={menuPos ? { ...themeVars, top: menuPos.top, left: menuPos.left, width: menuPos.width } : themeVars}>
+          {searchable ? (
+            <div className="glide-select__search-wrap">
+              <input
+                ref={searchRef}
+                type="search"
+                value={query}
+                onChange={e => {
+                  setQuery(e.target.value);
+                  instant.current = true;
+                  setActive(0);
+                }}
+                onKeyDown={onSearchKey}
+                placeholder={searchPlaceholder || 'Search...'}
+                aria-label={searchPlaceholder || 'Search options'}
+                className="glide-select__search"
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
           <div
             id={`${id}-list`}
             role="listbox"
@@ -355,18 +424,20 @@ export default function GlideSelect({
             onLostPointerCapture={onListUp}
           >
             <span ref={pillRef} className="glide-select__pill" aria-hidden="true" />
-            {items.map((it, i) => (
+            {filteredItems.length === 0 ? (
+              <div className="glide-select__empty">No results</div>
+            ) : filteredItems.map((it, i) => (
               <div
                 key={it.value}
                 id={`${id}-${i}`}
                 role="option"
-                aria-selected={i === selected}
+                aria-selected={it.value === current}
                 data-index={i}
                 className="glide-select__option"
               >
                 <span className="glide-select__name">{it.label}</span>
                 {showTags && it.tag ? <span className="glide-select__tag">{it.tag}</span> : null}
-                <span className="glide-select__check" data-on={i === selected ? '' : undefined} aria-hidden="true">
+                <span className="glide-select__check" data-on={it.value === current ? '' : undefined} aria-hidden="true">
                   <TickIcon />
                 </span>
               </div>

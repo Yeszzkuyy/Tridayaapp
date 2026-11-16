@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductPriceLog;
 use App\Models\Supplier;
+use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -99,6 +100,26 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Bersihkan pemisah ribuan dari input uang sebelum validasi.
+     *
+     * @param  array<int, string>  $fields
+     */
+    private function normalizeMoneyInput(Request $request, array $fields): void
+    {
+        $normalized = [];
+
+        foreach ($fields as $field) {
+            if ($request->has($field)) {
+                $normalized[$field] = Rupiah::normalize($request->input($field));
+            }
+        }
+
+        if ($normalized !== []) {
+            $request->merge($normalized);
+        }
+    }
+
     private function syncSuppliers(Request $request, Product $product): void
     {
         if (! $request->user()?->can('manage-admin')) {
@@ -173,6 +194,7 @@ class ProductController extends Controller
         $canManageSellingPrice = Gate::allows('manageSellingPrice', Product::class);
         $this->assertCostTampering($request, $canManageCost);
         $this->assertSupplierTampering($request);
+        $this->normalizeMoneyInput($request, ['default_price', 'cost_price']);
 
         abort_if(
             $request->has('default_price') && ! $canManageSellingPrice,
@@ -223,6 +245,7 @@ class ProductController extends Controller
         $canManageSellingPrice = Gate::allows('manageSellingPrice', $product);
         $this->assertCostTampering($request, $canManageCost);
         $this->assertSupplierTampering($request);
+        $this->normalizeMoneyInput($request, ['default_price', 'cost_price']);
 
         abort_if(
             $request->has('default_price') && ! $canManageSellingPrice,
@@ -295,6 +318,8 @@ class ProductController extends Controller
     public function updatePrice(Request $request, Product $product)
     {
         Gate::authorize('manageCost', $product);
+
+        $request->merge(['price' => Rupiah::normalize($request->input('price'))]);
 
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',

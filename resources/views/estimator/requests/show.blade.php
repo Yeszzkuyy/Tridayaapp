@@ -53,7 +53,7 @@
     @endphp
 
     <div>
-        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ __('Product Price Request') }}</h1>
@@ -70,7 +70,9 @@
                     @endif
                 </p>
             </div>
-            <x-back-button :href="$backUrl" />
+            <div class="flex w-full justify-end sm:w-auto">
+                <x-back-button :href="$backUrl" />
+            </div>
         </div>
 
         @if($estimatorRequest->status === 'revision')
@@ -199,6 +201,7 @@
         <section class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800"
                  x-data="{
                      editing: {{ $formOpen ? 'true' : 'false' }},
+                     sending: false,
                      waSuppliers: @js($waSuppliers),
                      waSupplierId: @js($defaultWaSupplierId),
                      waItems: @js($waItemLines),
@@ -230,24 +233,25 @@
                 <div x-show="editing" x-cloak style="{{ $formOpen ? '' : 'display: none' }}"
                      class="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-emerald-900 dark:text-emerald-200">{{ __('Ask Supplier via WhatsApp') }}</p>
-                        <p class="text-[11px] text-emerald-700 dark:text-emerald-300/80">{{ __('Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table.') }}</p>
+                        <p class="text-base font-semibold text-emerald-900 dark:text-emerald-200">{{ __('Ask Supplier via WhatsApp') }}</p>
+                        <p class="text-sm text-emerald-700 dark:text-emerald-300/80">{{ __('Choose a distributor to open a ready-to-send WhatsApp message with all requested items. This only opens WhatsApp and does not fill the table.') }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <div class="min-w-[240px]" @change="waSupplierId = $event.target.value">
                             <x-glide-select name="wa_supplier_id" :options="$supplierOptions" :value="$defaultWaSupplierId"
-                                            :label="__('Supplier')" :placeholder="__('Select supplier')" size="field" :menu-width="280" />
+                                            :label="__('Supplier')" :placeholder="__('Select supplier')" size="field" :menu-width="280"
+                                            searchable :search-placeholder="__('Search supplier...')" />
                         </div>
                         <x-icon-button as="a" icon="whatsapp" x-bind:href="waUrl()" target="_blank" rel="noopener" label="{{ __('Ask Supplier via WhatsApp') }}" title="{{ __('Ask Supplier via WhatsApp') }}" />
                     </div>
                 </div>
 
                 <form action="{{ route('estimator.requests.answer', $estimatorRequest) }}" method="POST"
-                      x-show="editing" x-cloak
+                      x-show="editing" x-cloak data-no-loader @submit="sending = true"
                       style="{{ $formOpen ? '' : 'display: none' }}">
                     @csrf
                     <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-xs">
+                        <table class="min-w-full text-left text-sm">
                             <thead class="bg-slate-50 uppercase tracking-wider text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
                                 <tr>
                                     <th class="px-5 py-3 text-center">{{ __('Item') }}</th>
@@ -273,33 +277,30 @@
                                         ] : null;
                                         $supplierValue = old("items.{$index}.supplier_id", $item->supplier_id);
                                         $priceValue = old("items.{$index}.price", $item->price);
-                                        $priceDisplay = ($priceValue !== null && $priceValue !== '')
-                                            ? number_format((float) $priceValue, 0, ',', '.')
-                                            : '';
                                         $stockValue = old("items.{$index}.stock_status", $item->stock_status) ?: 'ready';
                                         $etaValue = old("items.{$index}.stock_eta", $item->stock_eta);
                                     @endphp
                                     <tr class="align-top" data-estimator-row data-qty="{{ $item->quantity }}">
-                                        <td class="px-5 py-4 text-left">
+                                        <td class="min-w-[250px] px-5 py-4 text-left">
                                             <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
-                                            <p class="font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
+                                            <p class="font-semibold text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
                                             <p class="mt-0.5 text-[11px] text-slate-400">{{ $item->product?->sku ?: '-' }} &middot; {{ $item->quantity }} {{ $item->unit }}</p>
                                             @if($item->notes)<p class="mt-0.5 text-[11px] text-slate-400">{{ $item->notes }}</p>@endif
                                             @if($lastLog)
-                                                <div class="mt-2 rounded-xl border border-teal-200 bg-teal-50/70 p-2 text-[11px] text-teal-900 dark:border-teal-800/60 dark:bg-teal-950/30 dark:text-teal-200">
-                                                    <p class="font-semibold">
+                                                <div class="mt-2 w-full max-w-xs rounded-xl border border-teal-200 bg-teal-50/70 p-2.5 text-xs leading-5 text-teal-900 dark:border-teal-800/60 dark:bg-teal-950/30 dark:text-teal-200">
+                                                    <p class="font-semibold break-words">
                                                         {{ __('Last price') }}: Rp {{ number_format((float) $lastLog->price, 0, ',', '.') }}
-                                                        @if($lastLog->supplier)
-                                                            &middot; {{ $lastLog->supplier->name }}
-                                                        @endif
                                                     </p>
+                                                    @if($lastLog->supplier)
+                                                        <p class="mt-0.5 text-[11px] text-teal-700 dark:text-teal-300">{{ $lastLog->supplier->name }}</p>
+                                                    @endif
                                                     @if($lastLog->valid_until)
-                                                        <p class="mt-0.5 text-[10px] text-teal-700 dark:text-teal-300">
+                                                        <p class="mt-0.5 text-[11px] text-teal-700 dark:text-teal-300">
                                                             {{ __('Valid until :date', ['date' => $lastLog->valid_until->format('d M Y')]) }}
                                                         </p>
                                                     @endif
                                                     <button type="button" onclick="useLastPrice({{ $index }}, @js($lastLogPayload))"
-                                                            class="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-teal-700 active:scale-95">
+                                                            class="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-teal-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-teal-700 active:scale-95 sm:w-auto">
                                                         {{ __('Use Last Price') }}
                                                     </button>
                                                 </div>
@@ -313,15 +314,13 @@
                                                                 :label="__('Supplier')"
                                                                 :placeholder="__('Select supplier')"
                                                                 :error="$errors->first('items.'.$index.'.supplier_id')"
-                                                                size="field" :menu-width="280" required />
+                                                                size="field" :menu-width="280"
+                                                                searchable :search-placeholder="__('Search supplier...')" required />
                                             </div>
                                         </td>
                                         <td class="border-l border-slate-100 px-5 py-4 text-right dark:border-slate-700/60">
-                                            <div class="relative min-w-[220px]">
-                                                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-300">Rp</span>
-                                                <input type="text" inputmode="numeric" name="items[{{ $index }}][price]" value="{{ $priceDisplay }}" oninput="formatRupiahInput(this)" aria-label="{{ __('Cost') }}"
-                                                       class="h-10 w-full rounded-xl border-slate-300 pl-9 pr-3 text-right text-sm font-semibold tabular-nums text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
-                                            </div>
+                                            <x-rupiah-input :name="'items['.$index.'][price]'" :value="$priceValue"
+                                                            wrapper-class="min-w-[220px]" :aria-label="__('Cost')" required />
                                         </td>
                                         <td class="px-5 py-4 text-center">
                                             <div class="mx-auto w-full max-w-[150px]" data-glide-field="stock" @change="toggleStockEtaFromEvent($event)">
@@ -374,13 +373,14 @@
                         @if($estimatorRequest->status === 'answered')
                             <x-secondary-button type="button" x-on:click="editing = false">{{ __('Cancel') }}</x-secondary-button>
                         @endif
-                        <x-icon-button variant="solid" type="submit" icon="upload" label="{{ __('Send Prices') }}" title="{{ __('Send Prices') }}" />
+                        <x-icon-button variant="solid" type="submit" icon="upload" label="{{ __('Send Prices') }}" title="{{ __('Send Prices') }}"
+                                       x-bind:disabled="sending" x-bind:class="{ 'opacity-60 pointer-events-none': sending }" />
                     </div>
                 </form>
             @endif
 
             <div x-show="!editing" x-cloak class="overflow-x-auto">
-                <table class="min-w-full text-left text-xs">
+                <table class="min-w-full text-left text-sm">
                     <thead class="bg-slate-50 uppercase tracking-wider text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
                         <tr>
                             <th class="px-5 py-3 text-center">{{ __('Item') }}</th>
@@ -395,8 +395,8 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                         @foreach($estimatorRequest->items as $item)
                             <tr class="align-top">
-                                <td class="px-5 py-4 text-left">
-                                    <p class="font-medium text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
+                                <td class="min-w-[250px] px-5 py-4 text-left">
+                                    <p class="font-semibold text-slate-800 dark:text-slate-100">{{ $item->description }}</p>
                                     <p class="mt-0.5 text-[11px] text-slate-400">{{ $item->product?->sku ?: '-' }} &middot; {{ $item->quantity }} {{ $item->unit }}</p>
                                     @if($item->product_id && (auth()->user()->can('manage-price-requests') || auth()->user()->can('manage-sales-leads') || auth()->user()->can('manage-admin') || auth()->user()->hasRole('ceo')))
                                         <a href="{{ route('estimator.price-history', ['product_id' => $item->product_id]) }}" class="mt-1 inline-block text-[11px] font-semibold text-accent-600 hover:underline dark:text-accent-400">{{ __('Price History') }}</a>
@@ -435,6 +435,7 @@
                         <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Review Prices') }}</h2>
                         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Accept the prices or ask Estimator for a revision.') }}</p>
                         <form action="{{ route('estimator.requests.accept', $estimatorRequest) }}" method="POST" class="mt-4"
+                              x-data="{ submitting: false }" @submit="submitting = true"
                               data-confirm="{{ __('The prices are locked and used for the customer quotation.') }}"
                               data-confirm-title="{{ __('Accept these prices as final?') }}"
                               data-confirm-tone="success"
@@ -444,14 +445,17 @@
                                   ['label' => __('Request'), 'value' => '#'.$estimatorRequest->id],
                               ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                             @csrf
-                            <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept Prices') }}" title="{{ __('Accept Prices') }}" />
+                            <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept Prices') }}" title="{{ __('Accept Prices') }}"
+                                           x-bind:disabled="submitting" x-bind:class="{ 'opacity-60 pointer-events-none': submitting }" />
                         </form>
-                        <form action="{{ route('estimator.requests.revision', $estimatorRequest) }}" method="POST" class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-600">
+                        <form action="{{ route('estimator.requests.revision', $estimatorRequest) }}" method="POST" class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-600"
+                              x-data="{ submitting: false }" @submit="submitting = true">
                             @csrf
                             <label for="estimator-revision-reason" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Revision reason') }}</label>
                             <textarea id="estimator-revision-reason" name="reason" rows="3" required maxlength="2000" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800" placeholder="{{ __('Explain what must be revised (price, product, stock, or warranty).') }}">{{ old('reason') }}</textarea>
                             <div class="mt-2">
-                                <x-icon-button type="submit" icon="edit" label="{{ __('Request Revision') }}" title="{{ __('Request Revision') }}" />
+                                <x-icon-button type="submit" icon="edit" label="{{ __('Request Revision') }}" title="{{ __('Request Revision') }}"
+                                               x-bind:disabled="submitting" x-bind:class="{ 'opacity-60 pointer-events-none': submitting }" />
                             </div>
                         </form>
                     </section>
@@ -509,31 +513,8 @@
 
     @once
         <script>
-            function parseRupiah(value) {
-                return Number(String(value || '').replace(/[^0-9]/g, '')) || 0;
-            }
-
-            function formatRupiah(value) {
-                const number = parseRupiah(value);
-                return number ? number.toLocaleString('id-ID') : '';
-            }
-
-            function formatRupiahInput(input) {
-                const caretFromEnd = input.value.length - (input.selectionStart ?? input.value.length);
-                const digits = input.value.replace(/[^0-9]/g, '');
-                input.value = digits ? Number(digits).toLocaleString('id-ID') : '';
-                const caret = Math.max(0, input.value.length - caretFromEnd);
-                input.setSelectionRange(caret, caret);
-                recalcEstimatorTotal();
-            }
-
-            function setRupiahValue(input, value) {
-                if (!input) return;
-                input.value = formatRupiah(value);
-                recalcEstimatorTotal();
-            }
-
             function recalcEstimatorTotal() {
+                if (typeof window.parseRupiah !== 'function') return;
                 const totalEl = document.getElementById('estimator-total-cost');
                 if (!totalEl) return;
 
@@ -541,7 +522,7 @@
                 document.querySelectorAll('[data-estimator-row]').forEach((row) => {
                     const qty = parseFloat(row.dataset.qty || '0') || 0;
                     const priceInput = row.querySelector('input[name$="[price]"]');
-                    total += qty * parseRupiah(priceInput?.value);
+                    total += qty * window.parseRupiah(priceInput?.value);
                 });
 
                 totalEl.textContent = 'Rp ' + (total ? total.toLocaleString('id-ID') : '0');

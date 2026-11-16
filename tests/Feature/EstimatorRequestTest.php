@@ -355,6 +355,11 @@ class EstimatorRequestTest extends TestCase
             'reason' => 'Harga masih di atas target.',
         ])->assertRedirect();
 
+        // Double submit harus aman: revisi sudah terkirim, bukan 422.
+        $this->actingAs($sales)->post(route('estimator.requests.revision', $request), [
+            'reason' => 'Harga masih di atas target.',
+        ])->assertRedirect()->assertSessionHas('success');
+
         $request->refresh();
         $this->assertSame('revision', $request->status);
         $this->assertSame('Harga masih di atas target.', $request->revision_reason);
@@ -412,13 +417,26 @@ class EstimatorRequestTest extends TestCase
             'default_price' => 1000000,
         ]);
 
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 600000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '1 year',
+            'updated_by' => $estimator->id,
+        ]);
+
         $this->actingAs($estimator)->get(route('products.price.edit', $product))
             ->assertOk()
-            ->assertSee(__('Update Cost Price'));
+            ->assertSee(__('Update Cost Price'))
+            ->assertSee('value="600.000"', false)
+            ->assertSee('data-no-loader', false);
 
         $this->actingAs($estimator)->post(route('products.price.update', $product), [
             'supplier_id' => $supplier->id,
-            'price' => 555000,
+            'price' => '555.000',
             'stock_status' => 'indent',
             'stock_eta' => '3 weeks',
             'warranty_info' => '1 year distributor',
@@ -607,6 +625,8 @@ class EstimatorRequestTest extends TestCase
             ->assertSee(__('+2 Weeks'))
             ->assertSee(__('+1 Month'))
             ->assertSee('onclick="useLastPrice(0,', false)
+            ->assertSee('data-no-loader', false)
+            ->assertSee('data-searchable="1"', false)
             ->assertDontSee('data-loading-text');
     }
 
@@ -663,7 +683,10 @@ class EstimatorRequestTest extends TestCase
             ->get(route('estimator.requests.create'))
             ->assertOk()
             ->assertDontSee('max-w-4xl')
-            ->assertSee(__('Search product name / SKU (optional)...'));
+            ->assertSee(__('Search product name / SKU (optional)...'))
+            ->assertSee('text-base', false)
+            ->assertSee('@keydown.arrow-down', false)
+            ->assertSee('moveActive', false);
 
         $this->actingAs($estimator)
             ->get(route('estimator.requests.index'))

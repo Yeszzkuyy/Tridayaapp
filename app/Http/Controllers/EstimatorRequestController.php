@@ -16,6 +16,7 @@ use App\Notifications\EstimatorRequestAnsweredNotification;
 use App\Notifications\EstimatorRequestCreatedNotification;
 use App\Notifications\EstimatorRequestRevisionNotification;
 use App\Support\PtAccess;
+use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -333,9 +334,7 @@ class EstimatorRequestController extends Controller
                 }
 
                 if (array_key_exists('price', $item)) {
-                    $item['price'] = is_scalar($item['price'])
-                        ? str_replace(['.', ' ', "\u{00A0}"], '', (string) $item['price'])
-                        : '';
+                    $item['price'] = Rupiah::normalize($item['price']);
                 }
 
                 if (($item['stock_status'] ?? null) === 'ready') {
@@ -437,7 +436,16 @@ class EstimatorRequestController extends Controller
     public function accept(Request $request, EstimatorRequest $estimatorRequest)
     {
         $this->authorize('decide', $estimatorRequest);
-        abort_unless($estimatorRequest->status === 'answered', 422);
+
+        if ($estimatorRequest->status === 'completed') {
+            return back()->with('success', __('Product prices already accepted.'));
+        }
+
+        abort_unless(
+            $estimatorRequest->status === 'answered',
+            422,
+            __('Only answered requests can be accepted.')
+        );
 
         DB::transaction(function () use ($estimatorRequest): void {
             $estimatorRequest->update([
@@ -453,7 +461,16 @@ class EstimatorRequestController extends Controller
     public function revision(Request $request, EstimatorRequest $estimatorRequest)
     {
         $this->authorize('decide', $estimatorRequest);
-        abort_unless($estimatorRequest->status === 'answered', 422);
+
+        if ($estimatorRequest->status === 'revision') {
+            return back()->with('success', __('Revision request already sent to Estimator.'));
+        }
+
+        abort_unless(
+            $estimatorRequest->status === 'answered',
+            422,
+            __('Only answered requests can be revised.')
+        );
 
         $validated = $request->validate([
             'reason' => 'required|string|max:2000',

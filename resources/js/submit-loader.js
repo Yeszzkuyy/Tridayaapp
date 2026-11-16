@@ -77,6 +77,8 @@ export function installSubmitLoader(document = globalThis.document, window = glo
     document.addEventListener('submit', (event) => {
         const form = event.target?.closest?.('form');
         if (!form || event.defaultPrevented || form.hasAttribute('data-ajax')) return;
+        // Form yang memilih feedback toast saja tidak perlu overlay loader.
+        if (form.hasAttribute('data-no-loader')) return;
         if (form.dataset.submitLoaderActive === 'true') return;
 
         const hasLoadingText = form.hasAttribute('data-loading-text');

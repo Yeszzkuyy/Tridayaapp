@@ -13,6 +13,8 @@
     'id' => null,
     'size' => 'md',
     'menuWidth' => null,
+    'searchable' => false,
+    'searchPlaceholder' => null,
 ])
 
 @php
@@ -37,6 +39,7 @@
          data-label="{{ $label }}"
          data-size="{{ $size }}"
          @if($menuWidth) data-menu-width="{{ $menuWidth }}" @endif
+         @if($searchable) data-searchable="1" data-search-placeholder="{{ $searchPlaceholder ?: __('Search...') }}" @endif
          @if($tags) data-tags="1" @endif
          @if($autosubmit) data-autosubmit="1" @endif
          @if($full) data-full="1" @endif

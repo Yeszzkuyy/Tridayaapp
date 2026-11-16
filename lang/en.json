@@ -5360,5 +5360,10 @@
     "Copy the first item valid until to all items": "Copy the first item valid until to all items",
     "Scroll tabs left": "Scroll tabs left",
     "Scroll tabs right": "Scroll tabs right",
-    "Open tabs": "Open tabs"
+    "Open tabs": "Open tabs",
+    "Product prices already accepted.": "Product prices already accepted.",
+    "Revision request already sent to Estimator.": "Revision request already sent to Estimator.",
+    "Only answered requests can be accepted.": "Only answered requests can be accepted.",
+    "Only answered requests can be revised.": "Only answered requests can be revised.",
+    "Search...": "Search..."
 }

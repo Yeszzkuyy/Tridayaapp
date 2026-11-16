@@ -34,11 +34,13 @@
             </div>
         @endif
 
-        <form action="{{ route('products.price.update', $product) }}" method="POST"
+        <form action="{{ route('products.price.update', $product) }}" method="POST" data-no-loader
               x-data="{
                   validUntil: @js(old('valid_until', $product->latestCostLog?->valid_until?->format('Y-m-d') ?? '')),
+                  submitting: false,
                   setKeepDate(dateStr) { this.validUntil = dateStr; }
               }"
+              @submit="submitting = true"
               class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             @csrf
 
@@ -48,13 +50,14 @@
                     <x-glide-select id="price-supplier" name="supplier_id" :options="$supplierOptions"
                                     :value="old('supplier_id', $product->latestCostLog?->supplier_id)"
                                     :label="__('Supplier')" :placeholder="__('Select supplier')"
-                                    :error="$errors->first('supplier_id')" size="field" :menu-width="260" required />
+                                    :error="$errors->first('supplier_id')" size="field" :menu-width="260"
+                                    searchable :search-placeholder="__('Search supplier...')" required />
                 </div>
 
                 <div>
                     <label for="price-cost" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Cost Price (Rp)') }} <span class="text-rose-500">*</span></label>
-                    <input id="price-cost" type="number" name="price" min="0.01" step="0.01" required value="{{ old('price', $product->latestCostLog?->price) }}"
-                           class="h-10 w-full rounded-xl border-slate-300 text-sm tabular-nums focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    <x-rupiah-input id="price-cost" name="price" :value="old('price', $product->latestCostLog?->price)"
+                                    :aria-label="__('Cost Price (Rp)')" required />
                     @error('price') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -103,7 +106,8 @@
 
             <div class="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-700/60">
                 <x-secondary-button as="a" :href="route('products.index')">{{ __('Cancel') }}</x-secondary-button>
-                <x-primary-button type="submit">{{ __('Save') }}</x-primary-button>
+                <x-primary-button type="submit" x-bind:disabled="submitting"
+                                  x-bind:class="{ 'opacity-60 pointer-events-none': submitting }">{{ __('Save') }}</x-primary-button>
             </div>
         </form>
     </div>

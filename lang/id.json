@@ -5360,5 +5360,10 @@
     "Copy the first item valid until to all items": "Salin tanggal berlaku item pertama ke semua item",
     "Scroll tabs left": "Geser tab ke kiri",
     "Scroll tabs right": "Geser tab ke kanan",
-    "Open tabs": "Tab terbuka"
+    "Open tabs": "Tab terbuka",
+    "Product prices already accepted.": "Harga produk sudah diterima.",
+    "Revision request already sent to Estimator.": "Permintaan revisi sudah dikirim ke Estimator.",
+    "Only answered requests can be accepted.": "Hanya permintaan yang sudah dijawab yang bisa diterima.",
+    "Only answered requests can be revised.": "Hanya permintaan yang sudah dijawab yang bisa direvisi.",
+    "Search...": "Cari..."
 }
