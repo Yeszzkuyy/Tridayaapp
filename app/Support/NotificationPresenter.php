@@ -27,9 +27,12 @@ use App\Notifications\SurveyReportUploadedNotification;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
+use App\Notifications\TechnicianAssignedNotification;
 use App\Notifications\TechnicianScheduleAssignedNotification;
 use App\Notifications\TechnicianScheduleChangedNotification;
 use App\Notifications\TechnicianScheduleReminderNotification;
+use App\Notifications\TechnicianTaskCancelledNotification;
+use App\Notifications\TechnicianTaskReassignedNotification;
 use App\Notifications\WhatsappHandoffNotification;
 use App\Notifications\WhatsappInboundNotification;
 use Illuminate\Notifications\DatabaseNotification;
@@ -82,6 +85,9 @@ final class NotificationPresenter
             LeadReassignedNotification::class => 'reassigned',
             FollowUpOverdueNotification::class => 'followup',
             LeadTaskNotification::class => 'task',
+            TechnicianAssignedNotification::class => 'technician_assigned',
+            TechnicianTaskReassignedNotification::class => 'technician_task_reassigned',
+            TechnicianTaskCancelledNotification::class => 'technician_task_cancelled',
             TechnicianScheduleAssignedNotification::class => 'schedule_assigned',
             TechnicianScheduleChangedNotification::class => 'schedule_changed',
             TechnicianScheduleReminderNotification::class => 'schedule_reminder',
@@ -151,6 +157,28 @@ final class NotificationPresenter
                 'title' => (string) ($data['title'] ?? __('New task')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
                 'chips' => [],
+            ],
+            'technician_assigned' => [
+                'app' => __('Engineer'),
+                'title' => (string) ($data['title'] ?? __('Task assigned to you')),
+                'body' => implode(' · ', array_filter([$data['preview'] ?? null, $data['location'] ?? null])),
+                'chips' => array_values(array_filter([
+                    ! empty($data['schedule'])
+                        ? self::chip(trim($data['schedule'].' '.($data['time'] ?? '')), 'info')
+                        : null,
+                ])),
+            ],
+            'technician_task_reassigned' => [
+                'app' => __('Engineer'),
+                'title' => (string) ($data['title'] ?? __('Task moved to another engineer')),
+                'body' => implode(' · ', array_filter([$data['preview'] ?? null, $data['task'] ?? null])),
+                'chips' => [self::chip(__('Moved'), 'warning')],
+            ],
+            'technician_task_cancelled' => [
+                'app' => __('Engineer'),
+                'title' => (string) ($data['title'] ?? __('Task cancelled')),
+                'body' => implode(' · ', array_filter([$data['preview'] ?? null, $data['task'] ?? null])),
+                'chips' => [self::chip(__('Cancelled'), 'danger')],
             ],
             'schedule_assigned' => [
                 'app' => __('Jadwal'),

@@ -14,6 +14,8 @@ use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
 use App\Notifications\TechnicianAssignedNotification;
+use App\Notifications\TechnicianTaskCancelledNotification;
+use App\Notifications\TechnicianTaskReassignedNotification;
 use App\Rules\SecureFile;
 use App\Services\GoogleCalendarService;
 use App\Services\Project\FieldJobWorkflowService;
@@ -451,6 +453,10 @@ class TechnicalRequestController extends Controller
             'target_date.required' => __('Choose the target date before assigning an engineer.'),
         ]);
 
+        // Engineer sebelum perubahan: dipakai untuk kabar pindah task dan
+        // membersihkan kartu notifikasi lama milik engineer yang dilepas.
+        $previousEngineerIds = $technicalRequest->assignedEngineerIds();
+
         // Tanggal target diisi Lead Teknisi saat menugaskan (Sales tidak lagi
         // mengisi tanggal di form request). Pasang di memori dulu supaya jadwal
         // memakai tanggal terbaru; penyimpanan dilakukan bersama penugasan
@@ -499,6 +505,14 @@ class TechnicalRequestController extends Controller
         ]);
 
         $technicalRequest->refresh();
+        $technicalRequest->loadMissing('supportUsers');
+
+        $currentEngineers = $technicalRequest->supportUsers
+            ->concat([$technician])
+            ->unique('id')
+            ->values();
+        $currentEngineerIds = $currentEngineers->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $removedEngineerIds = array_values(array_diff($previousEngineerIds, $currentEngineerIds));
 
         // Request tipe survey/installation: siapkan data lapangan untuk
         // dikerjakan teknisi. Idempoten — request yang sama tetap satu data.
@@ -511,12 +525,37 @@ class TechnicalRequestController extends Controller
             'support_engineers' => $technicalRequest->supportUsers->pluck('name')->implode(', '),
         ]);
 
-        // Engineer utama DAN support selalu diberi tahu detail task yang
-        // di-assign, supaya tidak bingung saat klik notifikasi.
-        foreach ($technicalRequest->supportUsers->push($technician)->unique('id') as $engineer) {
-            if ((int) $engineer->id !== (int) auth()->id()) {
-                $engineer->notify(new TechnicianAssignedNotification($technicalRequest->fresh()));
+        // Engineer yang baru masuk (utama/support) diberi tahu detail task.
+        // Engineer lama yang tidak berubah tidak dikirimi ulang; perubahan
+        // tanggal/jam sudah dikabari lewat notifikasi jadwal teknisi.
+        foreach ($currentEngineers as $engineer) {
+            if (in_array((int) $engineer->id, $previousEngineerIds, true)
+                || (int) $engineer->id === (int) auth()->id()) {
+                continue;
             }
+
+            $engineer->notify(new TechnicianAssignedNotification($technicalRequest));
+        }
+
+        // Engineer yang dilepas: bersihkan kartu "ditugaskan" lamanya, lalu
+        // kabari supaya tidak lanjut mengerjakan task yang bukan miliknya.
+        foreach ($removedEngineerIds as $removedId) {
+            if ($removedId === (int) auth()->id()) {
+                continue;
+            }
+
+            $removed = User::find($removedId);
+            if (! $removed) {
+                continue;
+            }
+
+            $removed->notifications()
+                ->where('type', TechnicianAssignedNotification::class)
+                ->get()
+                ->filter(fn ($notification) => (int) ($notification->data['technical_request_id'] ?? 0) === (int) $technicalRequest->id)
+                ->each->delete();
+
+            $removed->notify(new TechnicianTaskReassignedNotification($technicalRequest, $technician->name));
         }
 
         $this->notifyRequester($technicalRequest, new TechnicalRequestReviewedNotification($technicalRequest, 'assigned'));
@@ -635,6 +674,19 @@ class TechnicalRequestController extends Controller
 
         $technicalRequest->update(['status' => 'cancelled']);
         $this->log($technicalRequest->lead, 'tech_request_cancelled', ['title' => $technicalRequest->title]);
+
+        // Engineer utama + support diberi tahu supaya berhenti menyiapkan.
+        $technicalRequest->loadMissing(['supportUsers', 'technician']);
+        $engineers = $technicalRequest->supportUsers->collect();
+        if ($technicalRequest->technician) {
+            $engineers->push($technicalRequest->technician);
+        }
+
+        foreach ($engineers->unique('id') as $engineer) {
+            if ((int) $engineer->id !== (int) auth()->id()) {
+                $engineer->notify(new TechnicianTaskCancelledNotification($technicalRequest));
+            }
+        }
 
         return back()->with('success', __('Technical request canceled.'));
     }

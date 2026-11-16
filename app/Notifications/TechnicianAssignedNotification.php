@@ -53,15 +53,26 @@ class TechnicianAssignedNotification extends Notification
             'technical_request_id' => $this->request->id,
             'title' => $this->title(),
             'preview' => $this->request->lead?->customer?->name ?? '',
+            'schedule' => $this->request->target_date?->format('d M Y'),
+            'time' => $this->request->target_time
+                ? substr((string) $this->request->target_time, 0, 5)
+                : null,
+            'location' => $this->request->location,
             'url' => route('teknisi.technical-requests.show', $this->request->id, false),
         ];
     }
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject($this->title())
-            ->line($this->scheduleLine())
+            ->line($this->scheduleLine());
+
+        if ($this->request->location) {
+            $mail->line(__('Location').': '.$this->request->location);
+        }
+
+        return $mail
             ->action(__('Open Request'), url(route('teknisi.technical-requests.show', $this->request->id)))
             ->line(__('Thank you.'));
     }
