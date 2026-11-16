@@ -107,10 +107,10 @@
                         </span>
                     @endif
                 </div>
-                <p class="text-slate-500">{{ __('PO Number') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
-                <p class="text-slate-500">{{ __('PO Date') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
-                <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</span></p>
-                <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_address ?: __('Not set yet') }}</span></p>
+                <p class="text-slate-500">{{ __('PO Number') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_number ?: '-' }}</span></p>
+                <p class="text-slate-500">{{ __('PO Date') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->po_date?->format('d M Y') ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_deadline?->format('d M Y') ?? '-' }}</span></p>
+                <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_address ?: '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Payment Terms') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->paymentTermsSummary() }}</span></p>
                 @if($proposal->delivery_terms)
                     <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="font-medium text-slate-800 dark:text-slate-100">{{ $proposal->delivery_terms }}</span></p>

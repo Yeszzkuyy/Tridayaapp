@@ -388,7 +388,7 @@ class Proposal extends Model
             'full' => __('Full Payment 100%'),
             'dp' => __('Down Payment + Settlement'),
             'tempo' => __('Tempo / Net Days'),
-            default => __('Not set yet'),
+            default => '-',
         };
     }
 
@@ -413,7 +413,7 @@ class Proposal extends Model
             'tempo' => $this->term_days
                 ? __('Net :days days', ['days' => $this->term_days])
                 : __('Tempo'),
-            default => __('Not set yet'),
+            default => '-',
         };
     }
 

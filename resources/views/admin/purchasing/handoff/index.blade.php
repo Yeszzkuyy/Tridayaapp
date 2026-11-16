@@ -117,7 +117,7 @@
                                 </p>
                             </td>
                             <td class="px-2.5 py-3.5 text-slate-700 dark:text-slate-300">
-                                <p class="truncate">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</p>
+                                <p class="truncate">{{ $proposal->delivery_deadline?->format('d M Y') ?? '-' }}</p>
                                 @if($deadlineDays !== null)
                                     @if($deadlineDays < 0)
                                         <span class="mt-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">

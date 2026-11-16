@@ -298,10 +298,10 @@
                         <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer PO') }}</p>
                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $poStatusClass }}">{{ $proposal->purchasingStatusLabel() }}</span>
                     </div>
-                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
-                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
-                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</span></p>
-                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?: __('Not set yet') }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?: '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?: '-' }}</span></p>
                     <p class="text-slate-500">{{ __('Payment Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->paymentTermsSummary() }}</span></p>
                     @if($proposal->delivery_terms)
                         <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_terms }}</span></p>

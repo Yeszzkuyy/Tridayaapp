@@ -44,7 +44,7 @@
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Customer PO Number') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer_po_number ?: __('Not set yet') }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer_po_number ?: '-' }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Quotation') }}</dt>
@@ -52,13 +52,13 @@
                         @if($invoice->proposal)
                             <a href="{{ route('sales.proposals.show', $invoice->proposal) }}" class="text-accent-600 dark:text-accent-400 hover:underline">{{ $invoice->proposal->proposal_number }}</a>
                         @else
-                            <span class="text-slate-400 italic">{{ __('No quotation linked') }}</span>
+                            <span class="text-slate-400">{{ __('No quotation linked') }}</span>
                         @endif
                     </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Billing Address') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->billing_address ?: ($invoice->customer?->billingAddress() ?: __('Not set yet')) }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->billing_address ?: ($invoice->customer?->billingAddress() ?: '-') }}</dd>
                 </div>
             </dl>
             @if($invoice->notes)
