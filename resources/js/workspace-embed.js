@@ -155,10 +155,11 @@ export function initWorkspaceEmbed() {
     };
 
     // Jenis pesan dipertahankan (warning/info) untuk simpan cepat.
-    window.toastVariant = function (message, variant = 'success') {
+    window.toastVariant = function (message, variant = 'success', duration = null) {
         send('toast', {
             variant: String(variant || 'success'),
             message: String(message ?? ''),
+            duration: Number.isFinite(duration) ? duration : null,
         });
     };
 
