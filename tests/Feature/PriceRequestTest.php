@@ -563,6 +563,60 @@ class PriceRequestTest extends TestCase
         Notification::assertSentTo($sales, PriceRequestCommentNotification::class);
     }
 
+    public function test_sales_can_chat_after_accepting_the_final_price(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $amir = $this->pricingEngineer();
+        $request = $this->makePriceRequest($sales, [
+            'assigned_to' => $amir->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        // Harga final tetap boleh diobrolkan (mis. ucapan terima kasih).
+        $this->assertTrue(\Illuminate\Support\Facades\Gate::forUser($sales)->allows('comment', $request));
+        $this->assertTrue(\Illuminate\Support\Facades\Gate::forUser($amir)->allows('comment', $request));
+
+        Livewire::actingAs($sales)
+            ->test(\App\Livewire\PriceRequestChat::class, ['priceRequest' => $request])
+            ->set('body', 'Terima kasih, harga sudah oke.')
+            ->call('send')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('price_request_comments', [
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => 'Terima kasih, harga sudah oke.',
+            'type' => 'message',
+        ]);
+    }
+
+    public function test_chat_stays_closed_for_rejected_and_cancelled_price_requests(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        foreach (['rejected', 'cancelled'] as $status) {
+            $request = $this->makePriceRequest($sales, ['status' => $status]);
+
+            $this->assertFalse(
+                \Illuminate\Support\Facades\Gate::forUser($sales)->allows('comment', $request),
+                'Chat seharusnya ditutup untuk status '.$status
+            );
+        }
+    }
+
+    public function test_cancelled_price_request_shows_closed_discussion_note(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales, ['status' => 'cancelled']);
+
+        $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Discussion closed'))
+            ->assertDontSee('id="price-request-chat-body"', false);
+    }
+
     public function test_price_request_chat_rejects_invalid_comment_lengths(): void
     {
         $sales = $this->userWithRole('sales');

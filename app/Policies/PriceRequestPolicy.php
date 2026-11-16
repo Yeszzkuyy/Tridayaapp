@@ -30,7 +30,12 @@ class PriceRequestPolicy
             || $user->hasRole('super-admin')
             || ($priceRequest->status === 'waiting_lead' && $user->hasRole('lead-technician'));
 
-        return $isParticipant && !$priceRequest->isClosed();
+        // Harga yang sudah di-accept (completed) tetap boleh diobrolkan, mis.
+        // ucapan terima kasih. Diskusi hanya ditutup untuk request yang
+        // dibatalkan atau ditolak.
+        $chatClosed = in_array($priceRequest->status, ['rejected', 'cancelled'], true);
+
+        return $isParticipant && ! $chatClosed;
     }
 
     public function review(User $user, PriceRequest $priceRequest): bool
