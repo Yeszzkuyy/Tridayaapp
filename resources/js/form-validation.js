@@ -492,6 +492,15 @@ export function applyServerErrors(form, errors) {
     const unmapped = [];
     const messages = errors && typeof errors === 'object' ? errors : {};
 
+    // Bersihkan pesan dari percobaan sebelumnya supaya tidak ada pesan basi.
+    if (form) {
+        form.querySelectorAll('[data-validation-error]').forEach((element) => element.remove());
+        form.querySelectorAll('.form-validation-invalid').forEach((element) => {
+            element.classList.remove('form-validation-invalid');
+            element.removeAttribute('aria-invalid');
+        });
+    }
+
     Object.entries(messages).forEach(([key, value]) => {
         const message = Array.isArray(value) ? value[0] : value;
         if (!message) return;

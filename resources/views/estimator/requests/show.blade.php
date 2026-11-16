@@ -329,7 +329,7 @@
                                                                 :value="$stockValue"
                                                                 :label="__('Stock')"
                                                                 :placeholder="__('Stock')"
-                                                                size="field" />
+                                                                size="field" required />
                                             </div>
                                             <div data-stock-eta class="{{ $stockValue === 'indent' ? '' : 'hidden' }} mt-1.5">
                                                 <input type="text" name="items[{{ $index }}][stock_eta]" maxlength="100" value="{{ $etaValue }}" placeholder="{{ __('e.g. 2-3 weeks') }}" @disabled($stockValue !== 'indent')
@@ -337,7 +337,7 @@
                                             </div>
                                         </td>
                                         <td class="px-5 py-4 text-left">
-                                            <input type="text" name="items[{{ $index }}][warranty_info]" maxlength="255" value="{{ old("items.{$index}.warranty_info", $item->warranty_info) }}" placeholder="{{ __('e.g. 1 year distributor') }}"
+                                            <input type="text" name="items[{{ $index }}][warranty_info]" maxlength="255" required value="{{ old("items.{$index}.warranty_info", $item->warranty_info) }}" placeholder="{{ __('e.g. 1 year distributor') }}"
                                                    class="h-10 w-full min-w-[170px] rounded-xl border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
                                         </td>
                                         <td class="px-5 py-4 text-center">
