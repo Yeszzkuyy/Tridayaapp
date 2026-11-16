@@ -110,9 +110,15 @@ class ProductController extends Controller
         $normalized = [];
 
         foreach ($fields as $field) {
-            if ($request->has($field)) {
-                $normalized[$field] = Rupiah::normalize($request->input($field));
+            $value = $request->input($field);
+
+            // Biarkan kosong tetap null (nullable): jangan diubah jadi string
+            // kosong, karena kolom numeric PostgreSQL menolak nilai ''.
+            if ($value === null || $value === '') {
+                continue;
             }
+
+            $normalized[$field] = Rupiah::normalize($value);
         }
 
         if ($normalized !== []) {

@@ -46,4 +46,24 @@ class ProductPriceFormatTest extends TestCase
             ->assertSee('value="1.000.000"', false)
             ->assertSee('value="600.000"', false);
     }
+
+    public function test_product_can_be_saved_with_empty_cost_price(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)->post(route('products.store'), [
+            'name' => 'Produk Tanpa Harga Modal',
+            'category' => 'barang',
+            'unit' => 'pcs',
+            'default_price' => '1.000.000',
+            'cost_price' => '',
+            'is_active' => '1',
+        ])->assertRedirect(route('products.index'));
+
+        $product = Product::where('name', 'Produk Tanpa Harga Modal')->firstOrFail();
+
+        $this->assertSame(1000000.0, (float) $product->default_price);
+        $this->assertNull($product->cost_price);
+    }
 }
