@@ -6,7 +6,7 @@
 **Menu:** Lintas Divisi (Top Navbar + semua menu sidebar)
 **Branch:** `feature/div-panel`
 **Worktree:** `/home/yeski/3dyapp-panel` (perlu entry baru di tabel AGENTS §1)
-**Terakhir diperbarui:** 2026-11-16 (sinkronisasi tema shell ↔ tab)
+**Terakhir diperbarui:** 2026-11-16 (rekonsiliasi tab saat Back)
 
 ---
 
@@ -612,3 +612,37 @@ menyeberang batas iframe.
 - Ganti aksen (Ocean/Terracotta/Purple/Emerald) ikut tersinkron ke shell
   dan tab lain.
 - Tidak ada pesan berulang/loop.
+
+
+---
+
+## 18. Rekonsiliasi Tab Saat Back ke Menu Lain (2026-11-16)
+
+### 18.1 Masalah
+
+Tab Pricelist bisa berubah isi menjadi Queue/Dashboard saat tombol Back di
+halaman Pricelist ditekan. URL tab ikut berubah, tetapi judul tab tetap
+Pricelist. Klik menu Pricelist lagi hanya mengaktifkan tab yang sudah berisi
+menu lain, sehingga Pricelist tidak muncul sampai tab ditutup. Jika target
+Back adalah Dashboard, tab Dashboard bisa tampil dua kali.
+
+### 18.2 Perbaikan
+
+- Setiap tab menyimpan `homeUrl` (URL menu asal).
+- URL baru dari iframe dicocokkan ke menu sidebar:
+  - halaman detail dalam menu yang sama tetap di tab itu;
+  - akar grup seperti `/estimator` dipetakan ke menu header grup
+    (`/estimator/requests`).
+- Jika iframe pindah ke menu lain:
+  - tab asal dikembalikan ke `homeUrl`;
+  - tab menu tujuan diaktifkan bila sudah ada, atau dibuka sebagai tab baru.
+- Klik menu sidebar pada tab yang sempat berpindah menu akan memuat ulang
+  tab ke menu asalnya.
+- Navigasi dari tab latar belakang tidak memindahkan fokus tab aktif.
+
+### 18.3 Verifikasi
+
+- Pricelist → Back → Queue/Dashboard aktif, tab Pricelist tetap Pricelist.
+- Klik Pricelist lagi → Pricelist tampil normal.
+- Dashboard utama tidak terbuka dua kali.
+- Halaman detail dalam menu yang sama tidak memicu perpindahan tab.
