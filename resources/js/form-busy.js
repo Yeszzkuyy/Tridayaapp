@@ -42,6 +42,7 @@ export function markFormBusy(form, submitter = null, label = '') {
             svg: null,
             svgDisplay: '',
             textEl: null,
+            textNode: null,
             text: null,
         };
 
@@ -53,12 +54,33 @@ export function markFormBusy(form, submitter = null, label = '') {
             }
 
             record.textEl = button.querySelector('[data-button-label]');
-            if (record.textEl && label) {
-                record.text = record.textEl.textContent;
-                record.textEl.textContent = label;
+
+            if (record.textEl) {
+                if (label) {
+                    record.text = record.textEl.textContent;
+                    record.textEl.textContent = label;
+                }
+            } else if (label) {
+                // Tombol tulis tangan (belum memakai komponen): ganti text node
+                // terakhir yang terlihat, bukan seluruh innerHTML, supaya ikon
+                // dan efek kilau tetap ada.
+                const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+                let node;
+
+                while ((node = walker.nextNode())) {
+                    if (!node.nodeValue.trim()) continue;
+                    if (node.parentElement?.closest('[aria-hidden="true"]')) continue;
+                    record.textNode = node;
+                }
+
+                if (record.textNode) {
+                    record.text = record.textNode.nodeValue;
+                    record.textNode.nodeValue = label;
+                }
             }
 
             record.spinner = makeSpinner();
+            if (record.textNode) record.spinner.classList.add('mr-2');
             if (record.textEl) {
                 record.textEl.before(record.spinner);
             } else {
@@ -79,10 +101,11 @@ export function releaseFormBusy(form) {
     const records = states.get(form);
     if (!records) return;
 
-    records.forEach(({ button, spinner, svg, svgDisplay, textEl, text }) => {
+    records.forEach(({ button, spinner, svg, svgDisplay, textEl, textNode, text }) => {
         spinner?.remove();
         if (svg) svg.style.display = svgDisplay;
         if (textEl && text !== null) textEl.textContent = text;
+        if (textNode && text !== null) textNode.nodeValue = text;
 
         button.disabled = false;
         button.removeAttribute('aria-busy');
