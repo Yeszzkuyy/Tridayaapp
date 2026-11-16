@@ -14,9 +14,9 @@
         'info' => session('status') === 'google-linked'
             ? __('Your Google account has been successfully connected!')
             : null,
-        'error' => session('error')
-            ? (string) session('error')
-            : ($errors->any() ? __('Some fields need attention. Please review the highlighted inputs.') : null),
+        // Error validasi dipetakan langsung ke isian + toast ringkasan
+        // oleh resources/js/form-validation.js.
+        'error' => session('error') ? (string) session('error') : null,
     ];
 @endphp
 <!DOCTYPE html>
