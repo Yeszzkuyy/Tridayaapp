@@ -62,6 +62,7 @@ export function installSubmitLoader(document = globalThis.document, window = glo
     boundDocuments.add(document);
 
     const activeForms = new Set();
+    const defaultSavingLabel = document.querySelector('meta[name="saving-label"]')?.content || '';
 
     function unlock(form) {
         releaseFormBusy(form);
@@ -80,7 +81,7 @@ export function installSubmitLoader(document = globalThis.document, window = glo
         activeForms.add(form);
 
         const submitter = event.submitter && event.submitter.form === form ? event.submitter : null;
-        const label = form.dataset.loadingText || submitter?.dataset.savingLabel || '';
+        const label = form.dataset.loadingText || submitter?.dataset.savingLabel || defaultSavingLabel;
         markFormBusy(form, submitter, label);
 
         // Kartu loader layar penuh HANYA untuk aksi yang memintanya eksplisit

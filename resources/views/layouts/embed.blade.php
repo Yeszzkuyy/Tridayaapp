@@ -23,6 +23,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="saving-label" content="{{ __('Saving...') }}">
 
     <title>{{ $pageContext['tabTitle'] }} — {{ config('app.name', 'Tridaya App') }}</title>
 
