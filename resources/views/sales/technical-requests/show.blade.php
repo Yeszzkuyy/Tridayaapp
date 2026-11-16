@@ -419,6 +419,26 @@
                                     </div>
 
                                     <div>
+                                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            {{ __('Target Date') }} <span class="text-red-500" aria-hidden="true">*</span>
+                                        </label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" name="target_date"
+                                                   value="{{ old('target_date', $technicalRequest->target_date?->format('Y-m-d')) }}"
+                                                   @if(! $technicalRequest->target_date) required @endif
+                                                   class="flex-1 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                            <input type="time" name="target_time"
+                                                   value="{{ old('target_time', $technicalRequest->target_time ? substr((string) $technicalRequest->target_time, 0, 5) : '') }}"
+                                                   ondblclick="try { this.showPicker() } catch (e) {}"
+                                                   title="{{ __('Double-click to open the time picker') }}"
+                                                   class="w-32 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                        </div>
+                                        <p class="mt-1 text-xs text-slate-400">{{ __('Used to create the technician schedule. Empty time starts at 09:00.') }}</p>
+                                        @error('target_date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                        @error('target_time') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Support Technicians') }}</label>
                                         <div class="relative" @click.outside="supportOpen = false">
                                             <button type="button" @click="supportOpen = !supportOpen"

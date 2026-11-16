@@ -74,6 +74,9 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             'title' => 'Konsultasi Jaringan',
             'priority' => 'normal',
             'status' => 'accepted',
+            // Lead Teknisi mengisi tanggal saat assign; tes memakai tanggal tetap.
+            'target_date' => '2026-12-01',
+            'target_time' => '09:00',
         ], $overrides));
     }
 
@@ -348,6 +351,7 @@ class TechnicalRequestSupportEngineerTest extends TestCase
         $surveyRequest = $this->makeRequest($sales, $lead, [
             'request_type' => 'survey',
             'title' => 'Survey Support',
+            'target_date' => '2026-12-01',
         ]);
         $this->actingAs($coordinator)->post(route('sales.technical-requests.assign', $surveyRequest), [
             'technician_id' => $main->id,
@@ -362,9 +366,11 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             ->getContent();
         $this->assertStringContainsString($support->name, $surveyHtml);
 
+        // Tanggal berbeda supaya engineer yang sama tidak dianggap bentrok.
         $installationRequest = $this->makeRequest($sales, $lead, [
             'request_type' => 'installation',
             'title' => 'Instalasi Support',
+            'target_date' => '2026-12-03',
         ]);
         $this->actingAs($coordinator)->post(route('sales.technical-requests.assign', $installationRequest), [
             'technician_id' => $main->id,

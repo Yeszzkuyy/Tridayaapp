@@ -276,6 +276,7 @@ class ProjectWorkflowSyncTest extends TestCase
 
         $this->actingAs($leadTech)->post(route('sales.technical-requests.assign', $request), [
             'technician_id' => $worker->id,
+            'target_date' => now()->addDays(2)->toDateString(),
         ])->assertRedirect();
 
         $request->refresh();

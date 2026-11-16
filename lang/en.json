@@ -1,5 +1,9 @@
 {
+    "Choose the location for survey or installation.": "Choose the location for survey or installation.",
+    "Optional, 1 file max 10MB. Only the lead technician and assigned engineers can open it.": "Optional, 1 file max 10MB. Only the lead technician and assigned engineers can open it.",
     "PO Received — Ready for Purchasing": "PO Received — Ready for Purchasing",
+    "Required for survey and installation. Address opens in Google Maps; meeting links open directly.": "Required for survey and installation. Address opens in Google Maps; meeting links open directly.",
+    "Supporting attachment (site photo / brief)": "Supporting attachment (site photo / brief)",
     "Waiting for Customer PO": "Waiting for Customer PO",
     "Customer PO": "Customer PO",
     "PO Number": "PO Number",

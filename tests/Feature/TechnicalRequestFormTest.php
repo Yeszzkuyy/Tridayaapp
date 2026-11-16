@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\TechnicalRequest;
+use App\Models\TechnicianSchedule;
 use App\Models\User;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
@@ -16,9 +17,10 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * Form Request Engineering/Price: Purpose (pengganti Problem Description),
- * Location (alamat / link Maps), dan Target Time. Kolom lama tidak dipakai
- * lagi di form, tapi data lama tetap tampil di halaman detail.
+ * Form Request Engineering/Price: Purpose (pengganti Problem Description)
+ * dan Location (alamat / link Maps). Target Date diisi Lead Teknisi saat
+ * menugaskan engineer. Kolom lama tidak dipakai lagi di form, tapi data lama
+ * tetap tampil di halaman detail.
  */
 class TechnicalRequestFormTest extends TestCase
 {
@@ -86,6 +88,7 @@ class TechnicalRequestFormTest extends TestCase
             'request_type' => 'installation',
             'title' => 'Instalasi CCTV',
             'purpose' => 'Pasang 8 titik',
+            'location' => 'Jl. Instalasi No. 2',
             'pic_contact_name' => 'Budi',
             'pic_contact_phone' => '08123456789',
         ])->assertRedirect();
@@ -99,6 +102,7 @@ class TechnicalRequestFormTest extends TestCase
             'lead_id' => $lead->id,
             'request_type' => 'survey',
             'title' => 'Survey tanpa PIC',
+            'location' => 'Jl. Survey No. 3',
             'pic_contact_name' => 'Tidak Dipakai',
             'pic_contact_phone' => '0800',
         ])->assertRedirect();
@@ -159,6 +163,7 @@ class TechnicalRequestFormTest extends TestCase
             'lead_id' => $lead->id,
             'request_type' => 'survey',
             'title' => 'Survey Sendiri',
+            'location' => 'Jl. Survey Sendiri No. 4',
         ])->assertRedirect();
 
         Notification::assertNotSentTo($admin, TechnicalRequestCreatedNotification::class);
@@ -196,6 +201,7 @@ class TechnicalRequestFormTest extends TestCase
 
         $this->actingAs($leadTech)->post(route('sales.technical-requests.assign', $request), [
             'technician_id' => $tech->id,
+            'target_date' => now()->addDay()->toDateString(),
         ])->assertRedirect();
 
         // Satu aksi assign → tepat satu notifikasi "Forwarded to technician".
@@ -208,7 +214,7 @@ class TechnicalRequestFormTest extends TestCase
         $this->assertNotNull($request->fresh()->survey);
     }
 
-    public function test_form_uses_purpose_location_and_time_and_drops_legacy_fields(): void
+    public function test_form_uses_purpose_and_location_and_drops_legacy_fields(): void
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales);
@@ -219,16 +225,19 @@ class TechnicalRequestFormTest extends TestCase
 
         $this->assertStringContainsString('name="purpose"', $html);
         $this->assertStringContainsString('name="location"', $html);
-        $this->assertStringContainsString('name="target_time"', $html);
         $this->assertStringContainsString('id="tr-location"', $html);
         $this->assertStringContainsString('data-location-autocomplete', $html);
+
+        // Target Date kini diisi Lead Teknisi saat menugaskan engineer.
+        $this->assertStringNotContainsString('name="target_date"', $html);
+        $this->assertStringNotContainsString('name="target_time"', $html);
 
         $this->assertStringNotContainsString('name="requirement"', $html);
         $this->assertStringNotContainsString('name="problem_description"', $html);
         $this->assertStringNotContainsString('name="scope"', $html);
     }
 
-    public function test_store_persists_purpose_location_and_time(): void
+    public function test_store_persists_purpose_and_location_without_target_date(): void
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales);
@@ -240,6 +249,7 @@ class TechnicalRequestFormTest extends TestCase
             'priority' => 'normal',
             'purpose' => 'Customer minta survey CCTV',
             'location' => 'Jl. Merdeka No. 1',
+            // Tanggal target diabaikan: Sales tidak lagi menjadwalkan.
             'target_date' => now()->addDay()->toDateString(),
             'target_time' => '14:30',
         ])->assertRedirect();
@@ -247,7 +257,76 @@ class TechnicalRequestFormTest extends TestCase
         $request = TechnicalRequest::where('title', 'Survey Lokasi')->firstOrFail();
         $this->assertSame('Customer minta survey CCTV', $request->purpose);
         $this->assertSame('Jl. Merdeka No. 1', $request->location);
+        $this->assertNull($request->target_date);
+        $this->assertNull($request->target_time);
+    }
+
+    public function test_location_is_required_for_survey_and_installation_only(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales);
+
+        foreach (['survey', 'installation'] as $type) {
+            $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+                'lead_id' => $lead->id,
+                'request_type' => $type,
+                'title' => 'Tanpa lokasi '.$type,
+            ])->assertSessionHasErrors('location');
+        }
+
+        $this->actingAs($sales)->post(route('sales.technical-requests.store'), [
+            'lead_id' => $lead->id,
+            'request_type' => 'consultation',
+            'title' => 'Konsultasi tanpa lokasi',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('technical_requests', ['title' => 'Konsultasi tanpa lokasi']);
+    }
+
+    public function test_assign_sets_target_date_and_creates_technician_schedule(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'accepted']);
+
+        $this->assertNull($request->target_date);
+
+        $this->actingAs($leadTech)->post(route('sales.technical-requests.assign', $request), [
+            'technician_id' => $tech->id,
+            'target_date' => '2026-12-01',
+            'target_time' => '14:30',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $request->refresh();
+        $this->assertSame('2026-12-01', $request->target_date->format('Y-m-d'));
         $this->assertSame('14:30', substr((string) $request->target_time, 0, 5));
+
+        $schedule = TechnicianSchedule::where('technical_request_id', $request->id)->firstOrFail();
+        $this->assertSame('2026-12-01 14:30', $schedule->start_at->format('Y-m-d H:i'));
+    }
+
+    public function test_assign_requires_target_date_when_request_has_none(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $leadTech = $this->userWithRole('lead-technician');
+        $tech = $this->userWithRole('technician');
+        $lead = $this->makeLead($sales);
+        $request = $this->makeRequest($sales, $lead, ['status' => 'accepted']);
+
+        $this->actingAs($leadTech)->post(route('sales.technical-requests.assign', $request), [
+            'technician_id' => $tech->id,
+        ])->assertSessionHasErrors('target_date');
+
+        $this->assertSame('accepted', $request->refresh()->status);
+        $this->assertNull($request->assigned_technician_id);
     }
 
     public function test_survey_inherits_purpose_and_request_location(): void
@@ -264,7 +343,7 @@ class TechnicalRequestFormTest extends TestCase
 
         $this->actingAs($leadTech)->post(
             route('sales.technical-requests.assign', $request),
-            ['technician_id' => $tech->id]
+            ['technician_id' => $tech->id, 'target_date' => now()->addDay()->toDateString()]
         )->assertRedirect();
 
         $survey = $request->fresh()->survey;
@@ -284,7 +363,7 @@ class TechnicalRequestFormTest extends TestCase
 
         $this->actingAs($leadTech)->post(
             route('sales.technical-requests.assign', $request),
-            ['technician_id' => $tech->id]
+            ['technician_id' => $tech->id, 'target_date' => now()->addDay()->toDateString()]
         )->assertRedirect();
 
         $survey = $request->fresh()->survey;

@@ -1,5 +1,9 @@
 {
+    "Choose the location for survey or installation.": "Pilih lokasi untuk survey atau instalasi.",
+    "Optional, 1 file max 10MB. Only the lead technician and assigned engineers can open it.": "Opsional, 1 file maksimal 10MB. Hanya lead teknisi dan engineer yang ditugaskan yang bisa membukanya.",
     "PO Received — Ready for Purchasing": "PO Masuk — Siap Diproses Purchasing",
+    "Required for survey and installation. Address opens in Google Maps; meeting links open directly.": "Wajib untuk survey dan instalasi. Alamat terbuka di Google Maps; link meeting terbuka langsung.",
+    "Supporting attachment (site photo / brief)": "Lampiran pendukung (foto lokasi / brief)",
     "Waiting for Customer PO": "Menunggu Customer PO",
     "Customer PO": "Customer PO",
     "PO Number": "Nomor PO",

@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class TechnicalRequestController extends Controller
@@ -231,13 +232,19 @@ class TechnicalRequestController extends Controller
             'request_type' => 'required|in:'.implode(',', TechnicalRequest::TYPES),
             'title' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:2000',
-            'location' => 'nullable|string|max:255',
+            // Survey dan instalasi selalu ke lokasi customer, jadi lokasi wajib.
+            'location' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::requiredIf(fn () => in_array($request->input('request_type'), ['survey', 'installation'], true)),
+            ],
             'pic_contact_name' => 'nullable|string|max:150',
             'pic_contact_phone' => 'nullable|string|max:40',
-            'target_date' => 'nullable|date|after_or_equal:today',
-            'target_time' => 'nullable|date_format:H:i',
             'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,txt,csv,doc,docx,xls,xlsx',
             'notes' => 'nullable|string',
+        ], [
+            'location.required' => __('Choose the location for survey or installation.'),
         ]);
 
         $lead = Lead::findOrFail($validated['lead_id']);
@@ -294,33 +301,36 @@ class TechnicalRequestController extends Controller
         $engineerIds ??= $technicalRequest->assignedEngineerIds();
         $existing = TechnicianSchedule::where('technical_request_id', $technicalRequest->id)->first();
 
+        $start = $technicalRequest->target_time
+            ? Carbon::parse($technicalRequest->target_date->format('Y-m-d').' '.$technicalRequest->target_time)
+            : $technicalRequest->target_date->copy()->setTime(9, 0);
+        $end = $start->copy()->addHours(2);
+
         if ($existing) {
             // Assign ulang menghasilkan jadwal yang sama, tetapi daftar
-            // engineer-nya harus mengikuti pilihan terbaru.
+            // engineer dan tanggalnya harus mengikuti pilihan terbaru.
             $current = $existing->technicianList()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
             $desired = collect($engineerIds)->sort()->values()->all();
+            $timeChanged = ! $existing->start_at->equalTo($start);
 
-            if ($current !== $desired) {
+            if ($current !== $desired || $timeChanged) {
                 $this->assertNoScheduleConflict(
                     $engineerIds,
                     (int) $technician->id,
                     $existing->id,
-                    $existing->start_at,
-                    $existing->end_at,
+                    $start,
+                    $end,
                 );
 
                 app(GoogleCalendarService::class)->updateSchedule($existing, [
                     'technician_ids' => $engineerIds,
+                    'start_at' => $start,
+                    'end_at' => $end,
                 ]);
             }
 
             return $existing;
         }
-
-        $start = $technicalRequest->target_time
-            ? Carbon::parse($technicalRequest->target_date->format('Y-m-d').' '.$technicalRequest->target_time)
-            : $technicalRequest->target_date->copy()->setTime(9, 0);
-        $end = $start->copy()->addHours(2);
 
         $this->assertNoScheduleConflict(
             $engineerIds,
@@ -421,6 +431,12 @@ class TechnicalRequestController extends Controller
 
         $validated = $request->validate([
             'technician_id' => 'required|exists:users,id',
+            'target_date' => [
+                'nullable',
+                'date',
+                Rule::requiredIf(fn () => ! $technicalRequest->target_date),
+            ],
+            'target_time' => 'nullable|date_format:H:i',
             'support_ids' => 'nullable|array',
             'support_ids.*' => [
                 'integer',
@@ -431,7 +447,20 @@ class TechnicalRequestController extends Controller
                     }
                 },
             ],
+        ], [
+            'target_date.required' => __('Choose the target date before assigning an engineer.'),
         ]);
+
+        // Tanggal target diisi Lead Teknisi saat menugaskan (Sales tidak lagi
+        // mengisi tanggal di form request). Pasang di memori dulu supaya jadwal
+        // memakai tanggal terbaru; penyimpanan dilakukan bersama penugasan
+        // setelah validasi bentrok lolos (tidak ada penugasan setengah jadi).
+        $targetDate = $validated['target_date'] ?? null;
+        $targetTime = $validated['target_time'] ?? null;
+        if ($targetDate) {
+            $technicalRequest->target_date = $targetDate;
+            $technicalRequest->target_time = $targetTime ?: $technicalRequest->target_time;
+        }
 
         $technician = User::findOrFail($validated['technician_id']);
         abort_unless($technician->isTechnician(), 422, __('Only users with the Technician role can be assigned.'));
@@ -463,6 +492,10 @@ class TechnicalRequestController extends Controller
             'assigned_technician_id' => $technician->id,
             'project_id' => $this->resolveProjectId($technicalRequest),
             'status' => 'assigned',
+            ...($targetDate ? [
+                'target_date' => $targetDate,
+                'target_time' => $technicalRequest->target_time,
+            ] : []),
         ]);
 
         $technicalRequest->refresh();

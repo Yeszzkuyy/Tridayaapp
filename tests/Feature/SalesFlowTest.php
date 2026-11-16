@@ -186,6 +186,7 @@ class SalesFlowTest extends TestCase
             'lead_id' => $lead->id,
             'request_type' => 'survey',
             'title' => 'Survey Lokasi',
+            'location' => 'Jl. Merdeka No. 1',
             'priority' => 'urgent',
         ])->assertRedirect();
 
@@ -236,7 +237,10 @@ class SalesFlowTest extends TestCase
         Notification::assertSentTo($sales, TechnicalRequestReviewedNotification::class);
 
         $this->actingAs($leadTech)
-            ->post(route('sales.technical-requests.assign', $request), ['technician_id' => $tech->id])
+            ->post(route('sales.technical-requests.assign', $request), [
+                'technician_id' => $tech->id,
+                'target_date' => now()->addDay()->toDateString(),
+            ])
             ->assertRedirect();
         $this->assertSame('assigned', $request->refresh()->status);
         $this->assertSame($tech->id, (int) $request->assigned_technician_id);
@@ -254,7 +258,10 @@ class SalesFlowTest extends TestCase
         ]);
 
         $this->actingAs($leadTech)
-            ->post(route('sales.technical-requests.assign', $request), ['technician_id' => $sales->id])
+            ->post(route('sales.technical-requests.assign', $request), [
+                'technician_id' => $sales->id,
+                'target_date' => now()->addDay()->toDateString(),
+            ])
             ->assertStatus(422);
     }
 
