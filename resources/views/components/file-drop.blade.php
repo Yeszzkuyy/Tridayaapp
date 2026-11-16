@@ -1,9 +1,9 @@
-{{-- Area upload lampiran pendukung: drop zone + daftar file yang dipilih.
+{{-- Area upload file: drop zone + daftar file yang dipilih.
 
      <x-file-drop id="request_files" />
-     <x-file-drop id="request_files_create" hint="..." />
+     <x-file-drop id="quotation-file" name="attachment" :max="1" :multiple="false" accept="..." />
 
-     Props: name (default request_files[]), id, max (default 5).
+     Props: name (default request_files[]), id, max (default 5), multiple, accept.
      Input asli tetap dipakai (sr-only) supaya submit multipart jalan normal;
      drag & drop hanya memindahkan file ke input tersebut. --}}
 
@@ -11,7 +11,13 @@
     'name' => 'request_files[]',
     'id' => 'request_files',
     'max' => 5,
+    'multiple' => true,
+    'accept' => '.pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip',
 ])
+
+@php
+    $fileLimit = $multiple ? (int) $max : 1;
+@endphp
 
 <div
     class="rounded-2xl border-2 border-dashed px-4 py-5 transition-colors"
@@ -23,7 +29,7 @@
         files: [],
         pick(list) {
             const dt = new DataTransfer();
-            Array.from(list).slice(0, {{ (int) $max }}).forEach((file) => dt.items.add(file));
+            Array.from(list).slice(0, {{ $fileLimit }}).forEach((file) => dt.items.add(file));
             this.$refs.input.files = dt.files;
             this.sync();
         },
@@ -40,8 +46,8 @@
     x-on:dragleave.prevent="dragging = false"
     x-on:drop.prevent="dragging = false; pick($event.dataTransfer.files)"
 >
-    <input x-ref="input" id="{{ $id }}" type="file" name="{{ $name }}" multiple class="sr-only"
-           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip"
+    <input x-ref="input" id="{{ $id }}" type="file" name="{{ $name }}" @if($multiple) multiple @endif class="sr-only"
+           accept="{{ $accept }}"
            x-on:change="sync()">
 
     <label for="{{ $id }}" class="flex cursor-pointer flex-col items-center justify-center gap-2 text-center">
@@ -53,21 +59,19 @@
             </svg>
         </span>
         <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            {{ __('Drop files here or click to browse') }}
+            {{ $multiple ? __('Drop files here or click to browse') : __('Drop a file here or click to browse') }}
         </span>
         <span class="text-xs text-slate-500 dark:text-slate-400">
-            {{ __('PDF, Word, Excel, CSV, image, or ZIP. Max :count files, 10 MB each.', ['count' => (int) $max]) }}
+            {{ $multiple
+                ? __('PDF, Word, Excel, CSV, image, or ZIP. Max :count files, 10 MB each.', ['count' => $fileLimit])
+                : __('PDF, Word, Excel, image, or ZIP. Max 10 MB.') }}
         </span>
     </label>
 
     <ul x-show="files.length" x-cloak class="mt-4 flex flex-wrap justify-center gap-2">
         <template x-for="(file, index) in files" :key="index">
             <li class="flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <svg class="h-4 w-4 shrink-0 text-accent-600 dark:text-accent-400" fill="none" viewBox="0 0 24 24"
-                     stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M14 3v5h5M6 3h8l5 5v13H6z" />
-                </svg>
+                <x-icon name="file-text" class="h-4 w-4 shrink-0 text-accent-600 dark:text-accent-400" />
                 <span class="max-w-[14rem] truncate text-xs font-medium text-slate-700 dark:text-slate-200" x-text="file.name"></span>
                 <span class="shrink-0 text-[11px] font-medium text-slate-400" x-text="file.size"></span>
             </li>

@@ -89,91 +89,7 @@
         @endif
     </div>
 
-    {{-- Lampiran pendukung dari Sales (brief/requirement), terpisah dari file quotation. --}}
-    @php
-        $fileUser = auth()->user();
-        $canUploadRequestFiles = $fileUser && (
-            (int) $task->created_by === (int) $fileUser->id
-            || (int) $task->lead?->assigned_to === (int) $fileUser->id
-            || $fileUser->can('manage-sales-leads')
-        );
-    @endphp
-    <div class="mb-6 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800/60">
-            <div class="flex items-center gap-3.5">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-500/10 text-accent-600 dark:bg-accent-500/15 dark:text-accent-300">
-                    <x-icon name="file-text" class="h-5 w-5" />
-                </span>
-                <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Supporting Attachments') }}</h3>
-            </div>
-            <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                {{ $task->requestFiles->count() }} {{ __('file(s)') }}
-            </span>
-        </div>
-
-        @if($task->requestFiles->isNotEmpty())
-            <ul class="divide-y divide-slate-100 dark:divide-slate-800/60">
-                @foreach($task->requestFiles as $file)
-                    @php
-                        $extension = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION));
-                        [$fileBoxTone, $fileIconTone] = match (true) {
-                            $extension === 'pdf' => ['bg-rose-500/10', 'text-rose-600 dark:text-rose-400'],
-                            in_array($extension, ['doc', 'docx']) => ['bg-blue-500/10', 'text-blue-600 dark:text-blue-400'],
-                            in_array($extension, ['xls', 'xlsx', 'csv']) => ['bg-emerald-500/10', 'text-emerald-600 dark:text-emerald-400'],
-                            in_array($extension, ['jpg', 'jpeg', 'png', 'webp']) => ['bg-sky-500/10', 'text-sky-600 dark:text-sky-400'],
-                            $extension === 'zip' => ['bg-amber-500/10', 'text-amber-600 dark:text-amber-400'],
-                            default => ['bg-slate-500/10', 'text-slate-600 dark:text-slate-300'],
-                        };
-                    @endphp
-                    <li class="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $fileBoxTone }} {{ $fileIconTone }}">
-                            <x-icon name="file-text" class="h-5 w-5" />
-                        </span>
-                        <div class="min-w-0 flex-1">
-                            <a href="{{ route('lead-tasks.request-files.download', [$task, $file]) }}"
-                               title="{{ $file->original_name }}"
-                               class="block truncate text-sm font-semibold text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">{{ $file->original_name }}</a>
-                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                                <span class="font-semibold uppercase">{{ $extension !== '' ? $extension : __('File') }}</span>
-                                <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $file->humanSize() }}
-                                <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $file->uploader?->name ?? '-' }}
-                                <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $file->created_at?->format('d M Y H:i') }}
-                            </p>
-                        </div>
-                        <div class="flex shrink-0 items-center gap-2">
-                            <x-icon-button as="a" icon="download"
-                                           href="{{ route('lead-tasks.request-files.download', [$task, $file]) }}"
-                                           title="{{ __('Download') }}" />
-                            @if($fileUser && ((int) $file->uploaded_by === (int) $fileUser->id || $fileUser->can('manage-sales-leads')))
-                                <form action="{{ route('lead-tasks.request-files.destroy', [$task, $file]) }}" method="POST"
-                                      data-confirm="{{ __('Delete this supporting file?') }}" data-confirm-tone="danger">
-                                    @csrf @method('DELETE')
-                                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
-                                </form>
-                            @endif
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-        @else
-            <p class="px-5 py-5 text-sm text-slate-500 dark:text-slate-400">{{ __('No supporting attachments yet.') }}</p>
-        @endif
-
-        @if($canUploadRequestFiles)
-            <form action="{{ route('lead-tasks.request-files.store', $task) }}" method="POST" enctype="multipart/form-data"
-                  class="space-y-3 border-t border-slate-100 px-5 py-5 dark:border-slate-800/60">
-                @csrf
-                <x-file-drop id="request-files" />
-                @error('request_files') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
-                @error('request_files.*') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
-                <div class="flex justify-end">
-                    <x-icon-button type="submit" icon="upload" label="{{ __('Upload') }}" title="{{ __('Upload') }}" />
-                </div>
-            </form>
-        @endif
-    </div>
-
-    {{-- Lampiran quotation dari Inside Sales — riwayat versi (tidak menimpa). --}}
+    {{-- Hak akses: item & file quotation hanya untuk assignee Inside Sales / management. --}}
     @php
         $attachmentUser = auth()->user();
         // Item hanya boleh dikerjakan assignee Inside Sales (bebas batas PT)
@@ -206,41 +122,101 @@
         </div>
     @endif
 
-    @if($task->proposal)
-        <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/20">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">{{ __('Quotation') }}</p>
-                    <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">{{ $task->proposal->proposal_number }}</p>
-                    <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
-                        {{ __('Status') }}: <span class="font-semibold">{{ ucfirst($task->proposal->status) }}</span>
-                        · {{ $task->proposal->created_at?->format('d M Y H:i') }}
-                    </p>
-                </div>
-                <div class="flex items-center gap-2">
-                    @if($task->proposal->pdf_path)
-                        <x-icon-button as="a" icon="download" label="{{ __('Download PDF') }}"
-                                       href="{{ auth()->user()->can('manage-inside-sales') ? route('inside-sales.quotations.pdf', $task) : route('sales.proposals.pdf', $task->proposal) }}"
-                                       title="{{ __('Download PDF') }}" />
+    {{-- Hasil quotation dari Inside Sales: nomor quotation (bila sudah dibuat
+         dari item) + file penawaran yang diunggah, versi terbaru di atas. --}}
+    <div class="mb-6 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800/60">
+            <div class="flex min-w-0 items-center gap-3.5">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ $task->proposal ? 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-accent-500/10 text-accent-600 dark:bg-accent-500/15 dark:text-accent-300' }}">
+                    <x-icon name="receipt" class="h-5 w-5" />
+                </span>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation') }}</h3>
+                    @if($task->proposal)
+                        <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                            <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $task->proposal->proposal_number }}</span>
+                            <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ ucfirst($task->proposal->status) }}
+                            <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $task->proposal->created_at?->format('d M Y H:i') }}
+                        </p>
+                    @elseif($task->items->isEmpty())
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ __('Upload the quotation file, or add items first to create it from the system.') }}</p>
+                    @else
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ __('Items are ready. Create the quotation and PDF now.') }}</p>
                     @endif
                 </div>
             </div>
-        </div>
-    @elseif($canGenerateQuotation)
-        <div class="mb-6 rounded-2xl border border-accent-200 bg-accent-50/60 p-5 shadow-sm dark:border-accent-800/60 dark:bg-accent-950/20">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation is ready to generate') }}</p>
-                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                        {{ $task->items->isEmpty() ? __('Add at least one item first.') : __('All items are filled. Create the quotation and PDF now.') }}
-                    </p>
-                </div>
-                @if($task->items->isNotEmpty())
-                    <x-icon-button as="a" variant="solid" icon="sparkles" label="{{ __('Create Quotation') }}" href="{{ route('inside-sales.quotations.create', $task) }}" title="{{ __('Create Quotation') }}" />
+            <div class="flex flex-wrap items-center gap-2">
+                @if($task->proposal?->pdf_path)
+                    <x-icon-button as="a" icon="download" label="{{ __('Download PDF') }}"
+                                   href="{{ auth()->user()->can('manage-inside-sales') ? route('inside-sales.quotations.pdf', $task) : route('sales.proposals.pdf', $task->proposal) }}"
+                                   title="{{ __('Download PDF') }}" />
+                @endif
+                @if($canGenerateQuotation && ! $task->proposal && $task->items->isNotEmpty())
+                    <x-icon-button as="a" variant="solid" icon="sparkles" label="{{ __('Create Quotation') }}"
+                                   href="{{ route('inside-sales.quotations.create', $task) }}" title="{{ __('Create Quotation') }}" />
                 @endif
             </div>
         </div>
-    @endif
+
+        @if($attachmentTotal > 0)
+            <ul class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                @foreach($task->attachments as $attachment)
+                    <li class="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <x-icon name="file-text" class="h-5 w-5" />
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100" title="{{ $attachment->original_name }}">{{ $attachment->original_name }}</p>
+                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                <span class="font-semibold">v{{ $attachmentTotal - $loop->index }}</span>
+                                <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $attachment->humanSize() }}
+                                <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $attachment->uploader?->name ?? __('System') }}
+                                <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $attachment->created_at?->translatedFormat('d M Y H:i') }}
+                            </p>
+                            @if($attachment->accepted_at && $attachment->proposal)
+                                <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                    {{ __('Accepted') }} {{ $attachment->accepted_at->translatedFormat('d M Y H:i') }} ·
+                                    <a href="{{ route('sales.proposals.show', $attachment->proposal) }}" class="font-semibold underline">
+                                        {{ $attachment->proposal->proposal_number }}
+                                    </a>
+                                </p>
+                            @endif
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <x-file-preview :url="route('lead-tasks.attachments.preview', [$task, $attachment])"
+                                            :download="route('lead-tasks.attachments.download', [$task, $attachment])"
+                                            :name="$attachment->original_name" />
+                            <x-icon-button as="a" icon="download" href="{{ route('lead-tasks.attachments.download', [$task, $attachment]) }}" title="{{ __('Download') }}" />
+                            @if($canManageAttachment)
+                                <form action="{{ route('lead-tasks.attachments.destroy', [$task, $attachment]) }}" method="POST"
+                                      data-confirm="{{ __('Delete this quotation file?') }}" data-confirm-tone="danger">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
+                                </form>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">{{ __('No quotation file uploaded yet.') }}</p>
+        @endif
+
+        @if($canManageAttachment)
+            <form action="{{ route('lead-tasks.attachments.store', $task) }}" method="POST" enctype="multipart/form-data"
+                  class="space-y-3 border-t border-slate-100 px-5 py-5 dark:border-slate-800/60">
+                @csrf
+                <x-file-drop id="quotation-file" name="attachment" :max="1" :multiple="false"
+                             accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" />
+                @error('attachment') <p class="text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Each upload becomes the latest version, older files stay in history.') }}</p>
+                    <x-icon-button type="submit" icon="upload" label="{{ __('Upload Quotation File') }}" title="{{ __('Upload Quotation File') }}" />
+                </div>
+            </form>
+        @endif
+    </div>
 
     {{-- Item quotation dari Inside Sales (dipakai saat file di-Accept). --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
@@ -443,74 +419,7 @@
 
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">{{ __('Supporting Attachments (Optional)') }}</h3>
-            <span class="text-xs text-slate-400">{{ $attachmentTotal }} {{ __('file(s)') }} · {{ __('Latest first') }}</span>
-        </div>
-
-        @if($attachmentTotal > 0)
-            <ul class="mb-4 space-y-2">
-                @foreach($task->attachments as $attachment)
-                    <li class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-700/40">
-                        <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $attachment->original_name }}</p>
-                            <p class="text-xs text-slate-400">
-                                v{{ $attachmentTotal - $loop->index }} · {{ $attachment->humanSize() }}
-                                · {{ $attachment->uploader?->name ?? __('System') }}
-                                · {{ $attachment->created_at?->translatedFormat('d M Y H:i') }}
-                            </p>
-                            @if($attachment->accepted_at && $attachment->proposal)
-                                <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-                                    ✓ {{ __('Accepted') }} {{ $attachment->accepted_at->translatedFormat('d M Y H:i') }} ·
-                                    <a href="{{ route('sales.proposals.show', $attachment->proposal) }}" class="font-semibold underline">
-                                        {{ $attachment->proposal->proposal_number }}
-                                    </a>
-                                </p>
-                            @endif
-                        </div>
-                        <div class="flex shrink-0 items-center gap-2">
-                            <x-file-preview :url="route('lead-tasks.attachments.preview', [$task, $attachment])"
-                                            :download="route('lead-tasks.attachments.download', [$task, $attachment])"
-                                            :name="$attachment->original_name" />
-                            <x-icon-button as="a" icon="download" href="{{ route('lead-tasks.attachments.download', [$task, $attachment]) }}" title="{{ __('Download') }}" />
-                            @if($canManageAttachment)
-                                <form action="{{ route('lead-tasks.attachments.destroy', [$task, $attachment]) }}" method="POST"
-                                      data-confirm="{{ __('Delete this quotation file?') }}" data-confirm-tone="danger">
-                                    @csrf
-                                    @method('DELETE')
-                                    <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
-                                </form>
-                            @endif
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-        @else
-            <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{{ __('No quotation file uploaded yet.') }}</p>
-        @endif
-
-        @if($canManageAttachment)
-            <form action="{{ route('lead-tasks.attachments.store', $task) }}" method="POST" enctype="multipart/form-data"
-                  class="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-700">
-                @csrf
-                <div class="min-w-0 flex-1">
-                    <label for="quotation-attachment" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                        {{ __('Upload supporting file (optional, PDF/Word/Excel/image, max 10MB)') }}
-                    </label>
-                    <input id="quotation-attachment" type="file" name="attachment" required
-                           accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                    @error('attachment') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
-                </div>
-                <button type="submit"
-                        class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                    {{ __('Save') }}
-                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                </button>
-            </form>
-        @endif
-    </div>
+    @include('lead-tasks.partials.sales-attachments')
 
     <livewire:lead-task-chat :task="$task" />
 </x-app-layout>
