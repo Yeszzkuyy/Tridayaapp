@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\PriceRequest;
 use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -69,6 +71,32 @@ class InstantSaveResponseTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_ajax_sales_price_request_cancel_returns_json(): void
+    {
+        $sales = User::factory()->create()->assignRole('sales');
+        $customer = Customer::create(['name' => 'PT Simpan Cepat Sales']);
+        $request = PriceRequest::create([
+            'customer_id' => $customer->id,
+            'requested_by' => $sales->id,
+            'quotation_path' => 'price-requests/qa/quotation.pdf',
+            'status' => 'waiting_lead',
+        ]);
+
+        $response = $this->actingAs($sales)
+            ->withHeaders($this->ajax())
+            ->post(route('sales.price-requests.cancel', $request));
+
+        $response->assertOk()
+            ->assertJson([
+                'ok' => true,
+                'message' => __('Price request canceled.'),
+            ])
+            ->assertJsonStructure(['redirect']);
+
+        $response->assertSessionMissing('success');
+        $this->assertSame('cancelled', $request->fresh()->status);
     }
 
     public function test_non_ajax_product_save_still_redirects_with_flash(): void
