@@ -103,8 +103,8 @@
                          row.open = true;
                          row.active = Math.max(0, Math.min((row.active ?? 0) + step, list.length - 1));
                          this.$nextTick(() => {
-                             const menu = document.querySelector(`[data-product-menu="${index}"]`);
-                             menu?.querySelector(`[data-option-index="${row.active}"]`)?.scrollIntoView({ block: 'nearest' });
+                             const menu = document.querySelector(`[data-product-menu='${index}']`);
+                             menu?.querySelector(`[data-option-index='${row.active}']`)?.scrollIntoView({ block: 'nearest' });
                          });
                      },
                      pickActive(index, row) {
