@@ -6,11 +6,14 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
 use App\Models\LeadTaskItem;
+use App\Models\LeadTaskRequestFile;
 use App\Models\Product;
 use App\Models\User;
+use App\Rules\SecureFile;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationVersionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LeadTaskController extends Controller
 {
@@ -127,6 +130,11 @@ class LeadTaskController extends Controller
             'assigned_to' => 'required|exists:users,id',
             'due_date' => 'nullable|date',
             'priority' => 'nullable|in:'.implode(',', LeadTask::PRIORITIES),
+            'request_files' => 'nullable|array|max:5',
+            'request_files.*' => ['file', 'max:10240', SecureFile::documents()],
+        ], [
+            'request_files.max' => __('Maximum 5 supporting files.'),
+            'request_files.*.max' => __('Each file must be under 10 MB.'),
         ]);
 
         $lead = Lead::findOrFail($validated['lead_id']);
@@ -138,7 +146,10 @@ class LeadTaskController extends Controller
         }
 
         $validated['created_by'] = auth()->id();
+        unset($validated['request_files']);
         $task = LeadTask::create($validated);
+
+        $this->storeRequestFiles($request, $task);
 
         LeadActivity::create([
             'lead_id' => $lead->id,
@@ -159,7 +170,7 @@ class LeadTaskController extends Controller
 
     public function show(LeadTask $leadTask)
     {
-        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader', 'items.product', 'proposal']);
+        $leadTask->load(['lead.customer', 'assignee', 'creator', 'comments.user', 'attachments.uploader', 'requestFiles.uploader', 'items.product', 'proposal']);
         $this->authorizeTaskView($leadTask);
 
         $products = Product::saleable()
@@ -508,5 +519,108 @@ class LeadTaskController extends Controller
         return redirect()
             ->route('lead-tasks.show', $leadTask)
             ->with('success', __('Quotation file deleted.'));
+    }
+
+    /**
+     * Upload lampiran pendukung dari Sales (brief/requirement), bisa menyusul
+     * setelah request dibuat. File quotation tetap lewat storeAttachment.
+     */
+    public function storeRequestFile(Request $request, LeadTask $leadTask)
+    {
+        $this->authorizeRequestFileUpload($leadTask);
+
+        $request->validate([
+            'request_files' => 'required|array|max:5',
+            'request_files.*' => ['file', 'max:10240', SecureFile::documents()],
+        ], [
+            'request_files.required' => __('Please choose a file to upload.'),
+            'request_files.max' => __('Maximum 5 supporting files.'),
+            'request_files.*.max' => __('Each file must be under 10 MB.'),
+        ]);
+
+        $this->storeRequestFiles($request, $leadTask);
+
+        return redirect()
+            ->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Supporting files uploaded.'));
+    }
+
+    public function downloadRequestFile(LeadTask $leadTask, LeadTaskRequestFile $requestFile)
+    {
+        $this->authorizeTaskView($leadTask);
+
+        abort_unless((int) $requestFile->lead_task_id === (int) $leadTask->id, 404);
+        abort_unless(Storage::disk('private')->exists($requestFile->file_path), 404, __('File not found.'));
+
+        return SecureFile::fileResponse(
+            'private',
+            $requestFile->file_path,
+            $requestFile->original_name
+        );
+    }
+
+    public function destroyRequestFile(Request $request, LeadTask $leadTask, LeadTaskRequestFile $requestFile)
+    {
+        $this->authorizeTaskView($leadTask);
+
+        abort_unless((int) $requestFile->lead_task_id === (int) $leadTask->id, 404);
+
+        $user = $request->user();
+        $canDelete = $user && (
+            (int) $requestFile->uploaded_by === (int) $user->id
+            || $user->can('manage-sales-leads')
+        );
+
+        abort_unless($canDelete, 403);
+
+        Storage::disk('private')->delete($requestFile->file_path);
+        $requestFile->delete();
+
+        return redirect()
+            ->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Supporting file deleted.'));
+    }
+
+    /**
+     * Sales pembuat request, pemilik lead, atau management boleh menambah
+     * lampiran pendukung. Inside Sales hanya melihat/mengunduh.
+     */
+    private function authorizeRequestFileUpload(LeadTask $leadTask): void
+    {
+        $user = request()->user();
+
+        if ($user && (
+            (int) $leadTask->created_by === (int) $user->id
+            || (int) $leadTask->lead?->assigned_to === (int) $user->id
+            || $user->can('manage-sales-leads')
+        )) {
+            return;
+        }
+
+        abort(403);
+    }
+
+    private function storeRequestFiles(Request $request, LeadTask $leadTask): void
+    {
+        foreach ($request->file('request_files', []) as $file) {
+            if (! $file) {
+                continue;
+            }
+
+            $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $file->getClientOriginalName());
+            $path = $file->storeAs(
+                'lead-tasks/'.$leadTask->id.'/request-files',
+                \Illuminate\Support\Str::uuid().'_'.$safeName,
+                'private'
+            );
+
+            $leadTask->requestFiles()->create([
+                'file_path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime' => $file->getClientMimeType(),
+                'size' => $file->getSize() ?: 0,
+                'uploaded_by' => auth()->id(),
+            ]);
+        }
     }
 }

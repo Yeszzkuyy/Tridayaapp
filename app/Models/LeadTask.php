@@ -54,6 +54,12 @@ class LeadTask extends Model
         return $this->hasMany(LeadTaskAttachment::class)->latest('id');
     }
 
+    /** Lampiran pendukung dari Sales (brief/requirement), bukan quotation. */
+    public function requestFiles()
+    {
+        return $this->hasMany(LeadTaskRequestFile::class)->latest('id');
+    }
+
     public function items()
     {
         return $this->hasMany(LeadTaskItem::class);

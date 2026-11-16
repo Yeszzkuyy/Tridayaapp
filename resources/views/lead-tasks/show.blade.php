@@ -89,6 +89,65 @@
         @endif
     </div>
 
+    {{-- Lampiran pendukung dari Sales (brief/requirement), terpisah dari file quotation. --}}
+    @php
+        $fileUser = auth()->user();
+        $canUploadRequestFiles = $fileUser && (
+            (int) $task->created_by === (int) $fileUser->id
+            || (int) $task->lead?->assigned_to === (int) $fileUser->id
+            || $fileUser->can('manage-sales-leads')
+        );
+    @endphp
+    <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ __('Supporting Attachments') }}</h3>
+            <span class="text-xs text-slate-400">{{ $task->requestFiles->count() }} {{ __('file(s)') }}</span>
+        </div>
+
+        @if($task->requestFiles->isNotEmpty())
+            <ul class="mb-4 divide-y divide-slate-100 dark:divide-slate-700">
+                @foreach($task->requestFiles as $file)
+                    <li class="flex flex-wrap items-center justify-between gap-2 py-3">
+                        <div class="min-w-0">
+                            <a href="{{ route('lead-tasks.request-files.download', [$task, $file]) }}"
+                               class="text-sm font-medium text-accent-600 hover:underline dark:text-accent-400">{{ $file->original_name }}</a>
+                            <p class="text-xs text-slate-400">
+                                {{ $file->humanSize() }}
+                                · {{ $file->uploader?->name ?? '-' }}
+                                · {{ $file->created_at?->format('d M Y H:i') }}
+                            </p>
+                        </div>
+                        @if($fileUser && ((int) $file->uploaded_by === (int) $fileUser->id || $fileUser->can('manage-sales-leads')))
+                            <form action="{{ route('lead-tasks.request-files.destroy', [$task, $file]) }}" method="POST"
+                                  data-confirm="{{ __('Delete this supporting file?') }}" data-confirm-tone="danger">
+                                @csrf @method('DELETE')
+                                <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
+                            </form>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{{ __('No supporting attachments yet.') }}</p>
+        @endif
+
+        @if($canUploadRequestFiles)
+            <form action="{{ route('lead-tasks.request-files.store', $task) }}" method="POST" enctype="multipart/form-data"
+                  class="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4 dark:border-slate-700">
+                @csrf
+                <div class="min-w-0 flex-1">
+                    <label for="request-files" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Add supporting file') }}</label>
+                    <input id="request-files" type="file" name="request_files[]" multiple
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.zip"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    @error('request_files') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    @error('request_files.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <x-icon-button type="submit" icon="upload" label="{{ __('Upload') }}" title="{{ __('Upload') }}" />
+            </form>
+        @endif
+    </div>
+
     {{-- Lampiran quotation dari Inside Sales — riwayat versi (tidak menimpa). --}}
     @php
         $attachmentUser = auth()->user();
