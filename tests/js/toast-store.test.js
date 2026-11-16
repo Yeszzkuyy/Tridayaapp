@@ -37,17 +37,17 @@ test('nama varian lama dinormalkan: danger jadi error', () => {
     assert.equal(toast.variant, 'error');
 });
 
-test('varian tidak dikenal jatuh ke default dan durasi bawaan 8 detik', () => {
+test('varian tidak dikenal jatuh ke default dan durasi aksi bawaan 3 detik', () => {
     dismissAllToasts();
 
     const unknownId = pushToast({ variant: 'ngawur', message: 'x' });
     const unknown = getToasts().find((toast) => toast.id === unknownId);
     assert.equal(unknown.variant, 'default');
-    assert.equal(unknown.duration, 8000);
+    assert.equal(unknown.duration, 3000);
 
     const errorId = pushToast({ variant: 'error', message: 'gagal' });
     const error = getToasts().find((toast) => toast.id === errorId);
-    assert.equal(error.duration, 8000);
+    assert.equal(error.duration, 3000);
 
     const customId = pushToast({ message: 'khusus', duration: 3000 });
     const custom = getToasts().find((toast) => toast.id === customId);
