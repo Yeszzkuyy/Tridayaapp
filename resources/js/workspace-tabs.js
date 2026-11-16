@@ -650,6 +650,111 @@ export function registerWorkspaceStore(Alpine) {
             if (id) this.openSplitFromDrag(id, 'right');
         },
 
+        /**
+         * Cari menu sidebar yang paling cocok untuk sebuah URL.
+         * Selain URL menu langsung, mendukung akar grup seperti /estimator
+         * (dipetakan ke link header grup, mis. /estimator/requests).
+         */
+        resolveMenuForUrl(rawUrl) {
+            const path = normalizePath(rawUrl);
+            const links = [...document.querySelectorAll('#sidebar a[href]')];
+            let best = null;
+            let bestLen = -1;
+            let groupHead = null;
+            let groupHeadLen = -1;
+
+            links.forEach((link) => {
+                const linkPath = normalizePath(link.href);
+
+                if (path === linkPath || path.startsWith(linkPath + '/')) {
+                    if (linkPath.length > bestLen) {
+                        best = link;
+                        bestLen = linkPath.length;
+                    }
+                    return;
+                }
+
+                if (path !== '/' && linkPath.startsWith(path + '/')) {
+                    if (link.closest('.sb-head') && (groupHead === null || linkPath.length < groupHeadLen)) {
+                        groupHead = link;
+                        groupHeadLen = linkPath.length;
+                    }
+                    if (best === null || linkPath.length < bestLen) {
+                        best = link;
+                        bestLen = linkPath.length;
+                    }
+                }
+            });
+
+            const chosen = groupHead || best;
+            if (!chosen) return null;
+
+            const menuPath = normalizePath(chosen.href);
+            const meta = this.resolveMetaForPath(menuPath);
+
+            return {
+                menuPath,
+                id: tabIdFromPath(menuPath),
+                title: meta?.title || 'Page',
+                dept: meta?.dept || null,
+                deptName: meta?.deptName || null,
+                icon: meta?.icon || 'grid',
+            };
+        },
+
+        /** Kembalikan iframe tab ke halaman menu asalnya. */
+        resetTabToHome(tab) {
+            const home = tab.homeUrl || tab.url;
+            if (!home) return;
+
+            tab.url = home;
+            tab.path = normalizePath(home);
+            tab.dirty = false;
+
+            const pane = document.querySelector(`[data-workspace-pane="${CSS.escape(tab.id)}"]`);
+            const frame = pane?.querySelector('iframe');
+            if (frame) {
+                try {
+                    frame.contentWindow.location.replace(embedUrl(home));
+                } catch (e) {
+                    frame.src = embedUrl(home);
+                }
+            }
+
+            this.persist();
+            this.scheduleOverflowHints();
+        },
+
+        /**
+         * Iframe pindah ke menu lain (mis. tombol Back ke Queue/Dashboard):
+         * tab asal dikembalikan ke menu rumahnya, lalu tab tujuan diaktifkan
+         * atau dibuka. Tab asal tidak boleh berubah jadi menu lain.
+         */
+        reconcileMenuNavigation(tab, targetMenu) {
+            if (!targetMenu) return;
+
+            const wasActive = this.activeId === tab.id;
+            const targetTab = this.tabs.find((item) => item.id === targetMenu.id);
+
+            this.resetTabToHome(tab);
+
+            if (targetTab) {
+                if (wasActive) this.activate(targetTab.id);
+                return;
+            }
+
+            this.openByUrl(
+                targetMenu.menuPath,
+                {
+                    title: targetMenu.title,
+                    dept: targetMenu.dept,
+                    deptName: targetMenu.deptName,
+                    icon: targetMenu.icon,
+                },
+                { activate: wasActive },
+            );
+        },
+
         init() {
             // Layout penuh tidak boleh membuat workspace baru saat dimuat
             // di dalam iframe (pemicu iframe bersarang).
@@ -667,6 +772,7 @@ export function registerWorkspaceStore(Alpine) {
                 deptName: null,
                 url: dashUrl,
                 path: normalizePath(dashUrl),
+                homeUrl: dashUrl,
                 icon: 'grid',
                 pinned: true,
                 dirty: false,
@@ -691,6 +797,7 @@ export function registerWorkspaceStore(Alpine) {
                         .slice(0, this.maxDesktop - 1)
                         .map((tab) => {
                             const resolved = this.resolveMetaForPath(tab.url);
+                            const homeMenu = this.resolveMenuForUrl(tab.id);
                             return {
                                 id: tab.id,
                                 title: resolved?.title || cleanStoredTitle(tab.title),
@@ -698,6 +805,7 @@ export function registerWorkspaceStore(Alpine) {
                                 deptName: resolved?.deptName || tab.deptName || null,
                                 url: cleanUrl(tab.url),
                                 path: normalizePath(tab.url),
+                                homeUrl: tab.homeUrl || homeMenu?.menuPath || cleanUrl(tab.url),
                                 icon: resolved?.icon || String(tab.icon || 'grid'),
                                 pinned: false,
                                 dirty: false,
@@ -740,12 +848,25 @@ export function registerWorkspaceStore(Alpine) {
                 this.activate('dashboard', { pushState: false });
             } else {
                 const resolved = this.resolveMetaForPath(currentPath);
+                const homeMenu = this.resolveMenuForUrl(currentUrl);
+                const canonicalId = homeMenu?.id || currentId;
                 const fallback = this.metaFromInitial(initial);
-                const existing = this.tabs.find((tab) => tab.id === currentId || tab.path === currentPath);
+                const existing = this.tabs.find(
+                    (tab) =>
+                        tab.id === canonicalId ||
+                        tab.id === currentId ||
+                        tab.path === currentPath,
+                );
 
                 if (existing) {
                     existing.url = currentUrl;
                     existing.path = currentPath;
+                    if (!existing.homeUrl) {
+                        existing.homeUrl =
+                            this.resolveMenuForUrl(existing.id)?.menuPath ||
+                            homeMenu?.menuPath ||
+                            currentUrl;
+                    }
                     if (resolved) {
                         existing.title = resolved.title;
                         existing.dept = resolved.dept;
@@ -758,12 +879,13 @@ export function registerWorkspaceStore(Alpine) {
                         this.tabs.splice(1, 1);
                     }
                     const tab = {
-                        id: currentId,
+                        id: canonicalId,
                         title: resolved?.title || fallback.title,
                         dept: resolved?.dept || fallback.dept,
                         deptName: resolved?.deptName || fallback.deptName,
                         url: currentUrl,
                         path: currentPath,
+                        homeUrl: homeMenu?.menuPath || currentUrl,
                         icon: resolved?.icon || fallback.icon,
                         pinned: false,
                         dirty: false,
@@ -789,6 +911,7 @@ export function registerWorkspaceStore(Alpine) {
                     dept: tab.dept,
                     deptName: tab.deptName,
                     url: tab.url,
+                    homeUrl: tab.homeUrl || tab.url,
                     icon: tab.icon,
                     pinned: Boolean(tab.pinned),
                 }));
@@ -866,10 +989,11 @@ export function registerWorkspaceStore(Alpine) {
             this.scheduleOverflowHints();
         },
 
-        openByUrl(rawUrl, meta = {}) {
+        openByUrl(rawUrl, meta = {}, options = {}) {
             const url = cleanUrl(rawUrl);
             const path = normalizePath(url);
-            const id = tabIdFromPath(path);
+            const targetMenu = this.resolveMenuForUrl(url);
+            const id = targetMenu?.id || tabIdFromPath(path);
 
             const existing = this.tabs.find((tab) => tab.id === id || tab.path === path);
             if (existing) {
@@ -880,7 +1004,22 @@ export function registerWorkspaceStore(Alpine) {
                     existing.deptName = resolved.deptName;
                     existing.icon = resolved.icon;
                 }
-                this.activate(existing.id);
+
+                if (!existing.homeUrl) {
+                    existing.homeUrl =
+                        this.resolveMenuForUrl(existing.id)?.menuPath || existing.url;
+                }
+
+                // Tab lama yang sempat berpindah menu dikembalikan dulu.
+                const homeMenu = this.resolveMenuForUrl(existing.homeUrl);
+                const currentMenu = this.resolveMenuForUrl(existing.url);
+                if (homeMenu && (!currentMenu || currentMenu.id !== homeMenu.id)) {
+                    this.resetTabToHome(existing);
+                }
+
+                if (options.activate !== false) this.activate(existing.id);
+                else this.persist();
+
                 return existing;
             }
 
@@ -896,7 +1035,7 @@ export function registerWorkspaceStore(Alpine) {
                 return null;
             }
 
-            const resolved = this.resolveMetaForPath(path);
+            const resolved = this.resolveMetaForPath(path) || targetMenu;
             const tab = {
                 id,
                 title: resolved?.title || meta.title || 'Page',
@@ -904,13 +1043,15 @@ export function registerWorkspaceStore(Alpine) {
                 deptName: resolved?.deptName || meta.deptName || null,
                 url,
                 path,
+                homeUrl: targetMenu?.menuPath || url,
                 icon: resolved?.icon || meta.icon || 'grid',
                 pinned: false,
                 dirty: false,
                 loaded: false,
             };
             this.tabs.push(tab);
-            this.activate(tab.id);
+            if (options.activate !== false) this.activate(tab.id);
+            else this.persist();
             return tab;
         },
 
@@ -1219,8 +1360,23 @@ export function registerWorkspaceStore(Alpine) {
 
                 if (data.type === 'meta') {
                     if (data.url) {
-                        tab.url = cleanUrl(data.url);
-                        tab.path = normalizePath(tab.url);
+                        const nextUrl = cleanUrl(data.url);
+                        const nextPath = normalizePath(nextUrl);
+                        const nextMenu = this.resolveMenuForUrl(nextUrl);
+
+                        // Navigasi ke menu lain: jangan bajak tab ini.
+                        if (nextMenu && nextMenu.id !== tab.id) {
+                            this.reconcileMenuNavigation(tab, nextMenu);
+                            return;
+                        }
+
+                        tab.url = nextUrl;
+                        tab.path = nextPath;
+
+                        if (!tab.homeUrl) {
+                            tab.homeUrl =
+                                this.resolveMenuForUrl(tab.id)?.menuPath || nextUrl;
+                        }
                     }
                     tab.dirty = Boolean(data.dirty);
 
