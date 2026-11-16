@@ -222,17 +222,33 @@ export function initWorkspaceEmbed() {
         true,
     );
 
-    // 7. Sinkron tema dari shell luar bila user mengubah tampilan di tab lain.
+    // 7. Sinkron tema dua arah antara shell luar dan isi tab.
+    let applyingAppearanceFromHost = false;
+
     window.addEventListener('message', (event) => {
         if (event.origin !== window.location.origin) return;
         const data = event.data || {};
         if (data.source !== '3dy-workspace-host') return;
         if (data.type === 'appearance') {
+            applyingAppearanceFromHost = true;
             const root = document.documentElement;
             if (data.mode) root.setAttribute('data-mode', data.mode);
             if (data.accent) root.setAttribute('data-theme', data.accent);
             if (typeof window.__applyAppearance === 'function') window.__applyAppearance();
+            setTimeout(() => {
+                applyingAppearanceFromHost = false;
+            }, 0);
         }
+    });
+
+    // Kirim perubahan tema dari dalam tab (mis. halaman Settings) ke shell
+    // supaya sidebar/navbar ikut berubah dan tab lain disamakan.
+    window.addEventListener('appearance:change', () => {
+        if (applyingAppearanceFromHost) return;
+        send('appearance', {
+            mode: document.documentElement.getAttribute('data-mode') || 'system',
+            accent: document.documentElement.getAttribute('data-theme') || 'ocean',
+        });
     });
 
     // Beri tahu shell panel mana yang sedang dipakai (untuk split view).
