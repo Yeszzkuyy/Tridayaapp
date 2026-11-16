@@ -5,13 +5,14 @@ namespace App\Notifications;
 use App\Models\EstimatorRequest;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * Dikirim ke Estimator saat Sales meminta revisi harga/produk.
  */
-class EstimatorRequestRevisionNotification extends Notification
+class EstimatorRequestRevisionNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 

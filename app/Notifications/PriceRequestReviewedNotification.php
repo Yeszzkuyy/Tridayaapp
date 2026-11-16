@@ -6,11 +6,12 @@ use App\Models\PriceRequest;
 use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /** Dikirim kepada peserta saat status request harga berubah. */
-class PriceRequestReviewedNotification extends Notification
+class PriceRequestReviewedNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 
