@@ -64,8 +64,33 @@ function looksLikeFieldLabel(label) {
 function labelFor(field) {
     if (!field) return '';
 
-    const explicit = cleanLabel(field.dataset.fieldLabel || field.getAttribute('aria-label'));
+    const explicit = cleanLabel(field.dataset.fieldLabel);
     if (explicit) return explicit;
+
+    // Tabel: gabungkan nama baris (sel pertama) + judul kolom. Ditaruh
+    // sebelum placeholder karena placeholder tabel biasanya contoh
+    // ("e.g. 1 year distributor"), bukan nama isian.
+    const cell = field.closest('td');
+    if (cell) {
+        const row = cell.parentElement;
+        const index = row ? [...row.children].indexOf(cell) : -1;
+        const header = index >= 0
+            ? cleanLabel(cell.closest('table')?.querySelectorAll('thead th')[index]?.textContent)
+            : '';
+        const firstCell = row?.querySelector('td');
+        const rowName = cleanLabel(
+            firstCell?.querySelector('.font-semibold, p, a, span')?.textContent ||
+            firstCell?.textContent,
+        );
+        const shortRow = truncate(rowName.split(/Last price|Harga terakhir/i)[0], 48);
+
+        if (shortRow && header) return `${shortRow} - ${header}`;
+        if (header) return header;
+        if (shortRow) return shortRow;
+    }
+
+    const ariaLabel = cleanLabel(field.getAttribute('aria-label'));
+    if (ariaLabel) return ariaLabel;
 
     const labelledBy = field.getAttribute('aria-labelledby');
     if (labelledBy) {
@@ -95,27 +120,7 @@ function labelFor(field) {
     }
 
     const placeholder = cleanLabel(field.getAttribute('placeholder'));
-    if (placeholder) return placeholder;
-
-    // Tabel: gabungkan nama baris (sel pertama) + judul kolom.
-    const cell = field.closest('td');
-    if (cell) {
-        const row = cell.parentElement;
-        const index = row ? [...row.children].indexOf(cell) : -1;
-        const header = index >= 0
-            ? cleanLabel(cell.closest('table')?.querySelectorAll('thead th')[index]?.textContent)
-            : '';
-        const firstCell = row?.querySelector('td');
-        const rowName = cleanLabel(
-            firstCell?.querySelector('.font-semibold, p, a, span')?.textContent ||
-            firstCell?.textContent,
-        );
-        const shortRow = truncate(rowName.split(/Last price|Harga terakhir/i)[0], 48);
-
-        if (shortRow && header) return `${shortRow} - ${header}`;
-        if (header) return header;
-        if (shortRow) return shortRow;
-    }
+    if (placeholder && !/^e\.g\./i.test(placeholder)) return placeholder;
 
     return '';
 }
@@ -153,7 +158,7 @@ function fieldEntry(field) {
         return {
             field,
             kind: 'glide',
-            label: cleanLabel(glideMount.dataset.label || field.getAttribute('aria-label') || ''),
+            label: labelFor(field) || cleanLabel(glideMount.dataset.label || field.getAttribute('aria-label') || ''),
             host: glideMount.closest('.glide-select-root'),
             focus: glideMount.querySelector('.glide-select__trigger') || glideMount,
             error: (() => {
