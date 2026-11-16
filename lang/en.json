@@ -5405,5 +5405,9 @@
     "Left pane": "Left pane",
     "Right pane": "Right pane",
     "Select tab": "Select tab",
-    "Resize split panes": "Resize split panes"
+    "Resize split panes": "Resize split panes",
+    ":label is required.": ":label is required.",
+    "Please complete the required fields: :fields": "Please complete the required fields: :fields",
+    "Please fix the highlighted fields: :fields": "Please fix the highlighted fields: :fields",
+    "and :count more": "and :count more"
 }

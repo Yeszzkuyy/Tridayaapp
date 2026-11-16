@@ -57,7 +57,8 @@ class UiFeedbackStandardTest extends TestCase
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
 
         $this->assertStringContainsString('<x-confirm-dialog />', $layout);
-        $this->assertStringContainsString('<x-toast type="error">', $layout, 'Error validasi tetap tampil inline.');
+        $this->assertStringContainsString('<x-toast type="error"', $layout, 'Error validasi tetap tampil inline.');
+        $this->assertStringContainsString('data-server-error-summary', $layout);
     }
 
     public function test_dropdown_hover_uses_the_visible_menu_token(): void

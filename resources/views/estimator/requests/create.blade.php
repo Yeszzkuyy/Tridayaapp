@@ -167,9 +167,9 @@
                                         <p x-show="filteredProducts(row).length === 0" class="px-3.5 py-2.5 text-sm text-slate-500 dark:text-slate-400">{{ __('No matching catalog product - fill description manually.') }}</p>
                                     </div>
                                 </div>
-                                <input type="text" :name="`items[${index}][description]`" x-model="row.description" maxlength="255" placeholder="{{ __('Item description') }}"
+                                <input type="text" :name="`items[${index}][description]`" x-model="row.description" maxlength="255" required placeholder="{{ __('Item description') }}"
                                        class="col-span-12 h-11 rounded-xl border-slate-300 text-base text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 sm:col-span-7">
-                                <input type="number" :name="`items[${index}][quantity]`" x-model="row.quantity" min="0.01" step="0.01" placeholder="{{ __('Qty') }}"
+                                <input type="number" :name="`items[${index}][quantity]`" x-model="row.quantity" min="0.01" step="0.01" required placeholder="{{ __('Qty') }}"
                                        class="col-span-4 h-11 rounded-xl border-slate-300 text-base text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 sm:col-span-2">
                                 <input type="text" :name="`items[${index}][unit]`" x-model="row.unit" maxlength="16" placeholder="{{ __('Unit') }}"
                                        class="col-span-4 h-11 rounded-xl border-slate-300 text-base text-slate-900 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 sm:col-span-2">
