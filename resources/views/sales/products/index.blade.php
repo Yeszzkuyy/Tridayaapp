@@ -65,7 +65,7 @@
                         <x-icon-button variant="solid" as="a" icon="add" href="{{ route('products.create') }}" label="{{ __('Add Product') }}" title="{{ __('Add Product') }}" />
                     @endcanany
                     @if($canManageCost)
-                        <x-icon-button as="a" icon="edit" href="{{ $bulkUrl }}" label="{{ __('Review Prices') }}" title="{{ __('Bulk Edit Prices') }}" />
+                        <x-icon-button as="a" icon="edit" :href="$bulkUrl" label="{{ __('Review Prices') }}" title="{{ __('Bulk Edit Prices') }}" />
                     @endif
                 @endunless
             </div>
@@ -117,7 +117,7 @@
             @if($canManageCost && $counts['needs_recheck'] > 0)
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                     <span>{{ __(':count products need a price review.', ['count' => $counts['needs_recheck']]) }}</span>
-                    <x-icon-button as="a" icon="view" href="{{ $chipUrl('needs_recheck') }}" label="{{ __('Open Review List') }}" title="{{ __('Open Review List') }}" />
+                    <x-icon-button as="a" icon="view" :href="$chipUrl('needs_recheck')" label="{{ __('Open Review List') }}" title="{{ __('Open Review List') }}" />
                 </div>
             @endif
         @endif
