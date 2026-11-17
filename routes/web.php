@@ -333,6 +333,7 @@ Route::middleware('auth')->group(function () {
 
     // Update harga modal langsung dari Pricelist (Estimator/Purchasing).
     Route::middleware('permission:manage-price-requests|manage-admin')->group(function () {
+        Route::post('products/bulk-price-update', [ProductController::class, 'bulkUpdatePrice'])->name('products.bulk-price-update');
         Route::get('products/{product}/price', [ProductController::class, 'editPrice'])->name('products.price.edit');
         Route::post('products/{product}/price', [ProductController::class, 'updatePrice'])->name('products.price.update');
     });

@@ -157,6 +157,7 @@ Testing:
 | `/home/raafi/3dyapp-price-chat` | `feature/sales-price-chat` | Diskusi Price Request (Enter kirim, Shift+Enter baris baru) |
 | `/home/raafi/3dyapp-tekflow` | `feature/tek-project-workflow` | Integrasi workflow project + engineer (survey, sizing, price request, instalasi, BAST) |
 | `/home/yeski/3dyapp-sys` | `feature/sys-dropdown-standard` | Toast, konfirmasi, dropdown standar (lintas divisi) |
+| `/home/yeski/3dyapp-estimator` | `feature/estimator-pricelist` | Estimator Pricelist (margin, filter, bulk price) |
 
 Worktree baru juga butuh: `composer install`, symlink `.env`, dan
 `ln -s /var/www/3dyapp/public/build /var/www/3dyapp-<nama>/public/build`.

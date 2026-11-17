@@ -92,6 +92,140 @@ class Product extends Model
         return $query->where('is_active', true);
     }
 
+    /** Harga modal efektif: kolom produk, fallback ke log terakhir bila perlu. */
+    public function effectiveCostPrice(): ?float
+    {
+        if ($this->cost_price !== null) {
+            return (float) $this->cost_price;
+        }
+
+        if ($this->relationLoaded('latestCostLog') && $this->latestCostLog) {
+            return (float) $this->latestCostLog->price;
+        }
+
+        return null;
+    }
+
+    public function getMarginAmountAttribute(): ?float
+    {
+        $cost = $this->effectiveCostPrice();
+        $selling = $this->default_price === null ? null : (float) $this->default_price;
+
+        if ($cost === null || $selling === null) {
+            return null;
+        }
+
+        return $selling - $cost;
+    }
+
+    public function getMarginPercentageAttribute(): ?float
+    {
+        $cost = $this->effectiveCostPrice();
+        $selling = $this->default_price === null ? 0.0 : (float) $this->default_price;
+
+        if ($cost === null || $selling <= 0) {
+            return null;
+        }
+
+        return (($selling - $cost) / $selling) * 100;
+    }
+
+    public function getMarginStatusAttribute(): ?string
+    {
+        $margin = $this->margin_percentage;
+
+        if ($margin === null) {
+            return null;
+        }
+
+        if ($margin < 0) {
+            return 'loss';
+        }
+
+        return $margin <= 10 ? 'low' : 'healthy';
+    }
+
+    /**
+     * Perbandingan harga modal terakhir vs sebelumnya.
+     * Arah "up" berarti harga modal naik (buruk untuk margin).
+     */
+    public function getPriceTrendAttribute(): ?array
+    {
+        $logs = $this->relationLoaded('costLogs')
+            ? $this->costLogs
+            : $this->costLogs()->limit(2)->get();
+
+        if ($logs->count() < 2) {
+            return null;
+        }
+
+        $current = (float) $logs[0]->price;
+        $previous = (float) $logs[1]->price;
+
+        if ($previous <= 0) {
+            return null;
+        }
+
+        $percentage = (($current - $previous) / $previous) * 100;
+
+        if (abs($percentage) < 0.05) {
+            return null;
+        }
+
+        return [
+            'percentage' => $percentage,
+            'direction' => $percentage > 0 ? 'up' : 'down',
+        ];
+    }
+
+    /** Harga dianggap aktif bila log terakhir masih berlaku dan bukan margin 0. */
+    public function scopePriceActive($query): void
+    {
+        $today = now()->toDateString();
+
+        $query->whereNotNull('cost_price')
+            ->where('default_price', '>', 0)
+            ->whereColumn('default_price', '!=', 'cost_price')
+            ->whereHas('latestCostLog', fn ($log) => $log
+                ->whereNotNull('valid_until')
+                ->whereDate('valid_until', '>=', $today));
+    }
+
+    /** Belum ada harga, harga kedaluwarsa, atau harga sama dengan harga jual. */
+    public function scopeNeedsRecheck($query): void
+    {
+        $today = now()->toDateString();
+
+        $query->where(function ($outer) use ($today): void {
+            $outer->whereNull('cost_price')
+                ->orWhere('default_price', '<=', 0)
+                ->orWhereColumn('default_price', '=', 'cost_price')
+                ->orWhereDoesntHave('latestCostLog')
+                ->orWhereHas('latestCostLog', fn ($log) => $log->where(
+                    fn ($inner) => $inner
+                        ->whereNull('valid_until')
+                        ->orWhereDate('valid_until', '<', $today)
+                ));
+        });
+    }
+
+    public function scopeNegativeMargin($query): void
+    {
+        $query->whereNotNull('cost_price')
+            ->whereColumn('cost_price', '>', 'default_price');
+    }
+
+    public function scopeExpiringSoon($query): void
+    {
+        $today = now()->toDateString();
+        $until = now()->addDays(7)->toDateString();
+
+        $query->whereHas('latestCostLog', fn ($log) => $log
+            ->whereNotNull('valid_until')
+            ->whereDate('valid_until', '>=', $today)
+            ->whereDate('valid_until', '<=', $until));
+    }
+
     public static function saleCategoryLabel(string $category): string
     {
         return match ($category) {
