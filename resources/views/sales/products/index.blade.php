@@ -22,11 +22,11 @@
                 return route('products.index', $params);
             };
 
-            $bulkUrl = route('products.index', array_merge($filterParams, [
+            $bulkUrl = route('products.index', array_merge($filterParams, ['bulk' => 1]));
+            $bulkNeedsUrl = route('products.index', array_merge($filterParams, [
                 'quick' => 'needs_recheck',
                 'bulk' => 1,
             ]));
-            $bulkAllUrl = route('products.index', array_merge($filterParams, ['bulk' => 1]));
             $exitBulkUrl = route('products.index', array_merge($filterParams, $quick !== 'all' ? ['quick' => $quick] : []));
 
             $formatPct = fn ($value) => rtrim(rtrim(number_format((float) $value, 1, ',', '.'), '0'), ',');
@@ -78,9 +78,9 @@
                     <span class="block text-xs text-accent-700/80 dark:text-accent-200/80">{{ __('Use Update Price for products without price history.') }}</span>
                 </p>
                 @if($quick === 'needs_recheck')
-                    <a href="{{ $bulkAllUrl }}" class="shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">{{ __('Show all products with price history') }}</a>
-                @else
-                    <a href="{{ $bulkUrl }}" class="shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">{{ __('Show only Needs Recheck') }}</a>
+                    <a href="{{ $bulkUrl }}" class="shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">{{ __('Show all products with price history') }}</a>
+                @elseif(($counts['bulk_needs'] ?? 0) > 0)
+                    <a href="{{ $bulkNeedsUrl }}" class="shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">{{ __('Show only Needs Recheck') }}</a>
                 @endif
             </div>
         @else

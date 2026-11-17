@@ -40,6 +40,7 @@ class ProductController extends Controller
             'all' => (clone $base)->count(),
             'active' => (clone $base)->priceActive()->count(),
             'needs_recheck' => (clone $base)->needsRecheck()->count(),
+            'bulk_needs' => (clone $base)->needsRecheck()->whereHas('latestCostLog')->count(),
             'negative_margin' => (clone $base)->negativeMargin()->count(),
             'expiring_soon' => (clone $base)->expiringSoon()->count(),
         ];
