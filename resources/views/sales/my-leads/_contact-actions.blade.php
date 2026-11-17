@@ -35,9 +35,9 @@
 
     @if($first)
         <span data-tour="followup">
-            <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
+            <x-icon-button as="a" icon="add" :href="route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id, 'return' => 'my-leads'])" title="{{ __('Follow Up') }}" />
         </span>
     @else
-        <x-icon-button as="a" icon="add" href="{{ route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Follow Up') }}" />
+        <x-icon-button as="a" icon="add" :href="route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id, 'return' => 'my-leads'])" title="{{ __('Follow Up') }}" />
     @endif
 </div>

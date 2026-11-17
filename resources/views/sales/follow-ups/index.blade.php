@@ -17,9 +17,8 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Follow Up') }}</h1>
         </div>
         @can('manage-sales')
-            <x-icon-button as="a" variant="solid" reveal icon="add"
-                           href="{{ route('sales.follow-ups.create') }}"
-                           wire:navigate.hover
+            <x-icon-button as="a" variant="solid" icon="add"
+                           :href="route('sales.follow-ups.create')"
                            label="{{ __('Add Follow Up') }}"
                            title="{{ __('Add Follow Up') }}"
                            class="shrink-0" />
