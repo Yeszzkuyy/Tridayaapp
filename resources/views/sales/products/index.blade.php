@@ -429,6 +429,8 @@
                         this.dirty = count;
                     },
                     async cancel(event) {
+                        const href = event.currentTarget.getAttribute('href');
+
                         if (this.dirty > 0 && typeof window.askConfirm === 'function') {
                             event.preventDefault();
                             const ok = await window.askConfirm({
@@ -439,7 +441,8 @@
                             });
                             if (!ok) return;
                         }
-                        window.location.href = event.currentTarget.getAttribute('href');
+
+                        window.location.href = href;
                     },
                 };
             }
