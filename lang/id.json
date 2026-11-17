@@ -5436,5 +5436,6 @@
     ":label is required.": ":label wajib diisi.",
     "Please complete the required fields: :fields": "Lengkapi isian wajib berikut: :fields",
     "Please fix the highlighted fields: :fields": "Perbaiki isian berikut: :fields",
-    "and :count more": "dan :count lainnya"
+    "and :count more": "dan :count lainnya",
+    ":count product price updated.|:count product prices updated.": ":count harga produk diperbarui.|:count harga produk diperbarui."
 }

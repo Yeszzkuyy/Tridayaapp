@@ -491,7 +491,7 @@ class ProductController extends Controller
         }
 
         return redirect()->route('products.index', $filters)
-            ->with('success', __(':count product prices updated.', ['count' => $updated]));
+            ->with('success', trans_choice(':count product price updated.|:count product prices updated.', $updated, ['count' => $updated]));
     }
 
     /**

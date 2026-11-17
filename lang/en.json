@@ -5436,5 +5436,6 @@
     ":label is required.": ":label is required.",
     "Please complete the required fields: :fields": "Please complete the required fields: :fields",
     "Please fix the highlighted fields: :fields": "Please fix the highlighted fields: :fields",
-    "and :count more": "and :count more"
+    "and :count more": "and :count more",
+    ":count product price updated.|:count product prices updated.": ":count product price updated.|:count product prices updated."
 }

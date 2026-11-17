@@ -220,6 +220,8 @@
                     </div>
                 </div>
 
+                <div class="h-28 sm:h-16" aria-hidden="true"></div>
+
                 <div class="fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 sm:bottom-6">
                     <div class="flex w-full max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
                         <p class="text-sm text-slate-600 dark:text-slate-300">
