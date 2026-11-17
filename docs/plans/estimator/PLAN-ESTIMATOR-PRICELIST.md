@@ -1,6 +1,6 @@
 # PLAN-ESTIMATOR-PRICELIST: Revamp Pricelist (Margin, Filter, Bulk Price)
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** ESTIMATOR-PRICELIST
 **PIC:** Yeski
 **Menu:** Estimator / Pricelist
@@ -38,11 +38,11 @@ migrasi database baru (kecuali terbukti perlu).
 
 ## Verifikasi
 
-- [ ] Estimator melihat Selling Price + badge margin.
-- [ ] Produk rugi tampil merah; margin 0-10% kuning; sehat hijau.
-- [ ] Chip filter menampilkan jumlah yang benar dan bisa dikombinasikan
+- [x] Estimator melihat Selling Price + badge margin.
+- [x] Produk rugi tampil merah; margin 0-10% kuning; sehat hijau.
+- [x] Chip filter menampilkan jumlah yang benar dan bisa dikombinasikan
       dengan pencarian/kategori.
-- [ ] Review Prices membuka bulk mode berisi produk dengan riwayat harga.
-- [ ] Simpan bulk membuat satu log per produk yang berubah dalam satu transaksi.
-- [ ] Produk tanpa riwayat harga tidak masuk bulk dan diarahkan ke Update Price.
-- [ ] Test terkait lulus, build dari main, cache view dibersihkan.
+- [x] Review Prices membuka bulk mode berisi produk dengan riwayat harga.
+- [x] Simpan bulk membuat satu log per produk yang berubah dalam satu transaksi.
+- [x] Produk tanpa riwayat harga tidak masuk bulk dan diarahkan ke Update Price.
+- [x] Test terkait lulus, build dari main, cache view dibersihkan.
