@@ -38,6 +38,16 @@ Lead dipegang Sales, task dipegang Inside Sales, dan request harga diminta
 oleh Sales lalu dijawab Estimator. Jadi setiap peran bisa mengecek menu dan
 tampilannya masing-masing.
 
+**Penting:** buka **link preview**, bukan website utama. Website utama belum
+memakai kode baru.
+
+Link langsung ke data uji (tempel di belakang URL preview):
+
+- Task Inside Sales: `/lead-tasks/15`
+- Request Harga: `/estimator/requests/15`
+- Daftar Quotation Sales: `/sales/proposals`
+- Pengaturan Admin: `/admin-panel/pricing`
+
 ---
 
 ## 3. Persiapan
@@ -95,6 +105,9 @@ tampilannya masing-masing.
 ## 5. Skenario 2 - Inside Sales Memilih Riwayat Harga dan Margin
 
 **Login:** Audi (Inside Sales)
+
+Task ini belum punya item. Audi harus menambahkan produk dulu, lalu membuat
+quotation. Setelah quotation dibuat, baru muncul di menu Sales milik Felisia.
 
 ### Langkah
 
