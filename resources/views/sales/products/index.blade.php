@@ -75,7 +75,7 @@
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent-200 bg-accent-50/70 px-4 py-3 text-sm text-accent-900 dark:border-accent-800/60 dark:bg-accent-950/30 dark:text-accent-100">
                 <p class="min-w-0">
                     {{ __('Bulk edit only shows products with price history. Stock and warranty are copied from the latest price.') }}
-                    <span class="block text-xs text-accent-700/80 dark:text-accent-200/80">{{ __('Use Update Price for products without price history.') }}</span>
+                    <span class="block text-xs text-accent-700/80 dark:text-accent-200/80">{{ __('Use Set Price for products without price history.') }}</span>
                 </p>
                 @if($quick === 'needs_recheck')
                     <a href="{{ $bulkUrl }}" class="shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline">{{ __('Show all products with price history') }}</a>
@@ -129,6 +129,17 @@
                 <input type="hidden" name="quick" value="{{ $quick }}">
                 <input type="hidden" name="bulk" value="1">
 
+                <div class="mb-3">
+                    <div class="relative">
+                        <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" />
+                        </svg>
+                        <input type="search" @input="setQuery($event.target.value)"
+                               placeholder="{{ __('Search product name or SKU...') }}"
+                               class="h-10 w-full rounded-xl border-slate-300 pl-9 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                    </div>
+                </div>
+
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                     <div class="hidden border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:grid lg:grid-cols-12 lg:gap-3 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-500">
                         <span class="lg:col-span-4">{{ __('Product') }}</span>
@@ -150,8 +161,11 @@
                                     $log->valid_until?->format('Y-m-d') ?? '',
                                 ]);
                             @endphp
-                            <div class="flex flex-col gap-3 p-4 transition-colors hover:bg-slate-50/90 lg:grid lg:grid-cols-12 lg:items-center lg:gap-3 lg:px-5 lg:py-3.5 dark:hover:bg-slate-700/35"
-                                 data-bulk-row data-original="{{ $originalValues }}">
+                            <div class="flex flex-col gap-3 p-4 transition-colors hover:bg-slate-50/90 lg:grid lg:grid-cols-12 lg:items-start lg:gap-3 lg:px-5 lg:py-3.5 dark:hover:bg-slate-700/35"
+                                 data-bulk-row
+                                 data-search="{{ \Illuminate\Support\Str::lower($product->name.' '.($product->sku ?? '')) }}"
+                                 data-original="{{ $originalValues }}"
+                                 x-show="matchesRow($el)">
                                 <div class="min-w-0 lg:col-span-4">
                                     <p class="text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</p>
                                     <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -160,13 +174,13 @@
                                     <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                                         <span>{{ __('Selling') }} <strong class="font-semibold tabular-nums">Rp {{ number_format((float) $product->default_price, 0, ',', '.') }}</strong></span>
                                         @if($margin !== null && $marginStatus)
-                                            <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold {{ $marginStatus === 'loss' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' : ($marginStatus === 'low' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200') }}">
+                                            <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums {{ $marginStatus === 'loss' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' : ($marginStatus === 'low' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200') }}">
                                                 {{ $marginStatus === 'loss' ? __('Loss') : ($marginStatus === 'low' ? __('Low Margin') : __('Margin')) }}
                                                 {{ $margin > 0 ? '+' : '' }}{{ $formatPct($margin) }}%
                                             </span>
                                         @endif
                                     </p>
-                                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                         {{ $log->supplier?->name ?? __('No supplier') }}
                                         @if($log->stock_status)
                                             · {{ $log->stock_status === 'indent' ? __('Indent') : __('Ready') }}
@@ -179,11 +193,15 @@
 
                                 <div class="lg:col-span-2">
                                     <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Cost') }}</label>
-                                    <input type="text" inputmode="numeric" name="prices[{{ $product->id }}][cost]"
-                                           value="{{ old("prices.{$product->id}.cost", number_format((float) $log->price, 0, ',', '.')) }}"
-                                           class="h-9 w-full rounded-xl border-slate-300 text-sm tabular-nums focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                                    <div class="relative">
+                                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Rp</span>
+                                        <input type="text" inputmode="numeric" name="prices[{{ $product->id }}][cost]"
+                                               value="{{ old("prices.{$product->id}.cost", number_format((float) $log->price, 0, ',', '.')) }}"
+                                               @input="formatCost($event)"
+                                               class="h-10 w-full rounded-xl border-slate-300 pl-9 text-sm tabular-nums focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                                    </div>
                                     @if($trend)
-                                        <p class="mt-1 text-[10px] font-semibold {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                        <p class="mt-1 text-xs font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300' }}">
                                             {{ $trend['direction'] === 'up' ? '↑' : '↓' }} {{ $formatPct(abs($trend['percentage'])) }}%
                                         </p>
                                     @endif
@@ -201,20 +219,25 @@
                                     <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Valid Until') }}</label>
                                     <input type="date" name="prices[{{ $product->id }}][valid_until]"
                                            value="{{ old('prices.'.$product->id.'.valid_until', $log->valid_until?->format('Y-m-d')) }}"
-                                           class="h-9 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
-                                    <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">{{ __('Stock and warranty are copied from the latest price.') }}</p>
+                                           class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
                                 </div>
                             </div>
                         @empty
                             <div class="px-5 py-12 text-center">
                                 <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ __('No products with price history match this view.') }}</p>
-                                <p class="mt-1 text-xs text-slate-400">{{ __('Use Update Price for products without price history.') }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ __('Use Set Price for products without price history.') }}</p>
                             </div>
                         @endforelse
+                        @if($products->isNotEmpty())
+                            <div x-show="visible === 0" x-cloak class="px-5 py-10 text-center">
+                                <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">{{ __('No matching products found.') }}</p>
+                                <p class="mt-1 text-xs text-slate-400">{{ __('Try another product name or SKU.') }}</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
-                <div class="h-28 sm:h-16" aria-hidden="true"></div>
+                <div class="h-44 sm:h-24" aria-hidden="true"></div>
 
                 <div class="fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 sm:bottom-6">
                     <div class="flex w-full max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-800/95">
@@ -241,7 +264,7 @@
                 <div class="hidden border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:grid lg:grid-cols-12 lg:gap-3 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-500">
                     <span class="lg:col-span-3">{{ __('Product') }}</span>
                     <span class="lg:col-span-2 text-right">{{ __('Cost') }}</span>
-                    <span class="lg:col-span-2 text-right">{{ __('Selling Price') }}</span>
+                    <span class="lg:col-span-2 pr-6 text-right">{{ __('Selling Price') }}</span>
                     <span class="lg:col-span-2">{{ __('Margin') }}</span>
                     <span class="lg:col-span-3 text-right">{{ __('Actions') }}</span>
                 </div>
@@ -311,7 +334,7 @@
                                 </p>
 
                                 @if($canViewCost)
-                                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                         @if($log)
                                             {{ $log->supplier?->name ?? __('No supplier') }}
                                             @if($log->stock_status)
@@ -337,7 +360,7 @@
                                                 Rp {{ number_format($cost, 0, ',', '.') }}
                                             </p>
                                             @if($trend)
-                                                <p class="mt-0.5 text-[10px] font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}"
+                                                <p class="mt-0.5 text-xs font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300' }}"
                                                    title="{{ __('Compared to the previous cost') }}">
                                                     {{ $trend['direction'] === 'up' ? '↑' : '↓' }} {{ $formatPct(abs($trend['percentage'])) }}%
                                                 </p>
@@ -350,7 +373,7 @@
                                     @endif
                                 </div>
 
-                                <div class="text-right lg:col-span-2">
+                                <div class="text-right lg:col-span-2 lg:pr-6">
                                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Selling Price') }}</p>
                                     <p class="font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                                         Rp {{ number_format((float) $product->default_price, 0, ',', '.') }}
@@ -412,7 +435,33 @@
             function bulkPrices() {
                 return {
                     dirty: 0,
+                    query: '',
+                    visible: 0,
                     init() {
+                        this.filterRows();
+                        this.refresh();
+                    },
+                    setQuery(value) {
+                        this.query = value;
+                        this.filterRows();
+                    },
+                    matchesRow(row) {
+                        const query = (this.query || '').trim().toLowerCase();
+                        if (!query) return true;
+
+                        return (row.dataset.search || '').includes(query);
+                    },
+                    filterRows() {
+                        this.visible = [...this.$root.querySelectorAll('[data-bulk-row]')]
+                            .filter((row) => this.matchesRow(row))
+                            .length;
+                    },
+                    formatCost(event) {
+                        const input = event.target;
+                        const digits = input.value.replace(/\D/g, '');
+                        input.value = digits === ''
+                            ? ''
+                            : new Intl.NumberFormat('id-ID').format(parseInt(digits, 10));
                         this.refresh();
                     },
                     refresh() {

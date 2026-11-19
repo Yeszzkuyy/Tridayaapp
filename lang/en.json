@@ -5473,5 +5473,9 @@
     "Bulk price update": "Bulk price update",
     "No price changes were saved.": "No price changes were saved.",
     "Choose the target date before assigning an engineer.": "Choose the target date before assigning an engineer.",
-    "Set Price": "Set Price"
+    "Set Price": "Set Price",
+    "Search product name or SKU...": "Search product name or SKU...",
+    "No matching products found.": "No matching products found.",
+    "Try another product name or SKU.": "Try another product name or SKU.",
+    "Use Set Price for products without price history.": "Use Set Price for products without price history."
 }
