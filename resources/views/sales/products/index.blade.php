@@ -168,7 +168,7 @@
                                  x-show="matchesRow($el)">
                                 <div class="min-w-0 lg:col-span-4">
                                     <p class="text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</p>
-                                    <p class="mt-0.5 text-[12px] font-medium text-slate-500 dark:text-slate-400">
+                                    <p class="mt-0.5 text-[12px] font-medium text-slate-600 dark:text-slate-300">
                                         {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }}
                                     </p>
                                     <p class="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-slate-600 dark:text-slate-300">
@@ -180,7 +180,7 @@
                                             </span>
                                         @endif
                                     </p>
-                                    <p class="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 text-[12px] text-slate-600 dark:text-slate-300">
                                         {{ $log->supplier?->name ?? __('No supplier') }}
                                         @if($log->stock_status)
                                             · {{ $log->stock_status === 'indent' ? __('Indent') : __('Ready') }}
@@ -329,12 +329,12 @@
                                     @endif
                                 </div>
 
-                                <p class="mt-1 text-[12px] font-medium text-slate-500 dark:text-slate-400">
+                                <p class="mt-1 text-[12px] font-medium text-slate-600 dark:text-slate-300">
                                     {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }}
                                 </p>
 
                                 @if($canViewCost)
-                                    <p class="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 text-[12px] text-slate-600 dark:text-slate-300">
                                         @if($log)
                                             {{ $log->supplier?->name ?? __('No supplier') }}
                                             @if($log->stock_status)
