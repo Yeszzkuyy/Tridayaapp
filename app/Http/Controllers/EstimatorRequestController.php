@@ -273,19 +273,30 @@ class EstimatorRequestController extends Controller
             : collect();
         $suppliers = $allSuppliers;
 
-        $backUrl = $user->can('manage-price-requests')
+        $canManageEstimatorQueue = $user->can('manage-price-requests')
             || $user->can('manage-sales-leads')
             || $user->can('manage-admin')
-            || $user->hasRole('ceo')
+            || $user->hasRole('ceo');
+
+        $fallbackBackUrl = $canManageEstimatorQueue
             ? route('estimator.dashboard')
             : route('sales.requests.index', ['tab' => 'product-price']);
-        $backUrl = $estimatorRequest->proposal_id
-            ? route('sales.proposals.show', $estimatorRequest->proposal_id)
-            : ($estimatorRequest->lead_id
-                ? route('leads.show', $estimatorRequest->lead_id)
-                : ($estimatorRequest->project_id
-                    ? route('projects.show', $estimatorRequest->project_id)
-                    : $backUrl));
+
+        $isEstimatorOnly = $user->can('manage-price-requests')
+            && ! $user->can('manage-sales')
+            && ! $user->can('manage-sales-leads')
+            && ! $user->can('manage-admin')
+            && ! $user->hasRole('ceo');
+
+        $backUrl = $isEstimatorOnly
+            ? route('estimator.dashboard')
+            : ($estimatorRequest->proposal_id
+                ? route('sales.proposals.show', $estimatorRequest->proposal_id)
+                : ($estimatorRequest->lead_id
+                    ? route('leads.show', $estimatorRequest->lead_id)
+                    : ($estimatorRequest->project_id
+                        ? route('projects.show', $estimatorRequest->project_id)
+                        : $fallbackBackUrl)));
 
         return view('estimator.requests.show', compact('estimatorRequest', 'suppliers', 'allSuppliers', 'backUrl'));
     }

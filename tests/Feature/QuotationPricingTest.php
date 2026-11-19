@@ -204,6 +204,62 @@ class QuotationPricingTest extends TestCase
         $this->assertSame(1000000.0, (float) $product->fresh()->cost_price);
     }
 
+    public function test_estimator_answer_form_shows_price_includes_tax_checkbox(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $product = $this->product();
+
+        $request = EstimatorRequest::create([
+            'customer_id' => $this->customer()->id,
+            'requested_by' => $sales->id,
+            'status' => 'submitted',
+        ]);
+        $request->items()->create([
+            'product_id' => $product->id,
+            'description' => 'Kamera PPN',
+            'quantity' => 1,
+            'unit' => 'pcs',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee('Price includes VAT');
+    }
+
+    public function test_estimator_back_button_stays_in_estimator_area(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $lead = Lead::create([
+            'customer_id' => $this->customer()->id,
+            'pt_group' => 'WANI',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'assigned_to' => $sales->id,
+            'incoming_date' => today()->toDateString(),
+        ]);
+
+        $request = EstimatorRequest::create([
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'requested_by' => $sales->id,
+            'status' => 'submitted',
+        ]);
+        $request->items()->create([
+            'product_id' => $this->product()->id,
+            'description' => 'Kamera Back',
+            'quantity' => 1,
+            'unit' => 'pcs',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee('href="'.route('estimator.dashboard').'"', false);
+    }
+
     public function test_task_page_shows_price_history_and_target_margin(): void
     {
         $sales = $this->userWithRole('sales');

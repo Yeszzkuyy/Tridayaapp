@@ -5415,6 +5415,8 @@
     "Choose the target date before assigning an engineer.": "Pilih tanggal target sebelum menugaskan engineer.",
     "Select a product before choosing a price history.": "Pilih produk dulu sebelum memilih riwayat harga.",
     "The selected price history does not match this product.": "Riwayat harga yang dipilih tidak cocok dengan produk ini.",
+    "Tick this if the supplier price already includes VAT.": "Centang jika harga supplier sudah termasuk PPN.",
+    "This request has already been answered. The price form is closed.": "Request ini sudah dijawab. Form pengisian harga sudah ditutup.",
     "Tax & Margin": "Pajak & Margin",
     "VAT Rate (%)": "Tarif PPN (%)",
     "Used for new quotations. Each quotation keeps the rate it was created with.": "Dipakai untuk quotation baru. Setiap quotation menyimpan tarif saat dibuat.",

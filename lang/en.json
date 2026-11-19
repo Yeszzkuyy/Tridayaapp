@@ -5415,6 +5415,8 @@
     "Choose the target date before assigning an engineer.": "Choose the target date before assigning an engineer.",
     "Select a product before choosing a price history.": "Select a product before choosing a price history.",
     "The selected price history does not match this product.": "The selected price history does not match this product.",
+    "Tick this if the supplier price already includes VAT.": "Tick this if the supplier price already includes VAT.",
+    "This request has already been answered. The price form is closed.": "This request has already been answered. The price form is closed.",
     "Tax & Margin": "Tax & Margin",
     "VAT Rate (%)": "VAT Rate (%)",
     "Used for new quotations. Each quotation keeps the rate it was created with.": "Used for new quotations. Each quotation keeps the rate it was created with.",

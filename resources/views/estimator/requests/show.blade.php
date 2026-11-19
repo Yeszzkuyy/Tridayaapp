@@ -229,6 +229,12 @@
                 </div>
             </div>
 
+            @if($canAnswer && ! $formOpen && in_array($estimatorRequest->status, ['answered', 'completed'], true))
+                <div class="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200">
+                    {{ __('This request has already been answered. The price form is closed.') }}
+                </div>
+            @endif
+
             @if($canAnswer)
                 <div x-show="editing" x-cloak style="{{ $formOpen ? '' : 'display: none' }}"
                      class="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
@@ -322,11 +328,14 @@
                                         <td class="border-l border-slate-100 px-5 py-4 text-right dark:border-slate-700/60">
                                             <x-rupiah-input :name="'items['.$index.'][price]'" :value="$priceValue"
                                                             wrapper-class="min-w-[220px]" :aria-label="__('Cost')" required />
-                                            <label class="mt-2 inline-flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                            <label class="mt-2 flex w-full max-w-[260px] items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
                                                 <input type="checkbox" name="items[{{ $index }}][price_includes_tax]" value="1"
                                                        @checked((bool) old("items.{$index}.price_includes_tax", $item->price_includes_tax))
-                                                       class="rounded border-slate-300 text-accent-600 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                                {{ __('Price includes VAT') }}
+                                                       class="mt-0.5 rounded border-slate-300 text-accent-600 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                <span>
+                                                    <span class="block font-semibold">{{ __('Price includes VAT') }}</span>
+                                                    <span class="block text-[10px] font-normal text-slate-400">{{ __('Tick this if the supplier price already includes VAT.') }}</span>
+                                                </span>
                                             </label>
                                         </td>
                                         <td class="px-5 py-4 text-center">
