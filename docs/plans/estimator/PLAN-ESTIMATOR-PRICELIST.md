@@ -53,4 +53,4 @@ migrasi database baru (kecuali terbukti perlu).
       baris yang disembunyikan.
 - [x] Input Cost menampilkan Rp dan titik ribuan saat diketik.
 - [x] Kolom Cost, Supplier, dan Valid Until sejajar; helper berulang dihapus.
-- [ ] Test terkait lulus, build dari main, cache view dibersihkan.
+- [x] Test terkait lulus, build dari main, cache view dibersihkan.
