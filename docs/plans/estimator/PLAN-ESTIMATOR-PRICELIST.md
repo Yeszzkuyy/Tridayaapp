@@ -1,6 +1,6 @@
 # PLAN-ESTIMATOR-PRICELIST: Revamp Pricelist (Margin, Filter, Bulk Price)
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** ESTIMATOR-PRICELIST
 **PIC:** Yeski
 **Menu:** Estimator / Pricelist
