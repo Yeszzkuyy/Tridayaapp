@@ -168,10 +168,10 @@
                                  x-show="matchesRow($el)">
                                 <div class="min-w-0 lg:col-span-4">
                                     <p class="text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</p>
-                                    <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    <p class="mt-0.5 text-[12px] font-medium text-slate-500 dark:text-slate-400">
                                         {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }}
                                     </p>
-                                    <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                    <p class="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-slate-600 dark:text-slate-300">
                                         <span>{{ __('Selling') }} <strong class="font-semibold tabular-nums">Rp {{ number_format((float) $product->default_price, 0, ',', '.') }}</strong></span>
                                         @if($margin !== null && $marginStatus)
                                             <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums {{ $marginStatus === 'loss' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300' : ($marginStatus === 'low' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200') }}">
@@ -180,7 +180,7 @@
                                             </span>
                                         @endif
                                     </p>
-                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
                                         {{ $log->supplier?->name ?? __('No supplier') }}
                                         @if($log->stock_status)
                                             · {{ $log->stock_status === 'indent' ? __('Indent') : __('Ready') }}
@@ -198,10 +198,10 @@
                                         <input type="text" inputmode="numeric" name="prices[{{ $product->id }}][cost]"
                                                value="{{ old("prices.{$product->id}.cost", number_format((float) $log->price, 0, ',', '.')) }}"
                                                @input="formatCost($event)"
-                                               class="h-10 w-full rounded-xl border-slate-300 pl-9 text-sm tabular-nums focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                                               class="h-[40px] w-full rounded-xl border-slate-300 pl-9 text-sm tabular-nums focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
                                     </div>
                                     @if($trend)
-                                        <p class="mt-1 text-xs font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300' }}">
+                                        <p class="mt-1 text-[12px] font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300' }}">
                                             {{ $trend['direction'] === 'up' ? '↑' : '↓' }} {{ $formatPct(abs($trend['percentage'])) }}%
                                         </p>
                                     @endif
@@ -219,7 +219,7 @@
                                     <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Valid Until') }}</label>
                                     <input type="date" name="prices[{{ $product->id }}][valid_until]"
                                            value="{{ old('prices.'.$product->id.'.valid_until', $log->valid_until?->format('Y-m-d')) }}"
-                                           class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                                           class="h-[40px] w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
                                 </div>
                             </div>
                         @empty
@@ -329,12 +329,12 @@
                                     @endif
                                 </div>
 
-                                <p class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                <p class="mt-1 text-[12px] font-medium text-slate-500 dark:text-slate-400">
                                     {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }}
                                 </p>
 
                                 @if($canViewCost)
-                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <p class="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
                                         @if($log)
                                             {{ $log->supplier?->name ?? __('No supplier') }}
                                             @if($log->stock_status)
@@ -360,7 +360,7 @@
                                                 Rp {{ number_format($cost, 0, ',', '.') }}
                                             </p>
                                             @if($trend)
-                                                <p class="mt-0.5 text-xs font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300' }}"
+                                                <p class="mt-0.5 text-[12px] font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300' }}"
                                                    title="{{ __('Compared to the previous cost') }}">
                                                     {{ $trend['direction'] === 'up' ? '↑' : '↓' }} {{ $formatPct(abs($trend['percentage'])) }}%
                                                 </p>
