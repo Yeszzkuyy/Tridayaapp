@@ -794,6 +794,9 @@ Aturan ini melengkapi §9, bukan menggantikan. Sumber: `atomic-commits-plugin`
 - `--no-verify` hanya dengan persetujuan user.
 - Dilarang menempelkan prompt/tool log ke body commit.
 
+**Kartu papan:** setiap commit paket wajib punya kartu di papan Plane dan
+statusnya ikut diperbarui (§17).
+
 ## 10. Kebersihan storage & worktree (anti-30GB)
 
 Kenapa bengkak: tiap worktree menduplikat `vendor/` (~390MB) +
@@ -1033,4 +1036,87 @@ menunggu user menyebut namanya.
   `.opencode/skills/<id>/SKILL.md`.
 - Jika skill gagal dimuat, periksa path, nama file `SKILL.md`, ID, dan
   permission. Jangan langsung membuat skill baru sebagai pengganti.
+
+## 17. Pencatatan Pekerjaan ke Papan Plane (WAJIB)
+
+Setiap pekerjaan Yeski/Raafi wajib punya jejak di papan Plane, bukan hanya di
+git. Papan: workspace **TridayaApp**, project **Progres Website 3DY** (`WEB`).
+Akses lewat MCP `plane`; kalau MCP belum tersambung, catat manual di
+`app.plane.so` dengan aturan yang sama.
+
+### 17.1 Kapan kartu dibuat dan diubah
+
+| Momen | Status kartu | Diubah oleh |
+|---|---|---|
+| Mulai mengerjakan, commit `wip(...)` sudah di-push | `Dikerjakan` | yang mengerjakan |
+| Commit paket selesai, di-push, dan di-merge ke `main` | `Cek User` | yang mengerjakan |
+| Yeski/Raafi menyatakan hasilnya sudah sesuai | `Selesai` | Yeski/Raafi |
+| Pekerjaan ditunda atau dibatalkan | `Ditunda` | yang mengerjakan, sebutkan alasannya |
+
+- `Cek User` **bukan** `Selesai`. Selama Yeski/Raafi belum menjawab atau
+  belum memutuskan "sudah sesuai", kartu tetap di `Cek User`.
+- Jangan memindahkan kartu ke `Selesai` atas inisiatif sendiri, termasuk
+  kalau test otomatis sudah lulus.
+- Satu kartu = satu paket = satu commit paket (§9). Revisi yang masih satu
+  paket memakai kartu yang sama, bukan kartu baru.
+
+### 17.2 Isi wajib kartu
+
+Judul: `<Menu> - <hasil yang terlihat user>`, maksimal 80 karakter, tanpa
+nama file dan tanpa hash commit.
+
+Deskripsi (ikut tampil di link publik senior):
+
+```text
+Divisi: Sales
+PIC: Yeski
+Branch: feature/sales-quotation
+Rencana: docs/plans/sales/PLAN-SALES-QUOTATION.md
+```
+
+Label wajib: satu label orang (`Yeski` atau `Raafi`), satu label divisi
+(`Marketing`, `Sales`, `Inside Sales`, `Estimator`, `Teknisi`, `Admin`,
+`Customer`, `Management`, `Sistem`), dan `Prioritas Tinggi` bila memang
+mendesak. Modul kartu mengikuti divisi yang sama.
+
+Hash commit, tautan, dan kendala ditulis sebagai **komentar** kartu — komentar
+tidak ikut tampil di link publik.
+
+Alat MCP yang dipakai: `workitem` (create/update/comment), `label`, `module`.
+Kalau MCP mati, jalankan `opencode mcp auth plane` lalu sambungkan ulang.
+
+### 17.3 PIC dan identitas
+
+- PIC = pemilik worktree/manusia yang mengerjakan, bukan AI. Sesi AI yang
+  bekerja di worktree Yeski mencatat `Yeski`; di worktree Raafi mencatat
+  `Raafi`.
+- Sebelum commit, pastikan `git config user.name` dan `user.email` di
+  worktree itu memang milik orang yang mengerjakan. Jangan mengubah
+  identitas git milik orang lain.
+- Pekerjaan yang dikerjakan bersama tetap memakai satu PIC (pemegang
+  worktree), detailnya disebut di komentar.
+
+### 17.4 Sinkron dengan file rencana
+
+Status papan dan status `docs/plans/**` harus sejalan:
+
+| Papan | File rencana |
+|---|---|
+| `Backlog` | `Belum Dikerjakan` |
+| `Siap Dikerjakan` | `Siap Dikerjakan` |
+| `Dikerjakan` / `Cek User` | `Siap Dikerjakan` (belum `Selesai`) |
+| `Selesai` | `Selesai` |
+
+Perubahan status rencana ikut di commit `docs(...)` yang sama.
+
+### 17.5 Larangan
+
+- Merge ke `main` tanpa kartu di papan.
+- Menandai `Selesai` sebelum di-merge atau sebelum Yeski/Raafi menyatakan
+  sesuai.
+- Menulis nama customer lengkap di judul/deskripsi; pakai kode atau nama PT.
+- Menaruh hash commit di judul/deskripsi (taruh di komentar).
+- Membuat workspace atau project baru di luar `WEB` tanpa persetujuan user.
+- Membuat kartu untuk pekerjaan internal murni (`chore`, `docs`, `ci`),
+  kecuali menyentuh aturan kerja tim atau diminta user.
 
