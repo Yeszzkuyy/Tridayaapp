@@ -26,7 +26,7 @@
 
                 <div class="mt-6 flex items-center gap-4">
                     <form method="POST" action="{{ route('project-supports.destroy', $projectSupport) }}"
-                        onsubmit="return confirm('{{ __('Remove this support engineer from the project?') }}')">
+                        data-confirm="{{ __('Remove this support engineer from the project?') }}" data-confirm-tone="warning">
                         @csrf
                         @method('DELETE')
                         <x-icon-button icon="delete" type="submit" label="{{ __('Delete') }}" title="{{ __('Delete') }}" />

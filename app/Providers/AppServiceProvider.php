@@ -2,11 +2,21 @@
 
 namespace App\Providers;
 
+use App\Console\DestructiveCommandGuard;
 use App\Models\Customer;
+use App\Models\Instalasi;
+use App\Models\PriceRequest;
 use App\Models\Project;
+use App\Models\SizingProject;
+use App\Models\Survey;
 use App\Observers\CustomerObserver;
+use App\Observers\InstalasiObserver;
+use App\Observers\PriceRequestObserver;
 use App\Observers\ProjectObserver;
+use App\Observers\SizingProjectObserver;
+use App\Observers\SurveyObserver;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -32,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
 
         Customer::observe(CustomerObserver::class);
         Project::observe(ProjectObserver::class);
+        Survey::observe(SurveyObserver::class);
+        Instalasi::observe(InstalasiObserver::class);
+        SizingProject::observe(SizingProjectObserver::class);
+        PriceRequest::observe(PriceRequestObserver::class);
 
         // Pencarian seragam: case-insensitive + partial match + auto-trim.
         EloquentBuilder::macro('whereLike', function ($columns, $search) {
@@ -58,7 +72,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(CommandStarting::class, function (CommandStarting $event) {
             $connection = (string) ($event->input->getParameterOption('--database', config('database.default')));
             $cfg = config("database.connections.{$connection}", []);
-            $guard = app(\App\Console\DestructiveCommandGuard::class);
+            $guard = app(DestructiveCommandGuard::class);
             if ($guard->shouldGuard($event->command, (string) ($cfg['driver'] ?? ''), $cfg['database'] ?? null, $this->app->runningUnitTests())) {
                 $guard->handle($event->command, $event->input, $event->output, $connection, (string) ($cfg['driver'] ?? ''), $cfg['database'] ?? null);
             }
@@ -72,7 +86,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function bindRequestScheme(): void
     {
-        $this->app->afterResolving(\Illuminate\Contracts\Http\Kernel::class, function () {
+        $this->app->afterResolving(Kernel::class, function () {
             $request = request();
             $secure = $request->isSecure();
             $scheme = $secure ? 'https' : 'http';

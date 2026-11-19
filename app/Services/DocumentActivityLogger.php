@@ -11,7 +11,7 @@ use App\Models\ProjectDocument;
  */
 class DocumentActivityLogger
 {
-    public static function log(ProjectDocument $document, string $action): void
+    public static function log(ProjectDocument $document, string $action, array $extraMeta = []): void
     {
         DocumentActivity::create([
             'document_id' => $document->id,
@@ -21,11 +21,11 @@ class DocumentActivityLogger
             'doc_type' => $document->doc_type,
             'customer_id' => $document->customer_id,
             'project_id' => $document->project_id,
-            'meta' => [
+            'meta' => array_merge([
                 'source' => $document->doc_type ?: 'project',
                 'file_path' => $document->file_path,
                 'deleted_at' => $document->deleted_at?->toDateTimeString(),
-            ],
+            ], $extraMeta),
         ]);
     }
 }

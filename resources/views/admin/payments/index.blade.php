@@ -1,10 +1,9 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Payment Management') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage payments from invoices.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Payment Management') }}</h1>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Record Payment') }}" title="{{ __('Record Payment') }}" />
+        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Record Payment') }}" title="{{ __('Record Payment') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -38,7 +37,7 @@
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $pm) }}" title="{{ __('Payment detail') }}" />
                                     @can('manage-admin')
-                                        <form action="{{ route('admin.payments.destroy', $pm) }}" method="POST" onsubmit="return confirm('{{ __('Delete this payment?') }}')" class="inline">
+                                        <form action="{{ route('admin.payments.destroy', $pm) }}" method="POST" data-confirm="{{ __('Delete this payment?') }}" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete payment') }}" />
                                         </form>

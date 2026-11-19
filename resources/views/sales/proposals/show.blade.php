@@ -8,9 +8,19 @@
                     <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($proposal->status) }}">{{ \App\Models\Proposal::statusLabel($proposal->status) }}</span> •
                     Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}
                 </p>
+                <x-handoff-status :proposal="$proposal" class="mt-2" />
+                @if($proposal->sent_at)
+                    <p class="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        ✓ {{ __('Sent via :channel', ['channel' => $proposal->sentChannelLabel() ?? __('Manual')]) }}
+                        · {{ $proposal->sent_at->translatedFormat('d M Y H:i') }}
+                    </p>
+                @endif
             </div>
             <div class="flex items-center gap-2">
-                <x-icon-button as="a" icon="back" href="{{ route('leads.show', $proposal->lead) }}" title="{{ __('Back') }}" />
+                @can('create', \App\Models\EstimatorRequest::class)
+                    <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $proposal->lead?->customer_id, 'lead_id' => $proposal->lead_id, 'proposal_id' => $proposal->id]) }}" title="{{ __('Request Product Price') }}" />
+                @endcan
+                <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
 
@@ -21,6 +31,11 @@
                 <p class="text-slate-500">{{ __('Valid Until') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->valid_until?->format('d M Y') ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Sales Owner') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->lead->assignee?->name ?? '-' }}</span></p>
                 <p class="text-slate-500">{{ __('Prepared By') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->creator?->name ?? '-' }}</span></p>
+                @if($proposal->priceRequest)
+                    <p class="text-slate-500">{{ __('Price Request') }}:
+                        <a href="{{ route('sales.price-requests.show', $proposal->priceRequest) }}" class="font-medium text-accent-600 dark:text-accent-400 hover:underline">#{{ $proposal->priceRequest->id }}</a>
+                    </p>
+                @endif
             </div>
 
             <div class="overflow-x-auto">
@@ -92,9 +107,60 @@
                 </div>
             @endif
 
+            @if($proposal->attachments->isNotEmpty())
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Quotation File') }}</p>
+                    <ul class="mt-2 space-y-2">
+                        @foreach($proposal->attachments as $file)
+                            <li class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{{ $file->original_name }}</p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ $file->humanSize() }} · {{ $file->uploader?->name ?? __('System') }}
+                                        · {{ $file->created_at?->translatedFormat('d M Y H:i') }}
+                                    </p>
+                                </div>
+                                <x-file-preview :url="route('sales.proposals.attachments.preview', [$proposal, $file])"
+                                                :download="route('sales.proposals.attachments.download', [$proposal, $file])"
+                                                :name="$file->original_name" />
+                                <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" title="{{ __('Download') }}" />
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if($proposal->versions->isNotEmpty())
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Revision History') }}</p>
+                    <ul class="mt-3 space-y-2">
+                        @foreach($proposal->versions as $version)
+                            <li class="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40">
+                                <span class="inline-flex shrink-0 items-center rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-200">{{ $version->label ?? 'v'.$version->version }}</span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $version->change_summary ?: __('Initial quotation') }}</p>
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        {{ $version->created_at?->translatedFormat('d M Y H:i') }} · {{ $version->changer?->name ?? __('System') }}
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        {{ __('Total') }}: Rp {{ number_format((float) $version->total_after, 0, ',', '.') }}
+                                        @if($version->total_before !== null)
+                                            · {{ __('Previous') }}: Rp {{ number_format((float) $version->total_before, 0, ',', '.') }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="flex flex-wrap gap-2 pt-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
-                @if($isOwner && in_array($proposal->status, ['draft', 'revision']))
+                @if($proposal->pdf_path)
+                    <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.pdf', $proposal) }}" label="{{ __('Download PDF') }}" title="{{ __('Download PDF') }}" />
+                @endif
+                @if($isOwner && (in_array($proposal->status, ['draft', 'revision'], true) || ($proposal->status === 'ready' && (float) $proposal->grand_total <= 0)))
                     <x-icon-button as="a" icon="edit" href="{{ route('sales.proposals.edit', $proposal) }}" label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
                 @endif
                 @if($isOwner && $proposal->status === 'draft')
@@ -103,12 +169,18 @@
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Ready') }}" title="{{ __('Ready') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.submit-technical', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Submit this draft to the technical team?') }}')">
+                          data-confirm="{{ __('The draft is sent to the technical team for review.') }}"
+                          data-confirm-title="{{ __('Submit this draft?') }}"
+                          data-confirm-tone="success"
+                          data-confirm-label="{{ __('Yes, submit draft') }}">
                         @csrf
                         <x-icon-button type="submit" icon="mail" label="{{ __('To Technical') }}" title="{{ __('To Technical') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.cancel', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Cancel this proposal?') }}')">
+                          data-confirm="{{ __('The proposal is closed and cannot continue.') }}"
+                          data-confirm-title="{{ __('Cancel this proposal?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, cancel proposal') }}">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />
                     </form>
@@ -128,12 +200,15 @@
                 @endif
                 @if($isOwner && $proposal->status === 'ready')
                     <form action="{{ route('sales.proposals.send', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Mark this proposal as sent?') }}')">
+                          data-confirm="{{ __('The proposal status changes to sent and the customer can respond.') }}"
+                          data-confirm-title="{{ __('Mark this proposal as sent?') }}"
+                          data-confirm-tone="success"
+                          data-confirm-label="{{ __('Yes, mark as sent') }}">
                         @csrf
-                        <x-icon-button type="submit" icon="mail" label="{{ __('Send') }}" title="{{ __('Send') }}" />
+                        <x-icon-button type="submit" icon="mail" label="{{ __('Mark as Sent') }}" title="{{ __('Mark as Sent (confirmation only, does not send email)') }}" />
                     </form>
                 @endif
-                @if($isOwner && in_array($proposal->status, ['ready', 'sent', 'viewed']) && ($wa = $proposal->lead->customer?->whatsapp))
+                @if($isOwner && $proposal->status === 'ready' && ($wa = $proposal->lead->customer?->whatsapp))
                     @php
                         $waNumber = preg_replace('/\D/', '', $wa);
                         if (str_starts_with($waNumber, '0')) $waNumber = '62' . substr($waNumber, 1);
@@ -144,11 +219,24 @@
                         ]);
                     @endphp
                     <x-icon-button as="a" href="https://wa.me/{{ $waNumber }}?text={{ urlencode($waText) }}" target="_blank" rel="noopener"
+                                   onclick="markProposalSent('{{ route('sales.proposals.sent-via', [$proposal, 'whatsapp']) }}')"
                                    label="{{ __('Send via WhatsApp') }}" title="{{ __('Send via WhatsApp') }}">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
                             <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m5.83 14.12c-.25.7-1.45 1.33-2.02 1.42-.52.08-1.17.12-1.89-.12-.44-.15-1-.39-1.71-.75-3.03-1.39-5-4.63-5.15-4.84-.15-.21-1.23-1.64-1.23-3.13 0-1.49.78-2.22 1.06-2.52.28-.3.61-.38.81-.38l.58.01c.19.01.44-.07.69.53.25.61.86 2.11.94 2.26.08.15.13.33.03.53-.1.2-.15.33-.3.51l-.45.53c-.15.15-.31.31-.13.61.18.3.8 1.32 1.71 2.14 1.18 1.06 2.17 1.39 2.48 1.55.3.15.48.13.66-.08l1.1-1.28c.2-.26.42-.22.71-.13.3.09 1.9.9 2.23 1.06.38.2.53.44.5.65-.27.69-.52.98-.73 1.23"/>
                         </svg>
                     </x-icon-button>
+                @endif
+                @if($isOwner && $proposal->status === 'ready' && ($emailTo = $proposal->lead->customer?->email))
+                    @php
+                        $mailSubject = __('Quotation :number', ['number' => $proposal->proposal_number]);
+                        $mailBody = __('Halo, berikut penawaran :number senilai Rp :total (berlaku sampai :until). Mohon konfirmasinya, terima kasih.', [
+                            'number' => $proposal->proposal_number,
+                            'total' => number_format($proposal->grand_total, 0, ',', '.'),
+                            'until' => $proposal->valid_until?->format('d M Y') ?? '-',
+                        ]);
+                    @endphp
+                    <x-icon-button as="a" icon="mail" href="mailto:{{ $emailTo }}?subject={{ rawurlencode($mailSubject) }}&body={{ rawurlencode($mailBody) }}"
+                                   label="{{ __('Send via Email') }}" title="{{ __('Open your email app (mailto)') }}" />
                 @endif
                 @if($isOwner && $proposal->status === 'sent')
                     <form action="{{ route('sales.proposals.viewed', $proposal) }}" method="POST" class="inline">
@@ -162,13 +250,19 @@
                         <x-icon-button type="submit" icon="edit" label="{{ __('Revision') }}" title="{{ __('Revision') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Mark this proposal as accepted by the customer?') }}')">
+                          data-confirm="{{ __('The proposal is locked as accepted and the next step can continue.') }}"
+                          data-confirm-title="{{ __('Mark as accepted by the customer?') }}"
+                          data-confirm-tone="success"
+                          data-confirm-label="{{ __('Yes, mark accepted') }}">
                         @csrf
                         <input type="hidden" name="decision" value="accepted">
                         <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Mark this proposal as rejected by the customer?') }}')">
+                          data-confirm="{{ __('The proposal is closed as rejected.') }}"
+                          data-confirm-title="{{ __('Mark as rejected by the customer?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, mark rejected') }}">
                         @csrf
                         <input type="hidden" name="decision" value="rejected">
                         <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
@@ -176,11 +270,14 @@
                 @endif
                 @if($proposal->status === 'accepted')
                     @if($proposal->po_document_path)
+                        <x-file-preview :url="route('sales.proposals.download-po', $proposal)"
+                                        :download="route('sales.proposals.download-po', $proposal)"
+                                        :name="basename($proposal->po_document_path)" />
                         <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.download-po', $proposal) }}" label="{{ __('Download PO') }}" title="{{ __('Download PO') }}" />
                     @endif
                     @if($proposal->project)
                         <x-icon-button as="a" icon="project" href="{{ route('projects.show', $proposal->project) }}" label="{{ __('View Project') }}: {{ $proposal->project->project_name }}" title="{{ __('View Project') }}: {{ $proposal->project->project_name }}" />
-                    @elseif($isOwner)
+                    @elseif($isOwner || auth()->user()->can('manage-admin') || auth()->user()->can('manage-sales-leads'))
                         <x-icon-button icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}"
                                        onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
                     @endif
@@ -189,18 +286,36 @@
 
             {{-- Customer PO (pesanan pelanggan ke 3DY) — bukan Supplier PO --}}
             @if($proposal->status === 'accepted')
+                @php
+                    $poStatusClass = $proposal->isPoReturned()
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                        : ($proposal->isPoVerified()
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                            : 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300');
+                @endphp
                 <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 text-sm space-y-1">
                     <div class="flex items-center justify-between gap-2">
                         <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Customer PO') }}</p>
-                        <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ $proposal->isReadyForPurchasing() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ $proposal->purchasingStatusLabel() }}</span>
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $poStatusClass }}">{{ $proposal->purchasingStatusLabel() }}</span>
                     </div>
-                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?: __('Not set yet') }}</span></p>
-                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? __('Not set yet') }}</span></p>
-                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? __('Not set yet') }}</span></p>
-                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?: __('Not set yet') }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Number') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_number ?: '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('PO Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->po_date?->format('d M Y') ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Deadline') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_deadline?->format('d M Y') ?? '-' }}</span></p>
+                    <p class="text-slate-500">{{ __('Delivery Address') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_address ?: '-' }}</span></p>
                     <p class="text-slate-500">{{ __('Payment Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->paymentTermsSummary() }}</span></p>
                     @if($proposal->delivery_terms)
                         <p class="text-slate-500">{{ __('Delivery Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->delivery_terms }}</span></p>
+                    @endif
+                    @if($proposal->warranty_terms)
+                        <p class="text-slate-500">{{ __('Warranty Terms') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->warranty_terms }}</span></p>
+                    @endif
+
+                    @if($proposal->isPoReturned())
+                        <div class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 my-2">
+                            <p class="font-bold text-sm">⚠️ {{ __('Customer PO Returned by Admin') }}</p>
+                            <p class="mt-1 font-medium">{{ __('Notes from Admin: ') }} <span class="font-normal">{{ $proposal->po_return_reason }}</span></p>
+                            <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Please revise or upload the corrected PO document below.') }}</p>
+                        </div>
                     @endif
 
                     @if($isOwner)
@@ -248,17 +363,41 @@
                                 <div>
                                     <label class="block text-xs text-slate-500 mb-1">{{ __('Delivery Terms') }}</label>
                                     <input type="text" name="delivery_terms" maxlength="255" value="{{ old('delivery_terms', $proposal->delivery_terms) }}" class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                    <input type="text" name="warranty_terms" maxlength="255" value="{{ old('warranty_terms', $proposal->warranty_terms) }}" placeholder="{{ __('Warranty Terms') }}" class="mt-2 w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                                 </div>
                             </div>
 
-                            @if(! $proposal->po_document_path)
-                                <div class="md:col-span-3">
-                                    <input type="file" name="po_file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                           class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <div class="md:col-span-4 rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2 bg-slate-50/50 dark:bg-slate-800/40">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        @if($proposal->isPoReturned())
+                                            <span class="text-red-600 dark:text-red-400 font-bold">⚠️ {{ __('Upload Revised PO Document') }}</span>
+                                        @elseif($proposal->po_document_path)
+                                            {{ __('Replace / Upload New PO Document (Optional)') }}
+                                        @else
+                                            {{ __('Upload Customer PO Document') }} <span class="text-red-500">*</span>
+                                        @endif
+                                    </label>
+                                    @if($proposal->po_document_path)
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-slate-400">{{ __('Current File:') }}</span>
+                                            <a href="{{ route('sales.proposals.download-po', $proposal) }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-1">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                                {{ __('Download Current PO') }}
+                                            </a>
+                                        </div>
+                                    @endif
                                 </div>
-                            @endif
-                            <div class="{{ $proposal->po_document_path ? 'md:col-span-4' : '' }}">
-                                <x-icon-button type="submit" icon="upload" label="{{ $proposal->po_document_path ? __('Save PO Info') : __('Upload PO') }}" title="{{ $proposal->po_document_path ? __('Save PO Info') : __('Upload PO') }}" />
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                    <input type="file" name="po_file" {{ $proposal->po_document_path ? '' : 'required' }} accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                           class="text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/60 dark:file:text-indigo-300">
+                                    <x-icon-button type="submit" icon="upload"
+                                        label="{{ $proposal->isPoReturned() ? __('Submit Revised PO') : ($proposal->po_document_path ? __('Save PO Changes') : __('Upload PO')) }}"
+                                        title="{{ $proposal->isPoReturned() ? __('Submit Revised PO') : ($proposal->po_document_path ? __('Save PO Changes') : __('Upload PO')) }}" />
+                                </div>
+                                @if($proposal->isPoReturned())
+                                    <p class="text-[11px] text-amber-600 dark:text-amber-400">{{ __('Uploading a revised document or updating the PO details will clear the return flag and send it back to Admin for verification.') }}</p>
+                                @endif
                             </div>
                             @error('po_file') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
                             @error('po_number') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
@@ -273,6 +412,33 @@
             @endif
 
             @if($isOwner && $proposal->status === 'accepted' && !$proposal->project)
+                @php
+                    $handoffItems = [
+                        ['label' => __('Customer PO document'), 'done' => filled($proposal->po_document_path)],
+                        ['label' => __('Customer PO number'), 'done' => filled($proposal->po_number)],
+                        ['label' => __('Payment terms'), 'done' => filled($proposal->payment_scheme)],
+                        ['label' => __('Delivery deadline'), 'done' => filled($proposal->delivery_deadline)],
+                        ['label' => __('Customer PO verified'), 'done' => $proposal->isPoVerified()],
+                    ];
+                    $handoffComplete = collect($handoffItems)->every(fn ($item) => $item['done']);
+                @endphp
+                <div class="mt-3 rounded-xl border border-slate-200 p-3 dark:border-slate-600">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ __('Handoff checklist') }}</p>
+                    <ul class="mt-2 space-y-1 text-sm">
+                        @foreach($handoffItems as $item)
+                            <li class="flex items-center gap-2 {{ $item['done'] ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-300' }}">
+                                @if($item['done'])
+                                    <x-icon name="check-circle" class="h-4 w-4 shrink-0" />
+                                @else
+                                    <span class="inline-block h-2 w-2 shrink-0 rounded-full bg-slate-300 dark:bg-slate-500"></span>
+                                @endif
+                                {{ $item['label'] }}
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-2 text-xs text-slate-400">{{ __('All items must be complete before converting to a project.') }}</p>
+                </div>
+
                 <div id="convert-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
                     <div class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
                         <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Convert to Project') }}</h2>
@@ -299,6 +465,41 @@
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('PIC Engineer') }}</label>
+                                <select name="teknisi_user_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                                    <option value="">{{ __('No engineer yet (Unassigned)') }}</option>
+                                    @foreach($technicians as $tech)
+                                        <option value="{{ $tech->id }}" {{ (string) old('teknisi_user_id') === (string) $tech->id ? 'selected' : '' }}>{{ $tech->name }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-slate-400">{{ __('The lead engineer can assign this later.') }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Support Technicians') }}</label>
+                                <div class="grid max-h-32 grid-cols-2 gap-1.5 overflow-y-auto rounded-xl border border-slate-200 p-2 dark:border-slate-600">
+                                    @forelse($technicians as $tech)
+                                        <label class="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                            <input type="checkbox" name="support_user_ids[]" value="{{ $tech->id }}"
+                                                   class="rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+                                                   {{ in_array((string) $tech->id, array_map('strval', (array) old('support_user_ids', [])), true) ? 'checked' : '' }}>
+                                            {{ $tech->name }}
+                                        </label>
+                                    @empty
+                                        <p class="text-xs text-slate-400">{{ __('No engineers available.') }}</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                            <div class="space-y-2 py-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="requires_delivery" value="1" checked class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ __('Requires Physical Delivery (Goods Delivery Note)') }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="requires_installation" value="1" checked class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                    <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ __('Requires Field Installation / Technician Work') }}</span>
+                                </label>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes for Technician (optional)') }}</label>
                                 <textarea name="notes" rows="2" placeholder="{{ __('Anything the technician should know before starting...') }}"
                                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('notes') }}</textarea>
@@ -310,7 +511,14 @@
                                     {{ __('Cancel') }}
                                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                 </button>
-                                <x-icon-button type="submit" icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}" />
+                                @if($handoffComplete)
+                                    <x-icon-button type="submit" icon="add" label="{{ __('Convert to Project') }}" title="{{ __('Convert to Project') }}" />
+                                @else
+                                    <span class="inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+                                          title="{{ __('Complete the handoff checklist first.') }}">
+                                        {{ __('Convert to Project') }}
+                                    </span>
+                                @endif
                             </div>
                         </form>
                     </div>
@@ -318,4 +526,30 @@
             @endif
         </div>
     </div>
+    @once
+    <script>
+        /**
+         * Tandai quotation terkirim lewat kanal (WhatsApp/email) tanpa
+         * menghalangi link yang sedang dibuka (WA/mailto).
+         */
+        function markProposalSent(url) {
+            const token = document.querySelector('meta[name="csrf-token"]')?.content;
+
+            fetch(url, {
+                method: 'POST',
+                keepalive: true,
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            }).then((response) => {
+                if (response.ok) {
+                    setTimeout(() => window.location.reload(), 600);
+                }
+            }).catch(() => {});
+        }
+    </script>
+    @endonce
 </x-app-layout>

@@ -77,7 +77,7 @@ class ProjectDocumentTrashTest extends TestCase
 
         $html = $this->get(route('trash.index'))->assertOk()->getContent();
         $this->assertStringContainsString('nib-perusahaan.pdf', $html);
-        $this->assertStringContainsString($admin->name, $html);
+        $this->assertStringContainsString(e($admin->name), $html);
         $this->assertStringContainsString(
             $deleted->trashDeadline()->format('d M Y H:i'),
             $html,

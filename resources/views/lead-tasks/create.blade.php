@@ -10,7 +10,7 @@
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-        <form action="{{ route('lead-tasks.store') }}" method="POST" class="space-y-6">
+        <form action="{{ route('lead-tasks.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @if(isset($lead) && $lead)
                 <input type="hidden" name="lead_id" value="{{ $lead->id }}">
@@ -46,16 +46,26 @@
                 @error('description') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
+            <div>
+                <div class="mb-2 flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Supporting Attachments') }}</span>
+                    <span class="rounded-full border border-slate-200 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:border-slate-700 dark:text-slate-400">{{ __('Optional') }}</span>
+                </div>
+                <x-file-drop id="request_files_create" />
+                @error('request_files') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('request_files.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Assign to Inside Sales') }}</label>
-                    <select name="assigned_to"
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Assign to Inside Sales') }} <span class="text-red-500">*</span></label>
+                    <select name="assigned_to" required
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">{{ __('-- Not set --') }}</option>
                         @foreach($insideSales as $user)
                             <option value="{{ $user->id }}" @selected(old('assigned_to') == $user->id)>{{ $user->name }}</option>
                         @endforeach
                     </select>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Selected user will see this request in the Inside Sales menu.') }}</p>
                     @error('assigned_to') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>

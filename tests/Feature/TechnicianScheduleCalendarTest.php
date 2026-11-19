@@ -58,6 +58,20 @@ class TechnicianScheduleCalendarTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_cancelled_jobs_stay_visible_in_calendar_api(): void
+    {
+        $tech = $this->userWithRole('technician');
+        $this->makeSchedule($tech, [
+            'title' => 'Survey dibatalkan',
+            'status' => 'cancelled',
+        ]);
+
+        $res = $this->actingAs($tech)->getJson(route('teknisi.schedules.api', ['date' => '2026-10-20']));
+        $res->assertOk();
+        $this->assertSame(['Survey dibatalkan'], collect($res->json())->pluck('title')->all());
+        $this->assertSame('cancelled', $res->json()[0]['status']);
+    }
+
     public function test_credentials_saved_and_gated_to_super_admin_and_lead_technician(): void
     {
         $lead = $this->userWithRole('lead-technician');
@@ -167,12 +181,14 @@ class TechnicianScheduleCalendarTest extends TestCase
         $res = $this->actingAs($lead)->postJson(route('teknisi.schedules.store'), [
             'title' => 'Ajax create', 'date' => '2026-10-25',
             'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'scheduled',
+            'technician_user_id' => $lead->id,
         ]);
         $res->assertOk()->assertJson(['ok' => true]);
 
         $res = $this->actingAs($lead)->putJson(route('teknisi.schedules.update', $schedule), [
             'title' => 'Ajax update', 'date' => '2026-10-20',
             'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'scheduled',
+            'technician_user_id' => $lead->id,
         ]);
         $res->assertOk()->assertJson(['ok' => true]);
 
@@ -274,6 +290,7 @@ class TechnicianScheduleCalendarTest extends TestCase
             $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
                 'title' => 'Status '.$status, 'date' => '2026-10-25',
                 'start_time' => '09:00', 'end_time' => '11:00', 'status' => $status,
+                'technician_user_id' => $lead->id,
             ])->assertSessionHasNoErrors();
         }
 
@@ -281,6 +298,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
             'title' => 'Salah', 'date' => '2026-10-25',
             'start_time' => '09:00', 'end_time' => '11:00', 'status' => 'Scheduled',
+            'technician_user_id' => $lead->id,
         ])->assertSessionHasErrors('status');
     }
 
@@ -291,6 +309,7 @@ class TechnicianScheduleCalendarTest extends TestCase
         $this->actingAs($lead)->post(route('teknisi.schedules.store'), [
             'title' => 'Tanpa jam selesai', 'date' => '2026-10-25',
             'start_time' => '09:00', 'status' => 'scheduled',
+            'technician_user_id' => $lead->id,
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('technician_schedules', ['title' => 'Tanpa jam selesai']);
@@ -330,6 +349,7 @@ class TechnicianScheduleCalendarTest extends TestCase
                 'date' => '2026-10-20',
                 'start_time' => '10:00',
                 'status' => 'scheduled',
+                'technician_user_id' => $lead->id,
             ])
             ->assertSessionHasNoErrors();
 
@@ -350,6 +370,7 @@ class TechnicianScheduleCalendarTest extends TestCase
                 'date' => '2026-10-20',
                 'start_time' => '10:00',
                 'status' => 'scheduled',
+                'technician_user_id' => $teammate->id,
             ])
             ->assertSessionHasNoErrors();
 
@@ -371,6 +392,7 @@ class TechnicianScheduleCalendarTest extends TestCase
                 'date' => '2026-10-20',
                 'start_time' => '10:00',
                 'status' => 'scheduled',
+                'technician_user_id' => $owner->id,
             ])
             ->assertForbidden();
 

@@ -33,13 +33,18 @@ class CustomerDocumentUploadTest extends TestCase
         return $user;
     }
 
-    private function makeProject(string $ptGroup = 'NTI'): Project
+    private function makeProject(string $ptGroup = 'NTI', ?User $owner = null): Project
     {
-        $customer = Customer::create(['name' => 'PT Dokumen ' . uniqid(), 'pt_group' => $ptGroup]);
+        $customer = Customer::create([
+            'name' => 'PT Dokumen '.uniqid(),
+            'pt_group' => $ptGroup,
+            'created_by' => $owner?->id,
+        ]);
         $workType = WorkType::create(['name' => 'Instalasi']);
 
         return Project::create([
             'customer_id' => $customer->id,
+            'sales_user_id' => $owner?->id,
             'work_type_id' => $workType->id,
             'project_name' => 'Project Dokumen',
         ]);
@@ -121,7 +126,7 @@ class CustomerDocumentUploadTest extends TestCase
     {
         $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
         $this->actingAs($sales);
-        $project = $this->makeProject('NTI');
+        $project = $this->makeProject('NTI', $sales);
 
         $this->get(route('project-documents.index', $project))->assertOk();
         $this->upload($project, $this->surveyCategory()->id)->assertRedirect();
@@ -393,10 +398,9 @@ class CustomerDocumentUploadTest extends TestCase
         // Kosong = benar-benar kosong (tak ada file DAN tak ada data).
         $this->assertStringContainsString('No invoices', $html);
         $this->assertStringContainsString('No payments', $html);
-        // Empty state tidak buntu: ada ajakan unggah + tombolnya.
-        $this->assertStringContainsString('Upload the file so it appears here.', $html);
-        $this->assertStringContainsString('data-doc-type="invoice"', $html);
-        $this->assertStringContainsString('data-doc-type="payment"', $html);
+        // Empty state tidak buntu: tombol upload tetap ada di header.
+        $this->assertStringContainsString('data-doc-upload-open', $html);
+        $this->assertStringNotContainsString('data-doc-type=', $html);
     }
 
     public function test_section_invoice_dengan_record_tanpa_file_tetap_tampil(): void
@@ -538,5 +542,74 @@ class CustomerDocumentUploadTest extends TestCase
             ->assertOk()
             ->assertSee('lama.pdf', false)
             ->assertDontSee('0 KB', false);
+    }
+
+    // ============================================================
+    // SATU TOMBOL UPLOAD + PILIH KATEGORI
+    // ============================================================
+
+    public function test_upload_umum_dengan_kategori_muncul_di_kelompok_kategorinya(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $customer = Customer::create(['name' => 'PT Kategori', 'pt_group' => 'NTI']);
+        $category = DocumentCategory::firstOrCreate(['name' => 'BAST']);
+
+        Storage::fake('private');
+
+        $this->actingAs($sales)
+            ->post(route('customer-documents.store', $customer), [
+                'file' => UploadedFile::fake()->create('bast-signed.pdf', 100, 'application/pdf'),
+                'document_category_id' => $category->id,
+                'notes' => 'BAST tertanda tangan',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('doc_uploaded', true)
+            ->assertSessionHas('doc_category_id', $category->id);
+
+        $this->assertDatabaseHas('project_documents', [
+            'customer_id' => $customer->id,
+            'project_id' => null,
+            'document_category_id' => $category->id,
+            'file_name' => 'bast-signed.pdf',
+        ]);
+
+        // Dokumen langsung tampil di bawah judul kategorinya (module view).
+        $this->actingAs($sales)
+            ->get(route('customers.show', $customer))
+            ->assertOk()
+            ->assertSee('BAST')
+            ->assertSee('bast-signed.pdf', false);
+    }
+
+    public function test_kategori_dokumen_tidak_valid_ditolak(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $customer = Customer::create(['name' => 'PT Kategori Salah', 'pt_group' => 'NTI']);
+
+        Storage::fake('private');
+
+        $this->actingAs($sales)
+            ->post(route('customer-documents.store', $customer), [
+                'file' => UploadedFile::fake()->create('salah.pdf', 100, 'application/pdf'),
+                'document_category_id' => 999999,
+            ])
+            ->assertSessionHasErrors('document_category_id');
+
+        $this->assertDatabaseCount('project_documents', 0);
+    }
+
+    public function test_hanya_ada_satu_tombol_upload_di_tab_dokumen_customer(): void
+    {
+        $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
+        $customer = Customer::create(['name' => 'PT Satu Tombol', 'pt_group' => 'NTI']);
+
+        $html = $this->actingAs($sales)
+            ->get(route('customers.show', $customer))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-doc-upload-open', $html);
+        $this->assertStringNotContainsString('data-doc-type=', $html);
+        $this->assertStringContainsString('name="document_category_id"', $html);
     }
 }

@@ -14,7 +14,6 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.supplier-pos.index') }}" title="{{ __('Back') }}" />
             @can('manage-admin')
                 @if($supplierPurchaseOrder->status === 'draft')
                     <form action="{{ route('admin.supplier-pos.issue', $supplierPurchaseOrder) }}" method="POST" class="inline">
@@ -24,12 +23,13 @@
                 @endif
                 @if(in_array($supplierPurchaseOrder->status, ['draft', 'ordered']))
                     <form action="{{ route('admin.supplier-pos.cancel', $supplierPurchaseOrder) }}" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Cancel this purchase order?') }}')">
+                          data-confirm="{{ __('Cancel this purchase order?') }}" data-confirm-tone="danger">
                         @csrf
                         <x-icon-button icon="delete" type="submit" label="{{ __('Cancel PO') }}" title="{{ __('Cancel PO') }}" />
                     </form>
                 @endif
             @endcan
+            <x-back-button href="{{ route('admin.supplier-pos.index') }}" />
         </div>
     </div>
 

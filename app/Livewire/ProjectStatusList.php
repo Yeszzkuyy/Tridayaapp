@@ -54,7 +54,7 @@ class ProjectStatusList extends Component
         ]);
 
         $this->reset(['name', 'color', 'is_default']);
-        session()->flash('message', __('Status added successfully!'));
+        $this->dispatch('toast', message: __('Status added successfully!'), type: 'success');
     }
 
     public function edit($id)
@@ -83,7 +83,7 @@ class ProjectStatusList extends Component
         ]);
 
         $this->reset(['editId', 'editName', 'editColor', 'editIsDefault']);
-        session()->flash('message', __('Status updated successfully!'));
+        $this->dispatch('toast', message: __('Status updated successfully!'), type: 'success');
     }
 
     public function delete($id)
@@ -91,7 +91,7 @@ class ProjectStatusList extends Component
         $this->authorizeManage();
         $status = ProjectStatus::findOrFail($id);
         $status->delete();
-        session()->flash('message', __('Status deleted successfully!'));
+        $this->dispatch('toast', message: __('Status deleted successfully!'), type: 'success');
     }
 
     public function cancelEdit()

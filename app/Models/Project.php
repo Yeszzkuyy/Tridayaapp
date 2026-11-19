@@ -25,10 +25,18 @@ class Project extends Model
         'quotation_number',
         'proposal_id',
         'progress',
+        'workflow_state',
+        'workflow_synced_at',
+        'requires_delivery',
         'requires_installation',
         'bast_number',
         'bast_date',
         'bast_document_id',
+        'bast_signed_3dy_name',
+        'bast_signed_3dy_at',
+        'bast_signed_customer_name',
+        'bast_signed_customer_at',
+        'bast_ready_at',
         'delivery_deadline',
         'commercial_closed_at',
         'start_date',
@@ -41,8 +49,14 @@ class Project extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'progress' => 'integer',
+        'workflow_state' => 'array',
+        'workflow_synced_at' => 'datetime',
         'requires_installation' => 'boolean',
+        'requires_delivery' => 'boolean',
         'bast_date' => 'date',
+        'bast_signed_3dy_at' => 'datetime',
+        'bast_signed_customer_at' => 'datetime',
+        'bast_ready_at' => 'datetime',
         'delivery_deadline' => 'date',
         'commercial_closed_at' => 'datetime',
     ];
@@ -115,6 +129,21 @@ class Project extends Model
         return $this->hasMany(ProjectSupport::class);
     }
 
+    /**
+     * Engineer pendukung sebagai akun user (sumber baru).
+     * Tabel project_supports menyimpan project_id + user_id.
+     */
+    public function supportUsers()
+    {
+        return $this->belongsToMany(User::class, 'project_supports', 'project_id', 'user_id');
+    }
+
+    /** PIC engineer sebagai akun user. */
+    public function engineer()
+    {
+        return $this->belongsTo(User::class, 'teknisi_user_id');
+    }
+
     // Relasi ke Technical Workflow
     public function surveys()
     {
@@ -134,6 +163,11 @@ class Project extends Model
     public function instalasis()
     {
         return $this->hasMany(Instalasi::class);
+    }
+
+    public function priceRequests()
+    {
+        return $this->hasMany(PriceRequest::class);
     }
 
     public function invoices()
@@ -167,6 +201,33 @@ class Project extends Model
     }
 
     /**
+     * BAST dianggap siap untuk Finance bila dokumennya sudah tersimpan dan
+     * sudah ditandatangani kedua pihak (3DY + pelanggan).
+     */
+    public function isBastReady(): bool
+    {
+        return filled($this->bast_document_id)
+            && filled($this->bast_signed_3dy_at)
+            && filled($this->bast_signed_customer_at);
+    }
+
+    /**
+     * Sinkronkan penanda "siap Finance" setelah form BAST disimpan.
+     * Timestamp pertama kali siap dipertahankan; bila syarat tidak lagi
+     * terpenuhi (mis. dokumen/tanda tangan dihapus), penanda dikosongkan.
+     */
+    public function refreshBastReady(): bool
+    {
+        $ready = $this->isBastReady();
+
+        $this->forceFill([
+            'bast_ready_at' => $ready ? ($this->bast_ready_at ?? now()) : null,
+        ])->save();
+
+        return $ready;
+    }
+
+    /**
      * Closing komersial (Tahap 5) hanya jika:
      * 1. seluruh surat jalan proyek berstatus delivered;
      * 2. instalasi selesai — BAST terisi dan progres 100%/status Done
@@ -180,8 +241,9 @@ class Project extends Model
         }
 
         $deliveryQuery = $this->goodsDeliveries();
-        $deliveryDone = (clone $deliveryQuery)->exists()
-            && (clone $deliveryQuery)->where('status', '!=', 'delivered')->doesntExist();
+        $deliveryDone = ! $this->requires_delivery
+            || ((clone $deliveryQuery)->exists()
+                && (clone $deliveryQuery)->where('status', '!=', 'delivered')->doesntExist());
 
         $procurementDone = $this->deliveryObligationsMet();
 

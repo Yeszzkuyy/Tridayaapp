@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lead;
+use App\Models\LeadActivity;
 use App\Models\Proposal;
+use App\Notifications\ProposalStatusNotification;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Antrean handoff Sales → Admin/Purchasing.
@@ -20,9 +23,12 @@ use Illuminate\Http\Request;
  */
 class PurchasingHandoffController extends Controller
 {
+    /** Daftar tahap handoff yang bisa difilter lewat tab. */
+    public const STAGE_FILTERS = ['all', 'waiting_po', 'po_received', 'in_purchasing', 'project_created', 'bast_closed'];
+
     public function index(Request $request)
     {
-        $filters = $request->only(['q', 'pt_group']);
+        $filters = $request->only(['q', 'pt_group', 'stage']);
         $user = $request->user();
 
         $base = Proposal::query()
@@ -47,6 +53,7 @@ class PurchasingHandoffController extends Controller
         // mencegah data pipeline sales lain terbuka lewat antrean ini.
         $fullAccess = $user->can('manage-admin')
             || $user->can('manage-sales-leads')
+            || $user->can('view-admin-hub')
             || $user->hasRole('ceo');
 
         if (! $fullAccess) {
@@ -56,14 +63,19 @@ class PurchasingHandoffController extends Controller
             });
         }
 
-        // Siap diproses Purchasing = accepted + customer PO sudah diunggah.
-        $readyQuery = (clone $base)->whereNotNull('po_document_path');
-        $waitingQuery = (clone $base)->whereNull('po_document_path');
+        $requestedStage = $filters['stage'] ?? 'all';
+        $stage = in_array($requestedStage, self::STAGE_FILTERS, true) ? $requestedStage : 'all';
 
-        $readyCount = (clone $readyQuery)->count();
-        $waitingCount = (clone $waitingQuery)->count();
+        // Jumlah per tab dihitung dari query yang sama (ikut filter q & PT)
+        // supaya angka di tab selalu konsisten dengan isi tabel.
+        $stageCounts = [];
+        foreach (self::STAGE_FILTERS as $key) {
+            $stageCounts[$key] = $key === 'all'
+                ? (clone $base)->count()
+                : self::applyStageFilter(clone $base, $key)->count();
+        }
 
-        $proposals = $readyQuery
+        $proposals = self::applyStageFilter(clone $base, $stage)
             ->orderByDesc('po_date')
             ->latest('id')
             ->paginate(15)
@@ -72,10 +84,29 @@ class PurchasingHandoffController extends Controller
         return view('admin.purchasing.handoff.index', [
             'proposals' => $proposals,
             'filters' => $filters,
-            'readyCount' => $readyCount,
-            'waitingCount' => $waitingCount,
+            'stage' => $stage,
+            'stageCounts' => $stageCounts,
             'ptGroups' => Lead::PT_GROUPS,
         ]);
+    }
+
+    /**
+     * Persempit query quotation accepted ke satu tahap handoff.
+     */
+    private static function applyStageFilter($query, string $stage)
+    {
+        return match ($stage) {
+            'waiting_po' => $query->whereNull('po_document_path'),
+            'po_received' => $query->whereNotNull('po_document_path')
+                ->whereDoesntHave('supplierPurchaseOrders')
+                ->whereDoesntHave('project'),
+            'in_purchasing' => $query->whereNotNull('po_document_path')
+                ->whereHas('supplierPurchaseOrders')
+                ->whereDoesntHave('project'),
+            'project_created' => $query->whereHas('project', fn ($project) => $project->whereNull('bast_ready_at')),
+            'bast_closed' => $query->whereHas('project', fn ($project) => $project->whereNotNull('bast_ready_at')),
+            default => $query,
+        };
     }
 
     public function show(Request $request, Proposal $proposal)
@@ -85,6 +116,7 @@ class PurchasingHandoffController extends Controller
         $user = $request->user();
         $fullAccess = $user->can('manage-admin')
             || $user->can('manage-sales-leads')
+            || $user->can('view-admin-hub')
             || $user->hasRole('ceo');
 
         if (! $fullAccess) {
@@ -97,9 +129,93 @@ class PurchasingHandoffController extends Controller
 
         $proposal->load([
             'lead.customer', 'lead.assignee', 'creator', 'items', 'project',
-            'supplierPurchaseOrders.supplier',
+            'supplierPurchaseOrders.supplier', 'attachments.uploader',
         ]);
 
-        return view('admin.purchasing.handoff.show', compact('proposal'));
+        $workTypes = ! $proposal->project
+            ? \App\Models\WorkType::orderBy('name')->get(['id', 'name'])
+            : collect();
+
+        return view('admin.purchasing.handoff.show', compact('proposal', 'workTypes'));
+    }
+
+    public function verifyPo(Request $request, Proposal $proposal)
+    {
+        $user = $request->user();
+        abort_unless($user->can('manage-admin') || $user->hasRole('ceo'), 403);
+        abort_unless($proposal->isReadyForPurchasing(), 422);
+        abort_if($proposal->isPoReturned(), 422, __('This customer PO was returned to Sales. Wait for the revised PO before verifying.'));
+
+        $missing = $proposal->poCompletenessErrors();
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'po' => __('Customer PO is incomplete: :fields', ['fields' => implode(' ', $missing)]),
+            ]);
+        }
+
+        $proposal->update([
+            'po_verified_at' => now(),
+            'po_verified_by' => $user->id,
+            'po_returned_at' => null,
+            'po_returned_by' => null,
+            'po_return_reason' => null,
+        ]);
+
+        if ($proposal->lead) {
+            LeadActivity::create([
+                'lead_id' => $proposal->lead_id,
+                'user_id' => $user->id,
+                'action' => 'po_verified',
+                'changes' => ['number' => $proposal->proposal_number, 'po_number' => $proposal->po_number],
+            ]);
+        }
+
+        // Sales pemilik lead perlu tahu PO sudah lolos verifikasi dan
+        // boleh lanjut convert.
+        $assignee = $proposal->lead?->assignee ?: $proposal->creator;
+        if ($assignee && (int) $assignee->id !== (int) $user->id) {
+            $assignee->notify(new ProposalStatusNotification($proposal, 'po_verified'));
+        }
+
+        return back()->with('success', __('Customer PO verified successfully.'));
+    }
+
+    public function returnPo(Request $request, Proposal $proposal)
+    {
+        $user = $request->user();
+        abort_unless($user->can('manage-admin') || $user->hasRole('ceo'), 403);
+        abort_unless($proposal->isReadyForPurchasing(), 422);
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $proposal->update([
+            'po_returned_at' => now(),
+            'po_returned_by' => $user->id,
+            'po_return_reason' => $validated['reason'],
+            'po_verified_at' => null,
+            'po_verified_by' => null,
+        ]);
+
+        if ($proposal->lead) {
+            LeadActivity::create([
+                'lead_id' => $proposal->lead_id,
+                'user_id' => $user->id,
+                'action' => 'po_returned',
+                'changes' => [
+                    'number' => $proposal->proposal_number,
+                    'po_number' => $proposal->po_number,
+                    'reason' => $validated['reason'],
+                ],
+            ]);
+        }
+
+        $assignee = $proposal->lead?->assignee ?: $proposal->creator;
+        if ($assignee && (int) $assignee->id !== (int) $user->id) {
+            $assignee->notify(new ProposalStatusNotification($proposal, 'po_returned'));
+        }
+
+        return back()->with('success', __('Customer PO returned to Sales with revision notes.'));
     }
 }

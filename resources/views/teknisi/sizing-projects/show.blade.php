@@ -29,12 +29,6 @@
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="mb-4 px-4 py-3 rounded-xl bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
@@ -90,8 +84,9 @@
                             <li class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-600">
                                 <span class="min-w-0 truncate text-slate-700 dark:text-slate-200">{{ $doc->file_name }}</span>
                                 <span class="flex shrink-0 items-center gap-1.5">
-                                    <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $doc) }}"
-                                                   target="_blank" title="{{ __('Preview') }}" />
+                                    <x-file-preview :url="route('project-documents.preview', $doc)"
+                                                    :download="route('project-documents.download', $doc)"
+                                                    :name="$doc->file_name" />
                                     <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $doc) }}"
                                                    title="{{ __('Download') }}" />
                                 </span>

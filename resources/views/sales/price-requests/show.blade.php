@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $user = auth()->user();
         $isTech = $user?->can('manage-technician') ?? false;
@@ -33,7 +29,7 @@
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ __('Price Request') }}</h1>
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ __('Installation Price Request') }}</h1>
                     <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">#{{ $priceRequest->id }}</span>
                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusColors[$priceRequest->status] ?? 'bg-slate-200 text-slate-700' }}">{{ \App\Models\PriceRequest::statusLabel($priceRequest->status) }}</span>
                 </div>
@@ -42,8 +38,44 @@
                     <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $priceRequest->customer?->name ?? '-' }}</span>
                 </p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
+            <x-back-button :href="$backUrl" />
         </div>
+
+        @php
+            $nextStep = match ($priceRequest->status) {
+                'waiting_lead' => __('Assign a pricing engineer so the calculation can start.'),
+                'accepted' => __('Accepted. Waiting for the engineer to start the calculation.'),
+                'assigned' => __('Engineer assigned. Waiting for the calculation file.'),
+                'in_progress' => __('The engineer is preparing the calculation.'),
+                'waiting_sales_review' => __('Calculation uploaded. Review it, then accept the price or request a revision.'),
+                'revision' => __('Revision requested. The engineer needs to upload the new calculation.'),
+                'completed' => __('Completed. You can create or update the linked quotation.'),
+                'rejected' => __('Rejected. This request is closed.'),
+                'cancelled' => __('Cancelled. This request is closed.'),
+                default => __('Check the details below.'),
+            };
+        @endphp
+        <div class="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                <span class="text-slate-500 dark:text-slate-400">{{ __('Current status') }}:</span>
+                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusColors[$priceRequest->status] ?? 'bg-slate-200 text-slate-700' }}">{{ \App\Models\PriceRequest::statusLabel($priceRequest->status) }}</span>
+                <span class="text-slate-400" aria-hidden="true">→</span>
+                <span class="font-medium text-slate-700 dark:text-slate-200">{{ $nextStep }}</span>
+            </div>
+        </div>
+
+        @if($priceRequest->proposal)
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                {{ __('Quotation linked') }}:
+                <a href="{{ route('sales.proposals.show', $priceRequest->proposal) }}" class="font-semibold underline">{{ $priceRequest->proposal->proposal_number }}</a>
+            </div>
+        @elseif(! in_array($priceRequest->status, ['rejected', 'cancelled'], true)
+            && auth()->user()?->can('manage-sales-leads'))
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-200">
+                <span>{{ __('Turn this price request into a linked quotation without retyping the customer.') }}</span>
+                <x-icon-button as="a" icon="add" href="{{ route('sales.proposals.create', ['price_request_id' => $priceRequest->id]) }}" label="{{ __('Create Quotation') }}" title="{{ __('Create Quotation') }}" />
+            </div>
+        @endif
 
         <div class="grid grid-cols-1 items-start gap-4 xl:grid-cols-5">
             <div class="space-y-4 xl:col-span-3">
@@ -108,7 +140,12 @@
                         @endphp
                         <div class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between">
                             <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ $quotationFileName }}</p>
-                            <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.quotation', $priceRequest) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
+                            <div class="flex shrink-0 items-center gap-2">
+                                <x-file-preview :url="route('sales.price-requests.quotation.preview', $priceRequest)"
+                                                :download="route('sales.price-requests.quotation', $priceRequest)"
+                                                :name="$quotationFileName" />
+                                <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.quotation', $priceRequest) }}" label="{{ __('Download Quotation') }}" title="{{ __('Download Quotation') }}" />
+                            </div>
                         </div>
                     @else
                         <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ __('No quotation file attached.') }}</p>
@@ -153,14 +190,19 @@
                                             @endif
                                             <p class="mt-3 break-all text-xs text-slate-500 dark:text-slate-400">{{ $replyFileName }}</p>
                                         </div>
-                                        <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply]) }}" title="{{ __('Download version :number', ['number' => $reply->version]) }}" />
+                                        <div class="flex shrink-0 items-center gap-2">
+                                            <x-file-preview :url="route('sales.price-requests.replies.preview', ['priceRequest' => $priceRequest, 'reply' => $reply])"
+                                                            :download="route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply])"
+                                                            :name="$replyFileName" />
+                                            <x-icon-button as="a" icon="download" href="{{ route('sales.price-requests.replies.download', ['priceRequest' => $priceRequest, 'reply' => $reply]) }}" title="{{ __('Download version :number', ['number' => $reply->version]) }}" />
+                                        </div>
                                     </div>
                                 </article>
                             @endforeach
                         </div>
 
-                        {{-- Handover ke Quotation untuk Sales --}}
-                        @can('view-sales')
+                        {{-- Handover ke Quotation (hanya Management yang bisa buat langsung) --}}
+                        @can('manage-sales-leads')
                             @php
                                 $customerLead = $priceRequest->customer?->leads()->whereNotIn('status', ['won', 'lost'])->latest()->first()
                                     ?? $priceRequest->customer?->leads()->latest()->first();
@@ -191,7 +233,15 @@
                                     @csrf
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Take Request') }}" title="{{ __('Take Request') }}" />
                                 </form>
-                                <form action="{{ route('sales.price-requests.reject', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}" onsubmit="return confirm('{{ __('Reject this request?') }}')">
+                                <form action="{{ route('sales.price-requests.reject', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}"
+                                      data-confirm="{{ __('The request will be closed and the requester is notified.') }}"
+                                      data-confirm-title="{{ __('Reject this request?') }}"
+                                      data-confirm-tone="danger"
+                                      data-confirm-label="{{ __('Yes, reject request') }}"
+                                      data-confirm-details="{{ json_encode([
+                                          ['label' => __('Customer'), 'value' => $priceRequest->customer?->name ?? '-'],
+                                          ['label' => __('Request'), 'value' => '#'.$priceRequest->id],
+                                      ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                                     @csrf
                                     <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
                                 </form>
@@ -231,6 +281,7 @@
                                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                     @error('reply') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                                 </div>
+
                                 <div>
                                     <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Reply Notes (optional)') }}</label>
                                     <textarea name="reply_notes" rows="3" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('reply_notes') }}</textarea>
@@ -248,12 +299,25 @@
                             <h2 id="price-request-sales-decision-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Review Price') }}</h2>
                             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Choose the latest calculation or send a revision request.') }}</p>
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <form action="{{ route('sales.price-requests.accept', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}" onsubmit="return confirm('{{ __('Accept this price as final?') }}')">
+                                <form action="{{ route('sales.price-requests.accept', $priceRequest) }}" method="POST" data-loading-text="{{ __('Processing…') }}"
+                                      data-confirm="{{ __('The accepted price is locked and will be used in the customer quotation.') }}"
+                                      data-confirm-title="{{ __('Accept this price as final?') }}"
+                                      data-confirm-tone="success"
+                                      data-confirm-label="{{ __('Yes, accept price') }}"
+                                      data-confirm-details="{{ json_encode([
+                                          ['label' => __('Customer'), 'value' => $priceRequest->customer?->name ?? '-'],
+                                          ['label' => __('Request'), 'value' => '#'.$priceRequest->id],
+                                          ['label' => __('Quotation'), 'value' => $priceRequest->proposal?->proposal_number ?? __('Not created yet')],
+                                      ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                                     @csrf
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept Price') }}" title="{{ __('Accept Price') }}" />
                                 </form>
                             </div>
-                            <form action="{{ route('sales.price-requests.revision', $priceRequest) }}" method="POST" class="mt-5 border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Sending…') }}" onsubmit="return confirm('{{ __('Send this revision request to the Pricing Engineer?') }}')">
+                            <form action="{{ route('sales.price-requests.revision', $priceRequest) }}" method="POST" class="mt-5 border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Sending…') }}"
+                                  data-confirm="{{ __('Your note is sent to the Pricing Engineer and added to the discussion.') }}"
+                                  data-confirm-title="{{ __('Send this revision request?') }}"
+                                  data-confirm-tone="info"
+                                  data-confirm-label="{{ __('Yes, send revision') }}">
                                 @csrf
                                 <label for="revision-reason" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Revision / negotiation details') }}</label>
                                 <textarea id="revision-reason" name="reason" rows="3" required maxlength="2000" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('reason') }}</textarea>
@@ -268,7 +332,15 @@
                 @endcan
 
                 @can('cancel', $priceRequest)
-                    <form action="{{ route('sales.price-requests.cancel', $priceRequest) }}" method="POST" data-loading-text="{{ __('Cancelling…') }}" onsubmit="return confirm('{{ __('Cancel this request?') }}')">
+                    <form action="{{ route('sales.price-requests.cancel', $priceRequest) }}" method="POST" data-loading-text="{{ __('Cancelling…') }}"
+                          data-confirm="{{ __('The engineer calculation stays saved, but this request is closed and cannot be resumed.') }}"
+                          data-confirm-title="{{ __('Cancel this request?') }}"
+                          data-confirm-tone="danger"
+                          data-confirm-label="{{ __('Yes, cancel request') }}"
+                          data-confirm-details="{{ json_encode([
+                              ['label' => __('Customer'), 'value' => $priceRequest->customer?->name ?? '-'],
+                              ['label' => __('Request'), 'value' => '#'.$priceRequest->id],
+                          ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}">
                         @csrf
                         <x-icon-button type="submit" icon="delete" label="{{ __('Cancel Request') }}" title="{{ __('Cancel Request') }}" />
                     </form>

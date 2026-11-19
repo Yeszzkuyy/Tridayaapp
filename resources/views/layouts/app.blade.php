@@ -10,13 +10,44 @@
     // (script head saat load, hook onSwap saat navigasi) jadi tak ada kilatan
     // terbalik.
     $initialDark = $themePref !== 'light';
+    $instantSave = \App\Support\InstantSave::enabledFor(request());
+    $formErrors = collect($errors->getBag('default')->getMessages())
+        ->map(fn ($messages) => is_array($messages) ? ($messages[0] ?? null) : $messages)
+        ->filter()
+        ->all();
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-mode="{{ $themePref }}" data-theme="{{ $accentPref }}" class="{{ $initialDark ? 'dark' : '' }}"
+      data-instant-save-failed="{{ __('Failed to save. Please try again.') }}"
+      @if($instantSave) data-instant-save="1" @endif>
 <head>
+    <script>
+        // Jaring pengaman: layout penuh tidak boleh hidup di dalam iframe.
+        // Koreksi diri ke ?embed=1 agar tidak terbentuk iframe bersarang.
+        (function () {
+            if (window.self === window.top) return;
+            document.documentElement.classList.add('workspace-nested');
+            if (document.documentElement.getAttribute('data-embed') === '1') return;
+            try {
+                var key = 'ws-embed-retry:' + location.pathname;
+                var tries = Number(sessionStorage.getItem(key) || 0);
+                if (tries >= 2) return;
+                sessionStorage.setItem(key, String(tries + 1));
+                var url = new URL(location.href);
+                url.searchParams.set('embed', '1');
+                location.replace(url.toString());
+            } catch (e) {}
+        })();
+    </script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="saving-label" content="{{ __('Saving...') }}">
+    <meta name="validation-required" content="{{ __(':label is required.') }}">
+    <meta name="validation-summary" content="{{ __('Please complete the required fields: :fields') }}">
+    <meta name="validation-fix" content="{{ __('Please fix the highlighted fields: :fields') }}">
+    <meta name="validation-more" content="{{ __('and :count more') }}">
+    <script>window.__formErrors = @json($formErrors);</script>
     <meta name="google-site-verification" content="oGvxPPGpt9_UBNwgI1WD8_09SgQYH5xjE97G7Ltbvec">
 
     <title>{{ config('app.name', 'Tridaya App') }}</title>
@@ -24,36 +55,40 @@
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/logo/Logo3dydark.png') }}">
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|exo-2:500,600,700,800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|outfit:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     <script>
-        // Sumber kebenaran: localStorage (ditulis tiap ganti tema) fallback ke
-        // data-mode server. Dijalankan saat full load DAN tiap livewire:navigated
-        // (navigasi SPA tidak me-reload <head>, morph justru bisa menghapus
-        // class 'dark' client karena respons server tak memuatnya untuk mode system).
+        // Sumber kebenaran: preferensi server (users.preferences) yang dirender
+        // ke atribut <html>. localStorage TIDAK lagi dibaca — dulu nilainya
+        // global per browser (tidak per akun, tidak dibersihkan saat logout)
+        // sehingga tema milik sesi/akun lain menimpa pilihan yang tersimpan.
+        // Dijalankan saat full load DAN tiap livewire:navigated (navigasi SPA
+        // tidak me-reload <head>, morph bisa menghapus class 'dark' client
+        // karena respons server tak memuatnya untuk mode system).
+        window.__appearanceSaveFailed = @json(__('Failed to save theme preference. Please try again.'));
         window.__applyAppearance = function () {
             var root = document.documentElement;
-            var pref = root.getAttribute('data-mode') || @json($themePref);
-            var stored = null;
-            try { stored = localStorage.getItem('appearance-mode'); } catch (e) {}
-            var mode = stored || pref || 'system';
-            // Migrasi dari key lama 'dark-mode' bila belum pakai appearance-mode
-            if (!stored) {
-                var legacy = null;
-                try { legacy = localStorage.getItem('dark-mode'); } catch (e) {}
-                if (legacy === 'true') mode = 'dark';
-                else if (legacy === 'false') mode = 'light';
-            }
-            var accent = @json($accentPref);
-            try { accent = localStorage.getItem('appearance-accent') || accent; } catch (e) {}
-            var dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme:dark)').matches);
+            var mode = root.getAttribute('data-mode') || @json($themePref) || 'system';
+            var accent = root.getAttribute('data-theme') || @json($accentPref) || 'ocean';
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var dark = mode === 'dark' || (mode === 'system' && prefersDark);
             root.classList.toggle('dark', dark);
             root.setAttribute('data-mode', mode);
             root.setAttribute('data-theme', accent);
             window.__appearanceMode = mode;
             window.__appearanceAccent = accent;
         };
+        // Bersihkan kunci tema versi lama (global per browser) sekali saat load
+        // supaya nilai usang tak lagi dipakai kode lain di kemudian hari.
+        try {
+            ['appearance-mode', 'appearance-accent', 'dark-mode'].forEach(function (key) {
+                localStorage.removeItem(key);
+            });
+        } catch (e) {}
         window.__applyAppearance();
         // Sinkron saat skema OS berubah (mode system) tanpa reload.
         try {
@@ -76,9 +111,9 @@
         document.addEventListener('livewire:navigated', function () { window.__applyAppearance(); setTimeout(__appearanceSelfHeal, 120); });
         setTimeout(__appearanceSelfHeal, 300);
         // wire:navigate: Livewire menyalin atribut <html> dari hasil render server
-        // (replaceHtmlAttributes) — data-theme/class bisa beda dengan localStorage,
-        // sehingga halaman baru sempat ter-paint dengan tema salah (frame putih di
-        // border kartu + aksen ungu) sampai livewire:navigated memulihkannya.
+        // (replaceHtmlAttributes) — class 'dark' bisa hilang karena respons server
+        // tak memuatnya untuk mode system, sehingga halaman baru sempat ter-paint
+        // dengan tema salah sampai livewire:navigated memulihkannya.
         // Hook onSwap dipanggil SETELAH body baru terpasang tapi SEBELUM paint
         // pertama, jadi koreksi temanya tak pernah terlihat mata.
         document.addEventListener('livewire:navigating', function (e) {
@@ -107,6 +142,20 @@
             'userId' => auth()->id(),
             'csrf' => csrf_token(),
             'locale' => str_replace('_', '-', app()->getLocale()),
+            // Pesan simpan/gagal dari form biasa (POST + redirect) ikut
+            // ditampilkan sebagai pop up, bukan kotak hijau/merah di atas
+            // halaman. Semua aksi mutasi tanpa pesan khusus otomatis
+            // dilengkapi middleware FlashActionToast.
+            'flash' => [
+                'success' => session('success') ? (string) session('success') : null,
+                'warning' => session('warning') ? (string) session('warning') : null,
+                'info' => session('status') === 'google-linked'
+                    ? __('Your Google account has been successfully connected!')
+                    : null,
+                // Error validasi kini dipetakan langsung ke isian + toast
+                // ringkasan oleh resources/js/form-validation.js.
+                'error' => session('error') ? (string) session('error') : null,
+            ],
             'initial' => ['unread' => 0, 'unassigned' => 0, 'items' => [], 'next_cursor' => null, 'has_more' => false],
             'routes' => [
                 'status' => route('notifications.status'),
@@ -135,6 +184,21 @@
                 'unread' => __('unread'),
                 'sessionExpired' => __('Session expired, please log in again.'),
                 'loginAgain' => __('Log in again'),
+                'readFailedTitle' => __('Could not update notification'),
+                'readFailedBody' => __('The notification could not be marked as read.'),
+                'deleteFailedTitle' => __('Could not remove notification'),
+                'deleteFailedBody' => __('Something went wrong while removing the notification.'),
+                'markAllFailedTitle' => __('Could not mark all as read'),
+                'markAllFailedBody' => __('Not all notifications could be marked as read.'),
+                'clearFailedTitle' => __('Could not clear notifications'),
+                'clearFailedBody' => __('Something went wrong while clearing notifications.'),
+                'toastTitles' => [
+                    'success' => __('Saved'),
+                    'warning' => __('Attention'),
+                    'error' => __('Failed'),
+                    'info' => __('Information'),
+                    'default' => __('Information'),
+                ],
             ],
         ];
 
@@ -143,11 +207,19 @@
             $notifPage = \App\Http\Controllers\NotificationController::pageFor($notifUser);
             $notifCenter['initial'] = [
                 'unread' => $notifUser->unreadNotifications()->count(),
-                'unassigned' => \Illuminate\Support\Facades\Cache::remember(
-                    'leads:unassigned-count',
-                    60,
-                    fn () => \App\Models\Lead::whereNull('assigned_to')->count(),
-                ),
+                'unassigned' => (function () {
+                    // Cache bisa tidak tersedia (permission storage): jangan
+                    // sampai seluruh layout ikut 500 karena badge notifikasi.
+                    try {
+                        return \Illuminate\Support\Facades\Cache::remember(
+                            'leads:unassigned-count',
+                            60,
+                            fn () => \App\Models\Lead::whereNull('assigned_to')->count(),
+                        );
+                    } catch (\Throwable $e) {
+                        return \App\Models\Lead::whereNull('assigned_to')->count();
+                    }
+                })(),
                 'items' => $notifPage['items'],
                 'next_cursor' => $notifPage['next_cursor'],
                 'has_more' => $notifPage['has_more'],
@@ -155,6 +227,26 @@
         }
     @endphp
     <script>window.notifCenter = @json($notifCenter);</script>
+    @php
+        $workspaceEnabled = (bool) config('workspace.enabled', true);
+        $workspaceConfig = [
+            'enabled' => $workspaceEnabled,
+            'userId' => auth()->id(),
+            'appName' => config('app.name', 'Tridaya App'),
+            'dashboardUrl' => route('dashboard', [], false),
+            'maxDesktop' => (int) config('workspace.max_tabs_desktop', 8),
+            'maxMobile' => (int) config('workspace.max_tabs_mobile', 6),
+            'initialPage' => \App\Support\PageContext::forRequest(request()),
+            'i18n' => [
+                'dashboard' => __('Dashboard'),
+                'limitReached' => __('Maximum tabs open. Please close an unused tab first.'),
+                'unsavedTitle' => __('Close this tab?'),
+                'unsavedMessage' => __('This tab has unsaved input. Closing it will discard your changes.'),
+                'closeAnyway' => __('Close tab'),
+            ],
+        ];
+    @endphp
+    <script>window.__workspaceConfig = @json($workspaceConfig);</script>
     @auth
     <script>window.vapidPublicKey = @json(config('webpush.vapid.public_key'));</script>
     @endauth
@@ -355,6 +447,45 @@
         /* Progress bar pindah menu (wire:navigate): strip accent meluncur
            kiri-ke-kanan selama navigating; hormati reduced-motion. */
         #navigate-progress{position:fixed;top:0;left:0;height:3px;width:35%;z-index:1002;opacity:0;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgb(var(--accent-500)/0),rgb(var(--accent-500)),rgb(var(--accent-400)));box-shadow:0 0 12px rgb(var(--accent-500)/.7);transform:translateX(-110%);transition:opacity .25s ease}
+        .workspace-stage{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
+        .workspace-stage--split{flex-direction:row;align-items:stretch}
+        .workspace-pane{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:calc(100vh - 5rem)}
+        .workspace-pane.hidden{display:none!important}
+        .workspace-pane iframe{flex:1;min-height:calc(100vh - 5rem);width:100%}
+        .workspace-pane--focused::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:rgb(var(--accent-500));z-index:2;pointer-events:none}
+        #workspace-split-divider{display:none;order:2;flex:0 0 6px;margin:0 2px;border-radius:9999px;background:var(--card-border);cursor:col-resize;align-self:stretch;touch-action:none}
+        .workspace-stage--split #workspace-split-divider{display:block}
+        #workspace-split-divider:hover,#workspace-split-divider[data-resizing="1"]{background:rgb(var(--accent-500)/.75)}
+        body.workspace-dragging,body.workspace-resizing{user-select:none;-webkit-user-select:none}
+        body.workspace-dragging *{cursor:grabbing!important}
+        body.workspace-resizing *{cursor:col-resize!important}
+        /* Fallback bila layout penuh terlanjur termuat di dalam iframe:
+           sembunyikan shell, tampilkan konten halaman saja. */
+        html.workspace-nested .sidebar,
+        html.workspace-nested .app-header,
+        html.workspace-nested #workspace-stage,
+        html.workspace-nested #workspace-split-bar,
+        html.workspace-nested #workspace-drag-layer,
+        html.workspace-nested #sidebarOverlay,
+        html.workspace-nested #sidebarRail,
+        html.workspace-nested .main-content > footer{display:none!important}
+        html.workspace-nested .main-content{margin-left:0!important;width:100%!important}
+        html.workspace-nested #workspace-fallback{display:flex!important;flex:1;flex-direction:column}
+        .no-scrollbar::-webkit-scrollbar{display:none}
+        .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        /* Barisan tab: geser horizontal tanpa scrollbar, dengan pudar tepi
+           dan panah yang hanya tampil saat masih ada tab tersembunyi. */
+        #workspace-tablist{scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain;scroll-behavior:smooth}
+        #workspace-tablist::-webkit-scrollbar{display:none}
+        #workspace-tabbar[data-overflow="left"] #workspace-tablist{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 24px);mask-image:linear-gradient(to right,transparent 0,#000 24px)}
+        #workspace-tabbar[data-overflow="right"] #workspace-tablist{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to right,#000 calc(100% - 24px),transparent 100%)}
+        #workspace-tabbar[data-overflow="both"] #workspace-tablist{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%)}
+        .ws-scroll-btn{opacity:0;pointer-events:none;transition:opacity .15s ease}
+        #workspace-tabbar[data-overflow="left"] .ws-scroll-btn-left,
+        #workspace-tabbar[data-overflow="both"] .ws-scroll-btn-left,
+        #workspace-tabbar[data-overflow="right"] .ws-scroll-btn-right,
+        #workspace-tabbar[data-overflow="both"] .ws-scroll-btn-right{opacity:1;pointer-events:auto}
+        @media(prefers-reduced-motion:reduce){#workspace-tablist{scroll-behavior:auto}}
         #navigate-progress[data-run]{opacity:1;animation:nav-progress-slide 1.1s ease-in-out infinite}
         @keyframes nav-progress-slide{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
         @media(prefers-reduced-motion:reduce){#navigate-progress{display:none}}
@@ -376,32 +507,163 @@
             @include('layouts.partials.header')
             @include('partials.avatar-lightbox')
 
-            <div class="px-4 sm:px-6 lg:px-8 pt-5">
-                @if(session('success') && !session('success_card'))
-                    <x-toast type="success">{{ session('success') }}</x-toast>
-                @endif
-                @if(session('warning'))
-                    <x-toast type="warning">{{ session('warning') }}</x-toast>
-                @endif
-                @if(session('error'))
-                    <x-toast type="error">{{ session('error') }}</x-toast>
-                @endif
-                @if($errors->any())
-                    <x-toast type="error">
-                        <p class="font-semibold mb-1">{{ __('There were errors in the form:') }}</p>
-                        <ul class="list-disc list-inside text-sm">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </x-toast>
-                @endif
-            </div>
+            @if($workspaceEnabled)
+                {{-- Bar kontrol split view: pilih tab kiri/kanan, swap, close. --}}
+                <div id="workspace-split-bar"
+                     x-data
+                     x-show="$store.workspace.splitMode"
+                     x-cloak
+                     class="hidden items-center gap-2 border-b border-slate-200/70 bg-white/70 px-4 py-1.5 backdrop-blur dark:border-slate-800 dark:bg-zinc-900/70 sm:px-6 lg:flex lg:px-8">
+                    <span class="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <x-icon name="view-columns" class="h-3.5 w-3.5" />
+                        {{ __('Split view') }}
+                    </span>
 
-            <main class="relative flex-1 px-4 sm:px-6 lg:px-8 pb-8">
-                @isset($header)<div class="mb-6">{{ $header }}</div>@endisset
-                {{ $slot }}
-            </main>
+                    {{-- Pilih tab panel kiri --}}
+                    <x-dropdown align="left" width="w-64" content-classes="py-1 bg-[var(--card-bg)] border border-[var(--card-border)]">
+                        <x-slot name="trigger">
+                            <button type="button"
+                                    title="{{ __('Left pane') }}"
+                                    class="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[var(--card-bg)] px-2 text-xs font-medium text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:border-slate-700 dark:text-slate-300">
+                                <span class="rounded bg-accent-500/15 px-1 text-[9px] font-bold uppercase text-accent-700 dark:text-accent-300">L</span>
+                                <span class="max-w-[120px] truncate" x-text="$store.workspace.paneTitle('left')"></span>
+                                <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <template x-for="tab in $store.workspace.tabs" :key="'split-left-' + tab.id">
+                                <button type="button"
+                                        @click="$store.workspace.assignPane('left', tab.id)"
+                                        class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-300">
+                                    <span x-show="tab.dept" x-text="tab.dept" :class="$store.workspace.deptClass(tab.dept)" class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
+                                    <span class="min-w-0 flex-1 truncate" x-text="tab.title"></span>
+                                    <svg x-show="$store.workspace.leftTabId === tab.id" class="h-3.5 w-3.5 shrink-0 text-accent-600 dark:text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+                                </button>
+                            </template>
+                        </x-slot>
+                    </x-dropdown>
+
+                    <button type="button"
+                            @click="$store.workspace.swapSplit()"
+                            title="{{ __('Swap panes') }}"
+                            aria-label="{{ __('Swap panes') }}"
+                            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-[var(--card-bg)] text-slate-500 transition hover:bg-[var(--menu-hover-bg)] hover:text-accent-600 dark:border-slate-700 dark:text-slate-300">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h11l-3-3m3 13H7l3 3" />
+                        </svg>
+                    </button>
+
+                    {{-- Pilih tab panel kanan --}}
+                    <x-dropdown align="left" width="w-64" content-classes="py-1 bg-[var(--card-bg)] border border-[var(--card-border)]">
+                        <x-slot name="trigger">
+                            <button type="button"
+                                    title="{{ __('Right pane') }}"
+                                    class="inline-flex h-7 min-w-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-[var(--card-bg)] px-2 text-xs font-medium text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:border-slate-700 dark:text-slate-300">
+                                <span class="rounded bg-accent-500/15 px-1 text-[9px] font-bold uppercase text-accent-700 dark:text-accent-300">R</span>
+                                <span class="max-w-[120px] truncate" x-text="$store.workspace.paneTitle('right')"></span>
+                                <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+                            </button>
+                        </x-slot>
+                        <x-slot name="content">
+                            <template x-for="tab in $store.workspace.tabs" :key="'split-right-' + tab.id">
+                                <button type="button"
+                                        @click="$store.workspace.assignPane('right', tab.id)"
+                                        class="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs text-slate-600 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-300">
+                                    <span x-show="tab.dept" x-text="tab.dept" :class="$store.workspace.deptClass(tab.dept)" class="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"></span>
+                                    <span class="min-w-0 flex-1 truncate" x-text="tab.title"></span>
+                                    <svg x-show="$store.workspace.rightTabId === tab.id" class="h-3.5 w-3.5 shrink-0 text-accent-600 dark:text-accent-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+                                </button>
+                            </template>
+                        </x-slot>
+                    </x-dropdown>
+
+                    <span class="min-w-0 flex-1"></span>
+
+                    <button type="button"
+                            @click="$store.workspace.closeSplit()"
+                            title="{{ __('Close split') }}"
+                            class="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border border-red-200 px-2.5 text-[11px] font-semibold text-red-600 transition hover:bg-red-500 hover:text-white dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500 dark:hover:text-white">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                        {{ __('Close split') }}
+                    </button>
+                </div>
+
+                <div id="workspace-stage" class="workspace-stage" x-data>
+                    <div id="workspace-split-divider"
+                         data-resizing="0"
+                         role="separator"
+                         aria-orientation="vertical"
+                         aria-label="{{ __('Resize split panes') }}"
+                         @pointerdown="$store.workspace.startSplitResize($event)"></div>
+                </div>
+
+                {{-- Pelindung iframe saat drag/resize + zona drop split kiri/kanan. --}}
+                <div id="workspace-drag-layer"
+                     x-data
+                     x-show="$store.workspace.draggingTabId || $store.workspace.resizingSplit"
+                     x-cloak
+                     class="fixed inset-x-0 bottom-0 top-20 z-[34]">
+                    <div x-show="$store.workspace.resizingSplit" class="absolute inset-0 cursor-col-resize"></div>
+
+                    {{-- Saat tab ditarik, layar dibagi dua: lepas di separuh kiri
+                         atau kanan untuk membuka split view. --}}
+                    <div x-show="$store.workspace.draggingTabId"
+                         class="absolute inset-0 flex"
+                         @dragleave.prevent="if (!$event.currentTarget.contains($event.relatedTarget)) $store.workspace.clearDropHover()">
+                        <div class="w-1/2 p-4 sm:p-6"
+                             @dragenter.prevent="$store.workspace.setDropSide('left')"
+                             @dragover.prevent="$store.workspace.setDropSide('left')"
+                             @drop.prevent="$store.workspace.dropToLeft()">
+                            <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
+                                 :class="$store.workspace.dragLeftHover
+                                    ? 'border-accent-500 bg-accent-500/15'
+                                    : 'border-slate-300/70 bg-[var(--card-bg)]/70 dark:border-slate-600'">
+                                <div class="text-center">
+                                    <x-icon name="view-columns" class="mx-auto mb-2 h-6 w-6 text-accent-600 dark:text-accent-300" />
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Drop here to split left') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-1/2 p-4 sm:p-6"
+                             @dragenter.prevent="$store.workspace.setDropSide('right')"
+                             @dragover.prevent="$store.workspace.setDropSide('right')"
+                             @drop.prevent="$store.workspace.dropToRight()">
+                            <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
+                                 :class="$store.workspace.dragRightHover
+                                    ? 'border-accent-500 bg-accent-500/15'
+                                    : 'border-slate-300/70 bg-[var(--card-bg)]/70 dark:border-slate-600'">
+                                <div class="text-center">
+                                    <x-icon name="view-columns" class="mx-auto mb-2 h-6 w-6 text-accent-600 dark:text-accent-300" />
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Drop here to split right') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Saat workspace aktif di browser, konten di bawah disembunyikan
+                 karena halaman dimuat lewat iframe tab. Di test server-side
+                 (tanpa JS) bagian ini tetap ada di HTML respons. --}}
+            <div id="workspace-fallback" class="{{ $workspaceEnabled ? 'hidden' : 'flex flex-1 flex-col' }}">
+                <div class="px-4 sm:px-6 lg:px-8 pt-5">
+                    @if($errors->any())
+                        <x-toast type="error" data-server-error-summary>
+                            <p class="font-semibold mb-1">{{ __('There were errors in the form:') }}</p>
+                            <ul class="list-disc list-inside text-sm">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </x-toast>
+                    @endif
+                </div>
+
+                <main class="relative flex-1 px-4 sm:px-6 lg:px-8 pb-8">
+                    @isset($header)<div class="mb-6">{{ $header }}</div>@endisset
+                    {{ $slot }}
+                </main>
+            </div>
 
             <footer class="px-4 sm:px-6 lg:px-8 pb-4 text-center text-[11px] text-slate-400 dark:text-slate-500">
                 Tridayaapp.com
@@ -512,6 +774,8 @@
                 if(btn){btn.setAttribute('aria-expanded',String(!v));btn.setAttribute('aria-label',v?@json(__('Expand sidebar')):@json(__('Collapse sidebar')))}
             syncTitles();
             }
+            // Dipakai workspace split view untuk mengecilkan/mengembalikan sidebar.
+            window.__workspaceSetSidebarCollapsed=function(v){try{setCollapsed(Boolean(v))}catch(e){}};
             syncTitles();
             if(cb&&!cb.dataset.bound){cb.dataset.bound='1';cb.addEventListener('click',function(){
                 if(window.innerWidth<1024){close();return}
@@ -607,12 +871,13 @@
         // (highlight + grup terbuka) harus disinkron manual tiap navigasi.
         // Hanya class/aria yang disentuh — node tidak diganti, animasi tak replay.
         // (AI Assistant sengaja full reload; server me-render statusnya segar.)
-        function syncSidebarActive(){
+        function syncSidebarActive(customPath){
             var nav=document.getElementById('sidebar-navigation');if(!nav)return;
             var active=(nav.dataset.navActive||'').split(' ').filter(Boolean);
             var inactive=(nav.dataset.navInactive||'').split(' ').filter(Boolean);
             if(!active.length&&!inactive.length)return;
-            var here=window.location.pathname.replace(/\/+$/,'')||'/';
+            var rawPath=(typeof customPath==='string'&&customPath)?customPath:window.location.pathname;
+            var here=rawPath.replace(/\/+$/,'')||'/';
             function swap(el,on,extra){
                 active.forEach(function(c){el.classList.toggle(c,on);});
                 inactive.forEach(function(c){el.classList.toggle(c,!on);});
@@ -649,7 +914,14 @@
                 }
             }else if(head){swap(head,true,'sb-active');}
             else{swap(best,true);}
+
+            // Pastikan menu aktif terlihat di sidebar yang bisa digulir.
+            try{
+                var scroller=best.closest('nav')||document.getElementById('sidebar-navigation');
+                if(scroller&&scroller.contains(best))best.scrollIntoView({block:'nearest'});
+            }catch(e){}
         }
+        window.__syncSidebarPath=function(p){try{syncSidebarActive(p);}catch(e){}};
         document.addEventListener('livewire:navigated',function(){try{syncSidebarActive();}catch(e){}});
         // Penanda aktif navbar (breadcrumb + badge halaman): mainkan ulang
         // animasi fade tiap navigasi. Hanya elemen penanda — sisa navbar diam.
@@ -718,6 +990,12 @@
             }catch(e){}
         })();
     </script>
+    {{-- Jendela pratinjau file bersama (dipakai semua modul, tanpa unduh dulu). --}}
+    <x-doc-lightbox />
+    {{-- Kartu konfirmasi standar: pengganti confirm() bawaan browser. --}}
+    <x-confirm-dialog />
+    <script type="module" src="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/doc-thumbs.js') }}"></script>
+
     {{-- 3DY AI Chat V2 (pengganti floating lama; file lama dipertahankan tapi tidak di-mount) --}}
     @include('components.ai-chat-v2')
     @stack('scripts')

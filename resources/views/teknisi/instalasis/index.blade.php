@@ -20,7 +20,7 @@
                 <label class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('Status') }}</label>
                 <select name="status" class="rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 text-sm focus:border-accent-500 focus:ring-accent-500">
                     <option value="">{{ __('All') }}</option>
-                    @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Completed'), 'cancelled' => __('Cancelled')] as $val => $lbl)
+                    @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Technically Complete'), 'cancelled' => __('Cancelled')] as $val => $lbl)
                         <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>{{ $lbl }}</option>
                     @endforeach
                 </select>
@@ -92,7 +92,7 @@
                                     @can('manage-technician')
                                     <x-icon-button as="a" icon="edit" href="{{ route('teknisi.instalasis.edit', $instalasi) }}" title="{{ __('Edit') }}" />
                                     <form action="{{ route('teknisi.instalasis.destroy', $instalasi) }}" method="POST"
-                                          onsubmit="return confirm('{{ __('Delete this installation?') }}')">
+                                          data-confirm="{{ __('Delete this installation?') }}" data-confirm-tone="danger">
                                         @csrf
                                         @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />

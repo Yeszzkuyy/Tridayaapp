@@ -33,6 +33,8 @@ class LeadAttachmentTest extends TestCase
             'assigned_to' => User::first()->id,
             'segment' => 'vendor',
             'kebutuhan' => 'BOQ awal lampiran.',
+            'project_name' => 'Proyek Lampiran',
+            'need_type' => 'cctv',
             'incoming_date' => '2026-08-26',
         ], $overrides);
     }
@@ -95,6 +97,8 @@ class LeadAttachmentTest extends TestCase
             'assigned_to' => $user->id,
             'segment' => 'vendor',
             'kebutuhan' => 'BOQ jaringan kantor.',
+            'project_name' => 'Proyek Tambah Lampiran',
+            'need_type' => 'network',
             'incoming_date' => '2026-08-26',
             'attachments' => [UploadedFile::fake()->create('requirement.xlsx')],
         ])->assertRedirect(route('leads.index'));

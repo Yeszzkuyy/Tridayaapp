@@ -33,7 +33,7 @@
   padding: 0 8px 0 10px;
   border: 0;
   border-radius: var(--gs-inner-radius);
-  background: var(--gs-surface);
+  background: var(--gs-trigger-bg, var(--gs-surface));
   color: var(--gs-text);
   font-family: inherit;
   font-size: var(--gs-font);
@@ -56,12 +56,12 @@
 
 @media (hover: hover) and (pointer: fine) {
   .glide-select__trigger:not(:disabled):hover {
-    background: color-mix(in srgb, var(--gs-highlight) 60%, var(--gs-surface));
+    background: var(--gs-trigger-hover, var(--gs-highlight));
   }
 }
 
 .glide-select__trigger[aria-expanded='true'] {
-  background: color-mix(in srgb, var(--gs-highlight) 60%, var(--gs-surface));
+  background: var(--gs-trigger-hover, var(--gs-highlight));
 }
 
 .glide-select__trigger:not(:disabled):active {
@@ -150,6 +150,38 @@
      di sini agar tidak jadi scroller kedua yang memotong list). */
   max-height: none;
   overflow: visible;
+}
+
+.glide-select__search-wrap {
+  padding: 2px 4px 6px;
+}
+
+.glide-select__search {
+  width: 100%;
+  height: calc(var(--gs-row) + 2px);
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--gs-text) 22%, transparent);
+  border-radius: var(--gs-inner-radius);
+  background: var(--gs-trigger-bg, var(--gs-surface));
+  color: var(--gs-text);
+  font-family: inherit;
+  font-size: var(--gs-font);
+  outline: none;
+}
+
+.glide-select__search::placeholder {
+  color: color-mix(in srgb, var(--gs-text) 55%, transparent);
+}
+
+.glide-select__search:focus {
+  border-color: var(--gs-accent);
+}
+
+.glide-select__empty {
+  padding: 10px 8px;
+  color: color-mix(in srgb, var(--gs-text) 55%, transparent);
+  font-size: var(--gs-font);
+  text-align: center;
 }
 
 .glide-select__list {

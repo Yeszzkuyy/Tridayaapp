@@ -35,12 +35,6 @@
 
         <x-profile-tabs />
 
-        @if (session('status') === 'settings-updated')
-            <div class="rounded-lg border border-green-300 bg-green-100 px-5 py-3 text-sm text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400">
-                {{ __('Settings saved successfully.') }}
-            </div>
-        @endif
-
         <form id="settings-form" method="POST" action="{{ route('settings.update') }}" class="space-y-6">
             @csrf
             @method('patch')

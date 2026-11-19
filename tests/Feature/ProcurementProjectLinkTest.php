@@ -47,8 +47,22 @@ class ProcurementProjectLinkTest extends TestCase
             'status' => 'accepted',
             'po_number' => 'PO-CUST-LINK',
             'po_document_path' => 'proposals/link/po.pdf',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Link Procurement No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
+        $proposal->items()->create([
+            'description' => 'Paket perangkat',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 1000000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+        $proposal->recalculate();
 
         $supplier = Supplier::create([
             'code' => 'SUP-LINK',

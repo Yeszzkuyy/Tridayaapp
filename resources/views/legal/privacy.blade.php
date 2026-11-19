@@ -47,7 +47,7 @@
         </ul>
 
         <h2>2. Penggunaan Informasi</h2>
-        <p>Informasi yang diperoleh dari Google hanya digunakan semata-mata untuk keperluan operasional internal 3DY App, meliputi verifikasi login, penugasan tugas teknisi, komunikasi operasional, dan manajemen alur kerja internal 3DY Group.</p>
+        <p>Informasi yang diperoleh dari Google hanya digunakan semata-mata untuk keperluan operasional internal 3DY App, meliputi verifikasi login, penugasan tugas engineer, komunikasi operasional, dan manajemen alur kerja internal 3DY Group.</p>
 
         <h2>3. Perlindungan & Pembagian Data</h2>
         <p>Kami tidak menjual, menyewakan, atau membagikan data pribadi Anda kepada pihak ketiga mana pun di luar ekosistem operasional 3DY Group.</p>

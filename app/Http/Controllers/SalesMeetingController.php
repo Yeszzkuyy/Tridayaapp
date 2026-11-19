@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 
@@ -49,8 +50,6 @@ class SalesMeetingController extends Controller
             ->when($request->get('status') === 'completed', fn ($q) => $q->whereNotNull('completed_at'))
             ->when(in_array($request->get('mode'), FollowUp::MEETING_MODES, true),
                 fn ($q) => $q->where('meeting_mode', $request->get('mode')))
-            ->when(in_array($request->get('outcome'), FollowUp::MEETING_OUTCOMES, true),
-                fn ($q) => $q->where('meeting_outcome', $request->get('outcome')))
             ->when(trim((string) $request->get('q')) !== '', function ($q) use ($request) {
                 $term = trim((string) $request->get('q'));
                 $q->whereHas('customer', fn ($c) => $c->whereLike('name', $term));
@@ -67,7 +66,7 @@ class SalesMeetingController extends Controller
             'week' => (clone $base)->whereDate('follow_up_date', '>=', now()->startOfWeek())->count(),
             'pending' => (clone $base)->whereNull('completed_at')
                 ->whereDate('follow_up_date', '<=', today())->count(),
-            'won' => (clone $base)->where('meeting_outcome', 'closed_won')
+            'reported' => (clone $base)->whereNotNull('completed_at')
                 ->whereMonth('follow_up_date', now()->month)
                 ->whereYear('follow_up_date', now()->year)->count(),
         ];
@@ -99,12 +98,13 @@ class SalesMeetingController extends Controller
             'location' => 'nullable|string|max:255',
             'description' => 'required|string|max:2000',
             'next_follow_up_date' => 'nullable|date|after_or_equal:follow_up_date',
-            'meeting_photos' => 'nullable|array|max:3',
-            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            'meeting_photos' => 'nullable|array|max:'.FollowUp::MAX_MEETING_PHOTOS,
+            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:'.FollowUp::MEETING_PHOTO_MAX_KB,
         ]);
 
         $customer = Customer::findOrFail($validated['customer_id']);
         abort_unless(PtAccess::canWritePt($user, $customer->pt_group), 403);
+        abort_unless(CustomerAccess::canView($user, $customer), 403);
 
         if (! empty($validated['lead_id'])) {
             $lead = Lead::findOrFail($validated['lead_id']);
@@ -127,9 +127,10 @@ class SalesMeetingController extends Controller
             'created_by' => $user->id,
         ]);
 
+        app(\App\Services\SalesService::class)->completeMeetingReport($meeting);
+
         return redirect()->route('sales.meetings.show', $meeting)
-            ->with('success', __('Meeting created. Fill the report after the meeting.'))
-            ->with('success_card', true);
+            ->with('success', __('Meeting saved and daily report sent.'));
     }
 
     public function show(FollowUp $followUp)
@@ -162,36 +163,15 @@ class SalesMeetingController extends Controller
         $this->authorizeMeeting($followUp);
         abort_if($followUp->completed_at !== null, 422, __('This meeting has already been completed.'));
 
-        $existingPhotos = count($followUp->meeting_photos ?? []);
-        $remainingSlots = max(1, 3 - $existingPhotos);
-        $photoRule = ($existingPhotos === 0 ? 'required' : 'nullable').'|array|max:'.$remainingSlots;
-
-        $validated = $request->validate([
-            'meeting_photos' => $photoRule,
-            'meeting_photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
-            'meeting_notes' => 'required|string|min:10',
-            'meeting_outcome' => 'required|in:'.implode(',', FollowUp::MEETING_OUTCOMES),
-            'meeting_next_action_date' => 'nullable|date|after_or_equal:today',
-        ], [
-            'meeting_photos.required' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.min' => __('Please upload at least 1 photo as meeting documentation.'),
-            'meeting_photos.max' => __('Maximum 3 photos allowed.'),
-            'meeting_photos.*.max' => __('Each photo must be under 5 MB.'),
-            'meeting_notes.required' => __('Meeting notes are required.'),
-            'meeting_notes.min' => __('Meeting notes must be at least 10 characters.'),
-            'meeting_outcome.required' => __('Please select the meeting outcome.'),
-        ]);
-
-        app(\App\Services\SalesService::class)->completeMeetingReport($followUp, $validated);
+        app(\App\Services\SalesService::class)->completeMeetingReport($followUp);
 
         if ($request->input('return') === 'schedule') {
             return redirect()->route('sales.schedules.index', $request->filled('date') ? ['date' => substr($request->input('date'), 0, 10)] : [])
-                ->with('success', __('Meeting report submitted and marked as completed.'));
+                ->with('success', __('Daily report sent to Management.'));
         }
 
         return redirect()->route('sales.meetings.show', $followUp)
-            ->with('success', __('Meeting report submitted and marked as completed.'))
-            ->with('success_card', true);
+            ->with('success', __('Daily report sent to Management.'));
     }
 
     /** Boleh lihat/isi: pemilik meeting atau management. */
@@ -208,15 +188,10 @@ class SalesMeetingController extends Controller
         abort_unless($owner, 403);
     }
 
-    /** Customer yang boleh dipilih user ini (batas PT). */
+    /** Customer yang boleh dipilih user ini (milik Sales, bukan seluruh PT). */
     private function customerOptions(User $user): array
     {
-        $pts = PtAccess::userPts($user);
-
-        return Customer::query()
-            ->when($pts !== [], fn ($q) => $q->where(
-                fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
-            ))
+        return CustomerAccess::queryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])

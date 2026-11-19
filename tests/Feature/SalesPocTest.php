@@ -37,7 +37,7 @@ class SalesPocTest extends TestCase
     public function test_sales_can_schedule_poc(): void
     {
         $sales = $this->salesUser();
-        $customer = Customer::create(['name' => 'PT Demo']);
+        $customer = Customer::create(['name' => 'PT Demo', 'created_by' => $sales->id]);
 
         $this->actingAs($sales)
             ->post(route('sales.pocs.store'), $this->payload($customer))

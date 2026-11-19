@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Project;
 use App\Models\Survey;
 use App\Models\User;
@@ -52,9 +53,11 @@ class SurveyController extends Controller
     public function create(Request $request)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = \App\Models\Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->limit(200)->get(['id', 'name']);
         $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
             ->orderBy('name')->limit(200)->get(['id', 'name']);
+        $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')->get(['id', 'name']);
 
         // Dari timeline project: bawa project + customer-nya otomatis,
         // teknisi cukup mengisi judul + sales (tidak ada pilihan project yang membingungkan).
@@ -62,7 +65,7 @@ class SurveyController extends Controller
         $presetCustomerId = $request->query('customer_id')
             ?? Project::find($presetProjectId)?->customer_id;
 
-        return view('teknisi.surveys.create', compact('projects', 'customers', 'salesUsers', 'presetProjectId', 'presetCustomerId'));
+        return view('teknisi.surveys.create', compact('projects', 'customers', 'salesUsers', 'technicians', 'presetProjectId', 'presetCustomerId'));
     }
 
     public function store(Request $request)
@@ -72,6 +75,7 @@ class SurveyController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'sales_user_id' => 'required|exists:users,id',
+            'technician_user_id' => 'nullable|exists:users,id',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
@@ -91,14 +95,18 @@ class SurveyController extends Controller
         }
 
         try {
+            $technicianId = $validated['technician_user_id'] ?? auth()->id();
+            $technician = $technicianId ? User::find($technicianId) : null;
+
             $survey = Survey::create([
                 'title' => $validated['title'],
                 'customer_id' => $validated['customer_id'] ?? null,
                 'project_id' => $validated['project_id'] ?? null,
                 'sales_user_id' => $validated['sales_user_id'],
+                'technician_user_id' => $technician?->id,
                 'survey_date' => $validated['survey_date'] ?? null,
                 'location' => $validated['location'] ?? null,
-                'pic' => $validated['pic'] ?? null,
+                'pic' => $validated['pic'] ?? $technician?->name,
                 'survey_data' => $validated['survey_data'] ?? null,
                 // Tanpa laporan = masih rencana; dengan laporan = selesai.
                 'status' => $file ? Survey::STATUS_COMPLETED : 'scheduled',
@@ -171,7 +179,7 @@ class SurveyController extends Controller
     {
         $this->guardRead($request->user(), $survey);
 
-        $survey->load(['customer:id,name', 'sales:id,name', 'project:id,project_name']);
+        $survey->load(['customer:id,name', 'sales:id,name', 'project:id,project_name', 'technicalRequest.supportUsers']);
 
         return view('teknisi.surveys.show', compact('survey'));
     }
@@ -179,11 +187,13 @@ class SurveyController extends Controller
     public function edit(Survey $survey)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = \App\Models\Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $customers = Customer::orderBy('name')->limit(200)->get(['id', 'name']);
         $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
             ->orderBy('name')->limit(200)->get(['id', 'name']);
+        $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')->get(['id', 'name']);
 
-        return view('teknisi.surveys.edit', compact('survey', 'projects', 'customers', 'salesUsers'));
+        return view('teknisi.surveys.edit', compact('survey', 'projects', 'customers', 'salesUsers', 'technicians'));
     }
 
     public function update(Request $request, Survey $survey)
@@ -193,6 +203,7 @@ class SurveyController extends Controller
             'customer_id' => 'nullable|exists:customers,id',
             'project_id' => 'nullable|exists:projects,id',
             'sales_user_id' => 'required|exists:users,id',
+            'technician_user_id' => 'nullable|exists:users,id',
             'sales_request' => 'nullable|string',
             'survey_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
@@ -203,7 +214,28 @@ class SurveyController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $becomingComplete = ($validated['status'] ?? null) === Survey::STATUS_COMPLETED
+            && $survey->status !== Survey::STATUS_COMPLETED;
+
+        if ($becomingComplete && ! $survey->hasReport()) {
+            return back()->withInput()->withErrors([
+                'status' => __('Upload the survey report before completing this survey.'),
+            ]);
+        }
+
+        $technician = filled($validated['technician_user_id'] ?? null)
+            ? User::find($validated['technician_user_id'])
+            : null;
+
+        if ($technician) {
+            $validated['pic'] = $technician->name;
+        }
+
         $survey->update($validated);
+
+        if ($survey->hasReport()) {
+            DocumentRegistry::sync($survey);
+        }
 
         return redirect()->route('teknisi.surveys.show', $survey)
             ->with('success', __('Survey updated successfully.'));
@@ -244,9 +276,17 @@ class SurveyController extends Controller
             'report' => [
                 'required',
                 'file',
-                'mimes:pdf',
                 'max:5120',
-                new SecureFile(['pdf'], ['application/pdf']),
+                new SecureFile(
+                    ['pdf', 'doc', 'docx', 'xls', 'xlsx'],
+                    [
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'application/vnd.ms-excel',
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    ]
+                ),
             ],
             'report_survey_id' => 'nullable|integer',
         ]);
@@ -254,11 +294,15 @@ class SurveyController extends Controller
         $file = $request->file('report');
         $oldPath = $survey->report_file;
 
-        // Nama file dibuat server-side (uuid) dengan ekstensi PDF tetap;
-        // nama/ekstensi dari user tidak dipercaya.
+        // Nama file dibuat server-side (uuid); ekstensi diverifikasi SecureFile::documents().
+        $extension = strtolower($file->guessExtension() ?? '');
+        if (! in_array($extension, ['pdf', 'doc', 'docx', 'xls', 'xlsx'], true)) {
+            $extension = 'dat';
+        }
+
         $newPath = $file->storeAs(
             'surveys/'.$survey->id.'/reports',
-            Str::uuid()->toString().'.pdf',
+            Str::uuid()->toString().'.'.$extension,
             'private'
         );
 
@@ -352,8 +396,13 @@ class SurveyController extends Controller
      */
     private function reportFileName(Survey $survey): string
     {
-        return $survey->report_file_name
-            ?: 'Survey-Report-'.$survey->id.'.pdf';
+        if ($survey->report_file_name) {
+            return $survey->report_file_name;
+        }
+
+        $extension = strtolower(pathinfo((string) $survey->report_file, PATHINFO_EXTENSION)) ?: 'pdf';
+
+        return 'Survey-Report-'.$survey->id.'.'.$extension;
     }
 
     /**
@@ -366,7 +415,13 @@ class SurveyController extends Controller
     {
         abort_unless($user !== null, 401);
 
-        if ($user->can('view-technician')) {
+        if (
+            $user->can('view-technician')
+            || $user->can('manage-technician')
+            || $user->can('manage-admin')
+            || $user->can('manage-sales-leads')
+            || $user->hasRole('ceo')
+        ) {
             return;
         }
 

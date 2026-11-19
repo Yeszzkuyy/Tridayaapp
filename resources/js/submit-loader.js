@@ -1,4 +1,5 @@
-const SUBMIT_BUTTON_SELECTOR = 'button[type="submit"], input[type="submit"]';
+import { markFormBusy, releaseFormBusy } from './form-busy.js';
+
 const OVERLAY_ID = 'gs-submit-overlay';
 const boundDocuments = new WeakSet();
 
@@ -16,7 +17,7 @@ function getOverlay(document) {
 
     overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
-    overlay.className = 'status-card-backdrop';
+    overlay.className = 'gs-overlay-backdrop';
     overlay.style.display = 'none';
     overlay.innerHTML = `<div data-card>${LOADER_HTML}</div>`;
     document.body.appendChild(overlay);
@@ -61,44 +62,33 @@ export function installSubmitLoader(document = globalThis.document, window = glo
     boundDocuments.add(document);
 
     const activeForms = new Set();
-    const buttonStates = new WeakMap();
+    const defaultSavingLabel = document.querySelector('meta[name="saving-label"]')?.content || '';
 
     function unlock(form) {
-        for (const { button, disabled, opacity } of buttonStates.get(form) ?? []) {
-            button.disabled = disabled;
-            button.style.opacity = opacity;
-        }
-        buttonStates.delete(form);
+        releaseFormBusy(form);
         delete form.dataset.submitLoaderActive;
-        form.removeAttribute('aria-busy');
         activeForms.delete(form);
     }
 
     document.addEventListener('submit', (event) => {
         const form = event.target?.closest?.('form');
         if (!form || event.defaultPrevented || form.hasAttribute('data-ajax')) return;
+        // Form yang memilih feedback toast saja tidak perlu overlay loader.
+        if (form.hasAttribute('data-no-loader')) return;
         if (form.dataset.submitLoaderActive === 'true') return;
 
-        const hasLoadingText = form.hasAttribute('data-loading-text');
-        const hasGlideSelect = Boolean(form.querySelector('[data-glide-mount]'));
-        if (!hasLoadingText && !hasGlideSelect) return;
-
-        const states = [...form.querySelectorAll(SUBMIT_BUTTON_SELECTOR)].map((button) => ({
-            button,
-            disabled: button.disabled,
-            opacity: button.style.opacity,
-        }));
-        buttonStates.set(form, states);
         form.dataset.submitLoaderActive = 'true';
-        form.setAttribute('aria-busy', 'true');
         activeForms.add(form);
 
-        for (const { button } of states) {
-            button.disabled = true;
-            button.style.opacity = '.65';
-        }
+        const submitter = event.submitter && event.submitter.form === form ? event.submitter : null;
+        const label = form.dataset.loadingText || submitter?.dataset.savingLabel || defaultSavingLabel;
+        markFormBusy(form, submitter, label);
 
-        showOverlay(document, form);
+        // Kartu loader layar penuh HANYA untuk aksi yang memintanya eksplisit
+        // lewat data-loading-text. Simpan biasa cukup status di tombol + toast.
+        if (form.hasAttribute('data-loading-text')) {
+            showOverlay(document, form);
+        }
     });
 
     // A page restored from the browser's back-forward cache must not retain a stale overlay.

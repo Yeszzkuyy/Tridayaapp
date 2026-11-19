@@ -6,9 +6,14 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
+use App\Models\Proposal;
 use App\Models\User;
+use App\Notifications\LeadTaskNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class InsideSalesTaskTest extends TestCase
@@ -88,6 +93,7 @@ class InsideSalesTaskTest extends TestCase
         $this->actingAs($inside)->get(route('lead-tasks.show', $task))->assertOk();
         $this->actingAs($inside)->put(route('lead-tasks.update', $task), [
             'title' => $task->title,
+            'assigned_to' => $inside->id,
             'status' => 'in_progress',
         ])->assertRedirect();
         $this->assertSame('in_progress', $task->fresh()->status);
@@ -104,11 +110,14 @@ class InsideSalesTaskTest extends TestCase
     public function test_task_detail_back_link_points_to_request_hub_inside_sales_tab(): void
     {
         $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
         $lead = $this->makeLead($sales);
 
         $this->actingAs($sales)->post(route('lead-tasks.store'), [
             'lead_id' => $lead->id,
             'title' => 'Buatkan penawaran',
+            'assigned_to' => $inside->id,
         ])->assertRedirect();
 
         $task = LeadTask::where('title', 'Buatkan penawaran')->firstOrFail();
@@ -132,6 +141,7 @@ class InsideSalesTaskTest extends TestCase
         $this->actingAs($otherSales)->post(route('lead-tasks.store'), [
             'lead_id' => $lead->id,
             'title' => 'x',
+            'assigned_to' => $sales->id,
         ])->assertForbidden();
 
         // assign ke non inside-sales ditolak
@@ -144,6 +154,227 @@ class InsideSalesTaskTest extends TestCase
         // marketing tidak dapat akses task sales
         $task = LeadTask::create(['lead_id' => $lead->id, 'title' => 't', 'created_by' => $sales->id]);
         $this->actingAs($marketing)->get(route('lead-tasks.show', $task))->assertForbidden();
+    }
+
+    public function test_inside_sales_uploads_quotation_and_requester_is_notified(): void
+    {
+        Storage::fake('private');
+        Notification::fake();
+
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)->post(route('lead-tasks.attachments.store', $task), [
+            'attachment' => UploadedFile::fake()->create('quotation.pdf', 120, 'application/pdf'),
+        ])->assertRedirect(route('lead-tasks.show', $task));
+
+        $attachment = $task->attachments()->first();
+        $this->assertNotNull($attachment);
+        $this->assertSame('quotation.pdf', $attachment->original_name);
+        $this->assertSame($inside->id, $attachment->uploaded_by);
+        Storage::disk('private')->assertExists($attachment->file_path);
+
+        // Peminta (pembuat task) diberi notifikasi quotation baru.
+        Notification::assertSentTo($sales, LeadTaskNotification::class);
+    }
+
+    public function test_quotation_upload_keeps_every_version(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        foreach (['quotation-v1.pdf', 'quotation-v2.pdf'] as $name) {
+            $this->actingAs($inside)->post(route('lead-tasks.attachments.store', $task), [
+                'attachment' => UploadedFile::fake()->create($name, 90, 'application/pdf'),
+            ])->assertRedirect();
+        }
+
+        $this->assertCount(2, $task->attachments()->get());
+        foreach ($task->attachments as $attachment) {
+            Storage::disk('private')->assertExists($attachment->file_path);
+        }
+    }
+
+    public function test_other_sales_cannot_upload_or_download_quotation(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $otherSales = User::factory()->create();
+        $otherSales->assignRole('sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)->post(route('lead-tasks.attachments.store', $task), [
+            'attachment' => UploadedFile::fake()->create('quotation.pdf', 80, 'application/pdf'),
+        ])->assertRedirect();
+
+        $attachment = $task->attachments()->firstOrFail();
+
+        $this->actingAs($otherSales)->post(route('lead-tasks.attachments.store', $task), [
+            'attachment' => UploadedFile::fake()->create('lain.pdf', 80, 'application/pdf'),
+        ])->assertForbidden();
+
+        $this->actingAs($otherSales)
+            ->get(route('lead-tasks.attachments.download', [$task, $attachment]))
+            ->assertForbidden();
+    }
+
+    public function test_requester_can_download_quotation(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)->post(route('lead-tasks.attachments.store', $task), [
+            'attachment' => UploadedFile::fake()->create('quotation.pdf', 80, 'application/pdf'),
+        ])->assertRedirect();
+
+        $attachment = $task->attachments()->firstOrFail();
+
+        $this->actingAs($sales)
+            ->get(route('lead-tasks.attachments.download', [$task, $attachment]))
+            ->assertOk()
+            ->assertDownload('quotation.pdf');
+
+        // Kartu lampiran tampil di halaman detail task.
+        $this->actingAs($sales)->get(route('lead-tasks.show', $task))
+            ->assertOk()
+            ->assertSee('quotation.pdf');
+    }
+
+    public function test_accepting_quotation_file_creates_draft_quotation(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation CCTV',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)->post(route('lead-tasks.attachments.store', $task), [
+            'attachment' => UploadedFile::fake()->create('quotation-final.pdf', 120, 'application/pdf'),
+        ])->assertRedirect();
+
+        $attachment = $task->attachments()->firstOrFail();
+
+        \App\Models\LeadTaskItem::create([
+            'lead_task_id' => $task->id,
+            'description' => 'Cisco IP Phone 780',
+            'quantity' => 2,
+            'unit' => 'pcs',
+            'unit_price' => 100000,
+            'discount' => 0,
+            'subtotal' => 200000,
+        ]);
+
+        $this->actingAs($sales)
+            ->post(route('lead-tasks.attachments.accept', [$task, $attachment]))
+            ->assertRedirect();
+
+        $attachment->refresh();
+        $this->assertNotNull($attachment->accepted_at);
+        $this->assertNotNull($attachment->proposal_id);
+
+        $proposal = Proposal::findOrFail($attachment->proposal_id);
+        $this->assertSame($lead->id, $proposal->lead_id);
+        $this->assertSame('draft', $proposal->status);
+        $this->assertSame($lead->customer->name, $proposal->customer);
+        $this->assertMatchesRegularExpression('#^[A-Z]+/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
+        // Quotation dibuat dari item Inside Sales + file terlampir.
+        $this->assertCount(1, $proposal->items()->get());
+        $this->assertSame(200000.0, (float) $proposal->grand_total);
+        $this->assertCount(1, $proposal->attachments()->get());
+
+        // Muncul di menu Quotation milik sales tersebut + file terlampir.
+        $this->actingAs($sales)->get(route('sales.proposals.index'))
+            ->assertOk()
+            ->assertSee($proposal->proposal_number);
+
+        $this->actingAs($sales)->get(route('sales.proposals.show', $proposal))
+            ->assertOk()
+            ->assertSee('quotation-final.pdf');
+
+        // Accept dua kali ditolak.
+        $this->actingAs($sales)
+            ->post(route('lead-tasks.attachments.accept', [$task, $attachment]))
+            ->assertStatus(422);
+    }
+
+    public function test_inside_sales_and_other_sales_cannot_accept_quotation(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $inside = User::factory()->create();
+        $inside->assignRole('inside-sales');
+        $otherSales = User::factory()->create();
+        $otherSales->assignRole('sales');
+        $lead = $this->makeLead($sales);
+        $task = LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan quotation',
+            'assigned_to' => $inside->id,
+            'created_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)->post(route('lead-tasks.attachments.store', $task), [
+            'attachment' => UploadedFile::fake()->create('quotation.pdf', 60, 'application/pdf'),
+        ])->assertRedirect();
+
+        $attachment = $task->attachments()->firstOrFail();
+
+        // Inside Sales tidak boleh menerima file-nya sendiri.
+        $this->actingAs($inside)
+            ->post(route('lead-tasks.attachments.accept', [$task, $attachment]))
+            ->assertForbidden();
+
+        // Sales lain (bukan pemilik lead/pembuat request) juga tidak boleh.
+        $this->actingAs($otherSales)
+            ->post(route('lead-tasks.attachments.accept', [$task, $attachment]))
+            ->assertForbidden();
+
+        $this->assertNull($attachment->fresh()->accepted_at);
     }
 
     public function test_inside_sales_sees_lead_with_own_task(): void

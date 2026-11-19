@@ -95,7 +95,7 @@ document.addEventListener('alpine:init', () => {
                 location: ev.extendedProps.location || '',
                 description: ev.extendedProps.description || '',
                 status: ev.extendedProps.status || 'scheduled',
-                reminder_minutes: ev.extendedProps.reminder_minutes || '30',
+                reminder_minutes: ev.extendedProps.reminder_value ?? (ev.extendedProps.reminder_minutes != null ? String(ev.extendedProps.reminder_minutes) : ''),
             };
             this.setTechnician();
         },
@@ -152,6 +152,7 @@ document.addEventListener('alpine:init', () => {
                     description: data.description,
                     status: data.status,
                     reminder_minutes: data.reminder_minutes,
+                    reminder_value: data.reminder_value,
                     sync_status: data.sync_status,
                 },
             });
@@ -237,7 +238,7 @@ document.addEventListener('alpine:init', () => {
             <div class="flex flex-wrap items-center gap-3 pt-5 mt-5 border-t border-slate-100">
                 <x-icon-button type="button" icon="edit" label="{{ __('Edit') }}" title="{{ __('Edit') }}" @click="toEdit()" x-show="canManage" />
                 <form x-show="canManage" :action="deleteAction()" method="POST" class="inline"
-                      onsubmit="return confirm('{{ __('Are you sure you want to delete this schedule?') }}')">
+                      data-confirm="{{ __('Are you sure you want to delete this schedule?') }}" data-confirm-tone="danger">
                     <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="_method" value="DELETE">
                     <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">
@@ -248,8 +249,6 @@ document.addEventListener('alpine:init', () => {
                 <button type="button" @click="close()" class="group relative overflow-hidden ml-auto px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
                     {{ __('Cancel') }}
                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                </button>
-                    {{ __('Close') }}
                 </button>
             </div>
         </div>
@@ -344,11 +343,9 @@ document.addEventListener('alpine:init', () => {
                     <x-input-label for="schedule-reminder" value="{{ __('Reminder') }}" />
                     <select id="schedule-reminder" name="reminder_minutes" x-model="form.reminder_minutes"
                             class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
-                        <option value="">{{ __('No popup reminder') }}</option>
-                        <option value="30">{{ __('30 minutes before') }}</option>
-                        <option value="60">{{ __('1 hour before') }}</option>
-                        <option value="120">{{ __('2 hours before') }}</option>
-                        <option value="1440">{{ __('1 day before') }}</option>
+                        @foreach(\App\Models\TechnicianSchedule::REMINDER_OPTIONS as $value => $label)
+                            <option value="{{ $value }}">{{ __($label) }}</option>
+                        @endforeach
                     </select>
                     <p class="mt-1 text-xs text-slate-400">{{ __('Email reminder 24 hours before is always sent.') }}</p>
                 </div>
@@ -366,7 +363,7 @@ document.addEventListener('alpine:init', () => {
                 <div class="ml-auto flex items-center gap-3">
                     <span x-show="mode === 'edit' && connected" x-text="syncLabel()" class="text-xs text-slate-500"></span>
                     <form x-show="mode === 'edit' && canManage" :action="deleteAction()" method="POST" class="inline"
-                          onsubmit="return confirm('{{ __('Are you sure you want to delete this schedule?') }}')">
+                          data-confirm="{{ __('Are you sure you want to delete this schedule?') }}" data-confirm-tone="danger">
                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">

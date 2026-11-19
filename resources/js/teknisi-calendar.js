@@ -78,7 +78,7 @@ function initCalendar() {
             const ev = arg.event;
             const start = fmtTime(ev.start);
             const end = ev.end ? fmtTime(ev.end) : start;
-            const tech = ev.extendedProps.technician ? `<div class="fc-event-line">Technician: ${esc(ev.extendedProps.technician)}</div>` : '';
+            const tech = ev.extendedProps.technician ? `<div class="fc-event-line">Engineer: ${esc(ev.extendedProps.technician)}</div>` : '';
             const cust = ev.extendedProps.customer ? `<div class="fc-event-line">Customer: ${esc(ev.extendedProps.customer)}</div>` : '';
             return {
                 html: `<div class="fc-event-card">

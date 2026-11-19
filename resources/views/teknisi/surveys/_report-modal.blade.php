@@ -36,15 +36,15 @@
 
             <div class="p-6">
                 <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Upload Survey Report') }}</h3>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Choose PDF file (max 5 MB)') }}</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Choose file (PDF, Word, Excel, max 5 MB)') }}</p>
 
                 <input type="hidden" name="report_survey_id" data-report-survey-id :value="surveyId">
 
                 <div class="mt-4">
-                    <input type="file" name="report" accept="application/pdf" required
+                    <input type="file" name="report" accept=".pdf,.doc,.docx,.xls,.xlsx" required
                            @change="submitting = false"
                            class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium">
-                    <p class="mt-2 text-xs text-slate-400">{{ __('PDF file only, maximum 5 MB.') }}</p>
+                    <p class="mt-2 text-xs text-slate-400">{{ __('PDF, Word, or Excel document, maximum 5 MB.') }}</p>
                     @error('report')
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror

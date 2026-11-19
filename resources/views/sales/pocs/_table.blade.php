@@ -45,7 +45,7 @@
                                 @can('manage-sales')
                                     <x-icon-button as="a" icon="edit" href="{{ route('sales.pocs.edit', $poc) }}" title="{{ __('Edit POC/Demo') }}" />
                                     <form action="{{ route('sales.pocs.destroy', $poc) }}"
-                                          method="POST" class="inline-flex" data-ajax data-ajax-remove="tr" onsubmit="return confirm('{{ __('Delete this POC/Demo?') }}')">
+                                          method="POST" class="inline-flex" data-ajax data-ajax-remove="tr" data-confirm="{{ __('Delete this POC/Demo?') }}" data-confirm-tone="danger">
                                         @csrf @method('DELETE')
                                         <x-icon-button icon="delete" type="submit" title="{{ __('Delete POC/Demo') }}" />
                                     </form>

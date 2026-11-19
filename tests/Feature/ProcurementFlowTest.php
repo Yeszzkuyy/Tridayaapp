@@ -472,7 +472,7 @@ class ProcurementFlowTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.hub'))
             ->assertOk()
-            ->assertSee('4. Procurement', false)
+            ->assertSee('Procurement', false)
             ->assertSee($order->po_number, false);
     }
 
@@ -495,7 +495,12 @@ class ProcurementFlowTest extends TestCase
         $proposal = $this->makeProposal($project, 2500000);
         $proposal->update([
             'po_document_path' => 'customer-po/test.pdf',
+            'po_number' => 'PO-HUB-'.Str::upper(Str::random(4)),
             'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Hub Procurement No. 1',
+            'payment_scheme' => 'full',
+            'po_verified_at' => now(),
         ]);
 
         $this->actingAs($admin)->get(route('admin.hub'))
@@ -525,9 +530,9 @@ class ProcurementFlowTest extends TestCase
             $this->actingAs($admin)->get($url)->assertOk();
         }
 
-        // Sales punya view-admin (read-only): boleh lihat, tidak boleh tulis.
-        $this->actingAs($sales)->get(route('admin.goods-receipts.index'))->assertOk();
-        $this->actingAs($sales)->get(route('admin.supplier-invoices.index'))->assertOk();
+        // Sales tidak memiliki permission area procurement/AP.
+        $this->actingAs($sales)->get(route('admin.goods-receipts.index'))->assertForbidden();
+        $this->actingAs($sales)->get(route('admin.supplier-invoices.index'))->assertForbidden();
         $this->actingAs($sales)->post(route('admin.goods-receipts.store'), $this->receiptPayload($order, 1, 'X1'))->assertForbidden();
 
         // Marketing tidak punya view-admin/manage-admin: tertutup total.

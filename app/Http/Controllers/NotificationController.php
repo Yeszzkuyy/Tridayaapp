@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NotificationDeleted;
+use App\Events\NotificationRead;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadTaskNotification;
 use App\Notifications\NewLeadNotification;
+use App\Notifications\PurchasingHandoffNotification;
 use App\Support\NotificationPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -42,7 +46,13 @@ class NotificationController extends Controller
 
     public function readAll(Request $request)
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        $user = $request->user();
+        $ids = $user->unreadNotifications()->pluck('id')->all();
+        $user->unreadNotifications()->update(['read_at' => now()]);
+
+        if ($ids !== []) {
+            NotificationRead::dispatch($user->id, $ids, 0, 'all');
+        }
 
         return $request->wantsJson()
             ? response()->json(['unread' => 0])
@@ -51,24 +61,35 @@ class NotificationController extends Controller
 
     public function read(Request $request, string $notification)
     {
-        $request->user()->notifications()->findOrFail($notification)->markAsRead();
+        $user = $request->user();
+        $user->notifications()->findOrFail($notification)->markAsRead();
+        $unread = $user->unreadNotifications()->count();
 
-        return response()->json(['unread' => $request->user()->unreadNotifications()->count()]);
+        NotificationRead::dispatch($user->id, [$notification], $unread, 'single');
+
+        return response()->json(['unread' => $unread]);
     }
 
     public function destroy(Request $request, string $notification)
     {
-        $request->user()->notifications()->findOrFail($notification)->delete();
+        $user = $request->user();
+        $user->notifications()->findOrFail($notification)->delete();
+        $unread = $user->unreadNotifications()->count();
 
-        return response()->json(['unread' => $request->user()->unreadNotifications()->count()]);
+        NotificationDeleted::dispatch($user->id, [$notification], $unread, 'single');
+
+        return response()->json(['unread' => $unread]);
     }
 
     /** Hapus semua notifikasi user (read + unread). */
     public function destroyAll(Request $request)
     {
-        $request->user()->notifications()->delete();
+        $user = $request->user();
+        $deleted = $user->notifications()->delete();
 
-        return response()->json(['unread' => 0]);
+        NotificationDeleted::dispatch($user->id, [], 0, 'all');
+
+        return response()->json(['unread' => 0, 'deleted' => $deleted]);
     }
 
     /**
@@ -90,6 +111,8 @@ class NotificationController extends Controller
      */
     public static function pageFor(User $user, ?string $cursor = null): array
     {
+        self::collapseTaskReplyNotifications($user);
+
         $query = $user->notifications()
             ->orderByDesc('created_at')
             ->orderByDesc('id');
@@ -129,6 +152,14 @@ class NotificationController extends Controller
             // Notifikasi lead-baru untuk management yang nyasar ke user
             // tanpa permission manage-sales-leads (mis. sales): buang.
             if ($row->type === NewLeadNotification::class && ! $canManageLeads) {
+                $stale[] = $row->id;
+
+                continue;
+            }
+
+            // Customer PO bukan urusan Estimator. Notifikasi lama yang
+            // terlanjur masuk (sebelum role berubah) dibersihkan.
+            if ($row->type === PurchasingHandoffNotification::class && ! $user->can('view-admin-hub')) {
                 $stale[] = $row->id;
 
                 continue;
@@ -174,6 +205,49 @@ class NotificationController extends Controller
             ->pluck('assigned_to', 'id')
             ->map(fn ($owner) => (int) $owner)
             ->all();
+    }
+
+    /**
+     * Rapikan notifikasi balasan chat task yang menumpuk: untuk tiap task,
+     * cukup satu notifikasi belum dibaca (yang paling baru). Notifikasi
+     * jenis lain (task baru, status, quotation) tidak disentuh.
+     */
+    private static function collapseTaskReplyNotifications(User $user): void
+    {
+        $unread = $user->unreadNotifications()
+            ->where('type', LeadTaskNotification::class)
+            ->get()
+            ->sortByDesc(fn ($notification) => (string) $notification->created_at.'|'.$notification->id)
+            ->values();
+
+        $seenTasks = [];
+        $duplicates = [];
+
+        foreach ($unread as $notification) {
+            $data = $notification->data;
+
+            if (! LeadTaskNotification::isReplyData($data)) {
+                continue;
+            }
+
+            $taskId = (int) ($data['lead_task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                continue;
+            }
+
+            if (isset($seenTasks[$taskId])) {
+                $duplicates[] = $notification->id;
+
+                continue;
+            }
+
+            $seenTasks[$taskId] = true;
+        }
+
+        if ($duplicates !== []) {
+            $user->notifications()->whereIn('id', $duplicates)->delete();
+        }
     }
 
     private static function encodeCursor(DatabaseNotification $row): string

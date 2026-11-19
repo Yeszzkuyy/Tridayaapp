@@ -6,11 +6,12 @@ use App\Models\Customer;
 use App\Models\PriceRequest;
 use App\Models\PriceRequestComment;
 use App\Models\PriceRequestReply;
+use App\Models\Project;
 use App\Models\User;
-use App\Notifications\PriceRequestCommentNotification;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
+use App\Rules\SecureFile;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,8 @@ class PriceRequestController extends Controller
 
         return view('sales.price-requests.create', [
             'customers' => $this->customerOptions($user),
+            'projects' => Project::orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']),
+            'presetProjectId' => $request->query('project_id'),
             'backUrl' => $backUrl,
         ]);
     }
@@ -49,6 +52,7 @@ class PriceRequestController extends Controller
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
+            'project_id' => 'nullable|exists:projects,id',
             'notes' => 'nullable|string|max:2000',
             'quotation' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,
         ]);
@@ -56,9 +60,16 @@ class PriceRequestController extends Controller
         $customer = Customer::findOrFail($validated['customer_id']);
         abort_unless(PtAccess::canWritePt($request->user(), $customer->pt_group), 403);
 
+        $projectId = $validated['project_id'] ?? null;
+        if ($projectId) {
+            $project = Project::findOrFail($projectId);
+            abort_unless((int) $project->customer_id === (int) $customer->id, 422, __('The selected project does not belong to this customer.'));
+        }
+
         $pricingEngineer = $this->configuredPricingEngineer();
         $priceRequest = PriceRequest::create([
             'customer_id' => $customer->id,
+            'project_id' => $projectId,
             'requested_by' => $request->user()->id,
             'notes' => $validated['notes'] ?? null,
             'assigned_to' => $pricingEngineer?->id,
@@ -86,14 +97,16 @@ class PriceRequestController extends Controller
         Notification::send($recipients, new PriceRequestCreatedNotification($priceRequest));
 
         return redirect()->route('sales.price-requests.show', $priceRequest)
-            ->with('success', __('Price request dikirim ke tim Engineer.'))
-            ->with('success_card', true);
+            ->with('success', __('Price request dikirim ke tim Engineer.'));
     }
 
     public function show(Request $request, PriceRequest $priceRequest)
     {
         $this->authorize('view', $priceRequest);
-        $priceRequest->load(['customer', 'requester.roles', 'assignee', 'replies.uploader', 'replies.acceptedBy']);
+        $priceRequest->load([
+            'customer', 'proposal', 'requester.roles', 'assignee', 'handledBy',
+            'replies.uploader', 'replies.acceptedBy',
+        ]);
 
         $technicians = ($request->user()->hasRole('lead-technician') || $request->user()->hasRole('super-admin'))
             ? User::role('technician')->orderBy('name')->get(['id', 'name'])
@@ -113,7 +126,7 @@ class PriceRequestController extends Controller
         $priceRequest->loadMissing(['customer', 'assignee']);
         $this->notifyAssignedEngineer($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'cancelled'));
 
-        return back()->with('success', __('Price request canceled.'))->with('success_card', true);
+        return back()->with('success', __('Price request canceled.'));
     }
 
     /** Fallback only: a lead technician may claim a request if Amir is unavailable. */
@@ -124,6 +137,7 @@ class PriceRequestController extends Controller
         $priceRequest->update([
             'status' => 'in_progress',
             'assigned_to' => $request->user()->id,
+            'handled_by' => $request->user()->id,
         ]);
         $this->addSystemComment(
             $priceRequest,
@@ -133,7 +147,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'in_progress'));
 
-        return back()->with('success', __('Price request diambil untuk dikerjakan.'))->with('success_card', true);
+        return back()->with('success', __('Price request diambil untuk dikerjakan.'));
     }
 
     /** Fallback only: a lead technician may reject an unassigned request. */
@@ -146,7 +160,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'rejected'));
 
-        return back()->with('success', __('Price request ditolak.'))->with('success_card', true);
+        return back()->with('success', __('Price request ditolak.'));
     }
 
     /** Fallback only: review requests when the configured pricing engineer is unavailable. */
@@ -166,7 +180,7 @@ class PriceRequestController extends Controller
         );
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, $validated['decision']));
 
-        return back()->with('success', __('Price request telah di-' . $validated['decision'] . '.'))->with('success_card', true);
+        return back()->with('success', __('Price request telah di-'.$validated['decision'].'.'));
     }
 
     /** Fallback only: assign a technician when the configured pricing engineer is unavailable. */
@@ -182,6 +196,7 @@ class PriceRequestController extends Controller
 
         $priceRequest->update([
             'assigned_to' => $technician->id,
+            'handled_by' => $technician->id,
             'status' => 'assigned',
         ]);
         $this->addSystemComment(
@@ -192,7 +207,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'assigned'));
 
-        return back()->with('success', __('Technician assigned successfully.'))->with('success_card', true);
+        return back()->with('success', __('Technician assigned successfully.'));
     }
 
     /** Upload a new immutable calculation version and return the request to Sales review. */
@@ -232,6 +247,7 @@ class PriceRequestController extends Controller
                     'reply_notes' => $reply->notes,
                     'status' => 'waiting_sales_review',
                     'completed_at' => null,
+                    'handled_by' => $request->user()->id,
                 ]);
 
                 $this->addSystemComment(
@@ -252,7 +268,7 @@ class PriceRequestController extends Controller
 
         $this->notifyRequester($priceRequest, new PriceRequestCompletedNotification($priceRequest));
 
-        return back()->with('success', __('Price calculation sent to Sales for review.'))->with('success_card', true);
+        return back()->with('success', __('Price calculation sent to Sales for review.'));
     }
 
     /** Sales accepts the latest calculation as the final price. */
@@ -292,7 +308,7 @@ class PriceRequestController extends Controller
         $priceRequest->refresh()->load(['customer', 'assignee']);
         $this->notifyAssignedEngineer($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'accepted'));
 
-        return back()->with('success', __('Price accepted as final.'))->with('success_card', true);
+        return back()->with('success', __('Price accepted as final.'));
     }
 
     /** Sales asks the assigned engineer to revise/renegotiate the latest calculation. */
@@ -337,7 +353,7 @@ class PriceRequestController extends Controller
         $priceRequest->refresh()->load(['customer', 'assignee']);
         $this->notifyAssignedEngineer($priceRequest, new PriceRequestReviewedNotification($priceRequest, 'revision'));
 
-        return back()->with('success', __('Revision request sent to the Pricing Engineer.'))->with('success_card', true);
+        return back()->with('success', __('Revision request sent to the Pricing Engineer.'));
     }
 
     public function downloadQuotation(Request $request, PriceRequest $priceRequest)
@@ -356,6 +372,30 @@ class PriceRequestController extends Controller
         return Storage::disk('private')->download($priceRequest->reply_path);
     }
 
+    public function previewQuotation(Request $request, PriceRequest $priceRequest)
+    {
+        $this->authorize('view', $priceRequest);
+        abort_unless($priceRequest->quotation_path && Storage::disk('private')->exists($priceRequest->quotation_path), 404);
+
+        return SecureFile::fileResponse(
+            'private',
+            $priceRequest->quotation_path,
+            basename($priceRequest->quotation_path)
+        );
+    }
+
+    public function previewReply(Request $request, PriceRequest $priceRequest)
+    {
+        $this->authorize('view', $priceRequest);
+        abort_unless($priceRequest->reply_path && Storage::disk('private')->exists($priceRequest->reply_path), 404);
+
+        return SecureFile::fileResponse(
+            'private',
+            $priceRequest->reply_path,
+            basename($priceRequest->reply_path)
+        );
+    }
+
     public function downloadReplyVersion(Request $request, PriceRequest $priceRequest, PriceRequestReply $reply)
     {
         $this->authorize('view', $priceRequest);
@@ -364,6 +404,20 @@ class PriceRequestController extends Controller
 
         return Storage::disk('private')->download($reply->file_path);
     }
+
+    public function previewReplyVersion(Request $request, PriceRequest $priceRequest, PriceRequestReply $reply)
+    {
+        $this->authorize('view', $priceRequest);
+        abort_unless((int) $reply->price_request_id === (int) $priceRequest->id, 404);
+        abort_unless(Storage::disk('private')->exists($reply->file_path), 404);
+
+        return SecureFile::fileResponse(
+            'private',
+            $reply->file_path,
+            basename($reply->file_path)
+        );
+    }
+
 
     private function configuredPricingEngineer(): ?User
     {
@@ -401,6 +455,7 @@ class PriceRequestController extends Controller
             $requester->notify($notification);
         }
     }
+
 
     private function storeFile($file, string $dir, ?int $version = null): string
     {

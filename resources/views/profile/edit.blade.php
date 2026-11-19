@@ -11,12 +11,6 @@
 
         <x-profile-tabs />
 
-        @if(session('status') === 'google-linked')
-            <x-toast type="success">
-                <p class="font-semibold">{{ __('Your Google account has been successfully connected!') }}</p>
-            </x-toast>
-        @endif
-
         @php
             $roleLabel = $user->roles->first()?->name ?? __('No Role');
             $secure = $user->hasSecurePassword();

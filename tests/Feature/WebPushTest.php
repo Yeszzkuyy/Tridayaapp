@@ -27,7 +27,7 @@ class WebPushTest extends TestCase
 
     public function test_push_subscription_can_be_stored_and_deleted(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $payload = [
             'endpoint' => 'https://fcm.example.test/sub-123',
@@ -102,7 +102,7 @@ class WebPushTest extends TestCase
 
     public function test_webpush_channel_follows_notify_push_preference(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
         $lead = Lead::create([
             'customer_id' => Customer::create(['name' => 'PT Dorong'])->id,
             'status' => 'cool',

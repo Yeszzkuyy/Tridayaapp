@@ -30,6 +30,8 @@ export default {
             fontFamily: {
                 sans: ['Plus Jakarta Sans', 'PJSFallback', ...defaultTheme.fontFamily.sans],
                 display: ['Exo 2', 'Exo2Fallback', 'Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
+                outfit: ['Outfit', 'Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
+                urbanist: ['Urbanist', 'Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
             },
         },
     },

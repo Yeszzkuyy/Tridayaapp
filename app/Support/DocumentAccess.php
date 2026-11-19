@@ -84,6 +84,10 @@ class DocumentAccess
             return true;
         }
 
+        if ($project->supportUsers()->where('users.id', $user->id)->exists()) {
+            return true;
+        }
+
         $name = mb_strtolower(trim((string) $user->name));
         if ($name === '') {
             return false;
@@ -159,10 +163,16 @@ class DocumentAccess
         }
 
         if ($user->can('manage-sales') || PtAccess::isSalesLike($user)) {
-            return self::salesCanSee($user, $document);
+            // Bukti pembayaran tetap sensitif walau sudah masuk Trash.
+            return ! $document->isTransactionDocument()
+                && self::salesCanSee($user, $document);
         }
 
         if ($user->can('view-admin')) {
+            if ($document->doc_type === 'payment' && ! $user->can('view-payment-proofs')) {
+                return false;
+            }
+
             return $document->isTransactionDocument()
                 || (int) $document->deleted_by === (int) $user->id;
         }
@@ -209,10 +219,23 @@ class DocumentAccess
         }
 
         if ($user->can('view-admin')) {
-            return $query->where(function ($sub) use ($user) {
+            $transactionTypes = $user->can('view-payment-proofs')
+                ? ProjectDocument::DOC_TYPES
+                : array_values(array_diff(ProjectDocument::DOC_TYPES, ['payment']));
+
+            $query->where(function ($sub) use ($user, $transactionTypes) {
                 $sub->where('deleted_by', $user->id)
-                    ->orWhereIn('doc_type', ProjectDocument::DOC_TYPES);
+                    ->orWhereIn('doc_type', $transactionTypes);
             });
+
+            if (! $user->can('view-payment-proofs')) {
+                $query->where(function ($sub) {
+                    $sub->where('doc_type', '!=', 'payment')
+                        ->orWhereNull('doc_type');
+                });
+            }
+
+            return $query;
         }
 
         return $query->where('deleted_by', $user->id);

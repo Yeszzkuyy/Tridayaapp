@@ -58,6 +58,9 @@
     --card-bg: #fff;
     --card-border: #e2e8f0;
     --card-bg-hover: #f8fafc;
+    /* Sorotan baris dropdown/menu. Wajib terlihat di atas kartu putih,
+       tapi tetap lembut (bukan abu tua). */
+    --menu-hover-bg: #eef2f7;
     --input-bg: #f1f5f9;
     --input-bg-hover: #e2e8f0;
     --input-border: #cbd5e1;
@@ -113,6 +116,7 @@
     --card-bg: #232b3e;
     --card-border: #334070;
     --card-bg-hover: #2a3350;
+    --menu-hover-bg: #2f3a58;
     --input-bg: #1e2640;
     --input-bg-hover: #2a3350;
     --input-border: #334070;
@@ -191,7 +195,16 @@ html {
 
 ::selection { background: rgb(var(--accent-600) / 0.18); }
 
-body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.025em;
+}
 
 button, a, [type="submit"] { -webkit-tap-highlight-color: transparent; }
 
@@ -299,7 +312,7 @@ tbody tr { transition: background-color 0.2s ease; }
 .sidebar nav .sb-head.sb-active:hover { color: var(--nav-active-text); }
 .sidebar nav p { color: var(--nav-muted); }
 .sidebar .border-white\/10 { border-color: var(--sidebar-border-soft); }
-.sidebar .sidebar-logo h1 { color: var(--sidebar-logo-text); font-family: "Times New Roman", Times, serif; }
+.sidebar .sidebar-logo h1 { color: var(--sidebar-logo-text); font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif; font-weight: 800; letter-spacing: -0.025em; }
 .sidebar .sidebar-logo p { color: var(--nav-muted); }
 .sidebar .sidebar-logo { border-color: var(--sidebar-border-soft); }
 .sidebar .sidebar-user { border-color: var(--sidebar-border-soft); background: var(--sidebar-panel-bg); }
@@ -361,6 +374,53 @@ tbody tr { transition: background-color 0.2s ease; }
         transform: translate(var(--px, 0px), var(--py, 0px));
         transition: transform 0.35s var(--ease-out);
         will-change: transform;
+    }
+
+    /* ============================================================
+       Dashboard Micro-Animations & Interactions
+       ============================================================ */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in-up {
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes progressExpand {
+        from { width: 0%; }
+        to { width: var(--target-width, 100%); }
+    }
+
+    .animate-progress-fill {
+        animation: progressExpand 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes waveHand {
+        0% { transform: rotate(0deg); }
+        15% { transform: rotate(14deg); }
+        30% { transform: rotate(-10deg); }
+        45% { transform: rotate(14deg); }
+        60% { transform: rotate(-6deg); }
+        75% { transform: rotate(10deg); }
+        100% { transform: rotate(0deg); }
+    }
+
+    .animate-wave {
+        display: inline-block;
+        transform-origin: 70% 70%;
+        animation: waveHand 1s ease-in-out 1;
+    }
+
+    .animate-wave:hover {
+        animation: waveHand 1s ease-in-out 1;
     }
 }
 
@@ -706,49 +766,13 @@ html.doc-modal-open main .bg-white.shadow:hover {
 }
 
 /* ============================================================
-   Status card sukses: kartu pop + checkmark ter-draw
-   (dash di-setup hanya saat animasi jalan agar reduced-motion
-   tetap menampilkan centang utuh)
-   ============================================================ */
-@media (prefers-reduced-motion: no-preference) {
-    .status-card-pop {
-        animation: status-pop 0.35s var(--ease-out) backwards;
-    }
-
-    .status-check__circle {
-        stroke-dasharray: 214;
-        stroke-dashoffset: 214;
-        animation: status-draw 0.55s var(--ease-out) 0.1s forwards;
-    }
-
-    .status-check__mark {
-        stroke-dasharray: 48;
-        stroke-dashoffset: 48;
-        animation: status-draw 0.35s var(--ease-out) 0.5s forwards;
-    }
-
-    @keyframes status-pop {
-        from {
-            opacity: 0;
-            transform: scale(0.92) translateY(8px);
-        }
-    }
-
-    @keyframes status-draw {
-        to {
-            stroke-dashoffset: 0;
-        }
-    }
-}
-
-/* ============================================================
-   Backdrop kartu status + overlay submit: full selebar viewport
+   Backdrop overlay submit: full selebar viewport
    (redup tembus sampai area sidebar, sidebar tetap terang di atasnya
    karena z-index-nya lebih tinggi).
    Overlay submit (#gs-submit-overlay) mulai di bawah navbar
    (h-16 mobile, sm:h-20).
    ============================================================ */
-.status-card-backdrop {
+.gs-overlay-backdrop {
     left: 0;
 }
 
@@ -761,4 +785,39 @@ html.doc-modal-open main .bg-white.shadow:hover {
     #gs-submit-overlay {
         top: 80px;
     }
+}
+
+/* ============================================================
+   Validasi wajib-isi standar (resources/js/form-validation.js)
+   Hanya isian WAJIB yang ditandai; isian opsional tidak disentuh.
+   ============================================================ */
+.form-validation-invalid {
+    border-color: #dc2626 !important;
+}
+
+.form-validation-invalid:focus {
+    border-color: #dc2626 !important;
+    --tw-ring-color: #dc2626 !important;
+}
+
+input[type="checkbox"].form-validation-invalid,
+input[type="radio"].form-validation-invalid {
+    outline: 2px solid #dc2626;
+    outline-offset: 2px;
+}
+
+.glide-select-root.form-validation-invalid .glide-select__trigger,
+.glide-select__trigger.form-validation-invalid {
+    box-shadow: 0 0 0 2px rgb(220 38 38 / 0.35);
+}
+
+.form-validation-message {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+    color: #dc2626;
+}
+
+.dark .form-validation-message {
+    color: #f87171;
 }

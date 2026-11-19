@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, animate, motion, useReducedMotion } from 'motion/react';
+import ToastViewport from './ToastViewport.jsx';
+import { pushToast } from '../toast-store.js';
 
 /**
  * Notification Center — bell + feed di header.
@@ -18,6 +20,9 @@ const I18N = CONFIG.i18n || {};
 const ROUTES = CONFIG.routes || {};
 const LOCALE = CONFIG.locale || undefined;
 
+/** Pop up pesan simpan/gagal hanya diputar sekali per muat halaman. */
+let flashShown = false;
+
 /** Panel: dipasang di tengah bawah bell, digeser/clamp bila mepet tepi layar. */
 const PANEL_WIDTH = 400;
 const PANEL_GAP = 8;
@@ -27,6 +32,7 @@ const VIEWPORT_PAD = 12;
 const TYPE_META = {
     lead: { color: '#16a34a', icon: 'userPlus' },
     assigned: { color: '#0284c7', icon: 'userPlus' },
+    reassigned: { color: '#d97706', icon: 'userPlus' },
     followup: { color: '#d97706', icon: 'clock' },
     task: { color: '#7c3aed', icon: 'clipboard' },
     schedule_assigned: { color: '#4f46e5', icon: 'calendar' },
@@ -35,11 +41,25 @@ const TYPE_META = {
     sales_schedule_assigned: { color: '#4f46e5', icon: 'calendar' },
     whatsapp: { color: '#059669', icon: 'message' },
     proposal: { color: '#0891b2', icon: 'file' },
+    technician_assigned: { color: '#0d9488', icon: 'wrench' },
+    technician_task_reassigned: { color: '#d97706', icon: 'wrench' },
+    technician_task_cancelled: { color: '#dc2626', icon: 'wrench' },
     technical_request_created: { color: '#0d9488', icon: 'wrench' },
     technical_request_reviewed: { color: '#0d9488', icon: 'wrench' },
     technical_work_completed: { color: '#0d9488', icon: 'checkCircle' },
     survey_created: { color: '#e11d48', icon: 'camera' },
     survey_report_uploaded: { color: '#e11d48', icon: 'camera' },
+    price_request_created: { color: '#0d9488', icon: 'wrench' },
+    price_request_reviewed: { color: '#0d9488', icon: 'wrench' },
+    price_request_completed: { color: '#16a34a', icon: 'checkCircle' },
+    price_request_comment: { color: '#0d9488', icon: 'message' },
+    estimator_request_created: { color: '#7c3aed', icon: 'clipboard' },
+    estimator_request_answered: { color: '#7c3aed', icon: 'clipboard' },
+    estimator_request_revision: { color: '#7c3aed', icon: 'clipboard' },
+    project_converted: { color: '#16a34a', icon: 'checkCircle' },
+    meeting_report_reminder: { color: '#d97706', icon: 'clipboard' },
+    user_pending_approval: { color: '#0284c7', icon: 'userPlus' },
+    invoice_paid: { color: '#059669', icon: 'file' },
     generic: { color: '#64748b', icon: 'bell' },
 };
 
@@ -50,6 +70,9 @@ const CHIP_TONES = {
     warning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
     danger: 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300',
 };
+
+/** Notifikasi baru & pengingat tampil lebih lama daripada toast aksi. */
+const NOTIFICATION_DURATION = 8000;
 
 const ICON_PROPS = {
     fill: 'none',
@@ -92,7 +115,7 @@ function withId(template, id) {
     return (template || '').replace('__ID__', encodeURIComponent(id));
 }
 
-function TypeIcon({ name, className }) {
+export function TypeIcon({ name, className }) {
     switch (name) {
         case 'userPlus':
             return (
@@ -268,10 +291,34 @@ export default function NotificationCenter() {
     const bellRef = useRef(null);
     const openRef = useRef(false);
     const expiredRef = useRef(false);
+    // Pembuka notifikasi dipakai listener realtime (Echo) — disimpan di ref
+    // supaya listener tidak perlu dipasang ulang tiap render.
+    const openItemRef = useRef(null);
 
     useEffect(() => {
         openRef.current = open;
     }, [open]);
+
+    // Pesan simpan/gagal dari form biasa (session flash di layout) tampil
+    // sebagai pop up yang sama, supaya tidak ada lagi kotak kecil di atas
+    // halaman. Hanya sekali per muat halaman.
+    useEffect(() => {
+        if (flashShown) return;
+
+        flashShown = true;
+
+        ['success', 'info', 'warning', 'error'].forEach((variant) => {
+            const message = CONFIG.flash?.[variant];
+
+            if (message) {
+                pushToast({
+                    variant,
+                    title: I18N.toastTitles?.[variant] || I18N.toastTitles?.default,
+                    message,
+                });
+            }
+        });
+    }, []);
 
     useEffect(() => {
         expiredRef.current = sessionExpired;
@@ -364,19 +411,24 @@ export default function NotificationCenter() {
         setItems((previous) => {
             if (!merge) return incoming;
 
-            // Panel terbuka: jangan reset daftar (posisi scroll aman) —
-            // sisipkan hanya item yang benar-benar baru, perbarui status baca.
-            const known = new Map(previous.map((item) => [item.id, item]));
-            const updated = previous.map((item) => {
-                const fresh = incoming.find((candidate) => candidate.id === item.id);
+            // Panel terbuka: jangan reset posisi scroll bila tidak ada perubahan drastis —
+            // tapi sinkronkan dengan server (buang item yang sudah dihapus di server).
+            const incomingMap = new Map(incoming.map((item) => [item.id, item]));
 
-                return fresh && fresh.read !== item.read ? { ...item, read: fresh.read } : item;
-            });
+            const synced = previous
+                .filter((item) => incomingMap.has(item.id) || item._fresh)
+                .map((item) => {
+                    const fresh = incomingMap.get(item.id);
+
+                    return fresh && fresh.read !== item.read ? { ...item, read: fresh.read } : item;
+                });
+
+            const previousIds = new Set(previous.map((it) => it.id));
             const added = incoming
-                .filter((item) => !known.has(item.id))
+                .filter((item) => !previousIds.has(item.id))
                 .map((item) => ({ ...item, _fresh: true }));
 
-            return [...added, ...updated];
+            return [...added, ...synced];
         });
 
         setCursor(data.next_cursor ?? null);
@@ -409,13 +461,17 @@ export default function NotificationCenter() {
 
         let channel = null;
         let handler = null;
+        let readHandler = null;
+        let deleteHandler = null;
         let connection = null;
         let onState = null;
 
         const detach = () => {
-            if (channel && handler) {
+            if (channel) {
                 try {
-                    channel.stopListening('.notification.created', handler);
+                    if (handler) channel.stopListening('.notification.created', handler);
+                    if (readHandler) channel.stopListening('.notification.read', readHandler);
+                    if (deleteHandler) channel.stopListening('.notification.deleted', deleteHandler);
                 } catch (error) {
                     /* channel sudah mati — abaikan */
                 }
@@ -425,6 +481,8 @@ export default function NotificationCenter() {
 
             channel = null;
             handler = null;
+            readHandler = null;
+            deleteHandler = null;
             connection = null;
             onState = null;
         };
@@ -451,9 +509,67 @@ export default function NotificationCenter() {
                 setUnread((previous) => (typeof payload.unread === 'number' ? payload.unread : previous + (item.read ? 0 : 1)));
                 setLive(`${item.app ? `${item.app}: ` : ''}${item.title}`);
                 ringBell();
+
+                // Pop up pojok kanan bawah, kecuali panel lonceng sedang
+                // terbuka (user sudah melihat daftarnya — jangan dobel).
+                if (!openRef.current) {
+                    const meta = TYPE_META[item.type] || TYPE_META.generic;
+
+                    pushToast({
+                        variant: 'default',
+                        title: item.title,
+                        message: item.body || '',
+                        accent: meta.color,
+                        icon: <TypeIcon name={meta.icon} className="h-5 w-5" />,
+                        duration: NOTIFICATION_DURATION,
+                        onOpen: () => openItemRef.current?.(item),
+                    });
+                }
+            };
+
+            readHandler = (payload) => {
+                const ids = payload?.ids || [];
+                const scope = payload?.scope;
+
+                setItems((previous) => {
+                    if (scope === 'all') {
+                        return previous.map((it) => ({ ...it, read: true }));
+                    }
+                    if (ids.length > 0) {
+                        const set = new Set(ids);
+                        return previous.map((it) => (set.has(it.id) ? { ...it, read: true } : it));
+                    }
+                    return previous;
+                });
+
+                if (typeof payload?.unread === 'number') {
+                    setUnread(payload.unread);
+                }
+            };
+
+            deleteHandler = (payload) => {
+                const ids = payload?.ids || [];
+                const scope = payload?.scope;
+
+                setItems((previous) => {
+                    if (scope === 'all') {
+                        return [];
+                    }
+                    if (ids.length > 0) {
+                        const set = new Set(ids);
+                        return previous.filter((it) => !set.has(it.id));
+                    }
+                    return previous;
+                });
+
+                if (typeof payload?.unread === 'number') {
+                    setUnread(payload.unread);
+                }
             };
 
             channel.listen('.notification.created', handler);
+            channel.listen('.notification.read', readHandler);
+            channel.listen('.notification.deleted', deleteHandler);
 
             connection = Echo.connector?.pusher?.connection ?? null;
 
@@ -473,12 +589,12 @@ export default function NotificationCenter() {
         };
     }, [ringBell]);
 
-    // Fallback: poll 60 dtk saat socket putus + fetch saat tab kembali aktif.
+    // Jaring pengaman: poll berkala (60 dtk) + fetch saat tab kembali aktif.
     useEffect(() => {
         if (CONFIG.userId == null || sessionExpired) return undefined;
 
         const timer = setInterval(() => {
-            if (document.hidden || expiredRef.current || connected) return;
+            if (document.hidden || expiredRef.current) return;
 
             refreshStatus({ merge: openRef.current });
         }, 60000);
@@ -497,7 +613,7 @@ export default function NotificationCenter() {
             window.removeEventListener('focus', onWake);
             document.removeEventListener('visibilitychange', onWake);
         };
-    }, [connected, refreshStatus, sessionExpired]);
+    }, [refreshStatus, sessionExpired]);
 
     // Muat segar tiap panel dibuka.
     useEffect(() => {
@@ -574,7 +690,20 @@ export default function NotificationCenter() {
                 headers: { 'X-CSRF-TOKEN': CONFIG.csrf },
             });
 
-            if (data && typeof data.unread === 'number') setUnread(data.unread);
+            if (!data) {
+                // Rollback jika request gagal
+                setItems((previous) => previous.map((known) => (known.id === item.id ? { ...known, read: false } : known)));
+                setUnread((previous) => previous + 1);
+                pushToast({
+                    variant: 'error',
+                    title: I18N.readFailedTitle,
+                    message: I18N.readFailedBody,
+                });
+
+                return;
+            }
+
+            if (typeof data.unread === 'number') setUnread(data.unread);
         },
         [fetchJson],
     );
@@ -588,40 +717,98 @@ export default function NotificationCenter() {
         [markRead],
     );
 
+    useEffect(() => {
+        openItemRef.current = openItem;
+    }, [openItem]);
+
     const dismiss = useCallback(
         async (event, item) => {
             event.preventDefault();
             event.stopPropagation();
 
+            const wasRead = item.read;
+            const removedItem = item;
+
             setItems((previous) => previous.filter((known) => known.id !== item.id));
-            if (!item.read) setUnread((previous) => Math.max(0, previous - 1));
+            if (!wasRead) setUnread((previous) => Math.max(0, previous - 1));
 
             const data = await fetchJson(withId(ROUTES.destroy, item.id), {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CONFIG.csrf },
             });
 
-            if (data && typeof data.unread === 'number') setUnread(data.unread);
+            if (!data) {
+                // Rollback jika request gagal
+                setItems((previous) => [removedItem, ...previous]);
+                if (!wasRead) setUnread((previous) => previous + 1);
+                pushToast({
+                    variant: 'error',
+                    title: I18N.deleteFailedTitle,
+                    message: I18N.deleteFailedBody,
+                });
+
+                return;
+            }
+
+            if (typeof data.unread === 'number') setUnread(data.unread);
         },
         [fetchJson],
     );
 
     const markAllRead = useCallback(async () => {
+        const previousItems = items;
+        const previousUnread = unread;
+
         setItems((previous) => previous.map((item) => ({ ...item, read: true })));
         setUnread(0);
 
-        await fetchJson(ROUTES.readAll, { method: 'POST', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
-    }, [fetchJson]);
+        const data = await fetchJson(ROUTES.readAll, { method: 'POST', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
+
+        if (!data) {
+            setItems(previousItems);
+            setUnread(previousUnread);
+            pushToast({
+                variant: 'error',
+                title: I18N.markAllFailedTitle,
+                message: I18N.markAllFailedBody,
+            });
+
+            return;
+        }
+
+        refreshStatus({ merge: false });
+    }, [fetchJson, items, unread, refreshStatus]);
 
     const clearAll = useCallback(async () => {
+        const previousItems = items;
+        const previousUnread = unread;
+        const previousCursor = cursor;
+        const previousHasMore = hasMore;
+
         setItems([]);
         setUnread(0);
         setCursor(null);
         setHasMore(false);
         setConfirmClear(false);
 
-        await fetchJson(ROUTES.clear, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
-    }, [fetchJson]);
+        const data = await fetchJson(ROUTES.clear, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': CONFIG.csrf } });
+
+        if (!data) {
+            setItems(previousItems);
+            setUnread(previousUnread);
+            setCursor(previousCursor);
+            setHasMore(previousHasMore);
+            pushToast({
+                variant: 'error',
+                title: I18N.clearFailedTitle,
+                message: I18N.clearFailedBody,
+            });
+
+            return;
+        }
+
+        refreshStatus({ merge: false });
+    }, [fetchJson, items, unread, cursor, hasMore, refreshStatus]);
 
     const loadMore = useCallback(async () => {
         if (!cursor || loadingMore) return;
@@ -685,6 +872,8 @@ export default function NotificationCenter() {
             <span className="sr-only" aria-live="polite">
                 {live}
             </span>
+
+            <ToastViewport />
 
             <AnimatePresence>
                 {open && (

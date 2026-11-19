@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadDocument;
 use App\Models\Customer;
+use App\Models\CustomerContact;
 use App\Models\Partner;
 use App\Models\Project;
 use App\Models\ProjectDocument;
@@ -17,6 +18,11 @@ use App\Models\WhatsappAccount;
 use App\Models\WhatsappMessage;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
+use App\Services\CustomerContactService;
+use App\Services\CustomerLifecycleService;
+use App\Services\LeadPipelineService;
+use App\Support\CustomerAccess;
+use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -28,6 +34,11 @@ class LeadController extends Controller
     public const SEGMENTS = ['end_user', 'vendor', 'system_integrator', 'kontraktor', 'gov', 'principle', 'distributor', 'other'];
     public const SOURCES = ['whatsapp', 'email', 'telpon', 'canvasing', 'event', 'website', 'referral', 'social_media', 'other'];
     public const STATUSES = ['cool', 'warm', 'hot', 'won', 'lost'];
+
+    public function __construct(
+        private CustomerContactService $contacts,
+        private LeadPipelineService $pipeline,
+    ) {}
 
     public static function label(string $value): string
     {
@@ -48,7 +59,7 @@ class LeadController extends Controller
     {
         $this->authorize('viewAny', Lead::class);
 
-        $query = Lead::with(['customer', 'assignee', 'partner'])
+        $query = Lead::with(['customer.contacts', 'assignee', 'partner'])
             ->when($request->filled('search'), fn ($q) => $q->whereHas('customer',
                 fn ($c) => $c->whereLike('name', $request->search)))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
@@ -74,7 +85,11 @@ class LeadController extends Controller
         // tanpa pengecualian role (customer tidak campur antar sales).
         // Tiap kolom kanban diambil langsung di level SQL (tanpa get() +
         // filter Collection in-memory) agar tidak memuat seluruh lead sekaligus.
-        $base = Lead::with(['customer', 'assignee', 'partner'])
+        $base = Lead::with(['customer.contacts', 'assignee', 'partner'])
+            ->withExists(['followUps as has_follow_up_since_assignment' => fn ($q) => $q->whereColumn('follow_ups.created_at', '>=', 'leads.assigned_at')
+                ->where(fn ($x) => $x->where(fn ($d) => $d->whereNotNull('description')->where('description', '!=', ''))
+                    ->orWhereNotNull('completed_at')
+                    ->orWhereNotNull('outcome'))])
             ->where('assigned_to', $request->user()->id);
 
         // Kolom New (virtual, bukan status DB): lead yang di-assign ke sales
@@ -142,6 +157,12 @@ class LeadController extends Controller
      * Target assignment harus user divisi yang memang memegang lead
      * (sales/marketing), bukan id sembarang lintas divisi.
      */
+    /** PT yang boleh dipilih user saat membuat/mengubah lead. */
+    private function writablePtGroups(): array
+    {
+        return PtAccess::userPts(auth()->user()) ?: Lead::PT_GROUPS;
+    }
+
     private function guardSalesAssignee(mixed $assignedTo): void
     {
         if (empty($assignedTo)) {
@@ -161,7 +182,16 @@ class LeadController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:'.implode(',', self::STATUSES),
+            'lost_reason' => 'nullable|in:'.implode(',', Lead::LOST_REASONS),
+            'lost_note' => 'nullable|string|max:2000',
         ]);
+
+        $this->pipeline->assertCanTransition(
+            $lead,
+            $validated['status'],
+            $validated['lost_reason'] ?? null,
+            $validated['lost_note'] ?? null,
+        );
 
         if ($validated['status'] !== $lead->status) {
             $old = $lead->status;
@@ -169,7 +199,10 @@ class LeadController extends Controller
             if ($lead->acknowledged_at === null) {
                 $payload['acknowledged_at'] = now();
             }
-            if ($validated['status'] !== 'lost') {
+            if ($validated['status'] === 'lost') {
+                $payload['lost_reason'] = $validated['lost_reason'] ?? $lead->lost_reason;
+                $payload['lost_note'] = $validated['lost_note'] ?? $lead->lost_note;
+            } else {
                 $payload['lost_reason'] = null;
                 $payload['lost_note'] = null;
             }
@@ -195,6 +228,8 @@ class LeadController extends Controller
             'changes' => 'required|array',
             'changes.*.lead_id' => 'required|exists:leads,id',
             'changes.*.status' => 'required|in:'.implode(',', self::STATUSES),
+            'changes.*.lost_reason' => 'nullable|in:'.implode(',', Lead::LOST_REASONS),
+            'changes.*.lost_note' => 'nullable|string|max:2000',
         ]);
 
         $results = [];
@@ -203,12 +238,22 @@ class LeadController extends Controller
             $this->authorizeLeadStatus($lead);
             $old = $lead->status;
 
+            $this->pipeline->assertCanTransition(
+                $lead,
+                $change['status'],
+                $change['lost_reason'] ?? null,
+                $change['lost_note'] ?? null,
+            );
+
             if ($old !== $change['status']) {
                 $payload = ['status' => $change['status']];
                 if ($lead->acknowledged_at === null) {
                     $payload['acknowledged_at'] = now();
                 }
-                if ($change['status'] !== 'lost') {
+                if ($change['status'] === 'lost') {
+                    $payload['lost_reason'] = $change['lost_reason'] ?? $lead->lost_reason;
+                    $payload['lost_note'] = $change['lost_note'] ?? $lead->lost_note;
+                } else {
                     $payload['lost_reason'] = null;
                     $payload['lost_note'] = null;
                 }
@@ -351,13 +396,12 @@ class LeadController extends Controller
     {
         $this->authorize('create', Lead::class);
 
-        $customers = Customer::with('contacts:id,customer_id,name,is_primary')
-            ->orderBy('name')
-            ->get(['id', 'name', 'contact_person']);
+        $customers = CustomerAccess::queryFor($request->user())
+            ->with('contacts')->orderBy('name')->get(['id', 'name', 'contact_person']);
         $partners = Partner::orderBy('name')->get(['id', 'name', 'type']);
         $segments = self::SEGMENTS;
         $sources = self::SOURCES;
-        $ptGroups = Lead::PT_GROUPS;
+        $ptGroups = $this->writablePtGroups();
 
         $prefill = $this->prefillFromWhatsapp($request);
 
@@ -422,83 +466,6 @@ class LeadController extends Controller
         ], fn ($v) => filled($v));
     }
 
-    /**
-     * Atribut customer yang boleh diisi dari form Lead.
-     *
-     * Hanya nilai terisi yang dikembalikan: form Lead tidak boleh menghapus
-     * data customer yang sudah ada (non-destruktif).
-     *
-     * @param  array<string, mixed>  $validated
-     * @return array<string, mixed>
-     */
-    private function customerAttributes(array $validated): array
-    {
-        return array_filter([
-            'name' => $validated['customer_name'] ?? null,
-            'company' => $validated['customer_company'] ?? null,
-            'address' => $validated['customer_address'] ?? null,
-            'phone' => $validated['customer_phone'] ?? null,
-            'whatsapp' => $validated['customer_whatsapp'] ?? null,
-            'email' => $validated['customer_email'] ?? null,
-            'pt_group' => $validated['pt_group'] ?? null,
-            'whatsapp_account_id' => $validated['whatsapp_account_id'] ?? null,
-        ], fn ($value) => filled($value));
-    }
-
-    /**
-     * Data PIC dari form Lead. Email tidak ikut: field email di form Lead
-     * adalah email perusahaan, bukan email pribadi PIC.
-     *
-     * @param  array<string, mixed>  $validated
-     * @return array<string, string>
-     */
-    private function picAttributes(array $validated): array
-    {
-        return array_filter([
-            'name' => $validated['customer_contact_person'] ?? null,
-            'phone' => $validated['customer_phone'] ?? null,
-            'whatsapp' => $validated['customer_whatsapp'] ?? null,
-        ], fn ($value) => filled($value));
-    }
-
-    /**
-     * Sinkronkan data customer + PIC dari form Lead.
-     *
-     * Non-destruktif: field yang dikosongkan di form tidak menghapus data
-     * customer. Nomor WA/telepon PIC hanya diisi bila PIC belum punya nomor,
-     * supaya nomor kantor tidak menimpa nomor pribadi PIC.
-     *
-     * @param  array<string, mixed>  $validated
-     */
-    private function syncCustomerFromLead(Customer $customer, array $validated): void
-    {
-        $attributes = $this->customerAttributes($validated);
-
-        // WA account hanya diisi kalau customer belum terhubung ke account lain.
-        if (filled($customer->whatsapp_account_id)) {
-            unset($attributes['whatsapp_account_id']);
-        }
-
-        // Form Lead hanya punya satu kolom nama perusahaan; company mengikuti
-        // nama supaya tampilan konsisten.
-        if (isset($attributes['name']) && ! isset($attributes['company'])) {
-            $attributes['company'] = $attributes['name'];
-        }
-
-        if ($attributes) {
-            $customer->fill($attributes);
-            if ($customer->isDirty()) {
-                $customer->saveQuietly();
-            }
-        }
-
-        $pic = $this->picAttributes($validated);
-
-        if ($pic) {
-            $customer->syncPrimaryContact($pic, onlyMissing: true);
-        }
-    }
-
     public function store(Request $request)
     {
         $this->authorize('create', Lead::class);
@@ -514,12 +481,15 @@ class LeadController extends Controller
             'customer_id' => 'nullable|required_if:customer_mode,existing|exists:customers,id',
             'customer_contact_person' => 'nullable|string|max:255',
             'partner_id' => 'nullable|exists:partners,id',
-            'pt_group' => 'required|in:'.implode(',', Lead::PT_GROUPS),
+            'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'assigned_to' => 'nullable|exists:users,id',
             'whatsapp_account_id' => 'nullable|exists:whatsapp_accounts,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
             'kebutuhan' => 'required|string|max:2000',
+            'project_name' => 'nullable|string|max:255',
+            'need_type' => 'required|in:'.implode(',', Lead::NEED_TYPES),
+            'procurement_status' => 'nullable|in:'.implode(',', Lead::PROCUREMENT_STATUSES),
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
@@ -529,20 +499,60 @@ class LeadController extends Controller
         ], [
             'segment.required' => 'Kategori (Segment) wajib dipilih.',
             'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
+            'need_type.required' => 'Jenis kebutuhan wajib dipilih.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
+        // Sales lapangan membuat lead untuk dirinya sendiri; Marketing boleh
+        // mengosongkan assignee agar masuk antrean Management.
+        if (! $request->user()->can('manage-marketing')) {
+            $validated['assigned_to'] = $request->user()->id;
+        }
+
         if ($validated['customer_mode'] === 'new') {
-            $customer = Customer::create($this->customerAttributes($validated) + [
+            $customer = Customer::create([
+                'created_by' => $request->user()->id,
                 'name' => $validated['customer_name'],
                 'company' => $validated['customer_company'] ?? $validated['customer_name'],
+                'pt_group' => $validated['pt_group'],
+                'email' => $validated['customer_email'] ?? null,
+                'phone' => $validated['customer_phone'] ?? null,
+                'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                'address' => $validated['customer_address'] ?? null,
+                'status' => 'lead',
             ]);
-            $customer->syncPrimaryContact($this->picAttributes($validated) + ['created_by' => auth()->id()]);
+
+            // PIC yang diisi saat membuat lead = satu kontak primary,
+            // ditulis lewat service agar cache ikut sinkron.
+            if (filled($validated['customer_contact_person'] ?? null)) {
+                $this->contacts->create($customer, [
+                    'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
+                    'is_primary' => true,
+                ]);
+            }
+
             $validated['customer_id'] = $customer->id;
         } else {
-            $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
-            $this->syncCustomerFromLead($customer, $validated);
+            $customer = CustomerAccess::queryFor($request->user())->withTrashed()
+                ->findOrFail($validated['customer_id']);
+            $customerSync = ['pt_group' => $validated['pt_group']];
+
+            // PIC dari form lead ikut masuk ke kontak customer supaya
+            // halaman Customer dan tracking memakai data yang sama.
+            if (filled($validated['customer_contact_person'] ?? null)) {
+                $this->contacts->syncPrimaryFromLead($customer, [
+                    'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
+                ]);
+            }
+
+            $customer->update($customerSync);
         }
 
         unset(
@@ -568,6 +578,7 @@ class LeadController extends Controller
             $lead->forceFill([
                 'assigned_by' => auth()->id(),
                 'assigned_at' => now(),
+                'assignment_overdue_notified_at' => null,
             ])->saveQuietly();
             $this->notifyAssignee($lead, null);
         } else {
@@ -577,34 +588,28 @@ class LeadController extends Controller
             );
         }
 
+        if ($request->user()->can('manage-marketing')) {
+            return redirect()
+                ->route('leads.index')
+                ->with('success', __('Lead added successfully'));
+        }
+
         return redirect()
-            ->route('leads.index')
-            ->with('success', __('Lead added successfully'))
-            ->with('success_card', true);
+            ->route('leads.show', $lead)
+            ->with('success', __('Lead added successfully'));
     }
 
     public function show(Lead $lead)
     {
         $this->authorize('view', $lead);
 
-        $lead->load(['customer', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
+        $lead->load(['customer.contacts', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
         $documents = $lead->customer ? $lead->customer->projects->flatMap->documents : collect();
         $projectStatuses = ProjectStatus::orderBy('sort_order')->get(['id', 'name']);
         $workTypes = WorkType::orderBy('name')->get(['id', 'name']);
 
         // Riwayat follow-up milik lead ini, terbaru dulu.
-        // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
-        $canOpenDetail = auth()->user()?->can('manage-sales');
-        $timeline = $lead->followUps->map(fn ($f) => [
-            'type' => 'follow-up',
-            'date' => $f->follow_up_date ?? $f->created_at,
-            'time' => $f->activity_time,
-            'location' => $f->location,
-            'title' => FollowUp::typeLabel($f->type),
-            'summary' => $f->description,
-            'by' => $f->creator?->name,
-            'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
-        ])->sortByDesc('date')->values();
+        $timeline = $this->buildFollowUpTimeline($lead);
 
         // Sales flow: jadwal (upcoming/past), technical request, proposal milik lead ini.
         $upcomingSchedules = $lead->salesSchedules
@@ -620,17 +625,53 @@ class LeadController extends Controller
         return view('leads.show', compact('lead', 'documents', 'projectStatuses', 'workTypes', 'timeline', 'upcomingSchedules', 'pastSchedules', 'techRequests', 'activeTechRequest', 'proposalsList'));
     }
 
+    /**
+     * Endpoint poll daftar "Log Follow Up": hanya potongan daftar (tanpa
+     * layout), dipakai halaman detail lead supaya catatan baru muncul
+     * tanpa reload.
+     */
+    public function timeline(Lead $lead)
+    {
+        $this->authorize('view', $lead);
+
+        $lead->load('followUps.creator');
+
+        return response()->view('leads.partials.timeline', [
+            'timeline' => $this->buildFollowUpTimeline($lead),
+        ]);
+    }
+
+    /**
+     * Riwayat follow-up lead (terbaru dulu) — dipakai halaman detail dan
+     * endpoint poll-nya.
+     */
+    private function buildFollowUpTimeline(Lead $lead): \Illuminate\Support\Collection
+    {
+        // Link detail hanya untuk yang boleh manage-sales (role sales memilikinya).
+        $canOpenDetail = auth()->user()?->can('manage-sales');
+
+        return $lead->followUps->map(fn ($f) => [
+            'type' => 'follow-up',
+            'date' => $f->follow_up_date ?? $f->created_at,
+            'time' => $f->activity_time,
+            'location' => $f->location,
+            'title' => FollowUp::typeLabel($f->type),
+            'summary' => $f->description,
+            'by' => $f->creator?->name,
+            'url' => $canOpenDetail ? route('sales.follow-ups.show', $f) : null,
+        ])->sortByDesc('date')->values();
+    }
+
     public function edit(Lead $lead)
     {
         $this->authorize('update', $lead);
 
-        $customers = Customer::with('contacts:id,customer_id,name,is_primary')
-            ->orderBy('name')
-            ->get(['id', 'name', 'contact_person']);
+        $customers = CustomerAccess::queryFor(request()->user())
+            ->with('contacts')->orderBy('name')->get(['id', 'name', 'contact_person']);
         $partners = Partner::orderBy('name')->get(['id', 'name', 'type']);
         $segments = self::SEGMENTS;
         $sources = self::SOURCES;
-        $ptGroups = Lead::PT_GROUPS;
+        $ptGroups = $this->writablePtGroups();
 
         return view('leads.edit', compact('lead', 'customers', 'partners', 'segments', 'sources', 'ptGroups'));
     }
@@ -650,11 +691,14 @@ class LeadController extends Controller
             'customer_id' => 'nullable|required_if:customer_mode,existing|exists:customers,id',
             'customer_contact_person' => 'nullable|string|max:255',
             'partner_id' => 'nullable|exists:partners,id',
-            'pt_group' => 'required|in:'.implode(',', Lead::PT_GROUPS),
+            'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'assigned_to' => 'nullable|exists:users,id',
             'segment' => 'required|in:'.implode(',', self::SEGMENTS),
             'source' => 'nullable|in:'.implode(',', self::SOURCES),
             'kebutuhan' => 'required|string|max:2000',
+            'project_name' => 'nullable|string|max:255',
+            'need_type' => 'required|in:'.implode(',', Lead::NEED_TYPES),
+            'procurement_status' => 'nullable|in:'.implode(',', Lead::PROCUREMENT_STATUSES),
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
@@ -664,27 +708,73 @@ class LeadController extends Controller
         ], [
             'segment.required' => 'Kategori (Segment) wajib dipilih.',
             'kebutuhan.required' => 'Kebutuhan klien wajib diisi.',
+            'need_type.required' => 'Jenis kebutuhan wajib dipilih.',
         ]);
 
         $this->guardSalesAssignee($validated['assigned_to'] ?? null);
 
+        // Sales tidak boleh memindahkan lead ke orang lain lewat form edit.
+        if (! $request->user()->can('manage-marketing')) {
+            unset($validated['assigned_to']);
+        }
+
         if ($validated['customer_mode'] === 'new') {
-            $customer = Customer::create($this->customerAttributes($validated) + [
+            $customer = Customer::create([
+                'created_by' => $request->user()->id,
                 'name' => $validated['customer_name'],
                 'company' => $validated['customer_company'] ?? $validated['customer_name'],
+                'pt_group' => $validated['pt_group'],
+                'email' => $validated['customer_email'] ?? null,
+                'phone' => $validated['customer_phone'] ?? null,
+                'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                'address' => $validated['customer_address'] ?? null,
+                'status' => 'lead',
             ]);
-            $customer->syncPrimaryContact($this->picAttributes($validated) + ['created_by' => auth()->id()]);
-            $validated['customer_id'] = $customer->id;
-        } else {
-            $customer = Customer::withTrashed()->findOrFail($validated['customer_id']);
 
-            // Pindah lead ke customer lain = butuh hak tulis customer.
-            // Touch-up customer yang sama tetap boleh (alur marketing).
-            if ((int) $customer->id !== (int) $lead->customer_id) {
-                $this->authorize('update', $customer);
+            if (filled($validated['customer_contact_person'] ?? null)) {
+                $this->contacts->create($customer, [
+                    'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
+                    'is_primary' => true,
+                ]);
             }
 
-            $this->syncCustomerFromLead($customer, $validated);
+            $validated['customer_id'] = $customer->id;
+        } else {
+            $customer = CustomerAccess::queryFor($request->user())->withTrashed()
+                ->findOrFail($validated['customer_id']);
+
+            $customerData = array_filter([
+                'name' => $validated['customer_name'] ?? null,
+                'address' => $validated['customer_address'] ?? null,
+                'phone' => $validated['customer_phone'] ?? null,
+                'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                'email' => $validated['customer_email'] ?? null,
+                'pt_group' => $validated['pt_group'] ?? null,
+            ], fn ($value) => $value !== null);
+
+            // PIC dari form lead ikut masuk ke kontak customer supaya
+            // halaman Customer dan tracking memakai data yang sama.
+            if (filled($validated['customer_contact_person'] ?? null)) {
+                $this->contacts->syncPrimaryFromLead($customer, [
+                    'name' => $validated['customer_contact_person'],
+                    'phone' => $validated['customer_phone'] ?? null,
+                    'whatsapp' => $validated['customer_whatsapp'] ?? null,
+                    'email' => $validated['customer_email'] ?? null,
+                ]);
+            }
+
+            if ($customerData) {
+                // Pindah lead ke customer lain = butuh hak tulis customer.
+                // Touch-up customer yang sama tetap boleh (alur marketing).
+                if ((int) $customer->id !== (int) $lead->customer_id) {
+                    $this->authorize('update', $customer);
+                }
+
+                $customer->update($customerData);
+            }
         }
 
         unset(
@@ -721,8 +811,14 @@ class LeadController extends Controller
             $this->logActivity($lead, 'updated', $changes);
         }
 
+        if ($request->user()->can('manage-marketing')) {
+            return redirect()
+                ->route('leads.index')
+                ->with('success', __('Lead berhasil diupdate'));
+        }
+
         return redirect()
-            ->route('leads.index')
+            ->route('leads.show', $lead)
             ->with('success', __('Lead berhasil diupdate'));
     }
 
@@ -743,8 +839,11 @@ class LeadController extends Controller
         $this->authorizeLeadStatus($lead);
 
         $validated = $request->validate([
-            'lost_reason' => 'nullable|in:'.implode(',', Lead::LOST_REASONS),
-            'lost_note' => 'nullable|string|max:2000',
+            'lost_reason' => 'required|in:'.implode(',', Lead::LOST_REASONS),
+            'lost_note' => 'required|string|max:2000',
+        ], [
+            'lost_reason.required' => 'Alasan kalah wajib dipilih.',
+            'lost_note.required' => 'Catatan singkat wajib diisi.',
         ]);
 
         $lead->fill($validated);
@@ -840,11 +939,32 @@ class LeadController extends Controller
             'closed_at' => now(),
             'closing_note' => $validated['closing_note'] ?? null,
         ]);
+        app(CustomerLifecycleService::class)->promoteFromLead($lead);
         $this->logActivity($lead, 'converted', ['project_id' => $project->id]);
 
         return redirect()
             ->route('projects.show', $project)
             ->with('success', __('Lead converted to Project successfully'));
+    }
+
+    /**
+     * Angkat lead menjadi customer resmi agar muncul di menu Customer.
+     */
+    public function promoteCustomer(Request $request, Lead $lead, CustomerLifecycleService $lifecycle)
+    {
+        abort_unless(
+            $request->user()->can('manage-sales') || $request->user()->can('manage-sales-leads'),
+            403
+        );
+
+        $customer = $lead->customer;
+        abort_if(! $customer || $customer->trashed(), 422, __('This lead has no customer data.'));
+        abort_if($customer->status !== 'lead', 422, __('This lead is already a customer.'));
+
+        $lifecycle->promoteFromLead($lead);
+        $this->logActivity($lead, 'customer_promoted', ['customer_id' => $customer->id]);
+
+        return back()->with('success', __('Lead promoted to customer successfully.'));
     }
 
     public function activities(Request $request)
@@ -1172,7 +1292,7 @@ class LeadController extends Controller
             $now = now();
             $leadsBatch = [];
 
-            \Illuminate\Support\Facades\DB::transaction(function () use ($parsed, &$customerIds, &$leadsBatch, &$results, $usersById, $usersByNameLower, $wantedNames, $now) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($parsed, &$customerIds, &$leadsBatch, &$results, $usersById, $usersByNameLower, $now) {
                 // Customer baru: bulk insert sekaligus, bukan firstOrCreate per baris.
                 $newNames = collect($parsed)->pluck('company')->unique()->reject(fn ($n) => isset($customerIds[$n]))->values();
                 if ($newNames->isNotEmpty()) {
@@ -1182,35 +1302,29 @@ class LeadController extends Controller
                         ['created_at' => $now, 'updated_at' => $now]
                     ))->all());
                     $customerIds += Customer::whereIn('name', $newNames->all())->pluck('id', 'name')->all();
-                }
 
-                // Lengkapi data customer (baru maupun lama) + buat baris PIC.
-                // Non-destruktif: hanya field kosong yang diisi dari file.
-                $customersByName = Customer::whereIn('name', $wantedNames)->get()->keyBy('name');
+                    // PIC dari file import menjadi satu kontak primary per
+                    // customer baru — tidak menyentuh customer yang sudah ada.
+                    $contactRows = [];
+                    foreach ($newNames as $name) {
+                        $pic = trim((string) ($byName[$name]['customer_attrs']['contact_person'] ?? ''));
+                        $newCustomerId = $customerIds[$name] ?? null;
 
-                foreach ($parsed as $item) {
-                    $customer = $customersByName[$item['company']] ?? null;
-                    if (! $customer) {
-                        continue;
-                    }
-
-                    $attrs = $item['customer_attrs'];
-                    $picName = $attrs['contact_person'] ?? null;
-                    unset($attrs['contact_person'], $attrs['name'], $attrs['company']);
-
-                    $fill = [];
-                    foreach ($attrs as $key => $value) {
-                        if (filled($value) && blank($customer->{$key})) {
-                            $fill[$key] = $value;
+                        if ($pic === '' || ! $newCustomerId) {
+                            continue;
                         }
+
+                        $contactRows[] = [
+                            'customer_id' => $newCustomerId,
+                            'name' => $pic,
+                            'is_primary' => true,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
 
-                    if ($fill) {
-                        $customer->forceFill($fill)->saveQuietly();
-                    }
-
-                    if (filled($picName)) {
-                        $customer->syncPrimaryContact(['name' => $picName], onlyMissing: true);
+                    if ($contactRows !== []) {
+                        CustomerContact::insert($contactRows);
                     }
                 }
 

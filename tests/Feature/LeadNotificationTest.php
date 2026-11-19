@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\User;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadReassignedNotification;
 use App\Notifications\NewLeadNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\SendQueuedNotifications;
@@ -39,6 +40,8 @@ class LeadNotificationTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'end_user',
             'kebutuhan' => 'CCTV',
+            'project_name' => 'Proyek Notifikasi',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
         ], $overrides))->assertRedirect(route('leads.index'));
     }
@@ -59,11 +62,12 @@ class LeadNotificationTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'end_user',
             'kebutuhan' => 'IP Phone 10 unit.',
+            'project_name' => 'Proyek IP Phone',
+            'need_type' => 'pabx',
             'incoming_date' => now()->toDateString(),
         ])
             ->assertRedirect(route('leads.index'))
-            ->assertSessionHas('success')
-            ->assertSessionHas('success_card', true);
+            ->assertSessionHas('success');
 
         $this->assertSame(1, Lead::count());
         // Notifikasi wajib antre (tidak dikirim inline agar submit tetap cepat).
@@ -152,6 +156,8 @@ class LeadNotificationTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'end_user',
             'kebutuhan' => 'IP Phone 10 unit.',
+            'project_name' => 'Proyek IP Phone',
+            'need_type' => 'pabx',
             'assigned_to' => $salesB->id,
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
@@ -185,6 +191,8 @@ class LeadNotificationTest extends TestCase
             'segment' => 'end_user',
             'assigned_to' => $sales->id,
             'kebutuhan' => 'Update kebutuhan',
+            'project_name' => 'Proyek Tetap',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
 
@@ -386,7 +394,11 @@ class LeadNotificationTest extends TestCase
             ->post(route('manage-sales.assign', $lead), ['assigned_to' => $salesB->id])
             ->assertRedirect(route('manage-sales.index'));
 
-        $this->assertSame(0, $salesA->fresh()->notifications()->count());
+        // Notifikasi assign lama dibersihkan, diganti kabar "lead dipindahkan".
+        $this->assertSame(0, $salesA->fresh()->notifications()
+            ->where('type', LeadAssignedNotification::class)->count());
+        $this->assertSame(1, $salesA->fresh()->notifications()
+            ->where('type', LeadReassignedNotification::class)->count());
         $this->assertSame(1, $salesB->fresh()->notifications()
             ->where('type', LeadAssignedNotification::class)->count());
     }

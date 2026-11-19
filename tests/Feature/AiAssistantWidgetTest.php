@@ -13,7 +13,7 @@ class AiAssistantWidgetTest extends TestCase
 
     public function test_widget_markup_is_present_on_app_layout_pages(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->get(route('dashboard'))
@@ -31,7 +31,7 @@ class AiAssistantWidgetTest extends TestCase
 
     public function test_v2_embeds_owned_conversation_list(): void
     {
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
         Conversation::create([
             'id' => '00000000-0000-0000-0000-000000000021',
             'user_id' => $user->id,
@@ -49,7 +49,7 @@ class AiAssistantWidgetTest extends TestCase
     {
         config()->set('ai.providers.openrouter.key', null);
 
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         // Tanpa API key endpoint menolak dengan 422 — kontrak tidak berubah.
         $this->actingAs($user)

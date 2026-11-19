@@ -17,11 +17,21 @@ class Proposal extends Model
 
     protected $fillable = [
         'lead_id',
+        'lead_task_id',
         'proposal_number',
         'created_by',
         'proposal_date',
         'valid_until',
         'customer',
+        'customer_address',
+        'contact_name',
+        'contact_email',
+        'contact_phone',
+        'project_description',
+        'payment_terms_text',
+        'letterhead_pt',
+        'pdf_path',
+        'pdf_generated_at',
         'subtotal',
         'discount',
         'tax',
@@ -38,12 +48,19 @@ class Proposal extends Model
         'term_days',
         'payment_terms',
         'delivery_terms',
+        'warranty_terms',
+        'po_verified_at',
+        'po_verified_by',
+        'po_returned_at',
+        'po_returned_by',
+        'po_return_reason',
         'total_cost',
         'gross_profit',
         'gross_margin',
         'status',
         'sent_at',
         'sent_by',
+        'sent_channel',
     ];
 
     protected $casts = [
@@ -51,14 +68,22 @@ class Proposal extends Model
         'valid_until' => 'date',
         'po_date' => 'date',
         'delivery_deadline' => 'date',
+        'po_verified_at' => 'datetime',
+        'po_returned_at' => 'datetime',
         'dp_percent' => 'float',
         'term_days' => 'integer',
         'sent_at' => 'datetime',
+        'pdf_generated_at' => 'datetime',
     ];
 
     public function lead()
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function leadTask()
+    {
+        return $this->belongsTo(LeadTask::class);
     }
 
     public function creator()
@@ -71,9 +96,35 @@ class Proposal extends Model
         return $this->belongsTo(User::class, 'sent_by');
     }
 
+    /** Label kanal pengiriman quotation (dipakai badge "Terkirim via …"). */
+    public function sentChannelLabel(): ?string
+    {
+        return match ($this->sent_channel) {
+            'whatsapp' => 'WhatsApp',
+            'email' => __('Email'),
+            'manual' => __('Manual'),
+            default => null,
+        };
+    }
+
     public function items()
     {
         return $this->hasMany(ProposalItem::class);
+    }
+
+    /** Riwayat revisi quotation (versi per perubahan). */
+    public function versions()
+    {
+        return $this->hasMany(ProposalVersion::class)->orderBy('version');
+    }
+
+    /**
+     * File quotation dari Inside Sales yang di-accept menjadi quotation ini
+     * (dipakai untuk menampilkan lampiran di halaman detail quotation).
+     */
+    public function attachments()
+    {
+        return $this->hasMany(ProposalAttachment::class)->orderBy('id');
     }
 
     public function project()
@@ -85,6 +136,31 @@ class Proposal extends Model
     public function supplierPurchaseOrders()
     {
         return $this->hasMany(SupplierPurchaseOrder::class);
+    }
+
+    public function priceRequest()
+    {
+        return $this->hasOne(PriceRequest::class);
+    }
+
+    public function poVerifiedBy()
+    {
+        return $this->belongsTo(User::class, 'po_verified_by');
+    }
+
+    public function poReturnedBy()
+    {
+        return $this->belongsTo(User::class, 'po_returned_by');
+    }
+
+    public function isPoVerified(): bool
+    {
+        return $this->po_verified_at !== null;
+    }
+
+    public function isPoReturned(): bool
+    {
+        return $this->po_returned_at !== null;
     }
 
     public function recalculate(): void
@@ -155,6 +231,83 @@ class Proposal extends Model
         return $this->status === 'accepted' && filled($this->po_document_path);
     }
 
+    /**
+     * PO customer sudah diverifikasi Admin dan tidak sedang dikembalikan.
+     * Ini gate untuk membuat Supplier PO / convert project.
+     */
+    public function isReadyForSupplierPo(): bool
+    {
+        return $this->isReadyForPurchasing()
+            && $this->isPoVerified()
+            && ! $this->isPoReturned();
+    }
+
+    /** Daftar field PO customer yang masih kurang sebelum boleh diverifikasi. */
+    public function poCompletenessErrors(): array
+    {
+        $errors = [];
+
+        if (blank($this->po_document_path)) {
+            $errors[] = __('Customer PO document is missing.');
+        }
+        if (blank($this->po_number)) {
+            $errors[] = __('Customer PO number is missing.');
+        }
+        if (blank($this->po_date)) {
+            $errors[] = __('Customer PO date is missing.');
+        }
+        if (blank($this->delivery_deadline)) {
+            $errors[] = __('Delivery deadline is missing.');
+        }
+        if (blank($this->delivery_address)) {
+            $errors[] = __('Delivery address is missing.');
+        }
+        if (blank($this->payment_scheme)) {
+            $errors[] = __('Payment terms are missing.');
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Quotation yang siap ditarik ke Supplier PO (belum semua item selesai dipesan).
+     *
+     * Tetap muncul di antrean belanja bila ada rincian item yang jumlah ordered-nya
+     * pada Supplier PO aktif masih kurang dari quantity quotation.
+     */
+    public function scopePendingSupplierPo($query)
+    {
+        return $query->where('status', 'accepted')
+            ->whereNotNull('po_document_path')
+            ->whereNotNull('po_verified_at')
+            ->whereNull('po_returned_at')
+            ->where(function ($q) {
+                $q->whereHas('items', function ($itemQuery) {
+                    $itemQuery->whereRaw(
+                        'quantity > (SELECT COALESCE(SUM(spoi.quantity_ordered), 0) FROM supplier_purchase_order_items spoi JOIN supplier_purchase_orders spo ON spo.id = spoi.supplier_purchase_order_id WHERE spoi.proposal_item_id = proposal_items.id AND spo.status != ? AND spo.deleted_at IS NULL)',
+                        ['cancelled']
+                    );
+                })->orWhere(function ($fallbackQuery) {
+                    $fallbackQuery->whereDoesntHave('items')
+                        ->whereDoesntHave('supplierPurchaseOrders', fn ($spo) => $spo->where('status', '!=', 'cancelled'));
+                });
+            });
+    }
+
+    /** Cek apakah seluruh item pada quotation sudah tuntas dipesan ke supplier. */
+    public function isFullySourced(): bool
+    {
+        if ($this->items()->doesntExist()) {
+            return $this->supplierPurchaseOrders()->where('status', '!=', 'cancelled')->exists();
+        }
+
+        return ! $this->items()
+            ->whereRaw(
+                'quantity > (SELECT COALESCE(SUM(spoi.quantity_ordered), 0) FROM supplier_purchase_order_items spoi JOIN supplier_purchase_orders spo ON spo.id = spoi.supplier_purchase_order_id WHERE spoi.proposal_item_id = proposal_items.id AND spo.status != ? AND spo.deleted_at IS NULL)',
+                ['cancelled']
+            )->exists();
+    }
+
     /** Status customer PO untuk antrean Purchasing. */
     public function purchasingStatusLabel(): string
     {
@@ -162,9 +315,70 @@ class Proposal extends Model
             return self::statusLabel($this->status);
         }
 
+        if ($this->isPoReturned()) {
+            return __('PO Returned (Revision Needed)');
+        }
+
+        if ($this->isPoVerified()) {
+            return __('PO Verified');
+        }
+
         return $this->isReadyForPurchasing()
             ? __('PO Received — Ready for Purchasing')
             : __('Waiting for Customer PO');
+    }
+
+    /**
+     * Tahap handoff Sales → Admin, dipakai komponen `x-handoff-status` agar
+     * Sales dan Admin membaca tahap yang sama.
+     *
+     * Null bila quotation belum accepted (belum masuk alur handoff).
+     */
+    public function handoffStage(): ?string
+    {
+        if ($this->status !== 'accepted') {
+            return null;
+        }
+
+        $project = $this->project;
+
+        if (! $project) {
+            if (blank($this->po_document_path)) {
+                return 'waiting_po';
+            }
+
+            // Supplier PO menandakan Admin/Purchasing sudah mulai bekerja.
+            return $this->supplierPurchaseOrders()->exists() ? 'in_purchasing' : 'po_received';
+        }
+
+        if ($project->bast_signed_customer_at) {
+            return 'closed';
+        }
+
+        if ($project->bast_ready_at) {
+            return 'bast';
+        }
+
+        return 'project_created';
+    }
+
+    /** Urutan tahap handoff (key => label) untuk komponen status. */
+    public static function handoffStages(): array
+    {
+        return [
+            'waiting_po' => __('Waiting for Customer PO'),
+            'po_received' => __('PO Received'),
+            'in_purchasing' => __('In Purchasing'),
+            'project_created' => __('Project Created'),
+            'bast' => __('BAST'),
+            'closed' => __('Closed'),
+        ];
+    }
+
+    /** Label satu tahap handoff. */
+    public static function handoffStageLabel(string $stage): string
+    {
+        return self::handoffStages()[$stage] ?? $stage;
     }
 
     /** Label skema pembayaran untuk form/daftar. */
@@ -174,7 +388,7 @@ class Proposal extends Model
             'full' => __('Full Payment 100%'),
             'dp' => __('Down Payment + Settlement'),
             'tempo' => __('Tempo / Net Days'),
-            default => __('Not set yet'),
+            default => '-',
         };
     }
 
@@ -199,7 +413,7 @@ class Proposal extends Model
             'tempo' => $this->term_days
                 ? __('Net :days days', ['days' => $this->term_days])
                 : __('Tempo'),
-            default => __('Not set yet'),
+            default => '-',
         };
     }
 
@@ -218,11 +432,21 @@ class Proposal extends Model
     {
         $warnings = [];
 
+        if ($this->isPoReturned()) {
+            $warnings[] = __('Customer PO was returned by Admin: ') . $this->po_return_reason;
+        }
+
         if (blank($this->po_number)) {
             $warnings[] = __('Customer PO number is missing.');
         }
+        if (blank($this->po_date)) {
+            $warnings[] = __('Customer PO date is missing.');
+        }
         if (blank($this->delivery_deadline)) {
             $warnings[] = __('Delivery deadline is missing.');
+        }
+        if (blank($this->delivery_address)) {
+            $warnings[] = __('Delivery address is missing.');
         }
         if (blank($this->payment_scheme)) {
             $warnings[] = __('Payment terms are missing.');

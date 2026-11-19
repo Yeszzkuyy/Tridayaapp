@@ -51,10 +51,10 @@ class DivisionAccessTest extends TestCase
         $res = $this->actingAs($u)->get('/sales/follow-ups')->assertOk();
         $html = $res->getContent();
 
-        foreach (['/sales/follow-ups', '/customers', '/trash', '/projects', '/admin/invoices'] as $link) {
+        foreach (['/sales/follow-ups', '/customers', '/trash', '/projects'] as $link) {
             $this->assertStringContainsString($link, $html, "$link should be visible for sales");
         }
-        foreach (['/leads"'] as $link) {
+        foreach (['/leads"', '/admin/invoices'] as $link) {
             $this->assertStringNotContainsString($link, $html, "$link should be hidden for sales");
         }
 
@@ -63,10 +63,11 @@ class DivisionAccessTest extends TestCase
         $this->actingAs($u)->get('/trash')->assertOk();
 
         // Sales pada Project: read-only (PRD project workflow).
-        $customer = \App\Models\Customer::create(['name' => 'Cust Sales']);
+        $customer = \App\Models\Customer::create(['name' => 'Cust Sales', 'created_by' => $u->id]);
         $workType = \App\Models\WorkType::create(['name' => 'Instalasi']);
         $project = \App\Models\Project::create([
             'customer_id' => $customer->id,
+            'sales_user_id' => $u->id,
             'work_type_id' => $workType->id,
             'project_name' => 'Proj Sales',
         ]);
@@ -81,8 +82,8 @@ class DivisionAccessTest extends TestCase
         $this->assertNotSoftDeleted('projects', ['id' => $project->id]);
 
         $this->actingAs($u)->get('/teknisi/dashboard')->assertForbidden();
-        // Sales read-only pada Admin: lihat boleh, mutasi 403 ( tested di RoleMatrixTest )
-        $this->actingAs($u)->get('/admin/invoices')->assertOk();
+        // view-admin dicabut dari sales: halaman Admin/internal tertutup total.
+        $this->actingAs($u)->get('/admin/invoices')->assertForbidden();
         $this->actingAs($u)->get('/monitoring')->assertForbidden();
     }
 

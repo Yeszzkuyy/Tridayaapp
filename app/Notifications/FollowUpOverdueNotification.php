@@ -9,8 +9,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
 
 /** Pengingat follow-up yang tanggalnya sudah lewat dan belum ditindaklanjuti. */
-class FollowUpOverdueNotification extends Notification
-{
+class FollowUpOverdueNotification extends Notification{
     use Queueable, SendsWebPush;
 
     public function __construct(public FollowUp $followUp) {}
@@ -39,7 +38,7 @@ class FollowUpOverdueNotification extends Notification
 
         return [
             'type' => 'followup',
-            'title' => __('Follow up overdue'),
+            'title' => __('Follow up due'),
             'follow_up_id' => $this->followUp->id,
             'customer' => $customer,
             'preview' => Str::limit($this->followUp->description, 80),
@@ -50,7 +49,7 @@ class FollowUpOverdueNotification extends Notification
     protected function pushContent(): array
     {
         return [
-            'title' => __('Follow up overdue'),
+            'title' => __('Follow up due'),
             'body' => ($this->followUp->customer?->name ?? '').' — '.Str::limit($this->followUp->description, 80),
             'url' => self::indexUrl(),
         ];

@@ -2,6 +2,7 @@
 
 namespace App\View\Components;
 
+use App\Support\PageContext;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
@@ -12,6 +13,10 @@ class AppLayout extends Component
      */
     public function render(): View
     {
+        if (PageContext::isEmbed(request())) {
+            return view('layouts.embed');
+        }
+
         return view('layouts.app');
     }
 }

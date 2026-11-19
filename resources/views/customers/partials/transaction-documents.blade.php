@@ -6,23 +6,28 @@ Props:
   $custPayments    Collection payment customer
   $typedDocs       Collection dokumen transaksi dari ProjectDocument (groupBy doc_type)
 --}}
-@props(['custInvoices', 'custPos', 'custPayments', 'typedDocs', 'canUploadDocs' => false])
+@props(['custInvoices', 'custPos', 'custDeliveries', 'custPayments', 'typedDocs', 'canUploadDocs' => false])
+
+@php
+    $canViewAdmin = auth()->user()?->can('view-admin');
+@endphp
 
 <div class="space-y-6">
     <div class="border-t border-slate-200 pt-6 dark:border-slate-700">
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ __('Transaction Documents') }}</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen transaksi dikelola di modul asal. Tidak disalin ke Customer Documents.') }}</p>
+        <div class="mb-3">
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{ __('Transactions') }}</h3>
         </div>
 
         {{-- Invoice --}}
         <div>
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Invoice') }}</span>
-                <a href="{{ route('admin.invoices.index') }}"
-                   class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                    {{ __('Lihat Semua Invoice') }} →
-                </a>
+                @can('view-admin')
+                    <a href="{{ route('admin.invoices.index') }}"
+                       class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                        {{ __('Lihat Semua Invoice') }} →
+                    </a>
+                @endcan
             </div>
 
             @if($custInvoices->isNotEmpty() || ($typedDocs->get('invoice', collect()))->isNotEmpty())
@@ -36,10 +41,10 @@ Props:
                             };
                             $invStatusLabel = $inv->status === 'paid' ? __('Paid') : ($inv->status === 'cancelled' ? __('Cancelled') : __('Unpaid'));
                         @endphp
-                        <a href="{{ route('admin.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
+                        <a href="{{ auth()->user()?->can('view-admin') ? route('admin.invoices.show', $inv) : route('sales.invoices.show', $inv) }}" title="{{ $inv->invoice_number }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -56,10 +61,14 @@ Props:
                     @endforeach
 
                     @foreach(($typedDocs->get('invoice', collect())) as $doc)
-                        <a href="{{ route('project-documents.download', $doc) }}"
+                        <a href="{{ route('project-documents.preview', $doc) }}"
+                           data-doc-open
+                           data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                           data-download="{{ route('project-documents.download', $doc) }}"
+                           data-filename="{{ $doc->file_name }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -75,17 +84,12 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No invoices') }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
-                    @if($canUploadDocs ?? false)
-                        <div class="mt-3 flex justify-center">
-                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                           data-doc-upload-open data-doc-type="invoice" data-doc-section="{{ __('Invoice') }}" />
-                        </div>
-                    @endif
-                    <a href="{{ route('admin.invoices.index') }}"
-                       class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                        {{ __('Buka Modul Invoice') }} →
-                    </a>
+                    @can('view-admin')
+                        <a href="{{ route('admin.invoices.index') }}"
+                           class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                            {{ __('Buka Modul Invoice') }} →
+                        </a>
+                    @endcan
                 </div>
             @endif
         </div>
@@ -94,10 +98,12 @@ Props:
         <div class="mt-6">
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Purchase Order') }}</span>
-                <a href="{{ route('admin.pos.index') }}"
-                   class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                    {{ __('Lihat Semua PO') }} →
-                </a>
+                @can('view-admin')
+                    <a href="{{ route('admin.pos.index') }}"
+                       class="text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                        {{ __('Lihat Semua PO') }} →
+                    </a>
+                @endcan
             </div>
 
             @if($custPos->isNotEmpty() || ($typedDocs->get('po', collect()))->isNotEmpty())
@@ -111,10 +117,14 @@ Props:
                                 default => 'slate',
                             };
                         @endphp
-                        <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
-                           class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        @if($canViewAdmin)
+                            <a href="{{ route('admin.pos.show', $po) }}" title="{{ $po->po_number }}"
+                               class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
+                        @else
+                            <div class="block overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50">
+                        @endif
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -127,14 +137,22 @@ Props:
                                 </p>
                                 <p class="mt-0.5 truncate text-xs text-slate-400">{{ Str::limit($po->items, 60) }}</p>
                             </div>
-                        </a>
+                        @if($canViewAdmin)
+                            </a>
+                        @else
+                            </div>
+                        @endif
                     @endforeach
 
                     @foreach(($typedDocs->get('po', collect())) as $doc)
-                        <a href="{{ route('project-documents.download', $doc) }}"
+                        <a href="{{ route('project-documents.preview', $doc) }}"
+                           data-doc-open
+                           data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                           data-download="{{ route('project-documents.download', $doc) }}"
+                           data-filename="{{ $doc->file_name }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -150,22 +168,58 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No purchase orders') }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
-                    @if($canUploadDocs ?? false)
-                        <div class="mt-3 flex justify-center">
-                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                           data-doc-upload-open data-doc-type="po" data-doc-section="{{ __('Purchase Order') }}" />
-                        </div>
-                    @endif
-                    <a href="{{ route('admin.pos.index') }}"
-                       class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                        {{ __('Buka Modul Purchase Order') }} →
-                    </a>
+                    @can('view-admin')
+                        <a href="{{ route('admin.pos.index') }}"
+                           class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
+                            {{ __('Buka Modul Purchase Order') }} →
+                        </a>
+                    @endcan
                 </div>
             @endif
         </div>
 
-        {{-- Payment --}}
+        {{-- Pengiriman Barang (status surat jalan) --}}
+        <div class="mt-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Delivery') }}</span>
+            </div>
+
+            @if($custDeliveries->isNotEmpty())
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($custDeliveries as $delivery)
+                        @php
+                            $deliveryBadgeColor = match($delivery->status) {
+                                'delivered' => 'green',
+                                'shipped' => 'blue',
+                                default => 'slate',
+                            };
+                        @endphp
+                        <div class="block overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/50">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7"/>
+                                </svg>
+                                <span class="absolute left-2 top-2 rounded bg-sky-500 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">DLV</span>
+                            </div>
+                            <div class="p-3">
+                                <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                    <span class="truncate">{{ $delivery->delivery_number }}</span>
+                                    <x-status-badge :color="$deliveryBadgeColor">{{ \App\Models\GoodsDelivery::statusLabel($delivery->status) }}</x-status-badge>
+                                </p>
+                                <p class="mt-0.5 text-xs text-slate-400">{{ $delivery->delivery_date?->format('d M Y') }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No deliveries yet') }}</p>
+                </div>
+            @endif
+        </div>
+
+        {{-- Payment — bukti transfer hanya untuk role finance/management. --}}
+        @can('view-payment-proofs')
         <div class="mt-6">
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-slate-700 dark:text-slate-200">{{ __('Payment') }}</span>
@@ -180,8 +234,8 @@ Props:
                     @foreach($custPayments as $pm)
                         <a href="{{ route('admin.payments.show', $pm) }}" title="{{ $pm->invoice->invoice_number }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 14l6-6m-5.5.5h.01m4.99 1H15a5 5 0 015 5v7H5v-7a5 5 0 015-5h2.5z"/>
                                 </svg>
@@ -196,10 +250,14 @@ Props:
                     @endforeach
 
                     @foreach(($typedDocs->get('payment', collect())) as $doc)
-                        <a href="{{ route('project-documents.download', $doc) }}"
+                        <a href="{{ route('project-documents.preview', $doc) }}"
+                           data-doc-open
+                           data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                           data-download="{{ route('project-documents.download', $doc) }}"
+                           data-filename="{{ $doc->file_name }}"
                            class="block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                            <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="relative flex h-20 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                <svg class="h-6 w-6 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -215,13 +273,6 @@ Props:
             @else
                 <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center dark:border-slate-700">
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No payments') }}</p>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Upload the file so it appears here.') }}</p>
-                    @if($canUploadDocs ?? false)
-                        <div class="mt-3 flex justify-center">
-                            <x-icon-button icon="upload" label="{{ __('Upload File') }}" title="{{ __('Upload File') }}"
-                                           data-doc-upload-open data-doc-type="payment" data-doc-section="{{ __('Payment') }}" />
-                        </div>
-                    @endif
                     <a href="{{ route('admin.payments.index') }}"
                        class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
                         {{ __('Buka Modul Payment') }} →
@@ -229,5 +280,6 @@ Props:
                 </div>
             @endif
         </div>
+        @endcan
     </div>
 </div>

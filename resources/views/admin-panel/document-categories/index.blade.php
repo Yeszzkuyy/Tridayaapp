@@ -28,7 +28,7 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.document-categories.edit', $category) }}" title="{{ __('Edit') }}" />
                                         <form action="{{ route('admin-panel.document-categories.destroy', $category) }}" 
                                               method="POST" 
-                                              onsubmit="return confirm('{{ __('Delete this category?') }}')"
+                                              data-confirm="{{ __('Delete this category?') }}" data-confirm-tone="danger"
                                               class="inline">
                                             @csrf
                                             @method('DELETE')

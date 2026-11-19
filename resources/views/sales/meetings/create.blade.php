@@ -85,7 +85,7 @@
                         @error('activity_time') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Next Follow-up (optional)') }}</label>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Next Meeting') }}</label>
                         <x-datepicker name="next_follow_up_date" value="{{ old('next_follow_up_date') }}"></x-datepicker>
                         @error('next_follow_up_date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                     </div>

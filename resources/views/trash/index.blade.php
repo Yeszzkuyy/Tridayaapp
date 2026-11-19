@@ -22,7 +22,7 @@
                 @endif
                 @if(auth()->user()->hasRole('super-admin') || auth()->user()->can('manage-technician') || auth()->user()->can('manage-sales'))
                 <form action="{{ route('trash.clear') }}" method="POST"
-                      onsubmit="return confirm('{{ __('Permanently delete these items? This action cannot be undone.') }}')">
+                      data-confirm="{{ __('Permanently delete these items? This action cannot be undone.') }}" data-confirm-tone="danger">
                     @csrf
                     @method('DELETE')
                     <x-icon-button icon="delete" type="submit" title="{{ $isSuperAdmin ? __('Empty Trash') : __('Empty My Trash') }}" />

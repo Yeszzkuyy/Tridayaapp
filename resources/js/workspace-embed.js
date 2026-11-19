@@ -1,0 +1,280 @@
+/**
+ * Jembatan antara isi tab (layout embed, di dalam iframe) dan shell luar.
+ *
+ * Hanya aktif bila `<html data-embed="1">` dan berada di dalam iframe
+ * same-origin (`window.parent !== window`).
+ */
+
+function isEmbedded() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+    return (
+        document.documentElement?.getAttribute('data-embed') === '1' &&
+        window.parent &&
+        window.parent !== window
+    );
+}
+
+function send(type, payload = {}) {
+    if (!isEmbedded()) return;
+    try {
+        window.parent.postMessage({ source: '3dy-workspace', type, ...payload }, window.location.origin);
+    } catch (e) {}
+}
+
+function stripEmbedParam(rawUrl) {
+    try {
+        const u = new URL(rawUrl, window.location.origin);
+        u.searchParams.delete('embed');
+        return u.pathname + (u.search || '') + (u.hash || '');
+    } catch (e) {
+        return rawUrl;
+    }
+}
+
+/** Pastikan URL same-origin tetap membawa penanda embed. */
+function withEmbedParam(rawUrl) {
+    try {
+        const u = new URL(rawUrl, window.location.origin);
+        if (u.origin !== window.location.origin) return rawUrl;
+        if (!u.searchParams.has('embed')) u.searchParams.set('embed', '1');
+        return u.toString();
+    } catch (e) {
+        return rawUrl;
+    }
+}
+
+/** Form GET diberi embed di action; form POST diberi input tersembunyi. */
+function prepareEmbedForm(form) {
+    if (!form) return;
+    const action = form.getAttribute('action') || window.location.href;
+    let url;
+    try {
+        url = new URL(action, window.location.origin);
+    } catch (e) {
+        return;
+    }
+    if (url.origin !== window.location.origin) return;
+
+    const method = (form.getAttribute('method') || 'get').toLowerCase();
+    if (method === 'get') {
+        url.searchParams.set('embed', '1');
+        form.setAttribute('action', url.toString());
+        return;
+    }
+
+    if (!form.querySelector('input[name="embed"]')) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'embed';
+        input.value = '1';
+        form.appendChild(input);
+    }
+}
+
+export function initWorkspaceEmbed() {
+    if (!isEmbedded()) return;
+
+    // 1. Jika redirect berakhir di halaman login, minta shell luar reload penuh.
+    if (window.location.pathname === '/login' || document.querySelector('form[action*="/login"]')) {
+        send('login');
+        return;
+    }
+
+    // 2. Patch fetch: sertakan header X-Workspace-Embed pada request same-origin
+    //    supaya navigasi Livewire / AJAX di dalam tab tetap memakai layout embed.
+    if (typeof window.fetch === 'function' && !window.fetch.__workspacePatched) {
+        const origFetch = window.fetch.bind(window);
+        const patched = function (input, init = {}) {
+            try {
+                const raw = typeof input === 'string' ? input : input?.url || '';
+                const url = new URL(raw, window.location.origin);
+                if (url.origin === window.location.origin) {
+                    const headers = new Headers(init.headers || (typeof input !== 'string' ? input?.headers : undefined) || {});
+                    headers.set('X-Workspace-Embed', '1');
+                    init = { ...init, headers };
+                }
+            } catch (e) {}
+            return origFetch(input, init);
+        };
+        patched.__workspacePatched = true;
+        window.fetch = patched;
+    }
+
+    // 2b. Jangan bergantung pada header browser: link dan form di dalam tab
+    //     selalu membawa ?embed=1 agar halaman berikutnya tetap layout embed.
+    document.addEventListener(
+        'click',
+        (event) => {
+            if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+            ) {
+                return;
+            }
+            const anchor = event.target?.closest?.('a[href]');
+            if (!anchor) return;
+            if (
+                anchor.target ||
+                anchor.hasAttribute('download') ||
+                anchor.hasAttribute('data-workspace-bypass')
+            ) {
+                return;
+            }
+            const href = anchor.getAttribute('href') || '';
+            if (!href || href.startsWith('#') || /^(mailto:|tel:|javascript:)/i.test(href)) return;
+            const url = new URL(anchor.href, window.location.origin);
+            if (url.origin !== window.location.origin) return;
+            anchor.setAttribute('href', withEmbedParam(anchor.href));
+        },
+        true,
+    );
+
+    document.addEventListener(
+        'submit',
+        (event) => {
+            const form = event.target?.closest?.('form');
+            if (!form) return;
+            if (form.target && form.target !== '_self') return;
+            prepareEmbedForm(form);
+        },
+        true,
+    );
+
+    // 3. Teruskan window.toast dari dalam tab ke shell luar supaya pop up
+    //    muncul di pojok layar utama dan tidak hilang saat pindah tab.
+    window.toast = function (message, ok = true, action = null) {
+        send('toast', {
+            variant: ok ? 'success' : 'error',
+            message: String(message ?? ''),
+            action: action && action.label ? { label: action.label, href: action.href || null } : null,
+        });
+    };
+
+    // Jenis pesan dipertahankan (warning/info) untuk simpan cepat.
+    window.toastVariant = function (message, variant = 'success', duration = null) {
+        send('toast', {
+            variant: String(variant || 'success'),
+            message: String(message ?? ''),
+            duration: Number.isFinite(duration) ? duration : null,
+        });
+    };
+
+    // 4. Kirim metadata halaman saat ini ke shell luar.
+    const reportMeta = () => {
+        const meta = window.__workspacePage || {};
+        send('meta', {
+            url: stripEmbedParam(window.location.href),
+            path: window.location.pathname,
+            title: meta.tabTitle || document.title.replace(/\s*[—-]\s*Tridaya App.*$/i, '').trim(),
+            sectionLabel: meta.sectionLabel || '',
+            sectionIcon: meta.sectionIcon || 'grid',
+            dirty: false,
+        });
+    };
+
+    // 5. Teruskan flash session (simpan/hapus berhasil dari POST + redirect)
+    //    sekali saja ke shell luar.
+    const reportFlash = () => {
+        const flash = window.__workspaceFlash;
+        if (!flash || flash.__sent) return;
+        flash.__sent = true;
+        ['success', 'warning', 'info', 'error'].forEach((variant) => {
+            if (flash[variant]) {
+                send('toast', { variant, message: String(flash[variant]) });
+            }
+        });
+    };
+
+    // 6. Deteksi form yang sedang diketik (unsaved changes).
+    //    Filter GET (pencarian/filter tabel) diabaikan karena bukan data form.
+    let dirty = false;
+    const setDirty = (next) => {
+        if (dirty === next) return;
+        dirty = next;
+        send('dirty', { dirty });
+    };
+
+    const isTrackableField = (el) => {
+        if (!el || !el.tagName) return false;
+        if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return false;
+        if (el.type === 'hidden' || el.type === 'search' || el.disabled || el.readOnly) return false;
+        if (el.hasAttribute('data-workspace-ignore-dirty')) return false;
+        const form = el.closest('form');
+        if (!form) return false;
+        const method = (form.getAttribute('method') || 'get').toLowerCase();
+        return method === 'post';
+    };
+
+    document.addEventListener(
+        'input',
+        (e) => {
+            if (isTrackableField(e.target)) setDirty(true);
+        },
+        true,
+    );
+    document.addEventListener(
+        'change',
+        (e) => {
+            if (isTrackableField(e.target)) setDirty(true);
+        },
+        true,
+    );
+    document.addEventListener(
+        'submit',
+        () => {
+            setDirty(false);
+        },
+        true,
+    );
+
+    // 7. Sinkron tema dua arah antara shell luar dan isi tab.
+    let applyingAppearanceFromHost = false;
+
+    window.addEventListener('message', (event) => {
+        if (event.origin !== window.location.origin) return;
+        const data = event.data || {};
+        if (data.source !== '3dy-workspace-host') return;
+        if (data.type === 'appearance') {
+            applyingAppearanceFromHost = true;
+            const root = document.documentElement;
+            if (data.mode) root.setAttribute('data-mode', data.mode);
+            if (data.accent) root.setAttribute('data-theme', data.accent);
+            if (typeof window.__applyAppearance === 'function') window.__applyAppearance();
+            setTimeout(() => {
+                applyingAppearanceFromHost = false;
+            }, 0);
+        }
+    });
+
+    // Kirim perubahan tema dari dalam tab (mis. halaman Settings) ke shell
+    // supaya sidebar/navbar ikut berubah dan tab lain disamakan.
+    window.addEventListener('appearance:change', () => {
+        if (applyingAppearanceFromHost) return;
+        send('appearance', {
+            mode: document.documentElement.getAttribute('data-mode') || 'system',
+            accent: document.documentElement.getAttribute('data-theme') || 'ocean',
+        });
+    });
+
+    // Beri tahu shell panel mana yang sedang dipakai (untuk split view).
+    let lastFocusSent = 0;
+    const reportFocus = () => {
+        const now = Date.now();
+        if (now - lastFocusSent < 400) return;
+        lastFocusSent = now;
+        send('focus');
+    };
+    document.addEventListener('pointerdown', reportFocus, true);
+    document.addEventListener('focusin', reportFocus, true);
+
+    reportMeta();
+    reportFlash();
+    document.addEventListener('livewire:navigated', () => {
+        setDirty(false);
+        reportMeta();
+    });
+}

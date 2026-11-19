@@ -44,6 +44,14 @@ class ProposalInsideSalesTest extends TestCase
         ]);
         $lead->update(['assigned_to' => $sales->id]);
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $sales->id,
+        ]);
+
         return $lead;
     }
 
@@ -150,6 +158,22 @@ class ProposalInsideSalesTest extends TestCase
 
         $this->assertSame(0, Proposal::count());
         $this->assertSame($sales->id, (int) $lead->fresh()->assigned_to);
+    }
+
+    public function test_sales_cannot_create_quotation_without_inside_sales_file(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLeadOwnedBy($sales);
+
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertForbidden();
+
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.store'), $this->proposalPayload($lead))
+            ->assertForbidden();
+
+        $this->assertSame(0, Proposal::count());
     }
 
     public function test_unauthorized_roles_are_rejected(): void

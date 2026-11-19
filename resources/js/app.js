@@ -4,6 +4,13 @@ import AlpineBundle from 'alpinejs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { mountLoginGalaxy } from './galaxy.js';
+import { applyAppearanceDom } from './appearance.js';
+import { installLegacyToast } from './toast-store.js';
+import { installConfirmInterceptor, registerConfirmStore } from './confirm-dialog.js';
+import { registerWorkspaceStore } from './workspace-tabs.js';
+import { initWorkspaceEmbed } from './workspace-embed.js';
+import { installInstantSave } from './instant-save.js';
+import { installFormValidation } from './form-validation.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -18,17 +25,17 @@ window.DOMPurify = DOMPurify;
 /* ============================================================
    Appearance — mode (light/dark/system) × accent (theme)
    Token CSS di resources/css/themes/accent/*.css
+   Preferensi disimpan di server; sengaja TIDAK menulis localStorage
+   agar tema tidak tertimpa nilai lama/akun lain di browser yang sama.
    ============================================================ */
 function applyAppearance(mode, accent) {
-    const root = document.documentElement;
-    const dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    root.classList.toggle('dark', dark);
-    root.setAttribute('data-mode', mode);
-    root.setAttribute('data-theme', accent);
-    try {
-        localStorage.setItem('appearance-mode', mode);
-        localStorage.setItem('appearance-accent', accent);
-    } catch (e) {}
+    applyAppearanceDom(document.documentElement, {
+        mode,
+        accent,
+        prefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    });
+    window.__appearanceMode = mode;
+    window.__appearanceAccent = accent;
     window.dispatchEvent(new CustomEvent('appearance:change'));
 }
 
@@ -41,7 +48,7 @@ function persistAppearance(mode, accent, attempt = 1) {
     }).then((res) => {
         // fetch() tidak melempar error untuk status 4xx/5xx — tanpa cek ini
         // kegagalan simpan (mis. 419 token kedaluwarsa) berjalan diam-diam dan
-        // nilai DB vs localStorage nyimpang → kilatan tema salah saat navigasi.
+        // tema kembali ke pilihan lama saat halaman dimuat ulang.
         if (!res.ok) throw new Error('HTTP ' + res.status);
     }).catch((err) => {
         if (attempt < 2) {
@@ -49,6 +56,9 @@ function persistAppearance(mode, accent, attempt = 1) {
             return;
         }
         console.warn('[appearance] gagal menyimpan preferensi tema ke server:', err);
+        if (typeof window.toast === 'function') {
+            window.toast(window.__appearanceSaveFailed || 'Failed to save theme preference. Please try again.', false);
+        }
     });
 }
 
@@ -162,6 +172,9 @@ window.WebPush = {
 window.WebPush.init();
 
 document.addEventListener('alpine:init', () => {
+    registerConfirmStore(Alpine);
+    registerWorkspaceStore(Alpine);
+
     Alpine.store('appearance', {
         mode: window.__appearanceMode || 'system',
         accent: window.__appearanceAccent || 'ocean',
@@ -260,48 +273,59 @@ document.addEventListener('livewire:navigated', () => syncSidebarGroups());
 
 /* ============================================================
    Toast global + form AJAX (tanpa refresh).
+   Pop up notifikasi dirender oleh ToastViewport (React island notifikasi)
+   lewat antrean di resources/js/toast-store.js; API lama
+   `window.toast(message, ok, action)` tetap sama supaya semua pemanggil
+   di view Blade tidak perlu diubah.
    - <form data-ajax data-ajax-target="#tabel"> (GET): ganti target
      dengan partial `html` + pushState URL.
    - <form data-ajax> (POST/PUT/DELETE): JSON {ok, message,
      redirect?}; tanpa redirect + data-ajax-remove="tr" → hapus
      baris terdekat + toast. Sukses + redirect → pindah sekali.
    - 422: kotak error inline di atas form. Gagal total: submit biasa.
-   - Diabaikan bila event sudah di-cancel (mis. confirm() batal).
+   - Diabaikan bila event sudah di-cancel (mis. kartu konfirmasi dibatalkan).
    ============================================================ */
-window.toast = function (message, ok = true, action = null) {
-    const el = document.createElement('div');
-    el.className = 'fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg text-white transition-opacity ' + (ok ? 'bg-green-600' : 'bg-red-600');
-    const icon = document.createElement('span');
-    icon.setAttribute('aria-hidden', 'true');
-    icon.innerHTML = ok
-        ? '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" stroke-linejoin="round" d="m8.5 12.3 2.4 2.4 4.8-5" /></svg>'
-        : '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 shrink-0"><circle cx="12" cy="12" r="8.5" /><path stroke-linecap="round" d="M9 9l6 6M15 9l-6 6" /></svg>';
-    el.appendChild(icon);
-    const text = document.createElement('span');
-    text.textContent = message;
-    el.appendChild(text);
-    if (action && action.href && action.label) {
-        const a = document.createElement('a');
-        a.href = action.href;
-        a.textContent = action.label;
-        a.className = 'font-bold underline underline-offset-2 whitespace-nowrap';
-        el.appendChild(a);
+installLegacyToast();
+
+/* ============================================================
+   Kartu konfirmasi standar (pengganti confirm() bawaan browser).
+   Store Alpine dirender oleh <x-confirm-dialog> di layouts/app.blade.php;
+   penangkap global menangani form/tautan/tombol ber-atribut `data-confirm`.
+   ============================================================ */
+installConfirmInterceptor();
+initWorkspaceEmbed();
+
+/* Simpan cepat: toast tampil sebelum halaman berikutnya selesai dimuat. */
+installInstantSave();
+
+/* Validasi wajib-isi: pesan jelas per isian + ringkasan + fokus otomatis. */
+installFormValidation();
+
+/* Livewire memakai pop up yang sama: komponen cukup
+   $this->dispatch('toast', message: '...', type: 'success'). */
+window.addEventListener('toast', (event) => {
+    const detail = event.detail || {};
+    const message = detail.message || (Array.isArray(detail) ? detail[0] : '');
+
+    if (!message) return;
+
+    if (typeof window.toast === 'function') {
+        window.toast(message, detail.type !== 'error' && detail.ok !== false);
     }
-    document.body.appendChild(el);
-    setTimeout(() => {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 300);
-    }, 3500);
-};
+});
 
 function ajaxShowErrors(form, errors) {
     form.querySelector('[data-ajax-errors]')?.remove();
+
+    const messages = Object.values(errors || {}).flat().filter(Boolean);
+    if (!messages.length) return;
+
     const box = document.createElement('div');
     box.setAttribute('data-ajax-errors', '');
     box.className = 'rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 px-5 py-3 mb-4';
     const ul = document.createElement('ul');
     ul.className = 'list-disc list-inside text-sm space-y-1';
-    Object.values(errors || {}).flat().forEach((msg) => {
+    messages.forEach((msg) => {
         const li = document.createElement('li');
         li.textContent = msg;
         ul.appendChild(li);
@@ -367,7 +391,15 @@ document.addEventListener('submit', async (e) => {
 
         const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers });
         if (res.status === 422) {
-            ajaxShowErrors(form, (await res.json()).errors);
+            // 422 bisa datang dari validasi (ada `errors`) atau dari
+            // abort(422, '...') yang hanya membawa `message`. Jangan tampilkan
+            // kotak error kosong; sampaikan alasannya sebagai toast.
+            const body = await res.json().catch(() => ({}));
+            if (body.errors && Object.keys(body.errors).length) {
+                ajaxShowErrors(form, body.errors);
+            } else if (window.toast) {
+                window.toast(body.message || 'Request rejected. Please check the data.', false);
+            }
             done();
             return;
         }

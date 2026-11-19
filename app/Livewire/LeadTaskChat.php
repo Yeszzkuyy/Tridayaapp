@@ -36,11 +36,35 @@ class LeadTaskChat extends Component
         $this->dispatch('chat-updated');
 
         // Beri tahu lawan bicara (creator/assignee, kecuali pengirim sendiri).
+        // Satu task cukup punya satu notifikasi balasan yang belum dibaca,
+        // supaya chat beruntun tidak menumpuk seperti WhatsApp.
+        $senderName = auth()->user()?->name;
+
         foreach ([$this->task->creator, $this->task->assignee] as $recipient) {
-            if ($recipient && (int) $recipient->id !== (int) auth()->id()) {
-                $recipient->notify(new LeadTaskNotification($this->task, 'comment'));
+            if (! $recipient || (int) $recipient->id === (int) auth()->id()) {
+                continue;
             }
+
+            if ($this->hasUnreadReplyNotification($recipient)) {
+                continue;
+            }
+
+            $recipient->notify(new LeadTaskNotification($this->task, 'comment', $senderName, $validated['body']));
         }
+    }
+
+    /** Penerima sudah punya balasan task ini yang belum dibaca? */
+    private function hasUnreadReplyNotification(\App\Models\User $recipient): bool
+    {
+        return $recipient->unreadNotifications()
+            ->where('type', LeadTaskNotification::class)
+            ->get()
+            ->contains(function ($notification): bool {
+                $data = $notification->data;
+
+                return LeadTaskNotification::isReplyData($data)
+                    && (int) ($data['lead_task_id'] ?? 0) === (int) $this->task->id;
+            });
     }
 
     public function render()

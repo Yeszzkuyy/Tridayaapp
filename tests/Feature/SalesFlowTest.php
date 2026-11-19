@@ -44,6 +44,14 @@ class SalesFlowTest extends TestCase
             $lead->update(['assigned_to' => $assignedTo]);
         }
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $assignedTo,
+        ]);
+
         return $lead;
     }
 
@@ -178,6 +186,7 @@ class SalesFlowTest extends TestCase
             'lead_id' => $lead->id,
             'request_type' => 'survey',
             'title' => 'Survey Lokasi',
+            'location' => 'Jl. Merdeka No. 1',
             'priority' => 'urgent',
         ])->assertRedirect();
 
@@ -228,7 +237,10 @@ class SalesFlowTest extends TestCase
         Notification::assertSentTo($sales, TechnicalRequestReviewedNotification::class);
 
         $this->actingAs($leadTech)
-            ->post(route('sales.technical-requests.assign', $request), ['technician_id' => $tech->id])
+            ->post(route('sales.technical-requests.assign', $request), [
+                'technician_id' => $tech->id,
+                'target_date' => now()->addDay()->toDateString(),
+            ])
             ->assertRedirect();
         $this->assertSame('assigned', $request->refresh()->status);
         $this->assertSame($tech->id, (int) $request->assigned_technician_id);
@@ -246,7 +258,10 @@ class SalesFlowTest extends TestCase
         ]);
 
         $this->actingAs($leadTech)
-            ->post(route('sales.technical-requests.assign', $request), ['technician_id' => $sales->id])
+            ->post(route('sales.technical-requests.assign', $request), [
+                'technician_id' => $sales->id,
+                'target_date' => now()->addDay()->toDateString(),
+            ])
             ->assertStatus(422);
     }
 
@@ -298,8 +313,9 @@ class SalesFlowTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $management = $this->userWithRole('management');
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->format('Y-m-d'),
             'discount' => 10000,
@@ -311,7 +327,7 @@ class SalesFlowTest extends TestCase
         ])->assertRedirect();
 
         $proposal = Proposal::where('lead_id', $lead->id)->firstOrFail();
-        $this->assertMatchesRegularExpression('#^Q/\d{4}/\d{2}/\d{4}$#', $proposal->proposal_number);
+        $this->assertMatchesRegularExpression('#^[A-Z]+/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
         // (2*50000-5000) + 100000 = 195000; -10000 +11000 => 196000
         $this->assertSame(195000.0, (float) $proposal->subtotal);
         $this->assertSame(196000.0, (float) $proposal->grand_total);
@@ -330,6 +346,15 @@ class SalesFlowTest extends TestCase
             'lead_id' => $lead->id, 'proposal_number' => 'Q/2026/10/0001', 'created_by' => $sales->id,
             'proposal_date' => now(), 'customer' => 'PT X', 'status' => 'draft',
         ]);
+        $proposal->items()->create([
+            'description' => 'Paket CCTV',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 1000000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+        $proposal->recalculate();
 
         $this->actingAs($sales)->post(route('sales.proposals.ready', $proposal))->assertRedirect();
         $this->actingAs($sales)->post(route('sales.proposals.send', $proposal))->assertRedirect();

@@ -1,16 +1,11 @@
 <x-app-layout>
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div class="min-w-0">
-                <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">
-                    {{ __('Edit Customer') }}
-                </h1>
-                <p class="text-slate-500 mt-1">
-                    {{ __('Edit customer data:') }} <span class="font-semibold text-slate-700">{{ $customer->name }}</span>
-                </p>
-            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                {{ __('Edit Customer') }}
+            </h1>
             <div class="sm:self-start">
-                <x-icon-button as="a" icon="back" href="{{ route('customers.show', $customer) }}" title="{{ __('Back to Customer') }}" />
+                <x-back-button href="{{ route('customers.show', $customer) }}" />
             </div>
         </div>
 
@@ -54,6 +49,20 @@
                         @endif
                     </div>
 
+                    {{-- Status Customer: prospek vs customer resmi --}}
+                    @can('manage-sales')
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status') }}</label>
+                            <select id="status" name="status"
+                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                @foreach(['lead' => __('Prospects'), 'deal' => __('Deal'), 'instalasi' => __('Installation'), 'selesai' => __('Completed')] as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('status', $customer->status) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('status') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    @endcan
+
                     {{-- Address --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">
@@ -67,6 +76,7 @@
 
                     {{-- Billing & Shipping --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @can('view-customer-finance')
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">
                                 {{ __('Billing Address') }}
@@ -77,6 +87,7 @@
                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('billing_address', $customer->billing_address) }}</textarea>
                             @error('billing_address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
+                        @endcan
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">
                                 {{ __('Shipping Address') }}
@@ -89,58 +100,8 @@
                         </div>
                     </div>
 
-                    {{-- PIC utama --}}
-                    @php
-                        $pic = $customer->primaryPic();
-                        $picValues = [
-                            'name' => old('pic_name', $pic?->name ?: $customer->contact_person),
-                            'position' => old('pic_position', $pic?->position),
-                            'phone' => old('pic_phone', $pic?->phone),
-                            'whatsapp' => old('pic_whatsapp', $pic?->whatsapp),
-                            'email' => old('pic_email', $pic?->email),
-                        ];
-                    @endphp
-                    <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('PIC') }}</p>
-                            <p class="text-xs text-slate-500">{{ __('Primary') }}</p>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="pic_name" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Name') }}</label>
-                                <input type="text" id="pic_name" name="pic_name" value="{{ $picValues['name'] }}"
-                                       placeholder="{{ __('Person / PIC name') }}"
-                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                @error('pic_name') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label for="pic_position" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Position') }}</label>
-                                <input type="text" id="pic_position" name="pic_position" value="{{ $picValues['position'] }}"
-                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                @error('pic_position') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label for="pic_phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Phone') }}</label>
-                                <input type="text" id="pic_phone" name="pic_phone" value="{{ $picValues['phone'] }}"
-                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                @error('pic_phone') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label for="pic_whatsapp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('WhatsApp') }}</label>
-                                <input type="text" id="pic_whatsapp" name="pic_whatsapp" value="{{ $picValues['whatsapp'] }}"
-                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                @error('pic_whatsapp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="pic_email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Email') }}</label>
-                                <input type="email" id="pic_email" name="pic_email" value="{{ $picValues['email'] }}"
-                                       class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                                @error('pic_email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                            </div>
-                        </div>
-                    </div>
-
                     {{-- Finance PIC --}}
+                    @can('view-customer-finance')
                     <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
                         <div>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Finance PIC') }}</p>
@@ -167,6 +128,7 @@
                             </div>
                         </div>
                     </div>
+                    @endcan
 
                     {{-- Phone (perusahaan) --}}
                     <div>
@@ -208,6 +170,7 @@
                     </div>
 
                     {{-- NPWP --}}
+                    @can('view-customer-finance')
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">
@@ -233,6 +196,7 @@
                             @error('npwp_document') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
+                    @endcan
 
                     {{-- Notes --}}
                     <div>
@@ -287,7 +251,7 @@
                             </div>
                             <div class="flex shrink-0 gap-2">
                                 <x-icon-button as="a" icon="edit" href="{{ route('customer-contacts.edit', $contact) }}" title="{{ __('Edit PIC') }}" />
-                                <form action="{{ route('customer-contacts.destroy', $contact) }}" method="POST" class="inline-flex" onsubmit="return confirm('{{ __('Delete this PIC?') }}')">
+                                <form action="{{ route('customer-contacts.destroy', $contact) }}" method="POST" class="inline-flex" data-confirm="{{ __('Delete this PIC?') }}" data-confirm-tone="danger">
                                     @csrf @method('DELETE')
                                     <x-icon-button icon="delete" type="submit" title="{{ __('Delete PIC') }}" />
                                 </form>

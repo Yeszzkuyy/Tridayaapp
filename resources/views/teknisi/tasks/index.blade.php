@@ -1,24 +1,12 @@
 <x-app-layout>
 <div class="px-4 sm:px-6 lg:px-8">
-    @php
-        $statusColors = [
-            'waiting_lead' => 'bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200',
-            'accepted' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-            'rejected' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-            'assigned' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
-            'in_progress' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-            'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-            'cancelled' => 'bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300',
-        ];
-    @endphp
-
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">
-                {{ $isSuperAdmin ? __('Technician Tasks') : __('My Tasks') }}
+                {{ $canViewAllTasks ? __('Technician Tasks') : __('My Tasks') }}
             </h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ $isSuperAdmin ? __('All technician tasks') : __('Assigned to me') }} &middot; {{ $tasks->total() }} {{ __('tasks') }}
+                {{ $canViewAllTasks ? __('All technician tasks') : __('Assigned to me') }} &middot; {{ $tasks->total() }} {{ __('tasks') }}
             </p>
         </div>
     </div>
@@ -35,14 +23,23 @@
                 <label for="task-status" class="whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ __('Status') }}:</label>
                 <select id="task-status" name="status" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
                     <option value="">{{ __('All Statuses') }}</option>
-                    @foreach(\App\Models\TechnicalRequest::STATUSES as $status)
-                        <option value="{{ $status }}" @selected(request('status') === $status)>
-                            {{ \App\Models\TechnicalRequest::statusLabel($status) }}
-                        </option>
-                    @endforeach
+                    <optgroup label="{{ __('Sales Request') }}">
+                        @foreach($requestStatuses as $status)
+                            <option value="{{ $status }}" @selected($statusFilter === $status)>
+                                {{ \App\Models\TechnicalRequest::statusLabel($status) }}
+                            </option>
+                        @endforeach
+                    </optgroup>
+                    @if(! empty($scheduleStatuses))
+                        <optgroup label="{{ __('Jadwal') }}">
+                            @foreach($scheduleStatuses as $status => $label)
+                                <option value="{{ $status }}" @selected($statusFilter === $status)>{{ __($label) }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
                 </select>
             </div>
-            @if($isSuperAdmin)
+            @if($canViewAllTasks)
                 <div class="flex min-w-48 flex-1 items-center gap-2">
                     <label for="task-technician" class="whitespace-nowrap text-sm text-slate-500 dark:text-slate-300">{{ __('Technician') }}:</label>
                     <select id="task-technician" name="technician_id" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
@@ -71,7 +68,7 @@
                     <tr>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Customer') }}</th>
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Task') }}</th>
-                        @if($isSuperAdmin)
+                        @if($canViewAllTasks)
                             <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Technician') }}</th>
                         @endif
                         <th class="px-6 py-4 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-200">{{ __('Location') }}</th>
@@ -82,34 +79,45 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($tasks as $task)
-                        @php
-                            $customer = $task->lead?->customer;
-                            $displayLocation = $task->location ?: $customer?->address;
-                        @endphp
                         <tr class="group transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
                             <td class="px-6 py-4">
-                                <span class="block max-w-[200px] truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ $customer?->name ?? '' }}">
-                                    {{ $customer?->name ?? '-' }}
+                                <span class="block max-w-[200px] truncate font-semibold text-slate-800 dark:text-slate-100" title="{{ $task['customer'] ?? '' }}">
+                                    {{ $task['customer'] ?? '-' }}
                                 </span>
-                                @if($customer?->company)
-                                    <span class="mt-0.5 block max-w-[200px] truncate text-xs text-slate-500 dark:text-slate-400">{{ $customer->company }}</span>
+                                @if($task['customer_company'])
+                                    <span class="mt-0.5 block max-w-[200px] truncate text-xs text-slate-500 dark:text-slate-400">{{ $task['customer_company'] }}</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <a href="{{ route('teknisi.tasks.show', $task) }}" class="block max-w-[220px] truncate font-medium text-accent-600 hover:underline dark:text-accent-400" title="{{ $task->title }}">
-                                    {{ $task->title }}
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    @if($task['source'] === 'schedule')
+                                        <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{{ __('Jadwal') }}</span>
+                                    @else
+                                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ __('Request') }}</span>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ $task['type_label'] }}</span>
+                                    @endif
+                                </div>
+                                <a href="{{ $task['url'] }}" class="mt-0.5 block max-w-[220px] truncate font-medium text-accent-600 hover:underline dark:text-accent-400" title="{{ $task['title'] }}">
+                                    {{ $task['title'] }}
                                 </a>
-                                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                                    {{ \App\Models\TechnicalRequest::typeLabel($task->request_type) }}
-                                </span>
+                                @if(! $canViewAllTasks && $task['technician'])
+                                    <span class="mt-0.5 block max-w-[220px] truncate text-xs text-slate-400" title="{{ $task['technician']->name }}">
+                                        {{ __('Lead Technician') }}: {{ $task['technician']->name }}
+                                    </span>
+                                @endif
+                                @if($task['support_names'] !== '')
+                                    <span class="mt-0.5 block max-w-[220px] truncate text-xs text-slate-400" title="{{ $task['support_names'] }}">
+                                        {{ __('Support Technicians') }}: {{ $task['support_names'] }}
+                                    </span>
+                                @endif
                             </td>
-                            @if($isSuperAdmin)
+                            @if($canViewAllTasks)
                                 <td class="px-6 py-4">
-                                    @if($task->technician)
+                                    @if($task['technician'])
                                         <div class="flex items-center gap-2">
-                                            <x-user-avatar :user="$task->technician" size="h-7 w-7" />
-                                            <span class="block max-w-[160px] truncate text-sm text-slate-700 dark:text-slate-200" title="{{ $task->technician->name }}">
-                                                {{ $task->technician->name }}
+                                            <x-user-avatar :user="$task['technician']" size="h-7 w-7" />
+                                            <span class="block max-w-[160px] truncate text-sm text-slate-700 dark:text-slate-200" title="{{ $task['technician']->name }}">
+                                                {{ $task['technician']->name }}
                                             </span>
                                         </div>
                                     @else
@@ -120,41 +128,44 @@
                                 </td>
                             @endif
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                <span class="block max-w-[200px] truncate" title="{{ $displayLocation ?? '' }}">{{ $displayLocation ?: '-' }}</span>
+                                <span class="block max-w-[200px] truncate" title="{{ $task['location'] ?? '' }}">{{ $task['location'] ?: '-' }}</span>
+                                @if($task['project'])
+                                    <span class="mt-0.5 block max-w-[200px] truncate text-xs text-slate-400" title="{{ $task['project'] }}">{{ $task['project'] }}</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                @if($task->target_date)
-                                    <span class="block">{{ $task->target_date->format('d M Y') }}</span>
-                                    @if($task->target_time)
-                                        <span class="block text-xs text-slate-500 dark:text-slate-400">{{ substr((string) $task->target_time, 0, 5) }}</span>
+                                @if($task['date'])
+                                    <span class="block">{{ $task['date']->format('d M Y') }}</span>
+                                    @if($task['time'])
+                                        <span class="block text-xs text-slate-500 dark:text-slate-400">{{ $task['time'] }}</span>
                                     @endif
                                 @else
                                     -
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusColors[$task->status] ?? 'bg-slate-200 text-slate-700' }}">
-                                    {{ \App\Models\TechnicalRequest::statusLabel($task->status) }}
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $task['status_class'] }}">
+                                    {{ $task['status_label'] }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex justify-end">
-                                    <x-icon-button as="a" icon="view" href="{{ route('teknisi.tasks.show', $task) }}" title="{{ __('View details') }}" />
+                                    <x-icon-button as="a" icon="view" href="{{ $task['url'] }}" title="{{ __('View details') }}" />
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $isSuperAdmin ? 7 : 6 }}" class="px-6 py-16 text-center">
+                            <td colspan="{{ $canViewAllTasks ? 7 : 6 }}" class="px-6 py-16 text-center">
                                 <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
                                     <x-icon name="tools" class="h-6 w-6 text-slate-400" />
                                 </div>
-                                @if($isSuperAdmin)
+                                @if($canViewAllTasks)
                                     <p class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('No technician tasks yet.') }}</p>
-                                    <p class="mt-1 text-xs text-slate-400">{{ __('Technical requests from Sales will appear here.') }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">{{ __('Sales requests and schedules assigned to engineers will appear here.') }}</p>
                                 @else
                                     <p class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('No tasks assigned to you yet.') }}</p>
-                                    <p class="mt-1 text-xs text-slate-400">{{ __('Tasks assigned by your Lead Technician will appear here.') }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">{{ __('Tasks and schedules assigned by your Lead Technician will appear here.') }}</p>
                                 @endif
                             </td>
                         </tr>

@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Invoice;
 use App\Models\Lead;
+use App\Models\Payment;
 use App\Models\Proposal;
-use App\Models\PurchaseOrder;
 use App\Models\SalesTarget;
 use App\Models\User;
 use Carbon\Carbon;
@@ -15,6 +16,7 @@ class SalesKpiService
     /** Nilai target default jika belum diset oleh Management */
     public const DEFAULT_TARGET_REVENUE = 50000000; // Rp 50.000.000
     public const DEFAULT_TARGET_DEALS = 3; // 3 closing deal
+    public const DEFAULT_TARGET_MARGIN = 5000000; // Rp 5.000.000 (10% dari default omzet)
 
     /**
      * Hitung KPI personal seorang user sales untuk bulan dan tahun tertentu.
@@ -31,64 +33,52 @@ class SalesKpiService
 
         $targetRevenue = $targetRecord ? (float) $targetRecord->target_revenue : (float) self::DEFAULT_TARGET_REVENUE;
         $targetDeals = $targetRecord ? (int) $targetRecord->target_deals : (int) self::DEFAULT_TARGET_DEALS;
+        $targetMargin = $targetRecord && $targetRecord->target_margin !== null
+            ? (float) $targetRecord->target_margin
+            : (float) self::DEFAULT_TARGET_MARGIN;
         $isCustomTarget = $targetRecord !== null;
 
-        // 2. Hitung Deals Closing (WON)
-        // Ambil proposal accepted
-        $acceptedProposals = Proposal::where('status', 'accepted')
+        // 2. Deal / PO Masuk: proposal accepted yang PO-nya sudah diverifikasi.
+        //    Nilai ini dipakai sebagai indikator "PO Masuk" di dashboard,
+        //    terpisah dari uang yang benar-benar sudah dibayar.
+        $verifiedPoProposals = Proposal::where('status', 'accepted')
+            ->whereNotNull('po_verified_at')
+            ->whereBetween('po_verified_at', [$startOfMonth, $endOfMonth])
             ->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id)
                     ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
             })
-            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth])
             ->get();
 
-        $proposalRevenue = (float) $acceptedProposals->sum('grand_total');
+        $verifiedPoRevenue = (float) $verifiedPoProposals->sum('grand_total');
+        $verifiedPoDeals = $verifiedPoProposals->count();
 
-        // Ambil lead yang statusnya 'won' dalam bulan ini
-        $wonLeads = Lead::where('assigned_to', $user->id)
-            ->where('status', 'won')
-            ->where(function ($q) use ($startOfMonth, $endOfMonth) {
-                $q->whereBetween('closed_at', [$startOfMonth, $endOfMonth])
-                    ->orWhere(function ($w) use ($startOfMonth, $endOfMonth) {
-                        $w->whereNull('closed_at')
-                            ->whereBetween('updated_at', [$startOfMonth, $endOfMonth]);
-                    });
-            })
-            ->get();
+        // 3. Uang masuk (cash-in) tetap disimpan untuk kebutuhan supervisi
+        //    Management, tetapi KPI Personal memakai deal yang benar-benar
+        //    closed (seluruh invoice lunas), bukan DP/cicilan.
+        $paidRevenue = (float) Payment::query()
+            ->whereBetween('payment_date', [$startOfMonth->toDateString(), $endOfMonth->toDateString()])
+            ->whereHas('invoice', fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
+            ->sum('amount');
 
-        // Ambil PO yang dibuat oleh user atau terhubung ke project sales ini
-        $purchaseOrders = PurchaseOrder::where('created_by', $user->id)
-            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-            ->where('status', '!=', 'dibatalkan')
-            ->get();
+        $closed = $this->closedDealsForUser($user, $startOfMonth, $endOfMonth);
 
-        $poRevenue = (float) $purchaseOrders->sum('amount');
+        $actualDeals = $closed['deals'];
+        $actualRevenue = $closed['revenue'];
+        $actualMargin = $closed['margin'];
+        $marginIncomplete = $closed['margin_incomplete'];
 
-        // Jumlah deal closing adalah kombinasi distinct deal (proposal accepted atau won lead)
-        $actualDeals = max($acceptedProposals->count(), $wonLeads->count());
-        if ($actualDeals === 0 && $purchaseOrders->count() > 0) {
-            $actualDeals = $purchaseOrders->count();
-        }
-
-        // Realisasi omset (ambil nominal terbesar antara proposal won vs PO vs estimasi)
-        $actualRevenue = max($proposalRevenue, $poRevenue);
-
-        // Jika belum ada nominal proposal/PO tapi ada lead won, beri nilai baseline
-        if ($actualRevenue == 0 && $wonLeads->count() > 0) {
-            // Jika ada won lead tanpa proposal nominal
-            $actualRevenue = 0;
-        }
-
-        // 3. Persentase pencapaian
+        // 4. Persentase pencapaian
         $revenuePct = $targetRevenue > 0 ? round(($actualRevenue / $targetRevenue) * 100, 1) : 0;
         $dealsPct = $targetDeals > 0 ? round(($actualDeals / $targetDeals) * 100, 1) : 0;
+        $marginPct = $targetMargin > 0 ? round(($actualMargin / $targetMargin) * 100, 1) : 0;
 
         // Overall progress (rata-rata terbobot omset & deal)
         $overallPct = round(($revenuePct * 0.6) + ($dealsPct * 0.4), 1);
 
         $revenueShortfall = max(0, $targetRevenue - $actualRevenue);
         $dealsShortfall = max(0, $targetDeals - $actualDeals);
+        $marginShortfall = max(0, $targetMargin - $actualMargin);
 
         // 4. Statistik pipeline pendukung
         $activeLeadsCount = Lead::where('assigned_to', $user->id)
@@ -116,19 +106,151 @@ class SalesKpiService
             'period_year' => $year,
             'target_revenue' => $targetRevenue,
             'target_deals' => $targetDeals,
+            'target_margin' => $targetMargin,
             'is_custom_target' => $isCustomTarget,
             'target_notes' => $targetRecord?->notes,
             'actual_revenue' => $actualRevenue,
             'actual_deals' => $actualDeals,
+            'actual_margin' => $actualMargin,
+            'margin_incomplete' => $marginIncomplete,
+            'verified_po_revenue' => $verifiedPoRevenue,
+            'verified_po_deals' => $verifiedPoDeals,
+            'paid_revenue' => $paidRevenue,
             'revenue_pct' => $revenuePct,
             'deals_pct' => $dealsPct,
+            'margin_pct' => $marginPct,
             'overall_pct' => $overallPct,
             'revenue_shortfall' => $revenueShortfall,
             'deals_shortfall' => $dealsShortfall,
+            'margin_shortfall' => $marginShortfall,
             'active_leads' => $activeLeadsCount,
             'conversion_rate' => $conversionRate,
             'celebration' => $celebration,
         ];
+    }
+
+    /**
+     * Total PO terverifikasi bulan berjalan per PT (seluruh Sales di PT itu).
+     *
+     * @return Collection<string, array{value: float, count: int}>
+     */
+    public function getVerifiedPoByPt(int $month, int $year): Collection
+    {
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $rows = Proposal::query()
+            ->join('leads', 'leads.id', '=', 'proposals.lead_id')
+            ->join('customers', 'customers.id', '=', 'leads.customer_id')
+            ->where('proposals.status', 'accepted')
+            ->whereNotNull('proposals.po_verified_at')
+            ->whereBetween('proposals.po_verified_at', [$startOfMonth, $endOfMonth])
+            ->selectRaw('customers.pt_group as pt_group, SUM(proposals.grand_total) as total, COUNT(*) as deals')
+            ->groupBy('customers.pt_group')
+            ->get();
+
+        return collect(Lead::PT_GROUPS)->mapWithKeys(fn ($pt) => [
+            $pt => [
+                'value' => (float) ($rows->firstWhere('pt_group', $pt)?->total ?? 0),
+                'count' => (int) ($rows->firstWhere('pt_group', $pt)?->deals ?? 0),
+            ],
+        ]);
+    }
+
+    /**
+     * Deal yang benar-benar closed: seluruh invoice deal sudah lunas
+     * (atau cancelled) dan total invoice lunas menutup nilai quotation.
+     * Dihitung pada bulan saat invoice terakhir lunas.
+     *
+     * @return array{revenue: float, deals: int}
+     */
+    private function closedDealsForUser(User $user, Carbon $startOfMonth, Carbon $endOfMonth): array
+    {
+        $candidates = Invoice::query()
+            ->with([
+                'proposal:id,grand_total,gross_profit',
+                'project:id,proposal_id',
+                'project.proposal:id,grand_total,gross_profit',
+            ])
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$startOfMonth, $endOfMonth])
+            ->where(fn ($q) => $this->scopeInvoiceToSalesOwner($q, $user))
+            ->get();
+
+        $groups = $candidates->groupBy(function (Invoice $invoice) {
+            if ($invoice->project_id) {
+                return 'project:'.$invoice->project_id;
+            }
+
+            if ($invoice->proposal_id) {
+                return 'proposal:'.$invoice->proposal_id;
+            }
+
+            return 'invoice:'.$invoice->id;
+        });
+
+        $revenue = 0.0;
+        $deals = 0;
+        $margin = 0.0;
+        $marginIncomplete = false;
+
+        foreach ($groups as $key => $invoices) {
+            [$type, $id] = explode(':', (string) $key, 2);
+
+            $dealInvoices = match ($type) {
+                'proposal' => Invoice::where('proposal_id', (int) $id)->get(),
+                'project' => Invoice::where('project_id', (int) $id)->get(),
+                default => collect([$invoices->first()]),
+            };
+
+            if ($dealInvoices->whereNotIn('status', ['paid', 'cancelled'])->isNotEmpty()) {
+                continue;
+            }
+
+            $paidTotal = (float) $dealInvoices->where('status', 'paid')->sum('amount');
+            if ($paidTotal <= 0) {
+                continue;
+            }
+
+            $proposal = $invoices->first()->proposal
+                ?? $invoices->first()->project?->proposal;
+            $expectedValue = (float) ($proposal?->grand_total ?? 0);
+
+            // Jangan anggap closed kalau invoice baru menutup DP/termin
+            // sementara total quotation belum tertagih penuh.
+            if ($expectedValue > 0 && $paidTotal + 0.01 < $expectedValue) {
+                continue;
+            }
+
+            $revenue += $expectedValue > 0 ? $expectedValue : $paidTotal;
+            $deals++;
+
+            if ($proposal && $proposal->gross_profit !== null) {
+                $margin += (float) $proposal->gross_profit;
+            } else {
+                $marginIncomplete = true;
+            }
+        }
+
+        return [
+            'revenue' => round($revenue, 2),
+            'deals' => $deals,
+            'margin' => round($margin, 2),
+            'margin_incomplete' => $marginIncomplete,
+        ];
+    }
+
+    /** Invoice dianggap milik Sales lewat quotation, project, atau lead-nya. */
+    private function scopeInvoiceToSalesOwner($query, User $user): void
+    {
+        $query->where(function ($w) use ($user) {
+            $w->whereHas('proposal', function ($p) use ($user) {
+                $p->where('created_by', $user->id)
+                    ->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
+            })
+                ->orWhereHas('project', fn ($pr) => $pr->where('sales_user_id', $user->id))
+                ->orWhereHas('customer.leads', fn ($l) => $l->where('assigned_to', $user->id));
+        });
     }
 
     /**
@@ -173,9 +295,12 @@ class SalesKpiService
         $totalActualRevenue = (float) $leaderboard->sum('actual_revenue');
         $totalTargetDeals = (int) $leaderboard->sum('target_deals');
         $totalActualDeals = (int) $leaderboard->sum('actual_deals');
+        $totalTargetMargin = (float) $leaderboard->sum('target_margin');
+        $totalActualMargin = (float) $leaderboard->sum('actual_margin');
 
         $teamRevenuePct = $totalTargetRevenue > 0 ? round(($totalActualRevenue / $totalTargetRevenue) * 100, 1) : 0;
         $teamDealsPct = $totalTargetDeals > 0 ? round(($totalActualDeals / $totalTargetDeals) * 100, 1) : 0;
+        $teamMarginPct = $totalTargetMargin > 0 ? round(($totalActualMargin / $totalTargetMargin) * 100, 1) : 0;
         $teamOverallPct = round(($teamRevenuePct * 0.6) + ($teamDealsPct * 0.4), 1);
 
         $topPerformer = $leaderboard->first();
@@ -187,6 +312,9 @@ class SalesKpiService
             'total_target_deals' => $totalTargetDeals,
             'total_actual_deals' => $totalActualDeals,
             'team_deals_pct' => $teamDealsPct,
+            'total_target_margin' => $totalTargetMargin,
+            'total_actual_margin' => $totalActualMargin,
+            'team_margin_pct' => $teamMarginPct,
             'team_overall_pct' => $teamOverallPct,
             'top_performer' => $topPerformer,
             'total_sales_count' => $leaderboard->count(),
@@ -210,7 +338,7 @@ class SalesKpiService
         if (($actualRev >= $targetRev && $targetRev > 0) || ($actualDeals >= $targetDeals && $targetDeals > 0)) {
             return [
                 'type' => 'congratulations',
-                'badge' => 'TARGET TERCAPAI 🏆',
+                'badge' => __('TARGET ACHIEVED 🏆'),
                 'title' => __('Selamat :name, target bulan ini sukses tercapai!', ['name' => $name]),
                 'description' => __('Luar biasa! Anda mencatatkan :deals closing deal dengan pencapaian omset :pct% dari target. Pertahankan performa juara ini!', [
                     'deals' => $actualDeals,
@@ -225,7 +353,7 @@ class SalesKpiService
         if ($actualDeals > 0 || $actualRev > 0) {
             return [
                 'type' => 'progress',
-                'badge' => 'ON TRACK 🚀',
+                'badge' => __('ON TRACK 🚀'),
                 'title' => __('Hebat :name, :count project berhasil closing!', ['name' => $name, 'count' => $actualDeals]),
                 'description' => __('Progres Anda saat ini :pct% dari target. Tinggal :shortfall closing lagi untuk menuntaskan 100% target bulan ini!', [
                     'pct' => $revPct,
@@ -239,7 +367,7 @@ class SalesKpiService
         // Kasus 3: Belum ada closing bulan ini (Motivasi)
         return [
             'type' => 'motivation',
-            'badge' => 'FOKUS TARGET 💪',
+            'badge' => __('FOCUS ON TARGET 💪'),
             'title' => __('Semangat :name, target bulan ini siap diraih!', ['name' => $name]),
             'description' => __('Target bulan ini: :deals Closing Deals & Rp :target. Terus gencarkan follow up dan dekati prospek Anda hari ini!', [
                 'deals' => $targetDeals,

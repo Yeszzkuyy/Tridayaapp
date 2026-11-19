@@ -34,23 +34,28 @@ class AdminHubTest extends TestCase
         $this->actingAs($admin)
             ->get(route('manage.admin.index'))
             ->assertOk()
-            ->assertSee(__('Admin Command Center'))
-            ->assertSee(__('1. Purchasing & Pengadaan'))
-            ->assertSee(__('2. Finance & Penagihan'))
-            ->assertSee(__('3. Kelengkapan Dokumen Proyek'));
+            ->assertSee(__('Admin Dashboard'))
+            ->assertSee(__('Purchasing'))
+            ->assertSee(__('Finance'))
+            ->assertSee(__('Documents'));
+
+        $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee(route('admin.hub'), false);
 
         // Management role (manage-sales-leads, view-admin)
         $management = $this->loginAs('management');
         $this->actingAs($management)
             ->get(route('manage.admin.index'))
             ->assertOk()
-            ->assertSee(__('Admin Command Center'));
+            ->assertSee(__('Admin Dashboard'));
     }
 
     public function test_unauthorized_roles_cannot_access_admin_hub(): void
     {
-        // marketing and technician do not have view-admin or manage-admin
-        foreach (['marketing', 'technician'] as $role) {
+        // Sales tetap bisa membaca quotation sendiri, tetapi bukan Admin Hub.
+        foreach (['sales', 'marketing', 'technician'] as $role) {
             $user = $this->loginAs($role);
             $this->actingAs($user)
                 ->get(route('manage.admin.index'))

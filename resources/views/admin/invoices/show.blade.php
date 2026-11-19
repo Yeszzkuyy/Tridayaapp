@@ -5,14 +5,15 @@
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $invoice->invoice_number }}</h1>
                 <p class="text-slate-500 mt-1 dark:text-slate-400">{{ $invoice->customer->name }}</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex items-center gap-2">
+                <x-icon-button as="a" icon="print" href="{{ route('admin.invoices.print', $invoice) }}" target="_blank" title="{{ __('Print Invoice') }}" />
                 @can('manage-admin')
                     @if($invoice->status !== 'cancelled' && ! $invoice->isFullyPaid())
                         <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $invoice->id]) }}" title="{{ __('Record Payment') }}" />
                     @endif
                     <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $invoice) }}" title="{{ __('Edit') }}" />
                 @endcan
-                <x-icon-button as="a" icon="back" href="{{ route('admin.invoices.index') }}" title="{{ __('Back') }}" />
+                <x-back-button href="{{ route('admin.invoices.index') }}" />
             </div>
         </div>
 
@@ -59,7 +60,7 @@
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Customer PO Number') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer_po_number ?: __('Not set yet') }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer_po_number ?: '-' }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Quotation') }}</dt>
@@ -67,22 +68,22 @@
                         @if($invoice->proposal)
                             <a href="{{ route('sales.proposals.show', $invoice->proposal) }}" class="text-accent-600 dark:text-accent-400 hover:underline">{{ $invoice->proposal->proposal_number }}</a>
                         @else
-                            <span class="text-slate-400 italic">{{ __('No quotation linked') }}</span>
+                            <span class="text-slate-400">{{ __('No quotation linked') }}</span>
                         @endif
                     </dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Payment Terms') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->proposal?->paymentTermsSummary() ?: __('Not set yet') }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->payment_terms ?: ($invoice->proposal?->paymentTermsSummary() ?: '-') }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Billing Address') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->customer?->billingAddress() ?: __('Not set yet') }}</dd>
+                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->billing_address ?: ($invoice->customer?->billingAddress() ?: '-') }}</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-slate-400">{{ __('Finance PIC') }}</dt>
                     <dd class="font-medium text-slate-800 dark:text-slate-100">
-                        {{ $invoice->customer?->financeContact() ?: __('Not set yet') }}
+                        {{ $invoice->customer?->financeContact() ?: '-' }}
                     </dd>
                 </div>
                 <div>
@@ -94,7 +95,7 @@
                                 <a href="{{ route('customers.npwp', $invoice->customer) }}" target="_blank" class="ml-1 text-xs text-indigo-600 hover:underline">{{ __('Download') }}</a>
                             @endif
                         @else
-                            <span class="text-slate-400 italic">{{ __('Not set yet') }}</span>
+                            <span class="text-slate-400">{{ '-' }}</span>
                         @endif
                     </dd>
                 </div>
@@ -108,6 +109,36 @@
             <div class="mt-4 text-xs text-slate-400">{{ __('Created by:') }} {{ $invoice->creator?->name ?? '-' }}</div>
         </div>
 
+        @if($invoice->items->isNotEmpty())
+            <div class="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
+                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Invoice Items') }}</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
+                        <thead>
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Description') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Unit') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Price') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Subtotal') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            @foreach($invoice->items as $item)
+                                <tr>
+                                    <td class="px-3 py-3 text-sm text-slate-800 dark:text-slate-100">{{ $item->description }}</td>
+                                    <td class="px-3 py-3 text-right text-sm text-slate-700 dark:text-slate-300">{{ number_format($item->quantity, 2, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $item->unit }}</td>
+                                    <td class="px-3 py-3 text-right text-sm text-slate-700 dark:text-slate-300">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-right text-sm font-medium text-slate-800 dark:text-slate-100">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
         <div class="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
             <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Payments') }}</h3>
             @forelse($invoice->payments as $payment)
@@ -120,6 +151,8 @@
                         </div>
                         <div class="flex gap-2">
                             @if($payment->proof_file)
+                                <x-file-preview :url="route('admin.payments.proof', $payment)"
+                                                :name="basename($payment->proof_file)" />
                                 <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $payment) }}" target="_blank" title="{{ __('Proof') }}" />
                             @endif
                             <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $payment) }}" title="{{ __('Detail') }}" />
@@ -141,7 +174,9 @@
                         <p class="text-xs text-slate-400">{{ $document->created_at->format('d M Y') }}</p>
                     </div>
                     <div class="flex shrink-0 gap-2">
-                        <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $document) }}" target="_blank" title="{{ __('Preview') }}" />
+                        <x-file-preview :url="route('project-documents.preview', $document)"
+                                        :download="route('project-documents.download', $document)"
+                                        :name="$document->file_name" />
                         <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $document) }}" title="{{ __('Download') }}" />
                     </div>
                 </div>

@@ -1,14 +1,13 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Suppliers') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Procurement suppliers for supplier purchase orders. Separate from marketing partners.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Suppliers') }}</h1>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.supplier-pos.index') }}" title="{{ __('Back') }}" />
             @can('manage-admin')
-                <x-icon-button as="a" icon="add" href="{{ route('admin.suppliers.create') }}" label="{{ __('New Supplier') }}" title="{{ __('New Supplier') }}" />
+                <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.suppliers.create') }}" label="{{ __('New Supplier') }}" title="{{ __('New Supplier') }}" />
             @endcan
+            <x-back-button href="{{ route('admin.supplier-pos.index') }}" />
         </div>
     </div>
 
@@ -71,7 +70,7 @@
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.suppliers.edit', $supplier) }}" title="{{ __('Edit supplier') }}" />
                                         @if($supplier->is_active)
                                             <form action="{{ route('admin.suppliers.destroy', $supplier) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('{{ __('Deactivate this supplier?') }}')">
+                                                  data-confirm="{{ __('Deactivate this supplier?') }}" data-confirm-tone="warning">
                                                 @csrf @method('DELETE')
                                                 <x-icon-button icon="delete" type="submit" title="{{ __('Deactivate') }}" />
                                             </form>

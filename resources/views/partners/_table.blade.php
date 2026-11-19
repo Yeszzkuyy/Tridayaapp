@@ -73,7 +73,7 @@
                                     @can('manage-marketing')
                                         <x-icon-button as="a" icon="edit" href="{{ route('partners.edit', $partner) }}" title="{{ __('Edit Partner') }}" />
                                         <form action="{{ route('partners.destroy', $partner) }}" method="POST"
-                                              onsubmit="return confirm('{{ __('Delete partner') }} {{ $partner->name }}?')" class="inline">
+                                              data-confirm="{{ __('Delete partner') }} {{ $partner->name }}?" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete partner') }}" />
                                         </form>

@@ -1,13 +1,8 @@
 <x-app-layout>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div class="min-w-0">
-            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">
-                {{ __('Add Customer') }}
-            </h1>
-            <p class="text-slate-500 mt-1">
-                {{ __('Record a new company / customer into Tridaya App.') }}
-            </p>
-        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {{ __('Add Customer') }}
+        </h1>
         <div class="sm:self-start">
             <x-icon-button as="a" icon="back" size="lg" href="{{ route('customers.index') }}" title="{{ __('Back') }}" />
         </div>
@@ -56,7 +51,40 @@
             @error('address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
+        {{-- PIC utama --}}
+        <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('PIC') }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="contact_person" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Name') }}</label>
+                    <input type="text" id="contact_person" name="contact_person" value="{{ old('contact_person') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('contact_person') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="contact_position" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Position') }}</label>
+                    <input type="text" id="contact_position" name="contact_position" value="{{ old('contact_position') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('contact_position') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="contact_whatsapp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('WhatsApp') }}</label>
+                    <input type="text" id="contact_whatsapp" name="contact_whatsapp" value="{{ old('contact_whatsapp') }}"
+                           inputmode="tel"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('contact_whatsapp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="contact_email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Email') }}</label>
+                    <input type="email" id="contact_email" name="contact_email" value="{{ old('contact_email') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('contact_email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @can('view-customer-finance')
             <div>
                 <label for="billing_address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                     {{ __('Billing Address') }}
@@ -66,6 +94,7 @@
                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('billing_address') }}</textarea>
                 @error('billing_address') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+            @endcan
             <div>
                 <label for="shipping_address" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                     {{ __('Shipping Address') }}
@@ -77,46 +106,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
-            <div>
-                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('PIC') }}</p>
-                <p class="text-xs text-slate-500">{{ __('Primary') }}</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="pic_name" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Name') }}</label>
-                    <input type="text" id="pic_name" name="pic_name" value="{{ old('pic_name') }}"
-                           placeholder="{{ __('Person / PIC name') }}"
-                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                    @error('pic_name') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label for="pic_position" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Position') }}</label>
-                    <input type="text" id="pic_position" name="pic_position" value="{{ old('pic_position') }}"
-                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                    @error('pic_position') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label for="pic_phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Phone') }}</label>
-                    <input type="text" id="pic_phone" name="pic_phone" value="{{ old('pic_phone') }}"
-                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                    @error('pic_phone') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label for="pic_whatsapp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('WhatsApp') }}</label>
-                    <input type="text" id="pic_whatsapp" name="pic_whatsapp" value="{{ old('pic_whatsapp') }}"
-                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                    @error('pic_whatsapp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div class="md:col-span-2">
-                    <label for="pic_email" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Email') }}</label>
-                    <input type="email" id="pic_email" name="pic_email" value="{{ old('pic_email') }}"
-                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                    @error('pic_email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-        </div>
-
+        @can('view-customer-finance')
         <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
             <div>
                 <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Finance PIC') }}</p>
@@ -143,6 +133,7 @@
                 </div>
             </div>
         </div>
+        @endcan
 
         <div>
             <label for="phone" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
@@ -174,6 +165,7 @@
             @error('email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
+        @can('view-customer-finance')
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label for="npwp" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
@@ -192,6 +184,7 @@
                 @error('npwp_document') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
+        @endcan
 
         <div>
             <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">

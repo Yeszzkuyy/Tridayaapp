@@ -1,8 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
-
     @php
         $user = auth()->user();
         $fromTasks = $fromTasks ?? false;
@@ -19,7 +15,7 @@
         $customer = $technicalRequest->lead?->customer;
         $displayLocation = $technicalRequest->location ?: $customer?->address;
         $displayPicName = $technicalRequest->pic_contact_name ?: $customer?->picName();
-        $displayPicPhone = $technicalRequest->pic_contact_phone ?: $customer?->picWhatsapp();
+        $displayPicPhone = $technicalRequest->pic_contact_phone ?: ($customer?->whatsapp ?: $customer?->phone);
         $attachmentName = $technicalRequest->attachment_path
             ? preg_replace('/^\d+_/', '', basename($technicalRequest->attachment_path))
             : null;
@@ -34,11 +30,12 @@
         ];
         $canReview = $isCoordinator && $technicalRequest->status === 'waiting_lead';
         $canAssign = $isCoordinator && in_array($technicalRequest->status, ['accepted', 'assigned'], true);
-        $canWork = ($isSuperAdmin || (int) $technicalRequest->assigned_technician_id === (int) $user?->id)
+        $canWork = ($isSuperAdmin || $technicalRequest->isAssignedTo($user))
             && in_array($technicalRequest->status, ['assigned', 'in_progress'], true);
         $canCancel = !in_array($technicalRequest->status, ['completed', 'cancelled'], true)
             && ((int) $technicalRequest->requested_by === (int) $user?->id || $user?->can('manage-sales-leads'));
-        $canCreateQuotation = $technicalRequest->status === 'completed' && ($user?->can('manage-sales') ?? false);
+        $canCreateQuotation = $technicalRequest->status === 'completed'
+            && (($user?->can('manage-inside-sales') ?? false) || ($user?->can('manage-sales-leads') ?? false));
         $hasActions = ! $readOnly && ($canReview || $canAssign || $canWork || $canCancel || $canCreateQuotation);
         $hasWorkDetails = collect([
             $technicalRequest->purpose,
@@ -52,6 +49,8 @@
         ])->contains(fn ($value) => filled($value));
         $survey = $technicalRequest->survey;
         $surveyHasReport = $survey?->hasReport() ?? false;
+        $installation = $technicalRequest->installation;
+        $installationHasReport = $installation?->hasReport() ?? false;
     @endphp
 
     <div>
@@ -78,6 +77,34 @@
             <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
         </div>
 
+        {{-- Workflow pekerjaan lapangan --}}
+        <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="field-job-workflow-heading">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="field-job-workflow-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Workflow Progress') }}</h2>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    {{ $workflow['done'] }}/{{ $workflow['total'] }} {{ __('steps completed') }}
+                </span>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach($workflow['steps'] as $index => $step)
+                    <div class="flex items-start gap-2.5 rounded-xl border p-3 {{ $step['done'] ? 'border-green-200 bg-green-50 dark:border-green-800/60 dark:bg-green-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/30' }}">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $step['done'] ? 'bg-green-500 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300' }}">
+                            @if($step['done'])
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            @else
+                                {{ $index + 1 }}
+                            @endif
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $step['label'] }}</p>
+                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $step['detail'] }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
         @if($fromTasks && $readOnly)
             <div class="mb-4 flex items-start gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 dark:border-accent-500/30 dark:bg-accent-500/10">
                 <x-icon name="eye" class="mt-0.5 h-4 w-4 shrink-0 text-accent-600 dark:text-accent-300" />
@@ -103,17 +130,40 @@
                         </div>
                     </div>
 
-                    <div class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
-                        @if($technicalRequest->technician)
-                            <x-user-avatar :user="$technicalRequest->technician" size="w-11 h-11" text="text-sm" color="green" />
-                        @else
+                    <div class="space-y-3">
+                        <div class="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+                            @if($technicalRequest->technician)
+                                <x-user-avatar :user="$technicalRequest->technician" size="w-11 h-11" text="text-sm" color="green" />
+                            @else
+                                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300" aria-hidden="true">
+                                    <x-icon name="tools" class="h-5 w-5" />
+                                </span>
+                            @endif
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Technician') }}</p>
+                                <p class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ $technicalRequest->technician?->name ?? __('Not assigned yet') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex min-w-0 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
                             <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500 dark:bg-slate-600 dark:text-slate-300" aria-hidden="true">
                                 <x-icon name="tools" class="h-5 w-5" />
                             </span>
-                        @endif
-                        <div class="min-w-0">
-                            <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Technician') }}</p>
-                            <p class="truncate font-semibold text-slate-800 dark:text-slate-100">{{ $technicalRequest->technician?->name ?? __('Not assigned yet') }}</p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-medium text-slate-500 dark:text-slate-300">{{ __('Support Technicians') }}</p>
+                                @if($technicalRequest->supportUsers->isNotEmpty())
+                                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                        @foreach($technicalRequest->supportUsers as $support)
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                                <x-user-avatar :user="$support" size="h-5 w-5" text="text-[9px]" :clickable="false" />
+                                                {{ $support->name }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ __('No support engineers yet') }}</p>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -253,7 +303,13 @@
                     <h2 id="technical-request-attachments-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Attachments') }}</h2>
                     <div class="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-600 sm:flex-row sm:items-center sm:justify-between">
                         <p class="min-w-0 break-all text-sm font-medium text-slate-800 dark:text-slate-100">{{ $attachmentName }}</p>
-                        <x-icon-button as="a" icon="download" href="{{ $fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
+                        <div class="flex shrink-0 items-center gap-2">
+                            <x-file-preview
+                                :url="$fromTasks ? route('teknisi.technical-requests.attachment.preview', $technicalRequest) : route('sales.technical-requests.attachment.preview', $technicalRequest)"
+                                :download="$fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest)"
+                                :name="$attachmentName" />
+                            <x-icon-button as="a" icon="download" href="{{ $fromTasks ? route('teknisi.technical-requests.attachment', $technicalRequest) : route('sales.technical-requests.attachment', $technicalRequest) }}" label="{{ __('Download Attachment') }}" title="{{ __('Download Attachment') }}" />
+                        </div>
                     </div>
                 </section>
             @endif
@@ -268,6 +324,21 @@
                             </p>
                         </div>
                         <x-icon-button as="a" icon="view" href="{{ route('teknisi.surveys.show', $survey) }}" label="{{ $survey->title }}" title="{{ $survey->title }}" />
+                    </div>
+                </section>
+            @endif
+
+            @if($installation)
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 sm:p-6" aria-labelledby="technical-request-installation-heading">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 id="technical-request-installation-heading" class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Related Installation') }}</h2>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                {{ $installationHasReport ? __('Report has been uploaded') : __('Report not uploaded yet') }}
+                                · {{ $installation->isBastReady() ? __('BAST signed') : __('BAST not signed yet') }}
+                            </p>
+                        </div>
+                        <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.show', $installation) }}" label="{{ __('Installation Detail') }}" title="{{ __('Installation Detail') }}" />
                     </div>
                 </section>
             @endif
@@ -291,7 +362,7 @@
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
                                 </form>
                                 <form action="{{ route('sales.technical-requests.review', $technicalRequest) }}" method="POST" class="inline" data-loading-text="{{ __('Processing…') }}"
-                                      onsubmit="return confirm('{{ __('Reject this request?') }}')">
+                                      data-confirm="{{ __('Reject this request?') }}" data-confirm-tone="danger">
                                     @csrf
                                     <input type="hidden" name="decision" value="rejected">
                                     <x-icon-button type="submit" icon="delete" label="{{ __('Reject') }}" title="{{ __('Reject') }}" />
@@ -300,23 +371,119 @@
                         @endif
 
                         @if($canAssign)
-                            <form action="{{ route('sales.technical-requests.assign', $technicalRequest) }}" method="POST" class="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Assigning…') }}">
+                            @php
+                                $supportOptions = $technicians
+                                    ->map(fn ($tech) => ['id' => (int) $tech->id, 'name' => $tech->name])
+                                    ->values();
+                                $selectedSupportIds = $technicalRequest->supportUsers
+                                    ->pluck('id')
+                                    ->map(fn ($id) => (int) $id)
+                                    ->values();
+                            @endphp
+                            <form action="{{ route('sales.technical-requests.assign', $technicalRequest) }}" method="POST"
+                                  class="border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Assigning…') }}"
+                                  x-data="{
+                                      mainId: @js((int) old('technician_id', $technicalRequest->assigned_technician_id) ?: null),
+                                      supportOpen: false,
+                                      supportQuery: '',
+                                      supportIds: @js($selectedSupportIds),
+                                      supportOptions: @js($supportOptions),
+                                      get filteredSupports() {
+                                          const q = this.supportQuery.toLowerCase().trim();
+                                          return this.supportOptions.filter(t => Number(t.id) !== Number(this.mainId) && (!q || t.name.toLowerCase().includes(q)));
+                                      },
+                                      get supportSummary() {
+                                          const names = this.supportIds.map(id => this.supportOptions.find(t => Number(t.id) === Number(id))?.name).filter(Boolean);
+                                          return names.length ? names.join(', ') : '{{ __('Choose support engineers (optional)') }}';
+                                      },
+                                      syncMain() {
+                                          this.supportIds = this.supportIds.filter(id => Number(id) !== Number(this.mainId));
+                                      },
+                                      toggleSupport(id) {
+                                          const i = this.supportIds.indexOf(id);
+                                          if (i === -1) this.supportIds.push(id); else this.supportIds.splice(i, 1);
+                                      }
+                                  }">
                                 @csrf
-                                <div>
-                                    <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Assign Technician') }}</label>
-                                    <select name="technician_id" required class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                        <option value="">{{ __('-- Select Technician --') }}</option>
-                                        @foreach($technicians as $tech)
-                                            <option value="{{ $tech->id }}" @selected((int) $technicalRequest->assigned_technician_id === (int) $tech->id)>{{ $tech->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('technician_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                <div class="grid grid-cols-1 gap-3">
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Lead Technician') }} <span class="text-red-500" aria-hidden="true">*</span></label>
+                                        <select name="technician_id" x-model.number="mainId" @change="syncMain()" required
+                                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                            <option value="">{{ __('-- Select Technician --') }}</option>
+                                            @foreach($technicians as $tech)
+                                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('technician_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            {{ __('Target Date') }} <span class="text-red-500" aria-hidden="true">*</span>
+                                        </label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="date" name="target_date"
+                                                   value="{{ old('target_date', $technicalRequest->target_date?->format('Y-m-d')) }}"
+                                                   @if(! $technicalRequest->target_date) required @endif
+                                                   class="flex-1 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                            <input type="time" name="target_time"
+                                                   value="{{ old('target_time', $technicalRequest->target_time ? substr((string) $technicalRequest->target_time, 0, 5) : '') }}"
+                                                   ondblclick="try { this.showPicker() } catch (e) {}"
+                                                   title="{{ __('Double-click to open the time picker') }}"
+                                                   class="w-32 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                        </div>
+                                        <p class="mt-1 text-xs text-slate-400">{{ __('Used to create the technician schedule. Empty time starts at 09:00.') }}</p>
+                                        @error('target_date') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                        @error('target_time') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Support Technicians') }}</label>
+                                        <div class="relative" @click.outside="supportOpen = false">
+                                            <button type="button" @click="supportOpen = !supportOpen"
+                                                    class="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-left text-sm dark:border-slate-600 dark:bg-slate-800 focus:border-accent-500 focus:ring-accent-500">
+                                                <span class="truncate" :class="supportIds.length ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400'" x-text="supportSummary"></span>
+                                                <svg class="h-4 w-4 shrink-0 text-slate-400" :class="supportOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+                                            </button>
+
+                                            <div x-show="supportOpen" x-cloak x-transition
+                                                 class="absolute bottom-full z-30 mb-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-800">
+                                                <div class="p-2">
+                                                    <input type="text" x-model="supportQuery" placeholder="{{ __('Search support engineer...') }}"
+                                                           class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                                                </div>
+                                                <div class="max-h-52 overflow-y-auto pb-1">
+                                                    <template x-for="tech in filteredSupports" :key="tech.id">
+                                                        <label class="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition hover:bg-accent-50 dark:text-slate-200 dark:hover:bg-slate-700">
+                                                            <input type="checkbox" :value="tech.id" :checked="supportIds.includes(tech.id)"
+                                                                   @change="toggleSupport(tech.id)"
+                                                                   class="rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                            <span class="truncate" x-text="tech.name"></span>
+                                                        </label>
+                                                    </template>
+                                                    <p x-show="filteredSupports.length === 0" class="px-3 py-2 text-sm text-slate-400">{{ __('No results.') }}</p>
+                                                </div>
+                                            </div>
+
+                                            {{-- Penanda: form selalu mengirim daftar support (boleh kosong). --}}
+                                            <input type="hidden" name="support_present" value="1">
+                                            <template x-for="id in supportIds" :key="id">
+                                                <input type="hidden" name="support_ids[]" :value="id">
+                                            </template>
+                                        </div>
+                                        @error('support_ids') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                        @error('support_ids.*') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                                    </div>
                                 </div>
-                                <button type="submit"
-                                        class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                                    {{ __('Save') }}
-                                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                                </button>
+
+                                <div class="mt-3">
+                                    <button type="submit"
+                                            class="group relative overflow-hidden rounded-xl bg-accent-600 px-6 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
+                                        {{ __('Save') }}
+                                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                                    </button>
+                                </div>
                             </form>
                         @endif
 
@@ -348,7 +515,7 @@
                                 </form>
 
                                 <form action="{{ route('sales.technical-requests.complete', $technicalRequest) }}" method="POST" class="border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Completing…') }}"
-                                      onsubmit="return confirm('{{ __('Complete this job?') }}')">
+                                      data-confirm="{{ __('Complete this job?') }}" data-confirm-tone="success">
                                     @csrf
                                     <x-icon-button type="submit" icon="sparkles" label="{{ __('Complete') }}" title="{{ __('Complete') }}" />
                                 </form>
@@ -357,7 +524,7 @@
 
                         @if($canCancel)
                             <form action="{{ route('sales.technical-requests.cancel', $technicalRequest) }}" method="POST" class="border-t border-slate-200 pt-4 dark:border-slate-600" data-loading-text="{{ __('Cancelling…') }}"
-                                  onsubmit="return confirm('{{ __('Cancel this request?') }}')">
+                                  data-confirm="{{ __('Cancel this request?') }}" data-confirm-tone="danger">
                                 @csrf
                                 <x-icon-button type="submit" icon="delete" label="{{ __('Cancel') }}" title="{{ __('Cancel') }}" />
                             </form>

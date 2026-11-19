@@ -1,11 +1,22 @@
 <?php
 
+use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\FlashActionToast;
+use App\Http\Middleware\InstantSaveResponse;
+use App\Http\Middleware\PropagateWorkspaceEmbed;
+use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\SetSecurityHeaders;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,9 +36,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Preferensi bahasa per-user (Profil > Setting > Bahasa).
         $middleware->web(append: [
-            \App\Http\Middleware\SetLocale::class,
-            \App\Http\Middleware\SetSecurityHeaders::class,
-            \App\Http\Middleware\EnsureUserHasRole::class,
+            SetLocale::class,
+            SetSecurityHeaders::class,
+            EnsureUserHasRole::class,
+            // Di luar FlashActionToast: baca flash setelah middleware itu
+            // memasang pesan bawaan, lalu ubah redirect menjadi JSON.
+            InstantSaveResponse::class,
+            FlashActionToast::class,
+            PropagateWorkspaceEmbed::class,
         ]);
 
         // Percayai proxy (nginx/ngrok) agar Laravel melihat skema https asli
@@ -44,7 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Token CSRF basi (sesi kedaluwarsa/hilang) pada request logout
         // atau dari user yang sudah guest: antar ke login, bukan 419.
         // Mismatch lain saat masih login tetap 419 (proteksi CSRF utuh).
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
             if ($request->routeIs('logout') || $request->user() === null) {
                 if ($request->expectsJson()) {
                     return response()->json(['message' => __('Sesi berakhir. Silakan login kembali.')], 419);
@@ -55,8 +71,25 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return null;
         });
+
+        // Catat penolakan aturan bisnis (abort(422, '...')) agar pemicunya bisa
+        // dilacak dari log. ValidationException tidak lewat jalur ini, jadi log
+        // tidak dibanjiri error validasi form biasa.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            if ($e->getStatusCode() !== 422) {
+                return null;
+            }
+
+            Log::warning('422 ditolak: '.$e->getMessage(), [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'user_id' => $request->user()?->id,
+            ]);
+
+            return null;
+        });
     })
-    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+    ->withSchedule(function (Schedule $schedule) {
         // Polling pesan masuk & status WhatsApp (Green API) — untuk localhost tanpa webhook publik
         $schedule->command('whatsapp:receive')->everyThirtySeconds()
             ->withoutOverlapping();

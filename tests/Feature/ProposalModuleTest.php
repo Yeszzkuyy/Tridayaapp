@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\LeadTask;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Proposal;
@@ -51,7 +52,32 @@ class ProposalModuleTest extends TestCase
             $lead->update(['assigned_to' => $assignedTo]);
         }
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $assignedTo,
+        ]);
+
         return $lead;
+    }
+
+    private function insideSalesWithTask(Lead $lead): User
+    {
+        $inside = $this->userWithRole('inside-sales');
+
+        LeadTask::create([
+            'lead_id' => $lead->id,
+            'title' => 'Buatkan draft quotation',
+            'description' => 'Follow-up kebutuhan customer.',
+            'assigned_to' => $inside->id,
+            'due_date' => now()->addDays(3)->toDateString(),
+            'priority' => 'high',
+            'status' => 'todo',
+        ]);
+
+        return $inside;
     }
 
     private function makeProposal(Lead $lead, string $status = 'draft', ?int $createdBy = null): Proposal
@@ -93,7 +119,6 @@ class ProposalModuleTest extends TestCase
             'name' => 'Kamera Test',
             'category' => 'barang',
             'unit' => 'unit',
-            'default_price' => 500000,
         ])->assertRedirect(route('products.index'));
 
         $product = Product::where('sku', 'CAM-T1')->firstOrFail();
@@ -146,6 +171,54 @@ class ProposalModuleTest extends TestCase
         $this->assertSame('draft', $proposal->fresh()->status);
     }
 
+    public function test_zero_value_quotation_cannot_be_ready_sent_or_accepted(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $proposal = Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/2026/10/EMPTY-'.uniqid(),
+            'created_by' => $sales->id,
+            'proposal_date' => now()->toDateString(),
+            'customer' => $lead->customer->name,
+            'status' => 'draft',
+        ]);
+
+        // Draft kosong tidak boleh ditandai ready.
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.ready', $proposal))
+            ->assertSessionHasErrors('quotation');
+        $this->assertSame('draft', $proposal->fresh()->status);
+
+        // Status ready lama (data historis) juga tidak boleh dikirim.
+        $proposal->update(['status' => 'ready']);
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.send', $proposal))
+            ->assertSessionHasErrors('quotation');
+        $this->assertSame('ready', $proposal->fresh()->status);
+
+        // Status sent lama juga tidak boleh diterima customer.
+        $proposal->update(['status' => 'sent']);
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.respond', $proposal), ['decision' => 'accepted'])
+            ->assertSessionHasErrors('quotation');
+        $this->assertSame('sent', $proposal->fresh()->status);
+    }
+
+    public function test_admin_can_browse_all_quotations(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+        $lead = $this->makeLead($sales->id);
+        $proposal = $this->makeProposal($lead, 'draft', $sales->id);
+
+        $this->actingAs($admin)
+            ->get(route('sales.proposals.index'))
+            ->assertOk()
+            ->assertSee($proposal->proposal_number);
+    }
+
     public function test_accept_syncs_lead_won(): void
     {
         $sales = $this->userWithRole('sales');
@@ -158,6 +231,7 @@ class ProposalModuleTest extends TestCase
         $this->assertSame('accepted', $proposal->fresh()->status);
         $fresh = $lead->fresh();
         $this->assertSame('won', $fresh->status);
+        $this->assertSame('deal', $fresh->customer->status);
         $this->assertNotNull($fresh->closed_at);
         $this->assertTrue(LeadActivity::where('lead_id', $lead->id)->where('action', 'proposal_accepted')->exists());
     }
@@ -170,7 +244,12 @@ class ProposalModuleTest extends TestCase
         $proposal->update([
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-TEST-3',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Mapping No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
         $workType = WorkType::create(['name' => 'Instalasi']);
 
@@ -195,8 +274,9 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $management = $this->userWithRole('management');
 
-        $this->actingAs($sales)->post(route('sales.proposals.store'), [
+        $this->actingAs($management)->post(route('sales.proposals.store'), [
             'lead_id' => $lead->id,
             'proposal_date' => now()->toDateString(),
             'payment_scheme' => 'dp',
@@ -222,7 +302,9 @@ class ProposalModuleTest extends TestCase
             ->get(route('sales.proposals.preview', $proposal))
             ->assertOk()
             ->assertSee('DP 30% setelah PO, pelunasan setelah BAST')
-            ->assertSee('Ready stock 3-5 hari kerja');
+            ->assertSee('Ready stock 3-5 hari kerja')
+            ->assertSee('3DY GROUP')
+            ->assertSee(__('Print / Save as PDF'));
     }
 
     public function test_convert_requires_customer_po_number_and_payment_terms_and_copies_deadline(): void
@@ -255,6 +337,10 @@ class ProposalModuleTest extends TestCase
             'payment_scheme' => 'dp',
             'dp_percent' => 30,
             'delivery_deadline' => $deadline,
+            'po_date' => now()->toDateString(),
+            'delivery_address' => 'Jl. Uji Deadline No. 1',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
 
         $this->actingAs($sales)->post(route('sales.proposals.convert', $proposal), [
@@ -281,10 +367,11 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $mine = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($mine);
         $otherSales = $this->userWithRole('sales');
         $foreign = $this->makeLead($otherSales->id);
 
-        $html = $this->actingAs($sales)
+        $html = $this->actingAs($inside)
             ->get(route('sales.proposals.create'))
             ->assertOk()
             ->getContent();
@@ -298,15 +385,16 @@ class ProposalModuleTest extends TestCase
     {
         $sales = $this->userWithRole('sales');
         $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
         $otherSales = $this->userWithRole('sales');
         $foreign = $this->makeLead($otherSales->id);
 
-        $this->actingAs($sales)
+        $this->actingAs($inside)
             ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
             ->assertOk()
             ->assertSee(__('Create Quotation'));
 
-        $this->actingAs($sales)
+        $this->actingAs($inside)
             ->get(route('sales.proposals.create', ['lead_id' => $foreign->id]))
             ->assertForbidden();
     }
@@ -326,6 +414,7 @@ class ProposalModuleTest extends TestCase
 
         $this->actingAs($sales)->post(route('sales.proposals.upload-po', $proposal), [
             'po_file' => UploadedFile::fake()->create('po.pdf', 100, 'application/pdf'),
+            'delivery_address' => 'Jl. Pengiriman Uji No. 2, Jakarta',
         ])->assertRedirect();
         $this->assertNotNull($proposal->fresh()->po_document_path);
 
@@ -336,6 +425,7 @@ class ProposalModuleTest extends TestCase
     {
         Storage::fake('private');
         $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
         $customer = Customer::create(['name' => 'PT NPWP']);
 
         $this->actingAs($sales)->put(route('customers.update', $customer), [
@@ -349,7 +439,7 @@ class ProposalModuleTest extends TestCase
         $this->assertSame('01.234.567.8-901.234', $fresh->npwp);
         $this->assertNotNull($fresh->npwp_document_path);
 
-        $this->actingAs($sales)->get(route('customers.npwp', $customer))->assertOk();
+        $this->actingAs($admin)->get(route('customers.npwp', $customer))->assertOk();
     }
 
     public function test_index_kpi_renders(): void
@@ -381,5 +471,107 @@ class ProposalModuleTest extends TestCase
             ->assertOk()
             ->assertSee(__('Upload PO'))
             ->assertSee(__('Convert to Project'));
+    }
+
+    public function test_create_quotation_form_has_structured_item_and_price_fields(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
+
+        $html = $this->actingAs($inside)
+            ->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('name="items[0][description]"', $html);
+        $this->assertStringContainsString('name="items[0][unit_price]"', $html);
+        $this->assertStringContainsString('name="quotation_file"', $html);
+    }
+
+    public function test_zero_value_ready_quotation_can_be_edited_then_sent(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+
+        $proposal = Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/2026/10/READY-'.uniqid(),
+            'created_by' => $sales->id,
+            'proposal_date' => now()->toDateString(),
+            'customer' => $lead->customer->name,
+            'status' => 'ready',
+        ]);
+
+        // Quotation ready bernilai 0 tetap bisa dikoreksi lewat Edit.
+        $this->actingAs($sales)
+            ->get(route('sales.proposals.edit', $proposal))
+            ->assertOk();
+
+        $this->actingAs($sales)->put(route('sales.proposals.update', $proposal), [
+            'proposal_date' => now()->toDateString(),
+            'items' => [[
+                'description' => 'Paket quotation',
+                'quantity' => 1,
+                'unit' => 'paket',
+                'unit_price' => 1500000,
+                'discount' => 0,
+            ]],
+        ])->assertRedirect();
+
+        $proposal->refresh();
+        $this->assertSame(1500000.0, (float) $proposal->grand_total);
+
+        $this->actingAs($sales)
+            ->post(route('sales.proposals.send', $proposal))
+            ->assertRedirect();
+        $this->assertSame('sent', $proposal->fresh()->status);
+    }
+
+    public function test_create_quotation_by_uploading_file_without_items(): void
+    {
+        Storage::fake('private');
+
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
+
+        $this->actingAs($inside)->get(route('sales.proposals.create', ['lead_id' => $lead->id]))
+            ->assertOk()
+            ->assertSee('quotation_file', false);
+
+        $response = $this->actingAs($inside)->post(route('sales.proposals.store'), [
+            'lead_id' => $lead->id,
+            'proposal_date' => now()->toDateString(),
+            'valid_until' => now()->addDays(14)->toDateString(),
+            'notes' => 'Quotation dari sales',
+            'quotation_file' => UploadedFile::fake()->create('quotation-sales.pdf', 140, 'application/pdf'),
+        ]);
+
+        $proposal = Proposal::latest('id')->firstOrFail();
+
+        $response->assertRedirect(route('sales.proposals.show', $proposal));
+        $this->assertSame('draft', $proposal->status);
+        $this->assertCount(0, $proposal->items()->get());
+
+        $attachment = $proposal->attachments()->firstOrFail();
+        $this->assertSame('quotation-sales.pdf', $attachment->original_name);
+        Storage::disk('private')->assertExists($attachment->file_path);
+
+        $this->actingAs($sales)->get(route('sales.proposals.show', $proposal))
+            ->assertOk()
+            ->assertSee('quotation-sales.pdf');
+    }
+
+    public function test_create_quotation_requires_file_or_item(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $lead = $this->makeLead($sales->id);
+        $inside = $this->insideSalesWithTask($lead);
+
+        $this->actingAs($inside)->post(route('sales.proposals.store'), [
+            'lead_id' => $lead->id,
+            'proposal_date' => now()->toDateString(),
+        ])->assertStatus(422);
     }
 }

@@ -12,6 +12,7 @@ class SalesTarget extends Model
         'period_month',
         'period_year',
         'target_revenue',
+        'target_margin',
         'target_deals',
         'notes',
         'created_by',
@@ -21,6 +22,7 @@ class SalesTarget extends Model
         'period_month' => 'integer',
         'period_year' => 'integer',
         'target_revenue' => 'decimal:2',
+        'target_margin' => 'decimal:2',
         'target_deals' => 'integer',
     ];
 

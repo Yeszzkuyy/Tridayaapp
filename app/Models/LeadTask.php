@@ -48,6 +48,28 @@ class LeadTask extends Model
         return $this->hasMany(LeadTaskComment::class)->orderBy('id', 'asc');
     }
 
+    /** Riwayat file quotation (versi terbaru di atas). */
+    public function attachments()
+    {
+        return $this->hasMany(LeadTaskAttachment::class)->latest('id');
+    }
+
+    /** Lampiran pendukung dari Sales (brief/requirement), bukan quotation. */
+    public function requestFiles()
+    {
+        return $this->hasMany(LeadTaskRequestFile::class)->latest('id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(LeadTaskItem::class);
+    }
+
+    public function proposal()
+    {
+        return $this->hasOne(Proposal::class);
+    }
+
     public static function statusLabel(?string $status): string
     {
         return match ($status) {

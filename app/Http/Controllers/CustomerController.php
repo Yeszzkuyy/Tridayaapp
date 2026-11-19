@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Services\CustomerContactService;
+use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -12,6 +14,8 @@ use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
+    public function __construct(private CustomerContactService $contacts) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -19,14 +23,45 @@ class CustomerController extends Controller
     {
         $this->authorize('viewAny', Customer::class);
 
-        $customers = Customer::withCount('projects')
+        $isRestricted = CustomerAccess::isRestricted($request->user());
+
+        $customers = CustomerAccess::queryFor($request->user())
+            ->withCount('projects')
             ->with(['contacts' => function ($query) {
                 $query->orderByDesc('is_primary')->latest();
             }])
             ->when($request->filled('search'), function ($query) use ($request) {
-                $query->whereLike(['name', 'company', 'email'], $request->string('search'));
+                $search = $request->string('search');
+
+                $query->where(function ($q) use ($search) {
+                    $q->whereLike('name', $search)
+                        ->orWhereLike('company', $search)
+                        ->orWhereLike('email', $search)
+                        ->orWhereHas('contacts', function ($contact) use ($search) {
+                            $contact->whereLike('name', $search)
+                                ->orWhereLike('phone', $search)
+                                ->orWhereLike('whatsapp', $search)
+                                ->orWhereLike('email', $search);
+                        });
+                });
             })
-            ->when($request->filled('pt_group'), fn ($query) => $query->where('pt_group', $request->string('pt_group')))
+            ->when($request->filled('pic'), function ($query) use ($request) {
+                if ($request->string('pic')->toString() === 'no') {
+                    $query->whereDoesntHave('contacts');
+                } else {
+                    $query->whereHas('contacts');
+                }
+            })
+            ->when($request->filled('pt_group') && ! $isRestricted, fn ($query) => $query->where('pt_group', $request->string('pt_group')))
+            // Default: lead/prospek tidak tampil sampai menjadi deal.
+            // ?status=lead hanya prospek, ?status=all customer + prospek.
+            ->when(
+                $request->string('status')->toString() === 'lead',
+                fn ($query) => $query->where('status', 'lead'),
+                fn ($query) => $request->string('status')->toString() === 'all'
+                    ? $query
+                    : $query->where('status', '!=', 'lead'),
+            )
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -37,7 +72,8 @@ class CustomerController extends Controller
             ? view('customers._list', compact('customers'))->render()
             : view('customers.index', compact('customers', 'ptGroups'))
                 ->with('search', $request->string('search'))
-                ->with('ptGroup', $request->string('pt_group'));
+                ->with('ptGroup', $isRestricted ? '' : $request->string('pt_group'))
+                ->with('showCompanyFilter', ! $isRestricted);
     }
 
     /**
@@ -47,24 +83,6 @@ class CustomerController extends Controller
     private function writablePtGroups(): array
     {
         return PtAccess::userPts(auth()->user()) ?: Lead::PT_GROUPS;
-    }
-
-    /**
-     * Ambil field PIC dari form customer. PIC disimpan di customer_contacts,
-     * bukan di kolom customer, jadi dipisah sebelum Customer::create/update.
-     *
-     * @param  array<string, mixed>  $validated
-     * @return array<string, string|null>
-     */
-    private function picData(array $validated): array
-    {
-        return array_filter([
-            'name' => $validated['pic_name'] ?? $validated['contact_person'] ?? null,
-            'position' => $validated['pic_position'] ?? null,
-            'phone' => $validated['pic_phone'] ?? null,
-            'whatsapp' => $validated['pic_whatsapp'] ?? null,
-            'email' => $validated['pic_email'] ?? null,
-        ], fn ($value) => filled($value));
     }
 
     /**
@@ -87,11 +105,9 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
-            'pic_name' => 'nullable|string|max:255',
-            'pic_position' => 'nullable|string|max:255',
-            'pic_phone' => 'nullable|string|max:50',
-            'pic_whatsapp' => 'nullable|string|max:50',
-            'pic_email' => 'nullable|email|max:255',
+            'contact_position' => 'nullable|string|max:255',
+            'contact_whatsapp' => 'nullable|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
             'company' => 'nullable|string|max:255',
             'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
@@ -109,15 +125,40 @@ class CustomerController extends Controller
             'status' => 'nullable|in:lead,deal,instalasi,selesai',
         ]);
 
-        $picData = $this->picData($validated);
-        unset($validated['pic_name'], $validated['pic_position'], $validated['pic_phone'], $validated['pic_whatsapp'], $validated['pic_email']);
-
         // Form customer hanya punya satu kolom nama; company = name supaya tampilan Lead/Monitoring konsisten
         $validated['company'] ??= $validated['name'];
 
+        // Customer yang dibuat manual dari menu Customer adalah customer
+        // resmi. Lead dari Marketing tetap berstatus `lead` dan tidak
+        // muncul di menu ini sampai menjadi deal.
+        $validated['status'] = $validated['status'] ?? 'deal';
+
+        // PIC di form diterjemahkan menjadi satu kontak primary (input eksplisit
+        // pengguna), bukan lagi kolom legacy yang berdiri sendiri.
+        $contactPerson = $validated['contact_person'] ?? null;
+        $contactPosition = $validated['contact_position'] ?? null;
+        $contactWhatsapp = $validated['contact_whatsapp'] ?? null;
+        $contactEmail = $validated['contact_email'] ?? null;
+        unset(
+            $validated['contact_person'],
+            $validated['contact_position'],
+            $validated['contact_whatsapp'],
+            $validated['contact_email'],
+        );
+
+        $validated['created_by'] = auth()->id();
+
         $customer = Customer::create($validated);
 
-        $customer->syncPrimaryContact($picData);
+        if (filled($contactPerson)) {
+            $this->contacts->create($customer, [
+                'name' => $contactPerson,
+                'position' => $contactPosition,
+                'whatsapp' => $contactWhatsapp,
+                'email' => $contactEmail,
+                'is_primary' => true,
+            ]);
+        }
 
         if ($request->hasFile('npwp_document')) {
             $file = $request->file('npwp_document');
@@ -129,14 +170,13 @@ class CustomerController extends Controller
 
         return redirect()
             ->route('customers.index')
-            ->with('success', __('Customer added successfully'))
-            ->with('success_card', true);
+            ->with('success', __('Customer added successfully'));
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Customer $customer)
+    public function show(Customer $customer, Request $request, \App\Services\DocumentCenterService $documentCenter)
     {
         $this->authorize('view', $customer);
 
@@ -159,17 +199,86 @@ class CustomerController extends Controller
             }
         ]);
 
+        // Tab Dokumen: satu daftar terpadu khusus customer ini. Sumbernya
+        // sama dengan menu Dokumen global, jadi file tidak disalin/diduplikasi.
+        $documentFilters = [
+            'q' => filled($request->query('documents_q')) ? trim((string) $request->query('documents_q')) : null,
+            'category' => in_array($request->query('documents_category'), \App\Services\DocumentCenterService::CATEGORIES, true)
+                ? $request->query('documents_category') : null,
+            'subcategory' => in_array($request->query('documents_subcategory'), \App\Services\DocumentCenterService::SUBCATEGORIES, true)
+                ? $request->query('documents_subcategory') : null,
+            'customer_id' => $customer->id,
+            'sort' => in_array($request->query('documents_sort'), \App\Services\DocumentCenterService::SORTS, true)
+                ? $request->query('documents_sort') : 'newest',
+        ];
+
+        $custInvoices = $customer->invoices()->latest('issue_date')->get();
+        $custPos = $customer->purchaseOrders()->latest('issue_date')->get();
+        $custDeliveries = $customer->goodsDeliveries()->latest('delivery_date')->get();
+        $custPayments = \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
+            ->with('invoice')
+            ->latest('payment_date')
+            ->get();
+
+        // Opsi transaksi untuk modal "Ubah jenis dokumen" (khusus manage-admin).
+        $canReclassifyDocs = $request->user()->can('manage-admin');
+        $documentLinkOptions = [];
+
+        if ($canReclassifyDocs) {
+            $documentLinkOptions[$customer->id] = [
+                'invoice' => $custInvoices
+                    ->where('status', '!=', 'cancelled')
+                    ->map(fn ($invoice) => [
+                        'id' => $invoice->id,
+                        'label' => $invoice->invoice_number.' · '.$invoice->issue_date?->format('d M Y'),
+                    ])
+                    ->values()
+                    ->all(),
+                'po' => $custPos
+                    ->where('status', '!=', 'dibatalkan')
+                    ->map(fn ($order) => [
+                        'id' => $order->id,
+                        'label' => $order->po_number.' · '.$order->issue_date?->format('d M Y'),
+                    ])
+                    ->values()
+                    ->all(),
+                'payment' => $custPayments
+                    ->map(fn ($payment) => [
+                        'id' => $payment->id,
+                        'label' => ($payment->invoice?->invoice_number ?? '-').' · '.$payment->payment_date?->format('d M Y'),
+                    ])
+                    ->values()
+                    ->all(),
+            ];
+        }
+
         return view('customers.show', [
             'customer' => $customer,
             'timeline' => $this->buildTimeline($customer),
             'documents' => $this->generalDocuments($customer),
             'typedDocs' => $this->typedDocuments($customer),
-            'custInvoices' => $customer->invoices()->latest('issue_date')->get(),
-            'custPos' => $customer->purchaseOrders()->latest('issue_date')->get(),
-            'custPayments' => \App\Models\Payment::whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
-                ->with('invoice')
-                ->latest('payment_date')
-                ->get(),
+            'custInvoices' => $custInvoices,
+            'custPos' => $custPos,
+            'custDeliveries' => $custDeliveries,
+            'custPayments' => $custPayments,
+            'customerDocuments' => $documentCenter->paginate($request->user(), $documentFilters, 'documents_page'),
+            'customerDocumentFilters' => $documentFilters,
+            'documentCategories' => \App\Models\DocumentCategory::orderBy('name')->pluck('name', 'id')->all(),
+            'documentLinkOptions' => $documentLinkOptions,
+            'canReclassifyDocs' => $canReclassifyDocs,
+        ]);
+    }
+
+    /**
+     * Endpoint poll tab Activity: hanya potongan timeline (tanpa layout),
+     * dipakai halaman detail supaya aktivitas baru muncul tanpa reload.
+     */
+    public function timeline(Customer $customer)
+    {
+        $this->authorize('view', $customer);
+
+        return response()->view('customers.partials.timeline', [
+            'timeline' => $this->buildTimeline($customer),
         ]);
     }
 
@@ -235,6 +344,10 @@ class CustomerController extends Controller
             ->take(50)
             ->get()
             ->map(fn ($a) => [
+                // logged_at = kapan dicatat (label "x menit lalu" + urutan),
+                // event_at  = kapan kejadiannya (jadwal/aktivitas).
+                'logged_at' => $a->created_at,
+                'event_at' => $a->activity_date ?? $a->created_at,
                 'date' => $a->activity_date ?? $a->created_at,
                 'type' => 'project',
                 'user' => $a->user,
@@ -248,7 +361,9 @@ class CustomerController extends Controller
             ->take(50)
             ->get()
             ->map(fn ($fu) => [
-                'date' => $fu->follow_up_date ?? $fu->created_at,
+                'logged_at' => $fu->created_at,
+                'event_at' => $this->followUpEventAt($fu),
+                'date' => $this->followUpEventAt($fu),
                 'type' => 'followup',
                 'user' => $fu->creator,
                 'title' => \App\Models\FollowUp::typeLabel($fu->type),
@@ -262,6 +377,8 @@ class CustomerController extends Controller
             ->take(50)
             ->get()
             ->map(fn ($m) => [
+                'logged_at' => $m->created_at,
+                'event_at' => $m->start_at ?? $m->created_at,
                 'date' => $m->start_at ?? $m->created_at,
                 'type' => 'meeting',
                 'user' => $m->creator,
@@ -270,13 +387,38 @@ class CustomerController extends Controller
                 'context' => $m->start_at?->format('d M Y H:i'),
             ]);
 
+        // Urutkan dari yang paling baru dicatat, supaya aktivitas yang baru
+        // diinput selalu di atas (jadwal yang masih jauh tidak loncat ke atas).
         return $items
             ->concat($projectActivities)
             ->concat($followUps)
             ->concat($meetings)
-            ->sortByDesc('date')
+            ->sortByDesc(fn (array $item) => $item['logged_at']?->getTimestamp() ?? 0)
             ->values()
             ->take(50);
+    }
+
+    /**
+     * Waktu kejadian follow-up: tanggal + jam aktivitas. Kolom follow_up_date
+     * hanya menyimpan tanggal (jam 00:00), jadi jamnya ditempel dari
+     * activity_time agar label waktu tidak salah hitung beberapa jam.
+     */
+    private function followUpEventAt(\App\Models\FollowUp $followUp): ?\Carbon\CarbonInterface
+    {
+        $date = $followUp->follow_up_date?->copy();
+
+        if (! $date) {
+            return $followUp->created_at;
+        }
+
+        $time = substr((string) $followUp->activity_time, 0, 5);
+
+        if (substr_count($time, ':') === 1) {
+            [$hour, $minute] = array_map('intval', explode(':', $time));
+            $date->setTime($hour, $minute);
+        }
+
+        return $date;
     }
 
     /**
@@ -303,6 +445,7 @@ class CustomerController extends Controller
     public function downloadNpwp(Customer $customer)
     {
         $this->authorize('view', $customer);
+        abort_unless(auth()->user()?->can('view-customer-finance'), 403);
         abort_if(! $customer->npwp_document_path, 404);
 
         return \App\Rules\SecureFile::fileResponse(
@@ -322,11 +465,9 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
-            'pic_name' => 'nullable|string|max:255',
-            'pic_position' => 'nullable|string|max:255',
-            'pic_phone' => 'nullable|string|max:50',
-            'pic_whatsapp' => 'nullable|string|max:50',
-            'pic_email' => 'nullable|email|max:255',
+            'contact_position' => 'nullable|string|max:255',
+            'contact_whatsapp' => 'nullable|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
             'company' => 'nullable|string|max:255',
             'pt_group' => 'required|in:'.implode(',', $this->writablePtGroups()),
             'address' => 'nullable|string|max:1000',
@@ -344,10 +485,26 @@ class CustomerController extends Controller
             'status' => 'nullable|in:lead,deal,instalasi,selesai',
         ]);
 
-        $picData = $this->picData($validated);
-        unset($validated['pic_name'], $validated['pic_position'], $validated['pic_phone'], $validated['pic_whatsapp'], $validated['pic_email']);
-
         $validated['company'] ??= $validated['name'];
+
+        // `contact_person` bukan lagi sumber tulis independen: arahkan ke
+        // kontak primary supaya halaman Lead/Manage Sales tidak basi.
+        $contactPerson = $validated['contact_person'] ?? null;
+        $contactPosition = $validated['contact_position'] ?? null;
+        $contactWhatsapp = $validated['contact_whatsapp'] ?? null;
+        $contactEmail = $validated['contact_email'] ?? null;
+        $hasPicPayload = $request->hasAny([
+            'contact_person',
+            'contact_position',
+            'contact_whatsapp',
+            'contact_email',
+        ]);
+        unset(
+            $validated['contact_person'],
+            $validated['contact_position'],
+            $validated['contact_whatsapp'],
+            $validated['contact_email'],
+        );
 
         if ($request->hasFile('npwp_document')) {
             if ($customer->npwp_document_path) {
@@ -359,12 +516,33 @@ class CustomerController extends Controller
         }
 
         $customer->update($validated);
-        $customer->syncPrimaryContact($picData);
+
+        $primary = $this->contacts->primary($customer);
+
+        if ($primary && $hasPicPayload) {
+            // PIC utama diubah eksplisit dari form customer -> ikut ubah kontak.
+            $this->contacts->update($primary, [
+                'name' => filled($contactPerson) ? $contactPerson : $primary->name,
+                'position' => filled($contactPosition) ? $contactPosition : null,
+                'whatsapp' => filled($contactWhatsapp) ? $contactWhatsapp : null,
+                'email' => filled($contactEmail) ? $contactEmail : null,
+            ]);
+        } elseif (! $primary && filled($contactPerson)) {
+            // Customer lama tanpa kontak: angkat PIC yang diisi menjadi primary.
+            $this->contacts->create($customer, [
+                'name' => $contactPerson,
+                'position' => $contactPosition,
+                'whatsapp' => $contactWhatsapp,
+                'email' => $contactEmail,
+                'is_primary' => true,
+            ]);
+        } else {
+            $this->contacts->syncPicCache($customer);
+        }
 
         return redirect()
             ->route('customers.index')
-            ->with('success', __('Customer updated successfully'))
-            ->with('success_card', true);
+            ->with('success', __('Customer updated successfully'));
     }
 
     /**

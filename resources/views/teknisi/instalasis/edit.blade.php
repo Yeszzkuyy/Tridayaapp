@@ -35,8 +35,13 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Technician PIC') }}</label>
-                        <input type="text" name="technician_pic" value="{{ old('technician_pic', $instalasi->technician_pic) }}" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                        @error('technician_pic') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        <select name="technician_user_id" class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
+                            <option value="">{{ __('Not assigned') }}</option>
+                            @foreach($technicians as $technician)
+                                <option value="{{ $technician->id }}" {{ (string) old('technician_user_id', $instalasi->technician_user_id ?? $technicians->firstWhere('name', $instalasi->technician_pic)?->id) === (string) $technician->id ? 'selected' : '' }}>{{ $technician->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('technician_user_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
@@ -56,7 +61,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Status') }} <span class="text-red-500">*</span></label>
                     <select name="status" required class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 focus:border-accent-500 focus:ring-accent-500">
-                        @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Completed'), 'cancelled' => __('Cancelled')] as $val => $lbl)
+                        @foreach(['scheduled' => __('Scheduled'), 'on_progress' => __('On Progress'), 'waiting' => __('Waiting'), 'completed' => __('Technically Complete'), 'cancelled' => __('Cancelled')] as $val => $lbl)
                             <option value="{{ $val }}" {{ old('status', $instalasi->status) === $val ? 'selected' : '' }}>{{ $lbl }}</option>
                         @endforeach
                     </select>
@@ -67,7 +72,9 @@
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Upload Installation Report File') }}</label>
                     @if($instalasi->hasReport())
                         <div class="mb-2 flex items-center gap-2">
-                            <x-icon-button as="a" icon="view" href="{{ route('teknisi.instalasis.report.view', $instalasi) }}" target="_blank" rel="noopener" title="{{ __('View') }}" />
+                            <x-file-preview :url="route('teknisi.instalasis.report.view', $instalasi)"
+                                            :download="route('teknisi.instalasis.report.download', $instalasi)"
+                                            :name="$instalasi->report_file_name ?: basename((string) $instalasi->report_file)" />
                             <x-icon-button as="a" icon="download" href="{{ route('teknisi.instalasis.report.download', $instalasi) }}" title="{{ __('Download') }}" />
                             <span class="text-sm text-slate-600 dark:text-slate-300 truncate">{{ $instalasi->report_file_name }}</span>
                         </div>

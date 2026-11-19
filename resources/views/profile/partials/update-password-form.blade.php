@@ -37,16 +37,6 @@
                 {{ __('Save') }}
                 <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
             </button>
-
-            @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm font-medium text-green-600 dark:text-green-400"
-                >{{ __('Saved.') }}</p>
-            @endif
         </div>
     </form>
 </section>

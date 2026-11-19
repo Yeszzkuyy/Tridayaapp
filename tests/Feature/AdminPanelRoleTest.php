@@ -51,12 +51,12 @@ class AdminPanelRoleTest extends TestCase
 
         $this->actingAs($this->loginAsSuperAdmin())
             ->post(route('admin-panel.roles.store'), [
-                'name' => 'finance',
+                'name' => 'finance-baru',
                 'permissions' => ['view-admin'],
             ])
             ->assertRedirect(route('admin-panel.index'));
 
-        $role = Role::where('name', 'finance')->first();
+        $role = Role::where('name', 'finance-baru')->first();
         $this->assertNotNull($role);
         $this->assertTrue($role->hasPermissionTo('view-admin'));
     }

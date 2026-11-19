@@ -1,3 +1,4 @@
+@php $itemsRequired = $itemsRequired ?? true; @endphp
 <div class="space-y-4">
     <input type="hidden" name="lead_id" value="{{ $lead->id ?? $proposal->lead_id }}">
 
@@ -60,12 +61,19 @@
                         class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 @error('delivery_terms') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Warranty Terms') }}</label>
+                <input type="text" name="warranty_terms" maxlength="255" value="{{ old('warranty_terms', $proposal->warranty_terms ?? '') }}"
+                        placeholder="{{ __('e.g. 1 year official distributor warranty') }}"
+                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                @error('warranty_terms') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
         </div>
     </div>
 
     <div>
         <div class="flex items-center justify-between mb-2">
-            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} <span class="text-red-500">*</span></label>
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Item') }} @if($itemsRequired)<span class="text-red-500">*</span>@endif</label>
             <x-icon-button icon="add" label="{{ __('Item') }}" title="{{ __('Item') }}" type="button" onclick="proposalAddRow()" />
         </div>
         <div class="relative mb-2">
@@ -74,22 +82,68 @@
             <div id="proposal-catalog-results" class="absolute z-10 w-full mt-1 hidden max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg dark:bg-slate-800 dark:border-slate-600"></div>
         </div>
         <div id="proposal-items" class="space-y-2">
-            @php $rows = old('items', isset($proposal) ? $proposal->items->map(fn ($i) => ['product_id' => $i->product_id, 'description' => $i->description, 'quantity' => $i->quantity, 'unit' => $i->unit, 'unit_price' => $i->unit_price, 'unit_cost' => $i->unit_cost, 'discount' => $i->discount])->all() : [['product_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'unit_cost' => null, 'discount' => 0]]); @endphp
+            @php
+                $rows = old('items', isset($proposal) ? $proposal->items->map(fn ($i) => [
+                    'product_id' => $i->product_id,
+                    'product_price_log_id' => $i->product_price_log_id,
+                    'description' => $i->description,
+                    'quantity' => $i->quantity,
+                    'unit' => $i->unit,
+                    'unit_price' => $i->unit_price,
+                    'unit_cost' => $i->unit_cost,
+                    'stock_status' => $i->stock_status,
+                    'stock_eta' => $i->stock_eta,
+                    'warranty_info' => $i->warranty_info,
+                    'discount' => $i->discount,
+                ])->all() : []);
+                if (empty($rows)) {
+                    $rows = [['product_id' => null, 'product_price_log_id' => null, 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'unit_price' => 0, 'unit_cost' => null, 'stock_status' => null, 'stock_eta' => null, 'warranty_info' => null, 'discount' => 0]];
+                }
+                $historyByProduct = \App\Models\ProductPriceLog::with('supplier')
+                    ->where('price_type', 'cost')
+                    ->whereIn('product_id', collect($rows)->pluck('product_id')->filter()->unique())
+                    ->orderByDesc('created_at')
+                    ->get()
+                    ->groupBy('product_id');
+            @endphp
             @foreach($rows as $i => $row)
                 <div class="proposal-row grid grid-cols-12 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                     <input type="hidden" name="items[{{ $i }}][product_id]" value="{{ $row['product_id'] }}">
-                    <input type="text" name="items[{{ $i }}][description]" required value="{{ $row['description'] }}" placeholder="{{ __('Description') }}"
+                    <input type="hidden" name="items[{{ $i }}][product_price_log_id]" value="{{ $row['product_price_log_id'] ?? '' }}">
+                    <input type="hidden" name="items[{{ $i }}][stock_status]" value="{{ $row['stock_status'] ?? '' }}">
+                    <input type="hidden" name="items[{{ $i }}][stock_eta]" value="{{ $row['stock_eta'] ?? '' }}">
+                    <input type="hidden" name="items[{{ $i }}][warranty_info]" value="{{ $row['warranty_info'] ?? '' }}">
+                    <input type="text" name="items[{{ $i }}][description]" @if($itemsRequired) required @endif value="{{ $row['description'] }}" placeholder="{{ __('Description') }}"
                             class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <input type="number" name="items[{{ $i }}][quantity]" required min="0.01" step="0.01" value="{{ $row['quantity'] }}" placeholder="{{ __('Qty') }}"
                             class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <input type="text" name="items[{{ $i }}][unit]" value="{{ $row['unit'] }}" placeholder="{{ __('Unit') }}"
                             class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                    <input type="number" name="items[{{ $i }}][unit_price]" required min="0" step="0.01" value="{{ $row['unit_price'] }}" placeholder="{{ __('Price') }}"
+                    <input type="number" name="items[{{ $i }}][unit_price]" @if($itemsRequired) required @endif min="0" step="0.01" value="{{ $row['unit_price'] }}" placeholder="{{ __('Price') }}"
                             class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     @can('updateCost', \App\Models\Proposal::class)
                         <input type="number" name="items[{{ $i }}][unit_cost]" min="0" step="0.01" value="{{ old('items.'.$i.'.unit_cost', $row['unit_cost']) }}" placeholder="{{ __('Cost Price (Rp)') }}"
                                 class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">
                     @endcan
+                    @php($priceHistory = $historyByProduct[$row['product_id']] ?? collect())
+                    @if($priceHistory->isNotEmpty())
+                        <div class="col-span-12">
+                            <select class="proposal-price-pick w-full rounded-lg border-slate-200 bg-white text-xs text-slate-600 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                <option value="">{{ __('Price history: pick an older price (optional)') }}</option>
+                                @foreach($priceHistory as $log)
+                                    <option value="{{ $log->id }}"
+                                            data-price="{{ (float) $log->price }}"
+                                            data-stock="{{ $log->stock_status }}"
+                                            data-eta="{{ $log->stock_eta }}"
+                                            data-warranty="{{ $log->warranty_info }}">
+                                        {{ $log->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i') }}
+                                        - Rp {{ number_format((float) $log->price, 0, ',', '.') }}
+                                        @if($log->supplier) ({{ $log->supplier->name }}) @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
                     <input type="number" name="items[{{ $i }}][discount]" min="0" step="0.01" value="{{ $row['discount'] }}" placeholder="{{ __('Discount') }}"
                             class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                     <span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>
@@ -143,18 +197,31 @@
 <script>
 let proposalRowIdx = {{ count($rows) }};
 const proposalFmt = new Intl.NumberFormat('id-ID');
+const proposalItemsRequired = {{ $itemsRequired ? 'true' : 'false' }};
 
 function proposalRowHtml(i, prefill) {
     prefill = prefill || {};
     const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const history = prefill.price_history || [];
+    const historyHtml = history.length ? '<div class="col-span-12"><select class="proposal-price-pick w-full rounded-lg border-slate-200 bg-white text-xs text-slate-600 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">' +
+        '<option value="">{{ __('Price history: pick an older price (optional)') }}</option>' +
+        history.map(function (h) {
+            return '<option value="' + (h.id || '') + '" data-price="' + (h.price || 0) + '" data-stock="' + esc(h.stock_status || '') + '" data-eta="' + esc(h.stock_eta || '') + '" data-warranty="' + esc(h.warranty_info || '') + '">' + esc(h.date || '') + ' - Rp ' + proposalFmt.format(Math.round(h.price || 0)) + (h.supplier ? ' (' + esc(h.supplier) + ')' : '') + '</option>';
+        }).join('') +
+        '</select></div>' : '';
     return '<input type="hidden" name="items[' + i + '][product_id]" value="' + (prefill.product_id || '') + '">' +
-        '<input type="text" name="items[' + i + '][description]" required value="' + esc(prefill.description) + '" placeholder="{{ __('Description') }}" class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
+        '<input type="hidden" name="items[' + i + '][product_price_log_id]" value="' + esc(prefill.product_price_log_id || '') + '">' +
+        '<input type="hidden" name="items[' + i + '][stock_status]" value="' + esc(prefill.stock_status || '') + '">' +
+        '<input type="hidden" name="items[' + i + '][stock_eta]" value="' + esc(prefill.stock_eta || '') + '">' +
+        '<input type="hidden" name="items[' + i + '][warranty_info]" value="' + esc(prefill.warranty_info || '') + '">' +
+        '<input type="text" name="items[' + i + '][description]"' + (proposalItemsRequired ? ' required' : '') + ' value="' + esc(prefill.description) + '" placeholder="{{ __('Description') }}" class="col-span-12 md:col-span-4 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="number" name="items[' + i + '][quantity]" required min="0.01" step="0.01" value="' + (prefill.quantity || 1) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<input type="text" name="items[' + i + '][unit]" value="' + esc(prefill.unit || 'pcs') + '" class="col-span-4 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
-        '<input type="number" name="items[' + i + '][unit_price]" required min="0" step="0.01" value="' + (prefill.unit_price || 0) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
+        '<input type="number" name="items[' + i + '][unit_price]"' + (proposalItemsRequired ? ' required' : '') + ' min="0" step="0.01" value="' + (prefill.unit_price || 0) + '" class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         @can('updateCost', \App\Models\Proposal::class)
         '<input type="number" name="items[' + i + '][unit_cost]" min="0" step="0.01" value="' + (prefill.unit_cost ?? '') + '" placeholder="{{ __('Cost Price (Rp)') }}" class="col-span-4 md:col-span-2 rounded-lg border-amber-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-amber-700">' +
         @endcan
+        historyHtml +
         '<input type="number" name="items[' + i + '][discount]" min="0" step="0.01" value="0" class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">' +
         '<span class="proposal-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>';
 }
@@ -189,6 +256,26 @@ function proposalRecalc() {
 }
 
 document.getElementById('proposal-items').addEventListener('input', proposalRecalc);
+document.getElementById('proposal-items').addEventListener('change', function (event) {
+    if (!event.target.classList.contains('proposal-price-pick')) return;
+    const row = event.target.closest('.proposal-row');
+    const option = event.target.selectedOptions[0];
+    const price = parseFloat(option?.dataset.price || 0) || 0;
+    if (!row || price <= 0) return;
+    const cost = row.querySelector('input[name$="[unit_cost]"]');
+    const sell = row.querySelector('input[name$="[unit_price]"]');
+    if (cost) cost.value = price;
+    if (sell && (!sell.value || parseFloat(sell.value) === 0)) sell.value = price;
+    const log = row.querySelector('input[name$="[product_price_log_id]"]');
+    const stock = row.querySelector('input[name$="[stock_status]"]');
+    const eta = row.querySelector('input[name$="[stock_eta]"]');
+    const warranty = row.querySelector('input[name$="[warranty_info]"]');
+    if (log) log.value = event.target.value;
+    if (stock) stock.value = option?.dataset.stock || '';
+    if (eta) eta.value = option?.dataset.eta || '';
+    if (warranty) warranty.value = option?.dataset.warranty || '';
+    proposalRecalc();
+});
 document.getElementById('proposal-discount').addEventListener('input', proposalRecalc);
 document.getElementById('proposal-tax').addEventListener('input', proposalRecalc);
 
@@ -222,7 +309,20 @@ document.getElementById('proposal-tax').addEventListener('input', proposalRecalc
         const btn = e.target.closest('.proposal-pick');
         if (!btn) return;
         const p = JSON.parse(btn.dataset.p);
-        proposalAddRow({ product_id: p.id, description: p.name, quantity: 1, unit: p.unit, unit_price: p.default_price });
+        const latest = (p.price_history || [])[0] || null;
+        proposalAddRow({
+            product_id: p.id,
+            description: p.name,
+            quantity: 1,
+            unit: p.unit,
+            unit_price: p.default_price,
+            unit_cost: latest ? latest.price : null,
+            product_price_log_id: latest ? latest.id : '',
+            stock_status: latest ? latest.stock_status : '',
+            stock_eta: latest ? latest.stock_eta : '',
+            warranty_info: latest ? latest.warranty_info : '',
+            price_history: p.price_history || []
+        });
         input.value = '';
         box.classList.add('hidden');
         box.innerHTML = '';

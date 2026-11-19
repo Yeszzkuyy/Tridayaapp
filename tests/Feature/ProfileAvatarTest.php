@@ -42,7 +42,7 @@ class ProfileAvatarTest extends TestCase
     public function test_large_avatar_is_normalized_to_256px(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->post(route('profile.avatar.update'), ['avatar' => $this->largeUpload()])
@@ -60,7 +60,7 @@ class ProfileAvatarTest extends TestCase
     public function test_user_can_upload_and_remove_avatar(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->post(route('profile.avatar.update'), ['avatar' => $this->gifUpload()])
@@ -81,7 +81,7 @@ class ProfileAvatarTest extends TestCase
     public function test_profile_page_renders_with_avatar_form(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->get(route('profile.edit'))
@@ -92,7 +92,7 @@ class ProfileAvatarTest extends TestCase
     public function test_avatar_must_be_valid_image(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->post(route('profile.avatar.update'), [
@@ -126,7 +126,7 @@ class ProfileAvatarTest extends TestCase
     public function test_avatar_max_size_is_5mb(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
-        $user = User::factory()->create();
+        $user = $this->makeUserWithRole();
 
         $this->actingAs($user)
             ->post(route('profile.avatar.update'), [

@@ -42,7 +42,23 @@ class ManageSalesTest extends TestCase
         $this->actingAs($this->loginAs('management'))
             ->get(route('manage-sales.index'))
             ->assertOk()
-            ->assertSee('Manage Sales');
+            ->assertSee('Manage Sales')
+            ->assertSee(route('sales.schedules.index'), false)
+            ->assertSee(__('Sales Agenda'));
+    }
+
+    public function test_actions_column_opens_customer_detail(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = $this->makeLead();
+
+        $res = $this->actingAs($management)
+            ->get(route('manage-sales.index'))
+            ->assertOk();
+
+        $res->assertSee(route('customers.show', $lead->customer), false);
+        $res->assertSee(__('View customer detail'));
+        $res->assertDontSee(route('manage-sales.edit', $lead), false);
     }
 
     public function test_marketing_and_sales_cannot_open_manage_sales(): void
@@ -226,6 +242,8 @@ class ManageSalesTest extends TestCase
             'pt_group' => 'MGK',
             'segment' => 'end_user',
             'kebutuhan' => 'Jaringan kantor',
+            'project_name' => 'Proyek Jaringan Tanpa Sales',
+            'need_type' => 'network',
             'incoming_date' => now()->toDateString(),
         ])->assertRedirect(route('leads.index'));
 
@@ -278,6 +296,26 @@ class ManageSalesTest extends TestCase
             ->get(route('manage-sales.activity-log'))
             ->assertOk()
             ->assertSee('6281998880921');
+    }
+
+    public function test_activity_log_feed_endpoint_returns_partial(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = $this->makeLead();
+
+        LeadActivity::create([
+            'lead_id' => $lead->id,
+            'user_id' => $management->id,
+            'action' => 'created',
+            'changes' => ['source' => 'whatsapp'],
+        ]);
+
+        $response = $this->actingAs($management)
+            ->get(route('manage-sales.activity-log.feed'))
+            ->assertOk();
+
+        $response->assertSee($management->name);
+        $this->assertStringNotContainsString('<html', $response->getContent());
     }
 
     public function test_sales_cannot_open_activity_log(): void

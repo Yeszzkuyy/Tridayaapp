@@ -10,6 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('schedules:remind')->everyMinute();
 Schedule::command('followups:remind')->daily();
+Schedule::command('leads:overdue')->hourly();
 Schedule::command('meetings:remind')->dailyAt('17:00');
 Schedule::command('proposals:expire')->dailyAt('01:30');
 

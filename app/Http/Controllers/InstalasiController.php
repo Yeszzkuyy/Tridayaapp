@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DocumentCategory;
 use App\Models\Instalasi;
 use App\Models\Project;
+use App\Models\ProjectDocument;
+use App\Models\User;
+use App\Notifications\InstallationCompletedNotification;
 use App\Rules\SecureFile;
 use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -36,7 +41,7 @@ class InstalasiController extends Controller
 
     public function index(Request $request)
     {
-        $query = Instalasi::with('project.customer')->latest();
+        $query = Instalasi::with(['project.customer', 'customer', 'technician', 'technicalRequest'])->latest();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -55,8 +60,10 @@ class InstalasiController extends Controller
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
         $selectedProject = $request->query('project_id');
+        $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')->get(['id', 'name']);
 
-        return view('teknisi.instalasis.create', compact('projects', 'selectedProject'));
+        return view('teknisi.instalasis.create', compact('projects', 'selectedProject', 'technicians'));
     }
 
     public function store(Request $request)
@@ -65,6 +72,7 @@ class InstalasiController extends Controller
             'project_id' => 'required|exists:projects,id',
             'location' => 'nullable|string|max:255',
             'technician_pic' => 'nullable|string|max:255',
+            'technician_user_id' => 'nullable|exists:users,id',
             'schedule_date' => 'nullable|date',
             'job_status' => 'nullable|string|max:255',
             'report_file' => array_merge(self::REPORT_RULES, [$this->reportSecureRule()]),
@@ -73,6 +81,32 @@ class InstalasiController extends Controller
 
         $report = $request->file('report_file');
         unset($validated['report_file']);
+
+        $technician = filled($validated['technician_user_id'] ?? null)
+            ? User::find($validated['technician_user_id'])
+            : auth()->user();
+
+        if ($technician) {
+            $validated['technician_user_id'] = $technician->id;
+            $validated['technician_pic'] = $technician->name;
+        }
+
+        $project = Project::find($validated['project_id']);
+        $validated['customer_id'] = $project?->customer_id;
+        $validated['sales_user_id'] = $project?->sales_user_id;
+
+        // "Selesai secara teknis" wajib punya bukti: file laporan instalasi.
+        // Tanpa itu Admin tidak bisa memeriksa kelengkapan sebelum membuat BAST.
+        if ($validated['status'] === 'completed' && ! $report) {
+            return back()->withInput()->withErrors([
+                'report_file' => __('Upload the installation report before completing.'),
+            ]);
+        }
+
+        if ($validated['status'] === 'completed') {
+            $validated['completed_at'] = now();
+            $validated['completed_by'] = auth()->id();
+        }
 
         $reportFields = [];
         if ($report) {
@@ -100,13 +134,17 @@ class InstalasiController extends Controller
             DocumentRegistry::sync($instalasi);
         }
 
+        if ($instalasi->status === 'completed') {
+            $this->notifyInstallationCompleted($instalasi);
+        }
+
         return redirect()->route('teknisi.instalasis.index')
             ->with('success', __('Installation added successfully.'));
     }
 
     public function show(Instalasi $instalasi)
     {
-        $instalasi->load('project.customer');
+        $instalasi->load(['project.customer', 'customer', 'technician', 'technicalRequest.supportUsers', 'bastDocument', 'completedBy']);
 
         return view('teknisi.instalasis.show', compact('instalasi'));
     }
@@ -114,8 +152,10 @@ class InstalasiController extends Controller
     public function edit(Instalasi $instalasi)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
+        $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
+            ->orderBy('name')->get(['id', 'name']);
 
-        return view('teknisi.instalasis.edit', compact('instalasi', 'projects'));
+        return view('teknisi.instalasis.edit', compact('instalasi', 'projects', 'technicians'));
     }
 
     public function update(Request $request, Instalasi $instalasi)
@@ -124,6 +164,7 @@ class InstalasiController extends Controller
             'project_id' => 'required|exists:projects,id',
             'location' => 'nullable|string|max:255',
             'technician_pic' => 'nullable|string|max:255',
+            'technician_user_id' => 'nullable|exists:users,id',
             'schedule_date' => 'nullable|date',
             'job_status' => 'nullable|string|max:255',
             'report_file' => array_merge(self::REPORT_RULES, [$this->reportSecureRule()]),
@@ -132,6 +173,35 @@ class InstalasiController extends Controller
 
         $report = $request->file('report_file');
         unset($validated['report_file']);
+
+        $technician = filled($validated['technician_user_id'] ?? null)
+            ? User::find($validated['technician_user_id'])
+            : null;
+
+        if ($technician) {
+            $validated['technician_pic'] = $technician->name;
+        }
+
+        $project = Project::find($validated['project_id']);
+        $validated['customer_id'] = $project?->customer_id;
+        $validated['sales_user_id'] = $project?->sales_user_id;
+
+        $wasComplete = $instalasi->status === 'completed';
+
+        if ($validated['status'] === 'completed'
+            && ! $report
+            && ! $instalasi->hasReport()) {
+            return back()->withInput()->withErrors([
+                'report_file' => __('Upload the installation report before completing.'),
+            ]);
+        }
+
+        $validated['completed_at'] = $validated['status'] === 'completed'
+            ? ($instalasi->completed_at ?? now())
+            : null;
+        $validated['completed_by'] = $validated['status'] === 'completed'
+            ? ($instalasi->completed_by ?? auth()->id())
+            : null;
 
         $oldPath = $instalasi->report_file;
         $reportFields = [];
@@ -158,6 +228,10 @@ class InstalasiController extends Controller
         // Ganti laporan = dokumen yang sama diperbarui, bukan ditambah.
         DocumentRegistry::sync($instalasi);
 
+        if (! $wasComplete && $instalasi->status === 'completed') {
+            $this->notifyInstallationCompleted($instalasi->fresh());
+        }
+
         // File lama dibersihkan hanya setelah DB sukses (urutan dijaga manual).
         if ($report && $oldPath && $oldPath !== ($reportFields['report_file'] ?? null)) {
             Storage::disk('private')->delete($oldPath);
@@ -167,9 +241,82 @@ class InstalasiController extends Controller
             ->with('success', __('Installation updated successfully.'));
     }
 
-    public function destroy(Instalasi $instalasi)
+    /**
+     * Simpan BAST instalasi (berlaku untuk project maupun non-project).
+     * BAST wajib sebelum pekerjaan instalasi dianggap selesai.
+     */
+    public function updateBast(Request $request, Instalasi $instalasi)
     {
-        // Dokumen turunannya ikut dibersihkan supaya tidak menggantung.
+        $user = $request->user();
+        abort_unless($user && ($user->can('manage-technician') || $user->can('manage-admin')), 403);
+
+        $validated = $request->validate([
+            'bast_number' => 'nullable|string|max:100',
+            'bast_date' => 'nullable|date',
+            'bast_file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'bast_signed_3dy_name' => 'nullable|string|max:150',
+            'bast_signed_3dy_at' => 'nullable|date',
+            'bast_signed_customer_name' => 'nullable|string|max:150',
+            'bast_signed_customer_at' => 'nullable|date',
+        ]);
+
+        $file = $request->file('bast_file');
+        unset($validated['bast_file']);
+
+        $oldDocument = $instalasi->bastDocument;
+
+        if ($file) {
+            $path = $file->storeAs(
+                'bast/instalasi-'.$instalasi->id,
+                Str::uuid()->toString().'.'.strtolower($file->getClientOriginalExtension() ?: 'pdf'),
+                'private'
+            );
+
+            if (! $path) {
+                return back()->withInput()->withErrors([
+                    'bast_file' => __('Failed to store the BAST file. Please try again.'),
+                ]);
+            }
+
+            $category = DocumentCategory::firstOrCreate(['name' => 'BAST']);
+            $payload = [
+                'project_id' => $instalasi->project_id,
+                'customer_id' => $instalasi->customer_id ?? $instalasi->project?->customer_id,
+                'doc_type' => 'bast',
+                'document_category_id' => $category->id,
+                'file_name' => SecureFile::sanitizeName($file->getClientOriginalName()),
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_by' => $user->id,
+            ];
+
+            if ($oldDocument) {
+                $oldPath = $oldDocument->file_path;
+                $oldDocument->update($payload);
+                $document = $oldDocument;
+                if ($oldPath && $oldPath !== $path) {
+                    Storage::disk('private')->delete($oldPath);
+                }
+            } else {
+                $document = ProjectDocument::create($payload + [
+                    'documentable_type' => Instalasi::class,
+                    'documentable_id' => $instalasi->id,
+                ]);
+            }
+
+            $validated['bast_document_id'] = $document->id;
+        }
+
+        $instalasi->update($validated);
+        $instalasi->refresh();
+        $instalasi->refreshBastReady();
+
+        return back()->with('success', __('BAST saved. The installation is complete after both parties sign.'));
+    }
+
+    public function destroy(Instalasi $instalasi)
+    {        // Dokumen turunannya ikut dibersihkan supaya tidak menggantung.
         DocumentRegistry::forget($instalasi);
 
         $instalasi->delete();
@@ -180,6 +327,19 @@ class InstalasiController extends Controller
 
         return redirect()->route('teknisi.instalasis.index')
             ->with('success', __('Installation deleted successfully.'));
+    }
+
+    /**
+     * Beri tahu Admin & Finance bahwa pekerjaan instalasi sudah selesai
+     * secara teknis dan siap diperiksa untuk pembuatan BAST.
+     */
+    private function notifyInstallationCompleted(Instalasi $instalasi): void
+    {
+        $recipients = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['admin', 'finance']))->get();
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new InstallationCompletedNotification($instalasi));
+        }
     }
 
     /**

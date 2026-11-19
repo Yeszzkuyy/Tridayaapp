@@ -6,11 +6,12 @@ use App\Models\PriceRequest;
 use App\Models\User;
 use App\Notifications\Concerns\SendsWebPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /** Dikirim ke pricing engineer khusus, atau lead technician sebagai fallback. */
-class PriceRequestCreatedNotification extends Notification
+class PriceRequestCreatedNotification extends Notification implements ShouldQueue
 {
     use Queueable, SendsWebPush;
 

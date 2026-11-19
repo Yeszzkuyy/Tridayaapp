@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
 use App\Models\GoodsReceipt;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\ProjectDocument;
@@ -12,10 +14,13 @@ use App\Models\PurchaseOrder;
 use App\Models\RequestHarga;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPurchaseOrder;
+use App\Models\SupplierPurchaseOrderItem;
 use App\Rules\SecureFile;
+use App\Support\SparklineBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -62,6 +67,14 @@ class AdminService
     {
         $this->assertProjectBelongsToCustomer($data);
         $this->assertProposalBelongsToCustomer($data);
+        $data = $this->withInvoiceSnapshot($data);
+
+        $items = $this->normalizedInvoiceItems($data['items'] ?? []);
+        unset($data['items']);
+
+        if ($items !== []) {
+            [$data['subtotal'], $data['discount'], $data['tax'], $data['amount']] = $this->invoiceTotals($items, $data);
+        }
 
         $key = $data['idempotency_key'] ?? null;
         if ($key && ($existing = Invoice::where('idempotency_key', $key)->first())) {
@@ -78,10 +91,14 @@ class AdminService
         $data['paid_amount'] = 0;
 
         try {
-            return DB::transaction(function () use ($data, $file) {
+            return DB::transaction(function () use ($data, $file, $items) {
                 $data['invoice_number'] = $this->generateInvoiceNumber();
                 $data['created_by'] = auth()->id();
                 $invoice = Invoice::create($data);
+
+                foreach ($items as $item) {
+                    $invoice->items()->create($item);
+                }
 
                 if ($file) {
                     $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
@@ -98,11 +115,78 @@ class AdminService
         }
     }
 
+    private function normalizedInvoiceItems(mixed $items): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->filter(fn ($item) => is_array($item)
+                && (filled($item['description'] ?? null) || (float) ($item['unit_price'] ?? 0) > 0))
+            ->map(function ($item) {
+                $quantity = round((float) ($item['quantity'] ?? 1), 2);
+                $unitPrice = round((float) ($item['unit_price'] ?? 0), 2);
+                $discount = round((float) ($item['discount'] ?? 0), 2);
+
+                return [
+                    'description' => trim((string) $item['description']),
+                    'quantity' => $quantity,
+                    'unit' => filled($item['unit'] ?? null) ? $item['unit'] : 'pcs',
+                    'unit_price' => $unitPrice,
+                    'discount' => $discount,
+                    'subtotal' => InvoiceItem::subtotalFor($quantity, $unitPrice, $discount),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function invoiceTotals(array $items, array $data): array
+    {
+        $subtotal = round((float) collect($items)->sum('subtotal'), 2);
+        $discount = round(min((float) ($data['discount'] ?? 0), $subtotal), 2);
+        $tax = round(max(0, (float) ($data['tax'] ?? 0)), 2);
+
+        return [$subtotal, $discount, $tax, round($subtotal - $discount + $tax, 2)];
+    }
+
+    /**
+     * Salin billing address dan syarat bayar ke invoice pada saat terbit.
+     * Snapshot ini yang dipakai cetak invoice, bukan data customer/quotation
+     * yang bisa berubah belakangan.
+     */
+    private function withInvoiceSnapshot(array $data): array
+    {
+        // Guard sampai migration snapshot benar-benar dijalankan di server.
+        if (Schema::hasColumn('invoices', 'billing_address')
+            && blank($data['billing_address'] ?? null)
+            && ! empty($data['customer_id'])) {
+            $data['billing_address'] = Customer::find($data['customer_id'])?->billingAddress();
+        }
+
+        if (Schema::hasColumn('invoices', 'payment_terms')
+            && blank($data['payment_terms'] ?? null)
+            && ! empty($data['proposal_id'])) {
+            $data['payment_terms'] = Proposal::find($data['proposal_id'])?->paymentTermsSummary();
+        }
+
+        return $data;
+    }
+
     public function updateInvoice(Invoice $invoice, array $data, ?UploadedFile $file = null): Invoice
     {
         $this->assertTransactionAccess($invoice);
         $this->assertProjectBelongsToCustomer($data);
         $this->assertProposalBelongsToCustomer($data);
+
+        $hasItemsInput = array_key_exists('items', $data);
+        $items = $this->normalizedInvoiceItems($data['items'] ?? []);
+        unset($data['items']);
+
+        if ($hasItemsInput && $items !== []) {
+            [$data['subtotal'], $data['discount'], $data['tax'], $data['amount']] = $this->invoiceTotals($items, $data);
+        } elseif ($hasItemsInput) {
+            $data['subtotal'] = null;
+            $data['discount'] = 0;
+            $data['tax'] = 0;
+        }
 
         $paid = round((float) $invoice->payments()->sum('amount'), 2);
         $amount = round((float) ($data['amount'] ?? $invoice->amount), 2);
@@ -117,8 +201,15 @@ class AdminService
             $this->assertInvoiceStatusMatchesPayments((string) $data['status'], $paid, $amount);
         }
 
-        return DB::transaction(function () use ($invoice, $data, $file) {
+        return DB::transaction(function () use ($invoice, $data, $file, $hasItemsInput, $items) {
             $invoice->update($data);
+
+            if ($hasItemsInput) {
+                $invoice->items()->delete();
+                foreach ($items as $item) {
+                    $invoice->items()->create($item);
+                }
+            }
 
             if ($file) {
                 $this->attachDocument($invoice, 'invoice', $file, $data['notes'] ?? null);
@@ -248,7 +339,10 @@ class AdminService
             return $existing;
         }
 
-        return DB::transaction(function () use ($data, $proof) {
+        $invoice = Invoice::find($data['invoice_id']);
+        $wasPaid = $invoice?->status === 'paid';
+
+        $payment = DB::transaction(function () use ($data, $proof) {
             $data['created_by'] = auth()->id();
             $payment = Payment::create($data);
 
@@ -270,6 +364,75 @@ class AdminService
 
             return $payment;
         });
+
+        // Notifikasi hanya saat invoice berubah menjadi lunas, bukan setiap cicilan.
+        if (! $wasPaid && $payment->invoice->fresh()?->status === 'paid') {
+            $this->notifyInvoicePaid($payment->invoice->fresh());
+        }
+
+        return $payment;
+    }
+
+    /**
+     * Kabari Sales pemilik proyek dan Management saat invoice lunas.
+     * Persentase target dihitung dari uang masuk (payments), bukan nilai PO.
+     */
+    private function notifyInvoicePaid(Invoice $invoice): void
+    {
+        if (! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        $owner = $this->resolveSalesOwner($invoice);
+
+        $recipients = collect([$owner])
+            ->filter()
+            ->merge(\App\Models\User::role('management')->get())
+            ->unique('id')
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $targetPct = null;
+
+        if ($owner) {
+            $targetPct = app(SalesKpiService::class)
+                ->getUserKpi($owner, now()->month, now()->year)['revenue_pct'];
+        }
+
+        \Illuminate\Support\Facades\Notification::send(
+            $recipients,
+            new \App\Notifications\InvoicePaidSalesNotification($invoice, $targetPct)
+        );
+    }
+
+    /** Sales pemilik proyek/proposal/customer pada invoice ini. */
+    private function resolveSalesOwner(Invoice $invoice): ?\App\Models\User
+    {
+        $invoice->loadMissing(['proposal.lead', 'project', 'customer']);
+
+        $proposal = $invoice->proposal;
+
+        if ($proposal?->created_by) {
+            return \App\Models\User::find($proposal->created_by);
+        }
+
+        if ($proposal?->lead?->assigned_to) {
+            return \App\Models\User::find($proposal->lead->assigned_to);
+        }
+
+        if ($invoice->project?->sales_user_id) {
+            return \App\Models\User::find($invoice->project->sales_user_id);
+        }
+
+        $lead = $invoice->customer?->leads()
+            ->whereNotNull('assigned_to')
+            ->orderByDesc('updated_at')
+            ->first();
+
+        return $lead?->assigned_to ? \App\Models\User::find($lead->assigned_to) : null;
     }
 
     public function deletePayment(Payment $payment): void
@@ -299,7 +462,7 @@ class AdminService
         $paid = round((float) $invoice->payments()->sum('amount'), 2);
 
         if ($invoice->status === 'cancelled') {
-            $invoice->update(['paid_amount' => $paid]);
+            $invoice->update(['paid_amount' => $paid, 'paid_at' => null]);
 
             return;
         }
@@ -310,7 +473,21 @@ class AdminService
             default => 'partial',
         };
 
-        $invoice->update(['status' => $status, 'paid_amount' => $paid]);
+        // paid_at = tanggal pembayaran terakhir saat invoice menjadi lunas.
+        // Dipakai KPI closed agar periode closing mengikuti tanggal uang masuk.
+        $paidAt = null;
+        if ($status === 'paid') {
+            $latestPaymentDate = $invoice->payments()->max('payment_date');
+            $paidAt = $latestPaymentDate
+                ? \Illuminate\Support\Carbon::parse($latestPaymentDate)
+                : now();
+        }
+
+        $invoice->update([
+            'status' => $status,
+            'paid_amount' => $paid,
+            'paid_at' => $paidAt,
+        ]);
 
         // Tahap 5: pelunasan pelanggan bisa menjadi syarat terakhir closing.
         $invoice->project?->evaluateCommercialClosing();
@@ -514,13 +691,12 @@ class AdminService
             ->whereIn('status', ['ordered', 'partially_received']);
         $outstandingSupplierPoCount = (clone $outstandingSupplierPoQuery)->count();
         $recentSupplierPos = (clone $outstandingSupplierPoQuery)->latest('issue_date')->limit(10)->get();
+        $allRecentSupplierPos = (clone $supplierPoQuery)->latest('issue_date')->latest('id')->limit(10)->get();
 
         // Quotation deal accepted + Customer PO sudah diunggah, tetapi belum
-        // ditarik menjadi Supplier PO. Ini antrean "Siap Belanja" Purchasing.
-        $quotationDealQuery = Proposal::with(['lead.customer', 'project'])
-            ->where('status', 'accepted')
-            ->whereNotNull('po_document_path')
-            ->whereDoesntHave('supplierPurchaseOrders', fn ($q) => $q->where('status', '!=', 'cancelled'));
+        // semua item selesai dipesan ke supplier (mendukung parsial sourcing).
+        $quotationDealQuery = Proposal::with(['lead.customer', 'project', 'items'])
+            ->pendingSupplierPo();
         if ($ptGroup) {
             $quotationDealQuery->whereHas('lead', fn ($q) => $q->where('pt_group', $ptGroup));
         }
@@ -590,8 +766,77 @@ class AdminService
             ->limit(10)
             ->get();
 
+        // 9. Receipt draft yang belum diverifikasi.
+        $pendingReceiptQuery = GoodsReceipt::with(['purchaseOrder.supplier', 'project.customer'])
+            ->where('status', 'draft');
+        if ($ptGroup) {
+            $pendingReceiptQuery->whereHas('project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $pendingReceiptCount = (clone $pendingReceiptQuery)->count();
+        $pendingReceipts = (clone $pendingReceiptQuery)->latest('received_date')->limit(10)->get();
+
+        // 10. Barang sudah diterima tetapi belum dialokasikan seluruhnya ke surat jalan.
+        $outstandingDeliveryQuery = SupplierPurchaseOrderItem::with([
+            'purchaseOrder.supplier',
+            'purchaseOrder.project.customer',
+        ])
+            ->whereColumn('quantity_received', '>', 'quantity_delivered')
+            ->whereHas('purchaseOrder', fn ($q) => $q->whereIn('status', ['ordered', 'partially_received', 'received']));
+        if ($ptGroup) {
+            $outstandingDeliveryQuery->whereHas('purchaseOrder.project.customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $outstandingDeliveryCount = (clone $outstandingDeliveryQuery)->count();
+        $outstandingDeliveryItems = (clone $outstandingDeliveryQuery)->latest('id')->limit(10)->get();
+
+        // 11. Project yang seluruh syarat closing-nya sudah terpenuhi tetapi
+        // belum tercatat closed (mis. BAST/payment baru saja diubah).
+        $readyToCloseQuery = Project::with(['customer', 'proposal'])
+            ->whereNull('commercial_closed_at')
+            ->whereHas('goodsDeliveries')
+            ->whereDoesntHave('goodsDeliveries', fn ($q) => $q->where('status', '!=', 'delivered'))
+            ->whereHas('invoices')
+            ->whereDoesntHave('invoices', fn ($q) => $q->whereNotIn('status', ['paid', 'cancelled']))
+            ->where(function ($q) {
+                $q->where('requires_installation', false)
+                    ->orWhere(function ($installed) {
+                        $installed->whereNotNull('bast_number')
+                            ->where(function ($progress) {
+                                $progress->where('progress', '>=', 100)
+                                    ->orWhereHas('status', fn ($s) => $s->where('name', 'Done'));
+                            });
+                    });
+            });
+        if ($ptGroup) {
+            $readyToCloseQuery->whereHas('customer', fn ($q) => $q->where('pt_group', $ptGroup));
+        }
+        $readyToCloseCount = (clone $readyToCloseQuery)->count();
+        $readyToCloseProjects = (clone $readyToCloseQuery)->latest()->limit(10)->get();
+
+        // 12. Tren 6 bulan untuk grafik mini kartu ringkasan. Angka besar pada
+        // kartu tetap snapshot antrean; grafik menunjukkan dokumen masuk per
+        // bulan pada antrean yang sama.
+        $spark = [
+            'ready_to_invoice' => SparklineBuilder::monthlyCounts(
+                (clone $readyToInvoiceQuery)->reorder(),
+                'created_at'
+            ),
+            'unpaid_invoices' => SparklineBuilder::monthlyCounts(
+                (clone $unpaidQuery)->reorder(),
+                'issue_date'
+            ),
+            'request_harga' => SparklineBuilder::monthlyCounts(
+                (clone $queueRequestHargaQuery)->reorder(),
+                'created_at'
+            ),
+            'supplier_pos' => SparklineBuilder::monthlyCounts(
+                (clone $outstandingSupplierPoQuery)->reorder(),
+                'issue_date'
+            ),
+        ];
+
         return [
             'ptGroup' => $ptGroup,
+            'spark' => $spark,
             'kpi' => [
                 'ready_to_invoice_count' => $readyToInvoiceCount,
                 'unpaid_invoices_count' => $unpaidCount,
@@ -608,9 +853,13 @@ class AdminService
                 'bast_pending_count' => $bastPendingCount,
                 'commercial_closed_count' => $commercialClosedCount,
                 'deadline_risk_count' => $deadlineRiskCount,
+                'pending_receipts_count' => $pendingReceiptCount,
+                'outstanding_deliveries_count' => $outstandingDeliveryCount,
+                'ready_to_close_count' => $readyToCloseCount,
             ],
             'purchasing' => [
                 'request_hargas' => $recentRequestHargas,
+                'supplier_pos' => $allRecentSupplierPos,
                 'purchase_orders' => $recentPos,
             ],
             'finance' => [
@@ -628,6 +877,9 @@ class AdminService
                 'supplier_invoices' => $recentSupplierInvoices,
                 'bast_projects' => $bastPendingProjects,
                 'deadline_projects' => $deadlineRiskProjects,
+                'pending_receipts' => $pendingReceipts,
+                'outstanding_delivery_items' => $outstandingDeliveryItems,
+                'ready_to_close_projects' => $readyToCloseProjects,
             ],
         ];
     }

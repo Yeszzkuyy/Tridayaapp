@@ -1,7 +1,4 @@
 <x-app-layout>
-    @if(session('success') && session('success_card'))
-        <x-status-card :message="session('success')" />
-    @endif
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead / Opportunity List') }}</h1>
@@ -65,7 +62,7 @@
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Source') }}</th>
                         <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Requirement') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Requirement') }}</th>
                         <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Entry Date') }}</th>
                         <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
@@ -80,7 +77,7 @@
                                         <span>{{ $lead->customer->company }}</span>
                                     @endif
                                     @if($lead->pt_group)<span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-[11px] font-semibold mr-1">{{ $lead->pt_group }}</span>@endif
-                                    {{ $lead->customer->picName() ? 'PIC: '.$lead->customer->picName() : '' }}
+                                    {{ $lead->customer?->picName() ? 'PIC: '.$lead->customer->picName() : '' }}
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center">
@@ -114,12 +111,8 @@
                                     <span class="text-slate-400">-</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-right">
-                                @if($lead->kebutuhan)
-                                    <span class="text-sm text-slate-700 whitespace-normal break-words min-w-[200px] inline-block align-bottom">{{ $lead->kebutuhan }}</span>
-                                @else
-                                    <span class="text-slate-400">-</span>
-                                @endif
+                            <td class="px-6 py-4 text-left">
+                                <x-requirement-cell :text="$lead->kebutuhan" />
                             </td>
                             <td class="px-6 py-4 text-center">
                                 @if($lead->incoming_date)
@@ -135,7 +128,7 @@
                                     @endcan
                                     @can('manage-marketing')
                                         <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}" title="{{ __('Edit Lead') }}" />
-                                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" onsubmit="return confirm('{{ __('Delete this lead?') }}')" class="inline">
+                                        <form action="{{ route('leads.destroy', $lead) }}" method="POST" data-confirm="{{ __('Delete this lead?') }}" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete lead') }}" />
                                         </form>

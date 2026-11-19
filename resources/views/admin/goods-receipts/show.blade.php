@@ -10,8 +10,9 @@
             <p class="text-slate-500 mt-1">{{ __('Received from supplier against a Supplier PO.') }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.goods-receipts.index') }}" title="{{ __('Back') }}" />
             @if($goodsReceipt->attachment_path)
+                <x-file-preview :url="route('admin.goods-receipts.attachment', $goodsReceipt)"
+                                :name="basename((string) $goodsReceipt->attachment_path)" />
                 <x-icon-button as="a" icon="download" href="{{ route('admin.goods-receipts.attachment', $goodsReceipt) }}" title="{{ __('Download attachment') }}" />
             @endif
             @can('manage-admin')
@@ -22,12 +23,9 @@
                     </form>
                 @endif
             @endcan
+            <x-back-button href="{{ route('admin.goods-receipts.index') }}" />
         </div>
     </div>
-
-    @if(session('success'))
-        <div class="mb-4 rounded-xl border border-green-200 bg-green-50 text-green-700 px-4 py-3 text-sm dark:bg-green-900/30 dark:border-green-800 dark:text-green-200">{{ session('success') }}</div>
-    @endif
 
     @if($errors->any())
         <div class="mb-4 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm dark:bg-red-900/30 dark:border-red-800 dark:text-red-200">{{ $errors->first() }}</div>

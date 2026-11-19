@@ -45,6 +45,14 @@ class SupplierPurchaseOrderController extends Controller
         $suppliers = Supplier::active()->orderBy('name')->get();
         $proposals = $this->eligibleProposals();
 
+        $selectedProposalId = $request->integer('proposal_id') ?: null;
+        if (! $selectedProposalId && $request->filled('project_id')) {
+            $selectedProposalId = Proposal::whereHas('project', fn ($q) => $q->where('id', $request->integer('project_id')))->value('id');
+        }
+        if ($selectedProposalId && ! $proposals->contains('id', $selectedProposalId)) {
+            $selectedProposalId = null;
+        }
+
         return view('admin.supplier-pos.create', [
             'suppliers' => $suppliers,
             'proposals' => $proposals,
@@ -64,7 +72,7 @@ class SupplierPurchaseOrderController extends Controller
                     ])->values(),
                 ],
             ]),
-            'selectedProposalId' => $request->integer('proposal_id') ?: null,
+            'selectedProposalId' => $selectedProposalId,
             'selectedSupplierId' => $request->integer('supplier_id') ?: null,
             // Kunci idempotensi per render form: submit berulang tidak
             // membuat Supplier PO kedua.
@@ -98,7 +106,7 @@ class SupplierPurchaseOrderController extends Controller
 
         // Hanya quotation yang sudah disetujui DAN lolos syarat handoff
         // (customer PO terunggah) yang boleh diproses Purchasing.
-        abort_unless($proposal && $proposal->isReadyForPurchasing(), 422, __('This quotation is not ready for Purchasing yet.'));
+        abort_unless($proposal && $proposal->isReadyForSupplierPo(), 422, __('This quotation is not ready for Supplier PO yet. Verify the customer PO first.'));
 
         foreach ($validated['items'] as $index => $item) {
             $proposalItemId = $item['proposal_item_id'] ?? null;
@@ -218,6 +226,8 @@ class SupplierPurchaseOrderController extends Controller
             ->with(['items.product', 'project'])
             ->where('status', 'accepted')
             ->whereNotNull('po_document_path')
+            ->whereNotNull('po_verified_at')
+            ->whereNull('po_returned_at')
             ->latest('id')
             ->get();
     }

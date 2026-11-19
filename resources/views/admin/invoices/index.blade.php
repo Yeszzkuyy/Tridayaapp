@@ -1,10 +1,9 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Invoice Management') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage invoices for customers.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Invoice Management') }}</h1>
         </div>
-        <x-icon-button as="a" icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
+        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.invoices.create') }}" label="{{ __('Create Invoice') }}" title="{{ __('Create Invoice') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
@@ -38,12 +37,13 @@
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                     <x-icon-button as="a" icon="view" href="{{ route('admin.invoices.show', $inv) }}" title="{{ __('Invoice detail') }}" />
+                                    <x-icon-button as="a" icon="print" href="{{ route('admin.invoices.print', $inv) }}" target="_blank" title="{{ __('Print Invoice') }}" />
                                     @can('manage-admin')
                                         @if($inv->status !== 'cancelled' && ! $inv->isFullyPaid())
                                             <x-icon-button as="a" icon="add" href="{{ route('admin.payments.create', ['invoice_id' => $inv->id]) }}" title="{{ __('Record Payment') }}" />
                                         @endif
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin.invoices.edit', $inv) }}" title="{{ __('Edit invoice') }}" />
-                                        <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" onsubmit="return confirm('{{ __('Delete this invoice?') }}')" class="inline">
+                                        <form action="{{ route('admin.invoices.destroy', $inv) }}" method="POST" data-confirm="{{ __('Delete this invoice?') }}" data-confirm-tone="danger" class="inline">
                                             @csrf @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete invoice') }}" />
                                         </form>

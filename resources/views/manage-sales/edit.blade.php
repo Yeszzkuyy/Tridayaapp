@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Manage Lead:') }} {{ $lead->customer->name ?? __('N/A') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Fill in the solution, follow-up progress, internal notes, and assign to Sales') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="{{ __('Back') }}" />
+        <x-back-button href="{{ route('manage-sales.index') }}" />
     </div>
 
     <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="{{ __('Saving…') }}"
@@ -24,7 +24,7 @@
             </div>
             <div>
                 <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('PIC') }}</div>
-                <div class="text-sm text-slate-700 mt-1">{{ $lead->customer->picName() ?? '-' }}</div>
+                <div class="text-sm text-slate-700 mt-1">{{ $lead->customer?->picName() ?? '-' }}</div>
             </div>
             <div>
                 <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Entry Date') }}</div>
@@ -89,10 +89,17 @@
                         {{ __('Assign / Direct to Sales') }}
                         <x-info-tip tip="{{ __('The Sales rep responsible for following up this lead.') }}" />
                     </label>
-                    <x-glide-select name="assigned_to" id="assigned_to" :label="__('Assign / Direct to Sales')"
-                        :placeholder="__('— Unassigned (NEW) —')"
-                        :options="$salesUsers->map(fn ($u) => ['value' => $u->id, 'label' => $u->name])->all()"
-                        :value="old('assigned_to', $lead->assigned_to)" :error="$errors->first('assigned_to')" />
+                    @if(in_array($lead->status, ['won', 'lost'], true))
+                        <p class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-200">
+                            {{ $lead->assignee?->name ?? __('— Unassigned (NEW) —') }}
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Lead closed') }} · {{ __('Cannot be reassigned') }}</p>
+                    @else
+                        <x-glide-select name="assigned_to" id="assigned_to" :label="__('Assign / Direct to Sales')"
+                            :placeholder="__('— Unassigned (NEW) —')"
+                            :options="$salesUsers->map(fn ($u) => ['value' => $u->id, 'label' => $u->name])->all()"
+                            :value="old('assigned_to', $lead->assigned_to)" :error="$errors->first('assigned_to')" />
+                    @endif
                     @if($lead->assignee)
                         <p class="mt-1 text-xs text-slate-500">
                             {{ __('Assigned to') }} {{ $lead->assignee->name }}

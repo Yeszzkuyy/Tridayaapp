@@ -1,46 +1,43 @@
 <x-app-layout>
-    @if(session('success'))
-        <x-status-card :message="session('success')" />
-    @endif
+    @include('partials.live-feed')
     <div class="px-4 sm:px-6 lg:px-8">
         
-        {{-- Banner Header --}}
-        <div data-rise class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-indigo-50 to-accent-100 px-5 py-6 sm:px-8 sm:py-7 mb-6 border border-slate-200/60 dark:border-0 dark:from-slate-800 dark:via-slate-900 dark:to-indigo-950">
-            <div class="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl"></div>
-            <div class="pointer-events-none absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-blue-500/10 blur-3xl"></div>
-
-            <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex min-w-0 items-center gap-4">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-400 to-blue-600 text-lg font-bold text-white shadow-lg sm:h-14 sm:w-14 sm:text-xl">
-                        {{ strtoupper(Str::substr($customer->name, 0, 1)) }}
+        {{-- Header ringkas (open header, tanpa banner dekoratif) --}}
+        <div class="mb-6 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" data-rise>
+            <div class="flex min-w-0 items-center gap-3.5">
+                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-600 text-lg font-bold text-white shadow-sm">
+                    {{ strtoupper(Str::substr($customer->name, 0, 1)) }}
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="truncate text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">{{ $customer->name }}</h1>
+                        @if($customer->pt_group)
+                            <span class="inline-flex rounded-lg px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\Lead::PT_COLORS[$customer->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }}">{{ $customer->pt_group }}</span>
+                        @endif
                     </div>
-                    <div class="min-w-0">
-                        <h1 class="truncate text-2xl font-bold text-slate-800 dark:text-white sm:text-3xl">{{ $customer->name }}</h1>
-                        <p class="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-500 dark:text-slate-300">
-                            <x-icon name="map-pin" class="h-4 w-4 shrink-0 text-slate-400" />
-                            {{ __('Customer Detail') }} • {{ $customer->address ?? __('Address not available') }}
-                        </p>
-                    </div>
+                    <p class="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                        <x-icon name="map-pin" class="h-3.5 w-3.5 shrink-0" />
+                        {{ $customer->address ?? __('Address not available') }}
+                    </p>
                 </div>
+            </div>
 
-                <div class="flex shrink-0 gap-2">
-                    @can('update', $customer)
-                        <a href="{{ route('customers.edit', $customer) }}"
-                           class="flex-1 sm:flex-none text-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-accent-100 hover:bg-accent-200 text-accent-700 text-sm font-medium transition-all duration-200 hover:scale-[1.03]">
-                            {{ __('Edit Customer') }}
-                        </a>
-                    @endcan
-                    <a href="{{ route('customers.index') }}"
-                       class="flex-1 sm:flex-none text-center px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/30 dark:text-white dark:hover:bg-white/10 text-sm font-medium transition-all duration-200 hover:scale-[1.03]">
-                        {{ __('Back') }}
-                    </a>
-                </div>
+            <div class="flex shrink-0 items-center gap-2">
+                @can('update', $customer)
+                    <x-flow-button as="a" href="{{ route('customers.edit', $customer) }}"
+                                   icon="edit"
+                                   label="{{ __('Edit Customer') }}" title="{{ __('Edit Customer') }}" />
+                @endcan
+                <x-back-button href="{{ route('customers.index') }}" />
             </div>
         </div>
 
         {{-- Tabs --}}
         <div x-data="{
-                tab: '{{ session('doc_uploaded') || $errors->has('file') ? 'documents' : 'overview' }}',
+                tab: '{{ session('doc_uploaded') || $errors->has('file') || request()->filled('documents_q') || request()->filled('documents_category') || request()->filled('documents_page') ? 'documents' : 'overview' }}',
+                docView: '{{ session('doc_uploaded') ? 'module' : 'all' }}',
+                panelOpen: false,
+                doc: null,
                 moveIndicator(btn) {
                     if (!btn) return;
                     const i = this.$refs.indicator;
@@ -51,10 +48,10 @@
              x-init="$nextTick(() => moveIndicator($refs.tabs.querySelector('.tab-active')))"
              @resize.window.debounce.150ms="moveIndicator($refs.tabs.querySelector('.tab-active'))"
              data-rise="1"
-             class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
+             class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600">
 
-            {{-- Tab Navigation --}}
-            <div class="border-b border-slate-200 dark:border-slate-600">
+            {{-- Tab Navigation (sticky saat scroll) --}}
+            <div class="sticky top-16 z-20 rounded-t-2xl border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-600 dark:bg-slate-800/95 sm:top-20">
                 <nav x-ref="tabs" class="relative flex gap-4 sm:gap-6 px-4 sm:px-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     <span x-ref="indicator" class="tab-indicator absolute bottom-0 left-0 h-0.5 w-0 rounded-full bg-accent-500"></span>
 
@@ -103,20 +100,38 @@
                         $doneProjects = $customer->projects->where('project_status_id', 5)->count();
                         $activeProjects = $customer->projects->where('project_status_id', '!=', 5)->where('project_status_id', '!=', 6)->count();
                         $totalContacts = $customer->contacts->count();
+                        // Data finance (billing/PIC finance/NPWP) hanya untuk
+                        // Admin/Finance/Purchasing/Management/CEO. Sales tetap
+                        // melihat customer & quotation, tanpa data penagihan.
+                        $canSeeFinance = auth()->user()?->can('view-customer-finance') ?? false;
                         $infoFields = [
                             ['icon' => 'building', 'label' => __('Name'), 'value' => $customer->name],
                             ['icon' => 'building', 'label' => __('Customers from Company'), 'value' => $customer->pt_group],
                             ['icon' => 'user', 'label' => __('PIC'), 'value' => $customer->picName()],
                             ['icon' => 'map-pin', 'label' => __('Address'), 'value' => $customer->address],
-                            ['icon' => 'map-pin', 'label' => __('Billing Address'), 'value' => $customer->billingAddress()],
-                            ['icon' => 'map-pin', 'label' => __('Shipping Address'), 'value' => $customer->shippingAddress()],
+                            ['icon' => 'receipt', 'label' => __('Billing Address'), 'value' => $customer->billing_address],
+                            ['icon' => 'cube', 'label' => __('Shipping Address'), 'value' => $customer->shipping_address],
                             ['icon' => 'phone', 'label' => __('Telepon'), 'value' => \App\Support\PhoneFormatter::format($customer->phone)],
                             ['icon' => 'chat', 'label' => __('Company WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->whatsapp), 'badge' => __('Company'), 'badgeColor' => 'blue'],
-                            ['icon' => 'chat', 'label' => __('PIC WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->primaryPic()?->whatsapp), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
+                            ['icon' => 'chat', 'label' => __('PIC WhatsApp'), 'value' => \App\Support\PhoneFormatter::format($customer->picWhatsapp()), 'badge' => __('PIC'), 'badgeColor' => 'emerald'],
+                            ['icon' => 'user', 'label' => __('PIC Position'), 'value' => $customer->picPosition()],
+                            ['icon' => 'mail', 'label' => __('PIC Email'), 'value' => $customer->preferredContact()?->email],
                             ['icon' => 'mail', 'label' => __('Email'), 'value' => $customer->email],
                             ['icon' => 'user', 'label' => __('Finance PIC'), 'value' => $customer->financeContact()],
                             ['icon' => 'file-text', 'label' => __('NPWP'), 'value' => $customer->npwp],
                         ];
+
+                        if (! $canSeeFinance) {
+                            $hiddenFinanceLabels = [
+                                __('Finance PIC'),
+                                __('NPWP'),
+                            ];
+                            $infoFields = array_values(array_filter(
+                                $infoFields,
+                                fn (array $field) => ! in_array($field['label'], $hiddenFinanceLabels, true)
+                            ));
+                        }
+
                         $stats = [
                             ['icon' => 'folder', 'label' => __('Total Projects'), 'value' => $totalProjects, 'chip' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'],
                             ['icon' => 'check-circle', 'label' => __('Completed Projects'), 'value' => $doneProjects, 'chip' => 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'],
@@ -135,12 +150,12 @@
                                         <x-icon name="{{ $field['icon'] }}" class="w-4 h-4 mt-1 text-indigo-400 shrink-0" />
                                         <div class="min-w-0">
                                             <p class="text-xs text-slate-400">{{ $field['label'] }}</p>
-                                            <p class="flex flex-wrap items-center gap-2 font-medium text-slate-800 dark:text-slate-100 {{ empty($field['value']) ? 'text-slate-400 italic' : '' }}">{{ $field['value'] ?: __('Not set yet') }}@if(!empty($field['badge']))<x-status-badge :color="$field['badgeColor'] ?? 'slate'">{{ $field['badge'] }}</x-status-badge>@endif</p>
+                                            <p class="flex flex-wrap items-center gap-2 font-medium text-slate-800 dark:text-slate-100 {{ empty($field['value']) ? 'text-slate-400' : '' }}">{{ $field['value'] ?: '-' }}@if(!empty($field['badge']))<x-status-badge :color="$field['badgeColor'] ?? 'slate'">{{ $field['badge'] }}</x-status-badge>@endif</p>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
-                            @if($customer->npwp_document_path)
+                            @if($canSeeFinance && $customer->npwp_document_path)
                                 <a href="{{ route('customers.npwp', $customer) }}" target="_blank" rel="noopener" class="mt-3 inline-flex max-w-full items-center gap-1.5 text-sm text-indigo-600 hover:underline">
                                     <x-icon name="file-text" class="h-4 w-4 shrink-0" /><span class="truncate">{{ $customer->npwpDisplayName() }}</span>
                                 </a>
@@ -172,9 +187,9 @@
                 <div x-show="tab === 'projects'" x-transition>
                     <x-section-header title="{{ __('Project List') }}">
                         @if(auth()->user()->can('create', App\Models\Project::class) || auth()->user()->can('update', $customer))
-                            <x-add-button href="{{ route('projects.create', ['customer_id' => $customer->id]) }}">
-                                {{ __('Add Project') }}
-                            </x-add-button>
+                            <x-flow-button as="a" href="{{ route('projects.create', ['customer_id' => $customer->id]) }}"
+                                           icon="folder"
+                                           label="{{ __('Add Project') }}" title="{{ __('Add Project') }}" />
                         @endif
                     </x-section-header>
 
@@ -194,9 +209,9 @@
                 <div x-show="tab === 'contacts'" x-transition>
                     <x-section-header title="{{ __('PIC / Customer Contacts List') }}">
                         @can('update', $customer)
-                            <x-add-button href="{{ route('customer-contacts.create', $customer) }}">
-                                {{ __('Add PIC') }}
-                            </x-add-button>
+                            <x-flow-button as="a" href="{{ route('customer-contacts.create', $customer) }}"
+                                           icon="users"
+                                           label="{{ __('Add PIC') }}" title="{{ __('Add PIC') }}" />
                         @endcan
                     </x-section-header>
 
@@ -245,7 +260,7 @@
                                             @can('update', $customer)
                                                 <form action="{{ route('customer-contacts.destroy', $contact) }}"
                                                       method="POST"
-                                                      onsubmit="return confirm('{{ __('Delete this PIC?') }}')"
+                                                      data-confirm="{{ __('Delete this PIC?') }}" data-confirm-tone="danger"
                                                       class="inline-block align-middle ml-2">
                                                     @csrf
                                                     @method('DELETE')
@@ -269,45 +284,52 @@
                 <div x-show="tab === 'documents'" x-transition>
                     @php
                         $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
+                        $canUploadAnyDoc = $canUploadDocs || auth()->user()->can('manage-admin');
                         // Split dokumen berdasarkan jenis: project & general
                         // (dokumen transaksi sudah dipisah di controller).
                         $projectDocuments = $documents->whereNotNull('project_id');
                         $generalDocuments = $documents->whereNull('project_id');
                     @endphp
 
-                    {{-- Breadcrumb + judul halaman Documents --}}
-                    <nav aria-label="Breadcrumb" class="mb-4">
-                        <ol class="flex flex-wrap items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-                            <li>
-                                <a href="{{ route('customers.index') }}"
-                                   class="transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{{ __('Customer') }}</a>
-                            </li>
-                            <li aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</li>
-                            <li>
-                                <a href="{{ route('customers.show', $customer) }}"
-                                   class="max-w-[12rem] truncate transition-colors hover:text-indigo-600 dark:hover:text-indigo-400">{{ $customer->name }}</a>
-                            </li>
-                            <li aria-hidden="true" class="text-slate-300 dark:text-slate-600">/</li>
-                            <li class="font-medium text-slate-700 dark:text-slate-200" aria-current="page">{{ __('Documents') }}</li>
-                        </ol>
-                    </nav>
-
-                    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 class="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{{ __('Documents') }}</h2>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                {{ __('Semua dokumen pelanggan: proyek, umum, dan transaksi.') }}
-                            </p>
+                    {{-- Header: judul, switch tampilan, satu tombol upload. --}}
+                    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('Documents') }}</h2>
+                            <div class="inline-flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-700">
+                                <button type="button" @click="docView = 'all'"
+                                        :class="docView === 'all' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'"
+                                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
+                                    {{ __('All Documents') }}
+                                </button>
+                                <button type="button" @click="docView = 'module'"
+                                        :class="docView === 'module' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'"
+                                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
+                                    {{ __('By Module') }}
+                                </button>
+                            </div>
                         </div>
-                        @if($canUploadDocs)
+                        @if($canUploadAnyDoc)
                             <div class="shrink-0">
-                                <x-icon-button icon="add" label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
+                                <x-flow-button as="button" icon="upload"
+                                               label="{{ __('Upload Document') }}" title="{{ __('Upload Document') }}"
                                                data-doc-upload-open />
                             </div>
                         @endif
                     </div>
 
-                    <div class="space-y-8">
+                    <div x-show="docView === 'all'">
+                        @include('customers.partials.all-documents', [
+                            'customer' => $customer,
+                            'customerDocuments' => $customerDocuments,
+                            'customerDocumentFilters' => $customerDocumentFilters,
+                            'canUploadDocs' => $canUploadDocs,
+                            'documentCategories' => $documentCategories,
+                            'documentLinkOptions' => $documentLinkOptions,
+                            'canReclassifyDocs' => $canReclassifyDocs,
+                        ])
+                    </div>
+
+                    <div x-show="docView === 'module'" class="space-y-8">
                         {{-- Section 1: Project Documents (kelompokkan per project) --}}
                         @include('customers.partials.project-documents', [
                             'projectDocuments' => $projectDocuments,
@@ -332,61 +354,49 @@
                         ->latest('proposal_date')
                         ->get();
                 @endphp
-                <div x-show="tab === 'documents'" x-transition class="space-y-6">
+                <div x-show="tab === 'documents' && docView === 'module'" x-transition class="space-y-6">
                     {{-- Section Quotation / Penawaran Harga (Mirroring dari Sales) --}}
                     <div class="border-t border-slate-200 dark:border-slate-600 pt-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Quotation / Penawaran Harga') }}</h3>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen penawaran harga resmi dari divisi Sales yang terhubung dengan customer ini.') }}</p>
-                            </div>
+                        <div class="mb-3 flex items-center justify-between gap-2">
+                            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation') }}</h3>
                             <a href="{{ route('sales.proposals.index') }}"
-                               class="text-sm font-medium text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                                {{ __('Lihat Semua Quotation') }} →
+                               class="text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                                {{ __('View all') }}
                             </a>
                         </div>
 
                         @if($custQuotations->isNotEmpty())
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-700 dark:border-slate-700">
                                 @foreach($custQuotations as $quo)
-                                    <div class="group relative block overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/50">
-                                        <div class="relative flex h-36 items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-800">
-                                            <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                            </svg>
-                                            <span class="absolute left-2 top-2 rounded bg-indigo-600 px-1.5 py-0.5 text-[11px] font-bold uppercase text-white">QUO</span>
-                                            <div class="absolute right-2 top-2 flex items-center gap-1">
-                                                <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $quo) }}" target="_blank" title="{{ __('Preview PDF') }}" />
-                                            </div>
-                                        </div>
-                                        <div class="p-3">
-                                            <p class="flex flex-wrap items-center gap-2 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                                <a href="{{ route('sales.proposals.show', $quo) }}" class="truncate hover:text-accent-600 dark:hover:text-accent-400">
-                                                    {{ $quo->proposal_number }}
-                                                </a>
-                                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
-                                                    {{ \App\Models\Proposal::statusLabel($quo->status) }}
-                                                </span>
-                                            </p>
-                                            <p class="mt-0.5 font-mono text-sm text-slate-700 dark:text-slate-200 font-medium">Rp {{ number_format($quo->grand_total, 0, ',', '.') }}</p>
-                                            <p class="mt-0.5 truncate text-xs text-slate-400">
-                                                {{ $quo->proposal_date?->format('d M Y') ?? '-' }}
-                                                @if($quo->valid_until)
-                                                    · {{ __('Valid s/d') }} {{ $quo->valid_until->format('d M Y') }}
-                                                @endif
+                                    <div class="flex items-center gap-3 px-3 py-2.5">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                                            <x-icon name="file-text" class="h-4 w-4" />
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <a href="{{ route('sales.proposals.show', $quo) }}"
+                                               class="truncate font-mono text-sm font-semibold text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">
+                                                {{ $quo->proposal_number }}
+                                            </a>
+                                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                                {{ $quo->proposal_date?->format('d M Y') ?? '-' }} · Rp {{ number_format($quo->grand_total, 0, ',', '.') }}
                                             </p>
                                         </div>
+                                        <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
+                                            {{ \App\Models\Proposal::statusLabel($quo->status) }}
+                                        </span>
+                                        <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $quo) }}" target="_blank" title="{{ __('Preview PDF') }}" />
                                     </div>
                                 @endforeach
                             </div>
                         @else
-                            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-600 text-center">
-                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('Belum ada quotation / penawaran untuk customer ini.') }}</p>
-                                <a href="{{ route('sales.proposals.create') }}"
-                                   class="mt-2 inline-block text-sm text-accent-600 hover:text-accent-800 dark:text-accent-400 dark:hover:text-accent-300">
-                                    {{ __('Buat Quotation Baru') }} →
-                                </a>
+                            <div class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-slate-700">
+                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No quotations yet.') }}</p>
+                                @canany(['manage-inside-sales', 'manage-sales-leads'])
+                                    <a href="{{ route('sales.proposals.create') }}"
+                                       class="mt-1 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                                        {{ __('Create quotation') }}
+                                    </a>
+                                @endcanany
                             </div>
                         @endif
                     </div>
@@ -394,6 +404,7 @@
                     @include('customers.partials.transaction-documents', [
                         'custInvoices' => $custInvoices,
                         'custPos' => $custPos,
+                        'custDeliveries' => $custDeliveries,
                         'custPayments' => $custPayments,
                         'typedDocs' => $typedDocs,
                         'canUploadDocs' => $canUploadDocs,
@@ -402,7 +413,7 @@
                 @endcanany
 
                     {{-- Modul popup dokumen (dipakai oleh doc-thumbs.js) --}}
-                    @if($canUploadDocs)
+                    @if($canUploadAnyDoc)
                         {{-- Popup upload --}}
                         <div id="doc-upload-modal" class="fixed inset-0 z-[90] {{ $errors->has('file') ? 'doc-open' : 'hidden' }} items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
                             <div class="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
@@ -417,12 +428,72 @@
                                     </button>
                                 </div>
                                 <form action="{{ route('customer-documents.store', $customer) }}" method="POST" enctype="multipart/form-data"
-                                      x-data="{ dragging: false, fileName: '' }">
+                                      x-data="{ dragging: false, fileName: '', formType: '{{ auth()->user()->can('manage-admin') ? old('doc_type', '') : '' }}' }">
                                     @csrf
-                                    <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
+                                    @can('manage-admin')
+                                        <div class="mb-3">
+                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Document type') }}</label>
+                                            <select name="doc_type" id="doc-doc-type" x-model="formType"
+                                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                <option value="">{{ __('General') }}</option>
+                                                <option value="invoice">{{ __('Invoice') }}</option>
+                                                <option value="po">{{ __('PO') }}</option>
+                                                <option value="payment">{{ __('Payment') }}</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2" x-show="formType !== ''" x-cloak>
+                                            <div x-show="formType === 'invoice'">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Invoice') }}</label>
+                                                <select name="transaction_id" :disabled="formType !== 'invoice'"
+                                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                    <option value="">{{ __('Choose invoice') }}</option>
+                                                    @foreach($custInvoices as $invoice)
+                                                        @if($invoice->status !== 'cancelled')
+                                                            <option value="{{ $invoice->id }}">{{ $invoice->invoice_number }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div x-show="formType === 'po'">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Purchase Order') }}</label>
+                                                <select name="transaction_id" :disabled="formType !== 'po'"
+                                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                    <option value="">{{ __('Choose purchase order') }}</option>
+                                                    @foreach($custPos as $order)
+                                                        @if($order->status !== 'dibatalkan')
+                                                            <option value="{{ $order->id }}">{{ $order->po_number }}</option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div x-show="formType === 'payment'">
+                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Payment') }}</label>
+                                                <select name="transaction_id" :disabled="formType !== 'payment'"
+                                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                    <option value="">{{ __('Choose payment') }}</option>
+                                                    @foreach($custPayments as $payment)
+                                                        <option value="{{ $payment->id }}">{{ $payment->invoice?->invoice_number }} · {{ $payment->payment_date?->format('d M Y') }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <input type="hidden" name="doc_type" id="doc-doc-type" value="{{ old('doc_type') }}">
+                                    @endcan
                                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        <div x-show="formType === ''">
+                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Category') }}</label>
+                                            <select name="document_category_id" :disabled="formType !== ''"
+                                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                <option value="">{{ __('Tanpa Kategori') }}</option>
+                                                @foreach(($documentCategories ?? []) as $categoryId => $categoryName)
+                                                    <option value="{{ $categoryId }}" @selected((string) old('document_category_id') === (string) $categoryId)>{{ $categoryName }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                         @if($customer->projects->isNotEmpty())
-                                            <div id="doc-project-field">
+                                            <div id="doc-project-field" x-show="formType === ''">
                                                 <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
                                                 <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                                     <option value="">{{ __('General') }}</option>
@@ -477,28 +548,7 @@
                             </div>
                         </div>
                     @endif
-                    {{-- Lightbox & rename dipakai semua pengunjung dokumen; aksi tulis tetap dijaga backend. --}}
-
-                        {{-- Tampilan file dalam layar --}}
-                        <div id="doc-lightbox" class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/80 p-4" data-doc-modal>
-                            <div class="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
-                                <div class="flex items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-700">
-                                    <p id="doc-lightbox-name" class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100"></p>
-                                    <div class="flex shrink-0 gap-2">
-                                        <a id="doc-lightbox-download" href="#"
-                                           class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-emerald-600 transition hover:bg-emerald-600 hover:text-white dark:border-slate-600 dark:text-emerald-400"
-                                           title="{{ __('Download') }}" aria-label="{{ __('Download') }}">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                                        </a>
-                                        <button type="button" data-doc-modal-close aria-label="{{ __('Close') }}"
-                                                class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="doc-lightbox-body" class="flex min-h-[40vh] items-center justify-center overflow-auto bg-slate-100 p-4 dark:bg-slate-950/60"></div>
-                            </div>
-                        </div>
+                    {{-- Lightbox global dipasang di layout; rename tetap di sini karena khusus halaman ini. --}}
 
                         {{-- Popup ubah nama --}}
                         <div id="doc-rename-modal" class="fixed inset-0 z-[95] hidden items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
@@ -530,9 +580,9 @@
                         <div>
                             <x-section-header title="{{ __('Follow Up') }}">
                                 @can('update', $customer)
-                                    <x-add-button href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}">
-                                        {{ __('Add Follow Up') }}
-                                    </x-add-button>
+                                    <x-flow-button as="a" href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}"
+                                                   icon="phone"
+                                                   label="{{ __('Add Follow Up') }}" title="{{ __('Add Follow Up') }}" />
                                 @endcan
                             </x-section-header>
                             @php $followups = $customer->followUps()->with(['creator'])->latest('follow_up_date')->get(); @endphp
@@ -562,35 +612,16 @@
                 </div>
                 @endcan
 
+                {{-- Panel detail dokumen (dipakai tabel All Documents) --}}
+                @include('documents.partials.detail-panel')
+
                 {{-- TAB 10: ACTIVITY --}}
                 <div x-show="tab === 'activity'" x-transition>
                     <x-section-header title="{{ __('Activity Timeline') }}" />
 
-                    @if($timeline->isNotEmpty())
-                        <div class="relative">
-                            <div class="absolute left-[15px] top-8 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
-                            @foreach($timeline as $item)
-                                <div class="relative pl-10 pb-5 last:pb-0">
-                                    <div class="absolute left-0 top-0">
-                                        <x-user-avatar :user="$item['user']" size="w-8 h-8" text="text-xs" />
-                                    </div>
-                                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3.5">
-                                        <p class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-slate-800 dark:text-slate-100">
-                                            <span class="font-semibold">{{ $item['user']?->name ?? __('System') }}</span>
-                                            <x-timeline-badge :type="$item['type']" />
-                                            <span>{{ $item['title'] }}</span>
-                                            <span class="text-xs text-slate-400">· {{ $item['date']?->diffForHumans() }}</span>
-                                        </p>
-                                        @if($item['detail'] || $item['context'])
-                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $item['detail'] }}@if($item['context']) · {{ $item['context'] }}@endif</p>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <x-empty-state label="{{ __('activity') }}" />
-                    @endif
+                    <div x-data="liveFeed(@js(route('customers.timeline', $customer)), 60000)">
+                        @include('customers.partials.timeline', ['timeline' => $timeline])
+                    </div>
                 </div>
 
             </div>
@@ -617,6 +648,7 @@
                 },
             };
         }
+
     </script>
     {{-- Thumbnail PDF + popup/filter/preview dokumen (script langsung, bukan @push
          yang ternyata terbuang di komponen layout). --}}

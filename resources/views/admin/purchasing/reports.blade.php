@@ -1,10 +1,9 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Procurement Reports') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Unbilled receipts, undelivered Supplier POs, and outstanding supplier invoices.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Procurement Reports') }}</h1>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin.hub') }}" title="{{ __('Back') }}" />
+        <x-back-button href="{{ route('admin.hub') }}" />
     </div>
 
     <form method="GET" action="{{ route('admin.purchasing.reports') }}" class="mb-5 flex flex-wrap items-end gap-2">

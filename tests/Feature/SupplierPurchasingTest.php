@@ -91,6 +91,8 @@ class SupplierPurchasingTest extends TestCase
             'po_date' => now()->toDateString(),
             'po_document_path' => 'customer-po/po-'.Str::random(6).'.pdf',
             'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Supplier Test No. 1',
+            'po_verified_at' => now(),
             'status' => 'accepted',
         ]);
 
@@ -502,8 +504,8 @@ class SupplierPurchasingTest extends TestCase
         $proposal = $this->makeEligibleProposal();
         $supplier = $this->makeSupplier();
 
-        // Sales punya view-admin (read-only) — boleh melihat, tidak boleh menulis.
-        $this->actingAs($sales)->get(route('admin.supplier-pos.index'))->assertOk();
+        // Sales tidak memiliki permission Supplier PO.
+        $this->actingAs($sales)->get(route('admin.supplier-pos.index'))->assertForbidden();
         $this->actingAs($sales)->post(route('admin.supplier-pos.store'), $this->poPayload(
             $proposal,
             $supplier,

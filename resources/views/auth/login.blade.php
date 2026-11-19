@@ -1,3 +1,9 @@
+@php
+    $formErrors = collect($errors->getBag('default')->getMessages())
+        ->map(fn ($messages) => is_array($messages) ? ($messages[0] ?? null) : $messages)
+        ->filter()
+        ->all();
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -5,6 +11,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="google-site-verification" content="oGvxPPGpt9_UBNwgI1WD8_09SgQYH5xjE97G7Ltbvec">
+    <meta name="validation-required" content="{{ __(':label is required.') }}">
+    <meta name="validation-summary" content="{{ __('Please complete the required fields: :fields') }}">
+    <meta name="validation-fix" content="{{ __('Please fix the highlighted fields: :fields') }}">
+    <meta name="validation-more" content="{{ __('and :count more') }}">
+    <script>window.__formErrors = @json($formErrors);</script>
     <title>{{ __('Sign in') }} - {{ config('app.name', 'Tridaya App') }}</title>
 
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('favicon.png') }}">

@@ -1,10 +1,4 @@
 <div>
-    @if (session()->has('message'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl mb-4">
-            {{ session('message') }}
-        </div>
-    @endif
-
     {{-- Form Tambah --}}
     <div class="bg-slate-50 rounded-xl p-4 mb-6">
         <h3 class="text-lg font-bold text-slate-800 mb-3">{{ __('Add New Status') }}</h3>
@@ -73,8 +67,8 @@
                                 <div class="flex items-center justify-end gap-3">
                                     <x-icon-button icon="edit" label="{{ __('Edit') }}" title="{{ __('Edit') }}"
                                            wire:click="edit({{ $status->id }})" />
-                                    <button wire:click="delete({{ $status->id }})" 
-                                            onclick="return confirm('{{ __('Delete this status?') }}')"
+                                    <button wire:click="delete({{ $status->id }})"
+                                            data-confirm="{{ __('Delete this status?') }}" data-confirm-tone="danger"
                                             class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">{{ __('Delete') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
                                 </div>
                             </td>

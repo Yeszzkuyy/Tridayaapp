@@ -38,7 +38,7 @@
                             </x-icon-button>
                         </form>
                         <form action="{{ route('sales.schedules.cancel', $schedule) }}" method="POST" class="inline"
-                              onsubmit="return confirm('{{ __('Cancel this schedule?') }}')">
+                              data-confirm="{{ __('Cancel this schedule?') }}" data-confirm-tone="danger">
                             @csrf
                             <x-icon-button icon="delete" type="submit" title="{{ __('Cancel') }}" />
                         </form>

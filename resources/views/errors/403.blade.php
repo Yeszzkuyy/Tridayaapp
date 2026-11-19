@@ -3,14 +3,14 @@
      aplikasi. Jangan ubah status respons: backend tetap menolak dengan 403. --}}
 <x-guest-layout>
     <div class="flex flex-col items-center py-4 text-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400">
             <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
         </div>
 
-        <h1 class="mt-4 text-xl font-semibold text-gray-900">{{ __('Access Denied') }}</h1>
-        <p class="mt-2 text-sm text-gray-600">{{ __('You do not have permission to access this page.') }}</p>
+        <h1 class="mt-4 text-xl font-semibold text-[var(--text-primary)]">{{ __('Access Denied') }}</h1>
+        <p class="mt-2 text-sm text-[var(--text-muted)]">{{ __('You do not have permission to access this page.') }}</p>
 
         <div class="mt-6 flex items-center gap-3">
             <x-icon-button as="a" icon="back" href="{{ url()->previous() }}"

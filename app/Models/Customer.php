@@ -10,6 +10,7 @@ class Customer extends Model
     use SoftDeletes; // Pastikan ini ada
 
     protected $fillable = [
+        'created_by',
         'name',
         'contact_person',
         'company',
@@ -41,108 +42,88 @@ class Customer extends Model
         return $this->hasMany(CustomerContact::class);
     }
 
-    /**
-     * PIC utama customer. `contact_person` (kolom lama) hanya dipakai sebagai
-     * cadangan untuk data yang belum punya baris di customer_contacts.
-     */
-    public function primaryPic(): ?CustomerContact
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Kontak primary aktif; null bila customer belum punya kontak utama. */
+    public function primaryContact(): ?CustomerContact
     {
         if ($this->relationLoaded('contacts')) {
             return $this->contacts->firstWhere('is_primary', true);
         }
 
-        // Model yang belum tersimpan (mis. dipakai di unit test) tidak punya
-        // baris contact untuk dibaca.
-        if (! $this->exists) {
-            return null;
-        }
-
-        return $this->contacts()->where('is_primary', true)->latest('id')->first();
+        return $this->contacts()->where('is_primary', true)->orderByDesc('id')->first();
     }
 
+    /** Sudah punya data kontak orang (bukan cuma kolom legacy)? */
+    public function hasContacts(): bool
+    {
+        return $this->relationLoaded('contacts')
+            ? $this->contacts->isNotEmpty()
+            : $this->contacts()->exists();
+    }
+
+    /**
+     * Kontak default untuk tampilan PIC: primary, atau kontak pertama
+     * bila belum ada yang ditandai primary. Ini mencegah "No PIC yet"
+     * padahal customer sudah punya data kontak.
+     */
+    public function preferredContact(): ?CustomerContact
+    {
+        $primary = $this->primaryContact();
+
+        if ($primary) {
+            return $primary;
+        }
+
+        if ($this->relationLoaded('contacts')) {
+            return $this->contacts->first();
+        }
+
+        return $this->contacts()->orderByDesc('is_primary')->orderBy('id')->first();
+    }
+
+    /**
+     * Nama PIC default.
+     *
+     * Sumber utama tabel `customer_contacts`; kolom legacy hanya dipakai
+     * bila customer memang belum punya kontak sama sekali.
+     */
     public function picName(): ?string
     {
-        return $this->primaryPic()?->name ?: $this->contact_person;
+        $preferred = $this->preferredContact();
+
+        return $preferred?->name ?: $this->contact_person;
     }
 
-    public function picPhone(): ?string
-    {
-        return $this->primaryPic()?->phone ?: $this->phone;
-    }
-
-    /**
-     * Nomor WhatsApp untuk menghubungi PIC: WA PIC -> telp PIC -> WA customer.
-     */
+    /** WhatsApp PIC default (bukan nomor perusahaan). */
     public function picWhatsapp(): ?string
     {
-        $contact = $this->primaryPic();
+        $preferred = $this->preferredContact();
 
-        return $contact?->whatsapp ?: ($contact?->phone ?: $this->whatsapp);
+        // Kontak dulu; kalau kontak belum punya nomor, pakai nomor customer
+        // supaya kartu PIC tidak kosong padahal nomornya ada.
+        return $preferred?->whatsapp ?: ($preferred?->phone ?: $this->whatsapp);
     }
 
-    /**
-     * Sinkronkan data PIC ke customer_contacts (primary) sekaligus mengisi
-     * kolom `contact_person` sebagai mirror.
-     *
-     * Non-destruktif: nilai null/string kosong tidak dikirim, jadi data yang
-     * sudah ada tidak terhapus saat form dikirim dengan field kosong.
-     * `$onlyMissing` dipakai saat data berasal dari form Lead: nama PIC tetap
-     * diperbarui, tapi telp/WA/email lama milik PIC tidak ditimpa nomor
-     * customer.
-     *
-     * @param  array{name?: string|null, position?: string|null, phone?: string|null, whatsapp?: string|null, email?: string|null, created_by?: int|null}  $attributes
-     */
-    public function syncPrimaryContact(array $attributes, bool $onlyMissing = false): ?CustomerContact
+    /** Telepon PIC default (bukan nomor perusahaan). */
+    public function picPhone(): ?string
     {
-        $attributes = array_filter($attributes, fn ($value) => filled($value));
-
-        if (blank($attributes['name'] ?? null)) {
-            return $this->primaryPic();
-        }
-
-        $contact = $this->primaryPic();
-
-        if ($contact) {
-            if ($onlyMissing) {
-                $attributes = array_filter(
-                    $attributes,
-                    fn ($value, $key) => $key === 'name' || blank($contact->{$key}),
-                    ARRAY_FILTER_USE_BOTH
-                );
-            }
-
-            $contact->fill($attributes);
-            if ($contact->isDirty()) {
-                $contact->save();
-            }
-        } else {
-            $contact = $this->contacts()->create([
-                'name' => $attributes['name'],
-                'position' => $attributes['position'] ?? null,
-                'phone' => $attributes['phone'] ?? null,
-                'whatsapp' => $attributes['whatsapp'] ?? null,
-                'email' => $attributes['email'] ?? null,
-                'is_primary' => true,
-                'created_by' => $attributes['created_by'] ?? auth()->id(),
-            ]);
-        }
-
-        $this->syncContactMirror();
-
-        return $contact;
+        return $this->preferredContact()?->phone ?: $this->phone;
     }
 
-    /**
-     * Salin nama PIC primary ke kolom `contact_person`. Tidak pernah
-     * mengosongkan kolom supaya data lama tetap aman.
-     */
-    public function syncContactMirror(): void
+    /** Email PIC default (bukan email perusahaan). */
+    public function picEmail(): ?string
     {
-        $name = $this->primaryPic()?->name;
+        return $this->preferredContact()?->email ?: $this->email;
+    }
 
-        if (filled($name) && $name !== $this->contact_person) {
-            $this->forceFill(['contact_person' => $name])->saveQuietly();
-        }
+    /** Jabatan PIC default, bila diisi. */
+    public function picPosition(): ?string
+    {
+        return $this->preferredContact()?->position;
     }
 
     /**
@@ -209,6 +190,11 @@ class Customer extends Model
         return $this->hasMany(FollowUp::class);
     }
 
+    public function pocs()
+    {
+        return $this->hasMany(Poc::class);
+    }
+
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
@@ -217,6 +203,11 @@ class Customer extends Model
     public function purchaseOrders()
     {
         return $this->hasMany(PurchaseOrder::class);
+    }
+
+    public function goodsDeliveries()
+    {
+        return $this->hasMany(GoodsDelivery::class);
     }
 
     public function leads()
@@ -229,22 +220,43 @@ class Customer extends Model
         return $this->belongsTo(WhatsappAccount::class);
     }
 
-    public function waLink(string $text = '', ?string $number = null): ?string
+    public function waLink(string $text = ''): ?string
     {
-        $number = $number ?: ($this->picWhatsapp() ?: $this->whatsapp ?: $this->phone);
+        $digits = self::waNumber($this->whatsapp ?: $this->phone);
+
+        if (! $digits) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $digits . ($text ? '?text=' . rawurlencode($text) : '');
+    }
+
+    /** Tautan WhatsApp untuk PIC default (bukan nomor perusahaan). */
+    public function picWhatsappLink(): ?string
+    {
+        $digits = self::waNumber($this->picWhatsapp());
+
+        return $digits ? 'https://wa.me/' . $digits : null;
+    }
+
+    /** Normalisasi nomor WA ke format internasional tanpa simbol. */
+    public static function waNumber(?string $number): ?string
+    {
         $digits = preg_replace('/\D/', '', $number ?? '');
 
-        if (!$digits) {
+        if (! $digits) {
             return null;
         }
 
         if (str_starts_with($digits, '0')) {
-            $digits = '62' . substr($digits, 1);
-        } elseif (str_starts_with($digits, '8')) {
-            $digits = '62' . $digits;
+            return '62' . substr($digits, 1);
         }
 
-        return 'https://wa.me/' . $digits . ($text ? '?text=' . rawurlencode($text) : '');
+        if (str_starts_with($digits, '8')) {
+            return '62' . $digits;
+        }
+
+        return $digits;
     }
 
     /**

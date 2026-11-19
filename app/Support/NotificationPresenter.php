@@ -3,27 +3,36 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Notifications\EstimatorRequestAnsweredNotification;
+use App\Notifications\EstimatorRequestCreatedNotification;
+use App\Notifications\EstimatorRequestRevisionNotification;
 use App\Notifications\FollowUpOverdueNotification;
+use App\Notifications\InvoicePaidSalesNotification;
 use App\Notifications\LeadAssignedNotification;
+use App\Notifications\LeadReassignedNotification;
 use App\Notifications\LeadTaskNotification;
 use App\Notifications\MeetingReportReminderNotification;
 use App\Notifications\NewLeadNotification;
 use App\Notifications\NewUserPendingApprovalNotification;
-use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCommentNotification;
+use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
+use App\Notifications\QuotationGeneratedNotification;
 use App\Notifications\SalesScheduleAssignedNotification;
 use App\Notifications\SurveyCreatedNotification;
 use App\Notifications\SurveyReportUploadedNotification;
 use App\Notifications\TechnicalRequestCreatedNotification;
 use App\Notifications\TechnicalRequestReviewedNotification;
 use App\Notifications\TechnicalWorkCompletedNotification;
+use App\Notifications\TechnicianAssignedNotification;
 use App\Notifications\TechnicianScheduleAssignedNotification;
 use App\Notifications\TechnicianScheduleChangedNotification;
 use App\Notifications\TechnicianScheduleReminderNotification;
+use App\Notifications\TechnicianTaskCancelledNotification;
+use App\Notifications\TechnicianTaskReassignedNotification;
 use App\Notifications\WhatsappHandoffNotification;
 use App\Notifications\WhatsappInboundNotification;
 use Illuminate\Notifications\DatabaseNotification;
@@ -73,8 +82,12 @@ final class NotificationPresenter
         return match ($class) {
             NewLeadNotification::class => 'lead',
             LeadAssignedNotification::class => 'assigned',
+            LeadReassignedNotification::class => 'reassigned',
             FollowUpOverdueNotification::class => 'followup',
             LeadTaskNotification::class => 'task',
+            TechnicianAssignedNotification::class => 'technician_assigned',
+            TechnicianTaskReassignedNotification::class => 'technician_task_reassigned',
+            TechnicianTaskCancelledNotification::class => 'technician_task_cancelled',
             TechnicianScheduleAssignedNotification::class => 'schedule_assigned',
             TechnicianScheduleChangedNotification::class => 'schedule_changed',
             TechnicianScheduleReminderNotification::class => 'schedule_reminder',
@@ -82,6 +95,7 @@ final class NotificationPresenter
             WhatsappInboundNotification::class,
             WhatsappHandoffNotification::class => 'whatsapp',
             ProposalStatusNotification::class => 'proposal',
+            QuotationGeneratedNotification::class => 'proposal',
             TechnicalRequestCreatedNotification::class => 'technical_request_created',
             TechnicalRequestReviewedNotification::class => 'technical_request_reviewed',
             TechnicalWorkCompletedNotification::class => 'technical_work_completed',
@@ -89,11 +103,15 @@ final class NotificationPresenter
             PriceRequestReviewedNotification::class => 'price_request_reviewed',
             PriceRequestCompletedNotification::class => 'price_request_completed',
             PriceRequestCommentNotification::class => 'price_request_comment',
+            EstimatorRequestCreatedNotification::class => 'estimator_request_created',
+            EstimatorRequestAnsweredNotification::class => 'estimator_request_answered',
+            EstimatorRequestRevisionNotification::class => 'estimator_request_revision',
             ProjectConvertedNotification::class => 'project_converted',
             MeetingReportReminderNotification::class => 'meeting_report_reminder',
             SurveyCreatedNotification::class => 'survey_created',
             SurveyReportUploadedNotification::class => 'survey_report_uploaded',
             NewUserPendingApprovalNotification::class => 'user_pending_approval',
+            InvoicePaidSalesNotification::class => 'invoice_paid',
             default => self::legacyKind($data),
         };
     }
@@ -122,9 +140,15 @@ final class NotificationPresenter
                 'body' => (string) ($data['customer'] ?? __('New lead')),
                 'chips' => [],
             ],
+            'reassigned' => [
+                'app' => __('Lead'),
+                'title' => __('Lead moved to another sales'),
+                'body' => trim(($data['customer'] ?? __('Lead')).' · '.($data['new_assignee'] ?? ''), ' ·'),
+                'chips' => [self::chip(__('Moved'), 'warning')],
+            ],
             'followup' => [
                 'app' => __('Follow Up'),
-                'title' => (string) ($data['title'] ?? __('Follow up overdue')),
+                'title' => (string) ($data['title'] ?? __('Follow up reminder')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
                 'chips' => [self::chip(__('Due'), 'danger')],
             ],
@@ -133,6 +157,28 @@ final class NotificationPresenter
                 'title' => (string) ($data['title'] ?? __('New task')),
                 'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
                 'chips' => [],
+            ],
+            'technician_assigned' => [
+                'app' => __('Engineer'),
+                'title' => (string) ($data['title'] ?? __('Task assigned to you')),
+                'body' => implode(' · ', array_filter([$data['preview'] ?? null, $data['location'] ?? null])),
+                'chips' => array_values(array_filter([
+                    ! empty($data['schedule'])
+                        ? self::chip(trim($data['schedule'].' '.($data['time'] ?? '')), 'info')
+                        : null,
+                ])),
+            ],
+            'technician_task_reassigned' => [
+                'app' => __('Engineer'),
+                'title' => (string) ($data['title'] ?? __('Task moved to another engineer')),
+                'body' => implode(' · ', array_filter([$data['preview'] ?? null, $data['task'] ?? null])),
+                'chips' => [self::chip(__('Moved'), 'warning')],
+            ],
+            'technician_task_cancelled' => [
+                'app' => __('Engineer'),
+                'title' => (string) ($data['title'] ?? __('Task cancelled')),
+                'body' => implode(' · ', array_filter([$data['preview'] ?? null, $data['task'] ?? null])),
+                'chips' => [self::chip(__('Cancelled'), 'danger')],
             ],
             'schedule_assigned' => [
                 'app' => __('Jadwal'),
@@ -230,6 +276,24 @@ final class NotificationPresenter
                 'body' => trim((string) ($data['sender_name'] ?? '').': '.(string) ($data['preview'] ?? '')),
                 'chips' => [],
             ],
+            'estimator_request_created' => [
+                'app' => __('Estimator'),
+                'title' => __('New product price request'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'estimator_request_answered' => [
+                'app' => __('Estimator'),
+                'title' => __('Product price reply is available'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
+            'estimator_request_revision' => [
+                'app' => __('Estimator'),
+                'title' => __('Product price revision requested'),
+                'body' => (string) ($data['title'] ?? ''),
+                'chips' => [],
+            ],
             'project_converted' => [
                 'app' => __('Project'),
                 'title' => __('New project from Sales'),
@@ -259,6 +323,12 @@ final class NotificationPresenter
                 'title' => (string) ($data['title'] ?? __('New User Waiting for Role')),
                 'body' => (string) ($data['body'] ?? $data['name'] ?? ''),
                 'chips' => [self::chip(__('Pending Role'), 'warning')],
+            ],
+            'invoice_paid' => [
+                'app' => __('Finance'),
+                'title' => (string) ($data['title'] ?? __('Invoice fully paid')),
+                'body' => (string) ($data['preview'] ?? $data['customer'] ?? ''),
+                'chips' => [self::chip(__('Paid'), 'success')],
             ],
             default => [
                 'app' => __('Notifications'),
@@ -421,6 +491,7 @@ final class NotificationPresenter
     private static function proposalLabel(?string $event): string
     {
         return match ($event) {
+            'created' => __('Quotation created'),
             'pending_technical' => __('Waiting for technical review'),
             'returned_to_draft' => __('Returned to draft'),
             'ready' => __('Ready to send'),

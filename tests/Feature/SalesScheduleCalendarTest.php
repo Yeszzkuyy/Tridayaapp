@@ -42,6 +42,78 @@ class SalesScheduleCalendarTest extends TestCase
         ], $overrides));
     }
 
+    private function makeSalesSchedule(User $sales, array $overrides = []): \App\Models\SalesSchedule
+    {
+        $customer = Customer::create(['name' => 'PT Agenda '.uniqid()]);
+        $lead = \App\Models\Lead::create([
+            'customer_id' => $customer->id,
+            'assigned_to' => $sales->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'warm',
+        ]);
+
+        return \App\Models\SalesSchedule::create(array_merge([
+            'lead_id' => $lead->id,
+            'assigned_to' => $sales->id,
+            'created_by' => $sales->id,
+            'title' => 'Kunjungan lokasi proyek',
+            'type' => 'visit',
+            'start_at' => '2026-10-28 13:00:00',
+            'location' => 'Site customer',
+            'status' => 'scheduled',
+        ], $overrides));
+    }
+
+    public function test_api_merges_follow_up_meetings_with_sales_schedules(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $this->makeVisit($sales, ['description' => 'Meeting pagi']);
+        $schedule = $this->makeSalesSchedule($sales);
+
+        $res = $this->actingAs($sales)->getJson(route('sales.schedules.api', ['date' => '2026-10-28']));
+        $res->assertOk();
+
+        $events = collect($res->json());
+        $this->assertSame(['Meeting pagi', 'Kunjungan lokasi proyek'], $events->pluck('description')->all());
+        $this->assertSame(['follow_up', 'sales_schedule'], $events->pluck('source')->all());
+
+        $scheduleEvent = $events->firstWhere('source', 'sales_schedule');
+        $this->assertSame('schedule-'.$schedule->id, $scheduleEvent['id']);
+        $this->assertSame('Customer Visit', $scheduleEvent['type_label']);
+        $this->assertNotNull($scheduleEvent['edit_url']);
+        $this->assertNotNull($scheduleEvent['complete_url']);
+        $this->assertNull($scheduleEvent['snooze_url']);
+
+        $followUpEvent = $events->firstWhere('source', 'follow_up');
+        $this->assertNotNull($followUpEvent['snooze_url']);
+    }
+
+    public function test_management_sees_sales_schedules_read_only(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $mgmt = $this->userWithRole('management');
+        $this->makeSalesSchedule($sales);
+
+        $res = $this->actingAs($mgmt)->getJson(route('sales.schedules.api', ['date' => '2026-10-28']));
+        $res->assertOk();
+
+        $event = collect($res->json())->firstWhere('source', 'sales_schedule');
+        $this->assertNotNull($event);
+        $this->assertNull($event['edit_url']);
+        $this->assertNull($event['complete_url']);
+    }
+
+    public function test_api_skips_cancelled_sales_schedules(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $this->makeSalesSchedule($sales, ['status' => 'cancelled', 'title' => 'Batal']);
+
+        $res = $this->actingAs($sales)->getJson(route('sales.schedules.api', ['date' => '2026-10-28']));
+        $res->assertOk();
+        $this->assertNotContains('Batal', collect($res->json())->pluck('description')->all());
+    }
+
     public function test_api_returns_only_requested_day_and_own_schedules(): void
     {
         $sales = $this->userWithRole('sales');

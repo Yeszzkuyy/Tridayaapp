@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\EstimatorRequest;
 use App\Models\Lead;
 use App\Models\LeadTask;
+use App\Models\PriceRequest;
 use App\Models\TechnicalRequest;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -64,7 +66,7 @@ class SalesRequestHubTest extends TestCase
         ], $overrides));
     }
 
-    public function test_sales_sees_hub_with_all_three_tabs(): void
+    public function test_sales_sees_hub_with_all_four_tabs(): void
     {
         $sales = $this->userWithRole('sales');
 
@@ -72,8 +74,49 @@ class SalesRequestHubTest extends TestCase
             ->assertOk()->getContent();
 
         $this->assertStringContainsString(__('Inside Sales'), $html);
-        $this->assertStringContainsString(__('Price'), $html);
+        $this->assertStringContainsString(__('Installation Price'), $html);
         $this->assertStringContainsString('Engineer', $html);
+        $this->assertStringContainsString(__('Product Price'), $html);
+    }
+
+    public function test_sales_estimator_queue_url_redirects_to_product_price_tab(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        $this->actingAs($sales)
+            ->get(route('estimator.requests.index'))
+            ->assertRedirect(route('sales.requests.index', ['tab' => 'product-price']));
+    }
+
+    public function test_product_price_tab_lists_only_own_estimator_requests(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $otherSales = User::factory()->create();
+        $otherSales->assignRole('sales');
+        $customer = Customer::create(['name' => 'PT Tab Produk']);
+        $otherCustomer = Customer::create(['name' => 'PT Tab Produk Lain']);
+
+        EstimatorRequest::create([
+            'customer_id' => $customer->id,
+            'requested_by' => $sales->id,
+            'status' => 'submitted',
+        ]);
+        EstimatorRequest::create([
+            'customer_id' => $otherCustomer->id,
+            'requested_by' => $otherSales->id,
+            'status' => 'submitted',
+        ]);
+
+        $response = $this->actingAs($sales)
+            ->get(route('sales.requests.index', ['tab' => 'product-price']))
+            ->assertOk()
+            ->assertSee('PT Tab Produk')
+            ->assertSee(__('Product Price'));
+
+        $response->assertViewHas('estimatorRequests', fn ($paginator) => $paginator->total() === 1
+            && (int) $paginator->first()->requested_by === (int) $sales->id);
     }
 
     public function test_engineer_request_card_shows_requester_and_new_request_path(): void
@@ -87,7 +130,7 @@ class SalesRequestHubTest extends TestCase
 
         $this->assertStringContainsString($request->title, $html);
         $this->assertStringContainsString(__('Requested by'), $html);
-        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(e($sales->name), $html);
         $this->assertStringContainsString(route('sales.technical-requests.create'), $html);
     }
 
@@ -132,7 +175,7 @@ class SalesRequestHubTest extends TestCase
         $this->assertStringContainsString('Buatkan penawaran', $html);
     }
 
-    public function test_task_deep_link_opens_discussion_inside_request_hub(): void
+    public function test_sales_task_deep_link_opens_discussion_inside_request_hub(): void
     {
         $sales = $this->userWithRole('sales');
         $inside = User::factory()->create();
@@ -147,13 +190,17 @@ class SalesRequestHubTest extends TestCase
         ]);
         $task->comments()->create(['user_id' => $inside->id, 'body' => 'Pesan dari forum diskusi.']);
 
-        foreach ([$sales, $inside] as $viewer) {
-            $this->actingAs($viewer)
-                ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
-                ->assertOk()
-                ->assertSee('Diskusi penawaran PT Forvis')
-                ->assertSee('Pesan dari forum diskusi.');
-        }
+        // Sales tetap bisa membuka diskusi untuk memantau request milik lead-nya.
+        $this->actingAs($sales)
+            ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
+            ->assertOk()
+            ->assertSee('Diskusi penawaran PT Forvis')
+            ->assertSee('Pesan dari forum diskusi.');
+
+        // Inside Sales tidak lagi memakai hub Request; diarahkan ke workspace-nya.
+        $this->actingAs($inside)
+            ->get(route('sales.requests.index', ['tab' => 'inside-sales', 'task' => $task->id]))
+            ->assertRedirect(route('inside-sales.dashboard'));
     }
 
     public function test_task_deep_link_rejects_stranger(): void
@@ -177,7 +224,7 @@ class SalesRequestHubTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_multi_role_sales_and_inside_sales_sees_assigned_task(): void
+    public function test_multi_role_sales_and_inside_sales_uses_inside_workspace_for_assigned_task(): void
     {
         $owner = $this->userWithRole('sales');
         $multi = User::factory()->create();
@@ -191,13 +238,21 @@ class SalesRequestHubTest extends TestCase
             'created_by' => $owner->id,
         ]);
 
+        // Hub Request milik Sales tidak lagi menampilkan task yang di-assign
+        // sebagai Inside Sales.
         $this->actingAs($multi)
             ->get(route('sales.requests.index', ['tab' => 'inside-sales']))
+            ->assertOk()
+            ->assertDontSee($task->title);
+
+        // Task tetap terlihat di workspace Inside Sales dan daftar All Requests.
+        $this->actingAs($multi)
+            ->get(route('lead-tasks.index'))
             ->assertOk()
             ->assertSee($task->title);
 
         $this->actingAs($multi)
-            ->get(route('lead-tasks.index'))
+            ->get(route('inside-sales.dashboard'))
             ->assertOk()
             ->assertSee($task->title);
     }
@@ -205,8 +260,8 @@ class SalesRequestHubTest extends TestCase
     public function test_price_tab_lists_only_price_requests(): void
     {
         $sales = $this->userWithRole('sales');
-        $customer = \App\Models\Customer::create(['name' => 'PT Price Uji'.uniqid()]);
-        \App\Models\PriceRequest::create([
+        $customer = Customer::create(['name' => 'PT Price Uji'.uniqid()]);
+        PriceRequest::create([
             'customer_id' => $customer->id,
             'requested_by' => $sales->id,
             'status' => 'waiting_lead',
@@ -216,7 +271,7 @@ class SalesRequestHubTest extends TestCase
         $html = $this->actingAs($sales)->get(route('sales.requests.index', ['tab' => 'price']))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString($customer->name, $html);
+        $this->assertStringContainsString(e($customer->name), $html);
         $this->assertStringNotContainsString($survey->title, $html);
     }
 

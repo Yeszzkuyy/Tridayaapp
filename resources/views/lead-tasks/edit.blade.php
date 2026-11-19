@@ -25,14 +25,15 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Assign to Inside Sales') }}</label>
-                    <select name="assigned_to"
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Assign to Inside Sales') }} <span class="text-red-500">*</span></label>
+                    <select name="assigned_to" required
                             class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
-                        <option value="">{{ __('-- Not set --') }}</option>
                         @foreach($insideSales as $user)
                             <option value="{{ $user->id }}" @selected(old('assigned_to', $task->assigned_to) == $user->id)>{{ $user->name }}</option>
                         @endforeach
                     </select>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Selected user will see this request in the Inside Sales menu.') }}</p>
+                    @error('assigned_to') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Due Date') }}</label>

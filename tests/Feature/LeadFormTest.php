@@ -36,6 +36,19 @@ class LeadFormTest extends TestCase
             ->assertDontSee('Nilai Opportunity');
     }
 
+    public function test_need_type_label_uses_ip_phone_instead_of_pabx(): void
+    {
+        // Nilai tersimpan tetap 'pabx' agar leads lama tidak rusak; hanya
+        // label yang tampil di UI yang berubah.
+        $this->assertSame('IP Phone', \App\Models\Lead::needTypeLabel('pabx'));
+
+        $this->actingAs($this->marketingUser())
+            ->get(route('leads.create'))
+            ->assertOk()
+            ->assertSee('IP Phone')
+            ->assertDontSee('PABX');
+    }
+
     public function test_create_prefills_company_and_pic_separately_from_whatsapp(): void
     {
         $account = \App\Models\WhatsappAccount::create([
@@ -86,6 +99,37 @@ class LeadFormTest extends TestCase
         $this->assertStringContainsString('name="customer_name" id="customer_name" value=""', $response->getContent());
     }
 
+    public function test_create_form_submits_only_the_active_customer_mode_fields(): void
+    {
+        $html = $this->actingAs($this->marketingUser())
+            ->get(route('leads.create'))
+            ->assertOk()
+            ->getContent();
+
+        $dom = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $dom->loadHTML($html);
+        } finally {
+            libxml_use_internal_errors($previous);
+        }
+
+        $pics = (new \DOMXPath($dom))->query('//input[@name="customer_contact_person"]');
+
+        // Mode customer baru dan customer lama masing-masing punya kolom PIC.
+        // Keduanya tidak boleh terkirim bersamaan: kolom tersembunyi yang
+        // kosong akan menimpa PIC yang diketik user (bug PIC hilang).
+        $this->assertSame(2, $pics->length);
+
+        foreach ($pics as $pic) {
+            $this->assertTrue(
+                $pic->hasAttribute('x-bind:disabled'),
+                'Kolom PIC pada mode customer yang tidak aktif harus disabled.'
+            );
+        }
+    }
+
     public function test_store_creates_lead_with_customer_details(): void
     {
         // marketingUser() sudah seed; seed ganda akan me-wipe assignment role.
@@ -104,6 +148,8 @@ class LeadFormTest extends TestCase
                 'segment' => 'system_integrator',
                 'source' => 'canvasing',
                 'kebutuhan' => 'Instalasi jaringan 3 lantai',
+                'project_name' => 'Proyek Jaringan Kantor',
+                'need_type' => 'network',
                 'incoming_date' => '2026-08-24',
                 'assigned_to' => $sales->id,
             ])
@@ -120,6 +166,58 @@ class LeadFormTest extends TestCase
         $this->assertSame('info@ujicoba.id', $lead->customer->email);
         $this->assertSame('Budi PIC', $lead->customer->contact_person);
         $this->assertSame('Jl. Testing No. 1, Jakarta', $lead->customer->address);
+        $this->assertSame('lead', $lead->customer->status);
+    }
+
+    public function test_sales_can_promote_lead_customer_manually(): void
+    {
+        $this->marketingUser();
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+
+        $customer = Customer::create(['name' => 'PT Prospek', 'status' => 'lead', 'pt_group' => 'NTI']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'kebutuhan' => 'Butuh CCTV',
+            'incoming_date' => '2026-01-05',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)
+            ->post(route('leads.promote-customer', $lead))
+            ->assertRedirect();
+
+        $this->assertSame('deal', $customer->fresh()->status);
+        $this->assertTrue(
+            LeadActivity::where('lead_id', $lead->id)->where('action', 'customer_promoted')->exists()
+        );
+    }
+
+    public function test_promote_rejects_customer_that_is_already_deal(): void
+    {
+        $this->marketingUser();
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+
+        $customer = Customer::create(['name' => 'PT Sudah Deal', 'status' => 'deal', 'pt_group' => 'NTI']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'kebutuhan' => 'Butuh CCTV',
+            'incoming_date' => '2026-01-05',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)
+            ->post(route('leads.promote-customer', $lead))
+            ->assertStatus(422);
+
+        $this->assertSame('deal', $customer->fresh()->status);
     }
 
     public function test_update_persists_customer_whatsapp_even_when_customer_soft_deleted(): void
@@ -143,6 +241,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'x',
+            'project_name' => 'Proyek Soft Deleted',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $user->id,
         ]);
@@ -162,6 +262,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Instalasi CCTV',
+            'project_name' => 'Proyek CCTV',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $user->id,
         ])->assertRedirect(route('leads.index'));
@@ -174,6 +276,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'TPS',
             'segment' => 'end_user',
             'kebutuhan' => 'Instalasi CCTV',
+            'project_name' => 'Proyek CCTV',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $user->id,
         ])->assertRedirect(route('leads.index'));
@@ -231,6 +335,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Butuh review assign.',
+            'project_name' => 'Proyek Assign',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
             'assigned_to' => $technician->id,
         ])->assertStatus(422);
@@ -258,6 +364,8 @@ class LeadFormTest extends TestCase
             'pt_group' => 'NTI',
             'segment' => 'vendor',
             'kebutuhan' => 'Butuh review akses.',
+            'project_name' => 'Proyek Akses',
+            'need_type' => 'cctv',
             'incoming_date' => now()->toDateString(),
         ])->assertForbidden();
 

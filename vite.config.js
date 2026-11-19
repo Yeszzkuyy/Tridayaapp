@@ -27,7 +27,7 @@ export default defineConfig({
         react(),
         pdfjsWorkerAsset,
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/doc-thumbs.js', 'resources/js/teknisi-calendar.js', 'resources/js/pipeline-dnd.js', 'resources/js/rubber-segment.jsx', 'resources/js/glide-select.jsx', 'resources/js/notification-center.jsx', 'resources/js/submit-loader.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/doc-thumbs.js', 'resources/js/teknisi-calendar.js', 'resources/js/pipeline-dnd.js', 'resources/js/rubber-segment.jsx', 'resources/js/glide-select.jsx', 'resources/js/notification-center.jsx', 'resources/js/submit-loader.js', 'resources/js/leads-tour.js'],
             refresh: true,
         }),
     ],

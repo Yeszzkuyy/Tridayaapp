@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
+use App\Models\Proposal;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +26,13 @@ class LeadPipelineTest extends TestCase
 
     private function makeLead(array $attributes = []): Lead
     {
-        $customer = Customer::create(['name' => 'PT Pipeline']);
+        $customer = Customer::create([
+            'name' => 'PT Pipeline',
+            'address' => 'Jl. Pipeline No. 1',
+            'contact_person' => 'Budi Pipeline',
+            'whatsapp' => '081234567890',
+            'email' => 'budi@pipeline.test',
+        ]);
 
         $lead = Lead::create(array_merge([
             'customer_id' => $customer->id,
@@ -42,6 +49,17 @@ class LeadPipelineTest extends TestCase
         ])->save();
 
         return $lead->fresh();
+    }
+
+    /** Catat satu DAR (follow-up) supaya lead boleh naik ke Warm/Hot/Won. */
+    private function addDar(Lead $lead): void
+    {
+        \App\Models\FollowUp::create([
+            'lead_id' => $lead->id,
+            'customer_id' => $lead->customer_id,
+            'description' => 'Follow-up awal',
+            'follow_up_date' => now()->toDateString(),
+        ]);
     }
 
     public function test_pipeline_page_shows_own_leads_grouped_by_status(): void
@@ -103,6 +121,7 @@ class LeadPipelineTest extends TestCase
     {
         $user = $this->userWithRole('sales');
         $lead = $this->makeLead(['assigned_to' => $user->id, 'acknowledged_at' => null]);
+        $this->addDar($lead);
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
             'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
@@ -146,14 +165,39 @@ class LeadPipelineTest extends TestCase
         $this->assertNotNull($lead->fresh()->acknowledged_at);
     }
 
-    public function test_reassign_returns_lead_to_new_column(): void
+    public function test_reassign_keeps_progressed_lead_in_its_column(): void
     {
         $management = $this->userWithRole('management');
         $first = User::factory()->create();
         $first->assignRole('sales');
         $second = User::factory()->create();
         $second->assignRole('sales');
+        // Lead sudah diakui dan punya DAR: jangan dikembalikan ke New.
         $lead = $this->makeLead(['assigned_to' => $first->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($management)
+            ->post(route('manage-sales.assign', $lead), ['assigned_to' => $second->id])
+            ->assertRedirect();
+
+        $this->assertNotNull($lead->fresh()->acknowledged_at);
+
+        $response = $this->actingAs($second)->get(route('leads.pipeline'))->assertOk();
+        $this->assertFalse($response->viewData('newLeads')->contains($lead->fresh()));
+        $this->assertSame(1, $response->viewData('leads')->where('status', 'cool')->count());
+    }
+
+    public function test_reassign_untouched_lead_still_returns_to_new_column(): void
+    {
+        $management = $this->userWithRole('management');
+        $first = User::factory()->create();
+        $first->assignRole('sales');
+        $second = User::factory()->create();
+        $second->assignRole('sales');
+        $lead = $this->makeLead([
+            'assigned_to' => $first->id,
+            'acknowledged_at' => null,
+        ]);
 
         $this->actingAs($management)
             ->post(route('manage-sales.assign', $lead), ['assigned_to' => $second->id])
@@ -162,7 +206,7 @@ class LeadPipelineTest extends TestCase
         $this->assertNull($lead->fresh()->acknowledged_at);
 
         $response = $this->actingAs($second)->get(route('leads.pipeline'))->assertOk();
-        $this->assertTrue($response->viewData('newLeads')->contains($lead));
+        $this->assertTrue($response->viewData('newLeads')->contains($lead->fresh()));
     }
 
     public function test_management_sees_no_mixed_customers(): void
@@ -236,6 +280,18 @@ class LeadPipelineTest extends TestCase
     {
         $user = $this->userWithRole('sales');
         $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        // Won hanya dari quotation Accepted (satu pintu transaksi).
+        Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/WON/'.uniqid(),
+            'created_by' => $user->id,
+            'proposal_date' => now(),
+            'customer' => 'PT Pipeline',
+            'status' => 'accepted',
+        ]);
+
         $this->assertNull($lead->closed_at);
 
         $this->actingAs($user)->patchJson(route('leads.batch-status'), [
@@ -257,6 +313,7 @@ class LeadPipelineTest extends TestCase
     {
         $user = $this->userWithRole('marketing');
         $lead = $this->makeLead();
+        $this->addDar($lead);
 
         $this->actingAs($user)
             ->patch(route('leads.update-status', $lead), ['status' => 'warm'])
@@ -294,6 +351,7 @@ class LeadPipelineTest extends TestCase
     {
         $user = $this->userWithRole('sales');
         $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
 
         $this->actingAs($user)
             ->patch(route('leads.update-status', $lead), ['status' => 'warm'])
@@ -347,5 +405,72 @@ class LeadPipelineTest extends TestCase
             ->assertOk()
             ->assertSee('No leads in your pipeline yet.')
             ->assertDontSee('Belum ada lead di pipeline Anda.');
+    }
+
+    public function test_cannot_move_to_warm_without_dar(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
+        ])->assertStatus(422);
+
+        $this->assertSame('cool', $lead->fresh()->status);
+    }
+
+    public function test_can_move_to_warm_without_complete_client_identity(): void
+    {
+        $user = $this->userWithRole('sales');
+        $customer = Customer::create(['name' => 'PT Tanpa Identitas']);
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'cool',
+            'assigned_to' => $user->id,
+        ]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'warm']],
+        ])->assertOk();
+
+        $this->assertSame('warm', $lead->fresh()->status);
+    }
+
+    public function test_cannot_mark_lost_without_reason_and_note(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'lost']],
+        ])->assertStatus(422);
+
+        $this->assertSame('cool', $lead->fresh()->status);
+    }
+
+    public function test_can_mark_lost_with_reason_and_note(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [[
+                'lead_id' => $lead->id,
+                'status' => 'lost',
+                'lost_reason' => 'competitor',
+                'lost_note' => 'Customer chose a cheaper vendor',
+            ]],
+        ])->assertOk();
+
+        $fresh = $lead->fresh();
+        $this->assertSame('lost', $fresh->status);
+        $this->assertSame('competitor', $fresh->lost_reason);
+        $this->assertSame('Customer chose a cheaper vendor', $fresh->lost_note);
+        $this->assertNotNull($fresh->closed_at);
     }
 }

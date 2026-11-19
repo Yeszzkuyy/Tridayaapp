@@ -85,9 +85,10 @@ class FollowUpTypeNextTest extends TestCase
         $this->assertStringContainsString('fu '.today()->addDay()->toDateString(), $ridden('upcoming'));
         $this->assertStringNotContainsString('fu '.$today, $ridden('upcoming'));
 
-        // kompatibel mundur: overdue=1 tetap berarti jatuh tempo
+        // kompatibel mundur: overdue=1 sekarang berarti tab Due (termasuk yang lewat).
         $this->assertStringContainsString('fu '.today()->subDay()->toDateString(), $ridden('1'));
-        $this->assertStringNotContainsString('fu '.$today, $ridden('1'));
+        $this->assertStringContainsString('fu '.$today, $ridden('1'));
+        $this->assertStringNotContainsString('fu '.today()->addDay()->toDateString(), $ridden('1'));
     }
 
     public function test_null_fields_fall_back_gracefully(): void

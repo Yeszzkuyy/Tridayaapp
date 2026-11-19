@@ -365,8 +365,8 @@ class PriceRequestTest extends TestCase
 
         $this->assertStringContainsString(route('teknisi.requests.index'), $html);
         $this->assertStringContainsString('Request Sales', $html);
-        $this->assertStringContainsString(__('New Price Request'), $html);
-        $this->assertStringContainsString($sales->name, $html);
+        $this->assertStringContainsString(__('New Installation Price'), $html);
+        $this->assertStringContainsString(e($sales->name), $html);
         $this->assertStringContainsString(route('sales.price-requests.create'), $html);
     }
 
@@ -405,7 +405,7 @@ class PriceRequestTest extends TestCase
             ->assertOk()->getContent();
         $this->assertStringContainsString(__('Request details'), $detailHtml);
         $this->assertStringContainsString(__('Discussion'), $detailHtml);
-        $this->assertStringContainsString($tech->name, $detailHtml);
+        $this->assertStringContainsString(e($tech->name), $detailHtml);
         $this->assertStringContainsString(strtoupper(substr($tech->name, 0, 1)), $detailHtml);
         $this->assertStringContainsString(__('No engineering reply has been submitted yet.'), $detailHtml);
     }
@@ -563,6 +563,60 @@ class PriceRequestTest extends TestCase
         Notification::assertSentTo($sales, PriceRequestCommentNotification::class);
     }
 
+    public function test_sales_can_chat_after_accepting_the_final_price(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $amir = $this->pricingEngineer();
+        $request = $this->makePriceRequest($sales, [
+            'assigned_to' => $amir->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        // Harga final tetap boleh diobrolkan (mis. ucapan terima kasih).
+        $this->assertTrue(\Illuminate\Support\Facades\Gate::forUser($sales)->allows('comment', $request));
+        $this->assertTrue(\Illuminate\Support\Facades\Gate::forUser($amir)->allows('comment', $request));
+
+        Livewire::actingAs($sales)
+            ->test(\App\Livewire\PriceRequestChat::class, ['priceRequest' => $request])
+            ->set('body', 'Terima kasih, harga sudah oke.')
+            ->call('send')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('price_request_comments', [
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => 'Terima kasih, harga sudah oke.',
+            'type' => 'message',
+        ]);
+    }
+
+    public function test_chat_stays_closed_for_rejected_and_cancelled_price_requests(): void
+    {
+        $sales = $this->userWithRole('sales');
+
+        foreach (['rejected', 'cancelled'] as $status) {
+            $request = $this->makePriceRequest($sales, ['status' => $status]);
+
+            $this->assertFalse(
+                \Illuminate\Support\Facades\Gate::forUser($sales)->allows('comment', $request),
+                'Chat seharusnya ditutup untuk status '.$status
+            );
+        }
+    }
+
+    public function test_cancelled_price_request_shows_closed_discussion_note(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales, ['status' => 'cancelled']);
+
+        $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()
+            ->assertSee(__('Discussion closed'))
+            ->assertDontSee('id="price-request-chat-body"', false);
+    }
+
     public function test_price_request_chat_rejects_invalid_comment_lengths(): void
     {
         $sales = $this->userWithRole('sales');
@@ -625,7 +679,7 @@ class PriceRequestTest extends TestCase
 
         // Tombol menjelaskan bahwa teknisi membuat request harga.
         $this->assertStringContainsString(route('sales.price-requests.create'), $html);
-        $this->assertStringContainsString(__('New Price Request'), $html);
+        $this->assertStringContainsString(__('New Installation Price'), $html);
     }
 
     public function test_notification_center_renders_price_request_cards(): void
@@ -727,5 +781,35 @@ class PriceRequestTest extends TestCase
         ])->assertRedirect();
 
         Notification::assertNotSentTo($admin, PriceRequestCompletedNotification::class);
+    }
+
+    public function test_price_request_chat_renders_enter_hint_and_preserves_line_breaks(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $request = $this->makePriceRequest($sales);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(__('Enter to send, Shift+Enter for a new line'), $html);
+        $this->assertStringContainsString('x-on:keydown.enter', $html);
+        $this->assertStringContainsString('resize-none', $html);
+
+        PriceRequestComment::create([
+            'price_request_id' => $request->id,
+            'user_id' => $sales->id,
+            'body' => "Baris pertama\nBaris kedua",
+            'type' => PriceRequestComment::TYPE_MESSAGE,
+        ]);
+
+        $html = $this->actingAs($sales)
+            ->get(route('sales.price-requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString("Baris pertama\nBaris kedua", $html);
+        $this->assertStringContainsString('whitespace-pre-wrap', $html);
     }
 }

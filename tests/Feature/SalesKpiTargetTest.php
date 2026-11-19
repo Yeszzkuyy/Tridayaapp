@@ -22,7 +22,7 @@ class SalesKpiTargetTest extends TestCase
         return $user;
     }
 
-    public function test_sales_dashboard_renders_with_personal_kpi_and_leaderboard(): void
+    public function test_sales_dashboard_renders_with_personal_kpi_without_team_leaderboard(): void
     {
         $salesUser = $this->userWithRole('sales');
 
@@ -39,8 +39,22 @@ class SalesKpiTargetTest extends TestCase
 
         $response->assertOk();
         $response->assertViewHas('myKpi');
-        $response->assertViewHas('salesLeaderboard');
+        // Privasi: sales murni tidak melihat papan peringkat tim.
+        $response->assertViewHas('salesLeaderboard', fn ($board) => $board->isEmpty());
         $response->assertSee(__('KPI Personal Saya'));
+        $response->assertSee(__('Customer Hub'));
+        $response->assertDontSee(__('Peringkat & Target Bulanan Sales'));
+    }
+
+    public function test_management_sees_team_leaderboard_on_sales_dashboard(): void
+    {
+        $mgmtUser = $this->userWithRole('management');
+        $this->userWithRole('sales');
+
+        $response = $this->actingAs($mgmtUser)->get(route('sales.dashboard'));
+
+        $response->assertOk();
+        $response->assertViewHas('salesLeaderboard', fn ($board) => $board->isNotEmpty());
         $response->assertSee(__('Peringkat & Target Bulanan Sales'));
     }
 
@@ -75,6 +89,7 @@ class SalesKpiTargetTest extends TestCase
             'period_month' => 11,
             'period_year' => 2026,
             'target_revenue' => 75000000,
+            'target_margin' => 7500000,
             'target_deals' => 4,
             'notes' => 'Fokus closing corporate clients',
         ];
@@ -89,9 +104,32 @@ class SalesKpiTargetTest extends TestCase
             'period_month' => 11,
             'period_year' => 2026,
             'target_revenue' => 75000000,
+            'target_margin' => 7500000,
             'target_deals' => 4,
             'notes' => 'Fokus closing corporate clients',
         ]);
+    }
+
+    public function test_sales_kpi_service_returns_margin_metrics(): void
+    {
+        $salesUser = $this->userWithRole('sales');
+
+        SalesTarget::create([
+            'user_id' => $salesUser->id,
+            'period_month' => now()->month,
+            'period_year' => now()->year,
+            'target_revenue' => 50000000,
+            'target_margin' => 5000000,
+            'target_deals' => 2,
+        ]);
+
+        $service = app(SalesKpiService::class);
+        $kpi = $service->getUserKpi($salesUser, now()->month, now()->year);
+
+        $this->assertSame(5000000.0, (float) $kpi['target_margin']);
+        $this->assertArrayHasKey('actual_margin', $kpi);
+        $this->assertArrayHasKey('margin_pct', $kpi);
+        $this->assertArrayHasKey('margin_incomplete', $kpi);
     }
 
     public function test_sales_kpi_service_computes_accuracy_and_celebration(): void

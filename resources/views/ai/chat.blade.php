@@ -581,7 +581,11 @@
                 async deleteConversation(chat) {
                     if (this.busy) return;
                     this.menuId = null;
-                    if (!window.confirm(`{{ __('Delete conversation') }} "${chat.title}"?`)) return;
+                    const confirmed = await window.askConfirm({
+                        message: `{{ __('Delete conversation') }} "${chat.title}"?`,
+                        tone: 'danger',
+                    });
+                    if (!confirmed) return;
                     try {
                         const response = await fetch(this.deleteUrl.replace('__CONVERSATION__', encodeURIComponent(chat.id)), {
                             method: 'DELETE',

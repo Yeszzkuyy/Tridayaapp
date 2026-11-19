@@ -8,6 +8,8 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Poc;
+use App\Support\CustomerAccess;
+use App\Support\PtAccess;
 use Illuminate\Http\Request;
 
 class PocController extends Controller
@@ -37,14 +39,14 @@ class PocController extends Controller
         $this->scopeToOwnLeads($query);
 
         $pocs = $query->latest('scheduled_date')->paginate(15)->withQueryString();
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = CustomerAccess::queryFor(auth()->user())->orderBy('name')->get(['id', 'name']);
 
         return $this->ajaxPartial($request, 'sales.pocs._table', compact('pocs'), 'sales.pocs.index');
     }
 
     public function create(Request $request)
     {
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = CustomerAccess::queryFor(auth()->user())->orderBy('name')->get(['id', 'name']);
         $preselectedCustomerId = $request->query('customer_id');
         $preselectedLeadId = $request->query('lead_id');
         $leads = $this->leadOptions($preselectedCustomerId ? (int) $preselectedCustomerId : null);
@@ -68,6 +70,9 @@ class PocController extends Controller
 
         $this->lockLeadLink($validated);
 
+        $customer = Customer::findOrFail($validated['customer_id']);
+        abort_unless(CustomerAccess::canView(auth()->user(), $customer), 403);
+
         if (!empty($validated['lead_id'])) {
             $validated['customer_id'] = Lead::find($validated['lead_id'])->customer_id;
         }
@@ -90,6 +95,7 @@ class PocController extends Controller
 
     public function show(Poc $poc)
     {
+        $this->authorizePocView($poc);
         $poc->load(['customer', 'creator', 'lead.customer']);
 
         return view('sales.pocs.show', compact('poc'));
@@ -97,7 +103,8 @@ class PocController extends Controller
 
     public function edit(Poc $poc)
     {
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $this->authorizePocView($poc);
+        $customers = CustomerAccess::queryFor(auth()->user())->orderBy('name')->get(['id', 'name']);
         $leads = $this->leadOptions($poc->customer_id);
 
         return view('sales.pocs.edit', compact('poc', 'customers', 'leads'));
@@ -121,6 +128,9 @@ class PocController extends Controller
         ]);
 
         $this->lockLeadLink($validated);
+
+        $customer = Customer::findOrFail($validated['customer_id']);
+        abort_unless(CustomerAccess::canView(auth()->user(), $customer), 403);
 
         if (!empty($validated['lead_id'])) {
             $validated['customer_id'] = Lead::find($validated['lead_id'])->customer_id;
@@ -147,8 +157,9 @@ class PocController extends Controller
     private function leadOptions(?int $customerId = null)
     {
         $query = Lead::with('customer')->latest()->limit(100);
-        if (auth()->user()?->hasRole('sales') && !auth()->user()?->can('manage-marketing')) {
-            $query->where('assigned_to', auth()->id());
+        $user = auth()->user();
+        if ($user && PtAccess::isSalesLike($user) && ! $user->can('manage-marketing')) {
+            $query->where('assigned_to', $user->id);
         }
         if ($customerId) {
             $query->where('customer_id', $customerId);
@@ -164,7 +175,7 @@ class PocController extends Controller
     private function scopeToOwnLeads($query): void
     {
         $user = auth()->user();
-        if (!$user || !$user->hasRole('sales')) {
+        if (!$user || !PtAccess::isSalesLike($user)) {
             return;
         }
         if ($user->can('manage-marketing') || $user->can('manage-sales-leads')) {
@@ -176,5 +187,22 @@ class PocController extends Controller
             $q->whereHas('lead', fn ($l) => $l->where('assigned_to', $userId))
                 ->orWhere(fn ($w) => $w->whereNull('lead_id')->where('created_by', $userId));
         });
+    }
+
+    /** Detail POC boleh dibuka pembuat, pemilik lead, atau Management. */
+    private function authorizePocView(Poc $poc): void
+    {
+        $user = auth()->user();
+
+        if ($user && ($user->hasRole('super-admin') || $user->can('manage-sales-leads'))) {
+            return;
+        }
+
+        $isLeadOwner = $poc->lead && (int) $poc->lead->assigned_to === (int) $user?->id;
+        if ($user && ((int) $poc->created_by === (int) $user->id || $isLeadOwner)) {
+            return;
+        }
+
+        abort(403);
     }
 }

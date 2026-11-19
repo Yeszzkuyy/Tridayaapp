@@ -55,6 +55,14 @@ class PurchasingHandoffTest extends TestCase
             $lead->update(['assigned_to' => $assignedTo]);
         }
 
+        \App\Models\FollowUp::create([
+            'customer_id' => $customer->id,
+            'lead_id' => $lead->id,
+            'description' => 'Follow up awal untuk pengujian.',
+            'type' => 'note',
+            'created_by' => $assignedTo,
+        ]);
+
         return $lead;
     }
 
@@ -92,6 +100,7 @@ class PurchasingHandoffTest extends TestCase
     {
         $this->actingAs($sales)->post(route('sales.proposals.upload-po', $proposal), array_merge([
             'po_file' => UploadedFile::fake()->create('customer-po.pdf', 100, 'application/pdf'),
+            'delivery_address' => 'Jl. Pengiriman Uji No. 1, Jakarta',
         ], $extra))->assertRedirect();
     }
 
@@ -99,16 +108,27 @@ class PurchasingHandoffTest extends TestCase
     // SYARAT ANTREAN
     // ============================================================
 
-    public function test_accepted_without_customer_po_is_not_in_ready_queue(): void
+    public function test_accepted_without_customer_po_only_in_waiting_stage(): void
     {
         $sales = $this->userWithRole('sales');
         $admin = $this->userWithRole('admin');
         $withoutPo = $this->makeProposal($this->makeLead($sales->id), 'accepted', $sales->id);
 
+        // Tab "All" menampilkan seluruh quotation accepted, termasuk menunggu PO.
         $this->actingAs($admin)->get(route('admin.purchasing.index'))
             ->assertOk()
+            ->assertSee($withoutPo->proposal_number);
+
+        // Tab tahap PO Received tidak menampilkan quotation tanpa PO.
+        $this->actingAs($admin)->get(route('admin.purchasing.index', ['stage' => 'po_received']))
+            ->assertOk()
             ->assertDontSee($withoutPo->proposal_number)
-            ->assertSee(__('No quotations are ready for Purchasing yet.'));
+            ->assertSee(__('No quotations match this view.'));
+
+        // Tab Waiting for Customer PO menampilkannya.
+        $this->actingAs($admin)->get(route('admin.purchasing.index', ['stage' => 'waiting_po']))
+            ->assertOk()
+            ->assertSee($withoutPo->proposal_number);
 
         // Detail handoff juga tidak boleh dibuka untuk quotation tanpa PO.
         $this->actingAs($admin)->get(route('admin.purchasing.show', $withoutPo))->assertNotFound();
@@ -138,6 +158,34 @@ class PurchasingHandoffTest extends TestCase
             ->assertSee($proposal->proposal_number)
             ->assertSee('PO-CUST-001')
             ->assertSee($proposal->lead->assignee->name);
+    }
+
+    public function test_row_shows_quotation_value_and_readable_sla_text(): void
+    {
+        Storage::fake('private');
+        $sales = $this->userWithRole('sales');
+        $admin = $this->userWithRole('admin');
+
+        $dueTomorrow = $this->makeProposal($this->makeLead($sales->id, 'PT Besok'), 'accepted', $sales->id);
+        $this->uploadPo($dueTomorrow, $sales, [
+            'po_number' => 'PO-BESOK-001',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDay()->toDateString(),
+        ]);
+
+        $overdue = $this->makeProposal($this->makeLead($sales->id, 'PT Lewat'), 'accepted', $sales->id);
+        $this->uploadPo($overdue, $sales, [
+            'po_number' => 'PO-LEWAT-001',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->subDays(2)->toDateString(),
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.purchasing.index'))
+            ->assertOk()
+            ->assertSee('Rp 4.500.000')
+            ->assertSee(__('Due tomorrow'))
+            ->assertSee(__('Overdue by :days days', ['days' => 2]))
+            ->assertDontSee('Due in 1 days');
     }
 
     public function test_po_info_can_be_updated_without_reuploading_file(): void
@@ -233,10 +281,10 @@ class PurchasingHandoffTest extends TestCase
         $proposal = $this->makeProposal($this->makeLead($owner->id), 'accepted', $owner->id);
         $this->uploadPo($proposal, $owner);
 
-        // Antrean boleh dibuka (view-admin read-only) tapi hanya quotation sendiri.
+        // Sales tidak lagi memegang view-admin: antrean purchasing tertutup
+        // total, termasuk quotation milik sales lain.
         $this->actingAs($other)->get(route('admin.purchasing.index'))
-            ->assertOk()
-            ->assertDontSee($proposal->proposal_number);
+            ->assertForbidden();
 
         $this->actingAs($other)->get(route('admin.purchasing.show', $proposal))->assertForbidden();
     }
@@ -248,7 +296,7 @@ class PurchasingHandoffTest extends TestCase
         $proposal = $this->makeProposal($this->makeLead($sales->id), 'accepted', $sales->id);
         $this->uploadPo($proposal, $sales);
 
-        foreach (['management', 'ceo', 'purchasing', 'super-admin'] as $role) {
+        foreach (['management', 'ceo', 'purchasing', 'finance', 'super-admin'] as $role) {
             $user = $this->userWithRole($role);
 
             // Baca boleh.
@@ -330,7 +378,12 @@ class PurchasingHandoffTest extends TestCase
         $proposal->update([
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-TEST-1',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Konversi No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
             'notes' => 'Harga termasuk instalasi.',
             'internal_notes' => 'Jangan disebut ke pelanggan: margin tipis.',
         ]);

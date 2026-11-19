@@ -41,8 +41,10 @@
                 </dl>
 
                 <div class="mt-6 flex items-center gap-4">
-                    <x-icon-button as="a" icon="view" href="{{ route('project-documents.preview', $projectDocument) }}"
-                                   target="_blank" label="{{ __('View / Download File') }}" title="{{ __('View / Download File') }}" />
+                    <x-file-preview :url="route('project-documents.preview', $projectDocument)"
+                                    :download="route('project-documents.download', $projectDocument)"
+                                    :name="$projectDocument->file_name"
+                                    label="{{ __('View File') }}" />
                     <x-icon-button as="a" icon="back" href="{{ route('projects.show', $projectDocument->project) }}" title="{{ __('Back to project') }}" />
                 </div>
             </div>

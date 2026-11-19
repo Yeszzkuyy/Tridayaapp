@@ -2142,4 +2142,124 @@ class WhatsAppCenterTest extends TestCase
 
         $this->assertSame(0, WhatsappMessage::count());
     }
+
+    // ============================================================
+    // PENCocokan nomor ke customer_contacts
+    // ============================================================
+
+    public function test_number_of_secondary_contact_links_customer_without_changing_primary(): void
+    {
+        $account = $this->makeAccount();
+        $user = $this->marketingUser($account->id);
+        $customer = Customer::create([
+            'name' => 'PT Multi PIC',
+            'company' => 'PT Multi PIC',
+            'whatsapp' => '6281111111111',
+            'whatsapp_account_id' => $account->id,
+        ]);
+
+        $service = app(\App\Services\CustomerContactService::class);
+        $primary = $service->create($customer, [
+            'name' => 'Budi',
+            'whatsapp' => '6281111111111',
+            'is_primary' => true,
+        ]);
+        $service->create($customer, [
+            'name' => 'Sinta',
+            'whatsapp' => '6282222222222',
+        ]);
+
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id,
+            'sender_number' => '6282222222222',
+            'sender_name' => 'Sinta',
+            'message_body' => 'Halo, saya Sinta',
+            'direction' => 'inbound',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('whatsapp-center.messages', [$account, '6282222222222']))
+            ->assertOk()
+            ->assertJsonPath('customer.id', $customer->id);
+
+        $this->assertSame($primary->id, $customer->fresh()->primaryContact()->id);
+        $this->assertSame('Budi', $customer->fresh()->contact_person);
+    }
+
+    public function test_ambiguous_number_is_not_linked_to_any_customer(): void
+    {
+        $account = $this->makeAccount();
+        $user = $this->marketingUser($account->id);
+
+        $first = Customer::create([
+            'name' => 'PT Satu',
+            'whatsapp' => '6283333333333',
+            'whatsapp_account_id' => $account->id,
+        ]);
+        $second = Customer::create([
+            'name' => 'PT Dua',
+            'whatsapp' => '6284444444444',
+            'whatsapp_account_id' => $account->id,
+        ]);
+
+        // Nomor yang sama dipakai kontak customer kedua.
+        app(\App\Services\CustomerContactService::class)->create($second, [
+            'name' => 'Kontak PT Dua',
+            'whatsapp' => '6283333333333',
+            'is_primary' => true,
+        ]);
+
+        WhatsappMessage::create([
+            'whatsapp_account_id' => $account->id,
+            'sender_number' => '6283333333333',
+            'sender_name' => 'Ambigu',
+            'message_body' => 'Halo',
+            'direction' => 'inbound',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('whatsapp-center.messages', [$account, '6283333333333']))
+            ->assertOk()
+            ->assertJsonPath('customer', null);
+
+        $this->assertTrue($first->exists);
+    }
+
+    public function test_save_contact_from_whatsapp_never_replaces_existing_primary(): void
+    {
+        $account = $this->makeAccount();
+        $user = $this->marketingUser($account->id);
+        $customer = Customer::create([
+            'name' => 'PT Punya PIC',
+            'company' => 'PT Punya PIC',
+            'whatsapp' => '6285555555555',
+            'whatsapp_account_id' => $account->id,
+        ]);
+
+        $service = app(\App\Services\CustomerContactService::class);
+        $primary = $service->create($customer, [
+            'name' => 'Budi',
+            'whatsapp' => '6285555555555',
+            'is_primary' => true,
+        ]);
+        $service->create($customer, [
+            'name' => 'Sinta',
+            'whatsapp' => '6286666666666',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('whatsapp-center.contact-save', $account), [
+                'name' => 'Sinta',
+                'company' => 'PT Punya PIC',
+                'whatsapp' => '6286666666666',
+            ])
+            ->assertOk();
+
+        $this->assertSame($primary->id, $customer->fresh()->primaryContact()->id);
+        $this->assertSame('Budi', $customer->fresh()->contact_person);
+        $this->assertSame(2, $customer->contacts()->count());
+        $this->assertFalse(
+            $customer->contacts()->where('name', 'Sinta')->firstOrFail()->is_primary
+        );
+    }
 }

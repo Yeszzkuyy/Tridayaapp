@@ -30,6 +30,20 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
+    public function test_reset_password_link_request_is_throttled_after_three_attempts(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->post('/forgot-password', ['email' => $user->email]);
+        }
+
+        $response = $this->post('/forgot-password', ['email' => $user->email]);
+        $response->assertStatus(429);
+    }
+
     public function test_reset_password_screen_can_be_rendered(): void
     {
         Notification::fake();

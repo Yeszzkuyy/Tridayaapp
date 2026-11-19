@@ -68,32 +68,20 @@
                 </div>
 
                 <div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Target Date') }}</label>
-                        <div class="flex items-center gap-2">
-                            <input type="date" name="target_date" value="{{ old('target_date') }}"
-                                   class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                            <input type="time" name="target_time" value="{{ old('target_time') }}"
-                                   ondblclick="try { this.showPicker() } catch (e) {}"
-                                   title="{{ __('Double-click to open the time picker') }}"
-                                   class="w-32 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                        </div>
-                        @error('target_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        @error('target_time') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Location (optional)') }}</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        {{ __('Location') }}
+                        <span x-cloak x-show="type === 'survey' || type === 'installation'" class="text-red-500" aria-hidden="true">*</span>
+                    </label>
                     <div class="flex items-center gap-2">
                         <input id="tr-location" type="text" name="location" maxlength="255" value="{{ old('location') }}"
                                placeholder="{{ __('Address / meeting point or meeting link') }}"
+                               :required="type === 'survey' || type === 'installation'"
                                data-location-autocomplete
                                class="flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                         <x-maps-open-button input="tr-location" />
                         <x-location-autocomplete />
                     </div>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps; meeting links open directly.') }}</p>
+                    <p class="mt-1 text-xs text-slate-400">{{ __('Required for survey and installation. Address opens in Google Maps; meeting links open directly.') }}</p>
                     @error('location') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -106,9 +94,10 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Attachment (1 file, max 10MB)') }}</label>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Supporting attachment (site photo / brief)') }}</label>
                         <input type="file" name="attachment"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Optional, 1 file max 10MB. Only the lead technician and assigned engineers can open it.') }}</p>
                         @error('attachment') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>

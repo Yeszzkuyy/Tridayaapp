@@ -1,14 +1,13 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Goods Deliveries') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Delivery notes to customers. A delivered note is required before commercial closing.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Goods Deliveries') }}</h1>
         </div>
         <div class="flex items-center gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('admin.hub') }}" title="{{ __('Back') }}" />
             @can('manage-admin')
-                <x-icon-button as="a" icon="add" href="{{ route('admin.goods-deliveries.create') }}" label="{{ __('Create Delivery') }}" title="{{ __('Create Delivery') }}" />
+                <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.goods-deliveries.create') }}" label="{{ __('Create Delivery') }}" title="{{ __('Create Delivery') }}" />
             @endcan
+            <x-back-button href="{{ route('admin.hub') }}" />
         </div>
     </div>
 

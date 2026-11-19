@@ -77,7 +77,7 @@ $cum = 0.0;
         transform-box: fill-box;
         transform-origin: center;
         transition: filter 0.2s ease, transform 0.2s ease;
-        animation: donut-seg-sweep 1.1s ease backwards;
+        animation: donut-seg-sweep 1.2s cubic-bezier(0.22, 1, 0.36, 1) backwards;
     }
     /* Hover dimatikan: segmen tetap diam, sorotan hanya via klik/fokus (data-active) */
     .donut-svg .donut-seg:focus { outline: none; }

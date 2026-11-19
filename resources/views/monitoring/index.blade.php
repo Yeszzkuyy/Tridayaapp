@@ -1,11 +1,6 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Monitoring Dashboard - All Divisions') }}</h1>
-            <p class="text-slate-500 mt-1">
-                {{ __('Complete overview of cross-division activity') }}
-            </p>
-        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Monitoring Dashboard - All Divisions') }}</h1>
     </div>
 
     {{-- Filter Bar --}}
@@ -47,7 +42,7 @@
                            value="{{ $divisi }}"
                            {{ in_array($divisi, request('divisi', [])) ? 'checked' : '' }}
                            class="w-4 h-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                    <span class="text-sm font-medium text-slate-700 capitalize">{{ $divisi }}</span>
+                    <span class="text-sm font-medium text-slate-700 capitalize">{{ $divisi === 'teknisi' ? __('Engineer') : $divisi }}</span>
                 </label>
             @endforeach
         </div>
@@ -213,7 +208,7 @@
                                                 ];
                                             @endphp
                                             {{ $divisiDots[$customer->latest_divisi] ?? 'bg-slate-500' }}"></span>
-                                        {{ ucfirst($customer->latest_divisi) }}
+                                        {{ $customer->latest_divisi === 'teknisi' ? __('Engineer') : ucfirst($customer->latest_divisi) }}
                                     </span>
                                 @else
                                     <span class="text-slate-400 text-sm">-</span>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EstimatorRequest;
 use App\Models\LeadTask;
 use App\Models\PriceRequest;
 use App\Models\TechnicalRequest;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 
 class SalesRequestHubController extends Controller
 {
-    public const TABS = ['inside-sales', 'price', 'engineer'];
+    public const TABS = ['inside-sales', 'price', 'engineer', 'product-price'];
 
     public function index(Request $request)
     {
@@ -20,6 +21,15 @@ class SalesRequestHubController extends Controller
 
         $user = $request->user();
 
+        // Inside Sales murni bekerja dari workspace-nya sendiri, bukan dari
+        // hub Request milik Sales.
+        if ($user && $user->can('manage-inside-sales')
+            && ! $user->can('view-sales')
+            && ! $user->can('manage-sales')
+            && ! $user->can('manage-sales-leads')) {
+            return redirect()->route('inside-sales.dashboard');
+        }
+
         $openTask = $this->openTask($request);
         if ($openTask) {
             $tab = 'inside-sales';
@@ -28,6 +38,7 @@ class SalesRequestHubController extends Controller
         $taskQuery = $this->tasksFor($user);
         $techBase = $this->techRequestsFor($user);
         $priceBase = $this->priceRequestsFor($user);
+        $estimatorBase = $this->estimatorRequestsFor($user);
 
         return view('sales.requests.index', [
             'tab' => $tab,
@@ -35,10 +46,12 @@ class SalesRequestHubController extends Controller
             'tasks' => (clone $taskQuery)->paginate(10)->withQueryString(),
             'priceRequests' => (clone $priceBase)->paginate(10, ['*'], 'price_page')->withQueryString(),
             'engineerRequests' => (clone $techBase)->where('request_type', '!=', 'estimate')->paginate(10, ['*'], 'engineer_page')->withQueryString(),
+            'estimatorRequests' => (clone $estimatorBase)->paginate(10, ['*'], 'estimator_page')->withQueryString(),
             'counts' => [
                 'inside-sales' => (clone $taskQuery)->count(),
                 'price' => (clone $priceBase)->count(),
                 'engineer' => (clone $techBase)->where('request_type', '!=', 'estimate')->count(),
+                'product-price' => (clone $estimatorBase)->count(),
             ],
         ]);
     }
@@ -77,7 +90,7 @@ class SalesRequestHubController extends Controller
      */
     private function tasksFor($user)
     {
-        $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->latest();
+        $query = LeadTask::with(['lead.customer', 'assignee', 'creator'])->withCount('attachments')->latest();
 
         if (! $user) {
             return $query->whereRaw('1 = 0');
@@ -88,9 +101,8 @@ class SalesRequestHubController extends Controller
         }
 
         $query->where(function ($q) use ($user) {
-            if ($user->can('manage-inside-sales')) {
-                $q->orWhere('assigned_to', $user->id);
-            }
+            // Hub Request adalah milik Sales. Task yang di-assign sebagai
+            // Inside Sales hanya muncul di menu Inside Sales, bukan di sini.
             if ($user->can('view-sales') || $user->can('manage-sales')) {
                 $q->orWhereHas('lead', fn ($l) => $l->where('assigned_to', $user->id));
             }
@@ -105,9 +117,9 @@ class SalesRequestHubController extends Controller
      */
     private function techRequestsFor($user)
     {
-        $query = TechnicalRequest::with(['lead.customer', 'requester', 'technician'])->latest();
+        $query = TechnicalRequest::with(['lead.customer', 'requester', 'technician', 'supportUsers'])->latest();
 
-        if (!($user && $user->can('manage-sales-leads'))) {
+        if (! ($user && $user->can('manage-sales-leads'))) {
             $query->where('requested_by', $user->id);
         }
 
@@ -115,14 +127,34 @@ class SalesRequestHubController extends Controller
     }
 
     /**
-     * Request Harga (sistem terpisah): pemilik melihat miliknya sendiri,
-     * management (manage-sales-leads) melihat semua.
+     * Request harga instalasi: pemilik melihat miliknya sendiri, management
+     * (manage-sales-leads) melihat semua.
      */
     private function priceRequestsFor($user)
     {
-        $query = PriceRequest::with(['customer', 'requester', 'assignee'])->latest();
+        $query = PriceRequest::with(['customer', 'requester', 'assignee', 'handledBy'])->latest();
 
-        if (!($user && $user->can('manage-sales-leads'))) {
+        if (! ($user && $user->can('manage-sales-leads'))) {
+            $query->where('requested_by', $user->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Permintaan harga produk ke Estimator: pemilik melihat miliknya
+     * sendiri, management melihat semua.
+     */
+    private function estimatorRequestsFor($user)
+    {
+        $query = EstimatorRequest::with(['customer', 'requester', 'handler'])
+            ->withCount([
+                'items',
+                'items as answered_items_count' => fn ($items) => $items->whereIn('status', ['answered', 'accepted']),
+            ])
+            ->latest();
+
+        if (! ($user && $user->can('manage-sales-leads'))) {
             $query->where('requested_by', $user->id);
         }
 

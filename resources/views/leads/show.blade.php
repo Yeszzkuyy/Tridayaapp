@@ -1,4 +1,5 @@
 <x-app-layout>
+    @include('partials.live-feed')
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead Detail') }}:
@@ -28,21 +29,27 @@
                     <x-icon name="briefcase" class="h-5 w-5" />
                 </x-icon-button>
             @endif
-            @can('manage-marketing')
+            @canany(['manage-marketing', 'manage-sales'])
                 <x-icon-button as="a" icon="edit" href="{{ route('leads.edit', $lead) }}"
                     title="{{ __('Edit lead') }}" />
-                <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline-flex">
+            @endcanany
+            @can('manage-marketing')
+                <form action="{{ route('leads.destroy', $lead) }}" method="POST" class="inline-flex"
+                      data-confirm="{{ __('Delete this lead?') }}" data-confirm-tone="danger">
                     @csrf @method('DELETE')
                     <x-icon-button icon="delete" type="submit"
-                            onclick="return confirm('{{ __('Delete this lead?') }}')"
                             title="{{ __('Delete lead') }}" />
                 </form>
             @endcan
+            @if($lead->customer && $lead->customer->status === 'lead'
+                && (auth()->user()->can('manage-sales') || auth()->user()->can('manage-sales-leads')))
+                <form action="{{ route('leads.promote-customer', $lead) }}" method="POST" class="inline-flex">
+                    @csrf
+                    <x-icon-button type="submit" icon="customer" label="{{ __('Promote to Customer') }}" title="{{ __('Promote to Customer') }}" />
+                </form>
+            @endif
             @if(auth()->user()->can('view-sales') || auth()->user()->can('manage-sales'))
-                <x-icon-button as="a" href="{{ route('leads.pipeline') }}"
-                   title="{{ __('Back to Pipeline') }}">
-                    <x-icon name="view-columns" class="h-5 w-5" />
-                </x-icon-button>
+                <x-back-button :href="route('sales.my-leads')" :label="__('Back to My Leads')" />
             @endif
             <x-icon-button as="a" icon="back"
                 href="{{ (auth()->user()->can('view-marketing') || auth()->user()->can('manage-marketing')) ? route('leads.index') : route('sales.my-leads') }}"
@@ -52,6 +59,7 @@
 
     @php
         $canSalesWrite = auth()->user()?->can('manage-sales') || auth()->user()?->can('manage-inside-sales');
+        $canCreateQuotation = auth()->user()?->can('manage-inside-sales') || auth()->user()?->can('manage-sales-leads');
         $techRequests = $techRequests ?? collect();
         $activeTechRequest = $activeTechRequest ?? null;
         $proposalsList = $proposalsList ?? collect();
@@ -110,6 +118,9 @@
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
             <span>{{ $lead->source ? \App\Http\Controllers\LeadController::label($lead->source) : '-' }} • {{ $lead->incoming_date ? $lead->incoming_date->format('d M Y') : '-' }}</span>
+            @if($lead->location)
+                <span>{{ __('Location') }}: {{ $lead->location }}</span>
+            @endif
             <span>{{ __('Sales') }}: {{ $lead->assignee?->name ?? '-' }}</span>
         </div>
         <div class="mt-4 flex items-center gap-3 rounded-xl bg-accent-500/10 dark:bg-accent-400/10 p-3">
@@ -207,13 +218,31 @@
                 </section>
             @endif
 
-            @if($lead->notes || $lead->kebutuhan || $lead->solusi || $lead->progress_notes)
+            @if($lead->notes || $lead->kebutuhan || $lead->solusi || $lead->progress_notes || $lead->project_name || $lead->need_type || $lead->procurement_status)
                 <section aria-labelledby="card-kebutuhan" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                     <h2 id="card-kebutuhan" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         <x-icon name="file-text" class="h-5 w-5 text-slate-400" />
                         {{ __('Requirements & Notes') }}
                     </h2>
                     <div class="mt-3 space-y-3">
+                        @if($lead->project_name || $lead->need_type || $lead->procurement_status)
+                            <div class="flex flex-wrap gap-2">
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                    <x-icon name="briefcase" class="h-4 w-4 text-slate-400" />
+                                    {{ $lead->project_name ?: __('Installation') }}
+                                </span>
+                                @if($lead->need_type)
+                                    <span class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                        {{ \App\Models\Lead::needTypeLabel($lead->need_type) }}
+                                    </span>
+                                @endif
+                                @if($lead->procurement_status)
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                        {{ \App\Models\Lead::procurementStatusLabel($lead->procurement_status) }}
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
                         @if($lead->kebutuhan)
                             <div>
                                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Requirement') }}</p>
@@ -288,10 +317,17 @@
                             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rp {{ number_format($proposalsList->sum('grand_total'), 0, ',', '.') }}</span>
                         @endif
                     </h2>
-                    @if($canSalesWrite)
-                        <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
-                            <x-icon name="receipt" class="h-5 w-5" />
-                        </x-icon-button>
+                    @if($canSalesWrite || $canCreateQuotation)
+                        <div class="flex shrink-0 items-center gap-2">
+                            @can('create', \App\Models\EstimatorRequest::class)
+                                <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Request Product Price') }}" />
+                            @endcan
+                            @if($canCreateQuotation)
+                                <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">
+                                    <x-icon name="receipt" class="h-5 w-5" />
+                                </x-icon-button>
+                            @endif
+                        </div>
                     @endif
                 </div>
                 <div class="mt-3 space-y-2">
@@ -378,28 +414,8 @@
                         </div>
                     </form>
                 @endcan
-                <div class="mt-3 space-y-2">
-                    @forelse($timeline ?? [] as $item)
-                        <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 {{ $item['type'] === 'meeting' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' }}">
-                                {{ $item['title'] }}
-                            </span>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $item['summary'] ?: '-' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    {{ $item['date'] ? \Carbon\Carbon::parse($item['date'])->format('d M Y') : '-' }}
-                                    @if(!empty($item['time'])) • {{ substr((string) $item['time'], 0, 5) }} @endif
-                                    @if(!empty($item['location'])) • {{ $item['location'] }} @endif
-                                    @if($item['by']) • {{ $item['by'] }} @endif
-                                </p>
-                            </div>
-                            @if($item['url'])
-                                <x-icon-button as="a" icon="view" href="{{ $item['url'] }}" title="{{ __('View details') }}" class="shrink-0" />
-                            @endif
-                        </div>
-                    @empty
-                        <p class="text-slate-500">{{ __('No follow up logs for this lead yet.') }}</p>
-                    @endforelse
+                <div class="mt-3 space-y-2" x-data="liveFeed(@js(route('leads.timeline', $lead)), 60000)">
+                    @include('leads.partials.timeline', ['timeline' => $timeline])
                 </div>
             </section>
 
@@ -545,31 +561,41 @@
                     </div>
                     <div>
                         <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Office Phone') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->phone ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ \App\Support\PhoneFormatter::format($lead->customer?->phone) ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('WhatsApp No.') }}</dt>
                         @php($waLink = $lead->customer?->waLink() ?? null)
                         <dd class="mt-1 flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
                             @if($waLink)
-                                <a href="{{ $waLink }}" target="_blank" rel="noopener" class="hover:underline">{{ $lead->customer->picWhatsapp() ?? $lead->customer->whatsapp }}</a>
+                                <a href="{{ $waLink }}" target="_blank" rel="noopener" class="hover:underline">{{ \App\Support\PhoneFormatter::format($lead->customer->whatsapp) }}</a>
                                 <x-icon-button as="a" href="{{ $waLink }}" target="_blank" rel="noopener" title="WhatsApp" class="shrink-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
                                         <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.87 9.87 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m5.83 14.12c-.25.7-1.45 1.33-2.02 1.42-.52.08-1.17.12-1.89-.12-.44-.15-1-.39-1.71-.75-3.03-1.39-5-4.63-5.15-4.84-.15-.21-1.23-1.64-1.23-3.13 0-1.49.78-2.22 1.06-2.52.28-.3.61-.38.81-.38l.58.01c.19.01.44-.07.69.53.25.61.86 2.11.94 2.26.08.15.13.33.03.53-.1.2-.15.33-.3.51l-.45.53c-.15.15-.31.31-.13.61.18.3.8 1.32 1.71 2.14 1.18 1.06 2.17 1.39 2.48 1.55.3.15.48.13.66-.08l1.1-1.28c.2-.26.42-.22.71-.13.3.09 1.9.9 2.23 1.06.38.2.53.44.5.65-.27.69-.52.98-.73 1.23"/>
                                     </svg>
                                 </x-icon-button>
                             @else
-                                {{ $lead->customer?->whatsapp ?? '-' }}
+                                {{ \App\Support\PhoneFormatter::format($lead->customer?->whatsapp) ?? '-' }}
                             @endif
                         </dd>
                     </div>
+                    @if($lead->customer?->picWhatsappLink())
+                        <div>
+                            <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('PIC WhatsApp') }}</dt>
+                            <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                                <a href="{{ $lead->customer->picWhatsappLink() }}" target="_blank" rel="noopener" class="hover:underline">{{ \App\Support\PhoneFormatter::format($lead->customer->picWhatsapp()) }}</a>
+                            </dd>
+                        </div>
+                    @endif
                     <div>
                         <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Email') }}</dt>
                         <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100 break-all">{{ $lead->customer?->email ?? '-' }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Address') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->address ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                            <x-location-link :location="$lead->customer?->address" />
+                        </dd>
                     </div>
                 </dl>
             </section>
@@ -591,15 +617,13 @@
                                     {{ \App\Models\LeadDocument::categoryLabel($doc->category) }}
                                 </span>
                                 <div class="flex items-center gap-2 shrink-0">
-                                    <x-icon-button icon="view" type="button" title="{{ __('View') }}"
-                                            data-url="{{ route('leads.attachments.show', [$lead, $doc]) }}"
-                                            data-filename="{{ $doc->file_name }}"
-                                            data-mime="{{ $doc->mime_type }}"
-                                            onclick="openPreviewModal(this.dataset.url, this.dataset.filename, this.dataset.mime)" />
+                                    <x-file-preview :url="route('leads.attachments.show', [$lead, $doc])"
+                                                    :download="route('leads.attachments.download', [$lead, $doc])"
+                                                    :name="$doc->file_name" />
                                     <x-icon-button as="a" icon="download" href="{{ route('leads.attachments.download', [$lead, $doc]) }}" title="{{ __('Download') }}" />
                                     @can('manage-marketing')
                                         <form action="{{ route('leads.attachments.destroy', [$lead, $doc]) }}" method="POST"
-                                              onsubmit="return confirm('{{ __('Delete this attachment?') }}')" class="inline-flex">
+                                              data-confirm="{{ __('Delete this attachment?') }}" data-confirm-tone="danger" class="inline-flex">
                                             @csrf
                                             @method('DELETE')
                                             <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
@@ -658,14 +682,12 @@
                                         </div>
                                     </div>
                                     <div class="mt-3 flex gap-2">
+                                        <x-file-preview :url="route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id])"
+                                                        :download="route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id])"
+                                                        :name="$doc->file_name"
+                                                        label="{{ __('Preview') }}" />
                                         <x-icon-button as="a" icon="download" href="{{ route('leads.documents.download', ['lead' => $lead->id, 'document' => $doc->id]) }}"
                                            label="{{ __('Download') }}" title="{{ __('Download') }}" />
-                                        @if($doc->is_image || $doc->is_pdf)
-                                            <x-icon-button as="a" icon="view"
-                                               href="{{ route('leads.documents.preview', ['lead' => $lead->id, 'document' => $doc->id]) }}"
-                                               target="_blank"
-                                               label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
-                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -751,61 +773,4 @@
         document.getElementById('convertModal').classList.add('hidden');
     }
 
-    function openPreviewModal(url, filename, mimeType) {
-        var modal = document.getElementById('previewModal');
-        var content = document.getElementById('previewContent');
-        var title = document.getElementById('previewTitle');
-
-        title.textContent = filename;
-        content.innerHTML = '';
-
-        var imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-        var pdfTypes = ['application/pdf'];
-
-        if (imageTypes.includes(mimeType)) {
-            var img = document.createElement('img');
-            img.src = url;
-            img.className = 'max-h-[80vh] max-w-full mx-auto rounded-lg object-contain';
-            img.alt = filename;
-            content.appendChild(img);
-        } else if (pdfTypes.includes(mimeType)) {
-            var iframe = document.createElement('iframe');
-            iframe.src = url;
-            iframe.className = 'w-full h-[80vh] rounded-lg border-0';
-            content.appendChild(iframe);
-        } else {
-            content.innerHTML = '<div class="text-center py-10">' +
-                '<svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"></path></svg>' +
-                '<p class="text-slate-600 font-medium mb-2">{{ __('This file needs to be downloaded') }}</p>' +
-                '<a href="' + url.replace('/show', '/download') + '" ' +
-                'class="inline-flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white rounded-lg text-sm font-medium transition">' +
-                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path></svg>' +
-                '{{ __('Download') }}</a>' +
-                '</div>';
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    function closePreviewModal() {
-        var modal = document.getElementById('previewModal');
-        modal.classList.add('hidden');
-        document.getElementById('previewContent').innerHTML = '';
-    }
 </script>
-
-<!-- Preview Modal -->
-<div id="previewModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-slate-900/70" onclick="closePreviewModal()"></div>
-        <div class="relative w-full max-w-4xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-600">
-            <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-600">
-                <h3 id="previewTitle" class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[80%]"></h3>
-                <button type="button" onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div id="previewContent" class="p-4"></div>
-        </div>
-    </div>
-</div>

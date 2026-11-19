@@ -1,14 +1,26 @@
 <x-app-layout>
     @php($prefill = $prefill ?? [])
+    @php($backUrl = auth()->user()?->can('manage-marketing') ? route('leads.index') : route('sales.my-leads'))
     <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-3xl font-bold text-slate-800">{{ __('Add New Lead / Opportunity') }}</h1>
             <p class="text-slate-500 mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="{{ __('Back') }}" />
+        <x-icon-button as="a" icon="back" href="{{ $backUrl }}" title="{{ __('Back') }}" />
     </div>
 
-    <form action="{{ route('leads.store') }}" method="POST" enctype="multipart/form-data"
+    @if($errors->any())
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+            <p class="font-semibold">{{ __('Please fix the following:') }}</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('leads.store') }}" method="POST" enctype="multipart/form-data" novalidate
           data-loading-text="Saving…"
           class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
         @csrf
@@ -83,6 +95,7 @@
                         {{ __('Company') }} <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name', $prefill['customer_name'] ?? '') }}"
+                           x-bind:disabled="mode !== 'new'"
                            placeholder="{{ __('e.g. PT Koin Konstruksi') }}"
                            class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     @error('customer_name')
@@ -93,9 +106,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label for="customer_address" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
-                        <textarea name="customer_address" id="customer_address" rows="2"
-                                  placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
-                                  class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address') }}</textarea>
+                        <div class="flex items-start gap-2">
+                            <textarea name="customer_address" id="customer_address" rows="2"
+                                      x-bind:disabled="mode !== 'new'"
+                                      placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
+                                      data-location-autocomplete
+                                      class="w-full flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address') }}</textarea>
+                            <x-maps-open-button input="customer_address" />
+                            <x-location-autocomplete />
+                        </div>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps.') }}</p>
                     </div>
                     <div>
                         <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
@@ -103,24 +123,28 @@
                             <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di perusahaan tersebut.') }}" />
                         </label>
                         <input type="text" name="customer_contact_person" id="customer_contact_person" value="{{ old('customer_contact_person', $prefill['customer_contact_person'] ?? '') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. Ms. Vita') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
                         <label for="customer_phone" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Office Phone') }}</label>
                         <input type="text" name="customer_phone" id="customer_phone" value="{{ old('customer_phone') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
                         <label for="customer_whatsapp" class="block text-sm font-medium text-slate-700 mb-1">{{ __('WhatsApp No.') }}</label>
                         <input type="text" name="customer_whatsapp" id="customer_whatsapp" value="{{ old('customer_whatsapp', $prefill['customer_whatsapp'] ?? '') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div class="md:col-span-2">
                         <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                         <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email') }}"
+                               x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. vita@ptkoin.com') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @error('customer_email')
@@ -153,6 +177,7 @@
                         <x-info-tip tip="{{ __('Isi hanya jika ingin memperbarui nama PIC customer ini.') }}" />
                     </label>
                     <input type="text" name="customer_contact_person" id="customer_contact_person_existing" value="{{ old('customer_contact_person') }}"
+                           x-bind:disabled="mode !== 'existing'"
                            placeholder="{{ __('leave blank if unchanged') }}"
                            class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
@@ -162,15 +187,47 @@
         {{-- Detail --}}
         <section class="border-t border-slate-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-                <div>
+                <div class="md:col-span-2">
                     <label for="kebutuhan" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
                         {{ __('Requirement') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('Summary of what the user needs: product, quantity, and whether installation is included.') }}" />
                     </label>
-                    <textarea name="kebutuhan" id="kebutuhan" rows="2" required
+                    <textarea name="kebutuhan" id="kebutuhan" rows="4" required data-auto-grow
                               placeholder="{{ __('e.g. Cisco IP Phone 780 Series requirement with installation') }}"
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('kebutuhan', $prefill['kebutuhan'] ?? '') }}</textarea>
                     @error('kebutuhan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="project_name" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Project Name') }} <span class="text-xs font-normal text-slate-400">({{ __('Optional') }})</span>
+                        <x-info-tip tip="{{ __('Name of the project this lead refers to, e.g. Warehouse CCTV Installation.') }}" />
+                    </label>
+                    <input type="text" name="project_name" id="project_name" maxlength="255"
+                           value="{{ old('project_name', $prefill['project_name'] ?? '') }}"
+                           placeholder="{{ __('e.g. Warehouse CCTV Installation') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('project_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Need Type') }} <span class="text-red-500">*</span>
+                        <x-info-tip tip="{{ __('What the customer needs: CCTV, IP Phone, Video Conference, Network, or others.') }}" />
+                    </label>
+                    <x-glide-select name="need_type" :label="__('Need Type')" required
+                        :options="collect(\App\Models\Lead::NEED_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\Lead::needTypeLabel($t)])->all()"
+                        :value="old('need_type', '')" :placeholder="__('Select Need Type')" :error="$errors->first('need_type')" />
+                </div>
+
+                <div>
+                    <label for="procurement_status" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Procurement Status') }}
+                        <x-info-tip tip="{{ __('Whether this is a new installation or a replacement of existing units.') }}" />
+                    </label>
+                    <x-glide-select name="procurement_status" :label="__('Procurement Status')"
+                        :options="collect(\App\Models\Lead::PROCUREMENT_STATUSES)->map(fn ($s) => ['value' => $s, 'label' => \App\Models\Lead::procurementStatusLabel($s)])->all()"
+                        :value="old('procurement_status', '')" :placeholder="__('Select')" />
                 </div>
             </div>
         </section>
@@ -206,7 +263,7 @@
 
         {{-- Aksi --}}
         <div class="flex justify-end gap-3 border-t border-slate-200">
-            <a href="{{ route('leads.index') }}"
+            <a href="{{ $backUrl }}"
                class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
                 {{ __('Cancel') }}
                 <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
@@ -218,4 +275,5 @@
             </button>
         </div>
     </form>
+    @include('partials.auto-grow')
 </x-app-layout>

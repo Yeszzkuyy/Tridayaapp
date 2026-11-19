@@ -61,7 +61,7 @@ class ProjectWorkflowTest extends TestCase
 
     private function makeProposal(Lead $lead, User $creator, string $status = 'accepted'): Proposal
     {
-        return Proposal::create([
+        $proposal = Proposal::create([
             'lead_id' => $lead->id,
             'proposal_number' => 'Q/2026/10/'.uniqid(),
             'created_by' => $creator->id,
@@ -69,6 +69,17 @@ class ProjectWorkflowTest extends TestCase
             'customer' => $lead->customer->name,
             'status' => $status,
         ]);
+        $proposal->items()->create([
+            'description' => 'Paket instalasi',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 1000000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+        $proposal->recalculate();
+
+        return $proposal->fresh();
     }
 
     private function makeProject(User $sales, User $tech, array $overrides = []): Project
@@ -99,7 +110,12 @@ class ProjectWorkflowTest extends TestCase
         $proposal->update([
             'po_document_path' => 'proposals/test/po/test.pdf',
             'po_number' => 'PO-TEST-2',
+            'po_date' => now()->toDateString(),
+            'delivery_deadline' => now()->addDays(14)->toDateString(),
+            'delivery_address' => 'Jl. Uji Project Workflow No. 1',
             'payment_scheme' => 'full',
+            'po_verified_at' => now(),
+            'po_verified_by' => $sales->id,
         ]);
         $workType = WorkType::create(['name' => 'Instalasi CCTV']);
         $pendingId = ProjectStatus::where('name', 'Pending')->value('id');
@@ -114,7 +130,7 @@ class ProjectWorkflowTest extends TestCase
         $this->assertSame($proposal->id, $project->proposal_id);
         $this->assertSame($sales->id, $project->sales_user_id);
         $this->assertSame($pendingId, $project->project_status_id);
-        $this->assertStringContainsString('Catatan untuk Teknisi: Gunakan kabel outdoor.', $project->description);
+        $this->assertStringContainsString('Catatan untuk Engineer: Gunakan kabel outdoor.', $project->description);
 
         Notification::assertSentTo($leadTech, ProjectConvertedNotification::class);
 
@@ -252,7 +268,7 @@ class ProjectWorkflowTest extends TestCase
         $html = $this->actingAs($sales)->get(route('customers.show', $customer))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString(__('Project Documents'), $html);
-        $this->assertStringContainsString(__('Customer Documents'), $html);
+        $this->assertStringContainsString(__('Projects'), $html);
+        $this->assertStringContainsString('survey.pdf', $html);
     }
 }

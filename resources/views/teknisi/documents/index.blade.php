@@ -11,7 +11,7 @@
     <form method="GET" class="flex flex-wrap gap-3">
         <select name="project_id" class="rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
             <option value="">{{ __('All Projects') }}</option>
-            @foreach($documents->pluck('project')->unique('id') as $p)
+            @foreach($documents->pluck('project')->filter()->unique('id') as $p)
                 <option value="{{ $p->id }}" {{ request('project_id') == $p->id ? 'selected' : '' }}>{{ $p->project_name }}</option>
             @endforeach
         </select>
@@ -45,7 +45,13 @@
                             <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $doc->project->customer->name ?? '-' }}</td>
                             <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $doc->category->name ?? '-' }}</td>
                             <td class="px-6 py-4 text-sm">
-                                <a href="{{ route('project-documents.preview', $doc) }}" target="_blank" class="text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300 font-medium">{{ $doc->file_name }}</a>
+                                <button type="button"
+                                        data-doc-open
+                                        data-kind="{{ \App\Rules\SecureFile::previewKind($doc->file_name) }}"
+                                        data-url="{{ route('project-documents.preview', $doc) }}"
+                                        data-download="{{ route('project-documents.download', $doc) }}"
+                                        data-filename="{{ $doc->file_name }}"
+                                        class="text-left font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">{{ $doc->file_name }}</button>
                             </td>
                             <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $doc->uploader->name ?? '-' }}</td>
                             <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">{{ $doc->created_at->format('d M Y') }}</td>

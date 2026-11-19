@@ -1,323 +1,516 @@
 <x-app-layout>
-    {{-- Skeleton shimmer dashboard umum — hanya tampil sesaat setelah login.
-         Konten asli tetap di-render server (SEO-safe); overlay ini sekadar veil. --}}
-    <style>
-        /* Veil hanya seluas area konten <main> (relative): sidebar + header tetap terlihat. */
-        #dash-skeleton {
-            position: absolute; inset: 0; z-index: 20;
-            background-color: var(--bg);
-            transition: opacity 0.3s ease;
-        }
-        #dash-skeleton.skel-done { opacity: 0; }
-        .skel-block {
-            position: relative; overflow: hidden;
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 1rem;
-        }
-        .skel-block::after {
-            content: ""; position: absolute; inset: 0;
-            background: linear-gradient(100deg, transparent 20%, rgba(148, 163, 184, 0.28) 50%, transparent 80%);
-            background-size: 200% 100%;
-            animation: skel-sweep 1.4s ease-in-out infinite;
-        }
-        .dark .skel-block::after {
-            background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.09) 50%, transparent 80%);
-            background-size: 200% 100%;
-        }
-        .skel-line { border-radius: 0.375rem; background: rgba(148, 163, 184, 0.35); }
-        .dark .skel-line { background: rgba(255, 255, 255, 0.12); }
-        @keyframes skel-sweep {
-            from { background-position: 180% 0; }
-            to { background-position: -80% 0; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .skel-block::after { animation: none; }
-            #dash-skeleton { display: none; }
-        }
-    </style>
-    <div id="dash-skeleton" hidden aria-hidden="true">
-        {{-- Padding disamakan dengan <main> agar posisi 1:1 dengan konten asli (main jadi acuan absolute). --}}
-        <div class="px-4 sm:px-6 lg:px-8 pb-8">
-            <div class="w-full space-y-6">
-                {{-- Overview header --}}
-                <div class="skel-block rounded-2xl px-5 py-6 sm:px-7 sm:py-7">
-                    <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                        <div class="min-w-0 flex-1">
-                            <div class="skel-line h-3 w-40"></div>
-                            <div class="skel-line mt-3 h-8 w-full max-w-md"></div>
-                            <div class="skel-line mt-2 h-4 w-full max-w-lg"></div>
-                        </div>
-                        <div class="skel-line h-[68px] w-full shrink-0 lg:w-56"></div>
-                    </div>
-                </div>
-                {{-- Summary cards --}}
-                <div>
-                    <div class="mb-3 flex items-end justify-between gap-2 px-1">
-                        <div class="min-w-0">
-                            <div class="skel-line h-5 w-36"></div>
-                            <div class="skel-line mt-2 h-4 w-56 max-w-full"></div>
-                        </div>
-                        <div class="skel-line h-4 w-20 shrink-0"></div>
-                    </div>
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="skel-block p-5 sm:p-6">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="skel-line h-3 w-24"></div>
-                                    <div class="skel-line mt-3 h-8 w-20"></div>
-                                    <div class="skel-line mt-2 h-3 w-28"></div>
-                                </div>
-                                <div class="skel-line h-11 w-11 shrink-0"></div>
-                            </div>
-                        </div>
-                        <div class="skel-block p-5 sm:p-6">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="skel-line h-3 w-24"></div>
-                                    <div class="skel-line mt-3 h-8 w-20"></div>
-                                    <div class="skel-line mt-2 h-3 w-28"></div>
-                                </div>
-                                <div class="skel-line h-11 w-11 shrink-0"></div>
-                            </div>
-                        </div>
-                        <div class="skel-block p-5 sm:p-6">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="skel-line h-3 w-24"></div>
-                                    <div class="skel-line mt-3 h-8 w-20"></div>
-                                    <div class="skel-line mt-2 h-3 w-28"></div>
-                                </div>
-                                <div class="skel-line h-11 w-11 shrink-0"></div>
-                            </div>
-                        </div>
-                        <div class="skel-block p-5 sm:p-6">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="skel-line h-3 w-24"></div>
-                                    <div class="skel-line mt-3 h-8 w-20"></div>
-                                    <div class="skel-line mt-2 h-3 w-28"></div>
-                                </div>
-                                <div class="skel-line h-11 w-11 shrink-0"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {{-- Recent activities --}}
-                <div class="skel-block p-5 sm:p-7">
-                    <div class="flex items-end justify-between gap-3 border-b border-transparent pb-4">
-                        <div>
-                            <div class="skel-line h-5 w-40"></div>
-                            <div class="skel-line mt-2 h-4 w-64 max-w-full"></div>
-                        </div>
-                        <div class="skel-line h-6 w-24 shrink-0"></div>
-                    </div>
-                    <div class="flex items-start gap-4 border-b border-transparent py-4">
-                        <div class="skel-line h-10 w-10 shrink-0 !rounded-full"></div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div class="skel-line h-4 w-full max-w-sm"></div>
-                                <div class="skel-line h-3 w-16 shrink-0"></div>
-                            </div>
-                            <div class="skel-line mt-2 h-3 w-48 max-w-full"></div>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4 border-b border-transparent py-4">
-                        <div class="skel-line h-10 w-10 shrink-0 !rounded-full"></div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div class="skel-line h-4 w-full max-w-sm"></div>
-                                <div class="skel-line h-3 w-16 shrink-0"></div>
-                            </div>
-                            <div class="skel-line mt-2 h-3 w-48 max-w-full"></div>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4 border-b border-transparent py-4">
-                        <div class="skel-line h-10 w-10 shrink-0 !rounded-full"></div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div class="skel-line h-4 w-full max-w-sm"></div>
-                                <div class="skel-line h-3 w-16 shrink-0"></div>
-                            </div>
-                            <div class="skel-line mt-2 h-3 w-48 max-w-full"></div>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4 py-4">
-                        <div class="skel-line h-10 w-10 shrink-0 !rounded-full"></div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div class="skel-line h-4 w-full max-w-sm"></div>
-                                <div class="skel-line h-3 w-16 shrink-0"></div>
-                            </div>
-                            <div class="skel-line mt-2 h-3 w-48 max-w-full"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        // ponytail: tampil hanya bila datang dari /login & belum pernah di tab ini;
-        // jalan saat parse (sebelum paint) agar tanpa kedip
-        (function () {
-            var el = document.getElementById('dash-skeleton');
-            if (!el) return;
-            var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            var fromLogin = /\/login/.test(document.referrer || '');
-            var seen = false;
-            try { seen = !!sessionStorage.getItem('dash-skel'); } catch (e) {}
-            if (reduce || !fromLogin || seen) { el.remove(); return; }
-            try { sessionStorage.setItem('dash-skel', '1'); } catch (e) {}
-            el.hidden = false;
-            setTimeout(function () {
-                el.classList.add('skel-done');
-                setTimeout(function () { el.remove(); }, 500);
-            }, 3000);
-        })();
-    </script>
+    @include('partials.lynk-dashboard-motion')
+
     @php
-        $dashboardCards = [
-            [
-                'label' => __('Total Customers'),
-                'value' => $customerCount ?? 0,
-                'description' => __('Registered customers'),
-                'icon' => 'users',
-                'iconClass' => 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
-                'washClass' => 'bg-blue-500/5 dark:bg-blue-400/10',
+        $user = auth()->user();
+        $canViewProjects = $user && $user->canAny([
+            'view-technician', 'manage-technician',
+            'view-sales', 'manage-sales',
+            'view-admin', 'manage-admin',
+        ]);
+        $projectsIndexUrl = $canViewProjects ? route('projects.index') : route('customers.index');
+
+        $dateBlocks = [
+            'violet' => [
+                'box' => 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+                'bar' => 'bg-violet-500',
+                'pill' => 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
             ],
-            [
-                'label' => __('Total Projects'),
-                'value' => $totalProjects ?? 0,
-                'description' => __('All projects'),
-                'icon' => 'folder',
-                'iconClass' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300',
-                'washClass' => 'bg-indigo-500/5 dark:bg-indigo-400/10',
+            'cyan' => [
+                'box' => 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300',
+                'bar' => 'bg-cyan-500',
+                'pill' => 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300',
             ],
-            [
-                'label' => __('Active Projects'),
-                'value' => $activeProjects ?? 0,
-                'description' => __('Open and On Progress'),
-                'icon' => 'activity',
-                'iconClass' => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
-                'washClass' => 'bg-emerald-500/5 dark:bg-emerald-400/10',
+            'emerald' => [
+                'box' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+                'bar' => 'bg-emerald-500',
+                'pill' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
             ],
-            [
-                'label' => __('Total Documents'),
-                'value' => $documentCount ?? 0,
-                'description' => __('Project documents'),
-                'icon' => 'book',
-                'iconClass' => 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
-                'washClass' => 'bg-amber-500/5 dark:bg-amber-400/10',
+            'blue' => [
+                'box' => 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+                'bar' => 'bg-indigo-500',
+                'pill' => 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+            ],
+            'indigo' => [
+                'box' => 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+                'bar' => 'bg-indigo-500',
+                'pill' => 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+            ],
+            'rose' => [
+                'box' => 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+                'bar' => 'bg-rose-500',
+                'pill' => 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+            ],
+            'amber' => [
+                'box' => 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+                'bar' => 'bg-amber-500',
+                'pill' => 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
             ],
         ];
+
+        $allStatuses = collect($projectStatusBreakdown ?? []);
+        $nonZeroStatuses = $allStatuses->filter(fn ($s) => ($s['count'] ?? 0) > 0)->values();
+        // Tampilkan seluruh status yang memiliki proyek (count > 0) agar genap 100% tanpa celah
+        $legendStatuses = $nonZeroStatuses->isNotEmpty()
+            ? $nonZeroStatuses
+            : $allStatuses->take(5);
+
+        $donutChartData = $nonZeroStatuses->map(fn ($s) => [
+            'label' => __($s['name']),
+            'value' => (int) $s['count'],
+            'color' => $s['hex_color'] ?? '#6366f1',
+            'key' => $s['name'],
+        ])->values();
+
+        $sparkCustomers = $kpiSparklines['customers'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
+        $sparkCompleted = $kpiSparklines['completed_projects'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
+        $sparkActive = $kpiSparklines['active_projects'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
+        $sparkDocs = $kpiSparklines['docs_kb'] ?? \App\Support\SparklineBuilder::fromSeries([], 0);
     @endphp
 
     <div class="w-full space-y-6">
-        {{-- Overview header --}}
-        <section class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm sm:px-7 sm:py-7 dark:border-[#334070] dark:bg-[#232b3e]" data-reveal>
-            <div class="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-500/5 dark:bg-blue-400/10" data-parallax-mouse="14"></div>
-            <div class="pointer-events-none absolute bottom-0 right-24 h-1 w-28 rounded-full bg-accent-500/30" data-parallax-mouse="7"></div>
+        {{-- 1. Open Header Style (delay 0ms) --}}
+        <div class="lynk-enter flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+                {{ __('Welcome back,') }} {{ $user?->name }} <span aria-hidden="true">👋</span>
+            </h1>
 
-            <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-3">
-                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent-600 dark:text-accent-300">
-                            {{ \Carbon\Carbon::now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}
+            <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
+                <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
+                <span>{{ ($now ?? \Carbon\Carbon::now('Asia/Jakarta'))->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
+            </div>
+        </div>
+
+        {{-- 2. 4 Kartu KPI dengan Data-Driven Sparkline SVG, Ambient Light & Count-Up 1.8s --}}
+        <section aria-label="{{ __('Key Summary') }}">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {{-- Card 1: Total Customers (Violet / Indigo) --}}
+                <a wire:navigate.hover href="{{ route('customers.index') }}"
+                   style="--d: 100ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-violet-500/40">
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-violet-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-violet-500/20"></span>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3.5">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 transition-transform duration-300 group-hover:scale-105 dark:bg-violet-500/15 dark:text-violet-300">
+                                <x-icon name="users" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total Customers') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($customerCount ?? 0) }}" data-countup-delay="120">
+                                    {{ number_format($customerCount ?? 0) }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span class="inline-flex items-center font-semibold text-violet-600 tabular-nums dark:text-violet-400">
+                                <svg class="mr-0.5 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.22 14.78a.75.75 0 0 0 1.06 0l7.22-7.22v5.69a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75h-7.5a.75.75 0 0 0 0 1.5h5.69l-7.22 7.22a.75.75 0 0 0 0 1.06Z" clip-rule="evenodd" />
+                                </svg>
+                                +{{ number_format($newCustomersThisMonth ?? 0) }}
+                            </span>
+                            <span>{{ __('new this month') }}</span>
                         </p>
-                        <span class="hidden h-1 w-1 rounded-full bg-slate-300 sm:block dark:bg-[#6e789e]"></span>
-                        <span class="text-xs font-medium text-slate-400">{{ __('Operational summary') }}</span>
                     </div>
-                    <h1 class="mt-3 max-w-3xl text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl dark:text-[#f2f6ff]">
-                        {{ __('Welcome back,') }} {{ auth()->user()->name }}
-                    </h1>
-                    <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 dark:text-[#a6b1d4]">
-                        {{ __('Monitor customer, project, and documentation conditions of 3DY Group in one place.') }}
-                    </p>
-                </div>
 
-                <div class="flex shrink-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#334070] dark:bg-[#2a3150]/60">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-600 text-white shadow-sm shadow-accent-600/20">
-                        <x-icon name="grid" class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('General dashboard') }}</p>
-                        <p class="mt-0.5 text-sm font-bold text-slate-700 dark:text-[#f2f6ff]">{{ __('3DY Group Overview') }}</p>
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="spark-customers" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="{{ $sparkCustomers['is_flat'] ? '0.10' : '0.32' }}" />
+                                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                            <path class="lynk-spark-area" d="{{ $sparkCustomers['area'] }}" fill="url(#spark-customers)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkCustomers['line'] }}" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" />
+                        </svg>
                     </div>
-                </div>
+                </a>
+
+                {{-- Card 2: Completed Projects (Emerald / Teal) --}}
+                <a wire:navigate.hover href="{{ $projectsIndexUrl }}"
+                   style="--d: 180ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-emerald-500/40">
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-emerald-500/20"></span>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3.5">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 transition-transform duration-300 group-hover:scale-105 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                <x-icon name="check-circle" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Completed Projects') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($completedProjectsTotal ?? 0) }}" data-countup-delay="200">
+                                    {{ number_format($completedProjectsTotal ?? 0) }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span class="inline-flex items-center font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+                                <svg class="mr-0.5 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.22 14.78a.75.75 0 0 0 1.06 0l7.22-7.22v5.69a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75h-7.5a.75.75 0 0 0 0 1.5h5.69l-7.22 7.22a.75.75 0 0 0 0 1.06Z" clip-rule="evenodd" />
+                                </svg>
+                                +{{ number_format($completedProjectsThisMonth ?? 0) }} {{ __('BAST this month') }}
+                            </span>
+                            <span>· {{ number_format($totalProjects ?? 0) }} {{ __('total') }}</span>
+                        </p>
+                    </div>
+
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="spark-projects" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#10b981" stop-opacity="{{ $sparkCompleted['is_flat'] ? '0.10' : '0.32' }}" />
+                                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                            <path class="lynk-spark-area" d="{{ $sparkCompleted['area'] }}" fill="url(#spark-projects)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkCompleted['line'] }}" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </a>
+
+                {{-- Card 3: Active Projects (Amber / Yellow) --}}
+                <a wire:navigate.hover href="{{ $projectsIndexUrl }}"
+                   style="--d: 260ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-amber-500/40">
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-amber-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-amber-500/20"></span>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3.5">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 transition-transform duration-300 group-hover:scale-105 dark:bg-amber-500/15 dark:text-amber-300">
+                                <x-icon name="activity" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Active Projects') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($activeProjects ?? 0) }}" data-countup-delay="280">
+                                    {{ number_format($activeProjects ?? 0) }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span class="font-semibold text-amber-600 tabular-nums dark:text-amber-400">{{ number_format($openProjectsCount ?? 0) }} {{ __('Open') }}</span>
+                            <span>·</span>
+                            <span class="font-semibold text-slate-700 tabular-nums dark:text-slate-300">{{ number_format($onProgressProjectsCount ?? 0) }} {{ __('On Progress') }}</span>
+                        </p>
+                    </div>
+
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="spark-active" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="{{ $sparkActive['is_flat'] ? '0.10' : '0.32' }}" />
+                                    <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                            <path class="lynk-spark-area" d="{{ $sparkActive['area'] }}" fill="url(#spark-active)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkActive['line'] }}" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </a>
+
+                {{-- Card 4: Total Documents & KB (Pink / Rose) --}}
+                <a wire:navigate.hover href="{{ route('documents.index') }}"
+                   style="--d: 340ms"
+                   class="lynk-enter lynk-kpi-card group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-pink-400/50 hover:shadow-lg active:scale-[0.98] dark:border-slate-800/60 dark:bg-slate-800/90 dark:hover:border-pink-500/40">
+                    <span aria-hidden="true" class="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/15 blur-2xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-pink-500/20"></span>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3.5">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-500/10 text-pink-600 transition-transform duration-300 group-hover:scale-105 dark:bg-pink-500/15 dark:text-pink-300">
+                                <x-icon name="book" class="h-5 w-5" />
+                            </span>
+                            <div class="min-w-0">
+                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total Documents & KB') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                   data-countup="{{ (int) ($totalDocsAndKb ?? ($documentCount ?? 0)) }}" data-countup-delay="360">
+                                    {{ number_format($totalDocsAndKb ?? ($documentCount ?? 0)) }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <span class="font-semibold text-pink-600 tabular-nums dark:text-pink-400">{{ number_format($documentCount ?? 0) }} {{ __('Project Docs') }}</span>
+                            <span>·</span>
+                            <span class="font-semibold text-slate-700 tabular-nums dark:text-slate-300">{{ number_format($kbTotalCount ?? 0) }} {{ __('KB') }}</span>
+                        </p>
+                    </div>
+
+                    <div class="relative z-10 mt-3 -mx-5 -mb-5 pt-1">
+                        <svg viewBox="0 0 240 52" class="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="spark-docs" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#ec4899" stop-opacity="{{ $sparkDocs['is_flat'] ? '0.10' : '0.32' }}" />
+                                    <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0" />
+                                </linearGradient>
+                            </defs>
+                            <path class="lynk-spark-area" d="{{ $sparkDocs['area'] }}" fill="url(#spark-docs)" />
+                            <path class="lynk-spark-line" pathLength="100" d="{{ $sparkDocs['line'] }}" fill="none" stroke="#ec4899" stroke-width="2.2" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                </a>
             </div>
         </section>
 
-        {{-- Summary cards --}}
-        <section aria-labelledby="dashboard-summary-heading" data-reveal data-reveal-delay="1">
-            <div class="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
+        {{-- 3. Baris Tengah: My Agenda & Tasks Today (420ms) & Project Status Breakdown Donut (500ms) --}}
+        <div class="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            {{-- Kiri (lg:col-span-7): My Agenda & Tasks Today --}}
+            <section style="--d: 420ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-7 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="my-agenda-heading">
                 <div>
-                    <h2 id="dashboard-summary-heading" class="text-lg font-bold text-slate-900 dark:text-[#f2f6ff]">{{ __('Key summary') }}</h2>
-                    <p class="mt-0.5 text-sm text-slate-500 dark:text-[#a6b1d4]">{{ __('Latest figures from available operational data.') }}</p>
-                </div>
-                <span class="text-xs font-semibold text-slate-400">{{ count($dashboardCards) }} {{ __('indicators') }}</span>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach($dashboardCards as $card)
-                    <article class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:border-accent-200 sm:p-6 dark:border-[#334070] dark:bg-[#232b3e] dark:hover:border-accent-500/40">
-                        <div class="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full {{ $card['washClass'] }} transition-transform duration-500 group-hover:scale-125"></div>
-                        <div class="relative flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ $card['label'] }}</p>
-                                <p class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-[#f2f6ff]"
-                                   x-data="counter({{ $card['value'] }})" x-init="start()" x-text="display">{{ $card['value'] }}</p>
-                                <p class="mt-1 text-xs font-medium text-slate-500 dark:text-[#a6b1d4]">{{ $card['description'] }}</p>
-                            </div>
-                            <span class="shrink-0 rounded-xl p-3 {{ $card['iconClass'] }}">
-                                <x-icon name="{{ $card['icon'] }}" class="h-5 w-5" />
+                    <div class="flex items-center justify-between gap-3 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <h2 id="my-agenda-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                                {{ __('My Agenda & Tasks Today') }}
+                            </h2>
+                            <span class="rounded-full bg-accent-500/10 px-2.5 py-0.5 text-xs font-semibold text-accent-700 tabular-nums dark:bg-accent-400/15 dark:text-accent-300">
+                                {{ ($agendaItems ?? collect())->count() }}
                             </span>
                         </div>
-                    </article>
-                @endforeach
-            </div>
-        </section>
 
-        {{-- Recent activities --}}
-        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 dark:border-[#334070] dark:bg-[#232b3e]" data-reveal data-reveal-delay="2" aria-labelledby="recent-activities-heading">
-            <div class="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-4 dark:border-[#334070]">
-                <div>
-                    <h2 id="recent-activities-heading" class="text-lg font-bold text-slate-900 dark:text-[#f2f6ff]">{{ __('Recent activity') }}</h2>
-                    <p class="mt-0.5 text-sm text-slate-500 dark:text-[#a6b1d4]">{{ __('Latest changes recorded on projects.') }}</p>
-                </div>
-                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500 dark:bg-[#334070] dark:text-[#a6b1d4]">
-                    {{ $activities->count() }} {{ __('activity') }}
-                </span>
-            </div>
-
-            @forelse($activities as $activity)
-                <article class="group flex items-start gap-4 border-b border-slate-100 py-4 last:border-0 last:pb-0 dark:border-[#334070]">
-                    <div class="shrink-0">
-                        <x-user-avatar :user="$activity->user" size="w-10 h-10" text="text-sm" />
+                        @if(!empty($agendaMeta['action_url']))
+                            <a wire:navigate.hover href="{{ $agendaMeta['action_url'] }}"
+                               class="inline-flex items-center gap-1 text-xs font-semibold text-accent-600 transition hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                                <span>{{ $agendaMeta['action_label'] ?? __('View All') }}</span>
+                                <x-icon name="chevron-right" class="h-3.5 w-3.5" />
+                            </a>
+                        @endif
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-                            <p class="min-w-0 text-sm leading-snug text-slate-700 dark:text-[#f2f6ff]">
-                                <span class="font-bold text-slate-900 dark:text-[#f2f6ff]">{{ $activity->user?->name ?? __('System') }}</span>
-                                <span class="text-slate-600 dark:text-[#a6b1d4]">{{ $activity->title ?? __('Activity') }}</span>
-                            </p>
-                            <time class="shrink-0 text-xs font-medium text-slate-400" datetime="{{ $activity->activity_date?->toIso8601String() }}">
-                                {{ $activity->activity_date?->setTimezone('Asia/Jakarta')->diffForHumans() ?? __('Time not available') }}
-                            </time>
+
+                    <div class="mt-1 space-y-1.5">
+                        @forelse(($agendaItems ?? collect()) as $item)
+                            @php
+                                $theme = $dateBlocks[$item['badge_color'] ?? 'blue'] ?? $dateBlocks['blue'];
+                                $prog = min(100, max(10, (int) ($item['progress'] ?? 45)));
+                            @endphp
+                            <a wire:navigate.hover href="{{ $item['url'] ?? '#' }}"
+                               class="group flex items-center justify-between gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 active:scale-[0.99] dark:hover:bg-slate-700/35">
+                                <div class="flex min-w-0 items-center gap-3.5">
+                                    {{-- Date Block Box bergaya kalender --}}
+                                    <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl {{ $theme['box'] }}">
+                                        <span class="text-sm font-extrabold leading-none tabular-nums">{{ $item['day'] ?? ($now ?? now())->format('d') }}</span>
+                                        <span class="mt-0.5 text-[10px] font-bold uppercase tracking-wider opacity-80">{{ $item['month'] ?? strtoupper(($now ?? now())->format('M')) }}</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-600 dark:text-slate-100 dark:group-hover:text-accent-400">
+                                            {{ $item['title'] }}
+                                        </p>
+                                        <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                            {{ $item['subtitle'] }} · <span class="tabular-nums">{{ $item['time_label'] }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex shrink-0 items-center gap-3">
+                                    {{-- Visual mini progress bar (animasi 1000ms) --}}
+                                    <div class="hidden w-16 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-slate-700/70" title="{{ $prog }}%">
+                                        <div class="lynk-progress-bar h-1.5 rounded-full {{ $theme['bar'] }}" style="--target-w: {{ $prog }}%; --d: 420ms"></div>
+                                    </div>
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $theme['pill'] }}">
+                                        {{ $item['status_label'] }}
+                                    </span>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="rounded-xl bg-slate-50/70 px-5 py-10 text-center dark:bg-slate-900/30">
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                                    <x-icon name="clipboard-check" class="h-5 w-5" />
+                                </span>
+                                <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No scheduled tasks for today') }}</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </section>
+
+            {{-- Kanan (lg:col-span-5): Project Status Breakdown (Side-by-Side Donut Chart & Legend 100% Akurat) --}}
+            <section style="--d: 500ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="project-status-heading">
+                <div class="flex items-center justify-between gap-3 pb-3">
+                    <h2 id="project-status-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                        {{ __('Project Status Breakdown') }}
+                    </h2>
+                    @if($canViewProjects)
+                        <a wire:navigate.hover href="{{ route('projects.index') }}"
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-accent-600 transition hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                            <span>{{ __('Explore all projects') }}</span>
+                            <x-icon name="chevron-right" class="h-3.5 w-3.5" />
+                        </a>
+                    @endif
+                </div>
+
+                @if($legendStatuses->isNotEmpty())
+                    <div class="my-auto flex flex-col items-center justify-between gap-6 py-2 sm:flex-row">
+                        {{-- Sisi Kiri: SVG Donut Chart Multi-Warna --}}
+                        <div class="relative w-40 shrink-0 sm:w-44">
+                            @if($donutChartData->isNotEmpty())
+                                <x-donut-chart :data="$donutChartData" :size="176" :strokeWidth="24" :scroll="true" />
+                            @else
+                                <svg viewBox="0 0 176 176" class="h-auto w-full">
+                                    <circle cx="88" cy="88" r="76" fill="transparent" stroke-width="24" style="stroke: var(--card-border)" />
+                                </svg>
+                            @endif
+                            <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+                                <span class="text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                      data-countup="{{ (int) ($totalProjects ?? 0) }}" data-countup-delay="520">
+                                    {{ number_format($totalProjects ?? 0) }}
+                                </span>
+                                <span class="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-400">
+                                    {{ __('Total Projects') }}
+                                </span>
+                            </div>
                         </div>
-                        <p class="mt-1 truncate text-xs text-slate-400 dark:text-[#6e789e]">
-                            {{ $activity->project?->project_name ?? __('Project not available') }}
-                        </p>
+
+                        {{-- Sisi Kanan: Daftar Legend Vertikal (Seluruh Status Aktif = 100%) --}}
+                        <div class="w-full flex-1 space-y-2">
+                            @foreach($legendStatuses as $statusItem)
+                                <div class="flex items-center justify-between gap-2 text-xs">
+                                    <span class="flex min-w-0 items-center gap-2.5 font-medium text-slate-600 dark:text-slate-300">
+                                        <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $statusItem['hex_color'] ?? '#6366f1' }}"></span>
+                                        <span class="truncate">{{ __($statusItem['name']) }}</span>
+                                    </span>
+                                    <span class="shrink-0 font-bold text-slate-800 tabular-nums dark:text-slate-100">
+                                        <span data-countup="{{ (int) $statusItem['count'] }}" data-countup-delay="540">{{ number_format($statusItem['count']) }}</span>
+                                        <span class="ml-0.5 font-normal text-slate-400">(<span data-countup="{{ round($statusItem['percentage']) }}" data-countup-suffix="%" data-countup-delay="540">{{ round($statusItem['percentage']) }}%</span>)</span>
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
-                </article>
-            @empty
-                <div class="rounded-xl bg-slate-50 px-5 py-12 text-center dark:bg-[#2a3150]/60">
-                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-300 shadow-sm dark:bg-[#334070] dark:text-[#6e789e]">
-                        <x-icon name="activity" class="h-6 w-6" />
-                    </span>
-                    <p class="mt-4 text-sm font-medium text-slate-500 dark:text-[#a6b1d4]">{{ __('No activity recorded yet.') }}</p>
-                    <p class="mt-1 text-xs text-slate-400 dark:text-[#6e789e]">{{ __('Project activity will appear here.') }}</p>
+                @else
+                    <div class="my-auto rounded-xl bg-slate-50/70 px-5 py-8 text-center dark:bg-slate-900/30">
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('No project status data available.') }}</p>
+                    </div>
+                @endif
+            </section>
+        </div>
+
+        {{-- 4. Baris Bawah: Recent Activity (580ms) & Company Board & Latest KB (660ms) --}}
+        <div class="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            {{-- Kiri (lg:col-span-6): Recent Activity --}}
+            <section style="--d: 580ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-6 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="recent-activities-heading">
+                <div>
+                    <div class="flex items-center justify-between gap-3 pb-3">
+                        <h2 id="recent-activities-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                            {{ __('Recent Activity') }}
+                        </h2>
+                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 tabular-nums dark:bg-slate-700/70 dark:text-slate-300">
+                            {{ $activities->count() }} {{ __('Recent Activities') }}
+                        </span>
+                    </div>
+
+                    <div class="mt-1 space-y-1">
+                        @forelse($activities as $activity)
+                            <article class="flex items-center justify-between gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
+                                <div class="flex min-w-0 items-center gap-3.5">
+                                    <div class="shrink-0">
+                                        <x-user-avatar :user="$activity['user']" size="w-9 h-9" text="text-xs" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm leading-snug text-slate-700 dark:text-slate-200">
+                                            <span class="font-semibold text-slate-900 dark:text-white">{{ $activity['user']?->name ?? __('System') }}</span>
+                                            <span class="text-slate-500 dark:text-slate-300">{{ __($activity['title']) }}</span>
+                                        </p>
+                                        <div class="mt-0.5 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                            @if($activity['type'] === 'project' && $activity['project_id'] && $canViewProjects)
+                                                <a wire:navigate.hover href="{{ route('projects.show', $activity['project_id']) }}"
+                                                   class="truncate font-medium text-accent-600 hover:underline dark:text-accent-400">
+                                                    {{ $activity['subject'] }}
+                                                </a>
+                                            @else
+                                                <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $activity['subject'] }}</span>
+                                            @endif
+                                            @if($activity['context'])
+                                                <span class="text-slate-300 dark:text-slate-600">·</span>
+                                                <span class="truncate">{{ $activity['context'] }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <time class="shrink-0 text-xs font-medium text-slate-400 tabular-nums dark:text-slate-400" datetime="{{ $activity['date']?->toIso8601String() }}">
+                                    {{ $activity['date']?->setTimezone('Asia/Jakarta')->shortRelativeDiffForHumans() ?? '-' }}
+                                </time>
+                            </article>
+                        @empty
+                            <div class="rounded-xl bg-slate-50/70 px-5 py-10 text-center dark:bg-slate-900/30">
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                                    <x-icon name="activity" class="h-5 w-5" />
+                                </span>
+                                <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No activity recorded yet.') }}</p>
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
-            @endforelse
-        </section>
+            </section>
+
+            {{-- Kanan (lg:col-span-6): Company Board & Latest KB --}}
+            <section style="--d: 660ms"
+                     class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-6 dark:border-slate-800/60 dark:bg-slate-800/90"
+                     aria-labelledby="company-board-heading">
+                <div>
+                    <div class="flex items-center justify-between gap-3 pb-3">
+                        <h2 id="company-board-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                            {{ __('Company Board & Latest KB') }}
+                        </h2>
+
+                        <a href="{{ $user?->can('manage-admin') ? route('knowledge-base.index') : route('ai.assistant.index') }}"
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-accent-600 transition hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
+                            <span>{{ $user?->can('manage-admin') ? __('Manage KB') : __('Ask AI Assistant') }}</span>
+                            <x-icon name="chevron-right" class="h-3.5 w-3.5" />
+                        </a>
+                    </div>
+
+                    <div class="mt-1 space-y-1.5">
+                        @forelse(($kbHighlights ?? collect()) as $idx => $kbItem)
+                            @php
+                                $isProductKb = ($kbItem['source'] ?? '') === __('Product KB');
+                                $kbColors = [
+                                    'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',
+                                    'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
+                                    'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+                                    'bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+                                ];
+                                $iconBoxClass = $kbColors[$idx % count($kbColors)];
+                            @endphp
+                            <a href="{{ $kbItem['url'] ?? route('ai.assistant.index') }}"
+                               class="group flex items-center justify-between gap-3.5 rounded-xl p-2.5 transition-colors hover:bg-slate-50/90 active:scale-[0.99] dark:hover:bg-slate-700/35">
+                                <div class="flex min-w-0 items-center gap-3.5">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $iconBoxClass }}">
+                                        <x-icon :name="$isProductKb ? 'cube' : 'book'" class="h-4 w-4" />
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-600 dark:text-slate-100 dark:group-hover:text-accent-400">
+                                            {{ $kbItem['title'] }}
+                                        </p>
+                                        <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                            <span class="font-medium text-slate-600 dark:text-slate-300">{{ $kbItem['source'] }}</span>
+                                            <span>·</span>
+                                            <span>{{ $kbItem['category'] }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <span class="shrink-0 text-xs font-medium text-slate-400 tabular-nums dark:text-slate-400">
+                                    {{ $kbItem['date_label'] }}
+                                </span>
+                            </a>
+                        @empty
+                            <div class="rounded-xl bg-slate-50/70 px-5 py-10 text-center dark:bg-slate-900/30">
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                                    <x-icon name="book" class="h-5 w-5" />
+                                </span>
+                                <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No knowledge base items yet') }}</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </x-app-layout>

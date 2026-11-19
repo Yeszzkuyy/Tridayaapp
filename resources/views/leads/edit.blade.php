@@ -7,7 +7,18 @@
         <x-icon-button as="a" icon="back" href="{{ route('leads.show', $lead) }}" title="{{ __('Back') }}" />
     </div>
 
-    <form action="{{ route('leads.update', $lead) }}" method="POST" enctype="multipart/form-data"
+    @if($errors->any())
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
+            <p class="font-semibold">{{ __('Please fix the following:') }}</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('leads.update', $lead) }}" method="POST" enctype="multipart/form-data" novalidate
           data-loading-text="Saving…"
           class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
         @csrf
@@ -82,9 +93,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label for="customer_address" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
-                        <textarea name="customer_address" id="customer_address" rows="2"
-                                  placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
-                                  class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address', $lead->customer->address) }}</textarea>
+                        <div class="flex items-start gap-2">
+                            <textarea name="customer_address" id="customer_address" rows="2"
+                                      placeholder="{{ __('e.g. Plaza Kebon Jeruk Block D7-8, Jl. Raya Perjuangan, West Jakarta 11530') }}"
+                                      data-location-autocomplete
+                                      class="w-full flex-1 rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('customer_address', $lead->customer->address) }}</textarea>
+                            <x-maps-open-button input="customer_address" />
+                            <x-location-autocomplete />
+                        </div>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps.') }}</p>
                     </div>
                     <div>
                         <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
@@ -123,15 +140,47 @@
         {{-- Detail --}}
         <section class="border-t border-slate-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
-                <div>
+                <div class="md:col-span-2">
                     <label for="kebutuhan" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
                         {{ __('Requirement') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('Summary of what the user needs: product, quantity, and whether installation is included.') }}" />
                     </label>
-                    <textarea name="kebutuhan" id="kebutuhan" rows="2" required
+                    <textarea name="kebutuhan" id="kebutuhan" rows="4" required data-auto-grow
                               placeholder="{{ __('e.g. Cisco IP Phone 780 Series requirement with installation') }}"
                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('kebutuhan', $lead->kebutuhan) }}</textarea>
                     @error('kebutuhan') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="project_name" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Project Name') }} <span class="text-xs font-normal text-slate-400">({{ __('Optional') }})</span>
+                        <x-info-tip tip="{{ __('Name of the project this lead refers to, e.g. Warehouse CCTV Installation.') }}" />
+                    </label>
+                    <input type="text" name="project_name" id="project_name" maxlength="255"
+                           value="{{ old('project_name', $lead->project_name) }}"
+                           placeholder="{{ __('e.g. Warehouse CCTV Installation') }}"
+                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                    @error('project_name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Need Type') }} <span class="text-red-500">*</span>
+                        <x-info-tip tip="{{ __('What the customer needs: CCTV, IP Phone, Video Conference, Network, or others.') }}" />
+                    </label>
+                    <x-glide-select name="need_type" :label="__('Need Type')" required
+                        :options="collect(\App\Models\Lead::NEED_TYPES)->map(fn ($t) => ['value' => $t, 'label' => \App\Models\Lead::needTypeLabel($t)])->all()"
+                        :value="old('need_type', $lead->need_type ?? '')" :placeholder="__('Select Need Type')" :error="$errors->first('need_type')" />
+                </div>
+
+                <div>
+                    <label for="procurement_status" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        {{ __('Procurement Status') }}
+                        <x-info-tip tip="{{ __('Whether this is a new installation or a replacement of existing units.') }}" />
+                    </label>
+                    <x-glide-select name="procurement_status" :label="__('Procurement Status')"
+                        :options="collect(\App\Models\Lead::PROCUREMENT_STATUSES)->map(fn ($s) => ['value' => $s, 'label' => \App\Models\Lead::procurementStatusLabel($s)])->all()"
+                        :value="old('procurement_status', $lead->procurement_status ?? '')" :placeholder="__('Select')" />
                 </div>
             </div>
         </section>
@@ -166,7 +215,7 @@
                                    class="text-sm text-accent-600 hover:underline">{{ $doc->file_name }}</a>
                                 <button type="button"
                                         class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white"
-                                        onclick="if(confirm('{{ __('Yakin hapus lampiran ini?') }}')){fetch('{{ route('leads.attachments.destroy', [$lead, $doc]) }}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({_method:'DELETE'})}).then(r=>r.ok&&location.reload())}">
+                                        onclick="window.askConfirm({ message: '{{ __('Delete this attachment?') }}', tone: 'danger' }).then((ok) => { if (!ok) return; fetch('{{ route('leads.attachments.destroy', [$lead, $doc]) }}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({_method:'DELETE'})}).then(r=>r.ok&&location.reload()); })">
                                     {{ __('Delete') }}
                                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                 </button>
@@ -207,4 +256,5 @@
             </button>
         </div>
     </form>
+    @include('partials.auto-grow')
 </x-app-layout>

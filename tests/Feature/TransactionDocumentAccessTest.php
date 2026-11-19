@@ -46,6 +46,22 @@ class TransactionDocumentAccessTest extends TestCase
         return $user;
     }
 
+    private function finance(string $name = 'Finance'): User
+    {
+        $user = User::factory()->create(['name' => $name]);
+        $user->assignRole('finance');
+
+        return $user;
+    }
+
+    private function purchasing(string $name = 'Purchasing'): User
+    {
+        $user = User::factory()->create(['name' => $name]);
+        $user->assignRole('purchasing');
+
+        return $user;
+    }
+
     private function superAdmin(string $name = 'Super Admin'): User
     {
         $user = User::factory()->create(['name' => $name]);
@@ -201,11 +217,11 @@ class TransactionDocumentAccessTest extends TestCase
                 'status' => 'selesai',
                 'issue_date' => now()->toDateString(),
             ])
-            ->assertRedirect();
+            ->assertForbidden();
 
         $this->assertDatabaseHas('purchase_orders', [
             'id' => $po->id,
-            'amount' => 9999999,
+            'amount' => 2500000,
         ]);
     }
 
@@ -227,9 +243,9 @@ class TransactionDocumentAccessTest extends TestCase
 
         $this->actingAs($other)
             ->delete(route('admin.pos.destroy', $po))
-            ->assertRedirect();
+            ->assertForbidden();
 
-        $this->assertSoftDeleted('purchase_orders', ['id' => $po->id]);
+        $this->assertNotSoftDeleted('purchase_orders', ['id' => $po->id]);
     }
 
     public function test_admin_can_update_own_purchase_order(): void
@@ -255,11 +271,11 @@ class TransactionDocumentAccessTest extends TestCase
                 'status' => 'diproses',
                 'issue_date' => now()->toDateString(),
             ])
-            ->assertRedirect();
+            ->assertForbidden();
 
         $this->assertDatabaseHas('purchase_orders', [
             'id' => $po->id,
-            'amount' => 3000000,
+            'amount' => 2500000,
         ]);
     }
 
@@ -387,7 +403,7 @@ class TransactionDocumentAccessTest extends TestCase
             ->assertOk();
     }
 
-    public function test_sales_can_download_payment_proof(): void
+    public function test_sales_cannot_download_payment_proof(): void
     {
         Storage::fake('private');
         $sales = $this->sales('Sales A');
@@ -414,7 +430,7 @@ class TransactionDocumentAccessTest extends TestCase
 
         $this->actingAs($sales)
             ->get(route('admin.payments.proof', $payment))
-            ->assertOk();
+            ->assertForbidden();
     }
 
     public function test_unauthenticated_cannot_access_payment_proof(): void
@@ -587,6 +603,50 @@ class TransactionDocumentAccessTest extends TestCase
         $this->actingAs($tech)
             ->get(route('project-documents.download', $document))
             ->assertForbidden();
+    }
+
+    public function test_only_payment_proof_roles_can_download_customer_payment_proof(): void
+    {
+        Storage::fake('private');
+        $admin = $this->admin();
+        $sales = $this->sales();
+        $finance = $this->finance();
+        $purchasing = $this->purchasing();
+        $customer = $this->customer();
+
+        $invoice = app(AdminService::class)->createInvoice([
+            'customer_id' => $customer->id,
+            'amount' => 1000000,
+            'status' => 'unpaid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $payment = app(AdminService::class)->createPayment([
+            'invoice_id' => $invoice->id,
+            'amount' => 500000,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'Transfer',
+        ], UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf'));
+
+        $document = ProjectDocument::where('documentable_type', Payment::class)
+            ->where('documentable_id', $payment->id)
+            ->firstOrFail();
+
+        $this->actingAs($sales)
+            ->get(route('project-documents.download', $document))
+            ->assertForbidden();
+
+        $this->actingAs($finance)
+            ->get(route('project-documents.download', $document))
+            ->assertOk();
+
+        // Bukti yang sudah masuk Trash tetap tidak boleh dilihat Sales.
+        $this->actingAs($admin)->delete(route('admin.payments.destroy', $payment))->assertRedirect();
+
+        $trashed = ProjectDocument::withTrashed()->findOrFail($document->id);
+        $this->assertFalse($sales->can('view', $trashed));
+        $this->assertFalse($purchasing->can('view', $trashed));
+        $this->assertTrue($finance->can('view', $trashed));
     }
 
     // ============================================================

@@ -61,11 +61,14 @@
                                     <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $version->created_at->format('d M Y H:i') }}</td>
                                     <td class="px-6 py-4 text-sm">
                                         <div class="flex items-center gap-2">
+                                            <x-file-preview :url="route('project-documents.preview', $version)"
+                                                            :download="route('project-documents.download', $version)"
+                                                            :name="$version->file_name" />
                                             <x-icon-button as="a" icon="download" href="{{ route('project-documents.download', $version) }}"
                                                 label="{{ __('Unduh Versi ini') }}" title="{{ __('Unduh Versi ini') }}" size="sm" />
                                             @if($version->id !== $document->id)
                                                 <form action="{{ route('project-documents.destroy', $version) }}" method="POST"
-                                                    onsubmit="return confirm('{{ __('Hapus versi ini secara permanen?') }}')"
+                                                    data-confirm="{{ __('Hapus versi ini secara permanen?') }}" data-confirm-tone="danger"
                                                     class="inline">
                                                     @csrf @method('DELETE')
                                                     @can('forceDelete', $version)
@@ -89,7 +92,7 @@
             @can('archive', $document)
                 <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-600">
                     <form action="{{ route('project-documents.archive', $document) }}" method="POST"
-                          onsubmit="return confirm('{{ __('Arsipkan dokumen ini? File dan riwayat versi tetap tersimpan.') }}')">
+                          data-confirm="{{ __('Arsipkan dokumen ini? File dan riwayat versi tetap tersimpan.') }}" data-confirm-tone="warning">
                         @csrf
                         <button type="submit"
                             class="inline-flex items-center gap-1.5 text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">

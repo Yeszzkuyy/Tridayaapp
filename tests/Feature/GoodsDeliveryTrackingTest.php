@@ -131,6 +131,11 @@ class GoodsDeliveryTrackingTest extends TestCase
         $order->refresh()->load('items');
         $item = $order->items->first();
 
+        $this->actingAs($admin)
+            ->get(route('admin.goods-deliveries.create', ['project_id' => $project->id]))
+            ->assertOk()
+            ->assertSee(__('Available'));
+
         $this->actingAs($admin)->post(route('admin.goods-deliveries.store'), [
             'project_id' => $project->id,
             'delivery_date' => now()->toDateString(),

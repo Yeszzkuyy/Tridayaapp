@@ -1,10 +1,9 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Create Delivery Note') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Record goods sent to the customer for a project.') }}</p>
+            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Create Delivery Note') }}</h1>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('admin.goods-deliveries.index') }}" title="{{ __('Back') }}" />
+        <x-back-button href="{{ route('admin.goods-deliveries.index') }}" />
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-5">
@@ -166,16 +165,8 @@
             </div>
 
             <div class="flex gap-3">
-                <button type="submit"
-                        class="group relative overflow-hidden rounded-xl bg-accent-600 hover:bg-accent-700 text-white px-6 py-2.5 text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                    {{ __('Save') }}
-                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                </button>
-                <a href="{{ route('admin.goods-deliveries.index') }}"
-                   class="group relative overflow-hidden rounded-xl bg-accent-500 hover:bg-accent-600 text-white px-6 py-2.5 text-sm font-medium text-center transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                    {{ __('Cancel') }}
-                    <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                </a>
+                <x-primary-button type="submit">{{ __('Save') }}</x-primary-button>
+                <x-secondary-button as="a" href="{{ route('admin.goods-deliveries.index') }}">{{ __('Cancel') }}</x-secondary-button>
             </div>
         </form>
     @else

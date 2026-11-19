@@ -221,7 +221,7 @@ class FollowUpFormTest extends TestCase
 
     public function test_index_renders_follow_ups_only(): void
     {
-        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(RoleAndPermissionSeeder::class);
         $sales = User::factory()->create();
         $sales->assignRole('sales');
         $customer = Customer::create(['name' => 'PT Index Penuh', 'pt_group' => 'MGK']);
@@ -285,7 +285,7 @@ class FollowUpFormTest extends TestCase
     {
         // Partial di-inject via innerHTML: kalau membawa id wrapper,
         // tabel bersarang tiap submit filter.
-        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(RoleAndPermissionSeeder::class);
         $sales = User::factory()->create();
         $sales->assignRole('sales');
 
@@ -354,7 +354,8 @@ class FollowUpFormTest extends TestCase
             ->assertOk()->getContent();
 
         $this->assertStringContainsString('Related Lead (optional)', $html);
-        $this->assertStringContainsString('Location (optional)', $html);
+        // Lokasi follow-up sengaja dihapus dari form (tidak terpakai).
+        $this->assertStringNotContainsString('Location (optional)', $html);
         $this->assertStringContainsString('Next Follow-up (optional)', $html);
         $this->assertStringNotContainsString('x-ref="firstTimeLead"', $html);
     }
@@ -412,5 +413,129 @@ class FollowUpFormTest extends TestCase
             ->assertOk()->getContent();
 
         $this->assertStringContainsString('data-submit-guarded', $html);
+    }
+
+    public function test_my_leads_follow_up_form_locks_customer_and_lead(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'project_name' => 'Gudang MGK',
+            'kebutuhan' => 'Pasang CCTV gudang',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create', [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'return' => 'my-leads',
+        ]))->assertOk()->getContent();
+
+        // Customer & lead terkunci, tidak perlu dipilih ulang.
+        $this->assertStringContainsString('name="customer_id" value="'.$customers['mgk']->id.'"', $html);
+        $this->assertStringContainsString('name="lead_id" value="'.$lead->id.'"', $html);
+        $this->assertStringNotContainsString('Related Lead (optional)', $html);
+        $this->assertStringNotContainsString('Search customer...', $html);
+
+        // Customer tetap terlihat terpilih di kolom read-only.
+        $this->assertMatchesRegularExpression('/readonly[^>]*value="PT MGK Client \(MGK\)"/', $html);
+
+        // Ringkasan lead ikut tampil supaya sales tidak perlu buka lead lagi.
+        $this->assertStringContainsString('PT MGK Client', $html);
+        $this->assertStringContainsString('Gudang MGK', $html);
+        $this->assertStringContainsString('Pasang CCTV gudang', $html);
+        $this->assertStringContainsString('>Warm<', $html);
+    }
+
+    public function test_my_leads_follow_up_form_prefills_last_type_and_next_schedule(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'hot',
+            'assigned_to' => $sales->id,
+        ]);
+        $nextDate = now()->addWeek()->toDateString();
+        FollowUp::create([
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'type' => 'whatsapp',
+            'description' => 'Follow up pertama.',
+            'follow_up_date' => $nextDate,
+            'activity_time' => '10:30',
+            'created_by' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create', [
+            'lead_id' => $lead->id,
+            'return' => 'my-leads',
+        ]))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/name="type"[^>]*value="whatsapp"/', $html);
+        $this->assertMatchesRegularExpression('/name="next_follow_up_date"[^>]*value="'.preg_quote($nextDate, '/').'"/', $html);
+        $this->assertMatchesRegularExpression('/name="next_follow_up_time"[^>]*value="10:30"/', $html);
+    }
+
+    public function test_my_leads_follow_up_form_returns_to_my_leads_after_save(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'type' => 'whatsapp',
+            'description' => 'Konfirmasi jadwal survei.',
+            'return' => 'my-leads',
+        ])->assertRedirect(route('sales.my-leads'));
+
+        $this->assertSame($lead->id, FollowUp::first()->lead_id);
+
+        // Form AJAX di My Leads memakai jalur JSON, redirect-nya juga ke My Leads.
+        $this->actingAs($sales)->postJson(route('sales.follow-ups.store'), [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'type' => 'call',
+            'description' => 'Telepon PIC.',
+            'return' => 'my-leads',
+        ])->assertOk()->assertJsonPath('redirect', route('sales.my-leads'));
+    }
+
+    public function test_my_leads_follow_up_button_carries_return_flag(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'cool',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.my-leads'))->assertOk()->getContent();
+
+        // Tautan di HTML menulis & sebagai &amp;.
+        $expected = str_replace('&', '&amp;', route('sales.follow-ups.create', [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'return' => 'my-leads',
+        ]));
+
+        $this->assertStringContainsString($expected, $html);
     }
 }
