@@ -63,7 +63,15 @@
                                     <p class="text-[11px] text-slate-400">{{ $log->product?->sku ?: '-' }}</p>
                                 </td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->supplier?->name ?? '-' }}</td>
-                                <td class="px-5 py-3 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-100">Rp {{ number_format((float) $log->price, 0, ',', '.') }}</td>
+                                <td class="px-5 py-3 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-100">
+                                    Rp {{ number_format((float) $log->price, 0, ',', '.') }}
+                                    @if($log->price_includes_tax && $log->price_entered !== null)
+                                        <p class="mt-0.5 text-[10px] font-normal text-slate-400">
+                                            {{ __('Including VAT') }} {{ rtrim(rtrim(number_format((float) $log->tax_rate, 2, ',', '.'), '0'), ',') }}%
+                                            &middot; Rp {{ number_format((float) $log->price_entered, 0, ',', '.') }}
+                                        </p>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3">
                                     @if($log->stock_status)
                                         <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $log->stock_status === 'indent' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' }}">

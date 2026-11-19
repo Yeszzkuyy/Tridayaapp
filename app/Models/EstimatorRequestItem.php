@@ -16,6 +16,9 @@ class EstimatorRequestItem extends Model
         'quantity',
         'unit',
         'price',
+        'price_includes_tax',
+        'tax_rate',
+        'price_before_tax',
         'stock_status',
         'stock_eta',
         'warranty_info',
@@ -29,6 +32,9 @@ class EstimatorRequestItem extends Model
     protected $casts = [
         'quantity' => 'decimal:2',
         'price' => 'decimal:2',
+        'price_includes_tax' => 'boolean',
+        'tax_rate' => 'decimal:2',
+        'price_before_tax' => 'decimal:2',
         'valid_until' => 'date',
         'answered_at' => 'datetime',
     ];

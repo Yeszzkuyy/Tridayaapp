@@ -269,7 +269,8 @@
                                         $lastLog = $item->product?->latestCostLog;
                                         $lastLogPayload = $lastLog ? [
                                             'supplier_id' => $lastLog->supplier_id ? (string) $lastLog->supplier_id : '',
-                                            'price' => (float) $lastLog->price,
+                                            'price' => (float) ($lastLog->price_entered ?? $lastLog->price),
+                                            'price_includes_tax' => (bool) $lastLog->price_includes_tax,
                                             'stock_status' => $lastLog->stock_status ?: 'ready',
                                             'stock_eta' => $lastLog->stock_eta ?: '',
                                             'warranty_info' => $lastLog->warranty_info ?: '',
@@ -321,6 +322,12 @@
                                         <td class="border-l border-slate-100 px-5 py-4 text-right dark:border-slate-700/60">
                                             <x-rupiah-input :name="'items['.$index.'][price]'" :value="$priceValue"
                                                             wrapper-class="min-w-[220px]" :aria-label="__('Cost')" required />
+                                            <label class="mt-2 inline-flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                <input type="checkbox" name="items[{{ $index }}][price_includes_tax]" value="1"
+                                                       @checked((bool) old("items.{$index}.price_includes_tax", $item->price_includes_tax))
+                                                       class="rounded border-slate-300 text-accent-600 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                                                {{ __('Price includes VAT') }}
+                                            </label>
                                         </td>
                                         <td class="px-5 py-4 text-center">
                                             <div class="mx-auto w-full max-w-[150px]" data-glide-field="stock" @change="toggleStockEtaFromEvent($event)">
@@ -403,7 +410,14 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-4 text-left text-slate-600 dark:text-slate-300">{{ $item->supplier?->name ?? '-' }}</td>
-                                <td class="border-l border-slate-100 px-5 py-4 text-right font-semibold tabular-nums text-slate-800 dark:border-slate-700/60 dark:text-slate-100">{{ $item->price !== null ? 'Rp '.number_format((float) $item->price, 0, ',', '.') : '-' }}</td>
+                                <td class="border-l border-slate-100 px-5 py-4 text-right font-semibold tabular-nums text-slate-800 dark:border-slate-700/60 dark:text-slate-100">
+                                    {{ $item->price !== null ? 'Rp '.number_format((float) $item->price, 0, ',', '.') : '-' }}
+                                    @if($item->price_includes_tax && $item->price_before_tax !== null)
+                                        <p class="mt-0.5 text-[10px] font-normal text-slate-400">
+                                            {{ __('Including VAT') }} &middot; {{ __('Net') }} Rp {{ number_format((float) $item->price_before_tax, 0, ',', '.') }}
+                                        </p>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-4 text-center">
                                     @if($item->stock_status)
                                         <span class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $item->stock_status === 'indent' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' }}">
@@ -517,12 +531,18 @@
                 if (typeof window.parseRupiah !== 'function') return;
                 const totalEl = document.getElementById('estimator-total-cost');
                 if (!totalEl) return;
+                const vatRate = {{ (float) \App\Models\AppSetting::vatRate() }};
 
                 let total = 0;
                 document.querySelectorAll('[data-estimator-row]').forEach((row) => {
                     const qty = parseFloat(row.dataset.qty || '0') || 0;
                     const priceInput = row.querySelector('input[name$="[price]"]');
-                    total += qty * window.parseRupiah(priceInput?.value);
+                    let unit = window.parseRupiah(priceInput?.value);
+                    const includesTax = row.querySelector('input[name$="[price_includes_tax]"]')?.checked;
+                    if (includesTax && vatRate > 0) {
+                        unit = unit / (1 + (vatRate / 100));
+                    }
+                    total += qty * unit;
                 });
 
                 totalEl.textContent = 'Rp ' + (total ? total.toLocaleString('id-ID') : '0');
@@ -589,6 +609,8 @@
                 fillRowField(index, 'stock_eta', log.stock_eta || '');
                 fillRowField(index, 'warranty_info', log.warranty_info || '');
                 fillRowField(index, 'valid_until', log.valid_until || '');
+                const taxBox = row?.querySelector('[name$="[price_includes_tax]"]');
+                if (taxBox) taxBox.checked = !!log.price_includes_tax;
                 recalcEstimatorTotal();
 
                 if (row && row.animate) {
@@ -618,6 +640,11 @@
             }
 
             document.addEventListener('DOMContentLoaded', recalcEstimatorTotal);
+            document.addEventListener('change', function (event) {
+                if (event.target.matches('input[name$="[price_includes_tax]"]')) {
+                    recalcEstimatorTotal();
+                }
+            });
             recalcEstimatorTotal();
         </script>
     @endonce
