@@ -20,8 +20,12 @@
                 @php
                     $lead = $fu->lead;
                     $customer = $fu->customer;
-                    $status = $fu->status ?? ($fu->isCompleted() ? 'completed' : 'pending');
+                    $isDone = $fu->isCompleted();
+                    $status = $fu->status ?? ($isDone ? 'completed' : 'pending');
                     $schedule = $fu->scheduleState();
+                    // Baris aktif = jadwal itu sendiri. Baris riwayat mengambil
+                    // jadwal berikutnya milik lead, bukan tanggal aktivitasnya.
+                    $nextDate = $isDone ? $lead?->activeFollowUp?->follow_up_date : $fu->follow_up_date;
                     $note = $fu->description ?: ($lead?->latestNoteFollowUp?->description ?? '');
                     $leadNote = $lead?->latestNoteFollowUp?->description;
                     $lastActivity = $lead?->latestActivityFollowUp?->follow_up_date ?? $fu->follow_up_date;
@@ -76,11 +80,13 @@
                         {{ $lastActivity?->format('d M Y') ?? '-' }}
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
-                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ $fu->follow_up_date?->format('d M Y') ?? __('Not scheduled') }}</p>
-                        @if($fu->activity_time)
+                        <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ $nextDate?->format('d M Y') ?? __('Not scheduled') }}</p>
+                        @if(! $isDone && $fu->activity_time)
                             <p class="text-[11px] text-slate-400">{{ substr((string) $fu->activity_time, 0, 5) }}</p>
                         @endif
-                        <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ \App\Models\FollowUp::scheduleStateClasses($schedule) }}">{{ \App\Models\FollowUp::scheduleStateLabel($schedule) }}</span>
+                        @if(! $isDone)
+                            <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold {{ \App\Models\FollowUp::scheduleStateClasses($schedule) }}">{{ \App\Models\FollowUp::scheduleStateLabel($schedule) }}</span>
+                        @endif
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
                         <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold {{ \App\Models\FollowUp::statusBadgeClasses($status) }}">{{ \App\Models\FollowUp::statusLabel($status) }}</span>

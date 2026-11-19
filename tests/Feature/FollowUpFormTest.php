@@ -451,7 +451,7 @@ class FollowUpFormTest extends TestCase
         $this->assertStringContainsString('>Warm<', $html);
     }
 
-    public function test_my_leads_follow_up_form_prefills_last_type_and_next_schedule(): void
+    public function test_my_leads_follow_up_form_prefills_last_type_but_keeps_next_empty(): void
     {
         $sales = $this->salesMgk();
         $customers = $this->seedCustomers();
@@ -462,13 +462,12 @@ class FollowUpFormTest extends TestCase
             'status' => 'hot',
             'assigned_to' => $sales->id,
         ]);
-        $nextDate = now()->addWeek()->toDateString();
         FollowUp::create([
             'customer_id' => $customers['mgk']->id,
             'lead_id' => $lead->id,
             'type' => 'whatsapp',
             'description' => 'Follow up pertama.',
-            'follow_up_date' => $nextDate,
+            'follow_up_date' => now()->addWeek()->toDateString(),
             'activity_time' => '10:30',
             'created_by' => $sales->id,
         ]);
@@ -478,9 +477,11 @@ class FollowUpFormTest extends TestCase
             'return' => 'my-leads',
         ]))->assertOk()->getContent();
 
+        // Tipe aktivitas terakhir tetap membantu, tapi jadwal berikutnya harus
+        // benar-benar kosong karena kolomnya opsional.
         $this->assertMatchesRegularExpression('/name="type"[^>]*value="whatsapp"/', $html);
-        $this->assertMatchesRegularExpression('/name="next_follow_up_date"[^>]*value="'.preg_quote($nextDate, '/').'"/', $html);
-        $this->assertMatchesRegularExpression('/name="next_follow_up_time"[^>]*value="10:30"/', $html);
+        $this->assertMatchesRegularExpression('/name="next_follow_up_date"[^>]*value=""/', $html);
+        $this->assertMatchesRegularExpression('/name="next_follow_up_time"[^>]*value=""/', $html);
     }
 
     public function test_my_leads_follow_up_form_returns_to_my_leads_after_save(): void

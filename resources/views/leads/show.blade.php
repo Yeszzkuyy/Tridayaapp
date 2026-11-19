@@ -106,14 +106,17 @@
             @endif
             @php
                 $doneFollowUps = $lead->followUps->whereNotNull('completed_at');
-                $nextFollowUp = $lead->followUps->whereNull('completed_at')->whereNotNull('next_follow_up_date')->sortBy('next_follow_up_date')->first();
-                $isFuOverdue = $nextFollowUp && $nextFollowUp->next_follow_up_date->lt(today());
+                $nextFollowUp = $lead->followUps
+                    ->filter(fn ($fu) => ! $fu->isCompleted() && $fu->follow_up_date !== null && $fu->type !== 'meeting')
+                    ->sortBy('follow_up_date')
+                    ->first();
+                $isFuOverdue = $nextFollowUp && $nextFollowUp->follow_up_date->lt(today());
             @endphp
             @if($doneFollowUps->isNotEmpty())
                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ __('Done') }}</span>
             @endif
             @if($nextFollowUp)
-                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $isFuOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ __('FU') }}: {{ $nextFollowUp->next_follow_up_date->format('d M Y') }}{{ $isFuOverdue ? ' • ' . __('Overdue') : '' }}</span>
+                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $isFuOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ __('FU') }}: {{ $nextFollowUp->follow_up_date->format('d M Y') }}{{ $isFuOverdue ? ' • ' . __('Overdue') : '' }}</span>
             @endif
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
