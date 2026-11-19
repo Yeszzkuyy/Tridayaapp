@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
+use App\Models\EstimatorRequest;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
@@ -17,6 +18,7 @@ use App\Services\QuotationVersionService;
 use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class LeadTaskController extends Controller
 {
@@ -198,11 +200,22 @@ class LeadTaskController extends Controller
             ],
         ])->all();
 
+        $estimatorRequest = EstimatorRequest::query()
+            ->where('lead_id', $leadTask->lead_id)
+            ->whereIn('status', ['answered', 'completed'])
+            ->with(['items' => fn ($query) => $query
+                ->whereIn('status', ['answered', 'accepted'])
+                ->with(['product', 'supplier', 'priceLog.supplier'])
+                ->orderBy('id')])
+            ->latest('id')
+            ->first();
+
         return view('lead-tasks.show', [
             'task' => $leadTask,
             'products' => $products,
             'productOptions' => $productOptions,
             'productData' => $productData,
+            'estimatorRequest' => $estimatorRequest,
             'defaultMargin' => \App\Models\AppSetting::defaultMarginPercent(),
         ]);
     }
@@ -356,6 +369,12 @@ class LeadTaskController extends Controller
                 && $validated['unit_cost'] !== ''
                 ? (float) $validated['unit_cost']
                 : null);
+
+        if ($unitCost !== null && (($price * $qty) - $discount) < ($unitCost * $qty)) {
+            throw ValidationException::withMessages([
+                'unit_price' => __('Selling price is below cost. Fix the selling price or target margin first.'),
+            ]);
+        }
 
         $leadTask->items()->create([
             'product_id' => $validated['product_id'] ?? null,

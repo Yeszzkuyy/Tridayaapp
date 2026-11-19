@@ -247,6 +247,64 @@
         @endif
     </div>
 
+    @if($canManageAttachment && $estimatorRequest && $estimatorRequest->items->isNotEmpty())
+        <div class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Estimator Items') }}</h3>
+                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        {{ __('Request') }} #{{ $estimatorRequest->id }}
+                        &middot; {{ \App\Models\EstimatorRequest::statusLabel($estimatorRequest->status) }}
+                        &middot; {{ $estimatorRequest->requester?->name ?? '-' }}
+                    </p>
+                </div>
+                <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                    {{ $estimatorRequest->items->count() }} {{ __('item(s)') }}
+                </span>
+            </div>
+            <ul class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                @foreach($estimatorRequest->items as $estimatorItem)
+                    @php
+                        $priceLog = $estimatorItem->priceLog;
+                        $netCost = $priceLog?->price ?? $estimatorItem->price_before_tax ?? $estimatorItem->price;
+                        $canUse = $netCost !== null && $estimatorItem->product_id;
+                        $payload = [
+                            'product_id' => $estimatorItem->product_id,
+                            'product_price_log_id' => $priceLog?->id,
+                            'description' => $estimatorItem->description,
+                            'sku' => $estimatorItem->product?->sku,
+                            'quantity' => (float) $estimatorItem->quantity,
+                            'unit' => $estimatorItem->unit ?: 'pcs',
+                            'unit_cost' => $netCost !== null ? (float) $netCost : null,
+                            'target_margin_percent' => (float) $defaultMargin,
+                        ];
+                    @endphp
+                    <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $estimatorItem->description }}</p>
+                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                {{ rtrim(rtrim(number_format((float) $estimatorItem->quantity, 2, ',', '.'), '0'), ',') }} {{ $estimatorItem->unit }}
+                                &middot; {{ __('Cost') }}: {{ $netCost !== null ? 'Rp '.number_format((float) $netCost, 0, ',', '.') : __('Price not available yet') }}
+                                @if($priceLog?->supplier)
+                                    &middot; {{ $priceLog->supplier->name }}
+                                @endif
+                                @if($priceLog?->valid_until)
+                                    &middot; {{ __('Valid until') }} {{ $priceLog->valid_until->format('d M Y') }}
+                                @endif
+                            </p>
+                        </div>
+                        @if($canUse)
+                            <x-icon-button type="button" icon="add" label="{{ __('Use') }}" title="{{ __('Use') }}"
+                                           onclick="useEstimatorItem(@js($payload))" />
+                        @else
+                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Price not available yet') }}</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- Item quotation dari Inside Sales (dipakai saat file di-Accept). --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-6">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -326,7 +384,7 @@
         @endif
 
         @if($canManageAttachment)
-            <form action="{{ route('lead-tasks.items.store', $task) }}" method="POST"
+            <form action="{{ route('lead-tasks.items.store', $task) }}" method="POST" id="item-form"
                   class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 dark:border-slate-700 md:grid-cols-12">
                 @csrf
                 @if(auth()->user()->can('manage-inside-sales'))
@@ -421,6 +479,7 @@
             @if(auth()->user()->can('manage-inside-sales'))
             <p id="item-price-info" class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400"></p>
             <p id="item-margin-preview" class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400"></p>
+            <p id="item-margin-error" class="mt-1 hidden text-xs font-semibold text-rose-600 dark:text-rose-400"></p>
 
             <script>
                 (function () {
@@ -428,6 +487,8 @@
                     const product = byId('item-product');
                     if (!product) return;
 
+                    const productOptions = @js($productOptions);
+                    const productMount = product.closest('.glide-select-root')?.querySelector('[data-glide-mount]');
                     const productData = @js($productData);
                     const fmt = (value) => 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(value || 0));
                     const labelMargin = @js(__('Item margin'));
@@ -503,13 +564,14 @@
                                 + (log.valid_until ? ' · ' + @js(__('valid until')) + ' ' + log.valid_until : '');
                         }
 
-                        if (window.parseRupiah(byId('item-price')?.value || 0) <= 0) {
+                        const targetMargin = parseFloat(byId('item-target-margin')?.value || 0) || 0;
+                        if (targetMargin > 0) {
                             applyTargetMargin();
                         }
                         refreshMargin();
                     }
 
-                    async function loadHistory(productId) {
+                    async function loadHistory(productId, preferredLogId = null) {
                         historyLogs = {};
                         if (!productId) {
                             if (historyMount && window.__glideRemount) window.__glideRemount(historyMount, [], '');
@@ -530,11 +592,14 @@
 
                             const options = logs.map((log) => ({ value: String(log.id), label: historyLabel(log) }));
                             const latest = logs[0] ? String(logs[0].id) : '';
+                            const selected = preferredLogId && historyLogs[String(preferredLogId)]
+                                ? String(preferredLogId)
+                                : latest;
                             if (historyMount && window.__glideRemount) {
-                                window.__glideRemount(historyMount, options, latest);
+                                window.__glideRemount(historyMount, options, selected);
                             }
-                            if (latest) {
-                                selectLog(latest);
+                            if (selected) {
+                                selectLog(selected);
                             } else {
                                 byId('item-cost').value = '';
                                 byId('item-cost-display').value = '';
@@ -546,6 +611,36 @@
                             // Diamkan: validasi server tetap menjadi jaring pengaman.
                         }
                     }
+
+                    window.useEstimatorItem = function (payload) {
+                        if (!payload || !payload.product_id) return;
+
+                        const productId = String(payload.product_id);
+                        if (productMount && window.__glideRemount) {
+                            window.__glideRemount(productMount, productOptions, productId);
+                        } else {
+                            product.value = productId;
+                        }
+
+                        byId('item-description').value = payload.description || '';
+                        byId('item-scope').value = payload.sku || '';
+                        byId('item-unit').value = payload.unit || 'pcs';
+                        byId('item-quantity').value = payload.quantity || 1;
+                        byId('item-target-margin').value = payload.target_margin_percent || 0;
+                        byId('item-cost').value = payload.unit_cost ?? '';
+                        byId('item-cost-display').value = payload.unit_cost !== null && payload.unit_cost !== undefined
+                            ? window.formatRupiah(payload.unit_cost)
+                            : '';
+                        byId('item-lead').value = 'Ready Stock';
+                        byId('item-section').value = 'MATERIAL';
+
+                        loadHistory(productId, payload.product_price_log_id).then(function () {
+                            applyTargetMargin();
+                            refreshMargin();
+                            byId('item-price')?.focus();
+                            byId('item-price')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                    };
 
                     product.addEventListener('change', function () {
                         const data = productData[product.value];
@@ -588,6 +683,26 @@
                             }
                             refreshMargin();
                         });
+                    });
+
+                    byId('item-form')?.addEventListener('submit', function (event) {
+                        const cost = window.parseRupiah(byId('item-cost')?.value || 0);
+                        const price = window.parseRupiah(byId('item-price')?.value || 0);
+                        const qty = parseFloat(byId('item-quantity')?.value || 0) || 0;
+                        const discount = window.parseRupiah(byId('item-discount')?.value || 0);
+                        const error = byId('item-margin-error');
+                        if (!error) return;
+
+                        if (cost > 0 && qty > 0 && (price * qty - discount) < (cost * qty)) {
+                            event.preventDefault();
+                            error.textContent = @js(__('Selling price is below cost. Fix the selling price or target margin first.'));
+                            error.classList.remove('hidden');
+                            byId('item-price')?.focus();
+                            window.toast?.(error.textContent, false);
+                            return;
+                        }
+
+                        error.classList.add('hidden');
                     });
                     refreshMargin();
                 })();

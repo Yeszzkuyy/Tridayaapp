@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppSetting;
+use App\Models\EstimatorRequest;
 use App\Models\LeadTask;
 use App\Models\ProductPriceLog;
 use App\Models\Proposal;
@@ -39,12 +40,44 @@ class InsideSalesQuotationController extends Controller
         $deliveryTerms = $this->stockSummary($leadTask->items);
         $warrantyTerms = $this->warrantySummary($leadTask->items);
 
+        $estimatorRequest = EstimatorRequest::query()
+            ->where('lead_id', $leadTask->lead_id)
+            ->whereIn('status', ['answered', 'completed'])
+            ->with(['items' => fn ($query) => $query->whereIn('status', ['answered', 'accepted'])])
+            ->latest('id')
+            ->first();
+
+        $quantityWarnings = [];
+        foreach ($estimatorRequest?->items ?? [] as $estimatorItem) {
+            if (! $estimatorItem->product_id) {
+                continue;
+            }
+
+            $taskItem = $leadTask->items->firstWhere('product_id', $estimatorItem->product_id);
+            if (! $taskItem) {
+                $quantityWarnings[] = __(':item from Estimator is not in the task items.', [
+                    'item' => $estimatorItem->description,
+                ]);
+                continue;
+            }
+
+            if (abs((float) $taskItem->quantity - (float) $estimatorItem->quantity) > 0.0001) {
+                $quantityWarnings[] = __(':item quantity differs: Estimator :estimator, task :task.', [
+                    'item' => $estimatorItem->description,
+                    'estimator' => rtrim(rtrim(number_format((float) $estimatorItem->quantity, 2, ',', '.'), '0'), ','),
+                    'task' => rtrim(rtrim(number_format((float) $taskItem->quantity, 2, ',', '.'), '0'), ','),
+                ]);
+            }
+        }
+
         return view('inside-sales.quotations.create', [
             'task' => $leadTask,
             'items' => $leadTask->items,
             'companies' => array_keys(config('companies')),
             'taxRate' => AppSetting::vatRate(),
             'defaultMargin' => AppSetting::defaultMarginPercent(),
+            'estimatorRequest' => $estimatorRequest,
+            'quantityWarnings' => $quantityWarnings,
             'prefill' => [
                 'proposal_number' => $this->numbers->generate($previewPt, $leadTask->lead?->assignee ?? auth()->user()),
                 'proposal_date' => today()->toDateString(),

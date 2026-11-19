@@ -352,3 +352,49 @@ Hasil perhitungan dengan contoh harga di atas dan margin 20%:
 Margin total: `11.500.000` atau `20%`.
 PPN 12%: `6.900.000`.
 Grand total: `64.400.000`.
+
+---
+
+## 13. Uji Ulang Setelah Perbaikan Sinkronisasi
+
+Data baru untuk memastikan qty dan harga dari Estimator benar-benar ikut ke Inside Sales.
+
+| Data | Nama |
+|---|---|
+| Customer | `PT Uji Coba 3 (TEST)` |
+| Lead | `Uji Coba Quotation NTI 3 (TEST)` |
+| Sales | Irfan |
+| Task Inside Sales | `Uji Coba Quotation 3 (TEST)` |
+| Inside Sales | Audi |
+| Request Harga | `Uji Coba Harga 3 (TEST)` |
+| Estimator | Vanesha |
+
+Link langsung:
+
+- Estimator: `/estimator/requests/17`
+- Task Inside Sales: `/lead-tasks/17`
+- Lead Sales: `/leads/53`
+
+### Langkah
+
+1. Login **Vanesha**, jawab request harga dengan 4 item dan harga yang sama seperti skenario sebelumnya.
+2. Login **Audi**, buka task Inside Sales.
+3. Panel **Item dari Estimator** akan muncul.
+4. Klik **Gunakan** pada setiap item.
+5. Qty, satuan, harga modal, dan harga jual otomatis terisi.
+6. Pastikan target margin `20` dan harga jual sesuai.
+7. Klik **Add** untuk keempat item.
+8. Coba turunkan harga jual salah satu item sampai di bawah modal.
+   - Tombol Add harus menolak dan menampilkan pesan.
+9. Klik **Create Quotation**.
+   - Tidak boleh ada peringatan qty berbeda.
+10. Login **Irfan**, cek quotation dan PDF.
+
+### Hasil yang diharapkan
+
+- Qty Switch `2` dan Kabel `100` otomatis terisi.
+- Harga jual PABX `25.000.000` dan Jasa `6.250.000` otomatis dari target margin.
+- Total sebelum PPN `57.500.000`.
+- PPN `6.900.000`.
+- Grand total `64.400.000`.
+- Tidak ada item dengan margin minus.

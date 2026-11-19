@@ -54,6 +54,11 @@ class EstimatorRequestItem extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function priceLog()
+    {
+        return $this->hasOne(ProductPriceLog::class, 'estimator_request_item_id')->latestOfMany();
+    }
+
     public function answeredBy()
     {
         return $this->belongsTo(User::class, 'answered_by');

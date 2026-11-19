@@ -3,12 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
+use App\Models\EstimatorRequest;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
 use App\Models\LeadTaskAttachment;
 use App\Models\LeadTaskItem;
+use App\Models\Product;
+use App\Models\ProductPriceLog;
 use App\Models\Proposal;
+use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -91,6 +95,18 @@ class LeadTaskQuotationItemsTest extends TestCase
         ]);
     }
 
+    private function product(string $name = 'Produk Uji', array $overrides = []): Product
+    {
+        return Product::create(array_merge([
+            'name' => $name,
+            'category' => 'barang',
+            'unit' => 'pcs',
+            'default_price' => 100000,
+            'is_active' => true,
+            'status' => Product::STATUS_APPROVED,
+        ], $overrides));
+    }
+
     public function test_inside_sales_can_add_quotation_item(): void
     {
         $sales = $this->userWithRole('sales');
@@ -122,16 +138,120 @@ class LeadTaskQuotationItemsTest extends TestCase
             'description' => 'Cisco IP Phone 780',
             'quantity' => 1,
             'unit' => 'pcs',
-            'unit_price' => '18.000.000',
+            'unit_price' => '22.000.000',
             'unit_cost' => '20.000.000',
             'discount' => '1.000.000',
         ])->assertRedirect();
 
         $item = $task->items()->firstOrFail();
-        $this->assertSame(18000000.0, (float) $item->unit_price);
+        $this->assertSame(22000000.0, (float) $item->unit_price);
         $this->assertSame(20000000.0, (float) $item->unit_cost);
         $this->assertSame(1000000.0, (float) $item->discount);
-        $this->assertSame(17000000.0, (float) $item->subtotal);
+        $this->assertSame(21000000.0, (float) $item->subtotal);
+    }
+
+    public function test_item_below_cost_is_rejected(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+
+        $this->actingAs($inside)->post(route('lead-tasks.items.store', $task), [
+            'description' => 'Cisco IP Phone 780',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'unit_price' => '18.000.000',
+            'unit_cost' => '20.000.000',
+            'discount' => 0,
+        ])->assertSessionHasErrors('unit_price');
+
+        $this->assertSame(0, $task->items()->count());
+    }
+
+    public function test_task_page_shows_estimator_items_to_use(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+        $product = $this->product('Switch Estimator');
+        $supplier = Supplier::create(['name' => 'Supplier Estimator']);
+
+        $estimator = EstimatorRequest::create([
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'requested_by' => $sales->id,
+            'status' => 'answered',
+        ]);
+        $item = $estimator->items()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'description' => 'Switch Estimator',
+            'quantity' => 2,
+            'unit' => 'pcs',
+            'price' => 8000000,
+            'price_before_tax' => 8000000,
+            'status' => 'answered',
+        ]);
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 8000000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '1 year',
+            'estimator_request_item_id' => $item->id,
+            'updated_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)
+            ->get(route('lead-tasks.show', $task))
+            ->assertOk()
+            ->assertSee('Estimator Items')
+            ->assertSee('Switch Estimator')
+            ->assertSee('useEstimatorItem', false);
+    }
+
+    public function test_quotation_create_warns_when_quantity_differs_from_estimator(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+        $product = $this->product('Switch Quantity');
+
+        $this->makeItem($task, [
+            'product_id' => $product->id,
+            'description' => 'Switch Quantity',
+            'quantity' => 1,
+            'unit_price' => 10000000,
+            'unit_cost' => 8000000,
+            'target_margin_percent' => 20,
+        ]);
+
+        $estimator = EstimatorRequest::create([
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'requested_by' => $sales->id,
+            'status' => 'answered',
+        ]);
+        $estimator->items()->create([
+            'product_id' => $product->id,
+            'description' => 'Switch Quantity',
+            'quantity' => 2,
+            'unit' => 'pcs',
+            'price' => 8000000,
+            'price_before_tax' => 8000000,
+            'status' => 'answered',
+        ]);
+
+        $this->actingAs($inside)
+            ->get(route('inside-sales.quotations.create', $task))
+            ->assertOk()
+            ->assertSee('Check item quantities')
+            ->assertSee('quantity differs', false);
     }
 
     public function test_accepting_file_creates_quotation_with_items(): void

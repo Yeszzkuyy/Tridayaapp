@@ -210,6 +210,18 @@
             </div>
         </div>
 
+        @if(! empty($quantityWarnings))
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/60 dark:bg-amber-500/10">
+                <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">{{ __('Check item quantities') }}</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
+                    @foreach($quantityWarnings as $warning)
+                        <li>{{ $warning }}</li>
+                    @endforeach
+                </ul>
+                <p class="mt-2 text-xs text-amber-700/80 dark:text-amber-300/80">{{ __('You can still generate the quotation, but make sure the quantities match the Estimator request.') }}</p>
+            </div>
+        @endif
+
         <div class="flex items-center justify-end gap-3">
             <x-secondary-button as="a" :href="route('lead-tasks.show', $task)">{{ __('Cancel') }}</x-secondary-button>
             <x-primary-button type="submit">{{ __('Generate Quotation') }}</x-primary-button>
