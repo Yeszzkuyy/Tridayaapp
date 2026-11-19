@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Rules\SecureFile;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationVersionService;
+use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -291,6 +292,14 @@ class LeadTaskController extends Controller
     public function storeItem(Request $request, LeadTask $leadTask)
     {
         $this->authorizeTaskItems($leadTask);
+
+        // Input harga memakai pemisah ribuan (18.000.000). Normalisasi dulu
+        // sebelum validasi agar tetap tersimpan sebagai angka.
+        $request->merge([
+            'unit_price' => Rupiah::normalize($request->input('unit_price')),
+            'unit_cost' => $request->filled('unit_cost') ? Rupiah::normalize($request->input('unit_cost')) : null,
+            'discount' => $request->filled('discount') ? Rupiah::normalize($request->input('discount')) : null,
+        ]);
 
         $validated = $request->validate([
             'product_id' => 'nullable|exists:products,id',

@@ -312,7 +312,7 @@ function proposalApplyMargin(row) {
     const priceInput = row.querySelector('input[name$="[unit_price]"]');
     if (!priceInput || cost <= 0 || qty <= 0 || margin <= 0 || margin >= 100) return;
 
-    const price = Math.ceil(((cost / (1 - margin / 100)) + (discount / qty)) * 100) / 100;
+    const price = Math.ceil((cost / (1 - margin / 100)) + (discount / qty));
     priceInput.value = price;
 }
 

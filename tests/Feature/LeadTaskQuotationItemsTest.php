@@ -111,6 +111,29 @@ class LeadTaskQuotationItemsTest extends TestCase
         $this->assertSame(195000.0, (float) $item->subtotal);
     }
 
+    public function test_formatted_rupiah_input_is_stored_as_number(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+
+        $this->actingAs($inside)->post(route('lead-tasks.items.store', $task), [
+            'description' => 'Cisco IP Phone 780',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'unit_price' => '18.000.000',
+            'unit_cost' => '20.000.000',
+            'discount' => '1.000.000',
+        ])->assertRedirect();
+
+        $item = $task->items()->firstOrFail();
+        $this->assertSame(18000000.0, (float) $item->unit_price);
+        $this->assertSame(20000000.0, (float) $item->unit_cost);
+        $this->assertSame(1000000.0, (float) $item->discount);
+        $this->assertSame(17000000.0, (float) $item->subtotal);
+    }
+
     public function test_accepting_file_creates_quotation_with_items(): void
     {
         $sales = $this->userWithRole('sales');

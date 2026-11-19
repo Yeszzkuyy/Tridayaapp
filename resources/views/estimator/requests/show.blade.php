@@ -230,7 +230,7 @@
             </div>
 
             @if($canAnswer && ! $formOpen && in_array($estimatorRequest->status, ['answered', 'completed'], true))
-                <div class="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200">
+                <div class="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-500/10 dark:text-amber-300">
                     {{ __('This request has already been answered. The price form is closed.') }}
                 </div>
             @endif

@@ -19,12 +19,12 @@
 @if($canComplete)
     <form action="{{ route('lead-tasks.complete', $task) }}" method="POST"
           data-confirm="{{ __('The request will be closed and shown as Done in the Sales and Inside Sales lists.') }}"
-          data-confirm-title="{{ __('Mark this request as done?') }}"
+          data-confirm-title="{{ __('Mark as done?') }}"
           data-confirm-tone="success"
           data-confirm-label="{{ __('Yes, mark as done') }}"
           data-confirm-details="{{ $confirmDetails }}">
         @csrf
         @method('PATCH')
-        <x-icon-button type="submit" icon="check-circle" label="{{ __('Mark as Done') }}" title="{{ __('Mark as Done') }}" />
+        <x-icon-button type="submit" icon="check-circle" label="{{ __('Done') }}" title="{{ __('Done') }}" />
     </form>
 @endif

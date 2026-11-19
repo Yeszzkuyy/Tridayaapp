@@ -709,17 +709,21 @@
         }
         // Hover pill meluncur ala template (SharedLayoutBg): satu pill
         // selebar nav mengikuti item yang di-hover. Tanpa :scope (rapuh di
-        // sebagian browser) — keanggotaan dicek via nav.contains. Class
+        // sebagian browser) - keanggotaan dicek via nav.contains. Class
         // html.sb-pill/js dipasang ulang tiap panggilan (bukan sekali saja)
-        // karena morph wire:navigate menimpa atribut <html> — nav di-persist
-        // sehingga guard pillBound tetap '1' antar navigasi.
+        // karena morph wire:navigate menimpa atribut <html>. Guard binding
+        // disimpan di window, bukan di DOM sidebar yang di-persist.
         function initHoverPill(){
             var nav=document.getElementById('sidebar-navigation');if(!nav)return;
             document.documentElement.classList.add('js','sb-pill');
             if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
             var pill=nav.querySelector(':scope > .sb-hover-pill');
             if(!pill){pill=document.createElement('span');pill.className='sb-hover-pill';pill.setAttribute('aria-hidden','true');nav.append(pill);}
-            if(nav.dataset.pillBound)return;nav.dataset.pillBound='1';
+            // Jangan simpan penanda di DOM sidebar: sidebar di-persist dan
+            // penanda lama ikut tersimpan, sementara listener-nya hilang
+            // setelah reload. Simpan di window agar selalu dipasang ulang.
+            if(window.__sidebarPillNav===nav)return;
+            window.__sidebarPillNav=nav;
             function place(el){
                 var x=0,y=0,node=el;
                 while(node&&node!==nav){x+=node.offsetLeft;y+=node.offsetTop;node=node.offsetParent;}
@@ -936,6 +940,7 @@
         });
         document.addEventListener('DOMContentLoaded',initChromeSafe);
         document.addEventListener('livewire:navigated',initChromeSafe);
+        window.addEventListener('pageshow',function(){try{initChromeSafe()}catch(e){}});
         document.addEventListener('DOMContentLoaded',initRevealSafe);
         document.addEventListener('livewire:navigated',initRevealSafe);
         // Script di ekor body = DOM sudah ter-parse: reveal sinkron langsung,

@@ -184,8 +184,8 @@ quotation. Setelah quotation dibuat, baru muncul di menu Sales milik Felisia.
    - Total: `Rp 1.400.000`.
 4. Klik **Edit**.
 5. Ubah **Margin %** item dari `20` menjadi `25`.
-   - Harga jual otomatis menjadi sekitar `Rp 1.333.333,34`.
-   - Margin menjadi sekitar `Rp 333.333,34 (25,00%)`.
+   - Harga jual otomatis menjadi sekitar `Rp 1.333.334`.
+   - Margin menjadi sekitar `Rp 333.334 (25,00%)`.
    - PPN otomatis menyesuaikan.
 6. Simpan.
 7. Buka kembali detail quotation.

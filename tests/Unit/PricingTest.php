@@ -17,6 +17,7 @@ class PricingTest extends TestCase
     {
         // Margin 20% dari harga jual: modal 800.000 -> jual 1.000.000.
         $this->assertSame(1000000.0, Pricing::sellingPrice(800000, 20));
+        $this->assertSame(1333334.0, Pricing::sellingPrice(1000000, 25));
     }
 
     public function test_selling_price_accounts_for_discount(): void

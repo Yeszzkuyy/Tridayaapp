@@ -84,21 +84,25 @@
             </section>
         @endif
 
+        @php
+            $statusOptions = collect($statuses)->map(fn ($status) => [
+                'value' => $status,
+                'label' => \App\Models\EstimatorRequest::statusLabel($status),
+            ])->values()->all();
+        @endphp
+
         <form method="GET" action="{{ route('estimator.requests.index') }}" class="mb-4 flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <div class="min-w-[220px] flex-1">
                 <label for="estimator-queue-q" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('Search') }}</label>
                 <input id="estimator-queue-q" type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('PT name or request number') }}"
                        class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
             </div>
-            <div>
-                <label for="estimator-queue-status" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</label>
-                <select id="estimator-queue-status" name="status" class="h-10 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                    <option value="">{{ __('All statuses') }}</option>
-                    <option value="open" @selected(request('status') === 'open')>{{ __('Open only') }}</option>
-                    @foreach($statuses as $status)
-                        <option value="{{ $status }}" @selected(request('status') === $status)>{{ \App\Models\EstimatorRequest::statusLabel($status) }}</option>
-                    @endforeach
-                </select>
+            <div class="min-w-[190px]">
+                <label class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</label>
+                <x-glide-select id="estimator-queue-status" name="status" :options="$statusOptions"
+                                :value="request('status')" :label="__('Status')"
+                                :placeholder="__('All statuses')" :empty-label="__('All statuses')"
+                                size="field" autosubmit />
             </div>
             <div>
                 <label for="estimator-queue-from" class="mb-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ __('From') }}</label>

@@ -37,8 +37,8 @@ class Pricing
 
         $target = ($netCost / (1 - ($margin / 100))) + ($discount / $quantity);
 
-        // Bulatkan ke atas ke dua desimal agar margin tidak jatuh di bawah target.
-        return ceil(round($target, 2) * 100) / 100;
+        // Bulatkan ke atas ke rupiah penuh agar margin tidak jatuh di bawah target.
+        return (float) ceil($target);
     }
 
     public static function marginAmount(
