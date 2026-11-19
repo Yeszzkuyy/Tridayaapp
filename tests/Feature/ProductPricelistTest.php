@@ -173,7 +173,9 @@ class ProductPricelistTest extends TestCase
             ->assertSee('Selling Price')
             ->assertSee('Rp 1.000')
             ->assertSee('Margin')
-            ->assertSee('Review Prices');
+            ->assertSee('Review Prices')
+            ->assertSee('dark:bg-white/20', false)
+            ->assertSee('dark:bg-slate-700', false);
     }
 
     public function test_pricelist_uses_set_price_for_products_without_history(): void
@@ -205,6 +207,7 @@ class ProductPricelistTest extends TestCase
 
         $response = $this->actingAs($admin)->get(route('products.index', ['bulk' => 1]))
             ->assertOk()
+            ->assertSee('Back')
             ->assertSee('Search product name or SKU...')
             ->assertSee('data-search="produk bulk uji sku-bulk"', false)
             ->assertSee('>Rp</span>', false)
