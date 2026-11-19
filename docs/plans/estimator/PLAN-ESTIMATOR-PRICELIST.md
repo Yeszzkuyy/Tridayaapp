@@ -1,11 +1,11 @@
 # PLAN-ESTIMATOR-PRICELIST: Revamp Pricelist (Margin, Filter, Bulk Price)
 
-**Status Pengerjaan:** Selesai
+**Status Pengerjaan:** Siap Dikerjakan
 **Work:** ESTIMATOR-PRICELIST
 **PIC:** Yeski
 **Menu:** Estimator / Pricelist
 **Branch:** feature/estimator-pricelist
-**Terakhir diperbarui:** 2026-11-17
+**Terakhir diperbarui:** 2026-11-19
 
 ## Tujuan & Hasil Akhir
 
@@ -20,9 +20,9 @@ sudah punya riwayat harga.
    tetapi tetap tidak bisa mengubah Selling Price.
 2. Bulk price update hanya untuk produk yang sudah punya riwayat harga;
    Stock dan Warranty disalin dari riwayat terakhir. Produk tanpa harga
-   memakai halaman Update Price biasa.
-3. Tombol Review Prices membuka mode bulk dengan filter Needs Recheck;
-   filter dapat dilepas untuk mengedit produk lain yang punya riwayat harga.
+   memakai tombol Set Price pada baris Pricelist.
+3. Tombol Review Prices membuka seluruh produk yang punya riwayat harga;
+   tautan ke Needs Recheck muncul bila memang ada produk yang tumpang tindih.
 
 ## Ruang Lingkup
 
@@ -30,6 +30,9 @@ sudah punya riwayat harga.
 - Scope filter harga: price active, needs recheck, negative margin, expiring soon.
 - UI grid sejajar Cost / Selling Price / Margin + quick filter chips.
 - Mode bulk edit: input Cost, Supplier, Valid Until; Stock/Warranty disalin.
+- Pencarian langsung di mode bulk berdasarkan nama produk/SKU tanpa
+  menghilangkan perubahan yang belum disimpan.
+- Input Cost memakai awalan Rp dan format ribuan langsung saat mengetik.
 - Endpoint bulk update dengan transaksi dan pencatatan ProductPriceLog.
 - Test accessor, filter, bulk update, dan tampilan.
 
@@ -44,5 +47,10 @@ migrasi database baru (kecuali terbukti perlu).
       dengan pencarian/kategori.
 - [x] Review Prices membuka bulk mode berisi produk dengan riwayat harga.
 - [x] Simpan bulk membuat satu log per produk yang berubah dalam satu transaksi.
-- [x] Produk tanpa riwayat harga tidak masuk bulk dan diarahkan ke Update Price.
-- [x] Test terkait lulus, build dari main, cache view dibersihkan.
+- [x] Produk tanpa riwayat harga memakai tombol Set Price; yang beriwayat
+      memakai Update Price.
+- [x] Pencarian bulk menyaring nama/SKU dan tetap menghitung perubahan pada
+      baris yang disembunyikan.
+- [x] Input Cost menampilkan Rp dan titik ribuan saat diketik.
+- [x] Kolom Cost, Supplier, dan Valid Until sejajar; helper berulang dihapus.
+- [ ] Test terkait lulus, build dari main, cache view dibersihkan.

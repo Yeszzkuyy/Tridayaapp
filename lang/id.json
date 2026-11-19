@@ -5471,5 +5471,9 @@
     "Bulk price update": "Update harga massal",
     "No price changes were saved.": "Tidak ada perubahan harga yang disimpan.",
     "Choose the target date before assigning an engineer.": "Pilih tanggal target sebelum menugaskan teknisi.",
-    "Set Price": "Atur Harga"
+    "Set Price": "Atur Harga",
+    "Search product name or SKU...": "Cari nama produk atau SKU...",
+    "No matching products found.": "Tidak ada produk yang cocok.",
+    "Try another product name or SKU.": "Coba nama produk atau SKU lain.",
+    "Use Set Price for products without price history.": "Gunakan Set Price untuk produk yang belum punya riwayat harga."
 }

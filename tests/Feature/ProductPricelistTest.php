@@ -176,6 +176,45 @@ class ProductPricelistTest extends TestCase
             ->assertSee('Review Prices');
     }
 
+    public function test_pricelist_uses_set_price_for_products_without_history(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $supplier = Supplier::create(['name' => 'Supplier Uji', 'is_active' => true]);
+
+        $withHistory = $this->makeProduct(['name' => 'Punya Riwayat', 'cost_price' => 600]);
+        $this->addCostLog($withHistory, $admin, 600, now()->addDays(10)->toDateString(), $supplier);
+
+        $this->makeProduct(['name' => 'Belum Ada Riwayat', 'cost_price' => null]);
+
+        $this->actingAs($admin)->get(route('products.index'))
+            ->assertOk()
+            ->assertSee('Update Price')
+            ->assertSee('Set Price');
+    }
+
+    public function test_bulk_view_has_live_search_currency_inputs_and_compact_copy(): void
+    {
+        $admin = $this->userWithRole('admin');
+        $supplier = Supplier::create(['name' => 'Supplier Bulk', 'is_active' => true]);
+        $product = $this->makeProduct([
+            'name' => 'Produk Bulk Uji',
+            'sku' => 'SKU-BULK',
+            'cost_price' => 600,
+        ]);
+        $this->addCostLog($product, $admin, 600, now()->addDays(10)->toDateString(), $supplier);
+
+        $response = $this->actingAs($admin)->get(route('products.index', ['bulk' => 1]))
+            ->assertOk()
+            ->assertSee('Search product name or SKU...')
+            ->assertSee('data-search="produk bulk uji sku-bulk"', false)
+            ->assertSee('>Rp</span>', false)
+            ->assertSee('Use Set Price for products without price history.')
+            ->assertSee('No matching products found.');
+
+        $html = $response->getContent();
+        $this->assertSame(1, substr_count($html, 'Stock and warranty are copied from the latest price.'));
+    }
+
     public function test_bulk_update_creates_one_log_and_updates_cost(): void
     {
         $admin = $this->userWithRole('admin');
