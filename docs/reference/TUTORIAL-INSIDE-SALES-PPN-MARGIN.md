@@ -296,3 +296,59 @@ belum pas, catat:
 - Bagian yang terasa terlalu ribet.
 
 Perbaikan dilakukan dulu sebelum merge ke website utama.
+
+---
+
+## 12. Skenario Uji Coba 2 - Lead NTI dari Irfan
+
+Data ini dibuat untuk mencoba alur dari Sales sampai Inside Sales dengan PT NTI.
+
+| Data | Nama |
+|---|---|
+| Customer | `PT Uji Coba 2 (TEST)` |
+| Lead | `Uji Coba Quotation NTI (TEST)` |
+| Sales pemilik lead | Irfan |
+| Task Inside Sales | `Uji Coba Quotation 2 (TEST)` |
+| Inside Sales | Audi |
+| Request Harga | `Uji Coba Harga 2 (TEST)` |
+| Estimator | Vanesha |
+
+Link langsung:
+
+- Estimator: `/estimator/requests/16`
+- Task Inside Sales: `/lead-tasks/16`
+- Lead Sales: `/leads/52`
+- Daftar quotation: `/sales/proposals`
+
+### Langkah
+
+1. Login **Vanesha**, buka request harga di atas.
+2. Isi 4 item dengan contoh harga berikut:
+
+   | Item | Qty | Harga supplier | Include PPN? |
+   |---|---|---|---|
+   | IP PABX 32 Extension | 1 unit | 22.400.000 | Ya |
+   | Switch Managed 24 Port Gigabit | 2 unit | 8.000.000 | Tidak |
+   | Kabel UTP Cat6 + Instalasi | 100 meter | 56.000 | Ya |
+   | Jasa Survey & Desain Sistem | 1 lot | 5.000.000 | Tidak |
+
+3. Simpan. Kalau mau alur lengkap, login **Irfan** dan klik Accept Prices.
+4. Login **Audi**, buka task Inside Sales.
+5. Tambahkan 4 produk yang sama, pilih riwayat harga baru dari Estimator.
+6. Isi target margin yang sama untuk semua item, misalnya `20`.
+7. Buat quotation.
+8. Login **Irfan**, buka daftar quotation atau lead, lalu cek dan edit quotation.
+
+Hasil perhitungan dengan contoh harga di atas dan margin 20%:
+
+| Item | Harga modal bersih | Harga jual |
+|---|---|---|
+| IP PABX 32 Extension | 20.000.000 | 25.000.000 |
+| Switch Managed 24 Port Gigabit | 16.000.000 | 20.000.000 |
+| Kabel UTP Cat6 + Instalasi | 5.000.000 | 6.250.000 |
+| Jasa Survey & Desain Sistem | 5.000.000 | 6.250.000 |
+| **Total** | **46.000.000** | **57.500.000** |
+
+Margin total: `11.500.000` atau `20%`.
+PPN 12%: `6.900.000`.
+Grand total: `64.400.000`.
