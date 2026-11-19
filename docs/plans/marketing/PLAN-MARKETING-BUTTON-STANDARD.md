@@ -1,6 +1,6 @@
 # PLAN-MARKETING-BUTTON-STANDARD: Standardisasi Tombol Menu Marketing
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** MKT-BUTTON-STANDARD
 **PIC:** Yeski
 **Menu:** Marketing / Lead & Partner
