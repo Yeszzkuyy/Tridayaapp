@@ -114,12 +114,6 @@
                 @endforeach
             </div>
 
-            @if($canManageCost && $counts['needs_recheck'] > 0)
-                <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                    <span>{{ __(':count products need a price review.', ['count' => $counts['needs_recheck']]) }}</span>
-                    <x-icon-button as="a" icon="view" :href="$chipUrl('needs_recheck')" label="{{ __('Open Review List') }}" title="{{ __('Open Review List') }}" />
-                </div>
-            @endif
         @endif
 
         @if($bulkMode)
@@ -246,8 +240,8 @@
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <div class="hidden border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:grid lg:grid-cols-12 lg:gap-3 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-500">
                     <span class="lg:col-span-3">{{ __('Product') }}</span>
-                    <span class="lg:col-span-2">{{ __('Cost') }}</span>
-                    <span class="lg:col-span-2">{{ __('Selling Price') }}</span>
+                    <span class="lg:col-span-2 text-right">{{ __('Cost') }}</span>
+                    <span class="lg:col-span-2 text-right">{{ __('Selling Price') }}</span>
                     <span class="lg:col-span-2">{{ __('Margin') }}</span>
                     <span class="lg:col-span-3 text-right">{{ __('Actions') }}</span>
                 </div>
@@ -286,8 +280,9 @@
                         @endphp
                         <div class="flex flex-col gap-3 p-4 transition-colors hover:bg-slate-50/90 lg:grid lg:grid-cols-12 lg:items-center lg:gap-3 lg:px-5 lg:py-3.5 dark:hover:bg-slate-700/35">
                             <div class="min-w-0 lg:col-span-3">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</p>
+                                <p class="text-base font-bold text-slate-900 dark:text-slate-100">{{ $product->name }}</p>
+
+                                <div class="mt-1 flex flex-wrap items-center gap-1.5">
                                     @unless($product->is_active)
                                         <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-600 dark:text-slate-300">{{ __('Nonaktif') }}</span>
                                     @endunless
@@ -311,7 +306,7 @@
                                     @endif
                                 </div>
 
-                                <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                <p class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                                     {{ $product->sku ?? '-' }} • {{ \App\Models\Product::saleCategoryLabel($product->category) }} • /{{ $product->unit }}
                                 </p>
 
@@ -334,15 +329,15 @@
                             </div>
 
                             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:contents">
-                                <div class="lg:col-span-2">
+                                <div class="text-right lg:col-span-2">
                                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Cost') }}</p>
                                     @if($canViewCost)
                                         @if($cost !== null)
-                                            <p class="font-bold tabular-nums {{ $marginStatus === 'loss' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100' }}">
+                                            <p class="font-bold tabular-nums text-slate-900 dark:text-slate-100">
                                                 Rp {{ number_format($cost, 0, ',', '.') }}
                                             </p>
                                             @if($trend)
-                                                <p class="mt-0.5 text-[10px] font-semibold {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}"
+                                                <p class="mt-0.5 text-[10px] font-semibold tabular-nums {{ $trend['direction'] === 'up' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}"
                                                    title="{{ __('Compared to the previous cost') }}">
                                                     {{ $trend['direction'] === 'up' ? '↑' : '↓' }} {{ $formatPct(abs($trend['percentage'])) }}%
                                                 </p>
@@ -355,7 +350,7 @@
                                     @endif
                                 </div>
 
-                                <div class="lg:col-span-2">
+                                <div class="text-right lg:col-span-2">
                                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Selling Price') }}</p>
                                     <p class="font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                                         Rp {{ number_format((float) $product->default_price, 0, ',', '.') }}
@@ -365,7 +360,7 @@
                                 <div class="lg:col-span-2">
                                     <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 lg:hidden">{{ __('Margin') }}</p>
                                     @if($margin !== null && $marginText)
-                                        <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold {{ $marginClasses }}">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tabular-nums {{ $marginClasses }}">
                                             @if($marginStatus === 'loss')
                                                 <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 3.5h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -381,7 +376,9 @@
 
                             <div class="flex flex-wrap items-center gap-1.5 lg:col-span-3 lg:justify-end">
                                 @if($canManageCost)
-                                    <x-icon-button as="a" icon="upload" href="{{ route('products.price.edit', $product) }}" label="{{ __('Update Price') }}" title="{{ __('Update Price') }}" />
+                                    <x-icon-button as="a" :icon="$log ? 'upload' : 'add'" href="{{ route('products.price.edit', $product) }}"
+                                                   :label="$log ? __('Update Price') : __('Set Price')"
+                                                   :title="$log ? __('Update Price') : __('Set Price')" />
                                 @endif
                                 @canany(['manage-sales', 'manage-admin'])
                                     <x-icon-button as="a" icon="edit" href="{{ route('products.edit', $product) }}" title="{{ __('Edit Product Details') }}" />
