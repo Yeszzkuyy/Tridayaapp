@@ -109,7 +109,7 @@
                             <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ $quick === $key ? 'bg-white/80' : $chip['dot'] }}" aria-hidden="true"></span>
                         @endif
                         {{ $chip['label'] }}
-                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums {{ $quick === $key ? 'bg-white text-accent-700 dark:bg-white/20 dark:text-white' : 'bg-accent-50 text-accent-700 dark:bg-slate-700 dark:text-slate-300' }}">
+                        <span class="inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums {{ $quick === $key ? 'bg-white/100 text-accent-700 dark:bg-white/20 dark:text-white' : 'bg-accent-50 text-accent-700 dark:bg-slate-700 dark:text-slate-300' }}">
                             {{ $counts[$key] ?? 0 }}
                         </span>
                     </a>
