@@ -100,13 +100,33 @@ class FollowUpController extends Controller
         $this->assertConsistentRelations($validated);
         $this->lockLeadLink($validated);
 
-        // Log Follow Up di detail lead = interaksi yang sudah terjadi.
-        // Form antrean: tanggal lampau juga dianggap sudah terjadi.
-        if ($request->input('return') === 'lead') {
+        // "Add Follow Up" mencatat aktivitas yang sudah terjadi. Hanya modal
+        // Add Schedule di kalender (return=schedule) atau tanggal aktivitas di
+        // masa depan yang dianggap jadwal yang masih menunggu dikerjakan.
+        // Form Log Follow Up di detail lead selalu catatan aktivitas karena
+        // tidak punya kolom jadwal berikutnya.
+        $returnTo = (string) $request->input('return');
+        $activityDate = $validated['follow_up_date'] ?? null;
+        $isPlanned = $returnTo !== 'lead'
+            && ($returnTo === 'schedule' || ($activityDate !== null && Carbon::parse($activityDate)->isFuture()));
+
+        if (! $isPlanned) {
             $validated['status'] = 'completed';
         }
 
         $followUp = $this->salesService->createFollowUp($validated);
+
+        // Tanpa jadwal berikutnya, jadwal lama lead ini yang sudah jatuh tempo
+        // ikut ditutup supaya tidak tertinggal sebagai Overdue. Detail lead
+        // tidak menawarkan jadwal berikutnya, jadi jadwalnya dibiarkan.
+        if (! $isPlanned && $returnTo !== 'lead'
+            && empty($validated['next_follow_up_date']) && $followUp->lead_id) {
+            $this->salesService->closeDueSchedulesForLead(
+                (int) $followUp->lead_id,
+                (int) $followUp->created_by,
+                $followUp->id
+            );
+        }
 
         // Form Log Follow Up di detail lead minta balik ke lead-nya.
         if ($request->input('return') === 'lead' && $followUp->lead_id) {
@@ -351,7 +371,8 @@ class FollowUpController extends Controller
 
     /**
      * Isian awal dari data lead: tipe follow up terakhir (atau kanal kontak
-     * yang tersedia) dan jadwal antrean berikutnya.
+     * yang tersedia). Jadwal berikutnya sengaja tidak diisi supaya kolom
+     * "Next Follow-up (optional)" benar-benar opsional.
      */
     private function leadPrefill(Lead $lead): array
     {
@@ -368,13 +389,7 @@ class FollowUpController extends Controller
             };
         }
 
-        $next = $lead->activeFollowUp;
-
-        return [
-            'type' => $type,
-            'next_date' => $next?->follow_up_date?->format('Y-m-d'),
-            'next_time' => $next?->activity_time ? substr((string) $next->activity_time, 0, 5) : null,
-        ];
+        return ['type' => $type];
     }
 
     /**
