@@ -5,9 +5,9 @@
             <p class="text-slate-500 mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
         </div>
         @can('manage-marketing')
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <x-icon-button as="a" icon="import" href="{{ route('leads.import') }}" title="{{ __('Import') }}" />
-                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" title="{{ __('Add Lead') }}" />
+                <x-flow-button as="a" href="{{ route('leads.create') }}" icon="add" label="{{ __('Add Lead') }}" title="{{ __('Add Lead') }}" />
             </div>
         @endcan
     </div>
@@ -139,7 +139,12 @@
                     @empty
                         <tr>
                             <td colspan="7" class="px-6 py-12 text-center text-slate-500">
-                                {{ __('No leads yet.') }} @can('manage-marketing')<a href="{{ route('leads.create') }}" class="text-accent-600 hover:underline">{{ __('Add the first lead') }}</a>@endcan
+                                <p>{{ __('No leads yet.') }}</p>
+                                @can('manage-marketing')
+                                    <div class="mt-3 flex justify-center">
+                                        <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" label="{{ __('Add the first lead') }}" title="{{ __('Add the first lead') }}" />
+                                    </div>
+                                @endcan
                             </td>
                         </tr>
                     @endforelse

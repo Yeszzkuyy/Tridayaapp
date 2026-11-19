@@ -10,7 +10,7 @@
                 @endif
             </p>
         </div>
-        <x-icon-button as="a" icon="back" href="{{ route('leads.index') }}" title="{{ __('Back') }}" />
+        <x-back-button :href="route('leads.index')" />
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
