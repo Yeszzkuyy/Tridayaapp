@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\User;
+use App\Support\LeadWorkspacePresenter;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -190,6 +191,133 @@ class FollowUpQueueTest extends TestCase
         $fu->refresh();
         $this->assertSame('process', $fu->status);
         $this->assertNull($fu->completed_at);
+    }
+
+    public function test_activity_today_without_next_schedule_closes_due_queue(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+
+        $due = $this->followUp($sales, $lead, [
+            'description' => 'Jadwal kemarin',
+            'follow_up_date' => today()->subDay()->toDateString(),
+        ]);
+
+        $this->actingAs($sales)->postJson(route('sales.follow-ups.store'), [
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => 'whatsapp',
+            'description' => 'Sudah dihubungi, belum ada jadwal berikutnya.',
+            'return' => 'my-leads',
+        ])->assertOk();
+
+        // Catatan hari ini = aktivitas selesai, bukan jadwal baru.
+        $activity = FollowUp::where('description', 'Sudah dihubungi, belum ada jadwal berikutnya.')->firstOrFail();
+        $this->assertSame('completed', $activity->status);
+        $this->assertNotNull($activity->completed_at);
+
+        // Jadwal lama yang sudah jatuh tempo ikut ditutup.
+        $due->refresh();
+        $this->assertSame('completed', $due->status);
+        $this->assertSame(0, FollowUp::where('lead_id', $lead->id)->active()->count());
+
+        // My Leads tidak lagi menampilkan jadwal berikutnya.
+        $this->assertSame('', LeadWorkspacePresenter::row($lead->fresh())['nextLabel']);
+    }
+
+    public function test_activity_today_with_next_date_reschedules_the_queue(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+
+        $this->followUp($sales, $lead, [
+            'description' => 'Jadwal kemarin',
+            'follow_up_date' => today()->subDay()->toDateString(),
+        ]);
+
+        $next = today()->addDays(3)->toDateString();
+
+        $this->actingAs($sales)->postJson(route('sales.follow-ups.store'), [
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => 'call',
+            'description' => 'Sudah dihubungi, lanjut minggu ini.',
+            'next_follow_up_date' => $next,
+            'next_follow_up_time' => '09:00',
+            'return' => 'my-leads',
+        ])->assertOk();
+
+        $active = FollowUp::where('lead_id', $lead->id)->active()->get();
+        $this->assertCount(1, $active);
+        $this->assertSame($next, $active->first()->follow_up_date->toDateString());
+        $this->assertSame('09:00', substr((string) $active->first()->activity_time, 0, 5));
+    }
+
+    public function test_future_visit_from_schedule_modal_stays_pending(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+        $visit = today()->addDays(2)->toDateString();
+
+        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => 'meeting',
+            'description' => 'Kunjungan survei',
+            'follow_up_date' => $visit,
+            'activity_time' => '10:00',
+            'return' => 'schedule',
+            'date' => $visit,
+        ])->assertRedirect();
+
+        $created = FollowUp::where('description', 'Kunjungan survei')->firstOrFail();
+        $this->assertSame('pending', $created->status);
+        $this->assertSame($visit, $created->follow_up_date->toDateString());
+    }
+
+    public function test_lead_detail_activity_keeps_existing_due_schedule(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+
+        $due = $this->followUp($sales, $lead, [
+            'description' => 'Jadwal kemarin',
+            'follow_up_date' => today()->subDay()->toDateString(),
+        ]);
+
+        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => 'whatsapp',
+            'description' => 'Update dari halaman lead.',
+            'follow_up_date' => today()->subDay()->toDateString(),
+            'return' => 'lead',
+        ])->assertRedirect();
+
+        // Detail lead tidak punya kolom jadwal berikutnya, jadi jadwal lama
+        // tidak boleh hilang tanpa pengganti.
+        $due->refresh();
+        $this->assertSame('pending', $due->status);
+        $this->assertSame(1, FollowUp::where('lead_id', $lead->id)->active()->count());
+    }
+
+    public function test_future_follow_up_date_from_form_creates_schedule(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+        $visit = today()->addDays(4)->toDateString();
+
+        $this->actingAs($sales)->postJson(route('sales.follow-ups.store'), [
+            'customer_id' => $lead->customer_id,
+            'lead_id' => $lead->id,
+            'type' => 'visit',
+            'description' => 'Rencana kunjungan minggu depan.',
+            'follow_up_date' => $visit,
+        ])->assertOk();
+
+        $created = FollowUp::where('description', 'Rencana kunjungan minggu depan.')->firstOrFail();
+        $this->assertSame('pending', $created->status);
+        $this->assertSame($visit, $created->follow_up_date->toDateString());
     }
 
     public function test_sales_per_pt_only_sees_own_queue(): void

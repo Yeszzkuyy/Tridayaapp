@@ -174,6 +174,28 @@ class SalesService
     }
 
     /**
+     * Tutup jadwal yang sudah jatuh tempo (tanggal hari ini atau lampau) untuk
+     * satu lead setelah follow up dicatat tanpa jadwal berikutnya. Tanpa ini,
+     * jadwal lama tetap menggantung dan tampil sebagai Overdue di My Leads
+     * padahal follow up-nya sudah dikerjakan.
+     */
+    public function closeDueSchedulesForLead(int $leadId, int $ownerId, ?int $exceptFollowUpId = null): int
+    {
+        return FollowUp::where('lead_id', $leadId)
+            ->where('created_by', $ownerId)
+            ->when($exceptFollowUpId, fn ($q) => $q->whereKeyNot($exceptFollowUpId))
+            ->active()
+            ->nonMeetings()
+            ->whereNotNull('follow_up_date')
+            ->whereDate('follow_up_date', '<=', today())
+            ->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
      * Catatan singkat dari tabel My Leads. Append-only: catatan lama tetap
      * tersimpan sebagai riwayat, yang baru menjadi Latest Note.
      */
