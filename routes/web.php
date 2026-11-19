@@ -340,6 +340,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:view-sales|manage-sales|view-admin|manage-admin|view-products')->group(function () {
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
         Route::get('products/picker', [ProductController::class, 'picker'])->name('products.picker');
+        Route::get('products/{product}/cost-logs', [ProductController::class, 'costLogs'])
+            ->middleware('permission:manage-inside-sales|manage-sales|manage-admin|manage-sales-leads|view-customer-finance')
+            ->name('products.cost-logs');
     });
 
     Route::middleware('permission:view-sales|manage-sales|manage-inside-sales|manage-technician')->prefix('sales')->name('sales.')->group(function () {
@@ -914,6 +917,10 @@ Route::middleware('auth')->group(function () {
     // ============================================
     Route::middleware('permission:manage-monitoring')->prefix('admin-panel')->name('admin-panel.')->group(function () {
         Route::get('/', [AdminPanelController::class, 'index'])->name('index');
+
+        // Pricing (PPN & default margin)
+        Route::get('/pricing', [AdminPanelController::class, 'pricingSettings'])->name('pricing.edit');
+        Route::put('/pricing', [AdminPanelController::class, 'updatePricingSettings'])->name('pricing.update');
 
         // Users
         Route::get('/users/create', [AdminPanelController::class, 'createUser'])->name('users.create');

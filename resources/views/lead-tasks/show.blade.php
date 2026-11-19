@@ -241,9 +241,21 @@
                                 @endif
                             </p>
                             @if($item->unit_cost !== null && auth()->user()->can('manage-inside-sales'))
+                                @php
+                                    $marginPercent = \App\Support\Pricing::marginPercent(
+                                        (float) $item->unit_price,
+                                        (float) $item->unit_cost,
+                                        (float) $item->quantity,
+                                        (float) $item->discount,
+                                    );
+                                @endphp
                                 <p class="text-xs text-slate-400">
                                     {{ __('Cost') }}: Rp {{ number_format((float) $item->unit_cost, 0, ',', '.') }} ·
                                     {{ __('Margin') }}: Rp {{ number_format((float) $item->subtotal - ((float) $item->quantity * (float) $item->unit_cost), 0, ',', '.') }}
+                                    ({{ $marginPercent === null ? '-' : number_format($marginPercent, 2).'%' }})
+                                    @if($item->target_margin_percent !== null)
+                                        · {{ __('Target') }}: {{ number_format((float) $item->target_margin_percent, 2) }}%
+                                    @endif
                                 </p>
                             @endif
                         </div>
@@ -269,8 +281,13 @@
                     $totalMargin = (float) $task->items->sum('subtotal') - $totalCost;
                 @endphp
                 @if($itemsWithCost->isNotEmpty() && $itemsWithCost->count() === $task->items->count() && auth()->user()->can('manage-inside-sales'))
+                    @php
+                        $netSales = (float) $task->items->sum('subtotal');
+                        $totalMarginPercent = $netSales > 0 ? ($totalMargin / $netSales) * 100 : null;
+                    @endphp
                     <span class="block text-xs font-medium text-emerald-600 dark:text-emerald-400">
                         {{ __('Margin') }}: Rp {{ number_format($totalMargin, 0, ',', '.') }}
+                        ({{ $totalMarginPercent === null ? '-' : number_format($totalMarginPercent, 2).'%' }})
                     </span>
                 @endif
             </p>
@@ -287,23 +304,9 @@
                 @if(auth()->user()->can('manage-inside-sales'))
                 <div class="md:col-span-4">
                     <label for="item-product" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Product') }}</label>
-                    <select id="item-product" name="product_id"
-                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                        <option value="">{{ __('Select product (optional)') }}</option>
-                        @foreach(($products ?? collect()) as $product)
-                            @php($log = $product->latestPriceLog)
-                            <option value="{{ $product->id }}"
-                                    data-description="{{ $product->name }}"
-                                    data-sku="{{ $product->sku }}"
-                                    data-unit="{{ $product->unit ?: 'pcs' }}"
-                                    data-price="{{ (float) $product->default_price }}"
-                                    data-cost="{{ $log ? (float) $log->price : '' }}"
-                                    data-supplier="{{ $log?->supplier?->name }}"
-                                    data-date="{{ $log?->created_at?->format('d M Y') }}">
-                                {{ $product->name }}{{ $product->sku ? ' · '.$product->sku : '' }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-glide-select id="item-product" name="product_id" :options="$productOptions"
+                                    :label="__('Product')" :placeholder="__('Select product (optional)')"
+                                    size="field" searchable :search-placeholder="__('Search product...')" />
                 </div>
                 @endif
                 <div class="md:col-span-2">
@@ -347,6 +350,12 @@
                 </div>
                 @if(auth()->user()->can('manage-inside-sales'))
                 <div class="md:col-span-2">
+                    <label for="item-target-margin" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Target Margin (%)') }}</label>
+                    <input id="item-target-margin" type="number" name="target_margin_percent" min="0" max="99.99" step="0.01"
+                           value="{{ $defaultMargin }}"
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                </div>
+                <div class="md:col-span-2">
                     <label for="item-cost" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Cost Price (Estimator)') }}</label>
                     <input id="item-cost" type="number" name="unit_cost" min="0" step="0.01" readonly
                            placeholder="{{ __('From estimator') }}"
@@ -358,22 +367,49 @@
                     <input id="item-discount" type="number" name="discount" min="0" step="0.01" value="0"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
                 </div>
+                @if(auth()->user()->can('manage-inside-sales'))
+                <div class="md:col-span-10">
+                    <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Price History') }}</label>
+                    <div id="item-cost-history-wrap">
+                        <x-glide-select id="item-cost-history" name="product_price_log_id" :options="[]"
+                                        :label="__('Price History')" :placeholder="__('Select a product first')" size="field" />
+                    </div>
+                    <p id="item-cost-history-info" class="mt-1 text-[11px] text-slate-400"></p>
+                </div>
                 <div class="flex items-end md:col-span-2">
                     <x-primary-button type="submit" class="w-full justify-center">{{ __('Add') }}</x-primary-button>
                 </div>
+                @else
+                <div class="flex items-end md:col-span-2">
+                    <x-primary-button type="submit" class="w-full justify-center">{{ __('Add') }}</x-primary-button>
+                </div>
+                @endif
             </form>
 
+            @if(auth()->user()->can('manage-inside-sales'))
             <p id="item-price-info" class="mt-2 text-xs text-slate-500 dark:text-slate-400"></p>
             <p id="item-margin-preview" class="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"></p>
 
             <script>
                 (function () {
-                    const product = document.getElementById('item-product');
-                    if (!product) return;
                     const byId = (id) => document.getElementById(id);
+                    const product = byId('item-product');
+                    if (!product) return;
+
+                    const productData = @js($productData);
                     const fmt = (value) => 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(value || 0));
                     const labelMargin = @js(__('Item margin'));
                     const labelNoCost = @js(__('Margin cannot be calculated yet: estimator cost is not available.'));
+
+                    let historyLogs = {};
+                    const historyMount = document.querySelector('#item-cost-history-wrap [data-glide-mount]');
+                    const historyInput = byId('item-cost-history');
+
+                    function marginPercent(price, cost, qty, discount) {
+                        const netSales = (price * qty) - (discount || 0);
+                        if (qty <= 0 || netSales <= 0) return null;
+                        return ((netSales - (cost * qty)) / netSales) * 100;
+                    }
 
                     function refreshMargin() {
                         const qty = parseFloat(byId('item-quantity')?.value || 0) || 0;
@@ -382,40 +418,140 @@
                         const discount = parseFloat(byId('item-discount')?.value || 0) || 0;
                         const target = byId('item-margin-preview');
                         if (!target) return;
-                        target.textContent = cost > 0
-                            ? labelMargin + ': ' + fmt((qty * price - discount) - (qty * cost))
-                            : labelNoCost;
+
+                        if (cost <= 0) {
+                            target.textContent = labelNoCost;
+                            return;
+                        }
+
+                        const pct = marginPercent(price, cost, qty, discount);
+                        target.textContent = labelMargin + ': ' + fmt((qty * price - discount) - (qty * cost))
+                            + (pct === null ? '' : ' (' + pct.toFixed(2) + '%)');
+                    }
+
+                    function applyTargetMargin() {
+                        const margin = parseFloat(byId('item-target-margin')?.value || 0) || 0;
+                        const cost = parseFloat(byId('item-cost')?.value || 0) || 0;
+                        const qty = parseFloat(byId('item-quantity')?.value || 0) || 0;
+                        const discount = parseFloat(byId('item-discount')?.value || 0) || 0;
+                        if (cost <= 0 || qty <= 0 || margin <= 0 || margin >= 100) return;
+
+                        const price = Math.ceil(((cost / (1 - margin / 100)) + (discount / qty)) * 100) / 100;
+                        byId('item-price').value = price;
+                        refreshMargin();
+                    }
+
+                    function historyLabel(log) {
+                        let label = log.date + ' · Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(log.price));
+                        if (log.supplier) label += ' · ' + log.supplier;
+                        if (log.price_includes_tax && log.price_entered) {
+                            label += ' · incl. VAT ' + new Intl.NumberFormat('id-ID').format(Math.round(log.price_entered));
+                        }
+                        if (log.valid_until) label += ' · valid ' + log.valid_until;
+                        return label;
+                    }
+
+                    function selectLog(id) {
+                        const log = historyLogs[String(id)];
+                        if (!log) return;
+
+                        byId('item-cost').value = log.price;
+                        const info = byId('item-cost-history-info');
+                        if (info) {
+                            info.textContent = @js(__('Cost before VAT')) + ': ' + fmt(log.price)
+                                + (log.price_includes_tax && log.price_entered ? ' · ' + @js(__('supplier price')) + ' ' + fmt(log.price_entered) + ' (' + @js(__('including VAT')) + ')' : '')
+                                + (log.supplier ? ' · ' + log.supplier : '')
+                                + (log.valid_until ? ' · ' + @js(__('valid until')) + ' ' + log.valid_until : '');
+                        }
+
+                        if ((parseFloat(byId('item-price')?.value || 0) || 0) <= 0) {
+                            applyTargetMargin();
+                        }
+                        refreshMargin();
+                    }
+
+                    async function loadHistory(productId) {
+                        historyLogs = {};
+                        if (!productId) {
+                            if (historyMount && window.__glideRemount) window.__glideRemount(historyMount, [], '');
+                            byId('item-cost').value = '';
+                            const info = byId('item-cost-history-info');
+                            if (info) info.textContent = '';
+                            refreshMargin();
+                            return;
+                        }
+
+                        try {
+                            const response = await fetch('{{ url('products') }}/' + productId + '/cost-logs', {
+                                headers: { 'Accept': 'application/json' },
+                            });
+                            const logs = await response.json();
+                            historyLogs = Object.fromEntries(logs.map((log) => [String(log.id), log]));
+
+                            const options = logs.map((log) => ({ value: String(log.id), label: historyLabel(log) }));
+                            const latest = logs[0] ? String(logs[0].id) : '';
+                            if (historyMount && window.__glideRemount) {
+                                window.__glideRemount(historyMount, options, latest);
+                            }
+                            if (latest) {
+                                selectLog(latest);
+                            } else {
+                                byId('item-cost').value = '';
+                                const info = byId('item-cost-history-info');
+                                if (info) info.textContent = @js(__('No cost price for this product yet.'));
+                                refreshMargin();
+                            }
+                        } catch {
+                            // Diamkan: validasi server tetap menjadi jaring pengaman.
+                        }
                     }
 
                     product.addEventListener('change', function () {
-                        const option = product.selectedOptions[0];
-                        if (!option || !option.value) return;
+                        const data = productData[product.value];
+                        if (!data) {
+                            loadHistory('');
+                            return;
+                        }
 
-                        byId('item-description').value = option.dataset.description || '';
-                        byId('item-scope').value = option.dataset.sku || '';
-                        byId('item-unit').value = option.dataset.unit || 'pcs';
-                        byId('item-price').value = option.dataset.price || 0;
-                        byId('item-cost').value = option.dataset.cost || '';
+                        byId('item-description').value = data.description || '';
+                        byId('item-scope').value = data.sku || '';
+                        byId('item-unit').value = data.unit || 'pcs';
+                        byId('item-price').value = data.price || 0;
                         byId('item-lead').value = 'Ready Stock';
                         byId('item-section').value = 'MATERIAL';
 
                         const info = byId('item-price-info');
                         if (info) {
-                            info.textContent = option.dataset.cost
-                                ? @js(__('Latest estimator price')) + ': ' + fmt(option.dataset.cost)
-                                    + (option.dataset.supplier ? ' · ' + option.dataset.supplier : '')
-                                    + (option.dataset.date ? ' · ' + option.dataset.date : '')
+                            info.textContent = data.cost !== null
+                                ? @js(__('Latest estimator price')) + ': ' + fmt(data.cost)
+                                    + (data.supplier ? ' · ' + data.supplier : '')
+                                    + (data.date ? ' · ' + data.date : '')
                                 : @js(__('No estimator price for this product yet.'));
                         }
-                        refreshMargin();
+
+                        loadHistory(product.value);
                     });
 
+                    if (historyInput) {
+                        historyInput.addEventListener('change', function () {
+                            if (historyInput.value) selectLog(historyInput.value);
+                        });
+                    }
+
+                    byId('item-target-margin')?.addEventListener('input', applyTargetMargin);
                     ['item-quantity', 'item-price', 'item-cost', 'item-discount'].forEach(function (id) {
-                        byId(id)?.addEventListener('input', refreshMargin);
+                        byId(id)?.addEventListener('input', function () {
+                            if (id === 'item-quantity' || id === 'item-discount') {
+                                // Qty/diskon mengubah harga jual agar target margin tetap.
+                                applyTargetMargin();
+                            }
+                            refreshMargin();
+                        });
                     });
                     refreshMargin();
                 })();
             </script>
+            @endif
         @endif
 
     </div>

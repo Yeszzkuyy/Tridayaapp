@@ -5,8 +5,10 @@
             ->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_cost);
         $allCostsKnown = $items->isNotEmpty() && $items->every(fn ($item) => $item->unit_cost !== null);
         $margin = $subtotal - $cost;
-        $vat = round($subtotal * 0.12, 2);
+        $marginPercent = $allCostsKnown && $subtotal > 0 ? ($margin / $subtotal) * 100 : null;
+        $vat = round($subtotal * ($taxRate / 100), 2);
         $total = $subtotal + $vat;
+        $vatLabel = rtrim(rtrim(number_format((float) $taxRate, 2, ',', '.'), '0'), ',');
     @endphp
 
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -134,7 +136,9 @@
                             <th class="px-5 py-3">{{ __('Lead Time') }}</th>
                             <th class="px-5 py-3 text-right">{{ __('Qty') }}</th>
                             <th class="px-5 py-3">{{ __('Unit') }}</th>
+                            <th class="px-5 py-3 text-right">{{ __('Cost') }}</th>
                             <th class="px-5 py-3 text-right">{{ __('Pricelist') }}</th>
+                            <th class="px-5 py-3 text-right">{{ __('Margin') }}</th>
                             <th class="px-5 py-3 text-right">{{ __('Total') }}</th>
                         </tr>
                     </thead>
@@ -158,7 +162,29 @@
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $item->lead_time ?: '-' }}</td>
                                 <td class="px-5 py-3 text-right tabular-nums">{{ rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',') }}</td>
                                 <td class="px-5 py-3">{{ $item->unit }}</td>
+                                <td class="px-5 py-3 text-right tabular-nums">{{ $item->unit_cost !== null ? 'Rp '.number_format((float) $item->unit_cost, 0, ',', '.') : '-' }}</td>
                                 <td class="px-5 py-3 text-right tabular-nums">Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}</td>
+                                <td class="px-5 py-3 text-right tabular-nums">
+                                    @php
+                                        $itemMargin = $item->unit_cost !== null
+                                            ? \App\Support\Pricing::marginAmount((float) $item->unit_price, (float) $item->unit_cost, (float) $item->quantity, (float) $item->discount)
+                                            : null;
+                                        $itemMarginPercent = $item->unit_cost !== null
+                                            ? \App\Support\Pricing::marginPercent((float) $item->unit_price, (float) $item->unit_cost, (float) $item->quantity, (float) $item->discount)
+                                            : null;
+                                    @endphp
+                                    @if($itemMargin !== null)
+                                        <span class="block font-semibold text-slate-800 dark:text-slate-100">Rp {{ number_format($itemMargin, 0, ',', '.') }}</span>
+                                        <span class="block text-[10px] text-slate-400">
+                                            {{ $itemMarginPercent === null ? '-' : number_format($itemMarginPercent, 2).'%' }}
+                                            @if($item->target_margin_percent !== null)
+                                                · {{ __('Target') }} {{ rtrim(rtrim(number_format((float) $item->target_margin_percent, 2, ',', '.'), '0'), ',') }}%
+                                            @endif
+                                        </span>
+                                    @else
+                                        <span class="text-amber-600 dark:text-amber-400">{{ __('No cost') }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-right font-semibold tabular-nums">Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
@@ -170,12 +196,15 @@
                     <p>{{ __('Cost') }}: Rp {{ number_format($cost, 0, ',', '.') }}</p>
                     <p class="mt-1 font-semibold {{ $allCostsKnown ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' }}">
                         {{ __('Margin') }}: {{ $allCostsKnown ? 'Rp '.number_format($margin, 0, ',', '.') : __('Cost price incomplete') }}
+                        @if($marginPercent !== null)
+                            ({{ number_format($marginPercent, 2) }}%)
+                        @endif
                     </p>
-                    <p class="mt-2">{{ __('VAT 12% is calculated automatically.') }}</p>
+                    <p class="mt-2">{{ __('VAT :rate% is calculated automatically.', ['rate' => $vatLabel]) }}</p>
                 </div>
                 <div class="text-right text-sm">
                     <p class="text-slate-500 dark:text-slate-400">{{ __('Total Unit') }}: <span class="font-semibold text-slate-800 dark:text-slate-100">Rp {{ number_format($subtotal, 0, ',', '.') }}</span></p>
-                    <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('VAT 12%') }}: <span class="font-semibold text-slate-800 dark:text-slate-100">Rp {{ number_format($vat, 0, ',', '.') }}</span></p>
+                    <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('VAT :rate%', ['rate' => $vatLabel]) }}: <span class="font-semibold text-slate-800 dark:text-slate-100">Rp {{ number_format($vat, 0, ',', '.') }}</span></p>
                     <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">Rp {{ number_format($total, 0, ',', '.') }}</p>
                 </div>
             </div>
