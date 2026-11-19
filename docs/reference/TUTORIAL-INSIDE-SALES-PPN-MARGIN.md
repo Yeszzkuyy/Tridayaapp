@@ -3,7 +3,7 @@
 **Status:** Panduan review
 **Menu:** Estimator, Inside Sales, Sales Quotation, Admin Panel
 **Data uji:** Customer `PT Uji Coba 3DY (TEST)`
-**Login utama:** Yeski (super-admin)
+**Login per peran:** Admin: Yeski, Estimator: Vanesha, Inside Sales: Audi, Sales: Felisia
 
 ---
 
@@ -25,34 +25,42 @@ bisa dihapus setelah review.
 
 ## 2. Data Simulasi yang Sudah Disiapkan
 
-| Data | Nama |
-|---|---|
-| Customer | `PT Uji Coba 3DY (TEST)` |
-| Lead | `Uji Coba PPN & Margin (TEST)` |
-| Task Inside Sales | `Uji Coba PPN & Margin (TEST)` |
-| Request Harga | `Simulasi harga supplier termasuk PPN` |
-| Produk | `IP PABX 32 Extension` (`PABX-IP`) |
-| Riwayat harga produk | 8 riwayat harga modal |
+| Data | Nama | Dipegang oleh |
+|---|---|---|
+| Customer | `PT Uji Coba 3DY (TEST)` | - |
+| Lead | `Uji Coba PPN & Margin (TEST)` | Felisia (Sales WANI) |
+| Task Inside Sales | `Uji Coba PPN & Margin (TEST)` | Audi (Inside Sales) |
+| Request Harga | `Simulasi harga supplier termasuk PPN` | Felisia (peminta), Vanesha (Estimator) |
+| Produk | `IP PABX 32 Extension` (`PABX-IP`) | - |
+| Riwayat harga produk | 8 riwayat harga modal | - |
 
-Lead, task, dan request harga sudah di-assign ke akun **Yeski** supaya satu
-akun bisa menjalankan seluruh simulasi. Di pemakaian nyata, task dipegang
-Inside Sales dan lead dipegang Sales pemilik customer.
+Lead dipegang Sales, task dipegang Inside Sales, dan request harga diminta
+oleh Sales lalu dijawab Estimator. Jadi setiap peran bisa mengecek menu dan
+tampilannya masing-masing.
 
 ---
 
 ## 3. Persiapan
 
 1. Buka link preview yang diberikan di chat.
-2. Login sebagai **Yeski**.
-3. Buka **Admin Panel → Pajak & Margin**.
-4. Pastikan nilai awal:
+2. Siapkan akun berikut:
+   - **Yeski** untuk Admin Panel.
+   - **Vanesha** (`vanesha@tridayaapp.com`) untuk Estimator.
+   - **Audi** (`audi@tridayaapp.com`) untuk Inside Sales.
+   - **Felisia** (`felisia@tridayaapp.com`) untuk Sales pemilik lead.
+3. Kalau lupa password salah satu akun, reset dulu lewat
+   **Admin Panel → Users → Edit**.
+4. Login sebagai **Yeski**, lalu buka **Admin Panel → Pajak & Margin**.
+5. Pastikan nilai awal:
    - Tarif PPN: `12`
    - Margin default: `20`
-5. Jangan ubah dulu. Perubahan admin diuji di langkah terakhir.
+6. Jangan ubah dulu. Perubahan admin diuji di langkah terakhir.
 
 ---
 
 ## 4. Skenario 1 - Estimator Mengisi Harga Termasuk PPN
+
+**Login:** Vanesha (Estimator)
 
 ### Langkah
 
@@ -85,6 +93,8 @@ Inside Sales dan lead dipegang Sales pemilik customer.
 ---
 
 ## 5. Skenario 2 - Inside Sales Memilih Riwayat Harga dan Margin
+
+**Login:** Audi (Inside Sales)
 
 ### Langkah
 
@@ -130,7 +140,9 @@ Inside Sales dan lead dipegang Sales pemilik customer.
   - PPN: `Rp 150.000`.
   - Total: `Rp 1.400.000`.
 - Margin item tetap `Rp 250.000 (20,00%)`.
-- PDF quotation bisa diunduh.
+- PDF quotation bisa diunduh dari halaman task.
+- Audi bisa melihat nomor quotation dan mengunduh PDF. Untuk membuka detail
+  dan mengedit, login sebagai **Felisia** (Sales pemilik lead).
 
 ### Yang perlu dinilai dari UX
 
@@ -144,6 +156,8 @@ Inside Sales dan lead dipegang Sales pemilik customer.
 ---
 
 ## 6. Skenario 3 - Sales Melihat dan Mengedit Quotation
+
+**Login:** Felisia (Sales WANI)
 
 ### Langkah
 
@@ -187,6 +201,8 @@ Inside Sales dan lead dipegang Sales pemilik customer.
 ---
 
 ## 7. Skenario 4 - Admin Mengubah Tarif PPN dan Margin Default
+
+**Login:** Yeski (Super Admin)
 
 ### Langkah
 
