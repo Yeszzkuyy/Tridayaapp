@@ -264,4 +264,32 @@ class ProductBulkPriceUpdateTest extends TestCase
             ->post(route('products.bulk-price.update'), [])
             ->assertForbidden();
     }
+
+    public function test_bulk_update_skips_unchanged_prices_without_adding_a_log(): void
+    {
+        $estimator = User::factory()->create()->assignRole('estimator');
+        $supplier = Supplier::create(['name' => 'Supplier Unchanged']);
+        $product = $this->product('Switch Unchanged');
+        $this->costLog($product, $supplier, [
+            'price' => 100_000,
+            'valid_until' => '2027-01-01',
+        ]);
+
+        $this->actingAs($estimator)
+            ->post(route('products.bulk-price.update'), [
+                'items' => [
+                    $product->id => [
+                        'product_id' => $product->id,
+                        'supplier_id' => $supplier->id,
+                        'price' => '100.000',
+                        'valid_until' => '2027-01-01',
+                    ],
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('warning', __('No price changes were saved.'));
+
+        $this->assertSame(1, ProductPriceLog::where('product_id', $product->id)->count());
+        $this->assertSame(100_000.0, (float) $product->fresh()->cost_price);
+    }
 }
