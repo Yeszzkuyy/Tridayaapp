@@ -271,8 +271,15 @@
     </div>
 
     <style>
+        /* Layout penuh: tinggi halaman dikunci ke viewport agar riwayat,
+           percakapan, dan kolom ketik tidak meluber. */
         .main-content{height:100dvh;overflow:hidden}
         .main-content main{display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:0!important}
+        /* Layout embed (tab workspace): tidak memakai .main-content, jadi
+           <body> yang dijadikan kolom penuh. Tanpa ini .ai-page hanya
+           setinggi isinya dan halaman terlihat terpotong separuh. */
+        html[data-embed="1"] body{height:100dvh;min-height:100dvh;overflow:hidden}
+        html[data-embed="1"] body>main{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden;padding:0!important}
         .ai-page{position:relative;display:flex;flex:1;min-height:0;width:100%;overflow:hidden;background:var(--card-bg);color:var(--text-primary)}
         .ai-history{position:relative;z-index:40;display:flex;width:17rem;flex:none;flex-direction:column;border-right:1px solid var(--card-border);background:var(--card-bg-hover);transition:transform .25s var(--ease-out)}
         .ai-history-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:1.1rem 1rem .9rem}

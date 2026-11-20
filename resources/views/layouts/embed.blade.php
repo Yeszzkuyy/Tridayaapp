@@ -79,7 +79,7 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         [x-cloak]{display:none!important}
-        :root{--bg:#f1f5f9}html.dark{--bg:#1c2235}
+        :root{--bg:#f4f4f5}html.dark{--bg:#1c2235}
         body{background-color:var(--bg)}
         html.dark body{background-color:var(--bg)!important;color:var(--text-primary)}
         .dark .bg-white{background-color:var(--card-bg)!important}

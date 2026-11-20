@@ -113,6 +113,22 @@ function cleanStoredTitle(title) {
     return value.replace(/\.index$/i, '').trim() || 'Page';
 }
 
+/** Halaman auth yang tidak boleh tampil di dalam panel tab workspace. */
+const AUTH_PATHS = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/confirm-password',
+    '/pending-approval',
+];
+
+export function isAuthPath(path) {
+    const p = (path || '/').replace(/\/+$/, '') || '/';
+    return AUTH_PATHS.some((base) => p === base || p.startsWith(base + '/'));
+}
+
 function labelFromLink(link) {
     if (!link) return '';
     const spans = [...link.querySelectorAll('span:not([aria-hidden])')].filter(
@@ -940,6 +956,17 @@ export function registerWorkspaceStore(Alpine) {
                 frame.setAttribute('title', this.fullTitle(tab) || 'Workspace tab');
                 frame.className = 'w-full h-full border-0 block';
                 frame.src = embedUrl(tab.url);
+                frame.addEventListener('load', () => {
+                    // Sesi habis / butuh verifikasi: jangan biarkan halaman auth
+                    // hidup di dalam panel (login kecil + sidebar induk ikut
+                    // terlihat). Pindahkan seluruh aplikasi ke halaman penuh.
+                    try {
+                        const win = frame.contentWindow;
+                        if (win && isAuthPath(win.location.pathname)) {
+                            this.breakOutOfWorkspace(win.location.href);
+                        }
+                    } catch (e) {}
+                });
                 wrap.appendChild(frame);
                 stage.appendChild(wrap);
                 tab.loaded = true;
@@ -1179,6 +1206,27 @@ export function registerWorkspaceStore(Alpine) {
             pane.remove();
         },
 
+        /**
+         * Halaman auth muncul di dalam panel tab (sesi habis, email belum
+         * diverifikasi, atau butuh konfirmasi password): pindahkan seluruh
+         * aplikasi ke halaman itu sebagai halaman penuh.
+         */
+        breakOutOfWorkspace(rawUrl) {
+            if (this.breakingOut) return;
+            this.breakingOut = true;
+
+            let target = '/login';
+            try {
+                const url = new URL(rawUrl || '/login', window.location.origin);
+                if (url.origin === window.location.origin) {
+                    url.searchParams.delete('embed');
+                    target = url.pathname + (url.search || '') + (url.hash || '');
+                }
+            } catch (e) {}
+
+            window.location.replace(target);
+        },
+
         syncSidebar(targetPath) {
             if (typeof window.__syncSidebarPath === 'function') {
                 window.__syncSidebarPath(targetPath);
@@ -1288,7 +1336,7 @@ export function registerWorkspaceStore(Alpine) {
                 if (data.source !== '3dy-workspace') return;
 
                 if (data.type === 'login') {
-                    window.location.href = '/login';
+                    this.breakOutOfWorkspace(data.url || '/login');
                     return;
                 }
 

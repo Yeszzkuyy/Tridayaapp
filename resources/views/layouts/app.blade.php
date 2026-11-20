@@ -435,7 +435,7 @@
         /* Teks tanpa class warna ikut var tema — jangan biarkan hitam bawaan browser di mode gelap */
         /* Warna dasar halaman sepagi mungkin (sebelum CSS Vite tiba):
            tanpa ini var(--bg) belum ada saat cat pertama -> putih sekilas di mode gelap. */
-        :root{--bg:#f1f5f9}html.dark{--bg:#1c2235}
+        :root{--bg:#f4f4f5}html.dark{--bg:#1c2235}
         body{background-color:var(--bg)}
         html.dark body{background-color:var(--bg)!important;color:var(--text-primary)}
         .dark th.text-slate-500,.dark th.text-slate-600{color:var(--text-secondary)!important}
@@ -471,6 +471,9 @@
         html.workspace-nested .main-content > footer{display:none!important}
         html.workspace-nested .main-content{margin-left:0!important;width:100%!important}
         html.workspace-nested #workspace-fallback{display:flex!important;flex:1;flex-direction:column}
+        /* Area drop split sejajar kolom isi: ikut lebar sidebar dan bergeser
+           halus saat sidebar dibuka (16rem) atau dikecilkan jadi rail. */
+        @media(min-width:1024px){#workspace-drag-layer{left:var(--sb-w);transition:left var(--sb-dur) var(--sb-ease)}}
         .no-scrollbar::-webkit-scrollbar{display:none}
         .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         /* Barisan tab: geser horizontal tanpa scrollbar, dengan pudar tepi
@@ -597,7 +600,9 @@
                          @pointerdown="$store.workspace.startSplitResize($event)"></div>
                 </div>
 
-                {{-- Pelindung iframe saat drag/resize + zona drop split kiri/kanan. --}}
+                {{-- Pelindung iframe saat drag/resize + area drop split kiri/kanan.
+                     Tanpa kotak: separuh layar tujuan hanya diberi warna lembut
+                     dan garis tipis di tengah sebagai batas panel. --}}
                 <div id="workspace-drag-layer"
                      x-data
                      x-show="$store.workspace.draggingTabId || $store.workspace.resizingSplit"
@@ -605,38 +610,26 @@
                      class="fixed inset-x-0 bottom-0 top-20 z-[34]">
                     <div x-show="$store.workspace.resizingSplit" class="absolute inset-0 cursor-col-resize"></div>
 
-                    {{-- Saat tab ditarik, layar dibagi dua: lepas di separuh kiri
-                         atau kanan untuk membuka split view. --}}
                     <div x-show="$store.workspace.draggingTabId"
                          class="absolute inset-0 flex"
                          @dragleave.prevent="if (!$event.currentTarget.contains($event.relatedTarget)) $store.workspace.clearDropHover()">
-                        <div class="w-1/2 p-4 sm:p-6"
+                        <div class="relative w-1/2 transition-colors duration-150"
+                             :class="$store.workspace.dragLeftHover ? 'bg-accent-500/10 dark:bg-accent-500/15' : 'bg-transparent'"
                              @dragenter.prevent="$store.workspace.setDropSide('left')"
                              @dragover.prevent="$store.workspace.setDropSide('left')"
                              @drop.prevent="$store.workspace.dropToLeft()">
-                            <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
-                                 :class="$store.workspace.dragLeftHover
-                                    ? 'border-accent-500 bg-accent-500/15'
-                                    : 'border-slate-300/70 bg-[var(--card-bg)]/70 dark:border-slate-600'">
-                                <div class="text-center">
-                                    <x-icon name="view-columns" class="mx-auto mb-2 h-6 w-6 text-accent-600 dark:text-accent-300" />
-                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Drop here to split left') }}</p>
-                                </div>
-                            </div>
+                            <span aria-hidden="true"
+                                  class="pointer-events-none absolute inset-y-6 right-0 w-0.5 rounded-full bg-transparent transition-colors duration-150"
+                                  :class="$store.workspace.dragLeftHover ? 'bg-accent-500/70' : ''"></span>
                         </div>
-                        <div class="w-1/2 p-4 sm:p-6"
+                        <div class="relative w-1/2 transition-colors duration-150"
+                             :class="$store.workspace.dragRightHover ? 'bg-accent-500/10 dark:bg-accent-500/15' : 'bg-transparent'"
                              @dragenter.prevent="$store.workspace.setDropSide('right')"
                              @dragover.prevent="$store.workspace.setDropSide('right')"
                              @drop.prevent="$store.workspace.dropToRight()">
-                            <div class="flex h-full items-center justify-center rounded-2xl border-2 border-dashed transition"
-                                 :class="$store.workspace.dragRightHover
-                                    ? 'border-accent-500 bg-accent-500/15'
-                                    : 'border-slate-300/70 bg-[var(--card-bg)]/70 dark:border-slate-600'">
-                                <div class="text-center">
-                                    <x-icon name="view-columns" class="mx-auto mb-2 h-6 w-6 text-accent-600 dark:text-accent-300" />
-                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Drop here to split right') }}</p>
-                                </div>
-                            </div>
+                            <span aria-hidden="true"
+                                  class="pointer-events-none absolute inset-y-6 left-0 w-0.5 rounded-full bg-transparent transition-colors duration-150"
+                                  :class="$store.workspace.dragRightHover ? 'bg-accent-500/70' : ''"></span>
                         </div>
                     </div>
                 </div>
