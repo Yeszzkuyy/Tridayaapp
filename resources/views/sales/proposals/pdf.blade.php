@@ -149,9 +149,11 @@
     @php
         $groups = $proposal->items->groupBy(fn ($item) => $item->section ?: 'MATERIAL');
         $rowNo = 0;
-        $vatPercent = (float) $proposal->subtotal > 0
-            ? round(((float) $proposal->tax / (float) $proposal->subtotal) * 100)
-            : 0;
+        $vatPercent = $proposal->tax_rate !== null
+            ? (float) $proposal->tax_rate
+            : ((float) $proposal->subtotal > 0
+                ? round(((float) $proposal->tax / (float) $proposal->subtotal) * 100)
+                : 0);
     @endphp
 
     <table class="items">

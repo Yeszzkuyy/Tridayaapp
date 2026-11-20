@@ -27,6 +27,9 @@
         @if($product->latestCostLog)
             <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
                 {{ __('Latest cost: Rp :price', ['price' => number_format((float) $product->latestCostLog->price, 0, ',', '.')]) }}
+                @if($product->latestCostLog->price_includes_tax && $product->latestCostLog->price_entered !== null)
+                    &middot; {{ __('Including VAT') }} Rp {{ number_format((float) $product->latestCostLog->price_entered, 0, ',', '.') }}
+                @endif
                 @if($product->latestCostLog->supplier)
                     &middot; {{ $product->latestCostLog->supplier->name }}
                 @endif
@@ -56,8 +59,13 @@
 
                 <div>
                     <label for="price-cost" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ __('Cost Price (Rp)') }} <span class="text-rose-500">*</span></label>
-                    <x-rupiah-input id="price-cost" name="price" :value="old('price', $product->latestCostLog?->price)"
+                    <x-rupiah-input id="price-cost" name="price" :value="old('price', $product->latestCostLog?->price_entered ?? $product->latestCostLog?->price)"
                                     :aria-label="__('Cost Price (Rp)')" required />
+                    <label class="mt-2 inline-flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        <input type="checkbox" name="price_includes_tax" value="1" @checked(old('price_includes_tax', $product->latestCostLog?->price_includes_tax))
+                               class="rounded border-slate-300 text-accent-600 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                        {{ __('Price includes VAT') }}
+                    </label>
                     @error('price') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                 </div>
 

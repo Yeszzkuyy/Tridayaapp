@@ -133,6 +133,15 @@
                                 <td class="px-5 py-3">
                                     <p class="max-w-[260px] truncate font-medium text-slate-800 dark:text-slate-100">{{ $task->title }}</p>
                                     <p class="mt-0.5 text-xs text-slate-400">{{ $task->items_count }} {{ __('item(s)') }}</p>
+                                    <p class="mt-1 text-[11px] font-medium {{ $task->proposal ? 'text-emerald-600 dark:text-emerald-400' : ($task->items_count > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400') }}">
+                                        @if($task->proposal)
+                                            {{ __('Quotation created.') }}
+                                        @elseif($task->items_count > 0)
+                                            {{ __('Items ready. Create the quotation.') }}
+                                        @else
+                                            {{ __('No items yet. Open the task to start.') }}
+                                        @endif
+                                    </p>
                                 </td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $task->lead?->customer?->name ?? '-' }}</td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $task->creator?->name ?? '-' }}</td>
@@ -157,10 +166,16 @@
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-2">
-                                        <x-task-complete-button :task="$task" />
-                                        <x-icon-button as="a" icon="view" href="{{ route('lead-tasks.show', $task) }}" label="{{ __('View') }}" title="{{ __('View details') }}" />
-                                        @if(! $task->proposal && $task->items_count > 0)
-                                            <x-icon-button as="a" icon="sparkles" href="{{ route('inside-sales.quotations.create', $task) }}" title="{{ __('Create Quotation') }}" />
+                                        @if($task->proposal)
+                                            <x-task-complete-button :task="$task" />
+                                            <x-icon-button as="a" icon="view" label="{{ __('Buka Task') }}" href="{{ route('lead-tasks.show', $task) }}" title="{{ __('Buka Task') }}" />
+                                        @elseif($task->items_count > 0)
+                                            <x-icon-button as="a" variant="solid" icon="file-text" label="{{ __('Buat Quotation') }}"
+                                                           href="{{ route('inside-sales.quotations.create', $task) }}" title="{{ __('Buat Quotation') }}" />
+                                            <x-icon-button as="a" icon="view" label="{{ __('Buka Task') }}" href="{{ route('lead-tasks.show', $task) }}" title="{{ __('Buka Task') }}" />
+                                        @else
+                                            <x-icon-button as="a" variant="solid" icon="edit" label="{{ __('Kerjakan Task') }}"
+                                                           href="{{ route('lead-tasks.show', $task) }}" title="{{ __('Kerjakan Task') }}" />
                                         @endif
                                     </div>
                                 </td>

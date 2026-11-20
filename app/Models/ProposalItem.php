@@ -21,6 +21,7 @@ class ProposalItem extends Model
         'unit',
         'unit_price',
         'unit_cost',
+        'target_margin_percent',
         'discount',
         'subtotal',
     ];

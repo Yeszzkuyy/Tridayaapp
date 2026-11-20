@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\GoodsReceipt;
 use App\Models\Lead;
 use App\Models\LeadActivity;
@@ -24,6 +25,7 @@ use App\Rules\SecureFile;
 use App\Services\CustomerLifecycleService;
 use App\Services\Project\ProjectWorkflowService;
 use App\Services\QuotationNumberService;
+use App\Services\QuotationPdfService;
 use App\Services\QuotationVersionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -39,6 +41,7 @@ class ProposalController extends Controller
     public function __construct(
         private QuotationNumberService $numbers,
         private QuotationVersionService $versions,
+        private QuotationPdfService $pdfService,
     ) {}
 
     private function log(Lead $lead, string $action, array $changes = []): void
@@ -259,7 +262,11 @@ class ProposalController extends Controller
             'items.*.unit' => 'nullable|string|max:16',
             'items.*.unit_price' => 'required|numeric|min:0|max:999999999999',
             'items.*.unit_cost' => 'nullable|numeric|min:0|max:999999999999',
+            'items.*.target_margin_percent' => 'nullable|numeric|min:0|max:99.99',
             'items.*.product_price_log_id' => 'nullable|integer|exists:product_price_logs,id',
+            'items.*.scope_of_supply' => 'nullable|string|max:100',
+            'items.*.lead_time' => 'nullable|string|max:100',
+            'items.*.section' => 'nullable|string|max:100',
             'items.*.stock_status' => 'nullable|in:ready,indent',
             'items.*.stock_eta' => 'nullable|string|max:100',
             'items.*.warranty_info' => 'nullable|string|max:255',
@@ -317,6 +324,10 @@ class ProposalController extends Controller
                 'stock_status' => $old->stock_status,
                 'stock_eta' => $old->stock_eta,
                 'warranty_info' => $old->warranty_info,
+                'scope_of_supply' => $old->scope_of_supply,
+                'lead_time' => $old->lead_time,
+                'section' => $old->section,
+                'target_margin_percent' => $old->target_margin_percent,
             ];
         }
 
@@ -372,10 +383,23 @@ class ProposalController extends Controller
                 'product_id' => $item['product_id'] ?? null,
                 'product_price_log_id' => $priceLog?->id ?? $previous['product_price_log_id'] ?? null,
                 'description' => $item['description'],
+                'scope_of_supply' => filled($item['scope_of_supply'] ?? null)
+                    ? $item['scope_of_supply']
+                    : ($previous['scope_of_supply'] ?? null),
+                'lead_time' => filled($item['lead_time'] ?? null)
+                    ? $item['lead_time']
+                    : ($previous['lead_time'] ?? null),
+                'section' => filled($item['section'] ?? null)
+                    ? $item['section']
+                    : ($previous['section'] ?? 'MATERIAL'),
                 'quantity' => $qty,
                 'unit' => $item['unit'] ?? 'pcs',
                 'unit_price' => $price,
                 'unit_cost' => $cost,
+                'target_margin_percent' => array_key_exists('target_margin_percent', $item)
+                    && $item['target_margin_percent'] !== null && $item['target_margin_percent'] !== ''
+                    ? (float) $item['target_margin_percent']
+                    : ($previous['target_margin_percent'] ?? $proposal->default_margin_percent),
                 'stock_status' => $stockStatus,
                 'stock_eta' => $stockStatus === 'indent' ? $stockEta : null,
                 'warranty_info' => $warrantyInfo,
@@ -508,6 +532,8 @@ class ProposalController extends Controller
             'valid_until' => 'nullable|date|after_or_equal:proposal_date',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'default_margin_percent' => 'nullable|numeric|min:0|max:99.99',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'price_request_id' => 'nullable|exists:price_requests,id',
@@ -564,6 +590,8 @@ class ProposalController extends Controller
                     'letterhead_pt' => $lead->pt_group ?: $lead->customer?->pt_group,
                     'discount' => $validated['discount'] ?? 0,
                     'tax' => $validated['tax'] ?? 0,
+                    'tax_rate' => $validated['tax_rate'] ?? null,
+                    'default_margin_percent' => $validated['default_margin_percent'] ?? AppSetting::defaultMarginPercent(),
                     'notes' => $validated['notes'] ?? null,
                     'internal_notes' => $validated['internal_notes'] ?? null,
                     'payment_scheme' => $validated['payment_scheme'] ?? null,
@@ -577,6 +605,14 @@ class ProposalController extends Controller
 
                 if ($items !== []) {
                     $this->persistItems($proposal, $items, $canManageCost);
+                }
+
+                if (array_key_exists('tax_rate', $validated)
+                    && $validated['tax_rate'] !== null && $validated['tax_rate'] !== '') {
+                    $proposal->forceFill([
+                        'tax' => round($proposal->netSales() * ((float) $validated['tax_rate'] / 100), 2),
+                    ])->save();
+                    $proposal->recalculate();
                 }
 
                 if ($priceRequest) {
@@ -594,6 +630,12 @@ class ProposalController extends Controller
         $this->versions->record($proposal, null, __('Initial quotation'));
 
         $this->log($lead, 'proposal_created', ['number' => $proposal->proposal_number]);
+
+        try {
+            $this->pdfService->generate($proposal->refresh());
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->route('sales.proposals.show', $proposal)
             ->with('success', __('Proposal draft created successfully.'));
@@ -659,6 +701,8 @@ class ProposalController extends Controller
             'valid_until' => 'nullable|date|after_or_equal:proposal_date',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'default_margin_percent' => 'nullable|numeric|min:0|max:99.99',
             'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'quotation_file' => ['nullable', 'file', 'max:10240', SecureFile::documents()],
@@ -671,11 +715,9 @@ class ProposalController extends Controller
         $totalBefore = (float) $proposal->grand_total;
 
         DB::transaction(function () use ($proposal, $validated, $canManageCost, $items) {
-            $proposal->update([
+            $updates = [
                 'proposal_date' => $validated['proposal_date'],
                 'valid_until' => $validated['valid_until'] ?? null,
-                'discount' => $validated['discount'] ?? 0,
-                'tax' => $validated['tax'] ?? 0,
                 'notes' => $validated['notes'] ?? null,
                 'internal_notes' => $validated['internal_notes'] ?? null,
                 'payment_scheme' => $validated['payment_scheme'] ?? null,
@@ -684,16 +726,49 @@ class ProposalController extends Controller
                 'payment_terms' => $validated['payment_terms'] ?? null,
                 'delivery_terms' => $validated['delivery_terms'] ?? null,
                 'warranty_terms' => $validated['warranty_terms'] ?? null,
-            ]);
+            ];
+
+            if (array_key_exists('discount', $validated)) {
+                $updates['discount'] = $validated['discount'] ?? 0;
+            }
+            if (array_key_exists('tax', $validated) && $validated['tax'] !== null) {
+                $updates['tax'] = $validated['tax'];
+            }
+            if (array_key_exists('tax_rate', $validated)
+                && $validated['tax_rate'] !== null && $validated['tax_rate'] !== '') {
+                $updates['tax_rate'] = (float) $validated['tax_rate'];
+            }
+            if (array_key_exists('default_margin_percent', $validated)
+                && $validated['default_margin_percent'] !== null && $validated['default_margin_percent'] !== '') {
+                $updates['default_margin_percent'] = (float) $validated['default_margin_percent'];
+            }
+
+            $proposal->update($updates);
+
             if ($items !== []) {
                 $this->persistItems($proposal, $items, $canManageCost);
             }
+
+            if (array_key_exists('tax_rate', $validated)
+                && $validated['tax_rate'] !== null && $validated['tax_rate'] !== '') {
+                $proposal->forceFill([
+                    'tax' => round($proposal->netSales() * ((float) $validated['tax_rate'] / 100), 2),
+                ])->save();
+            }
+
+            $proposal->recalculate();
         });
 
         $this->storeQuotationFile($request, $proposal);
 
         $proposal->refresh();
         $this->versions->record($proposal, $totalBefore, __('Quotation revised.'));
+
+        try {
+            $this->pdfService->generate($proposal);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->route('sales.proposals.show', $proposal)
             ->with('success', __('Proposal updated successfully.'));

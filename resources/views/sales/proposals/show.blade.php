@@ -65,7 +65,7 @@
                 <div class="w-full md:w-64 text-sm space-y-1">
                     <p class="flex justify-between text-slate-500"><span>{{ __('Subtotal') }}</span><span>{{ number_format($proposal->subtotal, 0, ',', '.') }}</span></p>
                     <p class="flex justify-between text-slate-500"><span>{{ __('Discount') }}</span><span>{{ number_format($proposal->discount, 0, ',', '.') }}</span></p>
-                    <p class="flex justify-between text-slate-500"><span>{{ __('Tax') }}</span><span>{{ number_format($proposal->tax, 0, ',', '.') }}</span></p>
+                    <p class="flex justify-between text-slate-500"><span>{{ __('Tax') }}@if($proposal->tax_rate !== null) ({{ rtrim(rtrim(number_format((float) $proposal->tax_rate, 2, ',', '.'), '0'), ',') }}%)@endif</span><span>{{ number_format($proposal->tax, 0, ',', '.') }}</span></p>
                     <p class="flex justify-between font-bold text-slate-800 dark:text-slate-100"><span>{{ __('Grand Total') }}</span><span>Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</span></p>
                 </div>
             </div>
@@ -83,7 +83,24 @@
                                 <summary class="cursor-pointer text-xs text-slate-500">{{ __('Cost per item') }}</summary>
                                 <ul class="mt-1 space-y-0.5 text-xs text-slate-500">
                                     @foreach($proposal->items as $item)
-                                        <li>{{ $item->description }}: Rp {{ number_format($item->unit_cost, 0, ',', '.') }} × {{ $item->quantity }}</li>
+                                        @php
+                                            $itemMarginAmount = $item->unit_cost !== null
+                                                ? \App\Support\Pricing::marginAmount((float) $item->unit_price, (float) $item->unit_cost, (float) $item->quantity, (float) $item->discount)
+                                                : null;
+                                            $itemMarginPercent = $item->unit_cost !== null
+                                                ? \App\Support\Pricing::marginPercent((float) $item->unit_price, (float) $item->unit_cost, (float) $item->quantity, (float) $item->discount)
+                                                : null;
+                                        @endphp
+                                        <li>
+                                            {{ $item->description }}: Rp {{ number_format((float) $item->unit_cost, 0, ',', '.') }} × {{ $item->quantity }}
+                                            @if($itemMarginAmount !== null)
+                                                · {{ __('Margin') }} Rp {{ number_format($itemMarginAmount, 0, ',', '.') }}
+                                                ({{ $itemMarginPercent === null ? '-' : number_format($itemMarginPercent, 2).'%' }})
+                                            @endif
+                                            @if($item->target_margin_percent !== null)
+                                                · {{ __('Target') }} {{ rtrim(rtrim(number_format((float) $item->target_margin_percent, 2, ',', '.'), '0'), ',') }}%
+                                            @endif
+                                        </li>
                                     @endforeach
                                 </ul>
                             </details>

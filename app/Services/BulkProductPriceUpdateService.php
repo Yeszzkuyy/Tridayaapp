@@ -84,6 +84,9 @@ class BulkProductPriceUpdateService
                 $priceService->recordCost($product, [
                     'supplier_id' => $supplierId,
                     'price' => $netPrice,
+                    'price_entered' => $priceEntered,
+                    'price_includes_tax' => $includesTax,
+                    'tax_rate' => $vatRate,
                     'stock_status' => $latestCost->stock_status ?: 'ready',
                     'stock_eta' => $latestCost->stock_eta,
                     'warranty_info' => $latestCost->warranty_info ?: '',
