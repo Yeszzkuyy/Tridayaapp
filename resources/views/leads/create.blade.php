@@ -3,8 +3,8 @@
     @php($backUrl = auth()->user()?->can('manage-marketing') ? route('leads.index') : route('sales.my-leads'))
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Add New Lead / Opportunity') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Add New Lead / Opportunity') }}</h1>
+            <p class="text-content-secondary mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
         </div>
         <x-back-button :href="$backUrl" />
     </div>
@@ -31,7 +31,7 @@
         {{-- Info Umum --}}
         <section class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
             <div>
-<label for="pt_group" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+<label for="pt_group" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('Lead from PT') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('The group company entity handling this lead: NTI, MGK, TPS, or WANI.') }}" />
                     </label>
@@ -42,7 +42,7 @@
             </div>
 
             <div>
-                <label for="incoming_date" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="incoming_date" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Entry Date') }} <span class="text-red-500">*</span>
                     <x-info-tip tip="{{ __('The date this lead first reached the team (e.g. from chat/email).') }}" />
                 </label>
@@ -50,7 +50,7 @@
             </div>
 
             <div>
-                <label for="source" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="source" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Entered by') }}
                     <x-info-tip tip="{{ __('Where this lead came from: WhatsApp, email, phone, canvassing, event, etc.') }}" />
                 </label>
@@ -60,7 +60,7 @@
             </div>
 
             <div>
-                <label for="segment" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="segment" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Segmentation') }} <span class="text-red-500">*</span>
                     <x-info-tip tip="{{ __('Type of prospective client: End User, Vendor, System Integrator, Contractor, Gov, Principle, Distributor, or other.') }}" />
                 </label>
@@ -73,17 +73,17 @@
 
         {{-- Data Customer --}}
         <section x-data="{ mode: '{{ old('customer_mode', $prefill['customer_mode'] ?? 'new') }}' }" class="border-t border-slate-200">
-            <label class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-3">
+            <label class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-3">
                 {{ __('Customer Data') }} <span class="text-red-500">*</span>
                 <x-info-tip tip="{{ __('Choose New Customer if not recorded before, or Existing Customer if already in the database.') }}" />
             </label>
 
             <div class="flex items-center gap-6 mb-4">
-                <label class="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+                <label class="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-content-secondary">
                     <input type="radio" name="customer_mode" value="new" x-model="mode" class="accent-blue-600">
                     {{ __('New Customer') }}
                 </label>
-                <label class="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
+                <label class="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-content-secondary">
                     <input type="radio" name="customer_mode" value="existing" x-model="mode" class="accent-blue-600">
                     {{ __('Existing Customer') }}
                 </label>
@@ -91,7 +91,7 @@
 
             <div x-show="mode === 'new'" x-cloak class="space-y-4">
                 <div>
-                    <label for="customer_name" class="block text-sm font-medium text-slate-700 mb-1">
+                    <label for="customer_name" class="block text-sm font-medium text-content-secondary mb-1">
                         {{ __('Company') }} <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name', $prefill['customer_name'] ?? '') }}"
@@ -105,7 +105,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
-                        <label for="customer_address" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
+                        <label for="customer_address" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Address') }}</label>
                         <div class="flex items-start gap-2">
                             <textarea name="customer_address" id="customer_address" rows="2"
                                       x-bind:disabled="mode !== 'new'"
@@ -115,10 +115,10 @@
                             <x-maps-open-button input="customer_address" />
                             <x-location-autocomplete />
                         </div>
-                        <p class="mt-1 text-xs text-slate-400">{{ __('Address opens in Google Maps.') }}</p>
+                        <p class="mt-1 text-xs text-content-tertiary">{{ __('Address opens in Google Maps.') }}</p>
                     </div>
                     <div>
-                        <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                        <label for="customer_contact_person" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                             {{ __('PIC') }}
                             <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di perusahaan tersebut.') }}" />
                         </label>
@@ -128,21 +128,21 @@
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
-                        <label for="customer_phone" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Office Phone') }}</label>
+                        <label for="customer_phone" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Office Phone') }}</label>
                         <input type="text" name="customer_phone" id="customer_phone" value="{{ old('customer_phone') }}"
                                x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
-                        <label for="customer_whatsapp" class="block text-sm font-medium text-slate-700 mb-1">{{ __('WhatsApp No.') }}</label>
+                        <label for="customer_whatsapp" class="block text-sm font-medium text-content-secondary mb-1">{{ __('WhatsApp No.') }}</label>
                         <input type="text" name="customer_whatsapp" id="customer_whatsapp" value="{{ old('customer_whatsapp', $prefill['customer_whatsapp'] ?? '') }}"
                                x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. 0812-3456-7890') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div class="md:col-span-2">
-                        <label for="customer_email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
+                        <label for="customer_email" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Email') }}</label>
                         <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email') }}"
                                x-bind:disabled="mode !== 'new'"
                                placeholder="{{ __('e.g. vita@ptkoin.com') }}"
@@ -156,7 +156,7 @@
 
             <div x-show="mode === 'existing'" x-cloak class="space-y-4">
                 <div>
-                    <label class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <label class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('Select Customer') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('Type the company name to search for a registered customer.') }}" />
                     </label>
@@ -172,7 +172,7 @@
                 </div>
 
                 <div>
-                    <label for="customer_contact_person_existing" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <label for="customer_contact_person_existing" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('PIC (update customer contact)') }}
                         <x-info-tip tip="{{ __('Isi hanya jika ingin memperbarui nama PIC customer ini.') }}" />
                     </label>
@@ -188,7 +188,7 @@
         <section class="border-t border-slate-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                 <div class="md:col-span-2">
-                    <label for="kebutuhan" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <label for="kebutuhan" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('Requirement') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('Summary of what the user needs: product, quantity, and whether installation is included.') }}" />
                     </label>
@@ -199,8 +199,8 @@
                 </div>
 
                 <div>
-                    <label for="project_name" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
-                        {{ __('Project Name') }} <span class="text-xs font-normal text-slate-400">({{ __('Optional') }})</span>
+                    <label for="project_name" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
+                        {{ __('Project Name') }} <span class="text-xs font-normal text-content-tertiary">({{ __('Optional') }})</span>
                         <x-info-tip tip="{{ __('Name of the project this lead refers to, e.g. Warehouse CCTV Installation.') }}" />
                     </label>
                     <input type="text" name="project_name" id="project_name" maxlength="255"
@@ -211,7 +211,7 @@
                 </div>
 
                 <div>
-                    <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <label for="need_type" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('Need Type') }} <span class="text-red-500">*</span>
                         <x-info-tip tip="{{ __('What the customer needs: CCTV, IP Phone, Video Conference, Network, or others.') }}" />
                     </label>
@@ -221,7 +221,7 @@
                 </div>
 
                 <div>
-                    <label for="procurement_status" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <label for="procurement_status" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('Procurement Status') }}
                         <x-info-tip tip="{{ __('Whether this is a new installation or a replacement of existing units.') }}" />
                     </label>
@@ -236,7 +236,7 @@
         <section class="border-t border-slate-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div>
-                    <label for="partner_id" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <label for="partner_id" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                         {{ __('Related Partner') }}
                         <x-info-tip tip="{{ __('Select a partner if this lead involves a specific vendor/supplier/contractor. Optional.') }}" />
                     </label>
@@ -249,7 +249,7 @@
 
         {{-- Lampiran --}}
         <section class="border-t border-slate-200">
-            <label class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+            <label class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                 {{ __('Attachments (BOQ / User Requirements)') }}
                 <x-info-tip tip="{{ __('Upload the initial BOQ, specifications, or user requirement documents. Max 5 files, 10 MB per file.') }}" />
             </label>

@@ -2,7 +2,7 @@
     @include('partials.live-feed')
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead Detail') }}:
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Lead Detail') }}:
                 @canany(['view-customer', 'view-sales', 'manage-sales'])
                     @if($lead->customer)
                         <a href="{{ route('customers.show', $lead->customer) }}" class="text-accent-600 hover:text-accent-500 hover:underline">{{ $lead->customer->name }}</a>
@@ -13,7 +13,7 @@
                     {{ $lead->customer?->name ?? '-' }}
                 @endcanany
             </h1>
-            <p class="text-slate-500 mt-1">{{ __('Complete lead / opportunity information') }}</p>
+            <p class="text-content-secondary mt-1">{{ __('Complete lead / opportunity information') }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @php
@@ -95,10 +95,10 @@
                 {{ ucfirst($lead->status) }}
             </span>
             @if($lead->segment)
-                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ \App\Http\Controllers\LeadController::label($lead->segment) }}</span>
+                <span class="text-xs font-medium text-content-secondary">{{ \App\Http\Controllers\LeadController::label($lead->segment) }}</span>
             @endif
             @if($lead->partner)
-                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-content-secondary dark:bg-slate-700">
                     <span class="w-1.5 h-1.5 rounded-full" style="background-color: {{ \App\Models\Partner::TYPE_DOTS[$lead->partner->type] ?? '#94a3b8' }}"></span>
                     {{ $lead->partner->name }}
                 </span>
@@ -118,7 +118,7 @@
                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $isFuOverdue ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">{{ __('FU') }}: {{ $nextFollowUp->follow_up_date->format('d M Y') }}{{ $isFuOverdue ? ' • ' . __('Overdue') : '' }}</span>
             @endif
         </div>
-        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-content-secondary">
             <span>{{ $lead->source ? \App\Http\Controllers\LeadController::label($lead->source) : '-' }} • {{ $lead->incoming_date ? $lead->incoming_date->format('d M Y') : '-' }}</span>
             @if($lead->location)
                 <span>{{ __('Location') }}: {{ $lead->location }}</span>
@@ -129,13 +129,13 @@
             <x-icon name="calendar" class="h-5 w-5 shrink-0 text-accent-600 dark:text-accent-400" />
             <div class="min-w-0 flex-1">
                 @if($nextSchedule)
-                    <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ \App\Models\SalesSchedule::typeLabel($nextSchedule->type) }} — {{ $nextSchedule->title }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $nextSchedule->start_at?->format('d M Y H:i') ?? '-' }} • {{ __('PIC') }}: {{ $nextSchedule->assignee?->name ?? '-' }} • {{ \App\Models\SalesSchedule::statusLabel($nextSchedule->status) }}</p>
+                    <p class="truncate text-sm font-semibold text-content-primary">{{ \App\Models\SalesSchedule::typeLabel($nextSchedule->type) }} — {{ $nextSchedule->title }}</p>
+                    <p class="mt-0.5 text-xs text-content-secondary">{{ $nextSchedule->start_at?->format('d M Y H:i') ?? '-' }} • {{ __('PIC') }}: {{ $nextSchedule->assignee?->name ?? '-' }} • {{ \App\Models\SalesSchedule::statusLabel($nextSchedule->status) }}</p>
                 @elseif($lastTimeline)
-                    <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $lastTimeline['title'] }} — {{ $lastTimeline['summary'] ?: '-' }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $lastTimeline['date'] ? \Carbon\Carbon::parse($lastTimeline['date'])->format('d M Y') : '-' }}@if($lastTimeline['by']) • {{ $lastTimeline['by'] }} @endif</p>
+                    <p class="truncate text-sm font-semibold text-content-primary">{{ $lastTimeline['title'] }} — {{ $lastTimeline['summary'] ?: '-' }}</p>
+                    <p class="mt-0.5 text-xs text-content-secondary">{{ $lastTimeline['date'] ? \Carbon\Carbon::parse($lastTimeline['date'])->format('d M Y') : '-' }}@if($lastTimeline['by']) • {{ $lastTimeline['by'] }} @endif</p>
                 @else
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('No schedules yet. Create the next step.') }}</p>
+                    <p class="text-sm font-semibold text-content-primary">{{ __('No schedules yet. Create the next step.') }}</p>
                 @endif
             </div>
             @if($nextSchedule)
@@ -154,16 +154,16 @@
         <div class="space-y-4 lg:col-span-2">
             @if(in_array($lead->status, ['won', 'lost']))
                 <section aria-labelledby="card-hasil" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                    <h2 id="card-hasil" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="check-circle" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-hasil" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="check-circle" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Final Result') }}
                     </h2>
                     <div class="mt-3">
                         @if($lead->status === 'won')
-                            <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-sm text-slate-700 dark:text-slate-200">
+                            <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-sm text-content-secondary">
                                 <p class="font-semibold text-green-700 dark:text-green-300">{{ __('Won') }}
                                     @if($lead->closed_at)
-                                        <span class="font-normal text-slate-500">• {{ $lead->closed_at->setTimezone('Asia/Jakarta')->format('d M Y H:i') }}</span>
+                                        <span class="font-normal text-content-secondary">• {{ $lead->closed_at->setTimezone('Asia/Jakarta')->format('d M Y H:i') }}</span>
                                     @endif
                                 </p>
                                 @if($lead->closing_note)
@@ -171,7 +171,7 @@
                                 @endif
                             </div>
                         @else
-                            <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl text-sm text-slate-700 dark:text-slate-200">
+                            <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl text-sm text-content-secondary">
                                 <p class="font-semibold text-red-700 dark:text-red-300">{{ __('Lost') }}
                                     @if($lead->lost_reason)
                                         <span class="font-normal">• {{ \App\Models\Lead::lostReasonLabel($lead->lost_reason) }}</span>
@@ -191,7 +191,7 @@
                                 <form action="{{ route('leads.outcome', $lead) }}" method="POST" class="mt-3 flex flex-wrap items-end gap-3">
                                     @csrf @method('PATCH')
                                     <div>
-                                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Lost Reason') }}</label>
+                                        <label class="block text-xs font-medium text-content-secondary mb-1">{{ __('Lost Reason') }}</label>
                                         <select name="lost_reason"
                                                 class="rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
                                             <option value="">{{ __('-- Select a reason --') }}</option>
@@ -203,7 +203,7 @@
                                         </select>
                                     </div>
                                     <div class="flex-1 min-w-52">
-                                        <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Notes') }}</label>
+                                        <label class="block text-xs font-medium text-content-secondary mb-1">{{ __('Notes') }}</label>
                                         <input type="text" name="lost_note" value="{{ old('lost_note', $lead->lost_note) }}"
                                                placeholder="{{ __('Additional notes (optional)') }}"
                                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 text-sm">
@@ -218,15 +218,15 @@
 
             @if($lead->notes || $lead->kebutuhan || $lead->solusi || $lead->progress_notes || $lead->project_name || $lead->need_type || $lead->procurement_status)
                 <section aria-labelledby="card-kebutuhan" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                    <h2 id="card-kebutuhan" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="file-text" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-kebutuhan" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="file-text" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Requirements & Notes') }}
                     </h2>
                     <div class="mt-3 space-y-3">
                         @if($lead->project_name || $lead->need_type || $lead->procurement_status)
                             <div class="flex flex-wrap gap-2">
-                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                                    <x-icon name="briefcase" class="h-4 w-4 text-slate-400" />
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-content-secondary dark:bg-slate-700">
+                                    <x-icon name="briefcase" class="h-4 w-4 text-content-tertiary" />
                                     {{ $lead->project_name ?: __('Installation') }}
                                 </span>
                                 @if($lead->need_type)
@@ -243,26 +243,26 @@
                         @endif
                         @if($lead->kebutuhan)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Requirement') }}</p>
-                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->kebutuhan }}</div>
+                                <p class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Requirement') }}</p>
+                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-content-primary whitespace-pre-wrap">{{ $lead->kebutuhan }}</div>
                             </div>
                         @endif
                         @if($lead->solusi)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Solution') }}</p>
-                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->solusi }}</div>
+                                <p class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Solution') }}</p>
+                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-content-primary whitespace-pre-wrap">{{ $lead->solusi }}</div>
                             </div>
                         @endif
                         @if($lead->progress_notes)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Follow-Up Progress / Notes') }}</p>
-                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->progress_notes }}</div>
+                                <p class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Follow-Up Progress / Notes') }}</p>
+                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-content-primary whitespace-pre-wrap">{{ $lead->progress_notes }}</div>
                             </div>
                         @endif
                         @if($lead->notes)
                             <div>
-                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Notes') }}</p>
-                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-slate-900 dark:text-slate-100 whitespace-pre-wrap">{{ $lead->notes }}</div>
+                                <p class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Notes') }}</p>
+                                <div class="mt-1 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl text-content-primary whitespace-pre-wrap">{{ $lead->notes }}</div>
                             </div>
                         @endif
                     </div>
@@ -271,10 +271,10 @@
 
             <section aria-labelledby="card-jadwal" id="section-schedule" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
-                    <h2 id="card-jadwal" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="calendar" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-jadwal" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="calendar" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Sales Schedule') }}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ ($upcomingSchedules->concat($pastSchedules))->count() }}</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ ($upcomingSchedules->concat($pastSchedules))->count() }}</span>
                     </h2>
                     @if($canSalesWrite)
                         <x-icon-button as="a" href="{{ route('sales.schedules.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add schedule') }}" class="shrink-0">
@@ -286,12 +286,12 @@
                     @php $allSchedules = $upcomingSchedules->concat($pastSchedules); @endphp
                     @forelse($allSchedules as $schedule)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
                                 {{ \App\Models\SalesSchedule::typeLabel($schedule->type) }}
                             </span>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $schedule->title }}</p>
-                                <p class="mt-1 text-xs text-slate-500">
+                                <p class="text-sm text-content-primary line-clamp-2">{{ $schedule->title }}</p>
+                                <p class="mt-1 text-xs text-content-secondary">
                                     {{ $schedule->start_at?->format('d M Y H:i') ?? '-' }}
                                     • {{ __('PIC') }}: {{ $schedule->assignee?->name ?? '-' }}
                                     • {{ \App\Models\SalesSchedule::statusLabel($schedule->status) }}
@@ -300,19 +300,19 @@
                             <x-icon-button as="a" icon="view" href="{{ route('sales.schedules.show', $schedule) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('No schedules for this lead yet.') }}</p>
+                        <p class="text-content-secondary">{{ __('No schedules for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
 
             <section aria-labelledby="card-penawaran" id="section-proposal" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
-                    <h2 id="card-penawaran" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="receipt" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-penawaran" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="receipt" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Offer') }}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $proposalsList->count() }}</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ $proposalsList->count() }}</span>
                         @if($proposalsList->isNotEmpty())
-                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Rp {{ number_format($proposalsList->sum('grand_total'), 0, ',', '.') }}</span>
+                            <span class="text-xs font-semibold text-content-secondary">Rp {{ number_format($proposalsList->sum('grand_total'), 0, ',', '.') }}</span>
                         @endif
                     </h2>
                     @if($canSalesWrite || $canCreateQuotation)
@@ -331,27 +331,27 @@
                 <div class="mt-3 space-y-2">
                     @forelse($proposalsList as $proposal)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200">
+                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 bg-slate-200 text-content-secondary dark:bg-slate-600">
                                 {{ \App\Models\Proposal::statusLabel($proposal->status) }}
                             </span>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $proposal->proposal_number }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</p>
+                                <p class="text-sm text-content-primary line-clamp-2">{{ $proposal->proposal_number }}</p>
+                                <p class="mt-1 text-xs text-content-secondary">Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</p>
                             </div>
                             <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('No quotations for this lead yet.') }}</p>
+                        <p class="text-content-secondary">{{ __('No quotations for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
 
             <section x-data="{ open: {{ $errors->any() ? 'true' : 'false' }}, activity: @js(old('type', 'whatsapp')) }" aria-labelledby="card-riwayat" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
-                    <h2 id="card-riwayat" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="chat" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-riwayat" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="chat" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Log Follow Up') }}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ ($timeline ?? collect())->count() }}</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ ($timeline ?? collect())->count() }}</span>
                     </h2>
                     @can('manage-sales')
                         <x-icon-button icon="add" :title="__('Log follow up')" x-on:click="open = !open" />
@@ -366,36 +366,36 @@
                         <input type="hidden" name="lead_id" value="{{ $lead->id }}">
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
-                                <label for="log-activity-type" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Activity Type') }}</label>
+                                <label for="log-activity-type" class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Activity Type') }}</label>
                                 <select id="log-activity-type" name="type" x-model="activity" required
-                                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-content-primary focus:border-accent-500 focus:ring-accent-500">
                                     @foreach(\App\Models\FollowUp::LOG_TYPES as $logType)
                                         <option value="{{ $logType }}" @selected(old('type') === $logType)>{{ \App\Models\FollowUp::typeLabel($logType) }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div>
-                                <label for="log-activity-date" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Date') }}</label>
+                                <label for="log-activity-date" class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Date') }}</label>
                                 <input type="date" id="log-activity-date" name="follow_up_date" required
                                        value="{{ old('follow_up_date', date('Y-m-d')) }}"
-                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-content-primary focus:border-accent-500 focus:ring-accent-500">
                             </div>
                             <div x-show="activity === 'meeting'" x-cloak>
-                                <label for="log-activity-time" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Time (optional)') }}</label>
+                                <label for="log-activity-time" class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Time (optional)') }}</label>
                                 <input type="time" id="log-activity-time" name="activity_time" value="{{ old('activity_time') }}"
-                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-content-primary focus:border-accent-500 focus:ring-accent-500">
                             </div>
                             <div x-show="activity === 'meeting'" x-cloak>
-                                <label for="log-activity-location" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Location (optional)') }}</label>
+                                <label for="log-activity-location" class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Location (optional)') }}</label>
                                 <input type="text" id="log-activity-location" name="location" maxlength="150" value="{{ old('location') }}"
-                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">
+                                       class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-content-primary focus:border-accent-500 focus:ring-accent-500">
                             </div>
                         </div>
                         <div>
-                            <label for="log-activity-detail" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Detail') }} <span class="text-red-500">*</span></label>
+                            <label for="log-activity-detail" class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Detail') }} <span class="text-red-500">*</span></label>
                             <textarea id="log-activity-detail" name="description" rows="3" required
                                       placeholder="{{ __('What did you do or learn? Keep it short...') }}"
-                                      class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 focus:border-accent-500 focus:ring-accent-500">{{ old('description') }}</textarea>
+                                      class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-content-primary focus:border-accent-500 focus:ring-accent-500">{{ old('description') }}</textarea>
                             @error('description') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div class="flex gap-3">
@@ -410,38 +410,38 @@
             </section>
 
             <section aria-labelledby="card-aktivitas" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                <h2 id="card-aktivitas" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    <x-icon name="activity" class="h-5 w-5 text-slate-400" />
+                <h2 id="card-aktivitas" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <x-icon name="activity" class="h-5 w-5 text-content-tertiary" />
                     {{ __('Lead History') }}
-                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $lead->activities->count() }}</span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ $lead->activities->count() }}</span>
                 </h2>
                 <div class="mt-3 space-y-2">
                     @forelse($lead->activities->sortByDesc('created_at') as $activity)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200">
+                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 bg-slate-200 text-content-secondary dark:bg-slate-600">
                                 {{ $activity->actionLabel() }}
                             </span>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm text-slate-800 dark:text-slate-100">
+                                <p class="text-sm text-content-primary">
                                     {{ $activity->user?->name ?? __('System') }}
                                 </p>
-                                <p class="mt-1 text-xs text-slate-500">
+                                <p class="mt-1 text-xs text-content-secondary">
                                     {{ $activity->created_at?->setTimezone('Asia/Jakarta')->format('d M Y H:i') ?? '-' }}
                                 </p>
                             </div>
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('No history for this lead yet.') }}</p>
+                        <p class="text-content-secondary">{{ __('No history for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
 
             <section aria-labelledby="card-task" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
-                    <h2 id="card-task" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="user" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-task" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="user" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Inside Sales Task') }}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $lead->tasks->count() }}</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ $lead->tasks->count() }}</span>
                     </h2>
                     @php
                         $canRequestTask = auth()->user()?->can('manage-sales-leads')
@@ -457,30 +457,30 @@
                 <div class="mt-3 space-y-2">
                     @forelse($lead->tasks->sortByDesc('created_at') as $task)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
                                 {{ \App\Models\LeadTask::statusLabel($task->status) }}
                             </span>
                             <div class="flex-1 min-w-0">
                                 <a href="{{ route('lead-tasks.show', $task) }}"
-                                   class="text-sm font-medium text-slate-800 dark:text-slate-100 hover:underline line-clamp-2">{{ $task->title }}</a>
-                                <p class="mt-1 text-xs text-slate-500">
+                                   class="text-sm font-medium text-content-primary hover:underline line-clamp-2">{{ $task->title }}</a>
+                                <p class="mt-1 text-xs text-content-secondary">
                                     {{ $task->assignee?->name ?? __('Not assigned yet') }}
                                     @if($task->due_date) • {{ $task->due_date->format('d M Y') }} @endif
                                 </p>
                             </div>
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('No inside sales tasks for this lead yet.') }}</p>
+                        <p class="text-content-secondary">{{ __('No inside sales tasks for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
 
             <section aria-labelledby="card-teknis" id="section-technical" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
                 <div class="flex items-center justify-between gap-2">
-                    <h2 id="card-teknis" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        <x-icon name="tools" class="h-5 w-5 text-slate-400" />
+                    <h2 id="card-teknis" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <x-icon name="tools" class="h-5 w-5 text-content-tertiary" />
                         {{ __('Technical Request') }}
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $techRequests->count() }}</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ $techRequests->count() }}</span>
                     </h2>
                     @if($canSalesWrite && !$activeTechRequest)
                         <x-icon-button as="a" href="{{ route('sales.technical-requests.create', ['lead_id' => $lead->id]) }}" title="{{ __('Request technical team') }}" class="shrink-0">
@@ -491,23 +491,23 @@
                 <div class="mt-3 space-y-2">
                     @forelse($techRequests as $tech)
                         <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl">
-                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                            <span class="mt-0.5 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                                 {{ \App\Models\TechnicalRequest::statusLabel($tech->status) }}
                             </span>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm text-slate-800 dark:text-slate-100 line-clamp-2">{{ $tech->title }}</p>
-                                <p class="mt-1 text-xs text-slate-500">
+                                <p class="text-sm text-content-primary line-clamp-2">{{ $tech->title }}</p>
+                                <p class="mt-1 text-xs text-content-secondary">
                                     {{ \App\Models\TechnicalRequest::typeLabel($tech->request_type) }}
                                     @if($tech->technician) • {{ $tech->technician->name }} @endif
                                 </p>
                                 @if($tech->status === 'completed' && $tech->technical_result)
-                                    <p class="mt-1 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{{ $tech->technical_result }}</p>
+                                    <p class="mt-1 text-xs text-content-secondary line-clamp-2">{{ $tech->technical_result }}</p>
                                 @endif
                             </div>
                             <x-icon-button as="a" icon="view" href="{{ route('sales.technical-requests.show', $tech) }}" title="{{ __('View details') }}" class="shrink-0" />
                         </div>
                     @empty
-                        <p class="text-slate-500">{{ __('No technical requests for this lead yet.') }}</p>
+                        <p class="text-content-secondary">{{ __('No technical requests for this lead yet.') }}</p>
                     @endforelse
                 </div>
             </section>
@@ -515,48 +515,48 @@
 
         <aside class="space-y-4 lg:sticky lg:top-24 self-start">
             <section aria-labelledby="card-info" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                <h2 id="card-info" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    <x-icon name="bolt" class="h-5 w-5 text-slate-400" />
+                <h2 id="card-info" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <x-icon name="bolt" class="h-5 w-5 text-content-tertiary" />
                     {{ __('Lead Information') }}
                 </h2>
                 <dl class="mt-3 space-y-3">
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('PT') }}</dt>
-                        <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $lead->pt_group ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('PT') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $lead->pt_group ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Company') }}</dt>
-                        <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ $lead->customer?->company ?? $lead->customer?->name ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Company') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $lead->customer?->company ?? $lead->customer?->name ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Created on') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->created_at?->format('d M Y H:i') ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Created on') }}</dt>
+                        <dd class="mt-1 text-sm text-content-primary">{{ $lead->created_at?->format('d M Y H:i') ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Last Updated') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->updated_at?->format('d M Y H:i') ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Last Updated') }}</dt>
+                        <dd class="mt-1 text-sm text-content-primary">{{ $lead->updated_at?->format('d M Y H:i') ?? '-' }}</dd>
                     </div>
                 </dl>
             </section>
 
             <section aria-labelledby="card-kontak" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                <h2 id="card-kontak" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    <x-icon name="phone" class="h-5 w-5 text-slate-400" />
+                <h2 id="card-kontak" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <x-icon name="phone" class="h-5 w-5 text-content-tertiary" />
                     {{ __('Customer Contact') }}
                 </h2>
                 <dl class="mt-3 space-y-3">
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('PIC') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ $lead->customer?->picName() ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('PIC') }}</dt>
+                        <dd class="mt-1 text-sm text-content-primary">{{ $lead->customer?->picName() ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Office Phone') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">{{ \App\Support\PhoneFormatter::format($lead->customer?->phone) ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Office Phone') }}</dt>
+                        <dd class="mt-1 text-sm text-content-primary">{{ \App\Support\PhoneFormatter::format($lead->customer?->phone) ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('WhatsApp No.') }}</dt>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('WhatsApp No.') }}</dt>
                         @php($waLink = $lead->customer?->waLink() ?? null)
-                        <dd class="mt-1 flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
+                        <dd class="mt-1 flex items-center gap-2 text-sm text-content-primary">
                             @if($waLink)
                                 <a href="{{ $waLink }}" target="_blank" rel="noopener" class="hover:underline">{{ \App\Support\PhoneFormatter::format($lead->customer->whatsapp) }}</a>
                                 <x-icon-button as="a" href="{{ $waLink }}" target="_blank" rel="noopener" title="WhatsApp" class="shrink-0">
@@ -571,19 +571,19 @@
                     </div>
                     @if($lead->customer?->picWhatsappLink())
                         <div>
-                            <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('PIC WhatsApp') }}</dt>
-                            <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                            <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('PIC WhatsApp') }}</dt>
+                            <dd class="mt-1 text-sm text-content-primary">
                                 <a href="{{ $lead->customer->picWhatsappLink() }}" target="_blank" rel="noopener" class="hover:underline">{{ \App\Support\PhoneFormatter::format($lead->customer->picWhatsapp()) }}</a>
                             </dd>
                         </div>
                     @endif
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Email') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100 break-all">{{ $lead->customer?->email ?? '-' }}</dd>
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Email') }}</dt>
+                        <dd class="mt-1 text-sm text-content-primary break-all">{{ $lead->customer?->email ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wide">{{ __('Address') }}</dt>
-                        <dd class="mt-1 text-sm text-slate-900 dark:text-slate-100">
+                        <dt class="text-xs font-semibold text-content-tertiary uppercase tracking-wide">{{ __('Address') }}</dt>
+                        <dd class="mt-1 text-sm text-content-primary">
                             <x-location-link :location="$lead->customer?->address" />
                         </dd>
                     </div>
@@ -591,19 +591,19 @@
             </section>
 
             <section aria-labelledby="card-lampiran" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                <h2 id="card-lampiran" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    <x-icon name="folder" class="h-5 w-5 text-slate-400" />
+                <h2 id="card-lampiran" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <x-icon name="folder" class="h-5 w-5 text-content-tertiary" />
                     {{ __('Attachments (BOQ / User Requirements)') }}
-                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $lead->documents->count() }}</span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ $lead->documents->count() }}</span>
                 </h2>
                 <div class="mt-3 space-y-2">
                     @if($lead->documents->isEmpty())
-                        <p class="text-slate-500">{{ __('No attachments yet.') }}</p>
+                        <p class="text-content-secondary">{{ __('No attachments yet.') }}</p>
                     @else
                         @foreach($lead->documents as $doc)
                             <div class="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                                <span class="text-sm text-slate-800 dark:text-slate-100 truncate">{{ $doc->file_name }}</span>
-                                <span class="shrink-0 inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200">
+                                <span class="text-sm text-content-primary truncate">{{ $doc->file_name }}</span>
+                                <span class="shrink-0 inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-200 text-content-secondary dark:bg-slate-600">
                                     {{ \App\Models\LeadDocument::categoryLabel($doc->category) }}
                                 </span>
                                 <div class="flex items-center gap-2 shrink-0">
@@ -623,7 +623,7 @@
                                         <form action="{{ route('leads.attachments.category', [$lead, $doc]) }}" method="POST" class="inline-flex">
                                             @csrf @method('PATCH')
                                             <select name="category" onchange="this.form.submit()" title="{{ __('Document category') }}"
-                                                    class="rounded-lg border-slate-300 text-xs text-slate-600 focus:border-accent-500 focus:ring-accent-500">
+                                                    class="rounded-lg border-slate-300 text-xs text-content-secondary focus:border-accent-500 focus:ring-accent-500">
                                                 <option value="">{{ __('Tanpa kategori') }}</option>
                                                 @foreach(\App\Models\LeadDocument::CATEGORIES as $category)
                                                     <option value="{{ $category }}" @selected($doc->category === $category)>
@@ -642,12 +642,12 @@
 
             @if($documents->isNotEmpty())
             <section aria-labelledby="card-instalasi" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-5">
-                <h2 id="card-instalasi" class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    <x-icon name="building" class="h-5 w-5 text-slate-400" />
+                <h2 id="card-instalasi" class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <x-icon name="building" class="h-5 w-5 text-content-tertiary" />
                     {{ __('Installation Documentation (Read-Only)') }}
-                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $documents->count() }}</span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700">{{ $documents->count() }}</span>
                 </h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Dokumen dari project terkait customer ini (diunggah Tim Teknisi)') }}</p>
+                <p class="mt-1 text-sm text-content-secondary">{{ __('Dokumen dari project terkait customer ini (diunggah Tim Teknisi)') }}</p>
                 <div class="mt-3">
                         <div class="grid grid-cols-1 gap-3">
                             @foreach($documents as $doc)
@@ -655,16 +655,16 @@
                                     <div class="flex items-center gap-3">
                                         <div class="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                                             @if($doc->is_image)
-                                                <svg class="w-6 h-6 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                <svg class="w-6 h-6 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                             @elseif($doc->is_pdf)
                                                 <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                                             @else
-                                                <svg class="w-6 h-6 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                <svg class="w-6 h-6 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                             @endif
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{{ $doc->file_name }}</p>
-                                            <p class="text-xs text-slate-500">
+                                            <p class="text-sm font-medium text-content-primary truncate">{{ $doc->file_name }}</p>
+                                            <p class="text-xs text-content-secondary">
                                                 {{ $doc->category->name ?? __('Tanpa Kategori') }} •
                                                 {{ $doc->uploader->name ?? __('Unknown') }} •
                                                 {{ $doc->created_at->format('d M Y') }}
@@ -696,8 +696,8 @@
         <div class="fixed inset-0 bg-slate-900/50" onclick="closeConvertModal()"></div>
         <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600">
             <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-600">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ __('Convert Lead to Project') }}</h3>
-                <button type="button" onclick="closeConvertModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <h3 class="text-lg font-semibold text-content-primary">{{ __('Convert Lead to Project') }}</h3>
+                <button type="button" onclick="closeConvertModal()" class="text-content-tertiary hover:text-content-secondary dark:hover:text-content-tertiary">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -705,13 +705,13 @@
                 @csrf @method('PATCH')
                 <div class="p-4 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Project Name') }}</label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Project Name') }}</label>
                         <input type="text" name="project_name" required
                                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                                placeholder="{{ __('New project name') }}">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Status Project') }}</label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Status Project') }}</label>
                         <select name="project_status_id" required
                                 class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
                             @foreach($projectStatuses ?? [] as $status)
@@ -720,7 +720,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Job Type') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Job Type') }} <span class="text-red-500">*</span></label>
                         <select name="work_type_id" required
                                  class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
                             <option value="">{{ __('-- Select Work Type --') }}</option>
@@ -730,7 +730,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Closing Note (Optional)') }}</label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Closing Note (Optional)') }}</label>
                         <textarea name="closing_note" rows="3"
                                   placeholder="{{ __('Closing notes: agreement, deal value, follow up...') }}"
                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"></textarea>
