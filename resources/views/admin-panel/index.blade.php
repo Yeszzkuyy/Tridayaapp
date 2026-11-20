@@ -5,7 +5,7 @@
             <p class="text-content-secondary mt-1">{{ __('User, Role & Permission Management (Super Admin)') }}</p>
         </div>
         <div class="flex gap-2">
-            <x-icon-button as="a" href="{{ route('admin-panel.pricing.edit') }}" icon="edit" label="{{ __('Tax & Margin') }}" title="{{ __('Tax & Margin') }}" />
+            <x-icon-button as="a" href="{{ route('admin-panel.pricing.edit') }}" icon="edit" :label="__('Tax & Margin')" :title="__('Tax & Margin')" />
             <x-icon-button as="a" href="{{ route('admin-panel.roles.create') }}" title="{{ __('Add Role') }}">
                 <x-icon name="users" class="h-5 w-5" />
             </x-icon-button>
