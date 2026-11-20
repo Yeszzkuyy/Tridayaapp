@@ -3,9 +3,9 @@
 
     {{-- 1. Open Header Style --}}
     <div class="lynk-enter flex flex-col gap-3 pt-1 mb-6 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Dashboard Marketing') }}</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-content-primary">{{ __('Dashboard Marketing') }}</h1>
         <div class="flex flex-wrap items-center gap-2.5">
-            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-content-secondary shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90">
                 <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
                 <span>{{ now()->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
             </div>
@@ -17,11 +17,11 @@
         <form method="GET" action="{{ route('marketing.dashboard') }}" class="flex flex-wrap items-end gap-x-6 gap-y-4">
             <div class="flex flex-wrap sm:flex-nowrap items-end gap-4">
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('From Date') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('From Date') }}</label>
                     <x-datepicker name="date_from" value="{{ $dateFrom }}" class="mt-1"></x-datepicker>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('To Date') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('To Date') }}</label>
                     <x-datepicker name="date_to" value="{{ $dateTo }}" class="mt-1"></x-datepicker>
                 </div>
             </div>
@@ -54,7 +54,7 @@
                             @foreach($presets as $label => [$from, $to])
                                 @php $active = $activeRange === $from . '|' . $to; @endphp
                                 <a href="{{ route('marketing.dashboard', ['date_from' => $from, 'date_to' => $to]) }}"
-                                   class="group relative overflow-hidden px-4 py-2.5 text-sm font-medium transition {{ $active ? 'bg-accent-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                                   class="group relative overflow-hidden px-4 py-2.5 text-sm font-medium transition {{ $active ? 'bg-accent-600 text-white' : 'text-content-secondary hover:bg-slate-50 dark:hover:bg-slate-700' }}">
                                     <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                     {{ $label }}
                                 </a>
@@ -66,7 +66,7 @@
                         @foreach($presets as $label => [$from, $to])
                             @php $active = $activeRange === $from . '|' . $to; @endphp
                             <a href="{{ route('marketing.dashboard', ['date_from' => $from, 'date_to' => $to]) }}"
-                               class="group relative overflow-hidden px-4 py-2.5 text-sm font-medium transition {{ $active ? 'bg-accent-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                               class="group relative overflow-hidden px-4 py-2.5 text-sm font-medium transition {{ $active ? 'bg-accent-600 text-white' : 'text-content-secondary hover:bg-slate-50 dark:hover:bg-slate-700' }}">
                                 <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
                                 {{ $label }}
                             </a>
@@ -108,7 +108,7 @@
                 'value' => (int) ($stats['total'] ?? 0),
                 'suffix' => '',
                 'sub' => __('All recorded leads'),
-                'subClass' => 'text-slate-500 dark:text-slate-400',
+                'subClass' => 'text-content-secondary',
                 'icon' => 'users',
                 'ambient' => 'bg-indigo-500/15 dark:bg-indigo-500/20',
                 'iconBg' => 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
@@ -150,7 +150,7 @@
                 'value' => (int) ($stats['conversion'] ?? 0),
                 'suffix' => '%',
                 'sub' => __('won ÷ (won + lost)'),
-                'subClass' => 'text-slate-400',
+                'subClass' => 'text-content-tertiary',
                 'icon' => 'chart-bar',
                 'ambient' => 'bg-pink-500/15 dark:bg-pink-500/20',
                 'iconBg' => 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/15 dark:text-pink-300',
@@ -174,8 +174,8 @@
                             <x-icon name="{{ $mc['icon'] }}" class="h-5 w-5" />
                         </span>
                         <div class="min-w-0">
-                            <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ $mc['label'] }}</p>
-                            <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums dark:text-white"
+                            <p class="truncate text-xs font-medium text-content-secondary">{{ $mc['label'] }}</p>
+                            <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-content-primary tabular-nums dark:text-white"
                                data-countup="{{ $mc['value'] }}" data-countup-suffix="{{ $mc['suffix'] }}" data-countup-delay="{{ $dMs + 20 }}">{{ $mc['value'] }}{{ $mc['suffix'] }}</p>
                         </div>
                     </div>
@@ -200,15 +200,15 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Tren lead masuk --}}
         <div style="--d: 420ms" class="lynk-enter rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-            <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">{{ __('Incoming Leads') }} — {{ $dateFrom }} {{ __('s/d') }} {{ $dateTo }}</h2>
+            <h2 class="font-semibold text-content-primary mb-4">{{ __('Incoming Leads') }} — {{ $dateFrom }} {{ __('s/d') }} {{ $dateTo }}</h2>
             @php $maxTrend = max($trend->max('total'), 1); @endphp
             <div class="flex items-end justify-between gap-3 h-44">
                 @foreach($trend as $month)
                     <div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                        <span class="text-xs font-semibold text-slate-600 tabular-nums">{{ $month->total }}</span>
+                        <span class="text-xs font-semibold text-content-secondary tabular-nums">{{ $month->total }}</span>
                         <div class="w-full max-w-12 rounded-t-[4px] bg-accent-500" data-grow-h
                              style="--h: {{ max(round($month->total / $maxTrend * 100), 2) }}%; --d: {{ $loop->index * 120 }}ms"></div>
-                        <span class="text-[11px] text-slate-500 whitespace-nowrap">{{ $month->label }}</span>
+                        <span class="text-xs text-content-secondary whitespace-nowrap">{{ $month->label }}</span>
                     </div>
                 @endforeach
             </div>
@@ -216,17 +216,17 @@
 
         {{-- Lead per sumber --}}
         <div style="--d: 500ms" class="lynk-enter rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
-            <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">{{ __('Leads by Source') }}</h2>
+            <h2 class="font-semibold text-content-primary mb-4">{{ __('Leads by Source') }}</h2>
             @if($perSource->isEmpty())
-                <p class="text-sm text-slate-500 py-8 text-center">{{ __('No lead data yet.') }}</p>
+                <p class="text-sm text-content-secondary py-8 text-center">{{ __('No lead data yet.') }}</p>
             @else
                 @php $maxSource = max($perSource->max('total'), 1); @endphp
                 <div class="space-y-3">
                     @foreach($perSource as $row)
                         <div>
                             <div class="flex items-center justify-between text-xs mb-1">
-                                <span class="text-slate-600 dark:text-slate-300 font-medium capitalize">{{ str_replace('_', ' ', $row->source) }}</span>
-                                <span class="font-bold text-slate-800 dark:text-slate-100 tabular-nums" data-countup="{{ (int) $row->total }}" data-countup-delay="520">{{ $row->total }}</span>
+                                <span class="text-content-secondary font-medium capitalize">{{ str_replace('_', ' ', $row->source) }}</span>
+                                <span class="font-bold text-content-primary tabular-nums" data-countup="{{ (int) $row->total }}" data-countup-delay="520">{{ $row->total }}</span>
                             </div>
                             <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-700/70 overflow-hidden">
                                 <div class="lynk-progress-bar h-full rounded-full bg-accent-500"
@@ -265,16 +265,16 @@
     }"
     x-on:donut-select.window="select($event.detail.key)"
     >
-        <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">{{ __('Lead Pipeline by Status') }}</h2>
+        <h2 class="font-semibold text-content-primary mb-4">{{ __('Lead Pipeline by Status') }}</h2>
         <div class="flex flex-col sm:flex-row items-center justify-between gap-6 max-w-2xl mx-auto">
             <div class="relative w-44 shrink-0">
                 <div id="status-donut-chart" class="w-full">
                     <x-donut-chart :data="$donutMarketing" :size="176" :strokeWidth="24" :scroll="true" />
                 </div>
                 <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                    <span class="mt-0.5 text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums dark:text-white" x-text="activeSeg() ? activeSeg().value : total">{{ $stats['total'] }}</span>
-                    <span class="text-[11px] font-medium text-slate-400 dark:text-slate-400 truncate max-w-full" x-text="activeSeg() ? activeSeg().label : '{{ __('Total Leads') }}'">{{ __('Total Leads') }}</span>
-                    <span x-show="activeSeg() && total > 0" class="text-xs font-medium text-slate-400" x-text="activeSeg() ? '[' + Math.round(activeSeg().value / total * 100) + '%]' : ''"></span>
+                    <span class="mt-0.5 text-2xl sm:text-3xl font-extrabold text-content-primary tabular-nums dark:text-white" x-text="activeSeg() ? activeSeg().value : total">{{ $stats['total'] }}</span>
+                    <span class="text-xs font-medium text-content-tertiary truncate max-w-full" x-text="activeSeg() ? activeSeg().label : '{{ __('Total Leads') }}'">{{ __('Total Leads') }}</span>
+                    <span x-show="activeSeg() && total > 0" class="text-xs font-medium text-content-tertiary" x-text="activeSeg() ? '[' + Math.round(activeSeg().value / total * 100) + '%]' : ''"></span>
                 </div>
             </div>
 
@@ -286,11 +286,11 @@
                             :class="selectedStatus === '{{ $seg['key'] }}' && 'bg-slate-50 dark:bg-slate-700/40 ring-1 ring-slate-200 dark:ring-slate-600'">
                         <span class="flex min-w-0 items-center gap-2.5">
                             <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $seg['color'] }}"></span>
-                            <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $seg['label'] }}</span>
+                            <span class="truncate font-medium text-content-secondary">{{ $seg['label'] }}</span>
                         </span>
-                        <span class="shrink-0 font-bold text-slate-800 tabular-nums dark:text-slate-100">
+                        <span class="shrink-0 font-bold text-content-primary tabular-nums">
                             <span data-countup="{{ (int) $seg['value'] }}" data-countup-delay="620">{{ $seg['value'] }}</span>
-                            <span class="font-normal text-slate-400">({{ $funnelTotal > 0 ? round($seg['value'] / $funnelTotal * 100) : 0 }}%)</span>
+                            <span class="font-normal text-content-tertiary">({{ $funnelTotal > 0 ? round($seg['value'] / $funnelTotal * 100) : 0 }}%)</span>
                         </span>
                     </button>
                 @endforeach
@@ -300,13 +300,13 @@
         {{-- Tabel lead — selalu tampil: semua lead bila belum filter, per status bila diklik --}}
         <div class="mt-6 border-t border-slate-100 dark:border-slate-700 pt-5">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="font-semibold text-slate-700 dark:text-slate-200">
+                <h3 class="font-semibold text-content-secondary">
                     <span x-show="!selectedStatus">{{ __('All Leads') }}</span>
                     <span x-show="selectedStatus">{{ __('Lead Detail') }} <span class="text-accent-600 dark:text-accent-400 uppercase" x-text="selectedStatus"></span></span>
-                    <span class="text-sm font-medium text-slate-400">(<span x-text="filteredLeads().length"></span> {{ __('lead') }})</span>
+                    <span class="text-sm font-medium text-content-tertiary">(<span x-text="filteredLeads().length"></span> {{ __('lead') }})</span>
                 </h3>
                 <button type="button" x-show="selectedStatus" @click="select(selectedStatus)"
-                        class="text-sm font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition">
+                        class="text-sm font-semibold text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary transition">
                     {{ __('Show all') }}
                 </button>
             </div>
@@ -316,24 +316,24 @@
                     <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
                         <thead class="bg-slate-50 dark:bg-slate-900/40">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
-                                <th x-show="!selectedStatus" class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Status') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Source') }}</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Partner') }}</th>
-                                <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">{{ __('Entry Date') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
+                                <th x-show="!selectedStatus" class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Status') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Source') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Partner') }}</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Entry Date') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800">
                             <template x-for="lead in filteredLeads()" :key="lead.id">
                                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
                                     <td class="px-4 py-3">
-                                        <p class="font-medium text-slate-800 dark:text-slate-100" x-text="lead.name"></p>
-                                        <p class="text-xs text-slate-500" x-show="lead.company" x-text="lead.company"></p>
+                                        <p class="font-medium text-content-primary" x-text="lead.name"></p>
+                                        <p class="text-xs text-content-secondary" x-show="lead.company" x-text="lead.company"></p>
                                     </td>
-                                    <td x-show="!selectedStatus" class="px-4 py-3 text-slate-600 dark:text-slate-300 uppercase" x-text="statusLabel(lead._status)"></td>
-                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300 capitalize" x-text="lead.source"></td>
-                                    <td class="px-4 py-3 text-slate-600 dark:text-slate-300" x-text="lead.partner"></td>
-                                    <td class="px-4 py-3 text-right text-slate-500 whitespace-nowrap" x-text="lead.date"></td>
+                                    <td x-show="!selectedStatus" class="px-4 py-3 text-content-secondary uppercase" x-text="statusLabel(lead._status)"></td>
+                                    <td class="px-4 py-3 text-content-secondary capitalize" x-text="lead.source"></td>
+                                    <td class="px-4 py-3 text-content-secondary" x-text="lead.partner"></td>
+                                    <td class="px-4 py-3 text-right text-content-secondary whitespace-nowrap" x-text="lead.date"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -343,7 +343,7 @@
 
             <template x-if="filteredLeads().length === 0">
                 <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 px-5 py-8 text-center">
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    <p class="text-sm font-medium text-content-secondary">
                         <span x-show="!selectedStatus">{{ __('No leads in this date range.') }}</span>
                         <span x-show="selectedStatus">{{ __('No leads with status') }} <span class="uppercase" x-text="selectedStatus"></span> {{ __('in this date range.') }}</span>
                     </p>

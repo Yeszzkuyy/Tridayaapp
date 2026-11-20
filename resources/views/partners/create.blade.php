@@ -1,8 +1,8 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Add Partner') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Save supplier, vendor, contractor, partner, or distributor data.') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Add Partner') }}</h1>
+            <p class="text-content-secondary mt-1">{{ __('Save supplier, vendor, contractor, partner, or distributor data.') }}</p>
         </div>
         <x-back-button :href="route('partners.index')" />
     </div>
@@ -14,7 +14,7 @@
         {{-- Informasi Partner --}}
         <section class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
             <div>
-                <label for="name" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="name" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Partner Name') }} <span class="text-red-500">*</span>
                     <x-info-tip tip="{{ __('Official name of the partner company or institution.') }}" />
                 </label>
@@ -26,7 +26,7 @@
             </div>
 
             <div>
-                <label for="type" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="type" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Tipe') }} <span class="text-red-500">*</span>
                     <x-info-tip tip="{{ __('Cooperation category: Supplier (goods), Vendor (services), Contractor, Distributor, or General Partner.') }}" />
                 </label>
@@ -45,7 +45,7 @@
         {{-- Kontak --}}
         <section class="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-6 pt-6 border-t border-slate-200">
             <div>
-                <label for="contact_person" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="contact_person" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Contact Person') }}
                     <x-info-tip tip="{{ __('Nama orang yang bisa dihubungi di partner ini.') }}" />
                 </label>
@@ -57,7 +57,7 @@
             </div>
 
             <div>
-                <label for="phone" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                <label for="phone" class="flex items-center gap-1.5 text-sm font-medium text-content-secondary mb-1">
                     {{ __('Phone / WhatsApp') }}
                     <x-info-tip tip="{{ __('A reachable number, may be in WhatsApp link format.') }}" />
                 </label>
@@ -69,7 +69,7 @@
             </div>
 
             <div>
-                <label for="email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
+                <label for="email" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Email') }}</label>
                 <input type="email" name="email" id="email" value="{{ old('email') }}" placeholder="{{ __('e.g. budi@ptsumberjaya.com') }}"
                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 @error('email')
@@ -81,7 +81,7 @@
         {{-- Lainnya --}}
         <section class="space-y-6 pt-6 border-t border-slate-200">
             <div>
-                <label for="address" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
+                <label for="address" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Address') }}</label>
                 <textarea name="address" id="address" rows="2"
                           placeholder="{{ __('e.g. Jl. Industri Raya No. 15, Bekasi, West Java') }}"
                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('address') }}</textarea>
@@ -91,7 +91,7 @@
             </div>
 
             <div>
-                <label for="notes" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Notes') }}</label>
+                <label for="notes" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Notes') }}</label>
                 <textarea name="notes" id="notes" rows="3" placeholder="{{ __('Additional notes about this partner...') }}"
                           class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('notes') }}</textarea>
                 @error('notes')

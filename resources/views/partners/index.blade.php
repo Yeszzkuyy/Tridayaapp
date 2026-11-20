@@ -1,8 +1,8 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Partners') }}</h1>
-            <p class="text-slate-500 mt-1">{{ $partners->total() }} {{ __('registered partners — supplier, vendor, contractor, partner, and distributor') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Partners') }}</h1>
+            <p class="text-content-secondary mt-1">{{ $partners->total() }} {{ __('registered partners — supplier, vendor, contractor, partner, and distributor') }}</p>
         </div>
         @can('manage-marketing')
             <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('partners.create') }}" label="{{ __('Add Partner') }}" title="{{ __('Add Partner') }}" />
@@ -17,7 +17,7 @@
               :aria-busy="loading">
             <div class="relative flex-1 min-w-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                     stroke="currentColor" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                     stroke="currentColor" class="w-4 h-4 text-content-tertiary absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
                 </svg>
                 <input type="search" name="search" value="{{ request('search') }}"
@@ -48,7 +48,7 @@
                        "
                 >
                 <div class="min-h-5 pt-1.5 text-xs" aria-live="polite">
-                    <span x-cloak x-show="loading" class="text-slate-400">{{ __('Searching partners...') }}</span>
+                    <span x-cloak x-show="loading" class="text-content-tertiary">{{ __('Searching partners...') }}</span>
                     <span x-cloak x-show="error" class="text-red-500">{{ __('Search failed. Try again.') }}</span>
                 </div>
             </div>
