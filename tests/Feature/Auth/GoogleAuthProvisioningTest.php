@@ -153,4 +153,29 @@ class GoogleAuthProvisioningTest extends TestCase
         $this->assertStringContainsString('/admin-panel/users/', $notification->data['url']);
         $this->assertStringContainsString('/edit', $notification->data['url']);
     }
+
+    public function test_google_callback_rejects_account_bound_to_different_google_id(): void
+    {
+        $existingUser = User::factory()->create([
+            'email' => 'karyawan.tetap@gmail.com',
+            'google_id' => 'google-id-asli',
+        ]);
+        $existingUser->assignRole('sales');
+
+        $mockGoogleUser = new SocialiteUser();
+        $mockGoogleUser->id = 'google-id-berbeda';
+        $mockGoogleUser->name = 'Karyawan Tetap';
+        $mockGoogleUser->email = 'karyawan.tetap@gmail.com';
+
+        $mockDriver = Mockery::mock('stdClass');
+        $mockDriver->shouldReceive('user')->once()->andReturn($mockGoogleUser);
+
+        Socialite::shouldReceive('driver')->with('google')->once()->andReturn($mockDriver);
+
+        $response = $this->get(route('auth.google.callback'));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
 }

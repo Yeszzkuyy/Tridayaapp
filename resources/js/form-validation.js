@@ -133,15 +133,15 @@ function fieldHost(field) {
     if (cell) return cell;
 
     let host = field.parentElement;
-    // Naik dari wrapper dekorasi (mis. .relative untuk prefix Rp) supaya
-    // pesan tidak menimpa input.
+    // Naik dari wrapper dekorasi (mis. .relative untuk prefix Rp, atau .box/.input-glass
+    // di halaman login/auth) supaya pesan error tampil di bawah kotak input, bukan di dalamnya.
     let guard = 0;
     while (
         host &&
         host !== field.form &&
         guard < 3 &&
-        host.children.length <= 2 &&
-        /(^|\s)relative(\s|$)/.test(String(host.className || ''))
+        host.children.length <= 3 &&
+        /(^|\s)(relative|box|input-glass|nx-pass-wrap|login-input-wrap)(\s|$)/.test(String(host.className || ''))
     ) {
         host = host.parentElement;
         guard += 1;

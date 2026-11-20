@@ -29,6 +29,8 @@
         document.documentElement.classList.add('dark');
     </script>
 
+    @include('layouts.partials.workspace-frame-guard')
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -256,7 +258,7 @@
         .field { margin-bottom: 26px; }
         label.t { display: block; margin-bottom: 12px; font-size: 15px; font-weight: 700; letter-spacing: -.03em; }
         .box { position: relative; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field); transition: border-color .25s, box-shadow .25s; }
-        .box:focus-within:not(.bad) {
+        .box:focus-within:not(.bad):not(:has(.form-validation-invalid)) {
             border-color: transparent;
             background:
                 linear-gradient(var(--field), var(--field)) padding-box,
@@ -265,25 +267,41 @@
             animation: borderflow 3s linear infinite;
         }
         @keyframes borderflow { to { --a: 360deg; } }
-        .box.bad { border-color: var(--danger); animation: shake .4s; }
+        .box.bad, .box:has(.form-validation-invalid) { border-color: var(--danger); animation: shake .4s; }
         @keyframes shake { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } }
+        .box input,
         input[type="email"], input[type="password"], input[type="text"] {
             width: 100%;
             height: 60px;
             padding: 0 56px 0 18px;
-            border: 0;
+            border: 0 !important;
             border-radius: 10px;
-            outline: none;
+            outline: none !important;
+            box-shadow: none !important;
+            --tw-ring-shadow: 0 0 #0000 !important;
+            --tw-ring-offset-shadow: 0 0 #0000 !important;
             color: var(--text);
             background: transparent;
             font: inherit;
             font-size: 17px;
             letter-spacing: -.02em;
         }
+        .box input:focus,
+        input[type="email"]:focus, input[type="password"]:focus, input[type="text"]:focus {
+            border: 0 !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
         input::placeholder { color: var(--placeholder); }
         input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
             -webkit-text-fill-color: var(--text);
             caret-color: var(--text);
+            -webkit-box-shadow: 0 0 0 1000px var(--field) inset !important;
+            box-shadow: 0 0 0 1000px var(--field) inset !important;
             transition: background-color 9999s ease-in-out 0s;
         }
         .eye { position: absolute; top: 10px; right: 10px; display: grid; width: 40px; height: 40px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; place-items: center; transition: background .2s, color .2s; }
@@ -530,6 +548,7 @@
                         <div class="box{{ $errors->has('password') ? ' bad' : '' }}">
                             <input
                                 id="password"
+                                type="password"
                                 :type="showPassword ? 'text' : 'password'"
                                 name="password"
                                 required

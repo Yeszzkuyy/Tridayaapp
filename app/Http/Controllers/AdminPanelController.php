@@ -87,6 +87,7 @@ class AdminPanelController extends Controller
             // Sengaja TIDAK menyentuh password_changed_at: reset oleh admin
             // bukan penggantian oleh pemilik akun, indikator tetap merah.
             $user->update(['password' => Hash::make($request->password)]);
+            \App\Support\SessionRevoker::allFor($user);
         }
 
         if ($request->has('roles')) {
