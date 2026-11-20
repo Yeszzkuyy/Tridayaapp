@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Goods Receipts') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Goods Receipts') }}</h1>
         </div>
         <div class="flex items-center gap-2">
             @can('manage-admin')
@@ -13,12 +13,12 @@
 
     <form method="GET" action="{{ route('admin.goods-receipts.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
         <div>
-            <label for="q" class="block text-xs text-slate-500 mb-1">{{ __('Search') }}</label>
+            <label for="q" class="block text-xs text-content-secondary mb-1">{{ __('Search') }}</label>
             <input id="q" type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('Receipt / delivery note / PO') }}"
                    class="w-64 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
         </div>
         <div>
-            <label for="status" class="block text-xs text-slate-500 mb-1">{{ __('Status') }}</label>
+            <label for="status" class="block text-xs text-content-secondary mb-1">{{ __('Status') }}</label>
             <select id="status" name="status" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <option value="">{{ __('All') }}</option>
                 @foreach($statuses as $status)
@@ -35,31 +35,31 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Receipt Number') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier PO') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Project') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Received Date') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Items') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Receipt Number') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier PO') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Project') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Received Date') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Items') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($receipts as $receipt)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-4 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $receipt->receipt_number }}</td>
-                            <td class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-300">{{ $receipt->purchaseOrder?->po_number ?? __('Not filled') }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $receipt->purchaseOrder?->supplier?->name ?? __('Not filled') }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                            <td class="px-4 py-3 font-mono text-sm font-semibold text-content-primary">{{ $receipt->receipt_number }}</td>
+                            <td class="px-4 py-3 font-mono text-sm text-content-secondary">{{ $receipt->purchaseOrder?->po_number ?? __('Not filled') }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $receipt->purchaseOrder?->supplier?->name ?? __('Not filled') }}</td>
+                            <td class="px-4 py-3 text-content-secondary">
                                 @if($receipt->project)
                                     <a href="{{ route('projects.show', $receipt->project) }}" class="hover:underline">{{ $receipt->project->project_name }}</a>
                                 @else
                                     -
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $receipt->received_date?->format('d M Y') }}</td>
-                            <td class="px-4 py-3 text-center text-slate-600 dark:text-slate-400">{{ $receipt->items_count }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $receipt->received_date?->format('d M Y') }}</td>
+                            <td class="px-4 py-3 text-center text-content-secondary">{{ $receipt->items_count }}</td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ \App\Models\GoodsReceipt::statusBadgeClasses($receipt->status) }}">
                                     {{ \App\Models\GoodsReceipt::statusLabel($receipt->status) }}
@@ -72,7 +72,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="py-8 text-center text-slate-400">{{ __('No goods receipts yet.') }}</td></tr>
+                        <tr><td colspan="8" class="py-8 text-center text-content-tertiary">{{ __('No goods receipts yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

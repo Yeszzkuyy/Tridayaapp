@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Suppliers') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Suppliers') }}</h1>
         </div>
         <div class="flex items-center gap-2">
             @can('manage-admin')
@@ -13,12 +13,12 @@
 
     <form method="GET" action="{{ route('admin.suppliers.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
         <div>
-            <label for="q" class="block text-xs text-slate-500 mb-1">{{ __('Search') }}</label>
+            <label for="q" class="block text-xs text-content-secondary mb-1">{{ __('Search') }}</label>
             <input id="q" type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('Name / code / contact') }}"
                    class="w-64 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
         </div>
         <div>
-            <label for="status" class="block text-xs text-slate-500 mb-1">{{ __('Status') }}</label>
+            <label for="status" class="block text-xs text-content-secondary mb-1">{{ __('Status') }}</label>
             <select id="status" name="status" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <option value="">{{ __('All') }}</option>
                 <option value="active" @selected(request('status') === 'active')>{{ __('Active') }}</option>
@@ -34,26 +34,26 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Code') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Contact') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Code') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Contact') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($suppliers as $supplier)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-300">{{ $supplier->code ?? '-' }}</td>
+                            <td class="px-4 py-3 font-mono text-sm text-content-secondary">{{ $supplier->code ?? '-' }}</td>
                             <td class="px-4 py-3">
-                                <p class="font-medium text-slate-800 dark:text-slate-100">{{ $supplier->name }}</p>
+                                <p class="font-medium text-content-primary">{{ $supplier->name }}</p>
                                 @if($supplier->notes)
-                                    <p class="text-xs text-slate-500 truncate max-w-xs">{{ $supplier->notes }}</p>
+                                    <p class="text-xs text-content-secondary truncate max-w-xs">{{ $supplier->notes }}</p>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                            <td class="px-4 py-3 text-content-secondary">
                                 <p>{{ $supplier->contact_person ?? '-' }}</p>
-                                <p class="text-xs text-slate-500">
+                                <p class="text-xs text-content-secondary">
                                     {{ $supplier->phone ?? '-' }}@if($supplier->email) • {{ $supplier->email }}@endif
                                 </p>
                             </td>
@@ -61,7 +61,7 @@
                                 @if($supplier->is_active)
                                     <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">{{ __('Active') }}</span>
                                 @else
-                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-slate-700 dark:bg-slate-600 dark:text-slate-200">{{ __('Inactive') }}</span>
+                                    <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-slate-200 text-content-secondary dark:bg-slate-600">{{ __('Inactive') }}</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
@@ -80,7 +80,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-8 text-center text-slate-400">{{ __('No suppliers yet.') }}</td></tr>
+                        <tr><td colspan="5" class="py-8 text-center text-content-tertiary">{{ __('No suppliers yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

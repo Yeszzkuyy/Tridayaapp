@@ -4,7 +4,7 @@
     <div class="space-y-5">
         {{-- Header terbuka: judul + filter PT sebaris, tanpa tombol aksi --}}
         <div class="lynk-enter flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+            <h1 class="text-2xl font-bold tracking-tight text-content-primary sm:text-3xl">
                 {{ __('Admin Dashboard') }}
             </h1>
 
@@ -47,7 +47,7 @@
                     <nav class="flex flex-wrap items-center gap-2" aria-label="{{ __('Filter Berdasarkan PT') }}">
                         @foreach ($ptItems as $i => $item)
                             <a href="{{ $item['url'] }}"
-                               class="rounded-xl border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ $i === $ptActive ? 'border-accent-600 bg-accent-600 text-white' : 'border-slate-200/80 bg-[var(--card-bg)] text-slate-600 dark:border-slate-700 dark:text-slate-300' }}">
+                               class="rounded-xl border px-4 py-2 text-xs font-semibold transition-all duration-200 {{ $i === $ptActive ? 'border-accent-600 bg-accent-600 text-white' : 'border-slate-200/80 bg-[var(--card-bg)] text-content-secondary dark:border-slate-700 dark:text-content-secondary' }}">
                                 {{ $item['label'] }}
                             </a>
                         @endforeach
@@ -105,10 +105,10 @@
                 @foreach ($steps as $index => $step)
                     <a href="{{ $step['route'] }}" data-step="{{ $index + 1 }}"
                        class="group flex items-center gap-2.5 bg-white px-4 py-3.5 transition-colors duration-200 last:col-span-2 hover:bg-slate-50/90 dark:bg-slate-800/90 dark:hover:bg-slate-700/35 xl:last:col-span-1">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold {{ $step['tone'] }}">{{ $index + 1 }}</span>
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold {{ $step['tone'] }}">{{ $index + 1 }}</span>
                         <span class="min-w-0">
-                            <span class="block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">{{ $step['label'] }}</span>
-                            <span class="block truncate text-[11px] text-slate-500 dark:text-slate-400">{{ $step['count'] }} {{ $step['meta'] }}</span>
+                            <span class="block truncate text-xs font-semibold text-content-secondary">{{ $step['label'] }}</span>
+                            <span class="block truncate text-xs text-content-secondary">{{ $step['count'] }} {{ $step['meta'] }}</span>
                         </span>
                     </a>
                 @endforeach
@@ -146,7 +146,7 @@
                         <x-icon name="building" class="h-3.5 w-3.5" />
                         <span>{{ __('Filter') }}: PT {{ $ptGroup }}</span>
                         <a href="{{ $ptUrl() }}"
-                           class="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-600 text-[10px] font-bold leading-none text-white transition-colors hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-400"
+                           class="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-accent-600 text-xs font-bold leading-none text-white transition-colors hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-400"
                            title="{{ __('Reset') }}" aria-label="{{ __('Reset') }}">×</a>
                     </div>
                 </div>
