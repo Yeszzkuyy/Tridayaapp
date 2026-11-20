@@ -10,12 +10,12 @@
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="truncate text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">{{ $customer->name }}</h1>
+                        <h1 class="truncate text-2xl font-bold tracking-tight text-content-primary sm:text-3xl">{{ $customer->name }}</h1>
                         @if($customer->pt_group)
-                            <span class="inline-flex rounded-lg px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\Lead::PT_COLORS[$customer->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }}">{{ $customer->pt_group }}</span>
+                            <span class="inline-flex rounded-lg px-2 py-0.5 text-xs font-semibold {{ \App\Models\Lead::PT_COLORS[$customer->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }}">{{ $customer->pt_group }}</span>
                         @endif
                     </div>
-                    <p class="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                    <p class="mt-1 flex items-center gap-1.5 truncate text-xs text-content-secondary">
                         <x-icon name="map-pin" class="h-3.5 w-3.5 shrink-0" />
                         {{ $customer->address ?? __('Address not available') }}
                     </p>
@@ -56,34 +56,34 @@
                     <span x-ref="indicator" class="tab-indicator absolute bottom-0 left-0 h-0.5 w-0 rounded-full bg-accent-500"></span>
 
                     <button @click="tab = 'overview'; moveIndicator($el)"
-                            :class="tab === 'overview' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                            :class="tab === 'overview' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="grid" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Overview') }}
                     </button>
                     <button @click="tab = 'projects'; moveIndicator($el)"
-                            :class="tab === 'projects' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                            :class="tab === 'projects' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="folder" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Projects') }}
                     </button>
                     <button @click="tab = 'contacts'; moveIndicator($el)"
-                            :class="tab === 'contacts' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                            :class="tab === 'contacts' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="users" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Contacts') }}
                     </button>
                     <button @click="tab = 'documents'; moveIndicator($el)"
-                            :class="tab === 'documents' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                            :class="tab === 'documents' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="book" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Documents') }}
                     </button>
                     @can('view-sales')
                     <button @click="tab = 'followups'; moveIndicator($el)"
-                            :class="tab === 'followups' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                            :class="tab === 'followups' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="phone" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Follow Up') }}
                     </button>
                     @endcan
                     <button @click="tab = 'activity'; moveIndicator($el)"
-                            :class="tab === 'activity' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                            :class="tab === 'activity' ? 'tab-active text-accent-600 dark:text-accent-400' : 'text-content-secondary hover:text-content-secondary dark:hover:text-content-tertiary'"
                             class="shrink-0 py-3 sm:py-4 px-1 font-medium text-xs sm:text-sm transition-colors duration-200">
                         <x-icon name="activity" class="h-4 w-4 mr-1.5 inline-block align-[-1px]" /> {{ __('Activity') }}
                     </button>
@@ -144,14 +144,14 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {{-- Info Perusahaan --}}
                         <div data-rise="1" class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6">
-                            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">{{ __('Company Information') }}</h3>
+                            <h3 class="text-sm font-semibold text-content-secondary uppercase tracking-wider mb-4">{{ __('Company Information') }}</h3>
                             <div class="space-y-1">
                                 @foreach($infoFields as $field)
                                     <div class="info-row flex items-start gap-3 rounded-lg px-3 py-2 -mx-3">
                                         <x-icon name="{{ $field['icon'] }}" class="w-4 h-4 mt-1 text-indigo-400 shrink-0" />
                                         <div class="min-w-0">
-                                            <p class="text-xs text-slate-400">{{ $field['label'] }}</p>
-                                            <p class="flex flex-wrap items-center gap-2 font-medium text-slate-800 dark:text-slate-100 {{ empty($field['value']) ? 'text-slate-400' : '' }}">{{ $field['value'] ?: '-' }}@if(!empty($field['badge']))<x-status-badge :color="$field['badgeColor'] ?? 'slate'">{{ $field['badge'] }}</x-status-badge>@endif</p>
+                                            <p class="text-xs text-content-tertiary">{{ $field['label'] }}</p>
+                                            <p class="flex flex-wrap items-center gap-2 font-medium text-content-primary {{ empty($field['value']) ? 'text-content-tertiary' : '' }}">{{ $field['value'] ?: '-' }}@if(!empty($field['badge']))<x-status-badge :color="$field['badgeColor'] ?? 'slate'">{{ $field['badge'] }}</x-status-badge>@endif</p>
                                         </div>
                                     </div>
                                 @endforeach
@@ -165,7 +165,7 @@
 
                         {{-- Statistik --}}
                         <div data-rise="2" class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6">
-                            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">{{ __('Statistics') }}</h3>
+                            <h3 class="text-sm font-semibold text-content-secondary uppercase tracking-wider mb-4">{{ __('Statistics') }}</h3>
                             <div class="grid grid-cols-2 gap-3 sm:gap-4">
                                 @foreach($stats as $i => $stat)
                                     <div class="stat-card bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex items-center gap-3" data-rise="{{ $i + 1 }}">
@@ -173,9 +173,9 @@
                                             <x-icon name="{{ $stat['icon'] }}" class="w-5 h-5" />
                                         </span>
                                         <div class="min-w-0">
-                                            <p class="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100"
+                                            <p class="text-2xl font-bold tabular-nums text-content-primary"
                                                x-data="countUp({{ $stat['value'] }})" x-text="n"></p>
-                                            <p class="text-[11px] sm:text-xs text-slate-500">{{ $stat['label'] }}</p>
+                                            <p class="text-xs sm:text-xs text-content-secondary">{{ $stat['label'] }}</p>
                                         </div>
                                     </div>
                                 @endforeach
@@ -230,11 +230,11 @@
                             <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
                                 @foreach($customer->contacts as $contact)
                                     <tr class="{{ $contact->is_primary ? 'bg-accent-50 dark:bg-accent-900/30' : '' }}">
-                                        <td class="px-6 py-3 font-medium text-slate-800 dark:text-slate-100 align-middle">{{ $contact->name }}</td>
-                                        <td class="px-6 py-3 text-sm text-slate-600 dark:text-slate-300 align-middle">{{ $contact->position ?? '-' }}</td>
-                                        <td class="px-6 py-3 text-sm text-slate-600 dark:text-slate-300 align-middle">
+                                        <td class="px-6 py-3 font-medium text-content-primary align-middle">{{ $contact->name }}</td>
+                                        <td class="px-6 py-3 text-sm text-content-secondary align-middle">{{ $contact->position ?? '-' }}</td>
+                                        <td class="px-6 py-3 text-sm text-content-secondary align-middle">
                                             @if($contact->whatsapp)<span>{{ __('WA:') }} {{ \App\Support\PhoneFormatter::format($contact->whatsapp) }}</span><br>@endif
-                                            <span class="text-xs text-slate-400">{{ $contact->email ?? '-' }}</span>
+                                            <span class="text-xs text-content-tertiary">{{ $contact->email ?? '-' }}</span>
                                         </td>
                                         <td class="px-6 py-3 align-middle">
                                             @can('update', $customer)
@@ -244,7 +244,7 @@
                                                         <input type="checkbox" value="1" {{ $contact->is_primary ? 'checked' : '' }}
                                                                onchange="this.form.submit()"
                                                                class="h-5 w-5 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                                                        <span class="text-xs text-slate-500">{{ __('Primary') }}</span>
+                                                        <span class="text-xs text-content-secondary">{{ __('Primary') }}</span>
                                                     </label>
                                                 </form>
                                             @else
@@ -295,15 +295,15 @@
                     {{-- Header: judul, switch tampilan, satu tombol upload. --}}
                     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
-                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">{{ __('Documents') }}</h2>
+                            <h2 class="text-xl font-bold text-content-primary dark:text-white">{{ __('Documents') }}</h2>
                             <div class="inline-flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-700">
                                 <button type="button" @click="docView = 'all'"
-                                        :class="docView === 'all' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'"
+                                        :class="docView === 'all' ? 'bg-white text-content-primary shadow-sm dark:bg-slate-800 : 'text-content-secondary hover:text-content-primary dark:hover:text-content-tertiary'"
                                         class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
                                     {{ __('All Documents') }}
                                 </button>
                                 <button type="button" @click="docView = 'module'"
-                                        :class="docView === 'module' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-800 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100'"
+                                        :class="docView === 'module' ? 'bg-white text-content-primary shadow-sm dark:bg-slate-800 : 'text-content-secondary hover:text-content-primary dark:hover:text-content-tertiary'"
                                         class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
                                     {{ __('By Module') }}
                                 </button>
@@ -359,7 +359,7 @@
                     {{-- Section Quotation / Penawaran Harga (Mirroring dari Sales) --}}
                     <div class="border-t border-slate-200 dark:border-slate-600 pt-6">
                         <div class="mb-3 flex items-center justify-between gap-2">
-                            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">{{ __('Quotation') }}</h3>
+                            <h3 class="text-base font-semibold text-content-primary">{{ __('Quotation') }}</h3>
                             <a href="{{ route('sales.proposals.index') }}"
                                class="text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
                                 {{ __('View all') }}
@@ -375,14 +375,14 @@
                                         </span>
                                         <div class="min-w-0 flex-1">
                                             <a href="{{ route('sales.proposals.show', $quo) }}"
-                                               class="truncate font-mono text-sm font-semibold text-slate-800 hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">
+                                               class="truncate font-mono text-sm font-semibold text-content-primary hover:text-accent-600 dark:hover:text-accent-400">
                                                 {{ $quo->proposal_number }}
                                             </a>
-                                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                            <p class="mt-0.5 truncate text-xs text-content-secondary">
                                                 {{ $quo->proposal_date?->format('d M Y') ?? '-' }} · Rp {{ number_format($quo->grand_total, 0, ',', '.') }}
                                             </p>
                                         </div>
-                                        <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
+                                        <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold {{ \App\Models\Proposal::statusBadgeClasses($quo->status) }}">
                                             {{ \App\Models\Proposal::statusLabel($quo->status) }}
                                         </span>
                                         <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $quo) }}" target="_blank" title="{{ __('Preview PDF') }}" />
@@ -391,7 +391,7 @@
                             </div>
                         @else
                             <div class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center dark:border-slate-700">
-                                <p class="text-sm text-slate-500 dark:text-slate-400">{{ __('No quotations yet.') }}</p>
+                                <p class="text-sm text-content-secondary">{{ __('No quotations yet.') }}</p>
                                 @canany(['manage-inside-sales', 'manage-sales-leads'])
                                     <a href="{{ route('sales.proposals.create') }}"
                                        class="mt-1 inline-block text-sm font-medium text-accent-600 hover:text-accent-700 dark:text-accent-400 dark:hover:text-accent-300">
@@ -420,11 +420,11 @@
                             <div class="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
                                 <div class="mb-4 flex items-center justify-between">
                                     <div>
-                                        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Upload File') }}</h3>
-                                        <p id="doc-upload-target" class="hidden text-xs text-slate-500 dark:text-slate-400"></p>
+                                        <h3 class="text-lg font-bold text-content-primary">{{ __('Upload File') }}</h3>
+                                        <p id="doc-upload-target" class="hidden text-xs text-content-secondary"></p>
                                     </div>
                                     <button type="button" data-doc-modal-close aria-label="{{ __('Close') }}"
-                                            class="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                                            class="flex h-9 w-9 items-center justify-center rounded-full text-content-secondary hover:bg-slate-100 dark:hover:bg-slate-800">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                                     </button>
                                 </div>
@@ -433,7 +433,7 @@
                                     @csrf
                                     @can('manage-admin')
                                         <div class="mb-3">
-                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Document type') }}</label>
+                                            <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Document type') }}</label>
                                             <select name="doc_type" id="doc-doc-type" x-model="formType"
                                                     class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                                 <option value="">{{ __('General') }}</option>
@@ -445,7 +445,7 @@
 
                                         <div class="mb-3 grid grid-cols-1 gap-3 md:grid-cols-2" x-show="formType !== ''" x-cloak>
                                             <div x-show="formType === 'invoice'">
-                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Invoice') }}</label>
+                                                <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Related Invoice') }}</label>
                                                 <select name="transaction_id" :disabled="formType !== 'invoice'"
                                                         class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                                     <option value="">{{ __('Choose invoice') }}</option>
@@ -457,7 +457,7 @@
                                                 </select>
                                             </div>
                                             <div x-show="formType === 'po'">
-                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Purchase Order') }}</label>
+                                                <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Related Purchase Order') }}</label>
                                                 <select name="transaction_id" :disabled="formType !== 'po'"
                                                         class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                                     <option value="">{{ __('Choose purchase order') }}</option>
@@ -469,7 +469,7 @@
                                                 </select>
                                             </div>
                                             <div x-show="formType === 'payment'">
-                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Related Payment') }}</label>
+                                                <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Related Payment') }}</label>
                                                 <select name="transaction_id" :disabled="formType !== 'payment'"
                                                         class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                                     <option value="">{{ __('Choose payment') }}</option>
@@ -484,7 +484,7 @@
                                     @endcan
                                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                                         <div x-show="formType === ''">
-                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Category') }}</label>
+                                            <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Category') }}</label>
                                             <select name="document_category_id" :disabled="formType !== ''"
                                                     class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
                                                 <option value="">{{ __('Tanpa Kategori') }}</option>
@@ -495,7 +495,7 @@
                                         </div>
                                         @if($customer->projects->isNotEmpty())
                                             <div id="doc-project-field" x-show="formType === ''">
-                                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Project') }}</label>
+                                                <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Project') }}</label>
                                                 <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                                     <option value="">{{ __('General') }}</option>
                                                     @foreach($customer->projects as $p)
@@ -505,7 +505,7 @@
                                             </div>
                                         @endif
                                         <div>
-                                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ __('Notes') }}</label>
+                                            <label class="mb-1 block text-sm font-medium text-content-secondary">{{ __('Notes') }}</label>
                                             <input type="text" name="notes" value="{{ old('notes') }}" placeholder="{{ __('Document notes') }}"
                                                    class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                         </div>
@@ -521,20 +521,20 @@
                                                x-ref="fileInput"
                                                @change="fileName = $event.target.files.length ? $event.target.files[0].name : ''"
                                                class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
-                                        <svg class="mx-auto mb-2 h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="mx-auto mb-2 h-8 w-8 text-content-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                         </svg>
-                                        <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('Drag & drop files here') }}</p>
-                                        <p class="text-xs text-slate-400">{{ __('or click to browse') }} · {{ __('Maximum 20MB') }}</p>
-                                        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400" x-text="fileName || '{{ __('No file selected') }}'"></p>
+                                        <p class="text-sm font-medium text-content-secondary">{{ __('Drag & drop files here') }}</p>
+                                        <p class="text-xs text-content-tertiary">{{ __('or click to browse') }} · {{ __('Maximum 20MB') }}</p>
+                                        <p class="mt-2 text-sm text-content-secondary" x-text="fileName || '{{ __('No file selected') }}'"></p>
                                         @error('file')
                                             <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
                                         @enderror
                                     </div>
                                     <div class="mt-4 flex justify-end gap-3">
                                         <button type="button" data-doc-modal-close
-                                                class="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                class="rounded-xl px-5 py-2.5 text-sm font-medium text-content-secondary hover:bg-slate-100 dark:hover:bg-slate-800">
                                             {{ __('Cancel') }}
                                         </button>
                                         <button type="submit" data-doc-upload-submit
@@ -554,15 +554,15 @@
                         {{-- Popup ubah nama --}}
                         <div id="doc-rename-modal" class="fixed inset-0 z-[95] hidden items-center justify-center bg-slate-950/70 p-4" data-doc-modal>
                             <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
-                                <h3 class="mb-4 text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Rename') }}</h3>
+                                <h3 class="mb-4 text-lg font-bold text-content-primary">{{ __('Rename') }}</h3>
                                 <form id="doc-rename-form" method="POST" action="#">
                                     @csrf @method('PATCH')
                                     <input type="text" name="name" id="doc-rename-input" required maxlength="255"
                                            class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                                    <p class="mt-1 text-xs text-slate-400">{{ __('File extension is kept automatically.') }}</p>
+                                    <p class="mt-1 text-xs text-content-tertiary">{{ __('File extension is kept automatically.') }}</p>
                                     <div class="mt-4 flex justify-end gap-3">
                                         <button type="button" data-doc-modal-close
-                                                class="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                                                class="rounded-xl px-5 py-2.5 text-sm font-medium text-content-secondary hover:bg-slate-100 dark:hover:bg-slate-800">
                                             {{ __('Cancel') }}
                                         </button>
                                         <button type="submit"
@@ -593,8 +593,8 @@
                                         <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200">
                                             <div class="flex items-start justify-between">
                                                 <div class="flex-1">
-                                                    <p class="text-sm text-slate-700 dark:text-slate-200">{{ $fu->description }}</p>
-                                                    <div class="flex gap-3 mt-2 text-xs text-slate-400">
+                                                    <p class="text-sm text-content-secondary">{{ $fu->description }}</p>
+                                                    <div class="flex gap-3 mt-2 text-xs text-content-tertiary">
                                                         <span>{{ $fu->creator?->name ?? '-' }}</span>
                                                         @if($fu->follow_up_date)
                                                             <span>· {{ $fu->follow_up_date->format('d M Y') }}</span>

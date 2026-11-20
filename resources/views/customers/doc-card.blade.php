@@ -83,7 +83,7 @@
          title="{{ $doc->file_name }}">
         {{-- Ikon fallback DI BELAKANG: hanya terlihat kalau render thumbnail gagal --}}
         @if(! $isImage)
-            <svg class="absolute h-10 w-10 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg class="absolute h-10 w-10 text-content-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
@@ -104,18 +104,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <span class="text-[11px] font-bold tracking-wider">{{ $typeTile[1] }}</span>
+                <span class="text-xs font-bold tracking-wider">{{ $typeTile[1] }}</span>
             </div>
         @endif
         @if($showsBadge)
-            <span class="absolute left-2.5 top-2.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm {{ $badgeClass }}">{{ $badgeText ?: ($docExt ?: __('File')) }}</span>
+            <span class="absolute left-2.5 top-2.5 rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm {{ $badgeClass }}">{{ $badgeText ?: ($docExt ?: __('File')) }}</span>
         @endif
     </div>
 
     <div class="flex flex-1 items-start justify-between gap-1.5 py-2.5 pl-3.5 pr-2">
         <div class="min-w-0 flex-1 pt-1.5">
-            <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100" title="{{ $doc->file_name }}">{{ $doc->file_name }}</p>
-            <p class="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">{{ $metaLine }}@if($docSize) · {{ $docSize }}@endif</p>
+            <p class="truncate text-sm font-medium text-content-primary" title="{{ $doc->file_name }}">{{ $doc->file_name }}</p>
+            <p class="mt-0.5 truncate text-xs text-content-tertiary">{{ $metaLine }}@if($docSize) · {{ $docSize }}@endif</p>
         </div>
 
         {{-- Aksi dokumen diringkas jadi satu tombol titik tiga; isinya
@@ -125,18 +125,18 @@
             <div data-doc-menu-panel
                  class="doc-menu absolute bottom-full right-0 z-50 mb-2 w-44 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
                 <button type="button" data-doc-open-child
-                        class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                        class="w-full px-3 py-2 text-left text-sm text-content-secondary transition hover:bg-slate-100 dark:hover:bg-slate-700">
                     {{ __('Preview') }}
                 </button>
                 <a href="{{ route('project-documents.download', $doc) }}"
-                   class="block w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                   class="block w-full px-3 py-2 text-left text-sm text-content-secondary transition hover:bg-slate-100 dark:hover:bg-slate-700">
                     {{ __('Download') }}
                 </a>
                 @if($canManage && ! $doc->isModuleDocument())
                     <button type="button" data-doc-rename
                             data-action="{{ route('project-documents.rename', $doc) }}"
                             data-name="{{ $doc->file_name }}"
-                            class="w-full px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700">
+                            class="w-full px-3 py-2 text-left text-sm text-content-secondary transition hover:bg-slate-100 dark:hover:bg-slate-700">
                         {{ __('Rename') }}
                     </button>
                 @endif

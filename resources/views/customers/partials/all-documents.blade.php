@@ -20,10 +20,10 @@
         <form method="GET" action="{{ route('customers.show', $customer) }}" class="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label class="relative w-full sm:w-64">
                 <span class="sr-only">{{ __('Search documents') }}</span>
-                <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
                 <input type="search" name="documents_q" value="{{ $customerDocumentFilters['q'] ?? '' }}" autocomplete="off"
                        placeholder="{{ __('Search documents...') }}"
-                       class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                       class="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm text-content-primary placeholder:text-content-tertiary focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
             </label>
             <select name="documents_category" onchange="this.form.submit()" aria-label="{{ __('Filter category') }}"
                     class="h-10 w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 sm:w-44">
@@ -41,7 +41,7 @@
             </div>
         </form>
 
-        <p class="text-sm text-slate-500 dark:text-slate-400 lg:whitespace-nowrap">
+        <p class="text-sm text-content-secondary lg:whitespace-nowrap">
             {{ trans_choice(':count document|:count documents', $customerDocuments->total(), ['count' => $customerDocuments->total()]) }}
         </p>
     </div>
