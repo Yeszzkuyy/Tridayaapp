@@ -211,12 +211,32 @@ class LeadTaskController extends Controller
             ->latest('id')
             ->first();
 
+        $estimatorRowByItem = [];
+        if ($estimatorRequest) {
+            foreach ($estimatorRequest->items as $estimatorItem) {
+                $priceLogId = $estimatorItem->priceLog?->id;
+
+                foreach ($leadTask->items as $taskItem) {
+                    $matches = ($priceLogId && (int) $taskItem->product_price_log_id === (int) $priceLogId)
+                        || ($estimatorItem->product_id
+                            && (int) $taskItem->product_id === (int) $estimatorItem->product_id
+                            && trim((string) $taskItem->description) === trim((string) $estimatorItem->description));
+
+                    if ($matches) {
+                        $estimatorRowByItem[$taskItem->id] = $estimatorItem->id;
+                        break;
+                    }
+                }
+            }
+        }
+
         return view('lead-tasks.show', [
             'task' => $leadTask,
             'products' => $products,
             'productOptions' => $productOptions,
             'productData' => $productData,
             'estimatorRequest' => $estimatorRequest,
+            'estimatorRowByItem' => $estimatorRowByItem,
             'defaultMargin' => \App\Models\AppSetting::defaultMarginPercent(),
         ]);
     }

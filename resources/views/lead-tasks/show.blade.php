@@ -193,7 +193,7 @@
             <ul class="divide-y divide-slate-100 dark:divide-slate-800/60">
                 @foreach($task->attachments as $attachment)
                     <li class="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
                             <x-icon name="file-text" class="h-5 w-5" />
                         </span>
                         <div class="min-w-0 flex-1">
@@ -205,7 +205,7 @@
                                 <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $attachment->created_at?->translatedFormat('d M Y H:i') }}
                             </p>
                             @if($attachment->accepted_at && $attachment->proposal)
-                                <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
                                     {{ __('Accepted') }} {{ $attachment->accepted_at->translatedFormat('d M Y H:i') }} ·
                                     <a href="{{ route('sales.proposals.show', $attachment->proposal) }}" class="font-semibold underline">
                                         {{ $attachment->proposal->proposal_number }}
@@ -240,7 +240,7 @@
                 @csrf
                 <x-file-drop id="quotation-file" name="attachment" :max="1" :multiple="false"
                              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" />
-                @error('attachment') <p class="text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                @error('attachment') <p class="text-xs text-rose-700 dark:text-rose-400">{{ $message }}</p> @enderror
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Each upload becomes the latest version, older files stay in history.') }}</p>
                     <x-icon-button type="submit" icon="upload" label="{{ __('Upload Quotation File') }}" title="{{ __('Upload Quotation File') }}" />
@@ -262,7 +262,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <x-icon-button type="button" id="use-all-estimator-items" icon="add" label="{{ __('Use All') }}" title="{{ __('Use All') }}" />
-                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
+                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[12px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
                         {{ $estimatorRequest->items->count() }} {{ __('item(s)') }}
                     </span>
                 </div>
@@ -273,12 +273,7 @@
                         $priceLog = $estimatorItem->priceLog;
                         $netCost = $priceLog?->price ?? $estimatorItem->price_before_tax ?? $estimatorItem->price;
                         $canUse = $netCost !== null && $estimatorItem->product_id;
-                        $isAdded = $task->items->contains(fn ($item) => (
-                            ($priceLog?->id && (int) $item->product_price_log_id === (int) $priceLog->id)
-                            || ($estimatorItem->product_id
-                                && (int) $item->product_id === (int) $estimatorItem->product_id
-                                && trim((string) $item->description) === trim((string) $estimatorItem->description))
-                        ));
+                        $isAdded = in_array($estimatorItem->id, $estimatorRowByItem, true);
                         $payload = [
                             'product_id' => $estimatorItem->product_id,
                             'product_price_log_id' => $priceLog?->id,
@@ -321,14 +316,16 @@
         </div>
     @endif
 
-    {{-- Item quotation dari Inside Sales: batch editable rows. --}}
+    {{-- Item quotation dari Inside Sales: tabel ringkas dengan baris detail. --}}
     <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div>
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
                 <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-100">{{ __('Quotation Items') }}</h3>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Edit items below, then save all changes.') }}</p>
+                <span id="quotation-items-count" class="rounded-full bg-slate-100 px-2 py-0.5 text-[12px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ $task->items->count() }} {{ __('item(s)') }}</span>
             </div>
-            <span id="quotation-items-count" class="text-xs text-slate-400">{{ $task->items->count() }} {{ __('item(s)') }}</span>
+            @if($canManageAttachment && auth()->user()->can('manage-inside-sales'))
+                <x-icon-button type="button" icon="add" label="{{ __('Add Item') }}" title="{{ __('Add Item') }}" id="add-quotation-item" />
+            @endif
         </div>
 
         @if($canManageAttachment && auth()->user()->can('manage-inside-sales'))
@@ -347,44 +344,59 @@
                 @csrf
                 @method('PUT')
 
-                <div id="quotation-items-list" class="space-y-3">
-                    @forelse($task->items as $index => $item)
-                        @include('lead-tasks.partials.quotation-item-card', [
-                            'index' => $index,
-                            'item' => $item,
-                            'productOptions' => $productOptions,
-                            'defaultMargin' => $defaultMargin,
-                        ])
-                    @empty
-                        <div id="quotation-items-empty" class="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center dark:border-slate-600">
-                            <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('No quotation items yet.') }}</p>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Use an estimator item above or add a blank item below.') }}</p>
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700/60 lg:max-h-[65vh] lg:overflow-auto">
+                    <div class="lg:min-w-[1120px]">
+                        <div class="sticky top-0 z-10 hidden grid-cols-[28px_28px_minmax(180px,1fr)_110px_142px_80px_136px_108px_176px_56px] items-center gap-x-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[12px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 lg:grid">
+                            <span aria-hidden="true"></span>
+                            <span aria-hidden="true">#</span>
+                            <span>{{ __('Product') }}</span>
+                            <span class="text-left">{{ __('Qty') }}</span>
+                            <span class="text-right" title="{{ __('Cost Price (Estimator)') }}">{{ __('Cost') }}</span>
+                            <span class="text-right">{{ __('Margin %') }}</span>
+                            <span class="text-right">{{ __('Selling Price') }}</span>
+                            <span class="text-right">{{ __('Disc. (Rp)') }}</span>
+                            <span class="text-right">{{ __('Subtotal') }}</span>
+                            <span aria-hidden="true"></span>
                         </div>
-                    @endforelse
+
+                        <div id="quotation-items-list">
+                            @forelse($task->items as $index => $item)
+                                @include('lead-tasks.partials.quotation-item-card', [
+                                    'index' => $index,
+                                    'item' => $item,
+                                    'rowNumber' => $loop->iteration,
+                                    'estimatorRowId' => $estimatorRowByItem[$item->id] ?? null,
+                                    'productOptions' => $productOptions,
+                                    'productData' => $productData,
+                                    'defaultMargin' => $defaultMargin,
+                                ])
+                            @empty
+                                <div id="quotation-items-empty" class="px-4 py-10 text-center">
+                                    <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ __('No quotation items yet.') }}</p>
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('Use an estimator item above or add a blank item.') }}</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
 
                 <template id="quotation-item-template">
                     @include('lead-tasks.partials.quotation-item-card', [
                         'index' => '__INDEX__',
                         'item' => null,
+                        'rowNumber' => 1,
+                        'estimatorRowId' => null,
                         'productOptions' => $productOptions,
+                        'productData' => $productData,
                         'defaultMargin' => $defaultMargin,
                     ])
                 </template>
 
-                <div class="mt-4">
-                    <button type="button" id="add-quotation-item"
-                            class="inline-flex h-10 items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 text-sm font-medium text-slate-600 transition-colors duration-200 hover:border-accent-500 hover:text-accent-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-accent-400 dark:hover:text-accent-300">
-                        <x-icon name="add" class="h-4 w-4" />
-                        {{ __('Add Item') }}
-                    </button>
-                </div>
-
-                <div class="sticky bottom-0 z-10 mt-5 -mx-6 -mb-6 flex flex-col gap-4 rounded-b-2xl border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur dark:border-slate-700/60 dark:bg-slate-800/95 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="space-y-1 text-sm">
-                        <p class="text-slate-500 dark:text-slate-400">{{ __('Subtotal') }}: <span id="items-total-subtotal" class="font-semibold tabular-nums text-slate-800 dark:text-slate-100">Rp 0</span></p>
+                <div class="sticky bottom-0 z-10 mt-5 -mx-6 -mb-6 flex flex-col gap-3 rounded-b-2xl border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur dark:border-slate-700/60 dark:bg-slate-800/95 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <p class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Subtotal') }} <span id="items-total-subtotal" class="tabular-nums">Rp 0</span></p>
                         <p id="items-total-margin" class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Margin') }}: -</p>
-                        <p id="items-unsaved" class="hidden text-xs font-semibold text-amber-600 dark:text-amber-400">{{ __('Unsaved changes') }}</p>
+                        <p id="items-unsaved" class="hidden text-xs font-semibold text-amber-600 dark:text-amber-400">● {{ __('Unsaved changes') }}</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <x-primary-button type="submit">{{ __('Save Items') }}</x-primary-button>
@@ -438,12 +450,47 @@
                     let activeHistoryCard = null;
                     let historyLogs = {};
 
-                    const cardInput = (card, suffix) => card.querySelector('input[name$="[' + suffix + ']"]');
+                    const cardInput = (card, suffix) => card.querySelector('[name$="[' + suffix + ']"]');
                     const cardQty = (card) => parseFloat(cardInput(card, 'quantity')?.value || 0) || 0;
                     const cardPrice = (card) => window.parseRupiah(cardInput(card, 'unit_price')?.value || 0);
                     const cardCost = (card) => window.parseRupiah(cardInput(card, 'unit_cost')?.value || 0);
                     const cardDiscount = (card) => window.parseRupiah(cardInput(card, 'discount')?.value || 0);
                     const cardTarget = (card) => parseFloat(cardInput(card, 'target_margin_percent')?.value || 0) || 0;
+
+                    const formatPercent = (value) => Number(value || 0).toLocaleString('id-ID', { maximumFractionDigits: 1 });
+                    const renumber = () => {
+                        list.querySelectorAll('[data-item-card]').forEach((card, index) => {
+                            const number = card.querySelector('[data-item-number]');
+                            if (number) number.textContent = index + 1;
+                        });
+                    };
+                    const setCost = (card, value) => {
+                        const display = card.querySelector('[data-cost-display]');
+                        if (!display) return;
+                        display.textContent = value === null || value === undefined || value === '' ? '' : fmt(value);
+                    };
+                    const setDetailOpen = (card, open) => {
+                        const detail = card.querySelector('[data-item-detail]');
+                        const toggle = card.querySelector('[data-item-toggle]');
+                        const chevron = card.querySelector('[data-item-chevron]');
+                        if (!detail) return;
+                        detail.classList.toggle('hidden', !open);
+                        toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+                        chevron?.classList.toggle('rotate-90', open);
+                    };
+                    const ensureEmptyState = () => {
+                        if (list.querySelectorAll('[data-item-card]').length > 0) {
+                            byId('quotation-items-empty')?.remove();
+                            return;
+                        }
+                        if (byId('quotation-items-empty')) return;
+                        const empty = document.createElement('div');
+                        empty.id = 'quotation-items-empty';
+                        empty.className = 'px-4 py-10 text-center';
+                        empty.innerHTML = '<p class="text-sm font-medium text-slate-600 dark:text-slate-300">' + @js(__('No quotation items yet.')) + '</p>'
+                            + '<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">' + @js(__('Use an estimator item above or add a blank item.')) + '</p>';
+                        list.appendChild(empty);
+                    };
 
                     function applyTargetMargin(card) {
                         const cost = cardCost(card);
@@ -470,17 +517,17 @@
                         if (!marginEl) return;
 
                         if (cost <= 0 || qty <= 0 || subtotal <= 0) {
-                            marginEl.className = 'text-slate-500 dark:text-slate-400';
+                            marginEl.className = 'block text-[12px] font-medium tabular-nums text-slate-500 dark:text-slate-400';
                             marginEl.textContent = @js(__('Margin')) + ': -';
                             return;
                         }
 
                         const amount = subtotal - (cost * qty);
-                        const pct = (amount / subtotal) * 100;
-                        marginEl.className = amount < 0
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-emerald-600 dark:text-emerald-400';
-                        marginEl.textContent = @js(__('Margin')) + ': ' + fmt(amount) + ' (' + pct.toFixed(2) + '%)';
+                        const percent = (amount / subtotal) * 100;
+                        marginEl.className = 'block text-[12px] font-medium tabular-nums ' + (amount < 0
+                            ? 'text-rose-700 dark:text-rose-400'
+                            : 'text-emerald-700 dark:text-emerald-400');
+                        marginEl.textContent = @js(__('Margin')) + ': ' + fmt(amount) + ' (' + formatPercent(percent) + '%)';
                     }
 
                     function recalcTotals() {
@@ -515,11 +562,11 @@
                                 marginEl.textContent = @js(__('Margin')) + ': -';
                             } else {
                                 const amount = subtotal - cost;
-                                const pct = (amount / subtotal) * 100;
+                                const percent = (amount / subtotal) * 100;
                                 marginEl.className = 'text-xs font-semibold ' + (amount < 0
-                                    ? 'text-rose-600 dark:text-rose-400'
-                                    : 'text-emerald-600 dark:text-emerald-400');
-                                marginEl.textContent = @js(__('Margin')) + ': ' + fmt(amount) + ' (' + pct.toFixed(2) + '%)';
+                                    ? 'text-rose-700 dark:text-rose-400'
+                                    : 'text-emerald-700 dark:text-emerald-400');
+                                marginEl.textContent = @js(__('Margin')) + ': ' + fmt(amount) + ' (' + formatPercent(percent) + '%)';
                             }
                         }
 
@@ -552,10 +599,11 @@
                     }
 
                     function bindCard(card) {
-                        card.querySelectorAll('input, select').forEach((input) => {
+                        card.querySelectorAll('input, select, textarea').forEach((input) => {
                             input.addEventListener('input', () => {
-                                card.classList.remove('ring-2', 'ring-rose-500/50');
-                                if (input.matches('input[name$="[target_margin_percent]"], input[name$="[quantity]"], input[name$="[discount]"]')) {
+                                card.classList.remove('bg-rose-50/70', 'dark:bg-rose-950/20');
+                                if (input.hasAttribute('data-autofill')) input.removeAttribute('data-autofill');
+                                if (input.matches('[name$="[target_margin_percent]"], [name$="[quantity]"], [name$="[discount]"]')) {
                                     applyTargetMargin(card);
                                 }
                                 markDirty();
@@ -565,12 +613,26 @@
                             input.addEventListener('change', () => markDirty());
                         });
 
+                        const toggle = card.querySelector('[data-item-toggle]');
+                        toggle?.addEventListener('click', () => {
+                            const detail = card.querySelector('[data-item-detail]');
+                            setDetailOpen(card, detail?.classList.contains('hidden') ?? false);
+                        });
+
                         const product = cardInput(card, 'product_id');
                         product?.addEventListener('change', () => {
                             const data = productData[product.value];
                             if (data) {
                                 const description = cardInput(card, 'description');
-                                if (description && !description.value.trim()) description.value = data.description || '';
+                                if (description && (!description.value.trim() || description.dataset.autofill === '1')) {
+                                    description.value = data.description || '';
+                                    description.dataset.autofill = '1';
+                                }
+                                const scope = cardInput(card, 'scope_of_supply');
+                                if (scope && (!scope.value.trim() || scope.dataset.autofill === '1')) {
+                                    scope.value = data.sku || '';
+                                    scope.dataset.autofill = '1';
+                                }
                                 const unit = cardInput(card, 'unit');
                                 if (unit) unit.value = data.unit || 'pcs';
                                 loadLatestLog(card, product.value);
@@ -589,11 +651,10 @@
                             const log = logs[0] || null;
                             const logInput = cardInput(card, 'product_price_log_id');
                             const costInput = cardInput(card, 'unit_cost');
-                            const costDisplay = card.querySelector('[data-cost-display]');
 
                             if (logInput) logInput.value = log ? log.id : '';
                             if (costInput) costInput.value = log ? Math.round(Number(log.price) || 0) : '';
-                            if (costDisplay) costDisplay.value = log ? num(log.price) : '';
+                            setCost(card, log ? log.price : '');
                             if (log) applyTargetMargin(card);
                             recalcTotals();
                         } catch {
@@ -618,23 +679,30 @@
                             const product = cardInput(card, 'product_id');
                             if (product) product.value = String(prefill.product_id);
                         }
-                        if (prefill.description) cardInput(card, 'description').value = prefill.description;
-                        if (prefill.sku) cardInput(card, 'scope_of_supply').value = prefill.sku;
-                        if (prefill.quantity) cardInput(card, 'quantity').value = prefill.quantity;
+                        if (prefill.description) {
+                            cardInput(card, 'description').value = prefill.description;
+                            cardInput(card, 'description').dataset.autofill = '1';
+                        }
+                        if (prefill.sku) {
+                            cardInput(card, 'scope_of_supply').value = prefill.sku;
+                            cardInput(card, 'scope_of_supply').dataset.autofill = '1';
+                        }
+                        if (prefill.quantity) cardInput(card, 'quantity').value = String(Number(prefill.quantity));
                         if (prefill.unit) cardInput(card, 'unit').value = prefill.unit;
-                        if (prefill.target_margin_percent) cardInput(card, 'target_margin_percent').value = prefill.target_margin_percent;
+                        if (prefill.target_margin_percent) cardInput(card, 'target_margin_percent').value = String(Number(prefill.target_margin_percent));
                         if (prefill.unit_cost !== null && prefill.unit_cost !== undefined) {
                             cardInput(card, 'unit_cost').value = Math.round(Number(prefill.unit_cost) || 0);
-                            const costDisplay = card.querySelector('[data-cost-display]');
-                            if (costDisplay) costDisplay.value = num(prefill.unit_cost);
+                            setCost(card, prefill.unit_cost);
                         }
                         if (prefill.product_price_log_id) cardInput(card, 'product_price_log_id').value = prefill.product_price_log_id;
 
                         applyTargetMargin(card);
                         bindCard(card);
+                        setDetailOpen(card, true);
+                        renumber();
                         markDirty();
                         recalcTotals();
-                        byId('quotation-items-empty')?.remove();
+                        ensureEmptyState();
                         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                         return card;
@@ -658,8 +726,10 @@
                                 }
                             }
                             card?.remove();
+                            renumber();
                             markDirty();
                             recalcTotals();
+                            ensureEmptyState();
                             return;
                         }
 
@@ -759,9 +829,9 @@
                                     '</tr>';
                             }).join('');
 
-                            modalBody.innerHTML = '<div class="overflow-x-auto"><table class="w-full min-w-[640px] text-left"><thead><tr class="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700"><th class="px-3 py-2">' + @js(__('Date')) + '</th><th class="px-3 py-2 text-right">' + @js(__('Cost before VAT')) + '</th><th class="px-3 py-2 text-right">' + @js(__('Supplier price (incl. VAT)')) + '</th><th class="px-3 py-2">' + @js(__('Supplier')) + '</th><th class="px-3 py-2">' + @js(__('Valid Until')) + '</th><th class="px-3 py-2"></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+                            modalBody.innerHTML = '<div class="overflow-x-auto"><table class="w-full min-w-[640px] text-left"><thead><tr class="border-b border-slate-200 text-[12px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-700"><th class="px-3 py-2">' + @js(__('Date')) + '</th><th class="px-3 py-2 text-right">' + @js(__('Cost before VAT')) + '</th><th class="px-3 py-2 text-right">' + @js(__('Supplier price (incl. VAT)')) + '</th><th class="px-3 py-2">' + @js(__('Supplier')) + '</th><th class="px-3 py-2">' + @js(__('Valid Until')) + '</th><th class="px-3 py-2"></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
                         } catch {
-                            if (modalBody) modalBody.innerHTML = '<p class="py-8 text-center text-sm text-rose-600 dark:text-rose-400">' + @js(__('Failed to load price history.')) + '</p>';
+                            if (modalBody) modalBody.innerHTML = '<p class="py-8 text-center text-sm text-rose-700 dark:text-rose-400">' + @js(__('Failed to load price history.')) + '</p>';
                         }
                     }
 
@@ -773,8 +843,7 @@
 
                         cardInput(activeHistoryCard, 'product_price_log_id').value = log.id;
                         cardInput(activeHistoryCard, 'unit_cost').value = Math.round(Number(log.price) || 0);
-                        const costDisplay = activeHistoryCard.querySelector('[data-cost-display]');
-                        if (costDisplay) costDisplay.value = num(log.price);
+                        setCost(activeHistoryCard, log.price);
                         applyTargetMargin(activeHistoryCard);
                         markDirty();
                         recalcTotals();
@@ -798,12 +867,14 @@
                             const price = cardPrice(card);
                             const discount = cardDiscount(card);
                             const description = cardInput(card, 'description');
+                            const descriptionMissing = description && !description.value.trim();
                             const invalid = (cost > 0 && qty > 0 && (price * qty - discount) < cost * qty)
-                                || (description && !description.value.trim());
+                                || descriptionMissing;
 
                             if (invalid) {
                                 event.preventDefault();
-                                card.classList.add('ring-2', 'ring-rose-500/50');
+                                card.classList.add('bg-rose-50/70', 'dark:bg-rose-950/20');
+                                if (descriptionMissing) setDetailOpen(card, true);
                                 if (!firstInvalid) firstInvalid = card;
                             }
                         });

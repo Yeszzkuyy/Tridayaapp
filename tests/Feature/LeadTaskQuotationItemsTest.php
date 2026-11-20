@@ -458,6 +458,32 @@ class LeadTaskQuotationItemsTest extends TestCase
             ->assertSee('Cisco IP Phone 780')
             ->assertSee('Save Items')
             ->assertSee(route('lead-tasks.items.batch', $task), false)
-            ->assertSee('Add Item');
+            ->assertSee('Add Item')
+            ->assertSee('data-item-card', false)
+            ->assertSee('data-item-toggle', false)
+            ->assertSee('data-item-detail', false)
+            ->assertSee('data-item-number', false)
+            ->assertSee('data-target-margin', false);
+    }
+
+    public function test_task_show_renders_compact_numbers_without_trailing_zeros(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+
+        $this->makeItem($task, [
+            'description' => 'Kabel UTP',
+            'quantity' => 100,
+            'target_margin_percent' => 20,
+        ]);
+
+        $this->actingAs($inside)->get(route('lead-tasks.show', $task))
+            ->assertOk()
+            ->assertSee('value="100"', false)
+            ->assertDontSee('value="100.00"', false)
+            ->assertSee('value="20"', false)
+            ->assertDontSee('value="20.00"', false);
     }
 }
