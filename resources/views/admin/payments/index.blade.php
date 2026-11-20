@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Payment Management') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Payment Management') }}</h1>
         </div>
         <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Record Payment') }}" title="{{ __('Record Payment') }}" />
     </div>
@@ -11,26 +11,26 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Related Invoice') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Tgl Bayar') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Amount') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Proof') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Related Invoice') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Customer') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Tgl Bayar') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Amount') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Proof') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($payments as $pm)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-4 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $pm->invoice->invoice_number }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $pm->invoice->customer->name }}</td>
-                            <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ $pm->payment_date->format('d M Y') }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($pm->amount, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 font-mono text-sm font-semibold text-content-primary">{{ $pm->invoice->invoice_number }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $pm->invoice->customer->name }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $pm->payment_date->format('d M Y') }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-content-primary">Rp {{ number_format($pm->amount, 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-center">
                                 @if($pm->proof_file)
                                     <x-icon-button as="a" icon="download" href="{{ route('admin.payments.proof', $pm) }}" target="_blank" title="{{ __('View') }}" />
                                 @else
-                                    <span class="text-slate-400 text-xs">-</span>
+                                    <span class="text-content-tertiary text-xs">-</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
@@ -46,7 +46,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="py-8 text-center text-slate-400">{{ __('No payments yet.') }}</td></tr>
+                        <tr><td colspan="6" class="py-8 text-center text-content-tertiary">{{ __('No payments yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -2,8 +2,8 @@
     <div>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ $invoice->invoice_number }}</h1>
-                <p class="text-slate-500 mt-1 dark:text-slate-400">{{ $invoice->customer->name }}</p>
+                <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ $invoice->invoice_number }}</h1>
+                <p class="text-content-secondary mt-1">{{ $invoice->customer->name }}</p>
             </div>
             <div class="flex items-center gap-2">
                 <x-icon-button as="a" icon="print" href="{{ route('admin.invoices.print', $invoice) }}" target="_blank" title="{{ __('Print Invoice') }}" />
@@ -20,31 +20,31 @@
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Invoice No.') }}</dt>
-                    <dd class="font-mono font-semibold text-slate-800 dark:text-slate-100">{{ $invoice->invoice_number }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Invoice No.') }}</dt>
+                    <dd class="font-mono font-semibold text-content-primary">{{ $invoice->invoice_number }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Customer') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer->name }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Customer') }}</dt>
+                    <dd class="font-medium text-content-primary">{{ $invoice->customer->name }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Project') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->project?->project_name ?? '-' }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Project') }}</dt>
+                    <dd class="font-medium text-content-primary">{{ $invoice->project?->project_name ?? '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Issue Date') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->issue_date->format('d M Y') }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Issue Date') }}</dt>
+                    <dd class="font-medium text-content-primary">{{ $invoice->issue_date->format('d M Y') }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Due Date') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->due_date?->format('d M Y') ?? '-' }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Due Date') }}</dt>
+                    <dd class="font-medium text-content-primary">{{ $invoice->due_date?->format('d M Y') ?? '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Amount') }}</dt>
-                    <dd class="font-semibold text-lg text-slate-800 dark:text-slate-100">Rp {{ number_format($invoice->amount, 0, ',', '.') }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Amount') }}</dt>
+                    <dd class="font-semibold text-lg text-content-primary">Rp {{ number_format($invoice->amount, 0, ',', '.') }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Status') }}</dt>
+                    <dt class="text-xs text-content-tertiary">{{ __('Status') }}</dt>
                     <dd>
                         <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ \App\Models\Invoice::statusBadgeClasses($invoice->status) }}">
                             {{ \App\Models\Invoice::statusLabel($invoice->status) }}
@@ -52,85 +52,85 @@
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Paid') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                    <dt class="text-xs text-content-tertiary">{{ __('Paid') }}</dt>
+                    <dd class="font-medium text-content-primary">
                         Rp {{ number_format($invoice->paidAmount(), 0, ',', '.') }}
-                        <span class="text-xs text-slate-400">· {{ __('Remaining') }} Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</span>
+                        <span class="text-xs text-content-tertiary">· {{ __('Remaining') }} Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</span>
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Customer PO Number') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->customer_po_number ?: '-' }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Customer PO Number') }}</dt>
+                    <dd class="font-medium text-content-primary">{{ $invoice->customer_po_number ?: '-' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Quotation') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                    <dt class="text-xs text-content-tertiary">{{ __('Quotation') }}</dt>
+                    <dd class="font-medium text-content-primary">
                         @if($invoice->proposal)
                             <a href="{{ route('sales.proposals.show', $invoice->proposal) }}" class="text-accent-600 dark:text-accent-400 hover:underline">{{ $invoice->proposal->proposal_number }}</a>
                         @else
-                            <span class="text-slate-400">{{ __('No quotation linked') }}</span>
+                            <span class="text-content-tertiary">{{ __('No quotation linked') }}</span>
                         @endif
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Payment Terms') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">{{ $invoice->payment_terms ?: ($invoice->proposal?->paymentTermsSummary() ?: '-') }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Payment Terms') }}</dt>
+                    <dd class="font-medium text-content-primary">{{ $invoice->payment_terms ?: ($invoice->proposal?->paymentTermsSummary() ?: '-') }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Billing Address') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100 whitespace-pre-line">{{ $invoice->billing_address ?: ($invoice->customer?->billingAddress() ?: '-') }}</dd>
+                    <dt class="text-xs text-content-tertiary">{{ __('Billing Address') }}</dt>
+                    <dd class="font-medium text-content-primary whitespace-pre-line">{{ $invoice->billing_address ?: ($invoice->customer?->billingAddress() ?: '-') }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('Finance PIC') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                    <dt class="text-xs text-content-tertiary">{{ __('Finance PIC') }}</dt>
+                    <dd class="font-medium text-content-primary">
                         {{ $invoice->customer?->financeContact() ?: '-' }}
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-slate-400">{{ __('NPWP') }}</dt>
-                    <dd class="font-medium text-slate-800 dark:text-slate-100">
+                    <dt class="text-xs text-content-tertiary">{{ __('NPWP') }}</dt>
+                    <dd class="font-medium text-content-primary">
                         @if($invoice->customer?->npwp)
                             {{ $invoice->customer->npwp }}
                             @if($invoice->customer->npwp_document_path)
                                 <a href="{{ route('customers.npwp', $invoice->customer) }}" target="_blank" class="ml-1 text-xs text-indigo-600 hover:underline">{{ __('Download') }}</a>
                             @endif
                         @else
-                            <span class="text-slate-400">{{ '-' }}</span>
+                            <span class="text-content-tertiary">{{ '-' }}</span>
                         @endif
                     </dd>
                 </div>
             </dl>
             @if($invoice->notes)
                 <div class="mt-6">
-                    <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Notes') }}</h3>
-                    <p class="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ $invoice->notes }}</p>
+                    <h3 class="text-sm font-semibold text-content-secondary uppercase tracking-wider mb-3">{{ __('Notes') }}</h3>
+                    <p class="text-content-secondary whitespace-pre-wrap">{{ $invoice->notes }}</p>
                 </div>
             @endif
-            <div class="mt-4 text-xs text-slate-400">{{ __('Created by:') }} {{ $invoice->creator?->name ?? '-' }}</div>
+            <div class="mt-4 text-xs text-content-tertiary">{{ __('Created by:') }} {{ $invoice->creator?->name ?? '-' }}</div>
         </div>
 
         @if($invoice->items->isNotEmpty())
             <div class="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-                <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Invoice Items') }}</h3>
+                <h3 class="text-sm font-semibold text-content-secondary uppercase tracking-wider mb-3">{{ __('Invoice Items') }}</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                         <thead>
                             <tr>
-                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Description') }}</th>
-                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
-                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Unit') }}</th>
-                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Price') }}</th>
-                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Subtotal') }}</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Description') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Qty') }}</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Unit') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Price') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Subtotal') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                             @foreach($invoice->items as $item)
                                 <tr>
-                                    <td class="px-3 py-3 text-sm text-slate-800 dark:text-slate-100">{{ $item->description }}</td>
-                                    <td class="px-3 py-3 text-right text-sm text-slate-700 dark:text-slate-300">{{ number_format($item->quantity, 2, ',', '.') }}</td>
-                                    <td class="px-3 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $item->unit }}</td>
-                                    <td class="px-3 py-3 text-right text-sm text-slate-700 dark:text-slate-300">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                                    <td class="px-3 py-3 text-right text-sm font-medium text-slate-800 dark:text-slate-100">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-sm text-content-primary">{{ $item->description }}</td>
+                                    <td class="px-3 py-3 text-right text-sm text-content-secondary">{{ number_format($item->quantity, 2, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-sm text-content-secondary">{{ $item->unit }}</td>
+                                    <td class="px-3 py-3 text-right text-sm text-content-secondary">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-right text-sm font-medium text-content-primary">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -140,14 +140,14 @@
         @endif
 
         <div class="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Payments') }}</h3>
+            <h3 class="text-sm font-semibold text-content-secondary uppercase tracking-wider mb-3">{{ __('Payments') }}</h3>
             @forelse($invoice->payments as $payment)
                 <div class="border-b border-slate-100 dark:border-slate-700 py-3 last:border-0">
                     <div class="flex justify-between items-start">
                         <div>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Rp {{ number_format($payment->amount, 0, ',', '.') }}</p>
-                            <p class="text-xs text-slate-500">{{ $payment->payment_date->format('d M Y') }}</p>
-                            <p class="text-xs text-slate-400">{{ $payment->payment_method ?? '-' }}</p>
+                            <p class="text-sm font-semibold text-content-primary">Rp {{ number_format($payment->amount, 0, ',', '.') }}</p>
+                            <p class="text-xs text-content-secondary">{{ $payment->payment_date->format('d M Y') }}</p>
+                            <p class="text-xs text-content-tertiary">{{ $payment->payment_method ?? '-' }}</p>
                         </div>
                         <div class="flex gap-2">
                             @if($payment->proof_file)
@@ -158,20 +158,20 @@
                             <x-icon-button as="a" icon="view" href="{{ route('admin.payments.show', $payment) }}" title="{{ __('Detail') }}" />
                         </div>
                     </div>
-                    @if($payment->notes)<p class="text-xs text-slate-400 mt-1">{{ $payment->notes }}</p>@endif
+                    @if($payment->notes)<p class="text-xs text-content-tertiary mt-1">{{ $payment->notes }}</p>@endif
                 </div>
             @empty
-                <p class="text-slate-400 text-sm text-center py-4">{{ __('No payments yet.') }}</p>
+                <p class="text-content-tertiary text-sm text-center py-4">{{ __('No payments yet.') }}</p>
             @endforelse
         </div>
 
         <div class="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{{ __('Invoice File') }}</h3>
+            <h3 class="text-sm font-semibold text-content-secondary uppercase tracking-wider mb-3">{{ __('Invoice File') }}</h3>
             @forelse($invoice->documents as $document)
                 <div class="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 py-3 last:border-0">
                     <div class="min-w-0">
-                        <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $document->file_name }}</p>
-                        <p class="text-xs text-slate-400">{{ $document->created_at->format('d M Y') }}</p>
+                        <p class="truncate text-sm font-medium text-content-primary">{{ $document->file_name }}</p>
+                        <p class="text-xs text-content-tertiary">{{ $document->created_at->format('d M Y') }}</p>
                     </div>
                     <div class="flex shrink-0 gap-2">
                         <x-file-preview :url="route('project-documents.preview', $document)"
@@ -181,7 +181,7 @@
                     </div>
                 </div>
             @empty
-                <p class="text-slate-400 text-sm text-center py-4">{{ __('No file uploaded yet.') }}</p>
+                <p class="text-content-tertiary text-sm text-center py-4">{{ __('No file uploaded yet.') }}</p>
             @endforelse
         </div>
     </div>
