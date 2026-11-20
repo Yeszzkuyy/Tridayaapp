@@ -15,10 +15,9 @@
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">{{ __('Team Activity') }}</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Daily schedule compliance and activity of the sales team.') }}</p>
         </div>
-        <div class="flex gap-2">
-            <x-icon-button as="a" icon="back" href="{{ route('manage-sales.index') }}" title="{{ __('Back') }}" />
-        </div>
     </div>
+
+    @include('manage-sales.partials.tabs')
 
     <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">

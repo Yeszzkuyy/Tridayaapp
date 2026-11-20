@@ -128,32 +128,52 @@ class ManageSalesTest extends TestCase
         $this->assertNotNull($lead->assigned_at);
     }
 
-    public function test_management_can_change_lead_pt_group(): void
+    public function test_management_cannot_change_lead_pt_group(): void
     {
         $management = $this->loginAs('management');
         $lead = $this->makeLead();
 
+        // PT hanya bisa diganti lewat menu Lead; Manage Sales mengabaikannya.
         $this->actingAs($management)
             ->put(route('manage-sales.update', $lead), ['pt_group' => 'MGK'])
             ->assertRedirect(route('manage-sales.index'));
 
-        $this->assertSame('MGK', $lead->fresh()->pt_group);
-        $this->assertNotNull(LeadActivity::where('lead_id', $lead->id)->where('action', 'updated')->first());
+        $this->assertSame('NTI', $lead->fresh()->pt_group);
+        $this->assertNull(LeadActivity::where('lead_id', $lead->id)->where('action', 'updated')->first());
+    }
+
+    public function test_management_pt_field_is_absent_from_pages(): void
+    {
+        $management = $this->loginAs('management');
+        $lead = $this->makeLead();
+
+        $index = $this->actingAs($management)->get(route('manage-sales.index'))->getContent();
+        $this->assertStringNotContainsString('name="pt_group"', $index);
+        $this->assertStringContainsString('NTI', $index);
+
+        $edit = $this->actingAs($management)->get(route('manage-sales.edit', $lead))->getContent();
+        $this->assertStringNotContainsString('name="pt_group"', $edit);
+        $this->assertStringContainsString('NTI', $edit);
     }
 
     public function test_management_changing_pt_keeps_assignment(): void
     {
-        $this->actingAs($this->loginAs('management'));
+        $management = $this->loginAs('management');
         $sales = User::factory()->create();
         $sales->assignRole('sales');
         $lead = $this->makeLead($sales);
 
-        $this->actingAs($this->loginAs('management'))
-            ->put(route('manage-sales.update', $lead), ['pt_group' => 'WANI'])
+        // Kirim pt_group sekaligus assignee: penugasan tetap tersimpan,
+        // PT lead tidak ikut berubah.
+        $this->actingAs($management)
+            ->put(route('manage-sales.update', $lead), [
+                'pt_group' => 'WANI',
+                'assigned_to' => $sales->id,
+            ])
             ->assertRedirect(route('manage-sales.index'));
 
         $lead->refresh();
-        $this->assertSame('WANI', $lead->pt_group);
+        $this->assertSame('NTI', $lead->pt_group);
         $this->assertSame($sales->id, $lead->assigned_to);
     }
 
