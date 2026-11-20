@@ -13,17 +13,17 @@ Props:
 
 <section class="space-y-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 class="text-base font-semibold text-slate-900 dark:text-white">
+        <h3 class="text-base font-semibold text-content-primary dark:text-white">
             {{ __('Projects') }}
         </h3>
 
         @if($projects->isNotEmpty())
             <label class="relative w-full sm:w-64">
                 <span class="sr-only">{{ __('Cari proyek') }}</span>
-                <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
                 <input id="proj-doc-search" type="search" placeholder="{{ __('Cari proyek...') }}"
                        autocomplete="off"
-                       class="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:ring-indigo-900">
+                       class="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-content-primary placeholder:text-content-tertiary focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-content-secondary dark:focus:ring-indigo-900">
             </label>
         @endif
     </div>
@@ -50,16 +50,16 @@ Props:
                     </span>
 
                     <span class="min-w-0 flex-1">
-                        <span class="block truncate font-semibold text-slate-900 transition-colors @if($canOpenProject) group-hover:text-indigo-600 dark:group-hover:text-indigo-400 @endif dark:text-white">
+                        <span class="block truncate font-semibold text-content-primary transition-colors @if($canOpenProject) group-hover:text-indigo-600 dark:group-hover:text-indigo-400 @endif dark:text-white">
                             {{ $project->project_name }}
                         </span>
-                        <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                        <span class="mt-0.5 block text-xs text-content-secondary">
                             {{ $docCount }} {{ __('files') }}
                         </span>
                     </span>
 
                     @if($canOpenProject)
-                        <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-indigo-500 dark:text-slate-600" />
+                        <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-content-tertiary transition-colors group-hover:text-indigo-500" />
                     @endif
                 @if($canOpenProject)
                     </a>
@@ -98,14 +98,14 @@ Props:
             </article>
         @empty
             <div class="col-span-full rounded-xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-700">
-                <p class="text-sm text-slate-500 dark:text-slate-400">
+                <p class="text-sm text-content-secondary">
                     {{ __('Belum ada proyek') }}
                 </p>
             </div>
         @endforelse
     </div>
 
-    <div id="proj-doc-no-results" class="hidden py-8 text-center text-sm text-slate-400">
+    <div id="proj-doc-no-results" class="hidden py-8 text-center text-sm text-content-tertiary">
         {{ __('Tidak ada proyek yang cocok.') }}
     </div>
 </section>

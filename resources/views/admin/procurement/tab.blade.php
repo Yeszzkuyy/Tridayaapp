@@ -32,8 +32,8 @@
                     @endphp
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
-                            <a href="{{ route('projects.show', $project) }}" class="text-sm font-medium text-slate-800 hover:underline dark:text-slate-100">{{ $project->project_name }}</a>
-                            <p class="truncate text-xs text-slate-600 dark:text-slate-400">
+                            <a href="{{ route('projects.show', $project) }}" class="text-sm font-medium text-content-primary hover:underline">{{ $project->project_name }}</a>
+                            <p class="truncate text-xs text-content-secondary">
                                 {{ $project->customer?->name }} · {{ __('Delivery Deadline') }} {{ $project->delivery_deadline?->format('d M Y') }}
                             </p>
                         </div>
@@ -57,7 +57,7 @@
         <section class="space-y-4">
             <div class="flex items-center gap-2 px-1">
                 <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-xs font-bold text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">1</span>
-                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Order to Supplier') }}</h2>
+                <h2 class="text-sm font-bold text-content-secondary">{{ __('Order to Supplier') }}</h2>
             </div>
 
             <x-queue-card :title="__('Quotation Deals Ready for Supplier PO')" count="{{ $kpi['quotation_deals_ready_count'] ?? 0 }}" :href="route('admin.purchasing.index')">
@@ -65,7 +65,7 @@
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
                             <a href="{{ route('admin.purchasing.show', $proposal) }}" class="block truncate text-sm font-semibold tabular-nums text-accent-600 hover:underline dark:text-accent-400">{{ $proposal->proposal_number }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+                            <p class="truncate text-xs text-content-secondary">
                                 {{ $proposal->lead?->customer?->name ?? __('No project') }}@if($proposal->project?->project_name) · {{ $proposal->project->project_name }}@endif
                             </p>
                         </div>
@@ -74,7 +74,7 @@
                         @endcan
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('No quotation deals waiting for supplier PO.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('No quotation deals waiting for supplier PO.') }}</p>
                 @endforelse
             </x-queue-card>
 
@@ -83,7 +83,7 @@
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
                             <a href="{{ route('admin.supplier-pos.show', $order) }}" class="block truncate text-sm font-semibold tabular-nums text-accent-600 hover:underline dark:text-accent-400">{{ $order->po_number }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $order->supplier?->name }} · {{ $order->project?->project_name ?? __('No project') }}</p>
+                            <p class="truncate text-xs text-content-secondary">{{ $order->supplier?->name }} · {{ $order->project?->project_name ?? __('No project') }}</p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
                             <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ \App\Models\SupplierPurchaseOrder::statusBadgeClasses($order->status) }}">{{ \App\Models\SupplierPurchaseOrder::statusLabel($order->status) }}</span>
@@ -93,7 +93,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('No outstanding Supplier POs.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('No outstanding Supplier POs.') }}</p>
                 @endforelse
             </x-queue-card>
         </section>
@@ -102,7 +102,7 @@
         <section class="space-y-4">
             <div class="flex items-center gap-2 px-1">
                 <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-xs font-bold text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">2</span>
-                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Receive & Deliver') }}</h2>
+                <h2 class="text-sm font-bold text-content-secondary">{{ __('Receive & Deliver') }}</h2>
             </div>
 
             <x-queue-card :title="__('Receipts Waiting Verification')" count="{{ $kpi['pending_receipts_count'] ?? 0 }}" :href="route('admin.goods-receipts.index')">
@@ -110,12 +110,12 @@
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
                             <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="block truncate text-sm font-semibold tabular-nums text-accent-600 hover:underline dark:text-accent-400">{{ $receipt->receipt_number }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
+                            <p class="truncate text-xs text-content-secondary">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
                         </div>
                         <x-icon-button as="a" icon="view" href="{{ route('admin.goods-receipts.show', $receipt) }}" title="{{ __('View receipt') }}" />
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('No receipts waiting verification.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('No receipts waiting verification.') }}</p>
                 @endforelse
             </x-queue-card>
 
@@ -123,8 +123,8 @@
                 @forelse(collect($procurement['outstanding_delivery_items'])->take(3) as $item)
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
-                            <p class="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{{ $item->item_name }}</p>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+                            <p class="truncate text-sm font-medium text-content-primary">{{ $item->item_name }}</p>
+                            <p class="truncate text-xs text-content-secondary">
                                 {{ $item->purchaseOrder?->po_number }} ·
                                 {{ $item->purchaseOrder?->project?->project_name ?? __('No project') }} ·
                                 {{ __('Remaining') }} {{ number_format((float) $item->quantity_received - (float) $item->quantity_delivered, 2) }} {{ $item->unit }}
@@ -135,7 +135,7 @@
                         @endcan
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('All received goods have been delivered.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('All received goods have been delivered.') }}</p>
                 @endforelse
             </x-queue-card>
         </section>
@@ -144,7 +144,7 @@
         <section class="space-y-4">
             <div class="flex items-center gap-2 px-1">
                 <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-xs font-bold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">3</span>
-                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">{{ __('Invoice & Close') }}</h2>
+                <h2 class="text-sm font-bold text-content-secondary">{{ __('Invoice & Close') }}</h2>
             </div>
 
             <x-queue-card :title="__('Verified Receipts Not Yet Invoiced')" count="{{ $kpi['unbilled_receipts_count'] ?? 0 }}" :href="route('admin.purchasing.reports')">
@@ -152,14 +152,14 @@
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
                             <a href="{{ route('admin.goods-receipts.show', $receipt) }}" class="block truncate text-sm font-semibold tabular-nums text-accent-600 hover:underline dark:text-accent-400">{{ $receipt->receipt_number }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
+                            <p class="truncate text-xs text-content-secondary">{{ $receipt->purchaseOrder?->supplier?->name }} · {{ $receipt->received_date?->format('d M Y') }}</p>
                         </div>
                         @can('manage-admin')
                             <a href="{{ route('admin.supplier-invoices.create', ['supplier_purchase_order_id' => $receipt->supplier_purchase_order_id, 'goods_receipt_id' => $receipt->id]) }}" class="shrink-0 text-xs font-semibold text-accent-600 hover:underline dark:text-accent-400">{{ __('Invoice') }}</a>
                         @endcan
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('All verified receipts have been invoiced.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('All verified receipts have been invoiced.') }}</p>
                 @endforelse
             </x-queue-card>
 
@@ -168,12 +168,12 @@
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
                             <a href="{{ route('admin.supplier-invoices.show', $invoice) }}" class="block truncate text-sm font-semibold tabular-nums text-accent-600 hover:underline dark:text-accent-400">{{ $invoice->internal_ref_number }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $invoice->supplier?->name }} · {{ __('Due') }} {{ $invoice->due_date?->format('d M Y') ?? __('Not filled') }}</p>
+                            <p class="truncate text-xs text-content-secondary">{{ $invoice->supplier?->name }} · {{ __('Due') }} {{ $invoice->due_date?->format('d M Y') ?? __('Not filled') }}</p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
                             <div class="text-right">
-                                <p class="text-sm tabular-nums text-slate-800 dark:text-slate-100">Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</p>
-                                <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {{ \App\Models\SupplierInvoice::statusBadgeClasses($invoice->status) }}">{{ \App\Models\SupplierInvoice::statusLabel($invoice->status) }}</span>
+                                <p class="text-sm tabular-nums text-content-primary">Rp {{ number_format($invoice->remainingAmount(), 0, ',', '.') }}</p>
+                                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ \App\Models\SupplierInvoice::statusBadgeClasses($invoice->status) }}">{{ \App\Models\SupplierInvoice::statusLabel($invoice->status) }}</span>
                             </div>
                             @can('manage-admin')
                                 <x-icon-button as="a" icon="add" href="{{ route('admin.supplier-invoices.show', $invoice) }}#payment-form" title="{{ __('Record Payment') }}" />
@@ -181,7 +181,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('No outstanding supplier invoices.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('No outstanding supplier invoices.') }}</p>
                 @endforelse
             </x-queue-card>
 
@@ -189,8 +189,8 @@
                 @forelse(collect($procurement['bast_projects'])->take(3) as $project)
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
-                            <a href="{{ route('projects.show', $project) }}" class="block truncate text-sm font-medium text-slate-800 hover:underline dark:text-slate-100">{{ $project->project_name }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+                            <a href="{{ route('projects.show', $project) }}" class="block truncate text-sm font-medium text-content-primary hover:underline">{{ $project->project_name }}</a>
+                            <p class="truncate text-xs text-content-secondary">
                                 {{ $project->customer?->name }}@if($project->proposal?->proposal_number) · {{ $project->proposal->proposal_number }}@endif
                             </p>
                         </div>
@@ -202,7 +202,7 @@
                         @endcan
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('No projects waiting BAST.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('No projects waiting BAST.') }}</p>
                 @endforelse
             </x-queue-card>
 
@@ -210,13 +210,13 @@
                 @forelse(collect($procurement['ready_to_close_projects'])->take(3) as $project)
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <div class="min-w-0">
-                            <a href="{{ route('projects.show', $project) }}" class="block truncate text-sm font-medium text-slate-800 hover:underline dark:text-slate-100">{{ $project->project_name }}</a>
-                            <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $project->customer?->name }}</p>
+                            <a href="{{ route('projects.show', $project) }}" class="block truncate text-sm font-medium text-content-primary hover:underline">{{ $project->project_name }}</a>
+                            <p class="truncate text-xs text-content-secondary">{{ $project->customer?->name }}</p>
                         </div>
                         <x-icon-button as="a" icon="view" href="{{ route('projects.show', $project) }}" title="{{ __('View project') }}" />
                     </div>
                 @empty
-                    <p class="px-4 py-6 text-center text-xs italic text-slate-400 dark:text-slate-500">{{ __('No projects are ready to close.') }}</p>
+                    <p class="px-4 py-6 text-center text-xs italic text-content-tertiary">{{ __('No projects are ready to close.') }}</p>
                 @endforelse
             </x-queue-card>
         </section>

@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Supplier Purchase Orders') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Supplier Purchase Orders') }}</h1>
         </div>
         <div class="flex items-center gap-2">
             @can('manage-admin')
@@ -13,12 +13,12 @@
 
     <form method="GET" action="{{ route('admin.supplier-pos.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
         <div>
-            <label for="q" class="block text-xs text-slate-500 mb-1">{{ __('Search') }}</label>
+            <label for="q" class="block text-xs text-content-secondary mb-1">{{ __('Search') }}</label>
             <input id="q" type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('PO number / supplier') }}"
                    class="w-64 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
         </div>
         <div>
-            <label for="status" class="block text-xs text-slate-500 mb-1">{{ __('Status') }}</label>
+            <label for="status" class="block text-xs text-content-secondary mb-1">{{ __('Status') }}</label>
             <select id="status" name="status" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <option value="">{{ __('All') }}</option>
                 @foreach($statuses as $status)
@@ -35,41 +35,41 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('PO Number') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Quotation') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Project') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Issue Date') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Expected Delivery') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Items') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Total') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('PO Number') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Quotation') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Project') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Issue Date') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Expected Delivery') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Items') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Total') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($orders as $order)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-4 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $order->po_number }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $order->supplier?->name ?? '-' }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                            <td class="px-4 py-3 font-mono text-sm font-semibold text-content-primary">{{ $order->po_number }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $order->supplier?->name ?? '-' }}</td>
+                            <td class="px-4 py-3 text-content-secondary">
                                 @if($order->proposal)
                                     <a href="{{ route('admin.purchasing.show', $order->proposal) }}" class="font-mono text-sm text-accent-600 dark:text-accent-400 hover:underline">{{ $order->proposal->proposal_number }}</a>
                                 @else
                                     -
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                            <td class="px-4 py-3 text-content-secondary">
                                 @if($order->project)
                                     <a href="{{ route('projects.show', $order->project) }}" class="hover:underline">{{ $order->project->project_name }}</a>
                                 @else
                                     -
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $order->issue_date?->format('d M Y') ?? '-' }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $order->expected_delivery_date?->format('d M Y') ?? '-' }}</td>
-                            <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ $order->items_count }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $order->issue_date?->format('d M Y') ?? '-' }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $order->expected_delivery_date?->format('d M Y') ?? '-' }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $order->items_count }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-content-primary">Rp {{ number_format($order->grand_total, 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ \App\Models\SupplierPurchaseOrder::statusBadgeClasses($order->status) }}">
                                     {{ \App\Models\SupplierPurchaseOrder::statusLabel($order->status) }}
@@ -82,7 +82,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="py-8 text-center text-slate-400">{{ __('No supplier purchase orders yet.') }}</td></tr>
+                        <tr><td colspan="10" class="py-8 text-center text-content-tertiary">{{ __('No supplier purchase orders yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

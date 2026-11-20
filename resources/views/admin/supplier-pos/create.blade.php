@@ -2,7 +2,7 @@
     <div class="max-w-6xl">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Create Supplier PO') }}</h1>
+                <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Create Supplier PO') }}</h1>
             </div>
             <x-back-button href="{{ route('admin.supplier-pos.index') }}" />
         </div>
@@ -24,7 +24,7 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Supplier') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Supplier') }} <span class="text-red-500">*</span></label>
                         <select name="supplier_id" required
                                 class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                             <option value="">{{ __('Select supplier') }}</option>
@@ -35,7 +35,7 @@
                         @error('supplier_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Quotation') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Quotation') }} <span class="text-red-500">*</span></label>
                         <select name="proposal_id" id="proposal_id" required
                                 class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                             <option value="">{{ __('Select quotation') }}</option>
@@ -54,13 +54,13 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Issue Date') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Issue Date') }} <span class="text-red-500">*</span></label>
                         <input type="date" name="issue_date" required value="{{ old('issue_date', now()->toDateString()) }}"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                         @error('issue_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Expected Delivery') }}</label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Expected Delivery') }}</label>
                         <input type="date" name="expected_delivery_date" value="{{ old('expected_delivery_date') }}"
                                class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                         @error('expected_delivery_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -68,7 +68,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ __('Notes') }}</label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Notes') }}</label>
                     <textarea name="notes" rows="2"
                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">{{ old('notes') }}</textarea>
                 </div>
@@ -77,11 +77,11 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <h2 class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Procurement Items') }}</h2>
-                        <p class="text-xs text-slate-500">{{ __('Items are copied from the quotation as a starting point. Split one quotation item into several components and order them from different suppliers using separate POs. The quotation itself is never modified.') }}</p>
+                        <h2 class="font-semibold text-content-secondary">{{ __('Procurement Items') }}</h2>
+                        <p class="text-xs text-content-secondary">{{ __('Items are copied from the quotation as a starting point. Split one quotation item into several components and order them from different suppliers using separate POs. The quotation itself is never modified.') }}</p>
                     </div>
                     <button type="button" id="add-component"
-                            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-green-600 hover:text-white hover:border-green-600">
+                            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-medium text-content-secondary transition hover:bg-green-600 hover:text-white hover:border-green-600">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         {{ __('Add Component') }}
                     </button>
@@ -90,7 +90,7 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="text-left text-xs text-slate-500 border-b border-slate-200 dark:border-slate-700">
+                            <tr class="text-left text-xs text-content-secondary border-b border-slate-200 dark:border-slate-700">
                                 <th class="py-2 pr-2">{{ __('Item') }}</th>
                                 <th class="py-2 pr-2">{{ __('Part Number') }}</th>
                                 <th class="py-2 pr-2 w-20">{{ __('Unit') }}</th>
@@ -103,27 +103,27 @@
                         <tbody id="spo-items" class="divide-y divide-slate-100 dark:divide-slate-700/60"></tbody>
                     </table>
                 </div>
-                <p id="empty-items" class="text-sm text-slate-400 text-center py-4">{{ __('Select a quotation to load its items, or add a component manually.') }}</p>
+                <p id="empty-items" class="text-sm text-content-tertiary text-center py-4">{{ __('Select a quotation to load its items, or add a component manually.') }}</p>
             </div>
 
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
                 <div class="flex justify-end">
                     <div class="w-full md:w-80 space-y-2 text-sm">
-                        <p class="flex items-center justify-between gap-3 text-slate-500">
+                        <p class="flex items-center justify-between gap-3 text-content-secondary">
                             <span>{{ __('Subtotal') }}</span>
-                            <span id="spo-subtotal" class="font-mono text-slate-800 dark:text-slate-100">0</span>
+                            <span id="spo-subtotal" class="font-mono text-content-primary">0</span>
                         </p>
-                        <div class="flex items-center justify-between gap-3 text-slate-500">
+                        <div class="flex items-center justify-between gap-3 text-content-secondary">
                             <label for="discount">{{ __('Discount') }}</label>
                             <input id="discount" type="number" name="discount" min="0" step="0.01" value="{{ old('discount', 0) }}"
                                    class="w-40 rounded-xl border-slate-300 text-right text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                         </div>
-                        <div class="flex items-center justify-between gap-3 text-slate-500">
+                        <div class="flex items-center justify-between gap-3 text-content-secondary">
                             <label for="tax">{{ __('Tax') }}</label>
                             <input id="tax" type="number" name="tax" min="0" step="0.01" value="{{ old('tax', 0) }}"
                                    class="w-40 rounded-xl border-slate-300 text-right text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                         </div>
-                        <p class="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 pt-2 font-bold text-slate-800 dark:text-slate-100">
+                        <p class="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 pt-2 font-bold text-content-primary">
                             <span>{{ __('Grand Total') }}</span>
                             <span id="spo-grand-total" class="font-mono">0</span>
                         </p>
@@ -147,7 +147,7 @@
                        class="w-full rounded-lg border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <input type="text" data-field="description" maxlength="2000" placeholder="{{ __('Description') }}"
                        class="mt-1 w-full rounded-lg border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
-                <p class="quotation-ref hidden mt-1 text-xs text-slate-400"></p>
+                <p class="quotation-ref hidden mt-1 text-xs text-content-tertiary"></p>
             </td>
             <td class="py-2 pr-2">
                 <input type="text" data-field="part_number" maxlength="120"
@@ -165,12 +165,12 @@
                 <input type="number" data-field="unit_price" min="0" step="0.01" value="0"
                        class="w-full rounded-lg border-slate-300 text-right text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
             </td>
-            <td class="py-2 pr-2 text-right font-mono text-slate-700 dark:text-slate-200">
+            <td class="py-2 pr-2 text-right font-mono text-content-secondary">
                 <span class="row-subtotal">0</span>
             </td>
             <td class="py-2">
                 <div class="flex items-center justify-end gap-1">
-                    <button type="button" class="split-row rounded-lg border border-slate-300 dark:border-slate-600 p-1.5 text-slate-500 transition hover:border-violet-600 hover:bg-violet-600 hover:text-white" title="{{ __('Split into another component') }}">
+                    <button type="button" class="split-row rounded-lg border border-slate-300 dark:border-slate-600 p-1.5 text-content-secondary transition hover:border-violet-600 hover:bg-violet-600 hover:text-white" title="{{ __('Split into another component') }}">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                     </button>
                     <button type="button" class="remove-row rounded-lg border border-slate-300 dark:border-slate-600 p-1.5 text-red-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white" title="{{ __('Remove') }}">

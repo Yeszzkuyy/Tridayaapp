@@ -3,7 +3,7 @@
     {{-- Panel 1: Proyek / Proposal Deal Siap Ditagih (Won Deals) --}}
     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
-            <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">
+            <h3 class="text-base font-semibold text-content-secondary">
                 {{ __('Proyek / Deal Siap Ditagih') }}
             </h3>
             <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
@@ -15,46 +15,46 @@
             <table class="w-full table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Nama Proyek') }}</th>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Klien & PT') }}</th>
-                        <th class="hidden w-[16%] px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 md:table-cell">{{ __('Ref. Proposal') }}</th>
-                        <th class="w-[18%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Nilai Kontrak (Rp)') }}</th>
-                        <th class="w-[9%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi Cepat') }}</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Nama Proyek') }}</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Klien & PT') }}</th>
+                        <th class="hidden w-[16%] px-3 py-3.5 text-left text-xs font-semibold text-content-secondary md:table-cell">{{ __('Ref. Proposal') }}</th>
+                        <th class="w-[18%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Nilai Kontrak (Rp)') }}</th>
+                        <th class="w-[9%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Aksi Cepat') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                     @forelse($finance['ready_projects'] as $p)
                         <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                             <td class="px-3 py-3.5">
-                                <div class="truncate font-semibold text-slate-800 dark:text-white" title="{{ $p->project_name }}">
+                                <div class="truncate font-semibold text-content-primary dark:text-white" title="{{ $p->project_name }}">
                                     {{ $p->project_name }}
                                 </div>
-                                <div class="truncate text-xs text-slate-400">
+                                <div class="truncate text-xs text-content-tertiary">
                                     {{ $p->project_code ?? '-' }}
                                 </div>
                             </td>
                             <td class="px-3 py-3.5">
-                                <div class="truncate font-medium text-slate-800 dark:text-white" title="{{ $p->customer?->name ?? __('Tanpa Klien') }}">
+                                <div class="truncate font-medium text-content-primary dark:text-white" title="{{ $p->customer?->name ?? __('Tanpa Klien') }}">
                                     {{ $p->customer?->name ?? __('Tanpa Klien') }}
                                 </div>
                                 @if($p->customer?->pt_group)
-                                    <span class="mt-0.5 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                    <span class="mt-0.5 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-bold text-content-secondary dark:bg-slate-700">
                                         PT {{ $p->customer->pt_group }}
                                     </span>
                                 @endif
                             </td>
-                            <td class="hidden truncate px-3 py-3.5 text-xs tabular-nums text-slate-600 dark:text-slate-300 md:table-cell">
+                            <td class="hidden truncate px-3 py-3.5 text-xs tabular-nums text-content-secondary md:table-cell">
                                 @if($p->proposal)
                                     <span class="font-semibold text-accent-600 dark:text-accent-400">{{ $p->proposal->proposal_number }}</span>
                                 @else
-                                    <span class="italic text-slate-400">{{ __('Tanpa Proposal') }}</span>
+                                    <span class="italic text-content-tertiary">{{ __('Tanpa Proposal') }}</span>
                                 @endif
                             </td>
-                            <td class="px-3 py-3.5 text-right font-medium tabular-nums text-slate-800 dark:text-white">
+                            <td class="px-3 py-3.5 text-right font-medium tabular-nums text-content-primary dark:text-white">
                                 @if($p->proposal && $p->proposal->grand_total > 0)
                                     <span class="break-words">Rp {{ number_format($p->proposal->grand_total, 0, ',', '.') }}</span>
                                 @else
-                                    <span class="text-xs italic text-slate-400">{{ __('Belum ditetapkan') }}</span>
+                                    <span class="text-xs italic text-content-tertiary">{{ __('Belum ditetapkan') }}</span>
                                 @endif
                             </td>
                             <td class="px-3 py-3.5 text-right">
@@ -73,7 +73,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-10 text-center text-sm italic text-slate-400 dark:text-slate-500">
+                            <td colspan="5" class="py-10 text-center text-sm italic text-content-tertiary">
                                 {{ __('Semua proyek deal yang ada sudah memiliki invoice penagihan.') }}
                             </td>
                         </tr>
@@ -86,7 +86,7 @@
     {{-- Panel 2: Tagihan (Invoices) Terbaru & Jatuh Tempo --}}
     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
-            <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">
+            <h3 class="text-base font-semibold text-content-secondary">
                 {{ __('Daftar Tagihan (Invoices) Terbaru') }}
             </h3>
             <div class="flex items-center gap-2">
@@ -103,11 +103,11 @@
             <table class="w-full table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="w-[22%] px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Nomor Invoice') }}</th>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Klien & Proyek') }}</th>
-                        <th class="w-[22%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Tagihan vs Terbayar') }}</th>
-                        <th class="w-[14%] px-3 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status') }}</th>
-                        <th class="w-[16%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi') }}</th>
+                        <th class="w-[22%] px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Nomor Invoice') }}</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Klien & Proyek') }}</th>
+                        <th class="w-[22%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Tagihan vs Terbayar') }}</th>
+                        <th class="w-[14%] px-3 py-3.5 text-center text-xs font-semibold text-content-secondary">{{ __('Status') }}</th>
+                        <th class="w-[16%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Aksi') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -119,10 +119,10 @@
                         @endphp
                         <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                             <td class="px-3 py-3.5">
-                                <div class="truncate font-semibold tabular-nums text-slate-800 dark:text-white" title="{{ $inv->invoice_number }}">
+                                <div class="truncate font-semibold tabular-nums text-content-primary dark:text-white" title="{{ $inv->invoice_number }}">
                                     {{ $inv->invoice_number }}
                                 </div>
-                                <div class="truncate text-xs text-slate-400">
+                                <div class="truncate text-xs text-content-tertiary">
                                     {{ $inv->issue_date ? $inv->issue_date->format('d M Y') : '-' }}
                                     @if($inv->due_date)
                                         · {{ __('Jatuh Tempo') }} {{ $inv->due_date->format('d M Y') }}
@@ -131,21 +131,21 @@
                                     @endif
                                 </div>
                                 @if($isOverdue)
-                                    <span class="mt-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-700 dark:bg-red-950/50 dark:text-red-300">
+                                    <span class="mt-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-xs font-bold text-red-700 dark:bg-red-950/50 dark:text-red-300">
                                         {{ __('Lewat ') . $inv->due_date->diffForHumans(['parts' => 1]) }}
                                     </span>
                                 @endif
                             </td>
                             <td class="px-3 py-3.5">
-                                <div class="truncate font-medium text-slate-800 dark:text-white" title="{{ $inv->customer?->name ?? __('Tanpa Klien') }}">
+                                <div class="truncate font-medium text-content-primary dark:text-white" title="{{ $inv->customer?->name ?? __('Tanpa Klien') }}">
                                     {{ $inv->customer?->name ?? __('Tanpa Klien') }}
                                 </div>
-                                <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                                <div class="truncate text-xs text-content-secondary">
                                     {{ $inv->project?->project_name ?? __('Tanpa Proyek') }}
                                 </div>
                             </td>
                             <td class="px-3 py-3.5 text-right tabular-nums">
-                                <div class="font-semibold text-slate-800 dark:text-white">
+                                <div class="font-semibold text-content-primary dark:text-white">
                                     Rp {{ number_format($inv->amount, 0, ',', '.') }}
                                 </div>
                                 @if($paidAmount > 0 && $remaining > 0)
@@ -177,7 +177,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-10 text-center text-sm italic text-slate-400 dark:text-slate-500">
+                            <td colspan="5" class="py-10 text-center text-sm italic text-content-tertiary">
                                 {{ __('Belum ada tagihan invoice yang dicatat.') }}
                             </td>
                         </tr>
@@ -190,7 +190,7 @@
     {{-- Panel 3: Riwayat Pembayaran Masuk (Payments) --}}
     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
-            <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">
+            <h3 class="text-base font-semibold text-content-secondary">
                 {{ __('Riwayat Pembayaran Masuk (Payments)') }}
             </h3>
             <a href="{{ route('admin.payments.index') }}" class="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline">
@@ -202,29 +202,29 @@
             <table class="w-full table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
                 <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                     <tr>
-                        <th class="w-[16%] px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Tanggal Bayar') }}</th>
-                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Invoice & Klien') }}</th>
-                        <th class="w-[18%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Nominal Masuk (Rp)') }}</th>
-                        <th class="w-[14%] px-3 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Bukti Transfer') }}</th>
-                        <th class="w-[9%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi') }}</th>
+                        <th class="w-[16%] px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Tanggal Bayar') }}</th>
+                        <th class="px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Invoice & Klien') }}</th>
+                        <th class="w-[18%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Nominal Masuk (Rp)') }}</th>
+                        <th class="w-[14%] px-3 py-3.5 text-center text-xs font-semibold text-content-secondary">{{ __('Bukti Transfer') }}</th>
+                        <th class="w-[9%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Aksi') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                     @forelse($finance['payments'] as $pay)
                         <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
-                            <td class="px-3 py-3.5 tabular-nums text-slate-800 dark:text-white">
+                            <td class="px-3 py-3.5 tabular-nums text-content-primary dark:text-white">
                                 <div class="whitespace-nowrap">
                                     {{ $pay->payment_date ? $pay->payment_date->format('d M Y') : '-' }}
                                 </div>
-                                <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                                <div class="truncate text-xs text-content-secondary">
                                     {{ $pay->payment_method ?: '-' }}
                                 </div>
                             </td>
                             <td class="px-3 py-3.5">
-                                <div class="truncate font-semibold tabular-nums text-slate-800 dark:text-white" title="{{ $pay->invoice?->invoice_number ?? '-' }}">
+                                <div class="truncate font-semibold tabular-nums text-content-primary dark:text-white" title="{{ $pay->invoice?->invoice_number ?? '-' }}">
                                     {{ $pay->invoice?->invoice_number ?? '-' }}
                                 </div>
-                                <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                                <div class="truncate text-xs text-content-secondary">
                                     {{ $pay->invoice?->customer?->name ?? __('Tanpa Klien') }}
                                 </div>
                             </td>
@@ -235,17 +235,17 @@
                                 @if($pay->proof_file)
                                     @can('manage-admin')
                                         <a href="{{ route('admin.payments.proof', $pay) }}" target="_blank"
-                                           class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-accent-100 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-accent-950">
+                                           class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-content-secondary transition hover:bg-accent-100 dark:bg-slate-700 dark:hover:bg-accent-950">
                                             <svg class="h-3.5 w-3.5 text-accent-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                             </svg>
                                             {{ __('Lihat Bukti') }}
                                         </a>
                                     @else
-                                        <span class="text-xs italic text-slate-400">{{ __('Ada Bukti') }}</span>
+                                        <span class="text-xs italic text-content-tertiary">{{ __('Ada Bukti') }}</span>
                                     @endcan
                                 @else
-                                    <span class="text-xs italic text-slate-400">{{ __('Tanpa File') }}</span>
+                                    <span class="text-xs italic text-content-tertiary">{{ __('Tanpa File') }}</span>
                                 @endif
                             </td>
                             <td class="px-3 py-3.5 text-right">
@@ -256,7 +256,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-10 text-center text-sm italic text-slate-400 dark:text-slate-500">
+                            <td colspan="5" class="py-10 text-center text-sm italic text-content-tertiary">
                                 {{ __('Belum ada riwayat pembayaran yang dicatat.') }}
                             </td>
                         </tr>

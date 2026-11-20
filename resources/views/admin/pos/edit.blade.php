@@ -1,14 +1,14 @@
 <x-app-layout>
     <div>
         <div class="flex items-center justify-between mb-6">
-            <div><h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Edit PO') }}</h1><p class="text-slate-500 mt-1 dark:text-slate-400">{{ $purchaseOrder->po_number }}</p></div>
+            <div><h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Edit PO') }}</h1><p class="text-content-secondary mt-1">{{ $purchaseOrder->po_number }}</p></div>
             <x-back-button href="{{ route('admin.pos.index') }}" />
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <form action="{{ route('admin.pos.update', $purchaseOrder) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf @method('PUT')
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Customer') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
                         name="customer_id"
                         :options="$customers->mapWithKeys(fn ($c) => [$c->id => $c->name])->all()"
@@ -17,7 +17,7 @@
                     />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Related Project') }}</label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Related Project') }}</label>
                     <select name="project_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500"
                             x-data="{ customerId: '{{ old('customer_id', $purchaseOrder->customer_id) }}' }"
                             @searchable-select:changed.window="customerId = $event.detail.id; $el.value = ''">
@@ -29,34 +29,34 @@
                     @error('project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Item') }} <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Item') }} <span class="text-red-500">*</span></label>
                     <textarea name="items" rows="4" required class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('items', $purchaseOrder->items) }}</textarea>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>
                         <input type="number" name="amount" value="{{ old('amount', $purchaseOrder->amount) }}" required step="0.01" min="0" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status') }}</label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Status') }}</label>
                         <select name="status" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                             @foreach($statuses as $val => $label) <option value="{{ $val }}" {{ old('status', $purchaseOrder->status) == $val ? 'selected' : '' }}>{{ $label }}</option> @endforeach
                         </select>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Issue Date') }} <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Issue Date') }} <span class="text-red-500">*</span></label>
                     <x-datepicker name="issue_date" required value="{{ old('issue_date', $purchaseOrder->issue_date->format('Y-m-d')) }}"></x-datepicker>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Notes') }}</label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Notes') }}</label>
                     <textarea name="notes" rows="2" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">{{ old('notes', $purchaseOrder->notes) }}</textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('PO File') }}</label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('PO File') }}</label>
                     <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500">
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Optional. The file also appears in the customer Documents tab.') }} · {{ __('Maximum 20MB') }}</p>
+                    <p class="mt-1 text-xs text-content-tertiary">{{ __('Optional. The file also appears in the customer Documents tab.') }} · {{ __('Maximum 20MB') }}</p>
                     @error('file') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div class="flex gap-3">

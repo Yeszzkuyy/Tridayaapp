@@ -34,7 +34,7 @@
     {{-- Nama + status --}}
     <div class="flex items-start justify-between gap-2">
         <a href="{{ route('projects.show', $project) }}"
-           class="min-w-0 flex-1 text-sm font-bold leading-snug text-slate-800 transition hover:text-accent-600 dark:text-slate-100 dark:hover:text-accent-400">
+           class="min-w-0 flex-1 text-sm font-bold leading-snug text-content-primary transition hover:text-accent-600 dark:hover:text-accent-400">
             <span class="line-clamp-2">{{ $project->project_name }}</span>
         </a>
         <div class="shrink-0">
@@ -45,12 +45,12 @@
     </div>
 
     @if($project->workType?->name)
-        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ $project->workType->name }}</p>
+        <p class="mt-1 text-xs text-content-tertiary">{{ $project->workType->name }}</p>
     @endif
 
     {{-- Progress pengerjaan --}}
     <div class="mt-3">
-        <div class="mb-1 flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400">
+        <div class="mb-1 flex items-center justify-between text-xs font-medium text-content-secondary">
             <span>{{ __('Progress') }}</span>
             <span>{{ $progress }}%</span>
         </div>
@@ -65,23 +65,23 @@
             {{ $initials }}
         </span>
         <div class="min-w-0">
-            <p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ __('PIC Engineer') }}</p>
-            <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $pic !== '' ? $pic : '-' }}</p>
+            <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('PIC Engineer') }}</p>
+            <p class="truncate text-sm font-semibold text-content-secondary">{{ $pic !== '' ? $pic : '-' }}</p>
         </div>
     </div>
 
     {{-- Deskripsi singkat --}}
     @if($project->description)
-        <p class="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ $project->description }}</p>
+        <p class="mt-3 line-clamp-2 text-xs leading-relaxed text-content-secondary">{{ $project->description }}</p>
     @endif
 
     {{-- Ringkasan progres kerja --}}
-    <div class="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
-        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+    <div class="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-medium text-content-secondary dark:bg-slate-800">
             <x-icon name="check-circle" class="h-3.5 w-3.5" />
             {{ $tasksDone }}/{{ $tasksTotal }} {{ __('Tasks') }}
         </span>
-        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-medium text-content-secondary dark:bg-slate-800">
             <x-icon name="file-text" class="h-3.5 w-3.5" />
             {{ $documentsCount }} {{ __('Documents') }}
         </span>

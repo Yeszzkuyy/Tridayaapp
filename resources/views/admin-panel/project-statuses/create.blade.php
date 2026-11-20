@@ -2,8 +2,8 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Add Project Status') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Create a new project status') }}</p>
+                <h1 class="text-3xl font-bold text-content-primary">{{ __('Add Project Status') }}</h1>
+                <p class="text-content-secondary mt-1">{{ __('Create a new project status') }}</p>
             </div>
             <x-icon-button as="a" icon="back" href="{{ route('admin-panel.project-statuses.index') }}" title="{{ __('Back') }}" />
         </div>
@@ -14,7 +14,7 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status Name') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Status Name') }} <span class="text-red-500">*</span></label>
                         <input type="text" name="name" value="{{ old('name') }}" required
                                placeholder="{{ __('Example: Open, Progress, Done') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
@@ -22,7 +22,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Warna (Color)') }}</label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Warna (Color)') }}</label>
                         <div class="flex items-center gap-3">
                             <input type="color" name="color" value="{{ old('color', '#3b82f6') }}"
                                    class="w-12 h-12 rounded border-slate-300 cursor-pointer">
@@ -36,7 +36,7 @@
                     <div class="flex items-center gap-2">
                         <input type="checkbox" name="is_default" id="is_default" value="1" {{ old('is_default') ? 'checked' : '' }}
                                class="w-5 h-5 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                        <label for="is_default" class="text-sm font-medium text-slate-700">{{ __('Set as Default Status') }}</label>
+                        <label for="is_default" class="text-sm font-medium text-content-secondary">{{ __('Set as Default Status') }}</label>
                     </div>
                     @error('is_default') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>

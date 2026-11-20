@@ -2,8 +2,8 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Account Manager') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Manage Account Manager data') }}</p>
+                <h1 class="text-3xl font-bold text-content-primary">{{ __('Account Manager') }}</h1>
+                <p class="text-content-secondary mt-1">{{ __('Manage Account Manager data') }}</p>
             </div>
             <x-icon-button as="a" icon="add" href="{{ route('admin-panel.account-managers.create') }}" label="{{ __('Add Account Manager') }}" title="{{ __('Add Account Manager') }}" />
         </div>
@@ -13,16 +13,16 @@
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Name') }}</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Created At') }}</th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Created At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                         @forelse($accountManagers as $am)
                             <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-800">{{ $am->name }}</td>
-                                <td class="px-6 py-4 text-slate-600">{{ $am->created_at->format('d M Y H:i') }}</td>
+                                <td class="px-6 py-4 font-medium text-content-primary">{{ $am->name }}</td>
+                                <td class="px-6 py-4 text-content-secondary">{{ $am->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.account-managers.edit', $am) }}" title="{{ __('Edit') }}" />
@@ -39,7 +39,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="py-16 text-center text-slate-400">
+                                <td colspan="3" class="py-16 text-center text-content-tertiary">
                                     {{ __('No Account Manager yet.') }}
                                 </td>
                             </tr>

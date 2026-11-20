@@ -71,11 +71,11 @@
     <div class="w-full space-y-6">
         {{-- 1. Open Header Style (delay 0ms) --}}
         <div class="lynk-enter flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between" style="--d: 0ms">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+            <h1 class="text-2xl font-bold tracking-tight text-content-primary sm:text-3xl">
                 {{ __('Welcome back,') }} {{ $user?->name }} <span aria-hidden="true">👋</span>
             </h1>
 
-            <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90 dark:text-slate-300">
+            <div class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200/80 bg-white px-4 py-2 text-xs font-semibold text-content-secondary shadow-sm dark:border-slate-800/70 dark:bg-slate-800/90">
                 <x-icon name="calendar" class="h-3.5 w-3.5 text-accent-600 dark:text-accent-400" />
                 <span>{{ ($now ?? \Carbon\Carbon::now('Asia/Jakarta'))->locale(app()->getLocale())->translatedFormat('l, d F Y') }}</span>
             </div>
@@ -95,15 +95,15 @@
                                 <x-icon name="users" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total Customers') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                <p class="truncate text-xs font-medium text-content-secondary">{{ __('Total Customers') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-content-primary tabular-nums sm:text-3xl dark:text-white"
                                    data-countup="{{ (int) ($customerCount ?? 0) }}" data-countup-delay="120">
                                     {{ number_format($customerCount ?? 0) }}
                                 </p>
                             </div>
                         </div>
 
-                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-content-secondary">
                             <span class="inline-flex items-center font-semibold text-violet-600 tabular-nums dark:text-violet-400">
                                 <svg class="mr-0.5 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M5.22 14.78a.75.75 0 0 0 1.06 0l7.22-7.22v5.69a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75h-7.5a.75.75 0 0 0 0 1.5h5.69l-7.22 7.22a.75.75 0 0 0 0 1.06Z" clip-rule="evenodd" />
@@ -139,15 +139,15 @@
                                 <x-icon name="check-circle" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Completed Projects') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                <p class="truncate text-xs font-medium text-content-secondary">{{ __('Completed Projects') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-content-primary tabular-nums sm:text-3xl dark:text-white"
                                    data-countup="{{ (int) ($completedProjectsTotal ?? 0) }}" data-countup-delay="200">
                                     {{ number_format($completedProjectsTotal ?? 0) }}
                                 </p>
                             </div>
                         </div>
 
-                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-content-secondary">
                             <span class="inline-flex items-center font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
                                 <svg class="mr-0.5 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M5.22 14.78a.75.75 0 0 0 1.06 0l7.22-7.22v5.69a.75.75 0 0 0 1.5 0v-7.5a.75.75 0 0 0-.75-.75h-7.5a.75.75 0 0 0 0 1.5h5.69l-7.22 7.22a.75.75 0 0 0 0 1.06Z" clip-rule="evenodd" />
@@ -183,18 +183,18 @@
                                 <x-icon name="activity" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Active Projects') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                <p class="truncate text-xs font-medium text-content-secondary">{{ __('Active Projects') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-content-primary tabular-nums sm:text-3xl dark:text-white"
                                    data-countup="{{ (int) ($activeProjects ?? 0) }}" data-countup-delay="280">
                                     {{ number_format($activeProjects ?? 0) }}
                                 </p>
                             </div>
                         </div>
 
-                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-content-secondary">
                             <span class="font-semibold text-amber-600 tabular-nums dark:text-amber-400">{{ number_format($openProjectsCount ?? 0) }} {{ __('Open') }}</span>
                             <span>·</span>
-                            <span class="font-semibold text-slate-700 tabular-nums dark:text-slate-300">{{ number_format($onProgressProjectsCount ?? 0) }} {{ __('On Progress') }}</span>
+                            <span class="font-semibold text-content-secondary tabular-nums">{{ number_format($onProgressProjectsCount ?? 0) }} {{ __('On Progress') }}</span>
                         </p>
                     </div>
 
@@ -223,18 +223,18 @@
                                 <x-icon name="book" class="h-5 w-5" />
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Total Documents & KB') }}</p>
-                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                <p class="truncate text-xs font-medium text-content-secondary">{{ __('Total Documents & KB') }}</p>
+                                <p class="mt-0.5 text-2xl font-extrabold tracking-tight text-content-primary tabular-nums sm:text-3xl dark:text-white"
                                    data-countup="{{ (int) ($totalDocsAndKb ?? ($documentCount ?? 0)) }}" data-countup-delay="360">
                                     {{ number_format($totalDocsAndKb ?? ($documentCount ?? 0)) }}
                                 </p>
                             </div>
                         </div>
 
-                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <p class="mt-3.5 flex items-center gap-1.5 text-xs font-medium text-content-secondary">
                             <span class="font-semibold text-pink-600 tabular-nums dark:text-pink-400">{{ number_format($documentCount ?? 0) }} {{ __('Project Docs') }}</span>
                             <span>·</span>
-                            <span class="font-semibold text-slate-700 tabular-nums dark:text-slate-300">{{ number_format($kbTotalCount ?? 0) }} {{ __('KB') }}</span>
+                            <span class="font-semibold text-content-secondary tabular-nums">{{ number_format($kbTotalCount ?? 0) }} {{ __('KB') }}</span>
                         </p>
                     </div>
 
@@ -263,7 +263,7 @@
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3">
                         <div class="flex items-center gap-2.5">
-                            <h2 id="my-agenda-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                            <h2 id="my-agenda-heading" class="text-base font-semibold text-content-primary sm:text-lg">
                                 {{ __('My Agenda & Tasks Today') }}
                             </h2>
                             <span class="rounded-full bg-accent-500/10 px-2.5 py-0.5 text-xs font-semibold text-accent-700 tabular-nums dark:bg-accent-400/15 dark:text-accent-300">
@@ -292,13 +292,13 @@
                                     {{-- Date Block Box bergaya kalender --}}
                                     <div class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl {{ $theme['box'] }}">
                                         <span class="text-sm font-extrabold leading-none tabular-nums">{{ $item['day'] ?? ($now ?? now())->format('d') }}</span>
-                                        <span class="mt-0.5 text-[10px] font-bold uppercase tracking-wider opacity-80">{{ $item['month'] ?? strtoupper(($now ?? now())->format('M')) }}</span>
+                                        <span class="mt-0.5 text-xs font-bold uppercase tracking-wider opacity-80">{{ $item['month'] ?? strtoupper(($now ?? now())->format('M')) }}</span>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-600 dark:text-slate-100 dark:group-hover:text-accent-400">
+                                        <p class="truncate text-sm font-semibold text-content-primary transition-colors group-hover:text-accent-600 dark:group-hover:text-accent-400">
                                             {{ $item['title'] }}
                                         </p>
-                                        <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                        <p class="mt-0.5 truncate text-xs text-content-secondary">
                                             {{ $item['subtitle'] }} · <span class="tabular-nums">{{ $item['time_label'] }}</span>
                                         </p>
                                     </div>
@@ -309,17 +309,17 @@
                                     <div class="hidden w-16 overflow-hidden rounded-full bg-slate-100 sm:block dark:bg-slate-700/70" title="{{ $prog }}%">
                                         <div class="lynk-progress-bar h-1.5 rounded-full {{ $theme['bar'] }}" style="--target-w: {{ $prog }}%; --d: 420ms"></div>
                                     </div>
-                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $theme['pill'] }}">
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $theme['pill'] }}">
                                         {{ $item['status_label'] }}
                                     </span>
                                 </div>
                             </a>
                         @empty
                             <div class="rounded-xl bg-slate-50/70 px-5 py-10 text-center dark:bg-slate-900/30">
-                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-content-tertiary shadow-sm dark:bg-slate-800">
                                     <x-icon name="clipboard-check" class="h-5 w-5" />
                                 </span>
-                                <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No scheduled tasks for today') }}</p>
+                                <p class="mt-3 text-sm font-semibold text-content-secondary">{{ __('No scheduled tasks for today') }}</p>
                             </div>
                         @endforelse
                     </div>
@@ -331,7 +331,7 @@
                      class="lynk-enter flex h-full flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6 lg:col-span-5 dark:border-slate-800/60 dark:bg-slate-800/90"
                      aria-labelledby="project-status-heading">
                 <div class="flex items-center justify-between gap-3 pb-3">
-                    <h2 id="project-status-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                    <h2 id="project-status-heading" class="text-base font-semibold text-content-primary sm:text-lg">
                         {{ __('Project Status Breakdown') }}
                     </h2>
                     @if($canViewProjects)
@@ -355,11 +355,11 @@
                                 </svg>
                             @endif
                             <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-                                <span class="text-2xl font-extrabold tracking-tight text-slate-900 tabular-nums sm:text-3xl dark:text-white"
+                                <span class="text-2xl font-extrabold tracking-tight text-content-primary tabular-nums sm:text-3xl dark:text-white"
                                       data-countup="{{ (int) ($totalProjects ?? 0) }}" data-countup-delay="520">
                                     {{ number_format($totalProjects ?? 0) }}
                                 </span>
-                                <span class="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-400">
+                                <span class="mt-0.5 text-xs font-medium text-content-tertiary">
                                     {{ __('Total Projects') }}
                                 </span>
                             </div>
@@ -369,13 +369,13 @@
                         <div class="w-full flex-1 space-y-2">
                             @foreach($legendStatuses as $statusItem)
                                 <div class="flex items-center justify-between gap-2 text-xs">
-                                    <span class="flex min-w-0 items-center gap-2.5 font-medium text-slate-600 dark:text-slate-300">
+                                    <span class="flex min-w-0 items-center gap-2.5 font-medium text-content-secondary">
                                         <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $statusItem['hex_color'] ?? '#6366f1' }}"></span>
                                         <span class="truncate">{{ __($statusItem['name']) }}</span>
                                     </span>
-                                    <span class="shrink-0 font-bold text-slate-800 tabular-nums dark:text-slate-100">
+                                    <span class="shrink-0 font-bold text-content-primary tabular-nums">
                                         <span data-countup="{{ (int) $statusItem['count'] }}" data-countup-delay="540">{{ number_format($statusItem['count']) }}</span>
-                                        <span class="ml-0.5 font-normal text-slate-400">(<span data-countup="{{ round($statusItem['percentage']) }}" data-countup-suffix="%" data-countup-delay="540">{{ round($statusItem['percentage']) }}%</span>)</span>
+                                        <span class="ml-0.5 font-normal text-content-tertiary">(<span data-countup="{{ round($statusItem['percentage']) }}" data-countup-suffix="%" data-countup-delay="540">{{ round($statusItem['percentage']) }}%</span>)</span>
                                     </span>
                                 </div>
                             @endforeach
@@ -383,7 +383,7 @@
                     </div>
                 @else
                     <div class="my-auto rounded-xl bg-slate-50/70 px-5 py-8 text-center dark:bg-slate-900/30">
-                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ __('No project status data available.') }}</p>
+                        <p class="text-sm font-medium text-content-secondary">{{ __('No project status data available.') }}</p>
                     </div>
                 @endif
             </section>
@@ -397,10 +397,10 @@
                      aria-labelledby="recent-activities-heading">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3">
-                        <h2 id="recent-activities-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                        <h2 id="recent-activities-heading" class="text-base font-semibold text-content-primary sm:text-lg">
                             {{ __('Recent Activity') }}
                         </h2>
-                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 tabular-nums dark:bg-slate-700/70 dark:text-slate-300">
+                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-content-secondary tabular-nums dark:bg-slate-700/70">
                             {{ $activities->count() }} {{ __('Recent Activities') }}
                         </span>
                     </div>
@@ -413,37 +413,37 @@
                                         <x-user-avatar :user="$activity['user']" size="w-9 h-9" text="text-xs" />
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="truncate text-sm leading-snug text-slate-700 dark:text-slate-200">
-                                            <span class="font-semibold text-slate-900 dark:text-white">{{ $activity['user']?->name ?? __('System') }}</span>
-                                            <span class="text-slate-500 dark:text-slate-300">{{ __($activity['title']) }}</span>
+                                        <p class="truncate text-sm leading-snug text-content-secondary">
+                                            <span class="font-semibold text-content-primary dark:text-white">{{ $activity['user']?->name ?? __('System') }}</span>
+                                            <span class="text-content-secondary">{{ __($activity['title']) }}</span>
                                         </p>
-                                        <div class="mt-0.5 flex items-center gap-1.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                        <div class="mt-0.5 flex items-center gap-1.5 truncate text-xs text-content-secondary">
                                             @if($activity['type'] === 'project' && $activity['project_id'] && $canViewProjects)
                                                 <a wire:navigate.hover href="{{ route('projects.show', $activity['project_id']) }}"
                                                    class="truncate font-medium text-accent-600 hover:underline dark:text-accent-400">
                                                     {{ $activity['subject'] }}
                                                 </a>
                                             @else
-                                                <span class="truncate font-medium text-slate-600 dark:text-slate-300">{{ $activity['subject'] }}</span>
+                                                <span class="truncate font-medium text-content-secondary">{{ $activity['subject'] }}</span>
                                             @endif
                                             @if($activity['context'])
-                                                <span class="text-slate-300 dark:text-slate-600">·</span>
+                                                <span class="text-content-tertiary">·</span>
                                                 <span class="truncate">{{ $activity['context'] }}</span>
                                             @endif
                                         </div>
                                     </div>
                                 </div>
 
-                                <time class="shrink-0 text-xs font-medium text-slate-400 tabular-nums dark:text-slate-400" datetime="{{ $activity['date']?->toIso8601String() }}">
+                                <time class="shrink-0 text-xs font-medium text-content-tertiary tabular-nums" datetime="{{ $activity['date']?->toIso8601String() }}">
                                     {{ $activity['date']?->setTimezone('Asia/Jakarta')->shortRelativeDiffForHumans() ?? '-' }}
                                 </time>
                             </article>
                         @empty
                             <div class="rounded-xl bg-slate-50/70 px-5 py-10 text-center dark:bg-slate-900/30">
-                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-content-tertiary shadow-sm dark:bg-slate-800">
                                     <x-icon name="activity" class="h-5 w-5" />
                                 </span>
-                                <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No activity recorded yet.') }}</p>
+                                <p class="mt-3 text-sm font-semibold text-content-secondary">{{ __('No activity recorded yet.') }}</p>
                             </div>
                         @endforelse
                     </div>
@@ -456,7 +456,7 @@
                      aria-labelledby="company-board-heading">
                 <div>
                     <div class="flex items-center justify-between gap-3 pb-3">
-                        <h2 id="company-board-heading" class="text-base font-semibold text-slate-800 sm:text-lg dark:text-slate-100">
+                        <h2 id="company-board-heading" class="text-base font-semibold text-content-primary sm:text-lg">
                             {{ __('Company Board & Latest KB') }}
                         </h2>
 
@@ -486,26 +486,26 @@
                                         <x-icon :name="$isProductKb ? 'cube' : 'book'" class="h-4 w-4" />
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-600 dark:text-slate-100 dark:group-hover:text-accent-400">
+                                        <p class="truncate text-sm font-semibold text-content-primary transition-colors group-hover:text-accent-600 dark:group-hover:text-accent-400">
                                             {{ $kbItem['title'] }}
                                         </p>
-                                        <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                                            <span class="font-medium text-slate-600 dark:text-slate-300">{{ $kbItem['source'] }}</span>
+                                        <p class="mt-0.5 truncate text-xs text-content-secondary">
+                                            <span class="font-medium text-content-secondary">{{ $kbItem['source'] }}</span>
                                             <span>·</span>
                                             <span>{{ $kbItem['category'] }}</span>
                                         </p>
                                     </div>
                                 </div>
-                                <span class="shrink-0 text-xs font-medium text-slate-400 tabular-nums dark:text-slate-400">
+                                <span class="shrink-0 text-xs font-medium text-content-tertiary tabular-nums">
                                     {{ $kbItem['date_label'] }}
                                 </span>
                             </a>
                         @empty
                             <div class="rounded-xl bg-slate-50/70 px-5 py-10 text-center dark:bg-slate-900/30">
-                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm dark:bg-slate-800 dark:text-slate-500">
+                                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-content-tertiary shadow-sm dark:bg-slate-800">
                                     <x-icon name="book" class="h-5 w-5" />
                                 </span>
-                                <p class="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('No knowledge base items yet') }}</p>
+                                <p class="mt-3 text-sm font-semibold text-content-secondary">{{ __('No knowledge base items yet') }}</p>
                             </div>
                         @endforelse
                     </div>

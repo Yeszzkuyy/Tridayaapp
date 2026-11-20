@@ -1,6 +1,6 @@
 <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-800/90">
     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
-        <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">
+        <h3 class="text-base font-semibold text-content-secondary">
             {{ __('Checklist Kelengkapan Dokumen Proyek') }}
         </h3>
     </div>
@@ -9,10 +9,10 @@
         <table class="w-full table-fixed divide-y divide-slate-100 text-sm dark:divide-slate-700">
             <thead class="bg-slate-50/80 dark:bg-slate-900/30">
                 <tr>
-                    <th class="px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Proyek & Klien') }}</th>
-                    <th class="w-[42%] px-3 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Kelengkapan Dokumen') }}</th>
-                    <th class="w-[20%] px-3 py-3.5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Status Tagihan') }}</th>
-                    <th class="w-[11%] px-3 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">{{ __('Aksi') }}</th>
+                    <th class="px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Proyek & Klien') }}</th>
+                    <th class="w-[42%] px-3 py-3.5 text-left text-xs font-semibold text-content-secondary">{{ __('Kelengkapan Dokumen') }}</th>
+                    <th class="w-[20%] px-3 py-3.5 text-center text-xs font-semibold text-content-secondary">{{ __('Status Tagihan') }}</th>
+                    <th class="w-[11%] px-3 py-3.5 text-right text-xs font-semibold text-content-secondary">{{ __('Aksi') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -29,20 +29,20 @@
                         $latestInvoice = $invoices->first();
                         $isFullyPaid = $hasInvoice && $invoices->every(fn ($i) => $i->status === 'paid');
 
-                        $docPill = 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition-colors duration-200';
+                        $docPill = 'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors duration-200';
                         $docReady = 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300';
                         $docWarn = 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300';
-                        $docMissing = 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500';
+                        $docMissing = 'border-slate-200 bg-slate-50 text-content-tertiary dark:border-slate-700 dark:bg-slate-900/40 dark:text-content-tertiary';
                     @endphp
                     <tr class="transition-colors hover:bg-slate-50/90 dark:hover:bg-slate-700/35">
                         <td class="px-3 py-3.5">
-                            <div class="truncate font-semibold text-slate-800 dark:text-white" title="{{ $p->project_name }}">
+                            <div class="truncate font-semibold text-content-primary dark:text-white" title="{{ $p->project_name }}">
                                 {{ $p->project_name }}
                             </div>
-                            <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                            <div class="truncate text-xs text-content-secondary">
                                 {{ $customer?->name ?? __('Tanpa Klien') }}
                                 @if($customer?->pt_group)
-                                    <span class="ml-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                    <span class="ml-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-xs font-bold text-content-secondary dark:bg-slate-700">
                                         {{ $customer->pt_group }}
                                     </span>
                                 @endif
@@ -114,7 +114,7 @@
                                 </span>
                             @endif
                             @if($hasInvoice)
-                                <div class="mt-1 truncate text-xs tabular-nums text-slate-400" title="{{ $latestInvoice->invoice_number }}">
+                                <div class="mt-1 truncate text-xs tabular-nums text-content-tertiary" title="{{ $latestInvoice->invoice_number }}">
                                     {{ $latestInvoice->invoice_number }}
                                 </div>
                             @endif
@@ -140,7 +140,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="py-10 text-center text-sm italic text-slate-400 dark:text-slate-500">
+                        <td colspan="4" class="py-10 text-center text-sm italic text-content-tertiary">
                             {{ __('Belum ada data proyek aktif untuk diverifikasi.') }}
                         </td>
                     </tr>

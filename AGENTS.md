@@ -354,7 +354,7 @@ Seluruh halaman (terutama Dashboard, Monitoring, KPI, dan List/Detail) wajib men
    - **Topbar Breadcrumb:** Dilarang menduplikasi nama grup/halaman di topbar (gunakan format ringkas `[Icon Grup] / Sub-menu`, dan jangan tampilkan tanggal ganda di topbar kanan).
 
 2. **Anatomi Standar Kartu KPI (Lynk KPI Card):**
-   - **Bagian Atas:** Letakkan **Icon Box** (`h-11 w-11 rounded-xl` dengan warna translucent lembut) di **sebelah kiri**, berdampingan langsung (`flex items-center gap-3.5`) dengan Label (`text-xs font-medium text-slate-500 dark:text-slate-400`) di atas dan Angka Utama (`text-2xl sm:text-3xl font-extrabold tabular-nums`) di bawahnya.
+   - **Bagian Atas:** Letakkan **Icon Box** (`h-11 w-11 rounded-xl` dengan warna translucent lembut) di **sebelah kiri**, berdampingan langsung (`flex items-center gap-3.5`) dengan Label (`text-[12px] font-medium text-content-secondary`) di atas dan Angka Utama (`text-2xl sm:text-3xl font-extrabold tabular-nums`) di bawahnya.
    - **Bagian Tengah (Trend Text):** **DILARANG** memasang garis pembatas horizontal (`border-t`/`hr`) di tengah kartu KPI dan dilarang memasang ikon chevron `>`. Tampilkan sub-metrik sebagai teks bersih dengan panah tren (`↗ +X new this month` atau rincian ringkas `X Open · Y On Progress`).
    - **Ambient Corner Light:** Tambahkan pendaran cahaya lembut (*ambient glow*) di pojok kanan atas kartu (`pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-<color>-500/15 blur-2xl dark:bg-<color>-500/20`) sesuai warna aksen kartu.
    - **Bagian Bawah (Data-Driven SVG Sparkline — Wajib Berbasis Data Riil):**
@@ -425,6 +425,11 @@ wall, bento, scroll-stacking, dan scroll cue **tidak berlaku** di repo ini. §7
 - Kontras WCAG AA: teks 4.5:1, teks besar 3:1. Placeholder, helper, dan focus ring
   ikut dicek.
 - Dark mode memakai token yang sama; jangan mengubah tema per section.
+- Standar rinci tipografi dan warna ada di §7.5 dan
+  `docs/reference/TYPOGRAPHY-COLOR-STANDARD.md`. Aturan §7.5 menang bila
+  contoh ukuran atau warna di §7.1/§7.2 berbeda. Penerapan massal belum
+  dilakukan; aturan ini wajib dipakai untuk file baru atau file yang sedang
+  disentuh.
 
 ### D. Layout & material
 
@@ -586,7 +591,7 @@ bertahap setiap file itu disentuh.
 | Permukaan menu | `--card-bg` | `#ffffff` | `#232b3e` |
 | Garis menu | `--card-border` | `#e2e8f0` | `#334070` |
 | Sorotan baris | `--menu-hover-bg` | `#eef2f7` | `#2f3a58` |
-| Teks utama | `--text-primary` | `#1e293b` | `#f2f6ff` |
+| Teks utama | `--text-primary` | `#0f172a` | `#f1f5f9` |
 | Item terpilih | `--accent-*` | accent tema | accent tema |
 
 - Tinggi trigger mengikuti size komponen: `md` 32px (bawaan) dan `field` 40px
@@ -638,6 +643,54 @@ bertahap setiap file itu disentuh.
 3. Tidak ada `<select>` native baru atau dropdown buatan sendiri.
 4. `php artisan test --filter=UiFeedbackStandardTest` lulus.
 5. `npm run build` dari `/var/www/3dyapp` setelah merge ke `main`.
+
+## 7.5 Standar Tipografi & Warna (WAJIB)
+
+Sumber lengkap: `docs/reference/TYPOGRAPHY-COLOR-STANDARD.md`.
+Status: **aturan resmi**. Pilot tiga halaman sudah selesai; halaman lain
+menyusul bertahap. Aturan ini wajib dipakai untuk file baru atau file yang
+sedang disentuh.
+
+### A. Tipografi
+
+1. Ukuran teks minimum **12px**. Dilarang `text-[10px]`, `text-[11px]`,
+   `font-size: 10px`, atau `font-size: 11px`.
+2. Skala Tailwind `xs` sudah di-set 12px (px, bukan rem), jadi `text-xs`
+   tetap 12px meski root 90%. Ukuran lain mengikuti skala pilot di poin 5.
+   Jangan mengecilkan teks agar muat; perbaiki layout.
+3. Font hanya **Plus Jakarta Sans** dan **Outfit**. Outfit hanya untuk judul
+   atau penegas. `Exo 2` dan `Urbanist` adalah warisan dan tidak boleh dipakai
+   untuk komponen baru.
+4. Label form dan metadata memakai weight **500**. Body 400/500. Judul kartu
+   600. Angka KPI weight **800**. Angka uang dan metrik wajib
+   `tabular-nums`.
+5. Skala pilot yang dipakai: 12, 13, 14, 16, 18, 22, dan 27px untuk KPI.
+   Target body 14px ditunda agar teks tidak terlalu besar. Tidak ada ukuran
+   lain tanpa persetujuan.
+
+### B. Warna Teks
+
+1. Tiga tingkat teks: `--text-primary`, `--text-secondary`,
+   `--text-tertiary`. Token lama `--text-muted` dipetakan ke tertiary.
+2. Label form memakai secondary, bukan tertiary. Metadata dan hint memakai
+   tertiary. Informasi kritis tidak boleh memakai tertiary/disabled.
+3. Dilarang memakai `opacity` atau alpha pada teks untuk membuatnya redup.
+   Dilarang `text-white/60`, `text-slate-500`, `text-gray-400`, atau warna
+   mentah sejenis pada pekerjaan baru. Gunakan token.
+4. Warna status wajib memakai token `--success`, `--warning`, `--danger`,
+   atau `--info` dan disertai ikon atau teks. Jangan mengandalkan warna saja.
+5. Nilai target token light/dark, tema aksen, dan pemetaan token lama ada di
+   dokumen rujukan. Jangan mengganti token massal tanpa pekerjaan terpisah.
+
+### C. Kontras & Verifikasi
+
+1. Semua pasangan teks/latar wajib lolos WCAG AA: 4,5:1 untuk teks biasa,
+   3:1 untuk teks besar dan border/focus ring penting.
+2. Setiap perubahan yang menyentuh token atau komponen wajib memeriksa light
+   dan dark mode, serta tema aksen yang terdampak.
+3. Jalankan audit Bagian 8 pada dokumen rujukan sebelum menyatakan selesai.
+4. Jangan menurunkan ambang kontras untuk meloloskan token. Sesuaikan token
+   atau layout.
 
 ## 8. Database Safety Rules
 

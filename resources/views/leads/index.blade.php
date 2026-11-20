@@ -1,8 +1,8 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead / Opportunity List') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Lead / Opportunity List') }}</h1>
+            <p class="text-content-secondary mt-1">{{ __('Manage marketing leads and sales opportunities') }}</p>
         </div>
         @can('manage-marketing')
             <div class="flex flex-wrap items-center gap-2">
@@ -16,35 +16,35 @@
         <div class="p-5 border-b dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-t-2xl">
             <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Search Customer') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('Search Customer') }}</label>
                     <input type="text" name="search" value="{{ request('search') }}"
                            placeholder="{{ __('Customer name...') }}"
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Status') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('Status') }}</label>
                     <x-glide-select name="status" class="mt-1" label="{{ __('Status') }}"
                         :options="collect($statuses)->map(fn ($s) => ['value' => $s, 'label' => ucfirst($s)])->all()"
                         :value="request('status', '')" :empty-label="__('All Statuses')" autosubmit />
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Source') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('Source') }}</label>
                     <x-glide-select name="source" class="mt-1" :label="__('Source')"
                         :options="collect($sources)->map(fn ($s) => ['value' => $s, 'label' => ucfirst(str_replace('_', ' ', $s))])->all()"
                         :value="request('source', '')" :empty-label="__('All Sources')" autosubmit />
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('PT') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('PT') }}</label>
                     <x-glide-select name="pt_group" class="mt-1" label="{{ __('PT') }}"
                         :options="collect($ptGroups)->map(fn ($g) => ['value' => $g, 'label' => $g])->all()"
                         :value="request('pt_group', '')" :empty-label="__('Semua PT')" autosubmit />
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('Start Date') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('Start Date') }}</label>
                     <x-datepicker name="date_from" value="{{ request('date_from') }}" class="mt-1"></x-datepicker>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-slate-500">{{ __('End Date') }}</label>
+                    <label class="text-sm font-medium text-content-secondary">{{ __('End Date') }}</label>
                     <x-datepicker name="date_to" value="{{ request('date_to') }}" class="mt-1"></x-datepicker>
                 </div>
                 <div class="sm:col-span-2 lg:col-span-6 flex items-end gap-2">
@@ -58,25 +58,25 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Source') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Partner') }}</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Requirement') }}</th>
-                        <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Entry Date') }}</th>
-                        <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Lead / Customer') }}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Status') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Source') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Partner') }}</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Requirement') }}</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Entry Date') }}</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
                     @forelse($leads as $lead)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
                             <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900">{{ $lead->customer->name ?? 'N/A' }}</div>
-                                <div class="text-sm text-slate-500">
+                                <div class="font-medium text-content-primary">{{ $lead->customer->name ?? 'N/A' }}</div>
+                                <div class="text-sm text-content-secondary">
                                     @if($lead->customer->company && $lead->customer->company !== $lead->customer->name)
                                         <span>{{ $lead->customer->company }}</span>
                                     @endif
-                                    @if($lead->pt_group)<span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-[11px] font-semibold mr-1">{{ $lead->pt_group }}</span>@endif
+                                    @if($lead->pt_group)<span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-xs font-semibold mr-1">{{ $lead->pt_group }}</span>@endif
                                     {{ $lead->customer?->picName() ? 'PIC: '.$lead->customer->picName() : '' }}
                                 </div>
                             </td>
@@ -88,7 +88,7 @@
                                         @case('hot') bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 @break
                                         @case('won') bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 @break
                                         @case('lost') bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 @break
-                                        @default bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200
+                                        @default bg-slate-100 text-content-primary dark:bg-slate-700
                                     @endswitch
                                 ">
                                     {{ ucfirst($lead->status) }}
@@ -96,19 +96,19 @@
                             </td>
                             <td class="px-6 py-4 text-left">
                                 @if($lead->source)
-                                    <span class="text-sm text-slate-700">{{ \App\Http\Controllers\LeadController::label($lead->source) }}</span>
+                                    <span class="text-sm text-content-secondary">{{ \App\Http\Controllers\LeadController::label($lead->source) }}</span>
                                 @else
-                                    <span class="text-slate-400">-</span>
+                                    <span class="text-content-tertiary">-</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-left">
                                 @if($lead->partner)
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-content-secondary dark:bg-slate-700">
                                         <span class="w-1.5 h-1.5 rounded-full" style="background-color: {{ \App\Models\Partner::TYPE_DOTS[$lead->partner->type] ?? '#94a3b8' }}"></span>
                                         {{ $lead->partner->name }}
                                     </span>
                                 @else
-                                    <span class="text-slate-400">-</span>
+                                    <span class="text-content-tertiary">-</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-left">
@@ -116,9 +116,9 @@
                             </td>
                             <td class="px-6 py-4 text-center">
                                 @if($lead->incoming_date)
-                                    <span class="text-sm text-slate-700">{{ $lead->incoming_date->format('d M Y') }}</span>
+                                    <span class="text-sm text-content-secondary">{{ $lead->incoming_date->format('d M Y') }}</span>
                                 @else
-                                    <span class="text-slate-400">-</span>
+                                    <span class="text-content-tertiary">-</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right">
@@ -138,7 +138,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                            <td colspan="7" class="px-6 py-12 text-center text-content-secondary">
                                 <p>{{ __('No leads yet.') }}</p>
                                 @can('manage-marketing')
                                     <div class="mt-3 flex justify-center">

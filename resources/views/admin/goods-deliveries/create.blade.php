@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Create Delivery Note') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Create Delivery Note') }}</h1>
         </div>
         <x-back-button href="{{ route('admin.goods-deliveries.index') }}" />
     </div>
@@ -9,9 +9,9 @@
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 mb-5">
         <form method="GET" action="{{ route('admin.goods-deliveries.create') }}" class="flex flex-wrap items-end gap-3">
             <div class="min-w-72 flex-1">
-                <label for="project_id" class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Project') }}</label>
+                <label for="project_id" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Project') }}</label>
                 <select id="project_id" name="project_id" required onchange="this.form.submit()"
-                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                        class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                     <option value="">{{ __('-- Select project --') }}</option>
                     @foreach($projects as $project)
                         <option value="{{ $project->id }}" @selected($selectedProjectId === $project->id)>{{ $project->project_name }} · {{ $project->customer?->name }}</option>
@@ -33,22 +33,22 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Delivery Date') }} <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Delivery Date') }} <span class="text-red-500">*</span></label>
                     <x-datepicker name="delivery_date" required value="{{ old('delivery_date', date('Y-m-d')) }}" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Recipient Name') }}</label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Recipient Name') }}</label>
                     <input type="text" name="recipient_name" value="{{ old('recipient_name') }}" maxlength="150"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                 </div>
                 <div class="rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm">
-                    <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Customer') }}</p>
-                    <p class="font-medium text-slate-800 dark:text-slate-100">{{ $selectedProject->customer?->name }}</p>
+                    <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Customer') }}</p>
+                    <p class="font-medium text-content-primary">{{ $selectedProject->customer?->name }}</p>
                 </div>
             </div>
 
             <div>
-                <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-2">{{ __('Delivery Items') }}</h2>
+                <h2 class="font-semibold text-content-primary mb-2">{{ __('Delivery Items') }}</h2>
 
                 @if($hasProcurementItems)
                     @if($poItems->isEmpty())
@@ -60,10 +60,10 @@
                             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                                 <thead>
                                     <tr>
-                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Received Item') }}</th>
-                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Available') }}</th>
-                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
-                                        <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Serial Numbers') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Received Item') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Available') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Qty') }}</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Serial Numbers') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -71,7 +71,7 @@
                                         <tr>
                                             <td class="px-2 py-2">
                                                 <select name="items[{{ $i }}][supplier_purchase_order_item_id]"
-                                                        class="w-80 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                        class="w-80 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                                     <option value="">{{ __('-- select received item --') }}</option>
                                                     @foreach($poItems as $poItem)
                                                         <option value="{{ $poItem->id }}" @selected((string) old("items.{$i}.supplier_purchase_order_item_id") === (string) $poItem->id)>
@@ -82,7 +82,7 @@
                                                     @endforeach
                                                 </select>
                                             </td>
-                                            <td class="px-2 py-2 text-xs text-slate-500 dark:text-slate-400">
+                                            <td class="px-2 py-2 text-xs text-content-secondary">
                                                 @php $oldItem = $poItems->firstWhere('id', (int) old("items.{$i}.supplier_purchase_order_item_id")); @endphp
                                                 @if($oldItem)
                                                     {{ number_format($oldItem->quantityAvailable(), 2) }} {{ $oldItem->unit }}
@@ -92,19 +92,19 @@
                                             </td>
                                             <td class="px-2 py-2">
                                                 <input type="number" step="0.01" min="0.01" name="items[{{ $i }}][quantity]" value="{{ old("items.{$i}.quantity") }}"
-                                                       class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                       class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                             </td>
                                             <td class="px-2 py-2">
                                                 <input type="text" name="items[{{ $i }}][serial_numbers_text]" value="{{ old("items.{$i}.serial_numbers_text") }}"
                                                        placeholder="{{ __('Comma separated') }}"
-                                                       class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                       class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                             </td>
                                         </tr>
                                     @endfor
                                 </tbody>
                             </table>
                         </div>
-                        <p class="mt-1 text-xs text-slate-400">{{ __('Choose only goods that have been received; quantity cannot exceed available stock.') }}</p>
+                        <p class="mt-1 text-xs text-content-tertiary">{{ __('Choose only goods that have been received; quantity cannot exceed available stock.') }}</p>
                     @endif
                 @else
                     <div class="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm mb-3 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-200">
@@ -114,11 +114,11 @@
                         <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                             <thead>
                                 <tr>
-                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Product (optional)') }}</th>
-                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Item Name') }}</th>
-                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Qty') }}</th>
-                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Unit') }}</th>
-                                    <th class="px-2 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Serial Numbers') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Product (optional)') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Item Name') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Qty') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Unit') }}</th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Serial Numbers') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -126,7 +126,7 @@
                                     <tr>
                                         <td class="px-2 py-2">
                                             <select name="items[{{ $i }}][product_id]"
-                                                    class="w-48 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                    class="w-48 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                                 <option value="">{{ __('-- none --') }}</option>
                                                 @foreach($products as $product)
                                                     <option value="{{ $product->id }}" @selected(old("items.{$i}.product_id") == $product->id)>{{ $product->name }}</option>
@@ -135,33 +135,33 @@
                                         </td>
                                         <td class="px-2 py-2">
                                             <input type="text" name="items[{{ $i }}][item_name]" value="{{ old("items.{$i}.item_name") }}" maxlength="255"
-                                                   class="w-52 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                   class="w-52 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                         </td>
                                         <td class="px-2 py-2">
                                             <input type="number" step="0.01" min="0" name="items[{{ $i }}][quantity]" value="{{ old("items.{$i}.quantity") }}"
-                                                   class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                   class="w-24 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                         </td>
                                         <td class="px-2 py-2">
                                             <input type="text" name="items[{{ $i }}][unit]" value="{{ old("items.{$i}.unit", 'pcs') }}" maxlength="16"
-                                                   class="w-20 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                   class="w-20 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                         </td>
                                         <td class="px-2 py-2">
                                             <input type="text" name="items[{{ $i }}][serial_numbers_text]" value="{{ old("items.{$i}.serial_numbers_text") }}"
                                                    placeholder="{{ __('Comma separated') }}"
-                                                   class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                                   class="w-56 rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                                         </td>
                                     </tr>
                                 @endfor
                             </tbody>
                         </table>
                     </div>
-                    <p class="mt-1 text-xs text-slate-400">{{ __('Fill at least one row. Empty rows are ignored.') }}</p>
+                    <p class="mt-1 text-xs text-content-tertiary">{{ __('Fill at least one row. Empty rows are ignored.') }}</p>
                 @endif
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{{ __('Notes') }}</label>
-                <textarea name="notes" rows="2" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">{{ old('notes') }}</textarea>
+                <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Notes') }}</label>
+                <textarea name="notes" rows="2" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">{{ old('notes') }}</textarea>
             </div>
 
             <div class="flex gap-3">
@@ -170,7 +170,7 @@
             </div>
         </form>
     @else
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-8 text-center text-slate-400">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-8 text-center text-content-tertiary">
             {{ __('Select a project to create a delivery note.') }}
         </div>
     @endif

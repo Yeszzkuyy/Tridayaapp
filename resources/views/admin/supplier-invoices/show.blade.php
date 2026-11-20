@@ -2,12 +2,12 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <div class="flex items-center gap-3">
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $supplierInvoice->internal_ref_number }}</h1>
+                <h1 class="text-3xl font-bold text-content-primary">{{ $supplierInvoice->internal_ref_number }}</h1>
                 <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ \App\Models\SupplierInvoice::statusBadgeClasses($supplierInvoice->status) }}">
                     {{ \App\Models\SupplierInvoice::statusLabel($supplierInvoice->status) }}
                 </span>
             </div>
-            <p class="text-slate-500 mt-1">{{ __('Supplier invoice') }} {{ $supplierInvoice->supplier_invoice_number }} · {{ $supplierInvoice->supplier?->name }}</p>
+            <p class="text-content-secondary mt-1">{{ __('Supplier invoice') }} {{ $supplierInvoice->supplier_invoice_number }} · {{ $supplierInvoice->supplier?->name }}</p>
         </div>
         <div class="flex items-center gap-2">
             @if($supplierInvoice->invoice_file_path)
@@ -34,47 +34,47 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div class="lg:col-span-2 space-y-5">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-                <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">{{ __('Invoice Summary') }}</h2>
+                <h2 class="font-semibold text-content-primary mb-4">{{ __('Invoice Summary') }}</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Amount') }}</p>
-                        <p class="font-mono font-semibold text-slate-800 dark:text-slate-100">Rp {{ number_format($supplierInvoice->amount, 0, ',', '.') }}</p>
+                        <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Amount') }}</p>
+                        <p class="font-mono font-semibold text-content-primary">Rp {{ number_format($supplierInvoice->amount, 0, ',', '.') }}</p>
                     </div>
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Paid') }}</p>
+                        <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Paid') }}</p>
                         <p class="font-mono font-semibold text-green-600 dark:text-green-400">Rp {{ number_format($supplierInvoice->paid_amount, 0, ',', '.') }}</p>
                     </div>
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Remaining') }}</p>
+                        <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Remaining') }}</p>
                         <p class="font-mono font-semibold text-amber-600 dark:text-amber-400">Rp {{ number_format($supplierInvoice->remainingAmount(), 0, ',', '.') }}</p>
                     </div>
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Type') }}</p>
-                        <p class="text-slate-800 dark:text-slate-100">{{ \App\Models\SupplierInvoice::typeLabel($supplierInvoice->invoice_type) }}</p>
+                        <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Type') }}</p>
+                        <p class="text-content-primary">{{ \App\Models\SupplierInvoice::typeLabel($supplierInvoice->invoice_type) }}</p>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6">
-                <h2 class="font-semibold text-slate-800 dark:text-slate-100 mb-4">{{ __('Payments to Supplier') }}</h2>
+                <h2 class="font-semibold text-content-primary mb-4">{{ __('Payments to Supplier') }}</h2>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                         <thead>
                             <tr>
-                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Date') }}</th>
-                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Method') }}</th>
-                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Amount') }}</th>
-                                <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Notes') }}</th>
-                                <th class="px-3 py-2 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Actions') }}</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Date') }}</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Method') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Amount') }}</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Notes') }}</th>
+                                <th class="px-3 py-2 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                             @forelse($supplierInvoice->payments as $payment)
                                 <tr>
-                                    <td class="px-3 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $payment->payment_date?->format('d M Y') }}</td>
-                                    <td class="px-3 py-3 text-sm text-slate-700 dark:text-slate-300">{{ $payment->payment_method ?? __('Not filled') }}</td>
-                                    <td class="px-3 py-3 text-right font-mono text-sm text-slate-800 dark:text-slate-100">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
-                                    <td class="px-3 py-3 text-sm text-slate-600 dark:text-slate-400">{{ $payment->notes ?? __('Not filled') }}</td>
+                                    <td class="px-3 py-3 text-sm text-content-secondary">{{ $payment->payment_date?->format('d M Y') }}</td>
+                                    <td class="px-3 py-3 text-sm text-content-secondary">{{ $payment->payment_method ?? __('Not filled') }}</td>
+                                    <td class="px-3 py-3 text-right font-mono text-sm text-content-primary">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-sm text-content-secondary">{{ $payment->notes ?? __('Not filled') }}</td>
                                     <td class="px-3 py-3">
                                         <div class="flex justify-end gap-2">
                                             @if($payment->proof_file)
@@ -93,7 +93,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5" class="py-6 text-center text-slate-400">{{ __('No payments recorded yet.') }}</td></tr>
+                                <tr><td colspan="5" class="py-6 text-center text-content-tertiary">{{ __('No payments recorded yet.') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -106,23 +106,23 @@
                             @csrf
                             <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $idempotencyKey) }}">
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>
+                                <label class="block text-xs text-content-secondary mb-1">{{ __('Amount (Rp)') }} <span class="text-red-500">*</span></label>
                                 <input type="number" step="0.01" min="0.01" max="{{ $supplierInvoice->remainingAmount() }}" name="amount" required
-                                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">{{ __('Payment Date') }} <span class="text-red-500">*</span></label>
+                                <label class="block text-xs text-content-secondary mb-1">{{ __('Payment Date') }} <span class="text-red-500">*</span></label>
                                 <x-datepicker name="payment_date" required value="{{ date('Y-m-d') }}" />
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">{{ __('Method') }}</label>
+                                <label class="block text-xs text-content-secondary mb-1">{{ __('Method') }}</label>
                                 <input type="text" name="payment_method" maxlength="100" placeholder="{{ __('Transfer / Cash') }}"
-                                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-500 mb-1">{{ __('Proof') }}</label>
+                                <label class="block text-xs text-content-secondary mb-1">{{ __('Proof') }}</label>
                                 <input type="file" name="proof_file" accept=".pdf,.jpg,.jpeg,.png"
-                                       class="w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                                       class="w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
                             </div>
                             <div>
                                 <button type="submit"
@@ -139,43 +139,43 @@
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-4 text-sm">
             <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Supplier PO') }}</p>
+                <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Supplier PO') }}</p>
                 @if($supplierInvoice->purchaseOrder)
                     <a href="{{ route('admin.supplier-pos.show', $supplierInvoice->purchaseOrder) }}" class="font-mono font-semibold text-accent-600 dark:text-accent-400 hover:underline">{{ $supplierInvoice->purchaseOrder->po_number }}</a>
                 @else
-                    <p class="text-slate-400 italic">{{ __('Not filled') }}</p>
+                    <p class="text-content-tertiary italic">{{ __('Not filled') }}</p>
                 @endif
             </div>
             <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Goods Receipt') }}</p>
+                <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Goods Receipt') }}</p>
                 @if($supplierInvoice->goodsReceipt)
-                    <a href="{{ route('admin.goods-receipts.show', $supplierInvoice->goodsReceipt) }}" class="font-mono text-slate-800 dark:text-slate-100 hover:underline">{{ $supplierInvoice->goodsReceipt->receipt_number }}</a>
+                    <a href="{{ route('admin.goods-receipts.show', $supplierInvoice->goodsReceipt) }}" class="font-mono text-content-primary hover:underline">{{ $supplierInvoice->goodsReceipt->receipt_number }}</a>
                 @else
-                    <p class="text-slate-400 italic">{{ __('Not filled') }}</p>
+                    <p class="text-content-tertiary italic">{{ __('Not filled') }}</p>
                 @endif
             </div>
             <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Project') }}</p>
+                <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Project') }}</p>
                 @if($supplierInvoice->project)
-                    <a href="{{ route('projects.show', $supplierInvoice->project) }}" class="text-slate-800 dark:text-slate-100 hover:underline">{{ $supplierInvoice->project->project_name }}</a>
+                    <a href="{{ route('projects.show', $supplierInvoice->project) }}" class="text-content-primary hover:underline">{{ $supplierInvoice->project->project_name }}</a>
                 @else
-                    <p class="text-slate-400 italic">{{ __('Not filled') }}</p>
+                    <p class="text-content-tertiary italic">{{ __('Not filled') }}</p>
                 @endif
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Issue Date') }}</p>
-                    <p class="text-slate-800 dark:text-slate-100">{{ $supplierInvoice->issue_date?->format('d M Y') }}</p>
+                    <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Issue Date') }}</p>
+                    <p class="text-content-primary">{{ $supplierInvoice->issue_date?->format('d M Y') }}</p>
                 </div>
                 <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Due Date') }}</p>
-                    <p class="text-slate-800 dark:text-slate-100">{{ $supplierInvoice->due_date?->format('d M Y') ?? __('Not filled') }}</p>
+                    <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Due Date') }}</p>
+                    <p class="text-content-primary">{{ $supplierInvoice->due_date?->format('d M Y') ?? __('Not filled') }}</p>
                 </div>
             </div>
             @if($supplierInvoice->notes)
                 <div>
-                    <p class="text-xs uppercase tracking-wide text-slate-400">{{ __('Notes') }}</p>
-                    <p class="text-slate-700 dark:text-slate-300 whitespace-pre-line">{{ $supplierInvoice->notes }}</p>
+                    <p class="text-xs uppercase tracking-wide text-content-tertiary">{{ __('Notes') }}</p>
+                    <p class="text-content-secondary whitespace-pre-line">{{ $supplierInvoice->notes }}</p>
                 </div>
             @endif
         </div>

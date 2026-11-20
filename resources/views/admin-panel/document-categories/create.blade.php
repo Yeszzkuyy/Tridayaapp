@@ -2,8 +2,8 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Add Document Category') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Create a new document category') }}</p>
+                <h1 class="text-3xl font-bold text-content-primary">{{ __('Add Document Category') }}</h1>
+                <p class="text-content-secondary mt-1">{{ __('Create a new document category') }}</p>
             </div>
             <x-icon-button as="a" icon="back" href="{{ route('admin-panel.document-categories.index') }}" title="{{ __('Back') }}" />
         </div>
@@ -14,7 +14,7 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Category Name') }} <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Category Name') }} <span class="text-red-500">*</span></label>
                         <input type="text" name="name" value="{{ old('name') }}" required
                                placeholder="{{ __('Example: Survey, Drawing, BAST') }}"
                                class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">

@@ -8,8 +8,8 @@
 <div class="space-y-3">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
-            <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Invoice Items') }}</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ __('Optional. If items are filled, the invoice total is calculated automatically.') }}</p>
+            <h2 class="text-sm font-semibold text-content-primary">{{ __('Invoice Items') }}</h2>
+            <p class="text-xs text-content-secondary">{{ __('Optional. If items are filled, the invoice total is calculated automatically.') }}</p>
         </div>
         <x-icon-button icon="add" type="button" label="{{ __('Item') }}" title="{{ __('Add Item') }}"
                        onclick="invoiceAddRow()" />
@@ -34,7 +34,7 @@
                     <input type="number" name="items[{{ $i }}][discount]" min="0" step="0.01" value="{{ $row['discount'] ?? 0 }}"
                            placeholder="{{ __('Discount') }}"
                            class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm text-right focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-                    <span class="invoice-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>
+                    <span class="invoice-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-content-secondary">0</span>
                     <div class="col-span-2 md:col-span-1">
                         <x-icon-button icon="delete" type="button" title="{{ __('Delete') }}"
                                        onclick="this.closest('.invoice-row').remove(); invoiceRecalc()" />
@@ -59,7 +59,7 @@
                class="col-span-4 md:col-span-2 rounded-lg border-slate-300 text-sm text-right focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
         <input type="number" data-field="discount" min="0" step="0.01" value="0" placeholder="{{ __('Discount') }}"
                class="col-span-7 md:col-span-1 rounded-lg border-slate-300 text-sm text-right focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
-        <span class="invoice-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-slate-600 dark:text-slate-300">0</span>
+        <span class="invoice-row-subtotal col-span-3 md:col-span-1 self-center text-right text-xs font-semibold text-content-secondary">0</span>
         <div class="col-span-2 md:col-span-1">
             <x-icon-button icon="delete" type="button" title="{{ __('Delete') }}"
                            onclick="this.closest('.invoice-row').remove(); invoiceRecalc()" />

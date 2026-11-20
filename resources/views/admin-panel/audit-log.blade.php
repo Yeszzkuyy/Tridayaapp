@@ -1,8 +1,8 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Audit Log') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('History of user activity in the system') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Audit Log') }}</h1>
+            <p class="text-content-secondary mt-1">{{ __('History of user activity in the system') }}</p>
         </div>
     </div>
 
@@ -35,21 +35,21 @@
             <table class="w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('User') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Action') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Model') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Description') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Properties') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('IP Address') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Waktu') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('User') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Action') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Model') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Description') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Properties') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('IP Address') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Waktu') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
                     @forelse($logs as $log)
                         <tr class="hover:bg-slate-50">
                             <td class="px-4 py-3">
-                                <div class="font-medium text-slate-900">{{ $log->causer->name ?? __('System') }}</div>
-                                <div class="text-sm text-slate-500">{{ $log->causer->email ?? '-' }}</div>
+                                <div class="font-medium text-content-primary">{{ $log->causer->name ?? __('System') }}</div>
+                                <div class="text-sm text-content-secondary">{{ $log->causer->email ?? '-' }}</div>
                             </td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium
@@ -57,20 +57,20 @@
                                     {{ ucfirst($log->action) }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-sm text-slate-700">{{ class_basename($log->subject_type) ?? '-' }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-700">{{ $log->description ?? '-' }}</td>
+                            <td class="px-4 py-3 text-sm text-content-secondary">{{ class_basename($log->subject_type) ?? '-' }}</td>
+                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->description ?? '-' }}</td>
                             <td class="px-4 py-3">
-                                <div class="text-xs text-slate-500 max-w-xs truncate">
+                                <div class="text-xs text-content-secondary max-w-xs truncate">
                                     {{ $log->properties ? json_encode($log->properties) : '-' }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-sm text-slate-500">{{ $log->ip ?? '-' }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-500">{{ $log->created_at->format('d M Y H:i') }}</td>
+                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->ip ?? '-' }}</td>
+                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->created_at->format('d M Y H:i') }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-slate-400">
-                                <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <td colspan="7" class="px-4 py-12 text-center text-content-tertiary">
+                                <svg class="w-12 h-12 mx-auto text-content-tertiary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                                 <p>{{ __('No audit log yet') }}</p>

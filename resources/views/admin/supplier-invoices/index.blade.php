@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Supplier Invoices') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Supplier Invoices') }}</h1>
         </div>
         <div class="flex items-center gap-2">
             @can('manage-admin')
@@ -13,12 +13,12 @@
 
     <form method="GET" action="{{ route('admin.supplier-invoices.index') }}" class="mb-4 flex flex-wrap items-end gap-2">
         <div>
-            <label for="q" class="block text-xs text-slate-500 mb-1">{{ __('Search') }}</label>
+            <label for="q" class="block text-xs text-content-secondary mb-1">{{ __('Search') }}</label>
             <input id="q" type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('Invoice / supplier / PO') }}"
                    class="w-64 rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
         </div>
         <div>
-            <label for="supplier_id" class="block text-xs text-slate-500 mb-1">{{ __('Supplier') }}</label>
+            <label for="supplier_id" class="block text-xs text-content-secondary mb-1">{{ __('Supplier') }}</label>
             <select id="supplier_id" name="supplier_id" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <option value="">{{ __('All') }}</option>
                 @foreach($suppliers as $supplier)
@@ -27,7 +27,7 @@
             </select>
         </div>
         <div>
-            <label for="status" class="block text-xs text-slate-500 mb-1">{{ __('Status') }}</label>
+            <label for="status" class="block text-xs text-content-secondary mb-1">{{ __('Status') }}</label>
             <select id="status" name="status" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <option value="">{{ __('All') }}</option>
                 @foreach($statuses as $status)
@@ -44,38 +44,38 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Internal Ref') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier Invoice No.') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Supplier PO') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Type') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Issue / Due') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Amount') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Paid') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Internal Ref') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier Invoice No.') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Supplier PO') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Type') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Issue / Due') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Amount') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Paid') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($invoices as $invoice)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-4 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $invoice->internal_ref_number }}</td>
-                            <td class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-300">{{ $invoice->supplier_invoice_number }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $invoice->supplier?->name ?? __('Not filled') }}</td>
-                            <td class="px-4 py-3 font-mono text-sm text-slate-700 dark:text-slate-300">
+                            <td class="px-4 py-3 font-mono text-sm font-semibold text-content-primary">{{ $invoice->internal_ref_number }}</td>
+                            <td class="px-4 py-3 font-mono text-sm text-content-secondary">{{ $invoice->supplier_invoice_number }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $invoice->supplier?->name ?? __('Not filled') }}</td>
+                            <td class="px-4 py-3 font-mono text-sm text-content-secondary">
                                 @if($invoice->purchaseOrder)
                                     <a href="{{ route('admin.supplier-pos.show', $invoice->purchaseOrder) }}" class="hover:underline">{{ $invoice->purchaseOrder->po_number }}</a>
                                 @else
                                     -
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ \App\Models\SupplierInvoice::typeLabel($invoice->invoice_type) }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">
+                            <td class="px-4 py-3 text-content-secondary">{{ \App\Models\SupplierInvoice::typeLabel($invoice->invoice_type) }}</td>
+                            <td class="px-4 py-3 text-content-secondary">
                                 {{ $invoice->issue_date?->format('d M Y') }}
-                                <span class="block text-xs text-slate-400">{{ $invoice->due_date?->format('d M Y') ?? __('Not filled') }}</span>
+                                <span class="block text-xs text-content-tertiary">{{ $invoice->due_date?->format('d M Y') ?? __('Not filled') }}</span>
                             </td>
-                            <td class="px-4 py-3 text-right font-mono text-slate-800 dark:text-slate-100">Rp {{ number_format($invoice->amount, 0, ',', '.') }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">Rp {{ number_format($invoice->paid_amount, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-content-primary">Rp {{ number_format($invoice->amount, 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-content-secondary">Rp {{ number_format($invoice->paid_amount, 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ \App\Models\SupplierInvoice::statusBadgeClasses($invoice->status) }}">
                                     {{ \App\Models\SupplierInvoice::statusLabel($invoice->status) }}
@@ -93,7 +93,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="py-8 text-center text-slate-400">{{ __('No supplier invoices yet.') }}</td></tr>
+                        <tr><td colspan="10" class="py-8 text-center text-content-tertiary">{{ __('No supplier invoices yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

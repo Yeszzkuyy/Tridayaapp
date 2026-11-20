@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-content-primary">
                 {{ __('Edit Customer') }}
             </h1>
             <div class="sm:self-start">
@@ -17,7 +17,7 @@
                 <div class="space-y-4">
                     {{-- Nama Perusahaan --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Company Name') }} <span class="text-red-500">*</span>
                         </label>
                         <input type="text"
@@ -30,14 +30,14 @@
 
                     {{-- Company Group --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Customers from Company') }} <span class="text-red-500">*</span>
                         </label>
                         @if(count($ptGroups) === 1)
                             {{-- Sales terkunci ke company-nya: PT tidak bisa dipindah --}}
                             <input type="hidden" name="pt_group" value="{{ old('pt_group', $customer->pt_group ?: $ptGroups[0]) }}">
-                            <div class="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-200">
-                                <x-icon name="building" class="h-4 w-4 text-slate-400" />
+                            <div class="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-content-secondary dark:border-slate-600 dark:bg-slate-900/40">
+                                <x-icon name="building" class="h-4 w-4 text-content-tertiary" />
                                 {{ old('pt_group', $customer->pt_group ?: $ptGroups[0]) }}
                             </div>
                             @error('pt_group') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -52,7 +52,7 @@
                     {{-- Status Customer: prospek vs customer resmi --}}
                     @can('manage-sales')
                         <div>
-                            <label for="status" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Status') }}</label>
+                            <label for="status" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Status') }}</label>
                             <select id="status" name="status"
                                     class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                 @foreach(['lead' => __('Prospects'), 'deal' => __('Deal'), 'instalasi' => __('Installation'), 'selesai' => __('Completed')] as $value => $label)
@@ -65,7 +65,7 @@
 
                     {{-- Address --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Address') }}
                         </label>
                         <textarea name="address" 
@@ -78,7 +78,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @can('view-customer-finance')
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                            <label class="block text-sm font-medium text-content-secondary mb-1">
                                 {{ __('Billing Address') }}
                             </label>
                             <textarea name="billing_address"
@@ -89,7 +89,7 @@
                         </div>
                         @endcan
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                            <label class="block text-sm font-medium text-content-secondary mb-1">
                                 {{ __('Shipping Address') }}
                             </label>
                             <textarea name="shipping_address"
@@ -104,24 +104,24 @@
                     @can('view-customer-finance')
                     <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-3">
                         <div>
-                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Finance PIC') }}</p>
-                            <p class="text-xs text-slate-500">{{ __('Contact person for invoices and billing follow-up.') }}</p>
+                            <p class="text-sm font-semibold text-content-secondary">{{ __('Finance PIC') }}</p>
+                            <p class="text-xs text-content-secondary">{{ __('Contact person for invoices and billing follow-up.') }}</p>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Name') }}</label>
+                                <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Name') }}</label>
                                 <input type="text" name="finance_pic_name" value="{{ old('finance_pic_name', $customer->finance_pic_name) }}"
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                 @error('finance_pic_name') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Phone / WhatsApp') }}</label>
+                                <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Phone / WhatsApp') }}</label>
                                 <input type="text" name="finance_pic_phone" value="{{ old('finance_pic_phone', $customer->finance_pic_phone) }}"
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                 @error('finance_pic_phone') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
+                                <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Email') }}</label>
                                 <input type="email" name="finance_pic_email" value="{{ old('finance_pic_email', $customer->finance_pic_email) }}"
                                        class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                                 @error('finance_pic_email') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
@@ -132,7 +132,7 @@
 
                     {{-- Phone (perusahaan) --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Company Phone No.') }}
                         </label>
                         <input type="text" 
@@ -145,7 +145,7 @@
 
                     {{-- WhatsApp (perusahaan) --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Company WhatsApp No.') }}
                         </label>
                         <input type="text"
@@ -159,7 +159,7 @@
 
                     {{-- Email --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Email') }}
                         </label>
                         <input type="email" 
@@ -173,7 +173,7 @@
                     @can('view-customer-finance')
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                            <label class="block text-sm font-medium text-content-secondary mb-1">
                                 {{ __('NPWP') }}
                             </label>
                             <input type="text"
@@ -184,7 +184,7 @@
                             @error('npwp') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                            <label class="block text-sm font-medium text-content-secondary mb-1">
                                 {{ __('NPWP Document') }}
                             </label>
                             @if($customer->npwp_document_path)
@@ -192,7 +192,7 @@
                             @endif
                             <input type="file"
                                    name="npwp_document" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                   class="w-full text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                   class="w-full text-sm text-content-secondary file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                             @error('npwp_document') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -200,7 +200,7 @@
 
                     {{-- Notes --}}
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">
+                        <label class="block text-sm font-medium text-content-secondary mb-1">
                             {{ __('Notes') }}
                         </label>
                         <textarea name="notes" 
@@ -228,7 +228,7 @@
         {{-- PIC / Kontak perusahaan --}}
         <div class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
             <div class="mb-2 flex items-center justify-between gap-3">
-                <h2 class="text-lg font-bold text-slate-800">{{ __('PIC / Customer Contacts List') }}</h2>
+                <h2 class="text-lg font-bold text-content-primary">{{ __('PIC / Customer Contacts List') }}</h2>
                 <x-icon-button as="a" icon="add" href="{{ route('customer-contacts.create', $customer) }}" label="{{ __('Add PIC') }}" title="{{ __('Add PIC') }}" />
             </div>
 
@@ -237,13 +237,13 @@
                     @foreach($customer->contacts as $contact)
                         <li class="flex items-center justify-between gap-3 py-3">
                             <div class="min-w-0">
-                                <p class="flex flex-wrap items-center gap-2 font-semibold text-slate-800">
+                                <p class="flex flex-wrap items-center gap-2 font-semibold text-content-primary">
                                     <span class="truncate">{{ $contact->name }}</span>
                                     @if($contact->is_primary)
                                         <x-status-badge color="green">{{ __('Primary') }}</x-status-badge>
                                     @endif
                                 </p>
-                                <p class="mt-0.5 truncate text-sm text-slate-500">
+                                <p class="mt-0.5 truncate text-sm text-content-secondary">
                                     {{ $contact->position ?? '-' }}
                                     @if($contact->whatsapp) · {{ \App\Support\PhoneFormatter::format($contact->whatsapp) }} @endif
                                     @if($contact->email) · {{ $contact->email }} @endif

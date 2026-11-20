@@ -14,21 +14,21 @@
                     <x-user-avatar :user="$item['user']" size="w-8 h-8" text="text-xs" />
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3.5">
-                    <p class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-slate-800 dark:text-slate-100">
+                    <p class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-content-primary">
                         <span class="font-semibold">{{ $item['user']?->name ?? __('System') }}</span>
                         <x-timeline-badge :type="$item['type']" />
                         <span>{{ $item['title'] }}</span>
-                        <span class="text-xs text-slate-400">·
+                        <span class="text-xs text-content-tertiary">·
                             <time datetime="{{ $loggedAt?->toIso8601String() }}"
                                   data-relative
                                   title="{{ $loggedAt?->setTimezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB">{{ $loggedAt?->diffForHumans() ?? '-' }}</time>
                         </span>
                     </p>
                     @if($item['detail'] || $item['context'])
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $item['detail'] }}@if($item['context']) · {{ $item['context'] }}@endif</p>
+                        <p class="text-xs text-content-secondary mt-0.5">{{ $item['detail'] }}@if($item['context']) · {{ $item['context'] }}@endif</p>
                     @endif
                     @if($eventDiffers)
-                        <p class="text-xs text-slate-400 mt-0.5">
+                        <p class="text-xs text-content-tertiary mt-0.5">
                             {{ in_array($item['type'], ['followup', 'meeting'], true) ? __('Event/schedule') : __('Event time') }}:
                             {{ $eventAt->setTimezone('Asia/Jakarta')->translatedFormat('d M Y H:i') }} WIB
                         </p>

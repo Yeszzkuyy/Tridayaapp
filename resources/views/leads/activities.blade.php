@@ -1,12 +1,12 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Lead Activity Log') }}</h1>
-            <p class="text-slate-500 mt-1">
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Lead Activity Log') }}</h1>
+            <p class="text-content-secondary mt-1">
                 {{ __('History of all lead changes and the users who made them') }}
                 @if($filterUser)
                     {{ __('— filter:') }} <span class="font-semibold text-accent-600">{{ $filterUser->name }}</span>
-                    <a href="{{ route('leads.activities') }}" class="text-slate-400 hover:text-red-500 ml-1" title="{{ __('Clear filter') }}">&times;</a>
+                    <a href="{{ route('leads.activities') }}" class="text-content-tertiary hover:text-red-500 ml-1" title="{{ __('Clear filter') }}">&times;</a>
                 @endif
             </p>
         </div>
@@ -47,7 +47,7 @@
 
         @if($activities->isEmpty())
             <div class="text-center py-12 px-4">
-                <p class="text-sm font-medium text-slate-500">{{ __('No lead activity yet.') }}</p>
+                <p class="text-sm font-medium text-content-secondary">{{ __('No lead activity yet.') }}</p>
             </div>
         @else
             <ol class="relative border-l-2 border-slate-200 ml-3 space-y-6">
@@ -58,8 +58,8 @@
 
                         <div class="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
                             <x-user-avatar :user="$activity->user" size="w-7 h-7" text="text-xs" />
-                            <span class="font-semibold text-slate-800">{{ $activity->user ? ($userNames[$activity->user_id] ?? $activity->user->name) : __('System') }}</span>
-                            <span class="text-slate-600">{{ $activity->actionLabel() }}</span>
+                            <span class="font-semibold text-content-primary">{{ $activity->user ? ($userNames[$activity->user_id] ?? $activity->user->name) : __('System') }}</span>
+                            <span class="text-content-secondary">{{ $activity->actionLabel() }}</span>
                             @if($activity->lead && $activity->lead->customer)
                                 @php [$badgeBg, $badgeText] = ($logColor)($activity->lead->customer_id); @endphp
                                 — <a href="{{ route('leads.show', $activity->lead) }}"
@@ -68,7 +68,7 @@
                                     {{ $activity->lead->customer->name }}
                                 </a>
                             @else
-                                — <span class="text-slate-400 italic">{{ __('lead has been permanently deleted') }}</span>
+                                — <span class="text-content-tertiary italic">{{ __('lead has been permanently deleted') }}</span>
                             @endif
                         </div>
 
@@ -82,7 +82,7 @@
                                         $new = ($formatLogValue)($field, $change['new'] ?? null);
                                     @endphp
                                     <div class="text-xs bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2 inline-block mr-2">
-                                        <span class="font-semibold text-slate-700 dark:text-slate-200">
+                                        <span class="font-semibold text-content-secondary">
                                             {{ __(\App\Models\LeadActivity::FIELD_LABELS[$field] ?? $field) }}:
                                         </span>
                                         @if($hasOld)
@@ -94,7 +94,7 @@
                             </div>
                         @endif
 
-                        <p class="text-xs text-slate-400 mt-1">{{ $activity->created_at->format('d M Y, H:i') }} WIB</p>
+                        <p class="text-xs text-content-tertiary mt-1">{{ $activity->created_at->format('d M Y, H:i') }} WIB</p>
                     </li>
                 @endforeach
             </ol>

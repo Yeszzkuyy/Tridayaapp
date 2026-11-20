@@ -16,7 +16,7 @@
             'value' => $delta > 0 ? '+'.$delta : (string) $delta,
             'color' => $delta > 0
                 ? 'text-emerald-600 dark:text-emerald-400'
-                : ($delta < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'),
+                : ($delta < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-content-secondary dark:text-content-tertiary'),
         ];
     };
 
@@ -93,8 +93,8 @@
                     <x-icon name="{{ $card['icon'] }}" class="h-5 w-5" />
                 </span>
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-medium text-slate-500 dark:text-slate-400">{{ $card['label'] }}</p>
-                    <p class="mt-0.5 break-words text-2xl font-extrabold leading-tight tracking-tight text-slate-900 tabular-nums dark:text-white sm:text-3xl"
+                    <p class="truncate text-sm font-medium text-content-secondary">{{ $card['label'] }}</p>
+                    <p class="mt-0.5 break-words text-2xl font-extrabold leading-tight tracking-tight text-content-primary tabular-nums dark:text-white sm:text-3xl"
                        @if ($card['countup'])
                            data-countup="{{ $card['value'] }}" data-countup-delay="{{ $delay + 20 }}"
                        @endif>{{ $card['display'] }}</p>

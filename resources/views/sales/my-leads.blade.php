@@ -2,7 +2,7 @@
     <div x-data="{ tips: localStorage.getItem('sales_followup_tips') !== 'off' }">
     <div class="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('My Leads') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('My Leads') }}</h1>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
             <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" label="{{ __('Add Lead') }}" title="{{ __('Add Lead') }}" />
@@ -12,7 +12,7 @@
                            title="{{ __('Add Follow Up') }}" />
             <button type="button"
                     @click="tips = true; localStorage.setItem('sales_followup_tips', 'on')"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-[var(--card-bg)] text-slate-500 transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-[var(--card-bg)] text-content-secondary transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
                     title="{{ __('Show guide') }}">
                 <span class="text-sm font-bold">?</span>
                 <span class="sr-only">{{ __('Show guide') }}</span>
@@ -26,29 +26,29 @@
     <div x-show="tips" x-cloak
          class="mb-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/60">
         <div class="flex items-start gap-3">
-            <x-icon name="bolt" class="h-5 w-5 shrink-0 text-slate-400 dark:text-slate-400" />
-            <div class="min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-200">
+            <x-icon name="bolt" class="h-5 w-5 shrink-0 text-content-tertiary" />
+            <div class="min-w-0 flex-1 text-sm text-content-secondary">
                 <p class="font-semibold">{{ __('Quick guide: 3 steps to follow up') }}</p>
                 <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <div class="rounded-xl border border-slate-200 bg-[var(--card-bg)] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
-                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">1</span>
+                        <span class="text-xs font-semibold text-content-secondary">1</span>
                         <p class="mt-0.5">{{ __('Pick a prospect from the table.') }}</p>
                     </div>
                     <div class="rounded-xl border border-slate-200 bg-[var(--card-bg)] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
-                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">2</span>
+                        <span class="text-xs font-semibold text-content-secondary">2</span>
                         <p class="mt-0.5">{{ __('Contact the PIC or write the latest note.') }}</p>
                     </div>
                     <div class="rounded-xl border border-slate-200 bg-[var(--card-bg)] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
-                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">3</span>
+                        <span class="text-xs font-semibold text-content-secondary">3</span>
                         <p class="mt-0.5">{{ __('Set the next follow up and update the stage.') }}</p>
                     </div>
                 </div>
                 @if($newLeadCount > 0)
-                    <p class="mt-2 font-medium text-slate-600 dark:text-slate-300">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
+                    <p class="mt-2 font-medium text-content-secondary">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
                 @endif
             </div>
             <button type="button" @click="localStorage.setItem('sales_followup_tips', 'off'); tips = false"
-                    class="rounded-xl p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                    class="rounded-xl p-1.5 text-content-tertiary transition hover:bg-white hover:text-content-secondary dark:hover:bg-slate-700 dark:hover:text-content-tertiary"
                     title="{{ __('Dismiss') }}">
                 <span class="sr-only">{{ __('Dismiss') }}</span>
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -272,7 +272,7 @@
                         today: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
                         completed: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
                         upcoming: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-                    }[this.nextState] || 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                    }[this.nextState] || 'bg-slate-100 text-content-secondary dark:bg-slate-700 dark:text-content-secondary';
                 },
                 nextStateText() {
                     return config.stateLabels[this.nextState] || config.stateLabels.upcoming;

@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800 dark:text-white">{{ __('Purchase Order Management') }}</h1>
+            <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Purchase Order Management') }}</h1>
         </div>
         <x-icon-button as="a" variant="solid" reveal icon="receipt" href="{{ route('admin.purchasing.index') }}" label="{{ __('Open Quotation Handoff') }}" title="{{ __('Open Quotation Handoff') }}" />
     </div>
@@ -16,25 +16,25 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead class="bg-slate-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('PO No.') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Customer') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Item') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('PO No.') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Customer') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Item') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($pos as $po)
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition group">
-                            <td class="px-4 py-3 font-mono text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $po->po_number }}</td>
-                            <td class="px-4 py-3 text-slate-700 dark:text-slate-300">{{ $po->customer->name }}</td>
-                            <td class="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-xs truncate">{{ Str::limit($po->items, 60) }}</td>
+                            <td class="px-4 py-3 font-mono text-sm font-semibold text-content-primary">{{ $po->po_number }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $po->customer->name }}</td>
+                            <td class="px-4 py-3 text-content-secondary max-w-xs truncate">{{ Str::limit($po->items, 60) }}</td>
                             <td class="px-4 py-3 text-center">
                                 <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full
                                     @if($po->status === 'selesai') bg-green-100 text-green-700
                                     @elseif($po->status === 'dibatalkan') bg-red-100 text-red-700
                                     @elseif($po->status === 'diproses') bg-yellow-100 text-yellow-700
-                                    @else bg-slate-100 text-slate-600 @endif">
+                                    @else bg-slate-100 text-content-secondary @endif">
                                     {{ $po->statusLabel() }}
                                 </span>
                             </td>
@@ -45,7 +45,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-8 text-center text-slate-400">{{ __('No POs yet.') }}</td></tr>
+                        <tr><td colspan="5" class="py-8 text-center text-content-tertiary">{{ __('No POs yet.') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>
