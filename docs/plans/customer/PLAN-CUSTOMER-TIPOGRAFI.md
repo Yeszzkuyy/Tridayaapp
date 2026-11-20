@@ -1,6 +1,6 @@
 # PLAN-CUSTOMER-TIPOGRAFI: Tipografi & Warna Modul Customer
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** CUS-TIPOGRAFI
 **PIC:** Yeski
 **Menu:** Customer
@@ -26,4 +26,4 @@ Tidak termasuk: perubahan data, route, filter, dan logika bisnis.
 - [x] Warna teks netral memakai token.
 - [x] Test Customer lulus.
 - [x] Build dari main dan pengecekan browser.
-- [ ] User menyatakan hasilnya sesuai.
+- [x] User menyatakan hasilnya sesuai.
