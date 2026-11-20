@@ -10,7 +10,7 @@
     // Warna semantik per tahap: abu = menunggu, indigo = butuh tindakan,
     // biru = proyek jalan, kuning = sedang diproses, teal = BAST, hijau = selesai.
     $badgeTone = match ($current) {
-        'waiting_po' => 'border border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-300',
+        'waiting_po' => 'border border-slate-300 bg-slate-100 text-content-secondary dark:border-slate-600 dark:bg-slate-700/60 dark:text-content-secondary',
         'po_received' => 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/30',
         'project_created' => 'border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-200',
         'in_purchasing' => 'border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
@@ -31,7 +31,7 @@
 @endphp
 
 @if ($current === null)
-    <span {{ $attributes->merge(['class' => 'inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold '.\App\Models\Proposal::statusBadgeClasses($proposal->status)]) }}>
+    <span {{ $attributes->merge(['class' => 'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold '.\App\Models\Proposal::statusBadgeClasses($proposal->status)]) }}>
         {{ \App\Models\Proposal::statusLabel($proposal->status) }}
     </span>
 @else
@@ -67,14 +67,14 @@
          @scroll.window.capture="open = false"
          @resize.window="open = false">
         <div class="flex items-center justify-between gap-2">
-            <span class="inline-flex max-w-full items-center truncate rounded-full px-2.5 py-0.5 text-[11px] font-semibold {{ $badgeTone }}">
+            <span class="inline-flex max-w-full items-center truncate rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $badgeTone }}">
                 {{ $stages[$current] }}
                 @if ($current === 'po_received')
                     {{-- Penanda diam: menonjol tanpa animasi berulang. --}}
                     <span class="ml-1 inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-white ring-2 ring-white/40" aria-hidden="true"></span>
                 @endif
             </span>
-            <span class="shrink-0 text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">{{ $index + 1 }}/{{ $total }}</span>
+            <span class="shrink-0 text-xs font-semibold tabular-nums text-content-tertiary dark:text-content-tertiary">{{ $index + 1 }}/{{ $total }}</span>
         </div>
 
         {{-- Bar progres 6 tahap: selesai hijau, aktif sesuai warna tahap, sisanya netral --}}
@@ -91,8 +91,8 @@
                 <ol class="space-y-1.5">
                     @foreach ($stages as $key => $label)
                         @php $i = array_search($key, $keys, true); @endphp
-                        <li class="flex items-center gap-2 text-xs {{ $i < $index ? 'text-emerald-600 dark:text-emerald-400' : ($i === $index ? 'font-semibold text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500') }}">
-                            <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold {{ $i < $index ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : ($i === $index ? 'bg-accent-600 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500') }}">
+                        <li class="flex items-center gap-2 text-xs {{ $i < $index ? 'text-emerald-600 dark:text-emerald-400' : ($i === $index ? 'font-semibold text-content-primary dark:text-content-primary' : 'text-content-tertiary dark:text-content-tertiary') }}">
+                            <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $i < $index ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : ($i === $index ? 'bg-accent-600 text-white' : 'bg-slate-100 text-content-tertiary dark:bg-slate-700 dark:text-content-tertiary') }}">
                                 {{ $i < $index ? '✓' : $i + 1 }}
                             </span>
                             <span class="truncate">{{ $label }}</span>

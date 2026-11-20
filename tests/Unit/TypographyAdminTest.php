@@ -12,13 +12,19 @@ class TypographyAdminTest extends TestCase
     {
         $files = [];
 
-        foreach ([resource_path('views/admin'), resource_path('views/admin-panel')] as $dir) {
+        foreach ([
+            resource_path('views/admin'),
+            resource_path('views/admin-panel'),
+            resource_path('views/components/purchasing'),
+        ] as $dir) {
             foreach (File::allFiles($dir) as $file) {
                 if (str_ends_with($file->getFilename(), '.blade.php')) {
                     $files[] = $file->getPathname();
                 }
             }
         }
+
+        $files[] = resource_path('views/components/handoff-status.blade.php');
 
         return $files;
     }
