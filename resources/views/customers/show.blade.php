@@ -298,12 +298,12 @@
                             <h2 class="text-xl font-bold text-content-primary dark:text-white">{{ __('Documents') }}</h2>
                             <div class="inline-flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-700">
                                 <button type="button" @click="docView = 'all'"
-                                        :class="docView === 'all' ? 'bg-white text-content-primary shadow-sm dark:bg-slate-800 : 'text-content-secondary hover:text-content-primary dark:hover:text-content-tertiary'"
+                                        :class="docView === 'all' ? 'bg-white text-content-primary shadow-sm dark:bg-slate-800' : 'text-content-secondary hover:text-content-primary dark:hover:text-content-tertiary'"
                                         class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
                                     {{ __('All Documents') }}
                                 </button>
                                 <button type="button" @click="docView = 'module'"
-                                        :class="docView === 'module' ? 'bg-white text-content-primary shadow-sm dark:bg-slate-800 : 'text-content-secondary hover:text-content-primary dark:hover:text-content-tertiary'"
+                                        :class="docView === 'module' ? 'bg-white text-content-primary shadow-sm dark:bg-slate-800' : 'text-content-secondary hover:text-content-primary dark:hover:text-content-tertiary'"
                                         class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
                                     {{ __('By Module') }}
                                 </button>

@@ -27,6 +27,7 @@ class TypographyPilotTest extends TestCase
             'resources/views/customers/partials/transaction-documents.blade.php',
             'resources/views/customers/partials/timeline.blade.php',
             'resources/views/documents/partials/detail-panel.blade.php',
+            'resources/views/documents/partials/table.blade.php',
         ];
     }
 
