@@ -354,7 +354,7 @@ Seluruh halaman (terutama Dashboard, Monitoring, KPI, dan List/Detail) wajib men
    - **Topbar Breadcrumb:** Dilarang menduplikasi nama grup/halaman di topbar (gunakan format ringkas `[Icon Grup] / Sub-menu`, dan jangan tampilkan tanggal ganda di topbar kanan).
 
 2. **Anatomi Standar Kartu KPI (Lynk KPI Card):**
-   - **Bagian Atas:** Letakkan **Icon Box** (`h-11 w-11 rounded-xl` dengan warna translucent lembut) di **sebelah kiri**, berdampingan langsung (`flex items-center gap-3.5`) dengan Label (`text-xs font-medium text-slate-500 dark:text-slate-400`) di atas dan Angka Utama (`text-2xl sm:text-3xl font-extrabold tabular-nums`) di bawahnya.
+   - **Bagian Atas:** Letakkan **Icon Box** (`h-11 w-11 rounded-xl` dengan warna translucent lembut) di **sebelah kiri**, berdampingan langsung (`flex items-center gap-3.5`) dengan Label (`text-[12px] font-medium text-content-secondary`) di atas dan Angka Utama (`text-2xl sm:text-3xl font-extrabold tabular-nums`) di bawahnya.
    - **Bagian Tengah (Trend Text):** **DILARANG** memasang garis pembatas horizontal (`border-t`/`hr`) di tengah kartu KPI dan dilarang memasang ikon chevron `>`. Tampilkan sub-metrik sebagai teks bersih dengan panah tren (`↗ +X new this month` atau rincian ringkas `X Open · Y On Progress`).
    - **Ambient Corner Light:** Tambahkan pendaran cahaya lembut (*ambient glow*) di pojok kanan atas kartu (`pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-<color>-500/15 blur-2xl dark:bg-<color>-500/20`) sesuai warna aksen kartu.
    - **Bagian Bawah (Data-Driven SVG Sparkline — Wajib Berbasis Data Riil):**
@@ -591,7 +591,7 @@ bertahap setiap file itu disentuh.
 | Permukaan menu | `--card-bg` | `#ffffff` | `#232b3e` |
 | Garis menu | `--card-border` | `#e2e8f0` | `#334070` |
 | Sorotan baris | `--menu-hover-bg` | `#eef2f7` | `#2f3a58` |
-| Teks utama | `--text-primary` | `#1e293b` | `#f2f6ff` |
+| Teks utama | `--text-primary` | `#0f172a` | `#f1f5f9` |
 | Item terpilih | `--accent-*` | accent tema | accent tema |
 
 - Tinggi trigger mengikuti size komponen: `md` 32px (bawaan) dan `field` 40px
@@ -647,17 +647,17 @@ bertahap setiap file itu disentuh.
 ## 7.5 Standar Tipografi & Warna (WAJIB)
 
 Sumber lengkap: `docs/reference/TYPOGRAPHY-COLOR-STANDARD.md`.
-Status: **aturan resmi**. Penerapan ke seluruh tampilan belum dilakukan dan
-menunggu pekerjaan terpisah. Aturan ini wajib dipakai untuk file baru atau
-file yang sedang disentuh.
+Status: **aturan resmi**. Pilot tiga halaman sudah selesai; halaman lain
+menyusul bertahap. Aturan ini wajib dipakai untuk file baru atau file yang
+sedang disentuh.
 
 ### A. Tipografi
 
 1. Ukuran teks minimum **12px**. Dilarang `text-[10px]`, `text-[11px]`,
    `font-size: 10px`, atau `font-size: 11px`.
-2. Root font-size proyek saat ini 90%, sehingga `text-xs` setara 10,8px.
-   Sampai root dinormalkan, teks 12px memakai `text-[12px]` atau token ukuran
-   khusus. Jangan mengecilkan teks agar muat; perbaiki layout.
+2. Skala Tailwind `xs` sudah di-set 12px (px, bukan rem), jadi `text-xs`
+   tetap 12px meski root 90%. Ukuran lain mengikuti skala pilot di poin 5.
+   Jangan mengecilkan teks agar muat; perbaiki layout.
 3. Font hanya **Plus Jakarta Sans** dan **Outfit**. Outfit hanya untuk judul
    atau penegas. `Exo 2` dan `Urbanist` adalah warisan dan tidak boleh dipakai
    untuk komponen baru.

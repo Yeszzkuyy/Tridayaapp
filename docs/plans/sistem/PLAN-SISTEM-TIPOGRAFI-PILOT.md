@@ -1,6 +1,6 @@
 # PLAN-SISTEM-TIPOGRAFI-PILOT: Pilot Tipografi & Warna
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** SYS-TIPOGRAFI-PILOT
 **PIC:** Yeski
 **Menu:** Sistem / Tipografi
@@ -37,4 +37,4 @@ perubahan data, route, dan logika bisnis.
 - [x] Warna teks netral tiga halaman pilot memakai token.
 - [x] Tidak ada overflow di desktop/mobile pada halaman pilot.
 - [x] Build dari main dan test pilot lulus.
-- [ ] User menyatakan hasil pilot sesuai.
+- [x] User menyatakan hasil pilot sesuai.

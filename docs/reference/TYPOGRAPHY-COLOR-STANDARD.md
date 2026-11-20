@@ -1,6 +1,6 @@
 # Standar Tipografi & Warna 3DY App
 
-**Status:** Aturan resmi. Penerapan massal belum dilakukan.
+**Status:** Aturan resmi. Pilot tiga halaman selesai; rollout halaman lain bertahap.
 **Berlaku sejak:** 2026-11-20
 **Rujukan aturan kerja:** `AGENTS.md` §7.2 dan §7.5
 
@@ -32,9 +32,9 @@ seluruh halaman dilakukan bertahap melalui pekerjaan terpisah.
 
 Catatan penting:
 
-- `html` memakai `font-size: 90%`. Akibatnya `text-xs` saat ini setara
-  **10,8px**, bukan 12px. Selama root belum dinormalisasi, teks minimum 12px
-  harus memakai ukuran eksplisit `text-[12px]` atau token ukuran khusus.
+- `html` memakai `font-size: 90%`. Skala Tailwind `xs` sudah di-set 12px
+  (px, bukan rem) dan `sm` 13px, jadi `text-xs` tetap 12px meski root 90%.
+  Ukuran lain mengikuti skala pilot.
 - Font yang dipakai saat ini: **Plus Jakarta Sans** dan **Outfit**. Konfigurasi
   masih menyimpan `Exo 2` dan `Urbanist` sebagai warisan. Keduanya tidak boleh
   dipakai untuk komponen baru.
@@ -47,13 +47,13 @@ Catatan penting:
 
 | Token | px | Kelas yang disarankan | Weight | Penggunaan |
 |---|---:|---|---|---|
-| `--fs-xs` | 12 | `text-[12px]` selama root 90% | 500 | Label mikro, badge, metadata, catatan tren |
-| `--fs-sm` | 13 (pilot) | `text-sm` | 400/500 | Isi tabel, input, tombol, label form |
-| `--fs-base` | 16 | `text-base` atau `text-[16px]` | 600 | Sub-judul, header kartu |
-| `--fs-lg` | 18 | `text-lg` atau `text-[18px]` | 600 | Header kartu besar |
-| `--fs-xl` | 20 | `text-xl` atau `text-[20px]` | 600-700 | Judul halaman |
-| `--fs-2xl` | 24 | `text-2xl` atau `text-[24px]` | 700 | Judul utama / salam dashboard |
-| `--fs-kpi` | 24-30 | `text-2xl` sampai `text-3xl` | 800 | Angka KPI |
+| `--fs-xs` | 12 | `text-xs` | 500 | Label mikro, badge, metadata, catatan tren |
+| `--fs-sm` | 13 | `text-sm` | 400/500 | Isi tabel, input, tombol, label form |
+| `--fs-base` | 14 | `text-base` | 600 | Sub-judul, header kartu |
+| `--fs-lg` | 16 | `text-lg` | 600 | Header kartu besar |
+| `--fs-xl` | 18 | `text-xl` | 600-700 | Judul halaman |
+| `--fs-2xl` | 22 | `text-2xl` | 700 | Judul utama / salam dashboard |
+| `--fs-kpi` | 27 | `text-3xl` | 800 | Angka KPI |
 
 Catatan pilot 2026-11-20: skala dibuat konservatif agar teks tidak terlalu besar. Target body 14px ditunda; pilot memakai 12, 13, 14, 16, 18, 22, dan 27px.
 
@@ -260,7 +260,7 @@ Jika ada yang gagal, sesuaikan token. Jangan menurunkan ambang.
 Jika label 12px menyebabkan overflow, perbaiki layout, wrap, atau lebar kolom.
 Jangan mengecilkan font.
 
-## 11. Tahapan Penerapan (Belum Dikerjakan)
+## 11. Tahapan Penerapan (Pilot Selesai, Rollout Bertahap)
 
 1. Audit jumlah temuan dan pemetaan token lama ke token baru.
 2. Rapikan token warna dan tipografi di file tema.
@@ -270,8 +270,9 @@ Jangan mengecilkan font.
 5. Jalankan audit, test kontras, dan pengecekan visual light/dark.
 6. Build dari `/var/www/3dyapp` dan perbarui catatan hasil.
 
-Penerapan massal menunggu perintah kerja terpisah. Untuk pekerjaan UI baru,
-aturan ini berlaku sejak file tersebut disentuh.
+Pilot Dashboard, My Leads, dan Detail Customer sudah selesai. Halaman
+divisi lain menyusul bertahap; untuk pekerjaan UI baru, aturan ini berlaku
+sejak file tersebut disentuh.
 
 ## 12. Catatan Agent
 
@@ -284,7 +285,10 @@ aturan ini berlaku sejak file tersebut disentuh.
   permukaan masih memakai nilai lama melalui alias agar perubahan background
   belum terjadi.
 - Status warna dan halaman lain belum dimigrasikan; masuk fase berikutnya.
-- Root font-size 90% adalah keputusan lama. Opsi yang dipertahankan: memakai
-  ukuran eksplisit 12px sampai ada persetujuan untuk menormalkan root.
+  Sisa audit saat pilot selesai: 81 file/348 teks di bawah 12px dan 247
+  file/6.854 warna teks netral mentah.
+- Root font-size 90% adalah keputusan lama. Tailwind `xs` dan `sm` sudah
+  di-override ke 12px/13px, sehingga minimum 12px tetap terpenuhi tanpa
+  menormalkan root.
 - Tema `ocean` dipetakan sebagai Biru, `purple` sebagai Ungu. Nama tema tidak
   diubah pada tahap aturan ini.
