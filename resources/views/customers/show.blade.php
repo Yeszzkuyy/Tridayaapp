@@ -123,6 +123,7 @@
 
                         if (! $canSeeFinance) {
                             $hiddenFinanceLabels = [
+                                __('Billing Address'),
                                 __('Finance PIC'),
                                 __('NPWP'),
                             ];

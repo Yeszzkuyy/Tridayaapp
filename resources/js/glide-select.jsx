@@ -108,16 +108,16 @@ window.__glideRemount = function (mountNode, options, value = '') {
 // Submit loader global berjalan di document bubble dan akan melihat defaultPrevented.
 function wireRequiredValidation() {
     document.querySelectorAll('form:not([data-glide-validated])').forEach((form) => {
-        const nodes = [...form.querySelectorAll('[data-glide-mount][data-required="1"]')];
+        const nodes = [...form.querySelectorAll('[data-glide-mount]')];
         if (!nodes.length) return;
         form.dataset.glideValidated = 'true';
         form.addEventListener('submit', (e) => {
             let firstBad = null;
-            nodes.forEach((node) => {
+            form.querySelectorAll('[data-glide-mount][data-required="1"]').forEach((node) => {
                 const scope = node.closest('.glide-select-root');
                 const hidden = scope?.querySelector('input[type="hidden"]');
                 const err = scope?.querySelector('.glide-select-error');
-                if (hidden && !hidden.value) {
+                if (hidden && !hidden.disabled && !hidden.value) {
                     e.preventDefault();
                     if (err) {
                         if (node.dataset.requiredMessage) err.textContent = node.dataset.requiredMessage;

@@ -272,7 +272,7 @@ function collectMissing(form) {
 
     form.querySelectorAll(GLIDE_SELECTOR).forEach((mount) => {
         const hidden = mount.closest('.glide-select-root')?.querySelector('input[type="hidden"]');
-        if (!hidden || String(hidden.value ?? '').trim() !== '') return;
+        if (!hidden || hidden.disabled || String(hidden.value ?? '').trim() !== '') return;
         const entry = fieldEntry(hidden);
         if (entry) missing.push(entry);
     });

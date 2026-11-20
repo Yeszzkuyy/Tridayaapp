@@ -78,7 +78,8 @@
 
         {{-- Rincian data penting (customer, nomor request, nominal) --}}
         <template x-if="$store.confirm.options.details.length > 0">
-            <dl class="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/80 px-4 dark:divide-slate-700/60 dark:border-slate-700/60 dark:bg-slate-800/60">
+            <dl role="region" aria-label="{{ __('Confirmation details') }}"
+                class="mt-4 max-h-56 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/80 px-4 dark:divide-slate-700/60 dark:border-slate-700/60 dark:bg-slate-800/60">
                 <template x-for="row in $store.confirm.options.details" :key="row.label">
                     <div class="flex items-start justify-between gap-4 py-2.5">
                         <dt class="text-xs font-medium text-slate-500 dark:text-slate-400" x-text="row.label"></dt>

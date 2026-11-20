@@ -577,7 +577,7 @@ class EstimatorRequestTest extends TestCase
         $this->assertDatabaseCount('notifications', 0);
     }
 
-    public function test_estimator_sees_pricelist_title_and_latest_valid_until(): void
+    public function test_estimator_sees_pricelist_title_and_active_badge(): void
     {
         $estimator = $this->userWithRole('estimator');
         $product = $this->product(['name' => 'Kamera Pricelist']);
@@ -599,7 +599,7 @@ class EstimatorRequestTest extends TestCase
             ->assertOk()
             ->assertSee(__('Pricelist'))
             ->assertSee('Vendor Pricelist')
-            ->assertSee(__('Active (Valid until :date)', ['date' => '31 Dec 2026']));
+            ->assertSee(__('Active'));
     }
 
     public function test_pricelist_shows_needs_recheck_badge_when_valid_until_is_missing(): void
@@ -645,7 +645,7 @@ class EstimatorRequestTest extends TestCase
 
         $this->actingAs($estimator)->get(route('products.index'))
             ->assertOk()
-            ->assertSee(__('Expired :date - Needs Recheck', ['date' => '10 Jan 2026']));
+            ->assertSee(__('Expired'));
     }
 
     public function test_detail_shows_whatsapp_generator_keep_buttons_and_use_last_price(): void

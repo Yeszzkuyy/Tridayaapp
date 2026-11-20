@@ -82,7 +82,7 @@ export function installSubmitLoader(document = globalThis.document, window = glo
 
         const submitter = event.submitter && event.submitter.form === form ? event.submitter : null;
         const label = form.dataset.loadingText || submitter?.dataset.savingLabel || defaultSavingLabel;
-        markFormBusy(form, submitter, label);
+        markFormBusy(form, submitter, label, document);
 
         // Kartu loader layar penuh HANYA untuk aksi yang memintanya eksplisit
         // lewat data-loading-text. Simpan biasa cukup status di tombol + toast.
