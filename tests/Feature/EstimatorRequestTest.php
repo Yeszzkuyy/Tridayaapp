@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Http\Controllers\NotificationController;
 use App\Models\Customer;
 use App\Models\EstimatorRequest;
+use App\Models\Lead;
 use App\Models\Product;
 use App\Models\ProductPriceLog;
+use App\Models\Proposal;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Notifications\EstimatorRequestAnsweredNotification;
@@ -897,5 +899,143 @@ class EstimatorRequestTest extends TestCase
         $this->actingAs($sales)
             ->get(route('estimator.price-history'))
             ->assertForbidden();
+    }
+
+    public function test_queue_links_to_every_new_request_beyond_the_card_limit(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $customer = $this->customer('PT Antrean Panjang');
+
+        for ($i = 1; $i <= 13; $i++) {
+            EstimatorRequest::create([
+                'customer_id' => $customer->id,
+                'requested_by' => $sales->id,
+                'status' => 'submitted',
+                'notes' => 'Request '.$i,
+            ]);
+        }
+
+        $response = $this->actingAs($estimator)->get(route('estimator.requests.index'));
+        $response->assertOk();
+        $this->assertCount(12, $response->viewData('newRequests'));
+        $this->assertSame(13, $response->viewData('newRequestsTotal'));
+        $response->assertSee(route('estimator.requests.index', ['status' => 'submitted']));
+
+        $filtered = $this->actingAs($estimator)->get(route('estimator.requests.index', ['status' => 'submitted']));
+        $filtered->assertOk();
+        $this->assertSame(13, $filtered->viewData('requests')->total());
+    }
+
+    public function test_create_form_prefills_items_from_selected_quotation(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $customer = $this->customer('PT Prefill Quotation');
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'assigned_to' => $sales->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+        ]);
+        $proposal = Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/PREFILL/0001',
+            'created_by' => $sales->id,
+            'proposal_date' => now(),
+            'customer' => $customer->name,
+            'status' => 'draft',
+        ]);
+        $proposal->items()->create([
+            'description' => 'Kamera Prefill',
+            'quantity' => 3,
+            'unit' => 'unit',
+            'unit_price' => 500000,
+            'discount' => 0,
+            'subtotal' => 1500000,
+        ]);
+        $proposal->items()->create([
+            'description' => 'Instalasi Prefill',
+            'quantity' => 1,
+            'unit' => 'paket',
+            'unit_price' => 750000,
+            'discount' => 0,
+            'subtotal' => 750000,
+        ]);
+
+        $this->actingAs($sales)
+            ->get(route('estimator.requests.create', [
+                'proposal_id' => $proposal->id,
+                'customer_id' => $customer->id,
+                'lead_id' => $lead->id,
+            ]))
+            ->assertOk()
+            ->assertSee('Kamera Prefill')
+            ->assertSee('Instalasi Prefill')
+            ->assertSee('\\u0022quantity\\u0022:3', false);
+    }
+
+    public function test_quotation_page_links_to_a_fully_prefilled_request(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $customer = $this->customer('PT Link Prefill');
+        $lead = Lead::create([
+            'customer_id' => $customer->id,
+            'assigned_to' => $sales->id,
+            'pt_group' => 'NTI',
+            'segment' => 'vendor',
+            'status' => 'hot',
+        ]);
+        $proposal = Proposal::create([
+            'lead_id' => $lead->id,
+            'proposal_number' => 'Q/LINK/0001',
+            'created_by' => $sales->id,
+            'proposal_date' => now(),
+            'customer' => $customer->name,
+            'status' => 'draft',
+        ]);
+        $proposal->items()->create([
+            'description' => 'Kamera Link Prefill',
+            'quantity' => 2,
+            'unit' => 'unit',
+            'unit_price' => 500000,
+            'discount' => 0,
+            'subtotal' => 1000000,
+        ]);
+
+        $response = $this->actingAs($sales)->get(route('sales.proposals.show', $proposal));
+        $response->assertOk()
+            ->assertSee('Quotation Items')
+            ->assertSee('Request Product Price');
+
+        $html = $response->getContent();
+        preg_match('/href="([^"]*proposal_id='.$proposal->id.'[^"]*)"/', $html, $matches);
+        $this->assertNotEmpty($matches, 'Link Request Product Price tidak ditemukan.');
+
+        // Link harus membawa ketiga parameter tanpa escape ganda, supaya
+        // item quotation ikut terisi di form request.
+        $href = html_entity_decode($matches[1]);
+        $this->assertStringContainsString('customer_id='.$customer->id, $href);
+        $this->assertStringContainsString('lead_id='.$lead->id, $href);
+        $this->assertStringContainsString('proposal_id='.$proposal->id, $href);
+        $this->assertStringNotContainsString('&amp;', $href);
+    }
+
+    public function test_detail_page_asks_for_confirmation_before_sending_prices(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $request = $this->makeRequest($sales, ['status' => 'in_progress']);
+        $request->items()->create([
+            'description' => 'Kamera Konfirmasi',
+            'quantity' => 1,
+            'unit' => 'pcs',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->assertSee('Send prices to Sales?');
     }
 }

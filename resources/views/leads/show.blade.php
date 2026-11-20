@@ -318,7 +318,7 @@
                     @if($canSalesWrite || $canCreateQuotation)
                         <div class="flex shrink-0 items-center gap-2">
                             @can('create', \App\Models\EstimatorRequest::class)
-                                <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id]) }}" title="{{ __('Request Product Price') }}" />
+                                <x-icon-button as="a" icon="tools" :href="route('estimator.requests.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id])" title="{{ __('Request Product Price') }}" />
                             @endcan
                             @if($canCreateQuotation)
                                 <x-icon-button as="a" href="{{ route('sales.proposals.create', ['lead_id' => $lead->id]) }}" title="{{ __('Add quotation') }}" class="shrink-0">

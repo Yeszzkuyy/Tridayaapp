@@ -84,7 +84,7 @@
                                 </td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->warranty_info ?: '-' }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap tabular-nums text-slate-600 dark:text-slate-300">{{ $log->valid_until?->format('d M Y') ?? '-' }}</td>
-                                <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->estimatorRequestItem?->estimatorRequest?->customer?->name ?? '-' }}</td>
+                                <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->estimatorRequestItem?->estimatorRequest?->customer?->name ?? __('Pricelist / Bulk update') }}</td>
                                 <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $log->updater?->name ?? '-' }}</td>
                             </tr>
                         @empty
