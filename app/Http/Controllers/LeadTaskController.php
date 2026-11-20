@@ -2,18 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
+use App\Models\EstimatorRequest;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\LeadTask;
 use App\Models\LeadTaskItem;
 use App\Models\LeadTaskRequestFile;
 use App\Models\Product;
+use App\Models\ProductPriceLog;
 use App\Models\User;
 use App\Rules\SecureFile;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationVersionService;
+use App\Support\Rupiah;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class LeadTaskController extends Controller
 {
@@ -178,7 +184,61 @@ class LeadTaskController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'unit', 'default_price']);
 
-        return view('lead-tasks.show', ['task' => $leadTask, 'products' => $products]);
+        $productOptions = $products->map(fn (Product $product) => [
+            'value' => (string) $product->id,
+            'label' => $product->name.($product->sku ? ' · '.$product->sku : ''),
+        ])->values()->all();
+
+        $productData = $products->mapWithKeys(fn (Product $product) => [
+            $product->id => [
+                'description' => $product->name,
+                'sku' => $product->sku,
+                'unit' => $product->unit ?: 'pcs',
+                'price' => (float) $product->default_price,
+                'cost' => $product->latestPriceLog ? (float) $product->latestPriceLog->price : null,
+                'supplier' => $product->latestPriceLog?->supplier?->name,
+                'date' => $product->latestPriceLog?->created_at?->format('d M Y'),
+            ],
+        ])->all();
+
+        $estimatorRequest = EstimatorRequest::query()
+            ->where('lead_id', $leadTask->lead_id)
+            ->whereIn('status', ['answered', 'completed'])
+            ->with(['items' => fn ($query) => $query
+                ->whereIn('status', ['answered', 'accepted'])
+                ->with(['product', 'supplier', 'priceLog.supplier'])
+                ->orderBy('id')])
+            ->latest('id')
+            ->first();
+
+        $estimatorRowByItem = [];
+        if ($estimatorRequest) {
+            foreach ($estimatorRequest->items as $estimatorItem) {
+                $priceLogId = $estimatorItem->priceLog?->id;
+
+                foreach ($leadTask->items as $taskItem) {
+                    $matches = ($priceLogId && (int) $taskItem->product_price_log_id === (int) $priceLogId)
+                        || ($estimatorItem->product_id
+                            && (int) $taskItem->product_id === (int) $estimatorItem->product_id
+                            && trim((string) $taskItem->description) === trim((string) $estimatorItem->description));
+
+                    if ($matches) {
+                        $estimatorRowByItem[$taskItem->id] = $estimatorItem->id;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return view('lead-tasks.show', [
+            'task' => $leadTask,
+            'products' => $products,
+            'productOptions' => $productOptions,
+            'productData' => $productData,
+            'estimatorRequest' => $estimatorRequest,
+            'estimatorRowByItem' => $estimatorRowByItem,
+            'defaultMargin' => \App\Models\AppSetting::defaultMarginPercent(),
+        ]);
     }
 
     public function edit(LeadTask $leadTask)
@@ -267,8 +327,17 @@ class LeadTaskController extends Controller
     {
         $this->authorizeTaskItems($leadTask);
 
+        // Input harga memakai pemisah ribuan (18.000.000). Normalisasi dulu
+        // sebelum validasi agar tetap tersimpan sebagai angka.
+        $request->merge([
+            'unit_price' => Rupiah::normalize($request->input('unit_price')),
+            'unit_cost' => $request->filled('unit_cost') ? Rupiah::normalize($request->input('unit_cost')) : null,
+            'discount' => $request->filled('discount') ? Rupiah::normalize($request->input('discount')) : null,
+        ]);
+
         $validated = $request->validate([
             'product_id' => 'nullable|exists:products,id',
+            'product_price_log_id' => 'nullable|integer|exists:product_price_logs,id',
             'description' => 'required|string|max:255',
             'scope_of_supply' => 'nullable|string|max:100',
             'lead_time' => 'nullable|string|max:100',
@@ -277,6 +346,7 @@ class LeadTaskController extends Controller
             'unit' => 'nullable|string|max:16',
             'unit_price' => 'required|numeric|min:0',
             'unit_cost' => 'nullable|numeric|min:0',
+            'target_margin_percent' => 'nullable|numeric|min:0|max:99.99',
             'discount' => 'nullable|numeric|min:0',
         ]);
 
@@ -284,8 +354,52 @@ class LeadTaskController extends Controller
         $price = (float) $validated['unit_price'];
         $discount = (float) ($validated['discount'] ?? 0);
 
+        abort_if(
+            ! empty($validated['product_price_log_id']) && empty($validated['product_id']),
+            422,
+            __('Select a product before choosing a price history.')
+        );
+
+        // Harga modal selalu diambil dari riwayat resmi (bukan input bebas)
+        // agar snapshot harga dan margin tidak bisa dimanipulasi dari form.
+        $priceLog = null;
+        if (! empty($validated['product_price_log_id'])) {
+            $priceLog = ProductPriceLog::query()
+                ->whereKey($validated['product_price_log_id'])
+                ->where('price_type', 'cost')
+                ->when(! empty($validated['product_id']), fn ($query) => $query
+                    ->where('product_id', $validated['product_id']))
+                ->first();
+
+            abort_if(! $priceLog, 422, __('The selected price history does not match this product.'));
+        }
+
+        if (! $priceLog && ! empty($validated['product_id'])) {
+            $priceLog = ProductPriceLog::query()
+                ->where('product_id', $validated['product_id'])
+                ->where('price_type', 'cost')
+                ->latest('created_at')
+                ->latest('id')
+                ->first();
+        }
+
+        $unitCost = $priceLog?->price !== null
+            ? (float) $priceLog->price
+            : ($request->user()->can('manage-inside-sales')
+                && isset($validated['unit_cost'])
+                && $validated['unit_cost'] !== ''
+                ? (float) $validated['unit_cost']
+                : null);
+
+        if ($unitCost !== null && (($price * $qty) - $discount) < ($unitCost * $qty)) {
+            throw ValidationException::withMessages([
+                'unit_price' => __('Selling price is below cost. Fix the selling price or target margin first.'),
+            ]);
+        }
+
         $leadTask->items()->create([
             'product_id' => $validated['product_id'] ?? null,
+            'product_price_log_id' => $priceLog?->id,
             'description' => $validated['description'],
             'scope_of_supply' => $validated['scope_of_supply'] ?? null,
             'lead_time' => $validated['lead_time'] ?? null,
@@ -293,10 +407,9 @@ class LeadTaskController extends Controller
             'quantity' => $qty,
             'unit' => $validated['unit'] ?? 'pcs',
             'unit_price' => $price,
-            'unit_cost' => $request->user()->can('manage-inside-sales')
-                && isset($validated['unit_cost'])
-                && $validated['unit_cost'] !== ''
-                ? (float) $validated['unit_cost']
+            'unit_cost' => $unitCost,
+            'target_margin_percent' => isset($validated['target_margin_percent'])
+                ? (float) $validated['target_margin_percent']
                 : null,
             'discount' => $discount,
             'subtotal' => LeadTaskItem::subtotalFor($qty, $price, $discount),
@@ -308,6 +421,135 @@ class LeadTaskController extends Controller
     }
 
     /** Hapus item quotation milik task ini. */
+    public function syncItems(Request $request, LeadTask $leadTask)
+    {
+        $this->authorizeTaskItems($leadTask);
+
+        // Normalisasi input Rupiah per baris sebelum validasi.
+        $request->merge([
+            'items' => collect($request->input('items', []))->map(function ($item) {
+                if (! is_array($item)) {
+                    return $item;
+                }
+
+                foreach (['unit_price', 'unit_cost', 'discount'] as $key) {
+                    if (array_key_exists($key, $item)) {
+                        $item[$key] = $item[$key] === null || $item[$key] === ''
+                            ? null
+                            : Rupiah::normalize($item[$key]);
+                    }
+                }
+
+                return $item;
+            })->all(),
+        ]);
+
+        $validated = $request->validate([
+            'items' => 'nullable|array|max:100',
+            'items.*.id' => 'nullable|integer',
+            'items.*.product_id' => 'nullable|exists:products,id',
+            'items.*.product_price_log_id' => 'nullable|integer|exists:product_price_logs,id',
+            'items.*.description' => 'required|string|max:255',
+            'items.*.scope_of_supply' => 'nullable|string|max:100',
+            'items.*.lead_time' => 'nullable|string|max:100',
+            'items.*.section' => 'nullable|string|max:100',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit' => 'nullable|string|max:16',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.unit_cost' => 'nullable|numeric|min:0',
+            'items.*.target_margin_percent' => 'nullable|numeric|min:0|max:99.99',
+            'items.*.discount' => 'nullable|numeric|min:0',
+        ]);
+
+        $items = $validated['items'] ?? [];
+        $existing = $leadTask->items()->get()->keyBy('id');
+        $keepIds = [];
+
+        DB::transaction(function () use ($request, $leadTask, $items, $existing, &$keepIds) {
+            foreach ($items as $index => $data) {
+                $qty = (float) $data['quantity'];
+                $price = (float) $data['unit_price'];
+                $discount = (float) ($data['discount'] ?? 0);
+
+                abort_if(
+                    ! empty($data['product_price_log_id']) && empty($data['product_id']),
+                    422,
+                    __('Select a product before choosing a price history.')
+                );
+
+                $priceLog = null;
+                if (! empty($data['product_price_log_id'])) {
+                    $priceLog = ProductPriceLog::query()
+                        ->whereKey($data['product_price_log_id'])
+                        ->where('price_type', 'cost')
+                        ->when(! empty($data['product_id']), fn ($query) => $query
+                            ->where('product_id', $data['product_id']))
+                        ->first();
+
+                    abort_if(! $priceLog, 422, __('The selected price history does not match this product.'));
+                }
+
+                if (! $priceLog && ! empty($data['product_id'])) {
+                    $priceLog = ProductPriceLog::query()
+                        ->where('product_id', $data['product_id'])
+                        ->where('price_type', 'cost')
+                        ->latest('created_at')
+                        ->latest('id')
+                        ->first();
+                }
+
+                $unitCost = $priceLog?->price !== null
+                    ? (float) $priceLog->price
+                    : ($request->user()->can('manage-inside-sales')
+                        && isset($data['unit_cost'])
+                        && $data['unit_cost'] !== ''
+                        ? (float) $data['unit_cost']
+                        : null);
+
+                if ($unitCost !== null && (($price * $qty) - $discount) < ($unitCost * $qty)) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.unit_price" => __('Selling price is below cost. Fix the selling price or target margin first.'),
+                    ]);
+                }
+
+                $item = null;
+                if (! empty($data['id'])) {
+                    $item = $existing->get((int) $data['id']);
+                    abort_unless($item, 404);
+                }
+
+                $payload = [
+                    'product_id' => $data['product_id'] ?? null,
+                    'product_price_log_id' => $priceLog?->id,
+                    'description' => $data['description'],
+                    'scope_of_supply' => $data['scope_of_supply'] ?? null,
+                    'lead_time' => $data['lead_time'] ?? null,
+                    'section' => ($data['section'] ?? null) ?: 'MATERIAL',
+                    'quantity' => $qty,
+                    'unit' => $data['unit'] ?? 'pcs',
+                    'unit_price' => $price,
+                    'unit_cost' => $unitCost,
+                    'target_margin_percent' => $data['target_margin_percent'] ?? null,
+                    'discount' => $discount,
+                    'subtotal' => LeadTaskItem::subtotalFor($qty, $price, $discount),
+                ];
+
+                if ($item) {
+                    $item->update($payload);
+                } else {
+                    $item = $leadTask->items()->create($payload);
+                }
+
+                $keepIds[] = $item->id;
+            }
+
+            $leadTask->items()->whereNotIn('id', $keepIds)->delete();
+        });
+
+        return redirect()->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Quotation items saved.'));
+    }
+
     public function destroyItem(LeadTask $leadTask, LeadTaskItem $item)
     {
         $this->authorizeTaskItems($leadTask);
@@ -464,6 +706,8 @@ class LeadTaskController extends Controller
         );
 
         $proposal = \Illuminate\Support\Facades\DB::transaction(function () use ($attachment, $leadTask, $lead, $items) {
+            $defaultMargin = AppSetting::defaultMarginPercent();
+
             $proposal = \App\Models\Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
@@ -472,6 +716,8 @@ class LeadTaskController extends Controller
                 'proposal_date' => now()->toDateString(),
                 'customer' => $lead?->customer?->name ?? '-',
                 'letterhead_pt' => $lead?->pt_group ?: $lead?->customer?->pt_group,
+                'tax_rate' => 0,
+                'default_margin_percent' => $defaultMargin,
                 'status' => 'draft',
                 'internal_notes' => __('Created automatically from Inside Sales :count item(s) and file :file (task #:task).', [
                     'count' => $items->count(),
@@ -483,11 +729,19 @@ class LeadTaskController extends Controller
             foreach ($items as $item) {
                 $proposal->items()->create([
                     'product_id' => $item->product_id,
+                    'product_price_log_id' => $item->product_price_log_id,
                     'description' => $item->description,
+                    'scope_of_supply' => $item->scope_of_supply,
+                    'lead_time' => $item->lead_time,
+                    'stock_status' => $item->stock_status,
+                    'stock_eta' => $item->stock_eta,
+                    'warranty_info' => $item->warranty_info,
+                    'section' => $item->section ?: 'MATERIAL',
                     'quantity' => $item->quantity,
                     'unit' => $item->unit,
                     'unit_price' => $item->unit_price,
-                    'unit_cost' => null,
+                    'unit_cost' => $item->unit_cost,
+                    'target_margin_percent' => $item->target_margin_percent ?? $defaultMargin,
                     'discount' => $item->discount,
                     'subtotal' => $item->subtotal,
                 ]);

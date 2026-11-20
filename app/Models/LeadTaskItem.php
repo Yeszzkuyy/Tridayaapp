@@ -21,6 +21,7 @@ class LeadTaskItem extends Model
         'unit',
         'unit_price',
         'unit_cost',
+        'target_margin_percent',
         'discount',
         'subtotal',
     ];
@@ -29,6 +30,7 @@ class LeadTaskItem extends Model
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'unit_cost' => 'decimal:2',
+        'target_margin_percent' => 'decimal:2',
         'discount' => 'decimal:2',
         'subtotal' => 'decimal:2',
     ];

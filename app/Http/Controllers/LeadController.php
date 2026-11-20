@@ -219,6 +219,8 @@ class LeadController extends Controller
             $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
         }
 
+        $this->autoPromoteCustomer($lead);
+
         return response()->noContent();
     }
 
@@ -270,6 +272,8 @@ class LeadController extends Controller
                 // tetap akui sebagai sudah ditangani agar keluar dari kolom New.
                 $lead->forceFill(['acknowledged_at' => now()])->saveQuietly();
             }
+
+            $this->autoPromoteCustomer($lead);
         }
 
         return response()->json(['updated' => count($results), 'changes' => $results]);
@@ -945,6 +949,19 @@ class LeadController extends Controller
         return redirect()
             ->route('projects.show', $project)
             ->with('success', __('Lead converted to Project successfully'));
+    }
+
+    /**
+     * Angkat customer otomatis saat lead masuk tahap serius (Warm/Hot/Won).
+     * Menutup celah sales lupa menekan tombol Promote.
+     */
+    private function autoPromoteCustomer(Lead $lead): void
+    {
+        if (! app(CustomerLifecycleService::class)->promoteIfSerious($lead)) {
+            return;
+        }
+
+        $this->logActivity($lead, 'customer_promoted_auto');
     }
 
     /**

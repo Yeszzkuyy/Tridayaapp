@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
@@ -87,6 +88,7 @@ class AdminPanelController extends Controller
             // Sengaja TIDAK menyentuh password_changed_at: reset oleh admin
             // bukan penggantian oleh pemilik akun, indikator tetap merah.
             $user->update(['password' => Hash::make($request->password)]);
+            \App\Support\SessionRevoker::allFor($user);
         }
 
         if ($request->has('roles')) {
@@ -226,6 +228,30 @@ class AdminPanelController extends Controller
         $role->delete();
         return redirect()->route('admin-panel.index')
             ->with('success', __('Role deleted successfully.'));
+    }
+
+    // ========== PRICING SETTINGS ==========
+
+    public function pricingSettings()
+    {
+        return view('admin-panel.pricing', [
+            'vatRate' => AppSetting::vatRate(),
+            'defaultMargin' => AppSetting::defaultMarginPercent(),
+        ]);
+    }
+
+    public function updatePricingSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'vat_rate' => 'required|numeric|min:0|max:100',
+            'default_margin_percent' => 'required|numeric|min:0|max:99.99',
+        ]);
+
+        AppSetting::set('vat_rate', round((float) $validated['vat_rate'], 2));
+        AppSetting::set('default_margin_percent', round((float) $validated['default_margin_percent'], 2));
+
+        return redirect()->route('admin-panel.pricing.edit')
+            ->with('success', __('Tax and margin settings saved.'));
     }
 
     // ========== AUDIT LOG ==========

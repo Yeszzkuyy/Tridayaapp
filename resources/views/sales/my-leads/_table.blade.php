@@ -1,37 +1,38 @@
-<table class="min-w-[1280px] w-full divide-y divide-slate-200 dark:divide-slate-600">
+<table class="min-w-[980px] w-full divide-y divide-slate-200 dark:divide-slate-600">
     <thead class="bg-slate-50 dark:bg-slate-700">
         <tr>
             <th class="px-3 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">#</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Company / Customer') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('PIC') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Contact') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Project Name') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Pipeline Stage') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Latest Note') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Last Activity') }}</th>
-            <th class="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Next Follow Up') }}</th>
-            <th class="px-4 py-3 text-right text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Action') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Company / Customer') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('PIC') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Contact') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Project Name') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Pipeline Stage') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Latest Note') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Last Activity') }}</th>
+            <th class="px-2 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Next Follow Up') }}</th>
+            {{-- Kolom Aksi dikunci di pinggir kanan: latar wajib menutup sel,
+                 supaya isi tabel yang digeser tidak tembus di belakang tombol. --}}
+            <th class="sticky right-0 z-20 border-l border-slate-200 bg-slate-50 px-2 py-3 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">{{ __('Action') }}</th>
         </tr>
     </thead>
     <tbody class="bg-[var(--card-bg)] dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
         @forelse($leads as $lead)
             @php
                 $cfg = \App\Support\LeadWorkspacePresenter::row($lead);
-                $contact = \App\Support\LeadWorkspacePresenter::contactLinks($lead);
                 $last = $lead->latestActivityFollowUp;
                 $next = $lead->activeFollowUp;
                 $reasonOptions = collect(\App\Models\Lead::LOST_REASONS)
                     ->map(fn ($reason) => ['value' => $reason, 'label' => \App\Models\Lead::lostReasonLabel($reason)]);
             @endphp
-            <tr x-data="myLeadsRow({{ json_encode($cfg) }})" class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
+            <tr x-data="myLeadsRow({{ json_encode($cfg) }})" class="group transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
                 <td class="relative px-3 py-3 text-xs text-slate-400 whitespace-nowrap">
                     <span class="absolute inset-y-0 left-0 w-1" :class="colorDotClass()" aria-hidden="true"></span>
                     {{ $leads->firstItem() + $loop->index }}
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="min-w-[170px]">
-                        <a href="{{ route('leads.show', $lead) }}" class="font-semibold text-slate-900 dark:text-slate-100 hover:text-accent-600 dark:hover:text-accent-400">
+                <td class="px-2 py-3">
+                    <div class="min-w-[112px] max-w-[136px]">
+                        <a href="{{ route('leads.show', $lead) }}" title="{{ $lead->customer?->name }}" class="block truncate font-semibold text-xs text-slate-900 dark:text-slate-100 hover:text-accent-600 dark:hover:text-accent-400">
                             {{ $lead->customer?->name ?? '-' }}
                         </a>
                         <div class="mt-1 flex flex-wrap items-center gap-1">
@@ -53,15 +54,15 @@
                     </div>
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="min-w-[120px] max-w-[170px]">
-                        <p class="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{{ $lead->customer?->picName() ?? '-' }}</p>
+                <td class="px-2 py-3">
+                    <div class="min-w-[92px] max-w-[106px]">
+                        <p class="truncate text-xs font-medium text-slate-800 dark:text-slate-100">{{ $lead->customer?->picName() ?? '-' }}</p>
                         <p class="text-[11px] text-slate-400 truncate">{{ $lead->customer?->picEmail() ?? '' }}</p>
                     </div>
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="min-w-[130px] text-xs text-slate-600 dark:text-slate-300">
+                <td class="px-2 py-3">
+                    <div class="min-w-[80px] text-xs text-slate-600 dark:text-slate-300">
                         @if($lead->customer?->picWhatsapp())
                             <p class="font-medium">{{ $lead->customer->picWhatsapp() }}</p>
                         @endif
@@ -74,9 +75,9 @@
                     </div>
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="min-w-[150px] max-w-[220px]">
-                        <p class="text-sm text-slate-700 dark:text-slate-200 truncate" title="{{ $lead->project_name }}">
+                <td class="px-2 py-3">
+                    <div class="min-w-[112px] max-w-[124px]">
+                        <p class="truncate text-xs text-slate-700 dark:text-slate-200" title="{{ $lead->project_name }}">
                             {{ $lead->project_name ?: ($lead->kebutuhan ?: '-') }}
                         </p>
                         @if($lead->need_type)
@@ -85,8 +86,8 @@
                     </div>
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="relative min-w-[130px]">
+                <td class="px-2 py-3">
+                    <div class="relative min-w-[80px]">
                         <select x-model="stage" @change="stageChanged($event.target.value)" :disabled="stageSaving"
                                 class="h-9 w-full rounded-xl border border-slate-300 bg-[var(--card-bg)] px-2 text-xs font-semibold text-slate-700 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                             @foreach($statuses as $status)
@@ -113,11 +114,11 @@
                     </div>
                 </td>
 
-                <td class="px-4 py-3">
+                <td class="px-2 py-3">
                     @include('sales.my-leads._note-cell')
                 </td>
 
-                <td class="px-4 py-3 whitespace-nowrap">
+                <td class="px-2 py-3">
                     @if($last)
                         <p class="text-xs font-medium text-slate-700 dark:text-slate-200">{{ $last->follow_up_date?->format('d M Y') ?? '-' }}</p>
                         <p class="text-[11px] text-slate-400">{{ \App\Models\FollowUp::typeLabel($last->type) }}</p>
@@ -126,13 +127,13 @@
                     @endif
                 </td>
 
-                <td class="px-4 py-3">
+                <td class="px-2 py-3">
                     @include('sales.my-leads._next-cell')
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="flex items-center justify-end">
-                        @include('sales.my-leads._contact-actions', ['lead' => $lead, 'contact' => $contact, 'followUp' => null, 'first' => $loop->first])
+                <td class="sticky right-0 z-10 border-l border-slate-200 bg-[var(--card-bg)] px-2 py-3 transition-colors group-hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:group-hover:bg-slate-700/40">
+                    <div class="flex items-center justify-center">
+                        @include('sales.my-leads._contact-actions', ['lead' => $lead, 'first' => $loop->first])
                     </div>
                 </td>
             </tr>

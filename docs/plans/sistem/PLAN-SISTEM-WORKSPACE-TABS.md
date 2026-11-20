@@ -522,7 +522,9 @@ Bagian ini mengalahkan detail tampilan di §5 bila terjadi perbedaan.
   tab, atau menarik tab ke separuh kiri/kanan layar. Tab yang dilepas mengisi
   panel di sisi itu dan panel sebelah memakai tab lain, sehingga dua panel
   tidak pernah menampilkan tab yang sama (bila tab sudah ada di panel sebelah,
-  posisinya ditukar).
+  posisinya ditukar). Saat tab ditarik, separuh layar tujuan hanya diberi warna
+  aksen lembut dengan garis tipis di tengah (tanpa kotak), dan areanya sejajar
+  tepi sidebar sehingga ikut bergeser saat sidebar dibuka/ditutup.
 - Satu baris kontrol tipis di atas kedua panel: pilih tab kiri/kanan,
   **Swap**, dan **Close split**.
 - Panel yang fokus ditandai garis aksen di tepi atas. Menu sidebar baru

@@ -51,19 +51,19 @@
     --semantic-danger: 239 68 68;     /* red-500    #ef4444 */
     --semantic-info: 59 130 246;      /* blue-500   #3b82f6 */
 
-    /* Surface (light) */
-    --bg: #f1f5f9;
-    --sidebar-bg: #f8fafc;
-    --sidebar-border: #e2e8f0;
+    /* Surface (light) — abu netral (tanpa kesan biru/hijau) */
+    --bg: #f4f4f5;
+    --sidebar-bg: #fafafa;
+    --sidebar-border: #e4e4e7;
     --card-bg: #fff;
-    --card-border: #e2e8f0;
-    --card-bg-hover: #f8fafc;
+    --card-border: #e4e4e7;
+    --card-bg-hover: #fafafa;
     /* Sorotan baris dropdown/menu. Wajib terlihat di atas kartu putih,
        tapi tetap lembut (bukan abu tua). */
-    --menu-hover-bg: #eef2f7;
-    --input-bg: #f1f5f9;
-    --input-bg-hover: #e2e8f0;
-    --input-border: #cbd5e1;
+    --menu-hover-bg: #f1f1f3;
+    --input-bg: #f4f4f5;
+    --input-bg-hover: #e4e4e7;
+    --input-border: #d4d4d8;
     --input-border-focus: rgb(var(--accent-500) / 1);
     --input-text: #1e293b;
     --text-primary: #1e293b;
@@ -76,7 +76,7 @@
     --nav-active-bg: rgb(var(--accent-500) / 0.10);
     --nav-active-text: rgb(var(--accent-700) / 1);
     --sidebar-logo-text: rgb(var(--accent-700) / 1);
-    --sidebar-border-soft: #e2e8f0;
+    --sidebar-border-soft: #e4e4e7;
     --sidebar-panel-bg: rgba(15, 23, 42, 0.04);
 
     /* Compatibility layer → Ocean (lihat komentar di atas) */

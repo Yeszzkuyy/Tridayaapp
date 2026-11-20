@@ -152,7 +152,7 @@ export function installInstantSave(document = globalThis.document, window = glob
                 : form.querySelector('button[type="submit"]');
         const label = form.dataset.loadingText || submitter?.dataset.savingLabel || defaultSavingLabel;
 
-        markFormBusy(form, submitter, label);
+        markFormBusy(form, submitter, label, document);
         form.querySelector('[data-instant-save-errors]')?.remove();
 
         const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };

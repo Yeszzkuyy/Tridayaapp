@@ -12,6 +12,8 @@
         </div>
     </div>
 
+    @include('manage-sales.partials.tabs')
+
     @php
         $allLeadSeries = \App\Support\SparklineBuilder::monthlyCounts(\App\Models\Lead::query(), 'created_at');
         $unassignedSeries = \App\Support\SparklineBuilder::monthlyCounts(\App\Models\Lead::whereNull('assigned_to'), 'created_at');
@@ -222,13 +224,11 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-left">
-                                <form action="{{ route('manage-sales.update', $lead) }}" method="POST" data-loading-text="{{ __('Updating…') }}">
-                                    @csrf
-                                    @method('PUT')
-                                    <x-glide-select name="pt_group" size="sm" class="w-24" :label="__('Lead from PT')" empty-label="—"
-                                        :options="collect(\App\Models\Lead::PT_GROUPS)->map(fn ($g) => ['value' => $g, 'label' => $g])->all()"
-                                        :value="$lead->pt_group" autosubmit />
-                                </form>
+                                @if($lead->pt_group)
+                                    <span class="inline-flex px-1.5 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-[11px] font-semibold">{{ $lead->pt_group }}</span>
+                                @else
+                                    <span class="text-sm text-slate-400 dark:text-slate-500">-</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-left">
                                 @if(in_array($lead->status, ['won', 'lost'], true))

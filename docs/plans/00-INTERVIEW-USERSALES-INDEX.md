@@ -36,5 +36,5 @@
 - Semua file di atas memakai penanda **INTERVIEW-USERSALES** agar jelas
   masih satu paket pekerjaan.
 - Plan lama sudah dipindahkan ke folder divisinya masing-masing.
-- Plan Estimator sudah diimplementasikan di branch `feature/sales-inside`
-  dan menunggu verifikasi user sebelum merge ke `main`.
+- Plan Estimator revisi final siap dikerjakan di `plans/estimator/PLAN-ESTIMATOR-INTERVIEW-USERSALES.md`
+  dengan alur WhatsApp supplier, tombol keep 1 minggu, dan penyempurnaan Pricelist.

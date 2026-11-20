@@ -248,7 +248,7 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             ->getContent();
         $this->assertStringContainsString($request->title, $tasksHtml);
         $this->assertStringContainsString(__('Support Technicians'), $tasksHtml);
-        $this->assertStringContainsString($support->name, $tasksHtml);
+        $this->assertStringContainsString(e($support->name), $tasksHtml);
 
         $inboxHtml = $this->actingAs($support)
             ->get(route('teknisi.requests.index', ['tab' => 'engineer']))
@@ -256,7 +256,7 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             ->getContent();
         $this->assertStringContainsString($request->title, $inboxHtml);
         $this->assertStringContainsString(__('Support Technicians'), $inboxHtml);
-        $this->assertStringContainsString($support->name, $inboxHtml);
+        $this->assertStringContainsString(e($support->name), $inboxHtml);
 
         // Sales melihat support pada daftar Request Tim Engineer.
         $salesHtml = $this->actingAs($sales)
@@ -264,7 +264,7 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             ->assertOk()
             ->getContent();
         $this->assertStringContainsString(__('Support Technicians'), $salesHtml);
-        $this->assertStringContainsString($support->name, $salesHtml);
+        $this->assertStringContainsString(e($support->name), $salesHtml);
 
         $this->actingAs($outsider)
             ->get(route('teknisi.tasks.show', $request))
@@ -364,7 +364,7 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             ->get(route('teknisi.surveys.show', $survey))
             ->assertOk()
             ->getContent();
-        $this->assertStringContainsString($support->name, $surveyHtml);
+        $this->assertStringContainsString(e($support->name), $surveyHtml);
 
         // Tanggal berbeda supaya engineer yang sama tidak dianggap bentrok.
         $installationRequest = $this->makeRequest($sales, $lead, [
@@ -383,7 +383,7 @@ class TechnicalRequestSupportEngineerTest extends TestCase
             ->get(route('teknisi.instalasis.show', $instalasi))
             ->assertOk()
             ->getContent();
-        $this->assertStringContainsString($support->name, $instalasiHtml);
+        $this->assertStringContainsString(e($support->name), $instalasiHtml);
     }
 
     public function test_support_engineer_must_have_technician_role(): void

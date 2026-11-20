@@ -1,0 +1,8 @@
+Goal besarnya adalah mengubah cara kerja tim sales di **3DY App** dari yang tadinya **input manual berlapis-lapis** menjadi **satu alur otomatis rasa Excel**:
+
+* **1 Papan Kerja Utama (Rasa Excel):** Halaman **My Leads** dan **Follow Up** tidak lagi menumpuk baris berulang (seperti `pt kembar` yang sekarang muncul 4 baris). Cukup **1 baris per customer**, dengan kolom warna status (**Netral** = Belum FU, **Kuning** = Process, **Merah** = Loss, **Hijau** = Won) dan kolom catatan yang bisa langsung diklik lalu diketik (*inline edit*).
+* **Kontak 1 Klik (Zero Pop-up):** Sales klik ikon **WhatsApp / Email** -> aplikasi langsung membuka WA/Email -> status baris otomatis berubah dari **Netral** menjadi **Kuning (`Process`)** tanpa pop-up pengganggu dan tanpa data duplikat.
+* **DAR (Daily Activity Record) Terisi Otomatis:** Sales nggak perlu ngetik laporan harian dua kali. Semua klik WA/Email, perubahan warna status, dan catatan *inline* hari itu otomatis terkumpul menjadi 1 rekap harian di menu **Daily Activity (DAR)** (maksimal 1 baris per lead per hari agar tidak nyepam).
+* **Alur Lanjutan Anti-Macet:** Ketika prospek sudah serius atau berubah menjadi **Hijau (`Won`)**, sistem otomatis mem-promote Lead menjadi **Customer** (jika sales lupa klik *Promote*), sehingga pembuatan **Quotation** dan **Project** berjalan mulus tanpa hambatan.
+
+Singkatnya: **Sales cukup fokus menghubungi klien, mengganti warna, dan mengetik catatan singkat di satu layar—sisanya (riwayat follow-up, laporan harian DAR, hingga konversi ke Customer) dibereskan otomatis oleh sistem di balik layar.**

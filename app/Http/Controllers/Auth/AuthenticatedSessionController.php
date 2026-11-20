@@ -40,6 +40,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Notifikasi perangkat berhenti bersama sesi yang mendaftarkannya.
+        $request->user()?->pushSubscriptions()->delete();
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
@@ -101,10 +104,26 @@ class AuthenticatedSessionController extends Controller
             }
 
             // Skenario 2: Login / Auto-provision via Google
+            $googleEmail = $googleUser->getEmail();
+            $rawUser = is_array($googleUser->user ?? null) ? $googleUser->user : [];
+            $emailVerified = ($rawUser['email_verified'] ?? $rawUser['verified_email'] ?? true) === true;
+
+            if (! $googleEmail || ! $emailVerified) {
+                return redirect()->route('login')->withErrors([
+                    'email' => __('Failed to sign in with Google. Please try again.'),
+                ]);
+            }
+
             // Cari akun berdasarkan google_id yang sudah ditautkan ATAU email yang cocok
             $user = \App\Models\User::where('google_id', $googleUser->getId())
-                ->orWhere('email', $googleUser->getEmail())
+                ->orWhere('email', $googleEmail)
                 ->first();
+
+            if ($user && $user->google_id && (string) $user->google_id !== (string) $googleUser->getId()) {
+                return redirect()->route('login')->withErrors([
+                    'email' => __('Failed to sign in with Google. Please try again.'),
+                ]);
+            }
 
             if (! $user) {
                 // Auto-create user baru (tanpa role Spatie)

@@ -1,7 +1,6 @@
 @forelse($leads as $lead)
     @php
         $cfg = \App\Support\LeadWorkspacePresenter::row($lead);
-        $contact = \App\Support\LeadWorkspacePresenter::contactLinks($lead);
         $last = $lead->latestActivityFollowUp;
         $reasonOptions = collect(\App\Models\Lead::LOST_REASONS)
             ->map(fn ($reason) => ['value' => $reason, 'label' => \App\Models\Lead::lostReasonLabel($reason)]);
@@ -80,7 +79,7 @@
         </div>
 
         <div class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">
-            @include('sales.my-leads._contact-actions', ['lead' => $lead, 'contact' => $contact, 'followUp' => null, 'first' => $loop->first])
+            @include('sales.my-leads._contact-actions', ['lead' => $lead, 'first' => $loop->first])
         </div>
     </div>
 @empty

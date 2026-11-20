@@ -34,6 +34,26 @@
                     $email = $customer?->picEmail();
                     $phone = $customer?->picPhone() ?: $customer?->phone;
                     $contactUrl = $lead ? route('sales.my-leads.contact', $lead) : null;
+                    $completeData = json_encode([
+                        'action' => route('sales.follow-ups.complete', $fu),
+                        'customer' => $customer?->name ?? '',
+                    ]);
+                    // Satu kanal kontak tampil di baris, sisanya masuk menu tiga
+                    // titik supaya tombol aksi tidak menumpuk.
+                    $contactLinks = array_filter([
+                        'whatsapp' => $waLink,
+                        'call' => $phone ? 'tel:'.preg_replace('/[^0-9+]/', '', $phone) : null,
+                        'email' => $email ? 'mailto:'.$email.'?subject='.rawurlencode(__('Follow up')) : null,
+                    ]);
+                    $primaryContact = array_key_first($contactLinks);
+                    $otherContacts = array_diff_key($contactLinks, [$primaryContact => true]);
+                    $contactLabels = ['whatsapp' => 'WhatsApp', 'call' => __('Call'), 'email' => __('Email')];
+                    $contactIcons = ['whatsapp' => 'message', 'call' => 'phone', 'email' => 'mail'];
+                    $contactColors = [
+                        'whatsapp' => 'text-emerald-600 dark:text-emerald-300',
+                        'call' => 'text-sky-600 dark:text-sky-300',
+                        'email' => 'text-cyan-600 dark:text-cyan-300',
+                    ];
                 @endphp
                 <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition {{ $fu->isCompleted() ? 'bg-slate-50/40 dark:bg-slate-800/40' : '' }}">
                     <td class="px-4 py-3">
@@ -93,33 +113,35 @@
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex flex-wrap items-center justify-end gap-1.5">
-                            @if($waLink)
-                                <x-icon-button as="a" icon="whatsapp" href="{{ $waLink }}" target="_blank" rel="noopener" title="{{ __('WhatsApp') }}"
+                            @can('manage-sales')
+                                {{-- Catat follow up lanjutan untuk baris ini: customer & lead
+                                     baris terkunci, dibuka sebagai halaman penuh. --}}
+                                <x-icon-button as="a" icon="add" target="_top"
+                                               :href="route('sales.follow-ups.create', array_filter([
+                                                   'customer_id' => $customer?->id,
+                                                   'lead_id' => $lead?->id,
+                                                   'return' => 'follow-ups',
+                                               ]))"
+                                               title="{{ __('Add Follow Up') }}" />
+                            @endcan
+
+                            {{-- Satu kanal kontak saja di baris; sisanya di menu tiga titik. --}}
+                            @if($primaryContact === 'whatsapp')
+                                <x-icon-button as="a" icon="whatsapp" href="{{ $waLink }}" target="_blank" rel="noopener" title="WhatsApp"
                                                data-contact-channel="whatsapp" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
-                            @endif
-                            @if($email)
-                                <x-icon-button as="a" icon="mail" href="mailto:{{ $email }}?subject={{ rawurlencode(__('Follow up')) }}" title="{{ __('Email') }}"
+                            @elseif($primaryContact === 'call')
+                                <x-icon-button as="a" icon="phone" href="{{ $contactLinks['call'] }}" title="{{ __('Call') }}"
+                                               data-contact-channel="call" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
+                            @elseif($primaryContact === 'email')
+                                <x-icon-button as="a" icon="mail" href="{{ $contactLinks['email'] }}" title="{{ __('Email') }}"
                                                data-contact-channel="email" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
                             @endif
-                            @if($phone)
-                                <x-icon-button as="a" icon="phone" href="tel:{{ preg_replace('/[^0-9+]/', '', $phone) }}" title="{{ __('Call') }}"
-                                               data-contact-channel="call" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}" />
-                            @endif
+
                             @if($lead)
                                 <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View Lead') }}" />
                             @endif
-                            @if(!$fu->isCompleted())
-                                @can('manage-sales')
-                                    @php($completeData = json_encode([
-                                        'action' => route('sales.follow-ups.complete', $fu),
-                                        'customer' => $customer?->name ?? '',
-                                    ]))
-                                    <x-icon-button
-                                        icon="check-circle"
-                                        title="{{ __('Complete') }}"
-                                        x-on:click="openComplete({{ $completeData }})" />
-                                @endcan
-                            @else
+
+                            @if($isDone)
                                 <span class="text-[10px] font-semibold text-slate-400">{{ $fu->completed_at?->format('d M Y') }}</span>
                             @endif
 
@@ -128,18 +150,38 @@
                                     <x-icon-button icon="more" title="{{ __('More actions') }}" />
                                 </x-slot>
                                 <x-slot name="content">
+                                    @can('manage-sales')
+                                        @if(! $isDone)
+                                            <button type="button" x-on:click="openComplete({{ $completeData }})"
+                                                    class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
+                                                <x-icon name="check-circle" class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                                                {{ __('Complete follow up') }}
+                                            </button>
+                                        @endif
+                                    @endcan
+
                                     <a href="{{ route('sales.follow-ups.show', $fu) }}"
                                        class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                         <x-icon name="eye" class="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
                                         {{ __('View follow up detail') }}
                                     </a>
+
+                                    @foreach($otherContacts as $channel => $href)
+                                        <a href="{{ $href }}"
+                                           data-contact-channel="{{ $channel }}" data-contact-url="{{ $contactUrl }}" data-contact-follow-up="{{ $fu->id }}"
+                                           class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
+                                            <x-icon name="{{ $contactIcons[$channel] }}" class="h-4 w-4 shrink-0 {{ $contactColors[$channel] }}" />
+                                            {{ $contactLabels[$channel] }}
+                                        </a>
+                                    @endforeach
+
                                     @can('manage-sales')
                                         <a href="{{ route('sales.follow-ups.edit', $fu) }}"
                                            class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">
                                             <x-icon name="edit" class="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
                                             {{ __('Edit follow up') }}
                                         </a>
-                                        @if($fu->isCompleted())
+                                        @if($isDone)
                                             <form action="{{ route('sales.follow-ups.reopen', $fu) }}" method="POST" data-ajax>
                                                 @csrf
                                                 <button type="submit" class="flex w-full items-center gap-2 px-4 py-2 text-start text-sm text-slate-700 transition hover:bg-[var(--menu-hover-bg)] dark:text-slate-200">

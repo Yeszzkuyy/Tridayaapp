@@ -47,7 +47,9 @@
     @if($required || $error)
         <p class="glide-select-error mt-1 text-sm text-red-600" @if(!$error) hidden @endif>{{ $error ?? __('This field is required.') }}</p>
     @endif
-    @vite('resources/js/glide-select.jsx')
+    @once
+        @vite('resources/js/glide-select.jsx')
+    @endonce
     <noscript>
         <select name="{{ $name }}" @if($required) required @endif class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
             @foreach($items as $item)

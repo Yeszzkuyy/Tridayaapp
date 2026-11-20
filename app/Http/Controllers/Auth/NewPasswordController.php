@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\SessionRevoker;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,6 +49,8 @@ class NewPasswordController extends Controller
                     'password_changed_at' => now(),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                SessionRevoker::allFor($user);
 
                 event(new PasswordReset($user));
             }

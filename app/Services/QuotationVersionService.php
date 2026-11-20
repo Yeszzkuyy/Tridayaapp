@@ -25,10 +25,13 @@ class QuotationVersionService
             'label' => 'v'.$next,
             'snapshot' => $items->map(fn (ProposalItem $item) => [
                 'description' => $item->description,
+                'section' => $item->section,
                 'quantity' => (float) $item->quantity,
                 'unit' => $item->unit,
                 'unit_price' => (float) $item->unit_price,
                 'unit_cost' => $item->unit_cost !== null ? (float) $item->unit_cost : null,
+                'target_margin_percent' => $item->target_margin_percent !== null ? (float) $item->target_margin_percent : null,
+                'discount' => (float) $item->discount,
                 'subtotal' => (float) $item->subtotal,
             ])->values()->all(),
             'total_before' => $totalBefore,

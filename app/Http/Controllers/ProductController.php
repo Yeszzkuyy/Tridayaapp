@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Product;
 use App\Models\ProductPriceLog;
+use App\Models\Proposal;
 use App\Models\Supplier;
+use App\Services\BulkProductPriceUpdateService;
 use App\Services\ProductPriceService;
+use App\Support\Pricing;
 use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -77,6 +81,7 @@ class ProductController extends Controller
     /** JSON untuk picker BOQ di form proposal (hanya produk aktif). */
     public function picker(Request $request)
     {
+        $canViewCost = Gate::allows('viewCost', Proposal::class);
         $items = Product::saleable()
             ->with(['costLogs' => fn ($q) => $q->with('supplier')->limit(6)])
             ->when($request->filled('q'), fn ($q) => $q->where(
@@ -94,22 +99,53 @@ class ProductController extends Controller
             'category' => $product->category,
             'unit' => $product->unit,
             'default_price' => (float) $product->default_price,
-            'price_history' => $product->costLogs->map(fn (ProductPriceLog $log) => [
+            'price_history' => $canViewCost ? $product->costLogs->map(fn (ProductPriceLog $log) => [
                 'id' => $log->id,
                 'price' => (float) $log->price,
+                'price_entered' => $log->price_entered !== null ? (float) $log->price_entered : null,
+                'price_includes_tax' => (bool) $log->price_includes_tax,
+                'tax_rate' => $log->tax_rate !== null ? (float) $log->tax_rate : null,
                 'supplier' => $log->supplier?->name,
                 'stock_status' => $log->stock_status,
                 'stock_eta' => $log->stock_eta,
                 'warranty_info' => $log->warranty_info,
                 'date' => $log->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'),
+                'valid_until' => $log->valid_until?->format('Y-m-d'),
                 'notes' => $log->notes,
-            ])->values(),
+            ])->values() : [],
         ])->values());
     }
 
     public function create()
     {
         return view('sales.products.create', $this->formData());
+    }
+
+    /** Riwayat harga modal untuk dropdown dependen di form item quotation. */
+    public function costLogs(Product $product)
+    {
+        Gate::authorize('viewCost', Proposal::class);
+
+        $logs = $product->costLogs()
+            ->with('supplier')
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(50)
+            ->get();
+
+        return response()->json($logs->map(fn (ProductPriceLog $log) => [
+            'id' => $log->id,
+            'price' => (float) $log->price,
+            'price_entered' => $log->price_entered !== null ? (float) $log->price_entered : null,
+            'price_includes_tax' => (bool) $log->price_includes_tax,
+            'tax_rate' => $log->tax_rate !== null ? (float) $log->tax_rate : null,
+            'supplier' => $log->supplier?->name,
+            'date' => $log->created_at?->timezone('Asia/Jakarta')->format('d M Y H:i'),
+            'valid_until' => $log->valid_until?->format('d M Y'),
+            'stock_status' => $log->stock_status,
+            'stock_eta' => $log->stock_eta,
+            'warranty_info' => $log->warranty_info,
+        ])->values());
     }
 
     /**
@@ -366,6 +402,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'price' => 'required|numeric|min:0.01|max:999999999999',
+            'price_includes_tax' => 'nullable|boolean',
             'stock_status' => 'required|in:ready,indent',
             'stock_eta' => 'required_if:stock_status,indent|nullable|string|max:100',
             'warranty_info' => 'required|string|max:255',
@@ -374,9 +411,16 @@ class ProductController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $product, $validated): void {
+            $vatRate = AppSetting::vatRate();
+            $includesTax = (bool) ($validated['price_includes_tax'] ?? false);
+            $netPrice = Pricing::netCost((float) $validated['price'], $includesTax, $vatRate);
+
             app(ProductPriceService::class)->recordCost($product, [
                 'supplier_id' => (int) $validated['supplier_id'],
-                'price' => (float) $validated['price'],
+                'price' => $netPrice,
+                'price_entered' => (float) $validated['price'],
+                'price_includes_tax' => $includesTax,
+                'tax_rate' => $vatRate,
                 'stock_status' => $validated['stock_status'],
                 'stock_eta' => $validated['stock_eta'] ?? null,
                 'warranty_info' => $validated['warranty_info'],
@@ -387,6 +431,78 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')
             ->with('success', __('Cost price updated.'));
+    }
+
+    public function bulkPriceEdit()
+    {
+        Gate::authorize('manageCost', Product::class);
+
+        $products = Product::query()
+            ->whereHas('latestCostLog')
+            ->with('latestCostLog.supplier')
+            ->orderBy('name')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('sales.products.bulk-price', [
+            'products' => $products,
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
+            'vatRate' => Pricing::vatRate(),
+        ]);
+    }
+
+    public function bulkPriceUpdate(Request $request, BulkProductPriceUpdateService $bulkProductPriceUpdateService)
+    {
+        Gate::authorize('manageCost', Product::class);
+
+        $items = $request->input('items');
+        if (is_array($items)) {
+            foreach ($items as $key => $item) {
+                if (! is_array($item) || ! array_key_exists('price', $item)) {
+                    continue;
+                }
+
+                $items[$key]['price'] = Rupiah::normalize($item['price']);
+            }
+            $request->merge(['items' => $items]);
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1|max:100',
+            'items.*.product_id' => 'required|integer|distinct|exists:products,id',
+            'items.*.supplier_id' => 'required|integer|exists:suppliers,id',
+            'items.*.price' => 'required|numeric|min:0.01|max:999999999999',
+            'items.*.price_includes_tax' => 'nullable|boolean',
+            'items.*.valid_until' => 'nullable|date',
+        ]);
+
+        $products = Product::query()
+            ->whereIn('id', collect($validated['items'])->pluck('product_id'))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($validated['items'] as $item) {
+            $product = $products->get((int) $item['product_id']);
+            if (! $product) {
+                abort(404);
+            }
+            Gate::authorize('manageCost', $product);
+        }
+
+        $updatedCount = $bulkProductPriceUpdateService->update(
+            array_values($validated['items']),
+            $request->user(),
+        );
+
+        if ($updatedCount === 0) {
+            return redirect()->route('products.index')
+                ->with('warning', __('No price changes were saved.'));
+        }
+
+        return redirect()->route('products.index')->with(
+            'success',
+            __(':count product prices updated.', ['count' => $updatedCount]),
+        );
     }
 
     /**

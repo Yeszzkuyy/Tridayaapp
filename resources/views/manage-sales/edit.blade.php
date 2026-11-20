@@ -76,13 +76,15 @@
         <section class="border-t border-slate-200">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div>
-                    <label for="pt_group" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">
+                    <span class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1 dark:text-slate-300">
                         {{ __('Lead from PT') }}
-                        <x-info-tip tip="{{ __('The provider brand handling this lead. Can be changed if management replaces it.') }}" />
-                    </label>
-                    <x-glide-select name="pt_group" id="pt_group" :label="__('Lead from PT')" empty-label="{{ __('— Select PT —') }}"
-                        :options="collect(\App\Models\Lead::PT_GROUPS)->map(fn ($g) => ['value' => $g, 'label' => $g])->all()"
-                        :value="old('pt_group', $lead->pt_group)" :error="$errors->first('pt_group')" />
+                        <x-info-tip tip="{{ __('PT follows the customer data. Change it from the Lead menu.') }}" />
+                    </span>
+                    @if($lead->pt_group)
+                        <span class="inline-flex px-2 py-0.5 rounded {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }} text-xs font-semibold">{{ $lead->pt_group }}</span>
+                    @else
+                        <span class="text-sm text-slate-400 dark:text-slate-500">—</span>
+                    @endif
                 </div>
                 <div>
                     <label for="assigned_to" class="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1">

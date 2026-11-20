@@ -12,6 +12,8 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
 
+    @include('layouts.partials.workspace-frame-guard')
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -195,6 +197,7 @@
                             </svg>
                             <input
                                 id="password"
+                                type="password"
                                 :type="showPassword ? 'text' : 'password'"
                                 name="password"
                                 required
@@ -222,6 +225,7 @@
                             </svg>
                             <input
                                 id="password_confirmation"
+                                type="password"
                                 :type="showConfirmPassword ? 'text' : 'password'"
                                 name="password_confirmation"
                                 required

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
 use App\Models\Customer;
 use App\Models\EstimatorRequest;
 use App\Models\EstimatorRequestItem;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Notifications\EstimatorRequestAnsweredNotification;
 use App\Notifications\EstimatorRequestCreatedNotification;
 use App\Notifications\EstimatorRequestRevisionNotification;
+use App\Support\Pricing;
 use App\Support\PtAccess;
 use App\Support\Rupiah;
 use Illuminate\Http\Request;
@@ -271,19 +273,30 @@ class EstimatorRequestController extends Controller
             : collect();
         $suppliers = $allSuppliers;
 
-        $backUrl = $user->can('manage-price-requests')
+        $canManageEstimatorQueue = $user->can('manage-price-requests')
             || $user->can('manage-sales-leads')
             || $user->can('manage-admin')
-            || $user->hasRole('ceo')
+            || $user->hasRole('ceo');
+
+        $fallbackBackUrl = $canManageEstimatorQueue
             ? route('estimator.dashboard')
             : route('sales.requests.index', ['tab' => 'product-price']);
-        $backUrl = $estimatorRequest->proposal_id
-            ? route('sales.proposals.show', $estimatorRequest->proposal_id)
-            : ($estimatorRequest->lead_id
-                ? route('leads.show', $estimatorRequest->lead_id)
-                : ($estimatorRequest->project_id
-                    ? route('projects.show', $estimatorRequest->project_id)
-                    : $backUrl));
+
+        $isEstimatorOnly = $user->can('manage-price-requests')
+            && ! $user->can('manage-sales')
+            && ! $user->can('manage-sales-leads')
+            && ! $user->can('manage-admin')
+            && ! $user->hasRole('ceo');
+
+        $backUrl = $isEstimatorOnly
+            ? route('estimator.dashboard')
+            : ($estimatorRequest->proposal_id
+                ? route('sales.proposals.show', $estimatorRequest->proposal_id)
+                : ($estimatorRequest->lead_id
+                    ? route('leads.show', $estimatorRequest->lead_id)
+                    : ($estimatorRequest->project_id
+                        ? route('projects.show', $estimatorRequest->project_id)
+                        : $fallbackBackUrl)));
 
         return view('estimator.requests.show', compact('estimatorRequest', 'suppliers', 'allSuppliers', 'backUrl'));
     }
@@ -350,6 +363,7 @@ class EstimatorRequestController extends Controller
             'items.*.id' => 'required|integer|exists:estimator_request_items,id',
             'items.*.supplier_id' => 'required|exists:suppliers,id',
             'items.*.price' => 'required|numeric|min:0.01|max:999999999999',
+            'items.*.price_includes_tax' => 'nullable|boolean',
             'items.*.stock_status' => 'required|in:ready,indent',
             'items.*.stock_eta' => 'nullable|string|max:100',
             'items.*.warranty_info' => 'required|string|max:255',
@@ -369,6 +383,7 @@ class EstimatorRequestController extends Controller
             $locked = EstimatorRequest::query()->lockForUpdate()->findOrFail($estimatorRequest->id);
             $this->authorize('answer', $locked);
 
+            $vatRate = AppSetting::vatRate();
             $itemIds = collect($validated['items'])->pluck('id')->map(fn ($id) => (int) $id)->all();
             $items = $locked->items()->whereIn('id', $itemIds)->get()->keyBy('id');
             abort_if($items->isEmpty(), 422, __('No valid items selected.'));
@@ -379,11 +394,18 @@ class EstimatorRequestController extends Controller
                     continue;
                 }
 
+                $priceEntered = (float) $data['price'];
+                $includesTax = (bool) ($data['price_includes_tax'] ?? false);
+                $priceBeforeTax = Pricing::netCost($priceEntered, $includesTax, $vatRate);
+
                 if ($item->product_id) {
                     ProductPriceLog::create([
                         'product_id' => $item->product_id,
                         'supplier_id' => $data['supplier_id'],
-                        'price' => $data['price'],
+                        'price' => $priceBeforeTax,
+                        'price_entered' => $priceEntered,
+                        'price_includes_tax' => $includesTax,
+                        'tax_rate' => $vatRate,
                         'price_type' => 'cost',
                         'currency' => 'IDR',
                         'stock_status' => $data['stock_status'],
@@ -395,12 +417,18 @@ class EstimatorRequestController extends Controller
                         'notes' => $data['notes'] ?? null,
                     ]);
 
-                    Product::whereKey($item->product_id)->update(['cost_price' => $data['price']]);
+                    Product::whereKey($item->product_id)->update([
+                        'cost_price' => $priceBeforeTax,
+                        'cost_includes_tax' => false,
+                    ]);
                 }
 
                 $item->update([
                     'supplier_id' => $data['supplier_id'],
-                    'price' => $data['price'],
+                    'price' => $priceEntered,
+                    'price_includes_tax' => $includesTax,
+                    'tax_rate' => $vatRate,
+                    'price_before_tax' => $priceBeforeTax,
                     'stock_status' => $data['stock_status'],
                     'stock_eta' => $data['stock_eta'] ?? null,
                     'warranty_info' => $data['warranty_info'],

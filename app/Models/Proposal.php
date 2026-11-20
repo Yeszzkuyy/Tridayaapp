@@ -35,6 +35,8 @@ class Proposal extends Model
         'subtotal',
         'discount',
         'tax',
+        'tax_rate',
+        'default_margin_percent',
         'grand_total',
         'notes',
         'internal_notes',
@@ -72,6 +74,9 @@ class Proposal extends Model
         'po_returned_at' => 'datetime',
         'dp_percent' => 'float',
         'term_days' => 'integer',
+        'tax_rate' => 'float',
+        'default_margin_percent' => 'float',
+        'gross_margin' => 'float',
         'sent_at' => 'datetime',
         'pdf_generated_at' => 'datetime',
     ];

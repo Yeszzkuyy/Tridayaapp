@@ -23,6 +23,9 @@ class ProductPriceService
             'product_id' => $product->getKey(),
             'supplier_id' => $data['supplier_id'],
             'price' => $data['price'],
+            'price_entered' => $data['price_entered'] ?? $data['price'],
+            'price_includes_tax' => (bool) ($data['price_includes_tax'] ?? false),
+            'tax_rate' => $data['tax_rate'] ?? null,
             'price_type' => 'cost',
             'currency' => 'IDR',
             'stock_status' => $data['stock_status'] ?? 'ready',
@@ -35,7 +38,10 @@ class ProductPriceService
             'notes' => $data['notes'] ?? null,
         ]);
 
-        $product->update(['cost_price' => (float) $data['price']]);
+        $product->update([
+            'cost_price' => (float) $data['price'],
+            'cost_includes_tax' => false,
+        ]);
 
         return $log;
     }

@@ -77,8 +77,11 @@ class MyLeadsWorkspaceTest extends TestCase
 
         $this->assertStringContainsString($mine->customer->name, $html);
         $this->assertStringNotContainsString('Proyek Sales Lain', $html);
-        $this->assertStringContainsString('data-contact-channel="whatsapp"', $html);
+        // Kolom Action My Leads tinggal Detail + Follow Up; tombol kontak cepat tidak tampil.
+        $this->assertStringNotContainsString('data-contact-channel', $html);
         $this->assertStringContainsString('data-tour="followup"', $html);
+        // Formulir dibuka halaman penuh supaya tidak memantul ke daftar Follow Up.
+        $this->assertMatchesRegularExpression('/<a href="[^"]*follow-ups\/create[^"]*"[^>]*target="_top"/', $html);
         $this->assertStringContainsString('myLeadsRow({', $html);
         $this->assertStringNotContainsString('@js(', $html);
     }
@@ -270,6 +273,53 @@ class MyLeadsWorkspaceTest extends TestCase
         $this->assertTrue(strpos($html, 'Baris satu') < strpos($html, 'Baris dua'));
         $this->assertTrue(strpos($html, 'Baris dua') < strpos($html, 'Baris tiga'));
         $this->assertStringNotContainsString('View all', $html);
+    }
+
+    public function test_management_sees_my_leads_of_every_sales(): void
+    {
+        $management = $this->sales('management');
+        $first = $this->sales();
+        $second = $this->sales();
+        $this->lead($first, ['customer' => $this->customer('PT Sales Pertama')]);
+        $this->lead($second, ['customer' => $this->customer('PT Sales Kedua')]);
+
+        $response = $this->actingAs($management)->get(route('sales.my-leads'))->assertOk();
+
+        $response->assertSee('PT Sales Pertama');
+        $response->assertSee('PT Sales Kedua');
+        $response->assertSee('name="sales_id"', false);
+    }
+
+    public function test_management_can_filter_my_leads_by_one_sales(): void
+    {
+        $management = $this->sales('management');
+        $first = $this->sales();
+        $second = $this->sales();
+        $this->lead($first, ['customer' => $this->customer('PT Sales Pertama')]);
+        $this->lead($second, ['customer' => $this->customer('PT Sales Kedua')]);
+
+        $response = $this->actingAs($management)
+            ->get(route('sales.my-leads', ['sales_id' => $first->id]))
+            ->assertOk();
+
+        $response->assertSee('PT Sales Pertama');
+        $response->assertDontSee('PT Sales Kedua');
+    }
+
+    public function test_sales_cannot_see_other_sales_leads_via_sales_id(): void
+    {
+        $first = $this->sales();
+        $second = $this->sales();
+        $this->lead($first, ['customer' => $this->customer('PT Milik Sendiri')]);
+        $this->lead($second, ['customer' => $this->customer('PT Milik Orang Lain')]);
+
+        $response = $this->actingAs($first)
+            ->get(route('sales.my-leads', ['sales_id' => $second->id]))
+            ->assertOk();
+
+        $response->assertSee('PT Milik Sendiri');
+        $response->assertDontSee('PT Milik Orang Lain');
+        $response->assertDontSee('name="sales_id"', false);
     }
 
     public function test_won_is_rejected_without_accepted_quotation(): void

@@ -19,6 +19,7 @@
         @can('manage-sales')
             <x-icon-button as="a" variant="solid" icon="add"
                            :href="route('sales.follow-ups.create')"
+                           target="_top"
                            label="{{ __('Add Follow Up') }}"
                            title="{{ __('Add Follow Up') }}"
                            class="shrink-0" />

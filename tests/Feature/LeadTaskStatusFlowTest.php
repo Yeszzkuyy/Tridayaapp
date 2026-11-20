@@ -143,13 +143,16 @@ class LeadTaskStatusFlowTest extends TestCase
         $this->actingAs($inside)
             ->get(route('lead-tasks.show', $task))
             ->assertOk()
-            ->assertSeeText(__('Mark as Done'));
+            ->assertSeeText(__('Done'));
 
         // Inside Sales bekerja dari workspace-nya sendiri (bukan hub Sales).
+        // Selama belum ada quotation, aksi utama adalah mengerjakan task,
+        // bukan menutup task.
         $this->actingAs($inside)
             ->get(route('inside-sales.dashboard'))
             ->assertOk()
-            ->assertSee($completeUrl, false);
+            ->assertSeeText(__('Kerjakan Task'))
+            ->assertDontSee($completeUrl, false);
 
         // Sales pembuat request melihat status, tetapi tidak mendapat tombol Selesai.
         $this->actingAs($sales)
@@ -167,6 +170,6 @@ class LeadTaskStatusFlowTest extends TestCase
         $this->actingAs($inside)
             ->get(route('inside-sales.dashboard'))
             ->assertOk()
-            ->assertSeeText(__('View'));
+            ->assertSeeText(__('Kerjakan Task'));
     }
 }

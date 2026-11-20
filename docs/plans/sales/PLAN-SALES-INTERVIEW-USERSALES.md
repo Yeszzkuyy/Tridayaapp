@@ -1,11 +1,11 @@
 # PLAN-SALES-INTERVIEW-USERSALES: Penyesuaian Menu Sales dengan Wawancara Adi Santosa
 
-**Status Pengerjaan:** Selesai
+**Status Pengerjaan:** Belum Dikerjakan
 **Work:** INTERVIEW-USERSALES
 **PIC:** Raafi
 **Menu:** Sales (Lead, Pipeline, Quotation, Dashboard, Customer Hub)
 **Sumber:** Wawancara Sales User Adi Santosa
-**Terakhir diperbarui:** 2026-11-12
+**Terakhir diperbarui:** 2026-11-11
 
 ---
 
@@ -296,8 +296,8 @@ Mengacu ke `docs/archive/WAWANCARA-USER-SALES.md`:
 ## 8. Keputusan yang perlu dijawab
 
 1. Inisial Sales diambil dari field baru di profil user, atau otomatis dari
-   nama?
-2. Nomor urut per PT di-reset setiap tahun, atau berjalan terus?
+   nama? dari profile user
+2. Nomor urut per PT di-reset setiap tahun, atau berjalan terus? berjalan terus
 3. Apakah Sales sama sekali tidak boleh membuat quotation, atau tetap boleh
-   untuk kondisi darurat?
-4. Target margin dihitung nominal Rupiah, persentase, atau keduanya?
+   untuk kondisi darurat? tidak dulu saja
+4. Target margin dihitung nominal Rupiah, persentase, atau keduanya? belum tahu

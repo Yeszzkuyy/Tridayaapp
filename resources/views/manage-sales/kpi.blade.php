@@ -45,9 +45,10 @@
                         @endfor
                     </select>
                 </form>
-                <x-icon-button as="a" icon="leads" href="{{ route('manage-sales.index') }}" title="{{ __('Manage Sales') }}" />
             </div>
         </div>
+
+        @include('manage-sales.partials.tabs')
 
         {{-- Ringkasan Tim (Executive Summary) --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

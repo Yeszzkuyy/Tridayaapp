@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
+use App\Models\EstimatorRequest;
 use App\Models\LeadTask;
 use App\Models\ProductPriceLog;
 use App\Models\Proposal;
@@ -38,10 +40,44 @@ class InsideSalesQuotationController extends Controller
         $deliveryTerms = $this->stockSummary($leadTask->items);
         $warrantyTerms = $this->warrantySummary($leadTask->items);
 
+        $estimatorRequest = EstimatorRequest::query()
+            ->where('lead_id', $leadTask->lead_id)
+            ->whereIn('status', ['answered', 'completed'])
+            ->with(['items' => fn ($query) => $query->whereIn('status', ['answered', 'accepted'])])
+            ->latest('id')
+            ->first();
+
+        $quantityWarnings = [];
+        foreach ($estimatorRequest?->items ?? [] as $estimatorItem) {
+            if (! $estimatorItem->product_id) {
+                continue;
+            }
+
+            $taskItem = $leadTask->items->firstWhere('product_id', $estimatorItem->product_id);
+            if (! $taskItem) {
+                $quantityWarnings[] = __(':item from Estimator is not in the task items.', [
+                    'item' => $estimatorItem->description,
+                ]);
+                continue;
+            }
+
+            if (abs((float) $taskItem->quantity - (float) $estimatorItem->quantity) > 0.0001) {
+                $quantityWarnings[] = __(':item quantity differs: Estimator :estimator, task :task.', [
+                    'item' => $estimatorItem->description,
+                    'estimator' => rtrim(rtrim(number_format((float) $estimatorItem->quantity, 2, ',', '.'), '0'), ','),
+                    'task' => rtrim(rtrim(number_format((float) $taskItem->quantity, 2, ',', '.'), '0'), ','),
+                ]);
+            }
+        }
+
         return view('inside-sales.quotations.create', [
             'task' => $leadTask,
             'items' => $leadTask->items,
             'companies' => array_keys(config('companies')),
+            'taxRate' => AppSetting::vatRate(),
+            'defaultMargin' => AppSetting::defaultMarginPercent(),
+            'estimatorRequest' => $estimatorRequest,
+            'quantityWarnings' => $quantityWarnings,
             'prefill' => [
                 'proposal_number' => $this->numbers->generate($previewPt, $leadTask->lead?->assignee ?? auth()->user()),
                 'proposal_date' => today()->toDateString(),
@@ -152,8 +188,10 @@ class InsideSalesQuotationController extends Controller
         $warrantyTerms = $validated['warranty_terms'] ?? $this->warrantySummary($items);
         $salesOwner = $leadTask->lead?->assignee ?? $leadTask->creator;
         $proposalNumber = $this->numbers->generate($validated['letterhead_pt'], $salesOwner ?? auth()->user());
+        $taxRate = AppSetting::vatRate();
+        $defaultMargin = AppSetting::defaultMarginPercent();
 
-        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber, $deliveryTerms, $warrantyTerms) {
+        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber, $deliveryTerms, $warrantyTerms, $taxRate, $defaultMargin) {
             $proposal = Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
@@ -170,6 +208,8 @@ class InsideSalesQuotationController extends Controller
                 'delivery_terms' => $deliveryTerms,
                 'warranty_terms' => $warrantyTerms,
                 'letterhead_pt' => $validated['letterhead_pt'],
+                'tax_rate' => $taxRate,
+                'default_margin_percent' => $defaultMargin,
                 'status' => 'draft',
                 'internal_notes' => __('Created from Inside Sales task #:task.', ['task' => $leadTask->id]),
             ]);
@@ -189,6 +229,7 @@ class InsideSalesQuotationController extends Controller
                     'unit' => $item->unit,
                     'unit_price' => $item->unit_price,
                     'unit_cost' => $item->unit_cost,
+                    'target_margin_percent' => $item->target_margin_percent ?? $defaultMargin,
                     'discount' => $item->discount,
                     'subtotal' => $item->subtotal,
                 ]);
@@ -196,7 +237,7 @@ class InsideSalesQuotationController extends Controller
 
             $proposal->recalculate();
             $proposal->forceFill([
-                'tax' => round((float) $proposal->subtotal * 0.12, 2),
+                'tax' => round($proposal->netSales() * ($taxRate / 100), 2),
             ])->save();
             $proposal->recalculate();
 

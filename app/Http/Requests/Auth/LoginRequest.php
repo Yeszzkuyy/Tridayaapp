@@ -43,14 +43,18 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            foreach ($this->throttleKeys() as $key) {
+                RateLimiter::hit($key, 900);
+            }
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
         }
 
-        RateLimiter::clear($this->throttleKey());
+        foreach ($this->throttleKeys() as $key) {
+            RateLimiter::clear($key);
+        }
     }
 
     /**
@@ -60,27 +64,46 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
+        foreach ($this->throttleKeys() as $key) {
+            if (! RateLimiter::tooManyAttempts($key, 5)) {
+                continue;
+            }
+
+            event(new Lockout($this));
+
+            $seconds = RateLimiter::availableIn($key);
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.throttle', [
+                    'seconds' => $seconds,
+                    'minutes' => ceil($seconds / 60),
+                ]),
+            ]);
         }
-
-        event(new Lockout($this));
-
-        $seconds = RateLimiter::availableIn($this->throttleKey());
-
-        throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
     }
 
     /**
      * Get the rate limiting throttle key for the request.
+     *
+     * The account key does not depend on the request IP, so rotating
+     * X-Forwarded-For (or any pool of source addresses) cannot reset the
+     * per-account budget. The source key is kept as a secondary signal.
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return $this->throttleKeys()[0];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function throttleKeys(): array
+    {
+        $email = Str::transliterate(Str::lower((string) $this->string('email')));
+
+        return [
+            'login:account:'.$email,
+            'login:source:'.$email.'|'.$this->ip(),
+        ];
     }
 }

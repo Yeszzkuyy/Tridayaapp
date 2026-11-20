@@ -1,5 +1,5 @@
 {{-- Sel Next Follow Up: badge status + atur tanggal/jam langsung. --}}
-<div class="min-w-[160px]">
+<div class="min-w-[128px]">
     <template x-if="nextLabel">
         <div>
             <p class="text-xs font-semibold text-slate-800 dark:text-slate-100" x-text="nextLabel"></p>

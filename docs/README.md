@@ -41,7 +41,7 @@ Paket kerja aktif: [INTERVIEW-USERSALES](plans/00-INTERVIEW-USERSALES-INDEX.md)
 
 | Plan | Status | Keterangan |
 |---|---|---|
-| [PLAN-ESTIMATOR-INTERVIEW-USERSALES](plans/estimator/PLAN-ESTIMATOR-INTERVIEW-USERSALES.md) | Belum Dikerjakan | Harga modal terpisah, riwayat, report |
+| [PLAN-ESTIMATOR-INTERVIEW-USERSALES](plans/estimator/PLAN-ESTIMATOR-INTERVIEW-USERSALES.md) | Siap Dikerjakan | Harga modal terpisah, WhatsApp supplier, keep harga, riwayat |
 | [PLAN-SALES-ESTIMATOR-PRICE-REQUEST](plans/estimator/PLAN-SALES-ESTIMATOR-PRICE-REQUEST.md) | Siap Dikerjakan | Estimator, histori harga, export Excel |
 | [PLAN-SALES-ESTIMATOR-DASHBOARD](plans/estimator/PLAN-SALES-ESTIMATOR-DASHBOARD.md) | Belum Dikerjakan | Dashboard kerja Estimator |
 

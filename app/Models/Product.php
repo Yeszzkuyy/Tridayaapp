@@ -13,12 +13,13 @@ class Product extends Model
 
     protected $fillable = [
         'brand', 'name', 'model', 'part_number', 'sku', 'category', 'description', 'status',
-        'unit', 'default_price', 'cost_price', 'has_serial_number', 'is_active',
+        'unit', 'default_price', 'cost_price', 'cost_includes_tax', 'has_serial_number', 'is_active',
     ];
 
     protected $casts = [
         'default_price' => 'float',
         'cost_price' => 'float',
+        'cost_includes_tax' => 'boolean',
         'has_serial_number' => 'boolean',
         'is_active' => 'boolean',
     ];

@@ -11,6 +11,7 @@ import { registerWorkspaceStore } from './workspace-tabs.js';
 import { initWorkspaceEmbed } from './workspace-embed.js';
 import { installInstantSave } from './instant-save.js';
 import { installFormValidation } from './form-validation.js';
+import { installBulkPriceUpdate } from './bulk-price-update.js';
 
 // Satu copy Alpine untuk seluruh app: Livewire menyuntik Alpine miliknya
 // sendiri (window.Alpine) + start saat DOMContentLoaded. Start ganda dari
@@ -301,6 +302,9 @@ installInstantSave();
 /* Validasi wajib-isi: pesan jelas per isian + ringkasan + fokus otomatis. */
 installFormValidation();
 
+/* Interaksi editor Pricelist massal. */
+installBulkPriceUpdate();
+
 /* Livewire memakai pop up yang sama: komponen cukup
    $this->dispatch('toast', message: '...', type: 'success'). */
 window.addEventListener('toast', (event) => {
@@ -434,4 +438,3 @@ if (document.getElementById('galaxy')) {
         mountLoginGalaxy();
     } catch (e) {}
 }
-

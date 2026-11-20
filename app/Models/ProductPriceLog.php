@@ -15,6 +15,9 @@ class ProductPriceLog extends Model
         'product_id',
         'supplier_id',
         'price',
+        'price_entered',
+        'price_includes_tax',
+        'tax_rate',
         'price_type',
         'currency',
         'stock_status',
@@ -29,6 +32,9 @@ class ProductPriceLog extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'price_entered' => 'decimal:2',
+        'price_includes_tax' => 'boolean',
+        'tax_rate' => 'decimal:2',
         'valid_until' => 'date',
     ];
 
