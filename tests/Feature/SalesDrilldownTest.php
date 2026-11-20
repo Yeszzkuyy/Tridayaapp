@@ -59,8 +59,14 @@ class SalesDrilldownTest extends TestCase
             'status' => 'accepted',
         ]);
 
-        $this->actingAs($sales)
-            ->get(route('sales.dashboard'))
+        // Customer Hub sekarang hanya tampil di drill-down Management.
+        // User management di produksi juga memegang role sales, sehingga
+        // tombol Upload PO tetap muncul.
+        $management = User::factory()->create();
+        $management->assignRole(['management', 'sales']);
+
+        $this->actingAs($management)
+            ->get(route('manage-sales.sales-rep', $sales))
             ->assertOk()
             ->assertSee('PT Hub PO')
             ->assertSee('Upload PO')
