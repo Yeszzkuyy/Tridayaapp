@@ -8,6 +8,9 @@ class FakeElement {
         this.dataset = {};
         this.textContent = '';
         this.disabled = false;
+        this.attributes = new Map();
+        this.children = [];
+        this.className = '';
     }
 
     set innerHTML(markup) {
@@ -23,6 +26,24 @@ class FakeElement {
         if (selector === '[data-text]') return this.card?.text ?? null;
         return null;
     }
+
+    setAttribute(name, value) {
+        this.attributes.set(name, value);
+    }
+
+    removeAttribute(name) {
+        this.attributes.delete(name);
+    }
+
+    prepend(element) {
+        this.children.unshift(element);
+    }
+
+    before(element) {
+        this.children.push(element);
+    }
+
+    remove() {}
 }
 
 function createHarness({ dark = false } = {}) {
@@ -48,6 +69,9 @@ function createHarness({ dark = false } = {}) {
         },
         getElementById(id) {
             return elements.get(id) ?? null;
+        },
+        querySelector() {
+            return null;
         },
     };
 
@@ -107,14 +131,18 @@ test('shows a loader for a form with loading text even without a Glide Select', 
     assert.equal(form['aria-busy'], 'true');
 });
 
-test('uses the fallback loader text for Glide Select forms without an explicit message', () => {
+test('shows button feedback, without a full overlay, for Glide Select forms without explicit loading text', () => {
     const harness = createHarness();
-    const form = harness.createForm({ glideSelect: true });
+    const button = new FakeElement();
+    const form = harness.createForm({ glideSelect: true, buttons: [button] });
 
     installSubmitLoader(harness.document, harness.window);
     harness.submit(form);
 
-    assert.equal(harness.elements.get('gs-submit-overlay').card.text.textContent, 'Loading...');
+    assert.equal(harness.elements.has('gs-submit-overlay'), false);
+    assert.equal(button.disabled, true);
+    assert.equal(button.children[0].attributes.has('data-busy-spinner'), true);
+    assert.equal(button.children[0].className.includes('animate-spin'), true);
 });
 
 test('does not show a loader for prevented or AJAX submissions', () => {

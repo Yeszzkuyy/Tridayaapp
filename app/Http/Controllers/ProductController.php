@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductPriceLog;
 use App\Models\Supplier;
+use App\Services\BulkProductPriceUpdateService;
 use App\Services\ProductPriceService;
+use App\Support\Pricing;
 use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -387,6 +389,78 @@ class ProductController extends Controller
 
         return redirect()->route('products.index')
             ->with('success', __('Cost price updated.'));
+    }
+
+    public function bulkPriceEdit()
+    {
+        Gate::authorize('manageCost', Product::class);
+
+        $products = Product::query()
+            ->whereHas('latestCostLog')
+            ->with('latestCostLog.supplier')
+            ->orderBy('name')
+            ->paginate(100)
+            ->withQueryString();
+
+        return view('sales.products.bulk-price', [
+            'products' => $products,
+            'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
+            'vatRate' => Pricing::vatRate(),
+        ]);
+    }
+
+    public function bulkPriceUpdate(Request $request, BulkProductPriceUpdateService $bulkProductPriceUpdateService)
+    {
+        Gate::authorize('manageCost', Product::class);
+
+        $items = $request->input('items');
+        if (is_array($items)) {
+            foreach ($items as $key => $item) {
+                if (! is_array($item) || ! array_key_exists('price', $item)) {
+                    continue;
+                }
+
+                $items[$key]['price'] = Rupiah::normalize($item['price']);
+            }
+            $request->merge(['items' => $items]);
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1|max:100',
+            'items.*.product_id' => 'required|integer|distinct|exists:products,id',
+            'items.*.supplier_id' => 'required|integer|exists:suppliers,id',
+            'items.*.price' => 'required|numeric|min:0.01|max:999999999999',
+            'items.*.price_includes_tax' => 'nullable|boolean',
+            'items.*.valid_until' => 'nullable|date',
+        ]);
+
+        $products = Product::query()
+            ->whereIn('id', collect($validated['items'])->pluck('product_id'))
+            ->get()
+            ->keyBy('id');
+
+        foreach ($validated['items'] as $item) {
+            $product = $products->get((int) $item['product_id']);
+            if (! $product) {
+                abort(404);
+            }
+            Gate::authorize('manageCost', $product);
+        }
+
+        $updatedCount = $bulkProductPriceUpdateService->update(
+            array_values($validated['items']),
+            $request->user(),
+        );
+
+        if ($updatedCount === 0) {
+            return redirect()->route('products.index')
+                ->with('warning', __('No price changes were saved.'));
+        }
+
+        return redirect()->route('products.index')->with(
+            'success',
+            __(':count product prices updated.', ['count' => $updatedCount]),
+        );
     }
 
     /**

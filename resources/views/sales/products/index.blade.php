@@ -23,6 +23,7 @@
             };
 
             $bulkUrl = route('products.index', array_merge($filterParams, ['bulk' => 1]));
+            $bulkEntryUrl = route('products.bulk-price');
             $bulkNeedsUrl = route('products.index', array_merge($filterParams, [
                 'quick' => 'needs_recheck',
                 'bulk' => 1,
@@ -67,7 +68,7 @@
                         <x-flow-button as="a" href="{{ route('products.create') }}" icon="add" label="{{ __('Add Product') }}" title="{{ __('Add Product') }}" />
                     @endcanany
                     @if($canManageCost)
-                        <x-icon-button as="a" icon="edit" :href="$bulkUrl" label="{{ __('Review Prices') }}" title="{{ __('Bulk Edit Prices') }}" />
+                        <x-icon-button as="a" icon="edit" :href="$bulkEntryUrl" label="{{ __('Review Prices') }}" title="{{ __('Bulk Edit Prices') }}" />
                     @endif
                 @endif
             </div>
