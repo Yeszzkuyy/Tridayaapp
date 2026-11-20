@@ -2,8 +2,8 @@
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800">{{ __('Project Status') }}</h1>
-                <p class="text-slate-500 mt-1">{{ __('Manage project statuses') }}</p>
+                <h1 class="text-3xl font-bold text-content-primary">{{ __('Project Status') }}</h1>
+                <p class="text-content-secondary mt-1">{{ __('Manage project statuses') }}</p>
             </div>
             <x-icon-button as="a" icon="add" href="{{ route('admin-panel.project-statuses.create') }}" label="{{ __('Add Status') }}" title="{{ __('Add Status') }}" />
         </div>
@@ -13,17 +13,17 @@
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                     <thead class="bg-slate-50 dark:bg-slate-700">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Status Name') }}</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Warna') }}</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Default') }}</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Created At') }}</th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Status Name') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Warna') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Default') }}</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Created At') }}</th>
+                            <th class="px-6 py-4 text-right text-xs font-medium text-content-secondary uppercase tracking-wider">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                         @forelse($statuses as $status)
                             <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-medium text-slate-800">{{ __($status->name) }}</td>
+                                <td class="px-6 py-4 font-medium text-content-primary">{{ __($status->name) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="px-3 py-1 text-xs font-semibold rounded-full" style="background-color: {{ $status->color ?? '#gray' }}20; color: {{ $status->color ?? '#gray' }}">
                                         {{ $status->color ?? __('Default') }}
@@ -33,10 +33,10 @@
                                     @if($status->is_default)
                                         <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">{{ __('Primary') }}</span>
                                     @else
-                                        <span class="text-slate-400">-</span>
+                                        <span class="text-content-tertiary">-</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-slate-600">{{ $status->created_at->format('d M Y H:i') }}</td>
+                                <td class="px-6 py-4 text-content-secondary">{{ $status->created_at->format('d M Y H:i') }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.project-statuses.edit', $status) }}" title="{{ __('Edit') }}" />
@@ -53,7 +53,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-16 text-center text-slate-400">
+                                <td colspan="5" class="py-16 text-center text-content-tertiary">
                                     {{ __('No project statuses yet.') }}
                                 </td>
                             </tr>

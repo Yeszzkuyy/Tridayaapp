@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{{ __('Tax & Margin') }}</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-content-primary">{{ __('Tax & Margin') }}</h1>
         <x-back-button :href="route('admin-panel.index')" />
     </div>
 
@@ -11,21 +11,21 @@
 
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-                <label for="vat_rate" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('VAT Rate (%)') }}</label>
+                <label for="vat_rate" class="mb-1 block text-xs font-medium text-content-secondary">{{ __('VAT Rate (%)') }}</label>
                 <input id="vat_rate" name="vat_rate" type="number" min="0" max="100" step="0.01" required
                        value="{{ old('vat_rate', $vatRate) }}"
-                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-content-primary">
                 @error('vat_rate') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
-                <p class="mt-1 text-[11px] text-slate-400">{{ __('Used for new quotations. Each quotation keeps the rate it was created with.') }}</p>
+                <p class="mt-1 text-xs text-content-tertiary">{{ __('Used for new quotations. Each quotation keeps the rate it was created with.') }}</p>
             </div>
 
             <div>
-                <label for="default_margin_percent" class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ __('Default Margin (%)') }}</label>
+                <label for="default_margin_percent" class="mb-1 block text-xs font-medium text-content-secondary">{{ __('Default Margin (%)') }}</label>
                 <input id="default_margin_percent" name="default_margin_percent" type="number" min="0" max="99.99" step="0.01" required
                        value="{{ old('default_margin_percent', $defaultMargin) }}"
-                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
+                       class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-content-primary">
                 @error('default_margin_percent') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
-                <p class="mt-1 text-[11px] text-slate-400">{{ __('Inherited by new quotation items. Each item can still be changed.') }}</p>
+                <p class="mt-1 text-xs text-content-tertiary">{{ __('Inherited by new quotation items. Each item can still be changed.') }}</p>
             </div>
         </div>
 

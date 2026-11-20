@@ -1,8 +1,8 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Admin Panel') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('User, Role & Permission Management (Super Admin)') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Admin Panel') }}</h1>
+            <p class="text-content-secondary mt-1">{{ __('User, Role & Permission Management (Super Admin)') }}</p>
         </div>
         <div class="flex gap-2">
             <x-icon-button as="a" href="{{ route('admin-panel.pricing.edit') }}" icon="edit" label="{{ __('Tax & Margin') }}" title="{{ __('Tax & Margin') }}" />
@@ -21,13 +21,13 @@
             <table class="w-full">
                 <thead class="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider w-16">{{ __('Photo') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Name') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Email') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Role') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Status') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Created') }}</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase tracking-wider">{{ __('Actions') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider w-16">{{ __('Photo') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Name') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Email') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Role') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Status') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Created') }}</th>
+                        <th class="px-4 py-3 text-right text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
@@ -37,12 +37,12 @@
                                 <x-user-avatar :user="$user" size="w-10 h-10" text="text-sm" clickable />
                             </td>
                             <td class="px-4 py-3">
-                                <p class="font-medium text-slate-900 dark:text-slate-100">{{ $user->name }}</p>
+                                <p class="font-medium text-content-primary">{{ $user->name }}</p>
                                 @if($user->id === auth()->id())
                                     <span class="text-xs text-accent-600">{{ __('(You)') }}</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $user->email }}</td>
+                            <td class="px-4 py-3 text-content-secondary">{{ $user->email }}</td>
                             <td class="px-4 py-3">
                                 @forelse($user->roles as $role)
                                     <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1 mb-1">{{ __(\Illuminate\Support\Str::headline($role->name)) }}</span>
@@ -68,7 +68,7 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
+                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $user->created_at->format('d M Y') }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.users.edit', $user) }}" title="{{ __('Edit user') }}" />
                                 @if($user->id !== auth()->id())
@@ -81,7 +81,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-slate-400">{{ __('No user data.') }}</td>
+                            <td colspan="7" class="px-4 py-12 text-center text-content-tertiary">{{ __('No user data.') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

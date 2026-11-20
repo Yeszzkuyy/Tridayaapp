@@ -1,8 +1,8 @@
 <x-app-layout>
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">{{ __('Add New Role') }}</h1>
-            <p class="text-slate-500 mt-1">{{ __('Create a new role and assign permissions') }}</p>
+            <h1 class="text-3xl font-bold text-content-primary">{{ __('Add New Role') }}</h1>
+            <p class="text-content-secondary mt-1">{{ __('Create a new role and assign permissions') }}</p>
         </div>
         <x-icon-button as="a" icon="back" href="{{ route('admin-panel.index') }}" title="{{ __('Back') }}" />
     </div>
@@ -12,17 +12,17 @@
             @csrf
             
             <div class="mb-6">
-                <label for="name" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Role Name') }}</label>
+                <label for="name" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Role Name') }}</label>
                 <input type="text" id="name" name="name" required
                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
                        placeholder="{{ __('Example: finance, hr, etc.') }}">
-                <p class="text-xs text-slate-400 mt-1">{{ __('Lowercase letters without spaces, e.g. finance.') }}</p>
+                <p class="text-xs text-content-tertiary mt-1">{{ __('Lowercase letters without spaces, e.g. finance.') }}</p>
             </div>
 
             <div class="mb-6">
                 <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
                     <div>
-                        <label for="role-preset" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Copy from an existing role') }}</label>
+                        <label for="role-preset" class="block text-sm font-medium text-content-secondary mb-1">{{ __('Copy from an existing role') }}</label>
                         <select id="role-preset"
                                 class="px-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-500">
                             <option value="">{{ __('Select a role...') }}</option>
@@ -36,18 +36,18 @@
                         <x-icon-button id="deselect-all" icon="reset" label="{{ __('Clear Selection') }}" title="{{ __('Clear Selection') }}" />
                     </div>
                 </div>
-                <p class="text-xs text-slate-400 mb-3">{{ __('Acuan matriks resmi: management, lead-marketing, marketing, sales, admin, technician, lead-technician, inside-sales, prakerin-technician, prakerin-admin, ceo.') }}</p>
+                <p class="text-xs text-content-tertiary mb-3">{{ __('Acuan matriks resmi: management, lead-marketing, marketing, sales, admin, technician, lead-technician, inside-sales, prakerin-technician, prakerin-admin, ceo.') }}</p>
                 
                 <div class="space-y-4">
                     @foreach($permissions as $group => $perms)
                         <div class="border border-slate-200 rounded-xl p-4">
-                            <h4 class="font-medium text-slate-800 mb-3 capitalize">{{ $group }}</h4>
+                            <h4 class="font-medium text-content-primary mb-3 capitalize">{{ $group }}</h4>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                                 @foreach($perms as $perm)
                                         <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/40 transition">
                                         <input type="checkbox" name="permissions[]" value="{{ $perm->name }}"
                                                class="w-4 h-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                                        <span class="text-sm text-slate-700">{{ $perm->name }}</span>
+                                        <span class="text-sm text-content-secondary">{{ $perm->name }}</span>
                                     </label>
                                 @endforeach
                             </div>
