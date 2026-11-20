@@ -307,9 +307,6 @@
         </div>
     @endif
 
-    {{-- Customer-Centric Hub: daftar customer milik sales + aksi cepat --}}
-    @include('sales.partials.customer-hub', ['hubResetRoute' => route('sales.dashboard')])
-
     {{-- Peringkat Tim & Target Bulanan Sales --}}
     @if(isset($salesLeaderboard) && $salesLeaderboard->isNotEmpty())
         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6" data-reveal>

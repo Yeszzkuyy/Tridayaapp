@@ -213,6 +213,20 @@ class ManageSalesController extends Controller
             ->limit(5)
             ->get();
 
+        // Customer Hub hanya untuk drill-down Management (bukan dashboard
+        // Sales). Pencarian cepat + filter tahap memakai query halaman ini.
+        $hubSearch = trim((string) $request->query('q', ''));
+        $hubStage = trim((string) $request->query('stage', ''));
+        $data['customerHub'] = $this->customerHubRows($user, $hubSearch, $hubStage);
+        $data['hubSearch'] = $hubSearch;
+        $data['hubStage'] = $hubStage;
+        $data['hubStages'] = [
+            'po_verified' => __('PO Verified'),
+            'quotation_sent' => __('Quotation Sent'),
+            'project_running' => __('Project Running'),
+            'invoice_paid' => __('Invoice Paid'),
+        ];
+
         return view('manage-sales.sales-rep', $data);
     }
 
@@ -328,17 +342,6 @@ class ManageSalesController extends Controller
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->selectRaw('type, count(*) as total')->groupBy('type')->pluck('total', 'type');
 
-        // Customer-Centric Hub: pencarian cepat + filter tahap.
-        $hubSearch = trim((string) $request->query('q', ''));
-        $hubStage = trim((string) $request->query('stage', ''));
-        $customerHub = $this->customerHubRows($user, $hubSearch, $hubStage);
-        $hubStages = [
-            'po_verified' => __('PO Verified'),
-            'quotation_sent' => __('Quotation Sent'),
-            'project_running' => __('Project Running'),
-            'invoice_paid' => __('Invoice Paid'),
-        ];
-
         return compact(
             'myKpi',
             'dueFollowUps',
@@ -356,10 +359,6 @@ class ManageSalesController extends Controller
             'meetingsPending',
             'dailyReport',
             'kpi',
-            'customerHub',
-            'hubSearch',
-            'hubStage',
-            'hubStages',
         );
     }
 

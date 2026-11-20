@@ -110,12 +110,12 @@ class DashboardAccessTest extends TestCase
             ->assertSee('Total Documents & KB')
             ->assertSee('My Agenda & Tasks Today')
             ->assertSee('Project Status Breakdown')
-            ->assertSee('Company Board & Latest KB')
+            ->assertSee('Newest Customers')
             ->assertSee('1 Recent Activities')
             ->assertSee('Created a project')
             ->assertDontSee('Project Dibuat')
             ->assertDontSee('Company Town Hall & Daily Productivity')
-            ->assertSee('Synology DiskStation DS425+');
+            ->assertSee('PT Nusantara Digital');
     }
 
     public function test_sales_and_inside_sales_with_leads_follow_ups_and_tasks_can_render_dashboard(): void

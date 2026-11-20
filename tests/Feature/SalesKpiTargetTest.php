@@ -42,7 +42,8 @@ class SalesKpiTargetTest extends TestCase
         // Privasi: sales murni tidak melihat papan peringkat tim.
         $response->assertViewHas('salesLeaderboard', fn ($board) => $board->isEmpty());
         $response->assertSee(__('KPI Personal Saya'));
-        $response->assertSee(__('Customer Hub'));
+        // Customer Hub dipindah: hanya untuk drill-down Management.
+        $response->assertDontSee(__('Customer Hub'));
         $response->assertDontSee(__('Peringkat & Target Bulanan Sales'));
     }
 

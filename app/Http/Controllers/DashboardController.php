@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\KnowledgeBaseCategory;
 use App\Enums\ProjectStatus as ProjectStatusEnum;
 use App\Models\Customer;
 use App\Models\FollowUp;
@@ -19,6 +18,7 @@ use App\Models\Survey;
 use App\Models\TechnicalRequest;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Support\CustomerAccess;
 use App\Support\RecentActivityFeed;
 use App\Support\SparklineBuilder;
 use Illuminate\Support\Carbon;
@@ -164,8 +164,8 @@ class DashboardController extends Controller
         // 4. Role-Aware My Agenda & Tasks Today (maks 5 item)
         [$agendaItems, $agendaMeta] = $this->buildRoleAwareAgenda($user, $now);
 
-        // 5. Company Board / Knowledge Base Highlights (3-4 item terbaru)
-        $kbHighlights = $this->buildKnowledgeHighlights($user);
+        // 5. Kartu "Customer Terbaru" (customer non-prospek sesuai batas akses user)
+        $latestCustomers = $this->buildLatestCustomers($user);
 
         // 6. Real-Time 6-Month Historical Sparklines (Flat line jika nilai 0 / datar)
         $docSeries = SparklineBuilder::monthlyCounts(ProjectDocument::query(), 'created_at', 6, $now);
@@ -231,7 +231,7 @@ class DashboardController extends Controller
             'projectStatusBreakdown',
             'agendaItems',
             'agendaMeta',
-            'kbHighlights',
+            'latestCustomers',
             'kpiSparklines',
             'activities',
             'now',
@@ -580,68 +580,25 @@ class DashboardController extends Controller
     }
 
     /**
-     * Ambil 4 item terbaru gabungan dari Knowledge Base (SOP/Company Docs) & Product KB.
+     * Kartu "Customer Terbaru": 4 customer non-prospek terakhir sesuai
+     * batas akses user (Sales tetap hanya melihat customer miliknya).
      *
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, Customer>
      */
-    private function buildKnowledgeHighlights(?User $user): Collection
+    private function buildLatestCustomers(?User $user): Collection
     {
-        $canManageAdmin = $user?->can('manage-admin') ?? false;
+        if (! $user) {
+            return collect();
+        }
 
-        $kbDocs = KnowledgeBaseDocument::with('uploader:id,name')
-            ->where('status', '!=', 'failed')
-            ->latest('updated_at')
+        return CustomerAccess::queryFor($user)
+            ->where('status', '!=', 'lead')
+            ->withCount(['projects' => fn ($query) => $query->whereHas('status', fn ($status) => $status->whereIn('name', [
+                ProjectStatusEnum::Open->value,
+                ProjectStatusEnum::OnProgress->value,
+            ]))])
+            ->latest()
             ->take(4)
-            ->get()
-            ->map(function (KnowledgeBaseDocument $doc) use ($canManageAdmin) {
-                $catLabel = $doc->category instanceof KnowledgeBaseCategory
-                    ? $doc->category->label()
-                    : __('Company KB');
-                $timestamp = $doc->updated_at ?? $doc->created_at;
-
-                return [
-                    'title' => $doc->original_name ?: __('Untitled Document'),
-                    'category' => $catLabel,
-                    'source' => __('Knowledge Base'),
-                    'badge_color' => 'indigo',
-                    'updated_at' => $timestamp,
-                    'date_label' => $timestamp ? $timestamp->setTimezone('Asia/Jakarta')->format('d M Y') : '-',
-                    'sort_ts' => $timestamp?->getTimestamp() ?? 0,
-                    'url' => $canManageAdmin
-                        ? route('knowledge-base.index', ['q' => $doc->original_name])
-                        : route('ai.assistant.index'),
-                ];
-            });
-
-        $products = Product::query()
-            ->where('status', '!=', Product::STATUS_REJECTED)
-            ->latest('updated_at')
-            ->take(4)
-            ->get()
-            ->map(function (Product $product) use ($canManageAdmin) {
-                $catLabel = $product->category
-                    ? Product::saleCategoryLabel((string) $product->category)
-                    : __('Product');
-                $timestamp = $product->updated_at ?? $product->created_at;
-
-                return [
-                    'title' => $product->displayName() ?: ($product->name ?: __('Unnamed Product')),
-                    'category' => ucfirst($catLabel),
-                    'source' => __('Product KB'),
-                    'badge_color' => 'amber',
-                    'updated_at' => $timestamp,
-                    'date_label' => $timestamp ? $timestamp->setTimezone('Asia/Jakarta')->format('d M Y') : '-',
-                    'sort_ts' => $timestamp?->getTimestamp() ?? 0,
-                    'url' => $canManageAdmin
-                        ? route('product-knowledge.show', $product)
-                        : route('ai.assistant.index'),
-                ];
-            });
-
-        return $kbDocs
-            ->concat($products)
-            ->sortByDesc('sort_ts')
-            ->take(4)
-            ->values();
+            ->get();
     }
 }
