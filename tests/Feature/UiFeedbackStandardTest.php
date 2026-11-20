@@ -65,7 +65,7 @@ class UiFeedbackStandardTest extends TestCase
     {
         $css = file_get_contents(resource_path('css/app.css'));
 
-        $this->assertStringContainsString('--menu-hover-bg: #eef2f7;', $css, 'Token hover menu light mode hilang.');
+        $this->assertStringContainsString('--menu-hover-bg: #f1f1f3;', $css, 'Token hover menu light mode hilang.');
         $this->assertStringContainsString('--menu-hover-bg: #2f3a58;', $css, 'Token hover menu dark mode hilang.');
 
         $glide = file_get_contents(resource_path('js/glide-select.jsx'));
