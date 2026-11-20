@@ -211,7 +211,7 @@ class LeadTaskQuotationItemsTest extends TestCase
             ->assertOk()
             ->assertSee('Estimator Items')
             ->assertSee('Switch Estimator')
-            ->assertSee('useEstimatorItem', false);
+            ->assertSee('data-use-estimator-item', false);
     }
 
     public function test_quotation_create_warns_when_quantity_differs_from_estimator(): void

@@ -247,11 +247,11 @@
         @endif
     </div>
 
-    @if($canManageAttachment && $estimatorRequest && $estimatorRequest->items->isNotEmpty())
+    @if($canManageAttachment && auth()->user()->can('manage-inside-sales') && $estimatorRequest && $estimatorRequest->items->isNotEmpty())
         <div class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 dark:border-slate-700/60">
                 <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ __('Estimator Items') }}</h3>
+                    <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-100">{{ __('Estimator Items') }}</h3>
                     <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                         {{ __('Request') }} #{{ $estimatorRequest->id }}
                         &middot; {{ \App\Models\EstimatorRequest::statusLabel($estimatorRequest->status) }}
@@ -279,12 +279,13 @@
                             'target_margin_percent' => (float) $defaultMargin,
                         ];
                     @endphp
-                    <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                    <li data-estimator-item-row class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition-colors duration-200">
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $estimatorItem->description }}</p>
-                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            <p class="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                                 {{ rtrim(rtrim(number_format((float) $estimatorItem->quantity, 2, ',', '.'), '0'), ',') }} {{ $estimatorItem->unit }}
-                                &middot; {{ __('Cost') }}: {{ $netCost !== null ? 'Rp '.number_format((float) $netCost, 0, ',', '.') : __('Price not available yet') }}
+                                &middot; {{ __('Cost') }}:
+                                <span class="font-medium text-slate-800 dark:text-slate-200">{{ $netCost !== null ? 'Rp '.number_format((float) $netCost, 0, ',', '.') : __('Price not available yet') }}</span>
                                 @if($priceLog?->supplier)
                                     &middot; {{ $priceLog->supplier->name }}
                                 @endif
@@ -293,12 +294,16 @@
                                 @endif
                             </p>
                         </div>
-                        @if($canUse)
-                            <x-icon-button type="button" icon="add" label="{{ __('Use') }}" title="{{ __('Use') }}"
-                                           onclick="useEstimatorItem(@js($payload))" />
-                        @else
-                            <span class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Price not available yet') }}</span>
-                        @endif
+                        <div class="flex items-center gap-2">
+                            <span data-estimator-item-badge class="hidden rounded-full bg-accent-500/15 px-2 py-0.5 text-[10px] font-semibold text-accent-700 dark:text-accent-300">{{ __('Loaded to form') }}</span>
+                            @if($canUse)
+                                <x-icon-button type="button" icon="add" label="{{ __('Use') }}" title="{{ __('Use') }}"
+                                               data-use-estimator-item
+                                               data-payload="{{ json_encode($payload, JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}" />
+                            @else
+                                <span class="text-xs font-medium text-amber-600 dark:text-amber-400">{{ __('Price not available yet') }}</span>
+                            @endif
+                        </div>
                     </li>
                 @endforeach
             </ul>
@@ -385,102 +390,114 @@
 
         @if($canManageAttachment)
             <form action="{{ route('lead-tasks.items.store', $task) }}" method="POST" id="item-form"
-                  class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 dark:border-slate-700 md:grid-cols-12">
+                  class="border-t border-slate-100 pt-4 dark:border-slate-700/60">
                 @csrf
-                @if(auth()->user()->can('manage-inside-sales'))
-                <div class="md:col-span-4">
-                    <label for="item-product" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Product') }}</label>
-                    <x-glide-select id="item-product" name="product_id" :options="$productOptions"
-                                    :label="__('Product')" :placeholder="__('Select product (optional)')"
-                                    size="field" searchable :search-placeholder="__('Search product...')" />
-                </div>
-                @endif
-                <div class="md:col-span-2">
-                    <label for="item-scope" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Scope of Supply') }}</label>
-                    <input id="item-scope" type="text" name="scope_of_supply" maxlength="100" placeholder="WAN-RS-..."
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="item-lead" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Estimated Lead Time') }}</label>
-                    <input id="item-lead" type="text" name="lead_time" maxlength="100" value="Ready Stock"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="item-section" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Section') }}</label>
-                    <input id="item-section" type="text" name="section" maxlength="100" value="MATERIAL"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                <div class="md:col-span-1">
-                    <label for="item-quantity" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Qty') }}</label>
-                    <input id="item-quantity" type="number" name="quantity" required min="0.01" step="0.01" value="1"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                <div class="md:col-span-1">
-                    <label for="item-unit" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Unit') }}</label>
-                    <input id="item-unit" type="text" name="unit" value="pcs" maxlength="16"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
+                <div id="item-form-box" class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition-all duration-300 dark:border-slate-700/60 dark:bg-slate-900/40">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-100">{{ __('Add Quotation Item') }}</h4>
 
-                <div class="md:col-span-4">
-                    <label for="item-description" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Description') }}</label>
-                    <input id="item-description" type="text" name="description" required maxlength="255"
-                           placeholder="{{ __('Item / product description') }}"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                    @error('description') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
-                </div>
-                <div class="md:col-span-2">
-                    <label for="item-price" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Selling Price') }}</label>
-                    <x-rupiah-input id="item-price" name="unit_price" :value="old('unit_price', 0)" :aria-label="__('Selling Price')" required />
-                    @error('unit_price') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
-                </div>
-                @if(auth()->user()->can('manage-inside-sales'))
-                <div class="md:col-span-2">
-                    <label for="item-target-margin" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Target Margin (%)') }}</label>
-                    <input id="item-target-margin" type="number" name="target_margin_percent" min="0" max="99.99" step="0.01"
-                           value="{{ $defaultMargin }}"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                    <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ __('Margin is calculated from the selling price before VAT.') }}</p>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="item-cost-display" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Cost Price (Estimator)') }}</label>
-                    <div class="relative">
-                        <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-300" aria-hidden="true">Rp</span>
-                        <input id="item-cost-display" type="text" readonly value="{{ old('unit_cost') !== null && old('unit_cost') !== '' ? number_format((float) old('unit_cost'), 0, ',', '.') : '' }}"
-                               placeholder="{{ __('From estimator') }}"
-                               class="h-10 w-full rounded-xl border-slate-300 bg-slate-100 pl-9 pr-3 text-right text-sm font-semibold tabular-nums text-slate-600 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                        <input id="item-cost" type="hidden" name="unit_cost" value="{{ old('unit_cost') }}">
+                    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-12">
+                        @if(auth()->user()->can('manage-inside-sales'))
+                        <div class="md:col-span-4">
+                            <label for="item-product" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Product') }}</label>
+                            <x-glide-select id="item-product" name="product_id" :options="$productOptions"
+                                            :label="__('Product')" :placeholder="__('Select product (optional)')"
+                                            size="field" searchable :search-placeholder="__('Search product...')" />
+                        </div>
+                        @endif
+                        <div class="{{ auth()->user()->can('manage-inside-sales') ? 'md:col-span-3' : 'md:col-span-4' }}">
+                            <label for="item-scope" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Scope of Supply') }}</label>
+                            <input id="item-scope" type="text" name="scope_of_supply" maxlength="100" placeholder="WAN-RS-..."
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 transition-colors duration-200 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500">
+                        </div>
+                        <div class="{{ auth()->user()->can('manage-inside-sales') ? 'md:col-span-2' : 'md:col-span-4' }}">
+                            <label for="item-lead" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Estimated Lead Time') }}</label>
+                            <input id="item-lead" type="text" name="lead_time" maxlength="100" value="Ready Stock"
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 transition-colors duration-200 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500">
+                        </div>
+                        <div class="{{ auth()->user()->can('manage-inside-sales') ? 'md:col-span-3' : 'md:col-span-4' }}">
+                            <label for="item-section" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Section') }}</label>
+                            <input id="item-section" type="text" name="section" maxlength="100" value="MATERIAL"
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 transition-colors duration-200 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500">
+                        </div>
+
+                        <div class="md:col-span-8">
+                            <label for="item-description" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Description') }} <span class="text-rose-500">*</span></label>
+                            <input id="item-description" type="text" name="description" required maxlength="255"
+                                   placeholder="{{ __('Item / product description') }}"
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 transition-colors duration-200 placeholder:text-slate-400 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500">
+                            @error('description') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="item-quantity" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Qty') }} <span class="text-rose-500">*</span></label>
+                            <input id="item-quantity" type="number" name="quantity" required min="0.01" step="0.01" value="1"
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm tabular-nums text-slate-900 transition-colors duration-200 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="item-unit" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Unit') }}</label>
+                            <input id="item-unit" type="text" name="unit" value="pcs" maxlength="16"
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm text-slate-900 transition-colors duration-200 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                        </div>
+
+                        <div class="{{ auth()->user()->can('manage-inside-sales') ? 'md:col-span-3' : 'md:col-span-6' }}">
+                            <label for="item-price" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Selling Price') }} <span class="text-rose-500">*</span></label>
+                            <x-rupiah-input id="item-price" name="unit_price" :value="old('unit_price', 0)" :aria-label="__('Selling Price')" required />
+                            @error('unit_price') <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">{{ $message }}</p> @enderror
+                        </div>
+                        @if(auth()->user()->can('manage-inside-sales'))
+                        <div class="md:col-span-3">
+                            <label for="item-target-margin" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Target Margin (%)') }}</label>
+                            <input id="item-target-margin" type="number" name="target_margin_percent" min="0" max="99.99" step="0.01"
+                                   value="{{ $defaultMargin }}"
+                                   class="h-10 w-full rounded-xl border-slate-300 text-sm tabular-nums text-slate-900 transition-colors duration-200 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-100">
+                            <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ __('Margin is calculated from the selling price before VAT.') }}</p>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label for="item-cost-display" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Cost Price (Estimator)') }} <span class="text-[10px] font-normal text-slate-400">({{ __('Auto') }})</span></label>
+                            <div class="relative">
+                                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 dark:text-slate-300" aria-hidden="true">Rp</span>
+                                <input id="item-cost-display" type="text" readonly value="{{ old('unit_cost') !== null && old('unit_cost') !== '' ? number_format((float) old('unit_cost'), 0, ',', '.') : '' }}"
+                                       placeholder="{{ __('From estimator') }}"
+                                       class="h-10 w-full cursor-not-allowed rounded-xl border-slate-300 bg-slate-100 pl-9 pr-3 text-right text-sm font-semibold tabular-nums text-slate-600 placeholder:text-slate-400 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-400">
+                                <input id="item-cost" type="hidden" name="unit_cost" value="{{ old('unit_cost') }}">
+                            </div>
+                        </div>
+                        @endif
+                        <div class="{{ auth()->user()->can('manage-inside-sales') ? 'md:col-span-3' : 'md:col-span-6' }}">
+                            <label for="item-discount" class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Disc. (Rp)') }}</label>
+                            <x-rupiah-input id="item-discount" name="discount" :value="old('discount', 0)" :aria-label="__('Discount')" />
+                        </div>
+
+                        @if(auth()->user()->can('manage-inside-sales'))
+                        <div class="md:col-span-12">
+                            <label class="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Price History') }}</label>
+                            <div id="item-cost-history-wrap" class="w-full">
+                                <x-glide-select id="item-cost-history" name="product_price_log_id" :options="[]"
+                                                :label="__('Price History')" :placeholder="__('Select a product first')" size="field" />
+                            </div>
+                        </div>
+                        <div class="md:col-span-12">
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700/50 dark:bg-slate-800/40">
+                                <p id="item-cost-history-info" class="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ __('Pick a price history to see the details.') }}</p>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+
+                    <div class="mt-5 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-700/60 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="min-w-0">
+                            <p id="item-price-info" class="text-xs leading-relaxed text-slate-500 dark:text-slate-400"></p>
+                            <p id="item-margin-preview" class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400"></p>
+                            <p id="item-margin-error" class="mt-1 hidden text-xs font-semibold text-rose-600 dark:text-rose-400"></p>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <x-icon-button type="button" icon="reset" id="item-form-reset" label="{{ __('Reset') }}" title="{{ __('Reset') }}" />
+                            <x-primary-button type="submit" class="min-w-[120px] justify-center">{{ __('Add') }}</x-primary-button>
+                        </div>
                     </div>
                 </div>
-                @endif
-                <div class="md:col-span-2">
-                    <label for="item-discount" class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Disc.') }}</label>
-                    <input id="item-discount" type="number" name="discount" min="0" step="0.01" value="0"
-                           class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
-                </div>
-                @if(auth()->user()->can('manage-inside-sales'))
-                <div class="md:col-span-12">
-                    <label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-300">{{ __('Price History') }}</label>
-                    <div id="item-cost-history-wrap" class="w-full">
-                        <x-glide-select id="item-cost-history" name="product_price_log_id" :options="[]"
-                                        :label="__('Price History')" :placeholder="__('Select a product first')" size="field" />
-                    </div>
-                    <p id="item-cost-history-info" class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400"></p>
-                </div>
-                <div class="md:col-span-12 flex justify-end">
-                    <x-primary-button type="submit">{{ __('Add') }}</x-primary-button>
-                </div>
-                @else
-                <div class="md:col-span-12 flex justify-end">
-                    <x-primary-button type="submit">{{ __('Add') }}</x-primary-button>
-                </div>
-                @endif
             </form>
 
             @if(auth()->user()->can('manage-inside-sales'))
-            <p id="item-price-info" class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400"></p>
-            <p id="item-margin-preview" class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400"></p>
-            <p id="item-margin-error" class="mt-1 hidden text-xs font-semibold text-rose-600 dark:text-rose-400"></p>
-
             <script>
                 (function () {
                     const byId = (id) => document.getElementById(id);
@@ -526,10 +543,15 @@
                             : (targetMargin > 0 && pct !== null && pct < targetMargin
                                 ? 'text-amber-600 dark:text-amber-400'
                                 : 'text-emerald-600 dark:text-emerald-400');
+                        const badgeTone = amount < 0
+                            ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                            : (targetMargin > 0 && pct !== null && pct < targetMargin
+                                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                                : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300');
 
                         target.className = 'mt-1 text-sm font-semibold ' + tone;
-                        target.textContent = labelMargin + ': ' + fmt(amount)
-                            + (pct === null ? '' : ' (' + pct.toFixed(2) + '%)');
+                        target.innerHTML = labelMargin + ': ' + fmt(amount)
+                            + (pct === null ? '' : ' <span class="ml-1 rounded px-1.5 py-0.5 text-xs font-medium ' + badgeTone + '">' + pct.toFixed(2) + '%</span>');
                     }
 
                     function applyTargetMargin() {
@@ -578,7 +600,7 @@
                             byId('item-cost').value = '';
                             byId('item-cost-display').value = '';
                             const info = byId('item-cost-history-info');
-                            if (info) info.textContent = '';
+                            if (info) info.textContent = @js(__('Pick a price history to see the details.'));
                             refreshMargin();
                             return;
                         }
@@ -612,8 +634,19 @@
                         }
                     }
 
-                    window.useEstimatorItem = function (payload) {
+                    window.useEstimatorItem = function (payload, button) {
                         if (!payload || !payload.product_id) return;
+
+                        document.querySelectorAll('[data-estimator-item-row]').forEach(function (row) {
+                            row.classList.remove('ring-1', 'ring-accent-500/40', 'bg-accent-500/10');
+                            row.querySelector('[data-estimator-item-badge]')?.classList.add('hidden');
+                        });
+
+                        const activeRow = button?.closest('[data-estimator-item-row]');
+                        if (activeRow) {
+                            activeRow.classList.add('ring-1', 'ring-accent-500/40', 'bg-accent-500/10');
+                            activeRow.querySelector('[data-estimator-item-badge]')?.classList.remove('hidden');
+                        }
 
                         const productId = String(payload.product_id);
                         if (productMount && window.__glideRemount) {
@@ -637,10 +670,29 @@
                         loadHistory(productId, payload.product_price_log_id).then(function () {
                             applyTargetMargin();
                             refreshMargin();
+
+                            const formBox = byId('item-form-box');
+                            if (formBox) {
+                                formBox.classList.add('ring-2', 'ring-accent-500/50');
+                                setTimeout(function () {
+                                    formBox.classList.remove('ring-2', 'ring-accent-500/50');
+                                }, 1400);
+                                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                                formBox.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+                            }
                             byId('item-price')?.focus();
-                            byId('item-price')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         });
                     };
+
+                    document.querySelectorAll('[data-use-estimator-item]').forEach(function (button) {
+                        button.addEventListener('click', function () {
+                            try {
+                                window.useEstimatorItem(JSON.parse(button.dataset.payload || '{}'), button);
+                            } catch (e) {
+                                // Diamkan: data payload rusak tidak boleh mematikan form.
+                            }
+                        });
+                    });
 
                     product.addEventListener('change', function () {
                         const data = productData[product.value];
@@ -683,6 +735,27 @@
                             }
                             refreshMargin();
                         });
+                    });
+
+                    byId('item-form-reset')?.addEventListener('click', function () {
+                        if (productMount && window.__glideRemount) window.__glideRemount(productMount, productOptions, '');
+                        byId('item-description').value = '';
+                        byId('item-scope').value = '';
+                        byId('item-lead').value = 'Ready Stock';
+                        byId('item-section').value = 'MATERIAL';
+                        byId('item-quantity').value = 1;
+                        byId('item-unit').value = 'pcs';
+                        window.setRupiahValue(byId('item-price'), 0);
+                        byId('item-target-margin').value = @js($defaultMargin);
+                        byId('item-cost').value = '';
+                        byId('item-cost-display').value = '';
+                        window.setRupiahValue(byId('item-discount'), 0);
+                        if (historyMount && window.__glideRemount) window.__glideRemount(historyMount, [], '');
+                        const info = byId('item-cost-history-info');
+                        if (info) info.textContent = @js(__('Pick a price history to see the details.'));
+                        byId('item-margin-error').classList.add('hidden');
+                        byId('item-price-info').textContent = '';
+                        refreshMargin();
                     });
 
                     byId('item-form')?.addEventListener('submit', function (event) {
