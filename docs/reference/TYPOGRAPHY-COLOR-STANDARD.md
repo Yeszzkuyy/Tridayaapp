@@ -48,12 +48,14 @@ Catatan penting:
 | Token | px | Kelas yang disarankan | Weight | Penggunaan |
 |---|---:|---|---|---|
 | `--fs-xs` | 12 | `text-[12px]` selama root 90% | 500 | Label mikro, badge, metadata, catatan tren |
-| `--fs-sm` | 14 | `text-sm` (12,6px saat root 90%) atau `text-[14px]` | 400/500 | Isi tabel, input, tombol, label form |
+| `--fs-sm` | 13 (pilot) | `text-sm` | 400/500 | Isi tabel, input, tombol, label form |
 | `--fs-base` | 16 | `text-base` atau `text-[16px]` | 600 | Sub-judul, header kartu |
 | `--fs-lg` | 18 | `text-lg` atau `text-[18px]` | 600 | Header kartu besar |
 | `--fs-xl` | 20 | `text-xl` atau `text-[20px]` | 600-700 | Judul halaman |
 | `--fs-2xl` | 24 | `text-2xl` atau `text-[24px]` | 700 | Judul utama / salam dashboard |
 | `--fs-kpi` | 24-30 | `text-2xl` sampai `text-3xl` | 800 | Angka KPI |
+
+Catatan pilot 2026-11-20: skala dibuat konservatif agar teks tidak terlalu besar. Target body 14px ditunda; pilot memakai 12, 13, 14, 16, 18, 22, dan 27px.
 
 Aturan:
 
@@ -273,9 +275,15 @@ aturan ini berlaku sejak file tersebut disentuh.
 
 ## 12. Catatan Agent
 
-- Dokumen ini belum mengubah `app.css`, tema aksen, komponen, atau halaman.
-- Nilai target di atas belum diverifikasi di layar. Verifikasi dilakukan saat
-  pekerjaan penerapan dimulai.
+- Pilot 2026-11-20 sudah menyentuh `app.css`, `tailwind.config.js`, komponen
+  label/back button, dan tiga halaman pilot: Dashboard, My Leads, dan Customer
+  Detail.
+- Skala font pilot: 12, 13, 14, 16, 18, 22, dan 27px. Target body 14px ditunda
+  agar teks tidak terlalu besar.
+- Token teks primer/sekunder/tersier sudah memakai nilai target. Token
+  permukaan masih memakai nilai lama melalui alias agar perubahan background
+  belum terjadi.
+- Status warna dan halaman lain belum dimigrasikan; masuk fase berikutnya.
 - Root font-size 90% adalah keputusan lama. Opsi yang dipertahankan: memakai
   ukuran eksplisit 12px sampai ada persetujuan untuk menormalkan root.
 - Tema `ocean` dipetakan sebagai Biru, `purple` sebagai Ungu. Nama tema tidak

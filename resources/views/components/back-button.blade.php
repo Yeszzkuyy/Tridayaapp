@@ -21,7 +21,7 @@
 $aria = $title ?: ($label ?: __('Back'));
 $text = $label ?: __('Back');
 
-$base = 'group/back relative inline-flex h-10 shrink-0 items-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-[var(--card-bg)] pl-3 pr-4 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 hover:border-accent-600 hover:shadow-md hover:shadow-accent-500/20 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2 motion-reduce:transition-none dark:border-slate-700 dark:text-slate-200 dark:hover:border-accent-500 dark:hover:shadow-accent-500/20';
+$base = 'group/back relative inline-flex h-10 shrink-0 items-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-[var(--card-bg)] pl-3 pr-4 text-sm font-semibold text-content-secondary shadow-sm transition-all duration-300 hover:border-accent-600 hover:shadow-md hover:shadow-accent-500/20 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2 motion-reduce:transition-none dark:border-slate-700 dark:hover:border-accent-500 dark:hover:shadow-accent-500/20';
 
 $panel = 'pointer-events-none absolute inset-0 -translate-x-full bg-accent-600 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/back:translate-x-0 motion-reduce:transition-none';
 

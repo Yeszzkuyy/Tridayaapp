@@ -664,8 +664,9 @@ file yang sedang disentuh.
 4. Label form dan metadata memakai weight **500**. Body 400/500. Judul kartu
    600. Angka KPI weight **800**. Angka uang dan metrik wajib
    `tabular-nums`.
-5. Skala yang dipakai: 12, 14, 16, 18, 20, 24, dan 24-30 untuk KPI. Tidak ada
-   ukuran lain tanpa persetujuan.
+5. Skala pilot yang dipakai: 12, 13, 14, 16, 18, 22, dan 27px untuk KPI.
+   Target body 14px ditunda agar teks tidak terlalu besar. Tidak ada ukuran
+   lain tanpa persetujuan.
 
 ### B. Warna Teks
 
