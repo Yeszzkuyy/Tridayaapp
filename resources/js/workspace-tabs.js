@@ -380,7 +380,6 @@ export function registerWorkspaceStore(Alpine) {
             this.activeId = tab.id;
             this.syncPanes();
             this.updateActiveUrl(false);
-            document.title = `${this.fullTitle(tab)} — ${appName}`;
             this.syncSidebar(tab.path || normalizePath(tab.url));
             this.persist();
         },
@@ -400,7 +399,6 @@ export function registerWorkspaceStore(Alpine) {
             this.activeId = tabId;
             this.syncPanes();
             this.updateActiveUrl(options.pushState !== false);
-            document.title = `${this.fullTitle(tab)} — ${appName}`;
             this.syncSidebar(tab.path || normalizePath(tab.url));
             this.persist();
             this.scrollActiveIntoView(tab);
@@ -437,7 +435,6 @@ export function registerWorkspaceStore(Alpine) {
             this.collapseForSplit();
             this.syncPanes();
             this.updateActiveUrl(false);
-            document.title = `${this.fullTitle(this.leftTab())} — ${appName}`;
             this.persist();
             this.scrollActiveIntoView(this.leftTab());
             this.scheduleOverflowHints();
@@ -490,7 +487,6 @@ export function registerWorkspaceStore(Alpine) {
             this.syncPanes();
             this.updateActiveUrl(true);
             const focused = this.paneTab(target);
-            document.title = `${this.fullTitle(focused)} — ${appName}`;
             this.syncSidebar(focused?.path || '/');
             this.persist();
             this.scrollActiveIntoView(focused);
@@ -510,7 +506,6 @@ export function registerWorkspaceStore(Alpine) {
             this.updateActiveUrl(false);
             const tab = this.tabs.find((item) => item.id === this.activeId);
             if (tab) {
-                document.title = `${this.fullTitle(tab)} — ${appName}`;
                 this.syncSidebar(tab.path || normalizePath(tab.url));
             }
             this.persist();
@@ -526,7 +521,6 @@ export function registerWorkspaceStore(Alpine) {
             this.updateActiveUrl(false);
             const tab = this.tabs.find((item) => item.id === this.activeId);
             if (tab) {
-                document.title = `${this.fullTitle(tab)} — ${appName}`;
                 this.syncSidebar(tab.path || normalizePath(tab.url));
             }
             this.persist();
@@ -982,7 +976,6 @@ export function registerWorkspaceStore(Alpine) {
                 } catch (e) {}
             }
 
-            document.title = `${this.fullTitle(tab)} — ${appName}`;
             this.syncSidebar(tab.path || normalizePath(tab.url));
             this.persist();
             this.scrollActiveIntoView(tab);
@@ -1394,7 +1387,6 @@ export function registerWorkspaceStore(Alpine) {
                                 );
                             }
                         } catch (e) {}
-                        document.title = `${this.fullTitle(tab)} — ${appName}`;
                         this.syncSidebar(tab.path);
                     }
                     this.persist();
