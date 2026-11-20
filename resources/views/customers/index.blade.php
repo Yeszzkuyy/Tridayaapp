@@ -3,10 +3,10 @@
         {{-- Open header: judul + deskripsi singkat + CTA utama --}}
         <div class="flex flex-col gap-4 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <div class="min-w-0">
-                <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+                <h1 class="text-2xl font-bold tracking-tight text-content-primary sm:text-3xl">
                     {{ __('Customer List') }}
                 </h1>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p class="mt-1 text-sm text-content-secondary">
                     {{ __('Manage all Tridaya App customer data.') }}
                 </p>
             </div>
@@ -29,7 +29,7 @@
                     <div class="relative min-w-0 flex-1 sm:max-w-xl">
                         <label for="customer-search" class="sr-only">{{ __('Search customer') }}</label>
                         <div class="relative">
-                            <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary" />
                             <input id="customer-search"
                                    type="search"
                                    name="search"
@@ -69,7 +69,7 @@
                         {{-- Status pencarian diposisikan absolut agar tinggi baris
                              filter tetap 40px dan sejajar dengan dropdown/tombol. --}}
                         <div class="pointer-events-none absolute left-1 top-full mt-1 text-xs" aria-live="polite">
-                            <span x-cloak x-show="loading" class="text-slate-400">{{ __('Searching customers...') }}</span>
+                            <span x-cloak x-show="loading" class="text-content-tertiary">{{ __('Searching customers...') }}</span>
                             <span x-cloak x-show="error" class="text-red-500">{{ __('Search failed. Try again.') }}</span>
                         </div>
                     </div>
