@@ -26,5 +26,5 @@ Tidak termasuk: perubahan data, route, filter, dan logika bisnis.
 - [x] Tidak ada teks di bawah 12px pada file sistem tersebut.
 - [x] Warna teks netral memakai token.
 - [x] Test sistem lulus.
-- [ ] Build dari main dan pengecekan browser.
+- [x] Build dari main dan pengecekan browser.
 - [ ] User menyatakan hasilnya sesuai.
