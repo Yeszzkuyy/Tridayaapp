@@ -206,14 +206,16 @@ class TechnicianScheduleCalendarTest extends TestCase
         $lead = $this->userWithRole('lead-technician');
 
         // Jadwal lokal yang BER-google_event_id (akan dihapus oleh Google) + yang lokal murni.
+        // Tanggal dibuat relatif terhadap hari ini agar tetap berada di rentang
+        // sinkronisasi (30 hari ke belakang sampai 2 bulan ke depan).
         $fromGoogle = TechnicianSchedule::create([
-            'user_id' => $lead->id, 'title' => 'From Google', 'start_at' => '2026-10-20 09:00:00',
-            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'user_id' => $lead->id, 'title' => 'From Google', 'start_at' => now()->addDay()->setTime(9, 0),
+            'end_at' => now()->addDay()->setTime(11, 0), 'status' => 'scheduled',
             'google_event_id' => 'gcal-123', 'google_sync_status' => 'synced',
         ]);
         $localOnly = TechnicianSchedule::create([
-            'user_id' => $lead->id, 'title' => 'Local only', 'start_at' => '2026-10-20 09:00:00',
-            'end_at' => '2026-10-20 11:00:00', 'status' => 'scheduled',
+            'user_id' => $lead->id, 'title' => 'Local only', 'start_at' => now()->addDay()->setTime(9, 0),
+            'end_at' => now()->addDay()->setTime(11, 0), 'status' => 'scheduled',
         ]);
 
         // Google sekarang TIDAK punya gcal-123 (dihapus di Google) → read mengembalikan [].
