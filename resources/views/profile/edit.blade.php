@@ -19,15 +19,18 @@
             $coverUrl = $user->cover ? asset('storage/' . $user->cover) : null;
         @endphp
 
-        {{-- Backdrop aurora + stage glass: blob warna di belakang panel frosted --}}
-        <div class="relative overflow-hidden">
-            <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
+        {{-- Latar gradasi lembut: satu kanvas dengan background halaman.
+             Bagian bawah gradasi memudar (mask) + bayangan, jadi tidak
+             berhenti mendadak seperti kotak. --}}
+        <div class="relative overflow-hidden rounded-3xl p-4 shadow-[0_28px_60px_-32px_rgb(var(--accent-500)_/_0.45)] sm:p-6 lg:p-8 dark:shadow-[0_28px_60px_-32px_rgb(0_0_0_/_0.55)]">
+            <div aria-hidden="true"
+                 class="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl bg-gradient-to-br from-accent-100/80 via-sky-50/70 to-indigo-100/70 [mask-image:linear-gradient(to_bottom,black_72%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,black_72%,transparent)] dark:from-indigo-950/40 dark:via-slate-900 dark:to-accent-950/30">
                 <div class="absolute -top-24 -right-20 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl"></div>
                 <div class="absolute top-1/4 -left-24 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl"></div>
                 <div class="absolute -bottom-24 right-1/3 h-72 w-72 rounded-full bg-cyan-400/15 blur-3xl"></div>
             </div>
 
-            <div class="relative grid grid-cols-1 gap-6 rounded-3xl border border-white/40 bg-white/40 p-6 shadow-2xl backdrop-blur-xl sm:p-10 lg:grid-cols-3 dark:border-white/10 dark:bg-slate-800/40 dark:shadow-black/30">
+            <div class="relative grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {{-- KIRI: kartu profil glassmorphism + cover/banner --}}
                 <section class="flex flex-col self-start overflow-hidden rounded-2xl border border-white/40 bg-white/60 text-center shadow-lg backdrop-blur-xl lg:min-h-[32rem] dark:border-white/10 dark:bg-slate-800/50 dark:shadow-black/20">
                     {{-- Banner/cover --}}
