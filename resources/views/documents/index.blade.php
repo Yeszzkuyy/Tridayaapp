@@ -48,8 +48,8 @@
 
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Documents') }}</h1>
-                <p class="mt-1 text-slate-500 dark:text-slate-400">
+                <h1 class="text-3xl font-bold text-content-primary dark:text-content-primary">{{ __('Documents') }}</h1>
+                <p class="mt-1 text-content-secondary dark:text-content-tertiary">
                     {{ __('Search and manage customer, project, and transaction documents in one place.') }}
                 </p>
             </div>
@@ -65,13 +65,13 @@
             'hasFilters' => $hasFilters,
         ])
 
-        <p class="text-xs text-slate-400 dark:text-slate-500">
+        <p class="text-xs text-content-tertiary dark:text-content-tertiary">
             {{ __('Search uses document metadata (file name, document number, customer, project) — not the content inside PDF files.') }}
         </p>
 
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-700">
-                <p class="text-sm text-slate-500 dark:text-slate-400">
+                <p class="text-sm text-content-secondary dark:text-content-tertiary">
                     {{ trans_choice(':count document found|:count documents found', $documents->total(), ['count' => $documents->total()]) }}
                 </p>
                 @if($hasFilters)

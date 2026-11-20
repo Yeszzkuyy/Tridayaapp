@@ -97,11 +97,11 @@
                 @if($user?->avatar_url)
                     <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="h-20 w-20 rounded-full border-2 border-slate-700 object-cover shadow-md mx-auto">
                 @else
-                    <div class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-800 text-2xl font-bold text-slate-200 border-2 border-slate-700 mx-auto">
+                    <div class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-800 text-2xl font-bold text-content-tertiary border-2 border-slate-700 mx-auto">
                         {{ strtoupper(substr($user?->name ?? 'U', 0, 1)) }}
                     </div>
                 @endif
-                <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-slate-950 shadow-md ring-2 ring-slate-900" title="{{ __('Pending Permissions') }}">
+                <span class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-content-primary shadow-md ring-2 ring-slate-900" title="{{ __('Pending Permissions') }}">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
                     </svg>
@@ -111,7 +111,7 @@
             <h1 class="text-xl font-bold text-white mb-1 tracking-tight">
                 {{ $user?->name ?? __('New User') }}
             </h1>
-            <p class="text-xs text-slate-400 font-normal mb-5">
+            <p class="text-xs text-content-tertiary font-normal mb-5">
                 {{ $user?->email }}
             </p>
 
@@ -122,7 +122,7 @@
             </div>
 
             {{-- To-the-point explanation (English) --}}
-            <p class="text-sm text-slate-300 leading-relaxed max-w-sm mx-auto mb-7 font-normal">
+            <p class="text-sm text-content-tertiary leading-relaxed max-w-sm mx-auto mb-7 font-normal">
                 {{ __('Your account is connected. To start accessing the system, your account requires permissions and is currently being processed by an administrator.') }}
             </p>
 
@@ -139,7 +139,7 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700/60 bg-transparent px-5 py-2.5 text-xs font-medium text-slate-400 transition hover:bg-slate-800/60 hover:text-slate-200">
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700/60 bg-transparent px-5 py-2.5 text-xs font-medium text-content-tertiary transition hover:bg-slate-800/60 hover:text-content-tertiary">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
