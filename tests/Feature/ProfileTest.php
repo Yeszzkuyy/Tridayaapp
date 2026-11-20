@@ -21,6 +21,43 @@ class ProfileTest extends TestCase
         $response->assertOk();
     }
 
+    /**
+     * Menu foto kanan atas harus memuat halaman penuh, bukan wire:navigate.
+     * Navigasi SPA tidak membangun ulang iframe tab workspace sehingga area
+     * isi halaman Profile tampil kosong.
+     */
+    public function test_header_profile_shortcut_uses_full_page_navigation(): void
+    {
+        $user = $this->makeUserWithRole();
+
+        $response = $this
+            ->actingAs($user)
+            ->get('/profile');
+
+        $response->assertOk();
+
+        // Hanya link Profile di header (menu foto kanan atas) yang diuji;
+        // link sidebar boleh tetap wire:navigate karena ditangani tab workspace.
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($response->getContent());
+        libxml_clear_errors();
+
+        $nodes = (new \DOMXPath($dom))->query('//header//a[@href="'.route('profile.edit').'"]');
+
+        $this->assertCount(1, $nodes);
+
+        $attributes = [];
+        foreach ($nodes->item(0)->attributes as $attribute) {
+            $attributes[] = $attribute->nodeName;
+        }
+
+        $this->assertEmpty(
+            array_filter($attributes, fn ($name) => str_contains($name, 'wire:navigate')),
+            'Link Profile di header tidak boleh memakai navigasi SPA (area isi workspace bisa kosong).',
+        );
+    }
+
     public function test_profile_information_can_be_updated(): void
     {
         $user = $this->makeUserWithRole();

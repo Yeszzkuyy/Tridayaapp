@@ -129,6 +129,22 @@ export function isAuthPath(path) {
     return AUTH_PATHS.some((base) => p === base || p.startsWith(base + '/'));
 }
 
+/**
+ * Beri tahu shell bahwa tab aktif berganti. Header memakainya untuk menutup
+ * menu akun yang sedang terbuka: klik menu sidebar dihentikan oleh interceptor
+ * workspace (capture) sebelum sempat memicu click-away Alpine, dan klik di
+ * area isi halaman terjadi di dalam iframe sehingga tak terlihat shell.
+ */
+export function broadcastTabChanged(tab) {
+    try {
+        window.dispatchEvent(
+            new CustomEvent('workspace-tab-changed', {
+                detail: { id: tab?.id || null, path: tab?.path || null },
+            }),
+        );
+    } catch (e) {}
+}
+
 function labelFromLink(link) {
     if (!link) return '';
     const spans = [...link.querySelectorAll('span:not([aria-hidden])')].filter(
@@ -398,6 +414,7 @@ export function registerWorkspaceStore(Alpine) {
             this.updateActiveUrl(false);
             this.syncSidebar(tab.path || normalizePath(tab.url));
             this.persist();
+            broadcastTabChanged(tab);
         },
 
         assignPane(pane, tabId, options = {}) {
@@ -419,6 +436,7 @@ export function registerWorkspaceStore(Alpine) {
             this.persist();
             this.scrollActiveIntoView(tab);
             this.scheduleOverflowHints();
+            broadcastTabChanged(tab);
         },
 
         openSplit(tabId = null) {
@@ -1007,6 +1025,7 @@ export function registerWorkspaceStore(Alpine) {
             this.persist();
             this.scrollActiveIntoView(tab);
             this.scheduleOverflowHints();
+            broadcastTabChanged(tab);
         },
 
         openByUrl(rawUrl, meta = {}, options = {}) {

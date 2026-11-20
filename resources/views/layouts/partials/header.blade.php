@@ -68,7 +68,13 @@
         </div>
 
         {{-- Dropdown Avatar --}}
-        <div class="relative" x-data="{ open: false }">
+        {{-- Tutup menu saat ganti tab/menu (sinyal dari workspace-tabs.js),
+             saat fokus pindah ke area isi halaman (iframe), atau Esc. --}}
+        <div class="relative"
+             x-data="{ open: false }"
+             @workspace-tab-changed.window="open = false"
+             @blur.window="open = false"
+             @keydown.escape.window="open = false">
             <button type="button"
                     @click="open = !open"
                     aria-label="{{ __('Account menu') }}"
@@ -89,7 +95,10 @@
                  x-transition:leave-end="opacity-0 scale-95"
                  class="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-slate-200 dark:border-zinc-800 py-2 z-50 origin-top-right">
 
-                <a wire:navigate.hover href="{{ route('profile.edit') }}"
+                {{-- Profile SENGAJA full reload: halaman ini tampil di panel tab
+                     workspace, dan wire:navigate (SPA) mengosongkan area isi
+                     karena iframe tab tidak dibangun ulang. --}}
+                <a href="{{ route('profile.edit') }}"
                    class="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
