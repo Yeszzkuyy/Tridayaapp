@@ -154,6 +154,7 @@ class SalesService
             }
 
             $followUp = FollowUp::create($data);
+            $this->acknowledgeLead($followUp->lead_id);
 
             if (! empty($followUp->lead_id)) {
                 LeadActivity::create([
@@ -238,10 +239,12 @@ class SalesService
                     'reminder_sent_at' => null,
                 ])->save();
 
+                $this->acknowledgeLead($lead->id);
+
                 return $existing->refresh();
             }
 
-            return FollowUp::create([
+            $followUp = FollowUp::create([
                 'customer_id' => $lead->customer_id,
                 'lead_id' => $lead->id,
                 'description' => '',
@@ -252,7 +255,27 @@ class SalesService
                 'source' => 'system',
                 'created_by' => $ownerId,
             ]);
+
+            $this->acknowledgeLead($lead->id);
+
+            return $followUp;
         });
+    }
+
+    /**
+     * Sales mencatat aktivitas pertama (follow up, catatan, atau jadwal
+     * berikutnya) berarti lead sudah dipegang. Isi acknowledged_at sekali saja
+     * supaya badge "New" hilang tanpa menimpa waktu pengakuan pertama.
+     */
+    private function acknowledgeLead(?int $leadId): void
+    {
+        if (! $leadId) {
+            return;
+        }
+
+        Lead::whereKey($leadId)
+            ->whereNull('acknowledged_at')
+            ->update(['acknowledged_at' => now()]);
     }
 
     private function scheduleNextFollowUp(FollowUp $completed, Carbon $date, ?string $time = null, ?int $ownerId = null): FollowUp

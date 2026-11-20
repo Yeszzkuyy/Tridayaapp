@@ -8,6 +8,17 @@
             <input type="hidden" name="won_month" value="{{ request('won_month') }}">
         @endif
 
+        @if(!empty($supervisor) && $salesUsers->isNotEmpty())
+            <div class="grid grid-cols-1 gap-3 sm:max-w-xs">
+                <div>
+                    <label class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('Sales') }}</label>
+                    <x-glide-select name="sales_id" class="mt-1" :label="__('Sales')"
+                        :options="$salesUsers->map(fn ($s) => ['value' => (string) $s->id, 'label' => $s->name])->all()"
+                        :value="(string) request('sales_id', '')" :empty-label="__('All Sales')" autosubmit />
+                </div>
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
                 <label for="my-leads-search" class="text-sm font-medium text-slate-500 dark:text-slate-300">{{ __('Search customer') }}</label>
@@ -81,7 +92,7 @@
 
             <div class="flex items-center gap-2">
                 <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
-                @if(request()->anyFilled(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort']))
+                @if(request()->anyFilled(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort', 'sales_id']))
                     <x-icon-button as="a" icon="reset" href="{{ route('sales.my-leads') }}" title="{{ __('Reset') }}" />
                 @endif
             </div>

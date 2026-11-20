@@ -42,7 +42,7 @@
                    class="w-full cursor-not-allowed rounded-xl border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
             <input type="hidden" name="customer_id" value="{{ $leadContext->customer_id }}">
             <input type="hidden" name="lead_id" value="{{ $leadContext->id }}">
-            <p class="mt-1 text-xs text-slate-400">{{ __('Customer and lead are locked because this follow up was opened from My Leads.') }}</p>
+            <p class="mt-1 text-xs text-slate-400">{{ __('Customer and lead are locked so this follow up stays tied to the selected record.') }}</p>
         </div>
 
         @include('sales.follow-ups._lead-summary', ['summary' => $leadSummary ?? []])

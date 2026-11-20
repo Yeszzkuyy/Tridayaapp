@@ -439,6 +439,77 @@ class LeadPipelineTest extends TestCase
         $this->assertSame('warm', $lead->fresh()->status);
     }
 
+    public function test_moving_lead_to_warm_promotes_customer_automatically(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)
+            ->patch(route('leads.update-status', $lead), ['status' => 'warm'])
+            ->assertNoContent();
+
+        $this->assertSame('warm', $lead->fresh()->status);
+        $this->assertSame('deal', $lead->customer->fresh()->status);
+        $this->assertTrue(
+            LeadActivity::where('lead_id', $lead->id)
+                ->where('action', 'customer_promoted_auto')
+                ->exists()
+        );
+    }
+
+    public function test_drag_to_hot_promotes_customer_automatically(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [['lead_id' => $lead->id, 'status' => 'hot']],
+        ])->assertOk();
+
+        $this->assertSame('hot', $lead->fresh()->status);
+        $this->assertSame('deal', $lead->customer->fresh()->status);
+    }
+
+    public function test_drag_to_lost_keeps_customer_as_lead(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)->patchJson(route('leads.batch-status'), [
+            'changes' => [[
+                'lead_id' => $lead->id,
+                'status' => 'lost',
+                'lost_reason' => 'competitor',
+                'lost_note' => 'Customer chose a cheaper vendor',
+            ]],
+        ])->assertOk();
+
+        $this->assertSame('lost', $lead->fresh()->status);
+        $this->assertSame('lead', $lead->customer->fresh()->status);
+    }
+
+    public function test_auto_promote_activity_recorded_only_once(): void
+    {
+        $user = $this->userWithRole('sales');
+        $lead = $this->makeLead(['assigned_to' => $user->id]);
+        $this->addDar($lead);
+
+        $this->actingAs($user)
+            ->patch(route('leads.update-status', $lead), ['status' => 'warm'])
+            ->assertNoContent();
+        $this->actingAs($user)
+            ->patch(route('leads.update-status', $lead), ['status' => 'hot'])
+            ->assertNoContent();
+
+        $this->assertSame(
+            1,
+            LeadActivity::where('lead_id', $lead->id)->where('action', 'customer_promoted_auto')->count()
+        );
+    }
+
     public function test_cannot_mark_lost_without_reason_and_note(): void
     {
         $user = $this->userWithRole('sales');

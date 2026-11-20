@@ -17,34 +17,34 @@
                 <span class="text-sm font-bold">?</span>
                 <span class="sr-only">{{ __('Show guide') }}</span>
             </button>
-            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort'])) }}" title="{{ __('Export CSV') }}" />
+            <x-icon-button as="a" icon="import" href="{{ route('sales.my-leads.export', request()->only(['search', 'company', 'pic', 'project', 'status', 'last_activity', 'next_follow_up', 'overdue', 'touched', 'active', 'won_month', 'sort', 'sales_id'])) }}" title="{{ __('Export CSV') }}" />
             <x-back-button :href="route('sales.dashboard')" :label="__('Back')" />
         </div>
     </div>
 
     @php($newLeadCount = $leads->getCollection()->whereNull('acknowledged_at')->count())
     <div x-show="tips" x-cloak
-         class="mb-4 rounded-2xl border border-accent-200 bg-accent-50/60 p-4 dark:border-accent-700 dark:bg-accent-900/20">
+         class="mb-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/60">
         <div class="flex items-start gap-3">
-            <x-icon name="bolt" class="h-5 w-5 shrink-0 text-accent-600 dark:text-accent-400" />
+            <x-icon name="bolt" class="h-5 w-5 shrink-0 text-slate-400 dark:text-slate-400" />
             <div class="min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-200">
                 <p class="font-semibold">{{ __('Quick guide: 3 steps to follow up') }}</p>
                 <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div class="rounded-xl border border-accent-200/70 bg-[var(--card-bg)] px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
-                        <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">1</span>
+                    <div class="rounded-xl border border-slate-200 bg-[var(--card-bg)] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">1</span>
                         <p class="mt-0.5">{{ __('Pick a prospect from the table.') }}</p>
                     </div>
-                    <div class="rounded-xl border border-accent-200/70 bg-[var(--card-bg)] px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
-                        <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">2</span>
+                    <div class="rounded-xl border border-slate-200 bg-[var(--card-bg)] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">2</span>
                         <p class="mt-0.5">{{ __('Contact the PIC or write the latest note.') }}</p>
                     </div>
-                    <div class="rounded-xl border border-accent-200/70 bg-[var(--card-bg)] px-3 py-2 dark:border-accent-700/60 dark:bg-slate-800/60">
-                        <span class="text-xs font-semibold text-accent-700 dark:text-accent-300">3</span>
+                    <div class="rounded-xl border border-slate-200 bg-[var(--card-bg)] px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">3</span>
                         <p class="mt-0.5">{{ __('Set the next follow up and update the stage.') }}</p>
                     </div>
                 </div>
                 @if($newLeadCount > 0)
-                    <p class="mt-2 font-medium text-accent-700 dark:text-accent-300">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
+                    <p class="mt-2 font-medium text-slate-600 dark:text-slate-300">{{ __('You have :count new lead(s) from Management. Record the first follow up today.', ['count' => $newLeadCount]) }}</p>
                 @endif
             </div>
             <button type="button" @click="localStorage.setItem('sales_followup_tips', 'off'); tips = false"
@@ -74,8 +74,6 @@
         @endif
     </div>
     </div>
-
-    @include('sales.partials.contact-tracking')
 
     <script>
         window.myLeadsRow = function (config) {

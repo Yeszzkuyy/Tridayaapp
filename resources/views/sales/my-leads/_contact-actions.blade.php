@@ -1,43 +1,26 @@
-{{-- Aksi cepat kontak + buka lead/follow up. Klik WA/Email/Call hanya
-     mencatat "mulai menghubungi", bukan bukti pesan terkirim. --}}
+{{-- Aksi baris My Leads: buka detail lead atau catat follow up (+).
+     Tombol kontak cepat (WhatsApp/Email/Telepon) tidak tampil di halaman ini;
+     nomor & email tetap terbaca di kolom Contact. --}}
 @php
-    $followUpId = $followUp->id ?? null;
-    $contactUrl = $contact['contactUrl'] ?? null;
+    $first = $first ?? false;
+    $followUpUrl = route('sales.follow-ups.create', [
+        'customer_id' => $lead->customer_id,
+        'lead_id' => $lead->id,
+        'return' => 'my-leads',
+    ]);
 @endphp
 
-<div class="flex flex-wrap items-center justify-end gap-1.5">
-    @if(!empty($contact['whatsapp']))
-        <x-icon-button as="a" icon="whatsapp" href="{{ $contact['whatsapp'] }}" target="_blank" rel="noopener"
-                       title="{{ __('WhatsApp') }}"
-                       data-contact-channel="whatsapp"
-                       data-contact-url="{{ $contactUrl }}"
-                       data-contact-follow-up="{{ $followUpId }}" />
-    @endif
-
-    @if(!empty($contact['email']))
-        <x-icon-button as="a" icon="mail"
-                       href="mailto:{{ $contact['email'] }}?subject={{ rawurlencode(__('Follow up')) }}"
-                       title="{{ __('Email') }}"
-                       data-contact-channel="email"
-                       data-contact-url="{{ $contactUrl }}"
-                       data-contact-follow-up="{{ $followUpId }}" />
-    @endif
-
-    @if(!empty($contact['phone']))
-        <x-icon-button as="a" icon="phone" href="tel:{{ preg_replace('/[^0-9+]/', '', $contact['phone']) }}"
-                       title="{{ __('Call') }}"
-                       data-contact-channel="call"
-                       data-contact-url="{{ $contactUrl }}"
-                       data-contact-follow-up="{{ $followUpId }}" />
-    @endif
-
+<div class="flex items-center justify-end gap-1">
     <x-icon-button as="a" icon="view" href="{{ route('leads.show', $lead) }}" title="{{ __('View Lead') }}" />
 
+    {{-- target=_top: formulir dibuka sebagai halaman penuh. Tanpa itu, isi tab
+         langsung memantul ke daftar Follow Up karena alamatnya satu keluarga
+         menu Follow Up. --}}
     @if($first)
         <span data-tour="followup">
-            <x-icon-button as="a" icon="add" :href="route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id, 'return' => 'my-leads'])" title="{{ __('Follow Up') }}" />
+            <x-icon-button as="a" icon="add" target="_top" :href="$followUpUrl" title="{{ __('Follow Up') }}" />
         </span>
     @else
-        <x-icon-button as="a" icon="add" :href="route('sales.follow-ups.create', ['customer_id' => $lead->customer_id, 'lead_id' => $lead->id, 'return' => 'my-leads'])" title="{{ __('Follow Up') }}" />
+        <x-icon-button as="a" icon="add" target="_top" :href="$followUpUrl" title="{{ __('Follow Up') }}" />
     @endif
 </div>

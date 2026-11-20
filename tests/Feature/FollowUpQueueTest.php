@@ -320,6 +320,32 @@ class FollowUpQueueTest extends TestCase
         $this->assertSame($visit, $created->follow_up_date->toDateString());
     }
 
+    public function test_row_action_column_stays_compact(): void
+    {
+        $sales = $this->sales();
+        $lead = $this->lead($sales);
+        $this->followUp($sales, $lead, ['description' => 'Antrean ringkas']);
+
+        $html = $this->actingAs($sales)
+            ->getJson(route('sales.follow-ups.index', ['tab' => 'all']))
+            ->assertOk()
+            ->json('html');
+
+        // Baris hanya memuat satu kanal kontak; Email/Telepon pindah ke menu.
+        $this->assertStringContainsString('data-contact-channel="whatsapp"', $html);
+        $this->assertStringNotContainsString('title="Email"', $html);
+        $this->assertStringNotContainsString('title="Call"', $html);
+
+        // Tombol Complete tidak lagi berdiri sendiri di baris.
+        $this->assertStringNotContainsString('title="Complete"', $html);
+
+        // Aksi lain tetap tersedia di menu tiga titik.
+        $this->assertStringContainsString('Complete follow up', $html);
+        $this->assertStringContainsString('View follow up detail', $html);
+        $this->assertStringContainsString('Edit follow up', $html);
+        $this->assertStringContainsString('Delete follow up', $html);
+    }
+
     public function test_sales_per_pt_only_sees_own_queue(): void
     {
         $mine = $this->sales('sales-mgk');

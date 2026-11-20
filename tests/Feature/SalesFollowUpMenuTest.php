@@ -93,4 +93,19 @@ class SalesFollowUpMenuTest extends TestCase
         // DAR tidak lagi jadi menu terpisah: riwayat aktivitas ada di My Leads.
         $this->assertStringNotContainsString('href="'.route('sales.dar.index').'"', $html);
     }
+
+    public function test_add_follow_up_button_opens_full_page_form(): void
+    {
+        $sales = $this->loginAs('sales');
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
+            ->assertOk()->getContent();
+
+        // Tombol utama keluar dari tab workspace: klik selalu pindah halaman.
+        $expected = route('sales.follow-ups.create');
+        $this->assertMatchesRegularExpression(
+            '/<a href="'.preg_quote($expected, '/').'"[^>]*target="_top"/',
+            $html
+        );
+    }
 }

@@ -83,7 +83,6 @@ class ManageSalesController extends Controller
             'solusi' => 'nullable|string|max:2000',
             'progress_notes' => 'nullable|string|max:2000',
             'notes' => 'nullable|string|max:5000',
-            'pt_group' => 'nullable|in:NTI,MGK,TPS,WANI',
             'assigned_to' => 'nullable|exists:users,id',
         ]);
 
@@ -620,13 +619,26 @@ class ManageSalesController extends Controller
 
     public function myLeads(Request $request)
     {
+        $supervisor = $this->canSupervise($request->user());
+
         $leads = $this->myLeadsQuery($request)
             ->paginate(15)
             ->withQueryString();
 
         $statuses = LeadController::STATUSES;
+        $salesUsers = $supervisor ? $this->salesRepOptions() : collect();
 
-        return view('sales.my-leads', compact('leads', 'statuses'));
+        return view('sales.my-leads', compact('leads', 'statuses', 'supervisor', 'salesUsers'));
+    }
+
+    /**
+     * Pilihan Sales untuk filter My Leads milik Management/CEO/Super Admin.
+     */
+    private function salesRepOptions()
+    {
+        return User::whereHas('roles', function ($q) {
+            $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%');
+        })->orderBy('name')->get(['id', 'name']);
     }
 
     public function exportMyLeads(Request $request)
@@ -670,6 +682,10 @@ class ManageSalesController extends Controller
 
     private function myLeadsQuery(Request $request)
     {
+        $user = $request->user() ?? auth()->user();
+        $supervisor = $user && $this->canSupervise($user);
+        $supervisorSalesId = $supervisor ? $request->integer('sales_id') : 0;
+
         $activeQueue = fn ($q) => $q->whereNull('completed_at')
             ->where(fn ($s) => $s->whereNull('status')->orWhere('status', '!=', 'completed'))
             ->where(fn ($t) => $t->whereNull('type')->orWhere('type', '!=', 'meeting'));
@@ -682,7 +698,11 @@ class ManageSalesController extends Controller
                     ->orWhereNotNull('outcome'))])
             ->withExists(['followUps as has_done_fu' => fn ($q) => $q->whereNotNull('completed_at')])
             ->withExists(['proposals as has_accepted_proposal' => fn ($q) => $q->where('status', 'accepted')])
-            ->where('assigned_to', auth()->id())
+            // Management/CEO/Super Admin melihat lead semua Sales; Sales biasa
+            // tetap terkunci ke lead miliknya sendiri.
+            ->when($supervisor && $supervisorSalesId > 0, fn ($q) => $q->where('assigned_to', $supervisorSalesId))
+            ->when($supervisor && $supervisorSalesId <= 0, fn ($q) => $q->whereNotNull('assigned_to'))
+            ->when(! $supervisor, fn ($q) => $q->where('assigned_to', $user?->id))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $like = '%'.$request->search.'%';
                 $q->where(function ($w) use ($like) {

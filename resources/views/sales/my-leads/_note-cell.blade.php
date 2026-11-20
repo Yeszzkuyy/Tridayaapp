@@ -1,5 +1,5 @@
 {{-- Latest Note: satu catatan terakhir, teks multi-baris seperti catatan Excel. --}}
-<div class="min-w-[220px] max-w-[320px]">
+<div class="min-w-[108px] max-w-[148px]">
     <div class="flex items-start gap-1.5">
         <p class="whitespace-pre-line text-xs leading-relaxed text-slate-600 dark:text-slate-300"
            :title="note"

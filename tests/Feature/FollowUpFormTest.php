@@ -71,6 +71,34 @@ class FollowUpFormTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_store_allows_cross_pt_customer_when_lead_is_assigned_to_user(): void
+    {
+        $sales = $this->salesMgk();
+        $ntiCustomer = Customer::create(['name' => 'PT NTI Penugasan', 'pt_group' => 'NTI']);
+        $lead = Lead::create([
+            'customer_id' => $ntiCustomer->id,
+            'pt_group' => 'NTI',
+            'segment' => 'end_user',
+            'status' => 'cool',
+            'incoming_date' => now()->toDateString(),
+            'assigned_to' => $sales->id,
+        ]);
+
+        // Penugasan lead lintas PT oleh Management tetap bisa dicatat sales-nya.
+        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
+            'customer_id' => $ntiCustomer->id,
+            'lead_id' => $lead->id,
+            'type' => 'whatsapp',
+            'description' => 'Follow up lead penugasan lintas PT.',
+        ])->assertRedirect(route('sales.follow-ups.index'));
+
+        $this->assertDatabaseHas('follow_ups', [
+            'customer_id' => $ntiCustomer->id,
+            'lead_id' => $lead->id,
+            'created_by' => $sales->id,
+        ]);
+    }
+
     public function test_store_rejects_lead_from_other_customer(): void
     {
         $sales = $this->salesMgk();
@@ -538,5 +566,98 @@ class FollowUpFormTest extends TestCase
         ]));
 
         $this->assertStringContainsString($expected, $html);
+    }
+
+    public function test_follow_up_row_button_opens_prefilled_full_page_form(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'assigned_to' => $sales->id,
+        ]);
+        FollowUp::create([
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'description' => 'Baris untuk tombol catat ulang.',
+            'type' => 'whatsapp',
+            'follow_up_date' => now()->toDateString(),
+            'created_by' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.index'))
+            ->assertOk()->getContent();
+
+        // Tombol per baris membawa customer + lead + penanda kembali ke daftar.
+        $expected = str_replace('&', '&amp;', route('sales.follow-ups.create', [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'return' => 'follow-ups',
+        ]));
+        $this->assertStringContainsString($expected, $html);
+
+        // target=_top: form dibuka sebagai halaman penuh di luar tab workspace.
+        $this->assertMatchesRegularExpression(
+            '/<a href="'.preg_quote($expected, '/').'".*?target="_top"/s',
+            $html
+        );
+    }
+
+    public function test_follow_up_form_locks_customer_and_lead_from_list_row(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'project_name' => 'Gudang MGK',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $html = $this->actingAs($sales)->get(route('sales.follow-ups.create', [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'return' => 'follow-ups',
+        ]))->assertOk()->getContent();
+
+        $this->assertStringContainsString('name="customer_id" value="'.$customers['mgk']->id.'"', $html);
+        $this->assertStringContainsString('name="lead_id" value="'.$lead->id.'"', $html);
+        $this->assertStringNotContainsString('Search customer...', $html);
+        $this->assertStringNotContainsString('Related Lead (optional)', $html);
+        $this->assertStringContainsString('Gudang MGK', $html);
+    }
+
+    public function test_follow_up_form_returns_to_list_after_save(): void
+    {
+        $sales = $this->salesMgk();
+        $customers = $this->seedCustomers();
+        $lead = Lead::create([
+            'customer_id' => $customers['mgk']->id,
+            'pt_group' => 'MGK',
+            'segment' => 'vendor',
+            'status' => 'warm',
+            'assigned_to' => $sales->id,
+        ]);
+
+        $this->actingAs($sales)->post(route('sales.follow-ups.store'), [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'type' => 'call',
+            'description' => 'Telepon PIC dari daftar.',
+            'return' => 'follow-ups',
+        ])->assertRedirect(route('sales.follow-ups.index'));
+
+        $this->actingAs($sales)->postJson(route('sales.follow-ups.store'), [
+            'customer_id' => $customers['mgk']->id,
+            'lead_id' => $lead->id,
+            'type' => 'call',
+            'description' => 'Telepon PIC kedua.',
+            'return' => 'follow-ups',
+        ])->assertOk()->assertJsonPath('redirect', route('sales.follow-ups.index'));
     }
 }

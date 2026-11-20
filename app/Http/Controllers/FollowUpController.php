@@ -59,9 +59,10 @@ class FollowUpController extends Controller
         // lead yang sudah punya follow-up = form lengkap.
         $isFirstTime = $leadId !== null && ! FollowUp::where('lead_id', $leadId)->exists();
 
-        // Dari My Leads: customer & lead yang diklik sudah pasti, jadi form
-        // dikunci ke keduanya dan sisa isian diambil dari data lead.
-        $leadContext = $returnTo === 'my-leads' ? $lead : null;
+        // Dari My Leads atau tombol per baris Follow Up: customer & lead yang
+        // diklik sudah pasti, jadi form dikunci ke keduanya dan sisa isian
+        // diambil dari data lead.
+        $leadContext = in_array($returnTo, ['my-leads', 'follow-ups'], true) ? $lead : null;
 
         $customerOptions = $this->customerOptions(auth()->user());
         if ($leadContext?->customer && ! isset($customerOptions[$leadContext->customer_id])) {
@@ -419,17 +420,34 @@ class FollowUpController extends Controller
     {
         $user = auth()->user();
         $customer = Customer::findOrFail($validated['customer_id']);
-        abort_unless(PtAccess::canWritePt($user, $customer->pt_group), 403);
-        abort_unless(CustomerAccess::canView($user, $customer), 403);
 
+        $lead = null;
         if (! empty($validated['lead_id'])) {
             $lead = Lead::find($validated['lead_id']);
             abort_if(! $lead || (int) $lead->customer_id !== (int) $validated['customer_id'],
                 422, __('The selected lead does not belong to this customer.'));
+        }
 
-            if (! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
-                abort_unless((int) $lead->assigned_to === (int) $user->id, 403);
-            }
+        // Customer/lead luar cakupan user = data bukan miliknya (403, bukan 422).
+        // Aturan "PT-nya sendiri" hanya berlaku untuk customer yang bukan lead
+        // milik user: Sales boleh mencatat follow-up untuk lead yang sudah
+        // di-assign kepadanya walau customer-nya PT lain (penugasan lintas PT
+        // oleh Management). Customer tanpa lead tetap dibatasi ke PT yang
+        // boleh ditulis user atau pemilik customer.
+        $assignedToUser = $lead !== null && $lead->assigned_to !== null
+            && (int) $lead->assigned_to === (int) $user->id;
+        abort_unless(
+            $assignedToUser
+            || $user->hasAnyPermission(['manage-sales-leads', 'manage-marketing'])
+            || (PtAccess::canWritePt($user, $customer->pt_group)
+                && CustomerAccess::canView($user, $customer)),
+            403
+        );
+
+        // Lead bukan milik user (dan bukan pengelola) tetap ditolak.
+        if ($lead !== null && ! $assignedToUser
+            && ! $user->can('manage-sales-leads') && ! $user->can('manage-marketing')) {
+            abort(403);
         }
     }
 }
