@@ -1,6 +1,6 @@
 # PLAN-SISTEM-TIPOGRAFI-HALAMAN: Tipografi Halaman Documents, Trash, dan Auth
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** SYS-TIPOGRAFI-HALAMAN
 **PIC:** Yeski
 **Menu:** Sistem / Documents, Trash, Auth
@@ -27,4 +27,4 @@ Tidak termasuk: perubahan data, route, filter, dan logika bisnis.
 - [x] Warna teks netral memakai token.
 - [x] Test sistem lulus.
 - [x] Build dari main dan pengecekan browser.
-- [ ] User menyatakan hasilnya sesuai.
+- [x] User menyatakan hasilnya sesuai.
