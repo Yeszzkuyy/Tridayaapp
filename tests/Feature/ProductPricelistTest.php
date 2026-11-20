@@ -194,134 +194,21 @@ class ProductPricelistTest extends TestCase
             ->assertSee('Set Price');
     }
 
-    public function test_bulk_view_has_live_search_currency_inputs_and_compact_copy(): void
+    public function test_legacy_bulk_pricelist_link_redirects_to_the_bulk_price_page(): void
     {
         $admin = $this->userWithRole('admin');
-        $supplier = Supplier::create(['name' => 'Supplier Bulk', 'is_active' => true]);
-        $product = $this->makeProduct([
-            'name' => 'Produk Bulk Uji',
-            'sku' => 'SKU-BULK',
-            'cost_price' => 600,
-        ]);
-        $this->addCostLog($product, $admin, 600, now()->addDays(10)->toDateString(), $supplier);
 
-        $response = $this->actingAs($admin)->get(route('products.index', ['bulk' => 1]))
-            ->assertOk()
-            ->assertSee('Back')
-            ->assertSee('Search product name or SKU...')
-            ->assertSee('data-search="produk bulk uji sku-bulk"', false)
-            ->assertSee('>Rp</span>', false)
-            ->assertSee('Use Set Price for products without price history.')
-            ->assertSee('No matching products found.');
-
-        $html = $response->getContent();
-        $this->assertSame(1, substr_count($html, 'Stock and warranty are copied from the latest price.'));
-    }
-
-    public function test_bulk_update_creates_one_log_and_updates_cost(): void
-    {
-        $admin = $this->userWithRole('admin');
-        $supplier = Supplier::create(['name' => 'Supplier Bulk', 'is_active' => true]);
-        $product = $this->makeProduct(['name' => 'Produk Bulk', 'default_price' => 1000, 'cost_price' => 600]);
-        $first = $this->addCostLog($product, $admin, 600, now()->addDays(10)->toDateString(), $supplier);
-
-        $validUntil = now()->addDays(20)->toDateString();
-
-        $this->actingAs($admin)->post(route('products.bulk-price-update'), [
-            'prices' => [
-                $product->id => [
-                    'cost' => '750.000',
-                    'supplier_id' => $supplier->id,
-                    'valid_until' => $validUntil,
-                ],
-            ],
-            'bulk' => 1,
-            'quick' => 'needs_recheck',
-        ])->assertRedirect();
-
-        $product->refresh();
-        $this->assertSame(750000.0, (float) $product->cost_price);
-        $this->assertSame(2, $product->costLogs()->count());
-
-        $latest = $product->costLogs()->first();
-        $this->assertSame(750000.0, (float) $latest->price);
-        $this->assertSame($supplier->id, $latest->supplier_id);
-        $this->assertSame($validUntil, $latest->valid_until?->toDateString());
-        $this->assertSame('ready', $latest->stock_status);
-        $this->assertSame('2 years', $latest->warranty_info);
-        $this->assertSame($admin->id, $latest->updated_by);
-
-        // Simpan nilai yang sama lagi tidak boleh menambah log.
-        $this->actingAs($admin)->post(route('products.bulk-price-update'), [
-            'prices' => [
-                $product->id => [
-                    'cost' => '750.000',
-                    'supplier_id' => $supplier->id,
-                    'valid_until' => $validUntil,
-                ],
-            ],
-            'bulk' => 1,
-        ])->assertRedirect()->assertSessionHas('warning');
-
-        $this->assertSame(2, $product->costLogs()->count());
-    }
-
-    public function test_bulk_update_rejects_product_without_history_and_invalid_supplier(): void
-    {
-        $admin = $this->userWithRole('admin');
-        $supplier = Supplier::create(['name' => 'Supplier Bulk', 'is_active' => true]);
-        $withoutHistory = $this->makeProduct(['name' => 'Tanpa Riwayat Bulk', 'cost_price' => 700]);
-
-        $this->actingAs($admin)->post(route('products.bulk-price-update'), [
-            'prices' => [
-                $withoutHistory->id => [
-                    'cost' => '800.000',
-                    'supplier_id' => $supplier->id,
-                    'valid_until' => now()->addDays(10)->toDateString(),
-                ],
-            ],
-            'bulk' => 1,
-        ])->assertSessionHasErrors('prices');
-
-        $this->assertSame(0, $withoutHistory->costLogs()->count());
-        $this->assertSame(700.0, (float) $withoutHistory->fresh()->cost_price);
-
-        $withHistory = $this->makeProduct(['name' => 'Riwayat Bulk', 'cost_price' => 600]);
-        $this->addCostLog($withHistory, $admin, 600, now()->addDays(10)->toDateString(), $supplier);
-
-        $this->actingAs($admin)->post(route('products.bulk-price-update'), [
-            'prices' => [
-                $withHistory->id => [
-                    'cost' => '650.000',
-                    'supplier_id' => 999999,
-                    'valid_until' => now()->addDays(10)->toDateString(),
-                ],
-            ],
-            'bulk' => 1,
-        ])->assertSessionHasErrors("prices.{$withHistory->id}.supplier_id");
-
-        $this->assertSame(1, $withHistory->costLogs()->count());
-        $this->assertSame(600.0, (float) $withHistory->fresh()->cost_price);
-    }
-
-    public function test_bulk_update_requires_cost_permission(): void
-    {
-        $sales = $this->userWithRole('sales');
-        $supplier = Supplier::create(['name' => 'Supplier Bulk', 'is_active' => true]);
-        $product = $this->makeProduct(['cost_price' => 600]);
-        $this->addCostLog($product, $sales, 600, now()->addDays(10)->toDateString(), $supplier);
-
-        $this->actingAs($sales)->post(route('products.bulk-price-update'), [
-            'prices' => [
-                $product->id => [
-                    'cost' => '700.000',
-                    'supplier_id' => $supplier->id,
-                    'valid_until' => now()->addDays(10)->toDateString(),
-                ],
-            ],
-            'bulk' => 1,
-        ])->assertForbidden();
-
-        $this->assertSame(1, $product->costLogs()->count());
+        $this->actingAs($admin)
+            ->get(route('products.index', [
+                'bulk' => 1,
+                'search' => 'switch',
+                'category' => 'barang',
+                'quick' => 'needs_recheck',
+            ]))
+            ->assertRedirect(route('products.bulk-price', [
+                'search' => 'switch',
+                'category' => 'barang',
+                'quick' => 'needs_recheck',
+            ]));
     }
 }

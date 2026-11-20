@@ -5606,5 +5606,16 @@
     "Prices are shown in Indonesian Rupiah.": "Prices are shown in Indonesian Rupiah.",
     "Supplier is required.": "Supplier is required.",
     "Product Pricing": "Product Pricing",
-    "products": "products"
+    "products": "products",
+    "View all :count": "View all :count",
+    "View all new requests": "View all new requests",
+    "Items are loaded from the selected quotation. Remove any item you do not want to request.": "Items are loaded from the selected quotation. Remove any item you do not want to request.",
+    "Pricelist / Bulk update": "Pricelist / Bulk update",
+    "Send prices to Sales?": "Send prices to Sales?",
+    "These prices will be sent to Sales for review. Sales can still ask for a revision.": "These prices will be sent to Sales for review. Sales can still ask for a revision.",
+    "Yes, send prices": "Yes, send prices",
+    "Cost from Estimator. This value cannot be edited here.": "Cost from Estimator. This value cannot be edited here.",
+    "Cost from Estimator": "Cost from Estimator",
+    "Show item details": "Show item details",
+    "Use an estimator item above or add a blank item.": "Use an estimator item above or add a blank item."
 }

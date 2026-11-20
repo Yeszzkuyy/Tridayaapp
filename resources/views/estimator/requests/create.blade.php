@@ -7,7 +7,14 @@
             'unit' => $p->unit ?: 'pcs',
             'label' => $p->name.($p->sku ? ' · '.$p->sku : ''),
         ])->values()->all();
-        $initialRows = collect(old('items', [['product_id' => '', 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'notes' => '']]))
+        $rowsSource = old('items');
+        if (! is_array($rowsSource)) {
+            $rowsSource = ! empty($prefillItems)
+                ? $prefillItems
+                : [['product_id' => '', 'description' => '', 'quantity' => 1, 'unit' => 'pcs', 'notes' => '']];
+        }
+
+        $initialRows = collect($rowsSource)
             ->map(function ($row) use ($productOptions) {
                 $pid = isset($row['product_id']) && $row['product_id'] !== '' ? (string) $row['product_id'] : '';
                 $matched = $pid !== '' ? collect($productOptions)->firstWhere('id', $pid) : null;
@@ -130,6 +137,12 @@
                     </div>
                     <x-icon-button icon="add" type="button" label="{{ __('Item') }}" title="{{ __('Item') }}" @click="addRow()" />
                 </div>
+
+                @if(! empty($prefillItems) && ! old('items'))
+                    <p class="mb-3 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2 text-xs leading-5 text-accent-800 dark:border-accent-800/60 dark:bg-accent-950/30 dark:text-accent-200">
+                        {{ __('Items are loaded from the selected quotation. Remove any item you do not want to request.') }}
+                    </p>
+                @endif
 
                 <div class="space-y-3">
                     <template x-for="(row, index) in rows" :key="index">

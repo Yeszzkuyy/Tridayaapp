@@ -5606,5 +5606,16 @@
     "Prices are shown in Indonesian Rupiah.": "Harga ditampilkan dalam Rupiah Indonesia.",
     "Supplier is required.": "Pemasok wajib dipilih.",
     "Product Pricing": "Harga Produk",
-    "products": "produk"
+    "products": "produk",
+    "View all :count": "Lihat semua :count",
+    "View all new requests": "Lihat semua permintaan baru",
+    "Items are loaded from the selected quotation. Remove any item you do not want to request.": "Item sudah diisi dari quotation yang dipilih. Hapus item yang tidak ingin diminta.",
+    "Pricelist / Bulk update": "Pricelist / Update massal",
+    "Send prices to Sales?": "Kirim harga ke Sales?",
+    "These prices will be sent to Sales for review. Sales can still ask for a revision.": "Harga ini akan dikirim ke Sales untuk ditinjau. Sales masih bisa meminta revisi.",
+    "Yes, send prices": "Ya, kirim harga",
+    "Cost from Estimator. This value cannot be edited here.": "Harga modal dari Estimator. Nilai ini tidak bisa diubah di sini.",
+    "Cost from Estimator": "Harga modal dari Estimator",
+    "Show item details": "Tampilkan detail item",
+    "Use an estimator item above or add a blank item.": "Gunakan item Estimator di atas atau tambahkan item kosong."
 }

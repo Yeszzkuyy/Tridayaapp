@@ -254,6 +254,15 @@
 
                 <form action="{{ route('estimator.requests.answer', $estimatorRequest) }}" method="POST"
                       x-show="editing" x-cloak data-no-loader @submit="sending = true"
+                      data-confirm="{{ __('These prices will be sent to Sales for review. Sales can still ask for a revision.') }}"
+                      data-confirm-title="{{ __('Send prices to Sales?') }}"
+                      data-confirm-tone="info"
+                      data-confirm-label="{{ __('Yes, send prices') }}"
+                      data-confirm-details="{{ json_encode([
+                          ['label' => __('Customer'), 'value' => $estimatorRequest->customer?->name ?? '-'],
+                          ['label' => __('Request'), 'value' => '#'.$estimatorRequest->id],
+                          ['label' => __('Items'), 'value' => $estimatorRequest->items->count()],
+                      ], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) }}"
                       style="{{ $formOpen ? '' : 'display: none' }}">
                     @csrf
                     <div class="overflow-x-auto">

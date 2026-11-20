@@ -59,6 +59,8 @@ class EstimatorRequestController extends Controller
             'date_to' => 'nullable|date|after_or_equal:date_from',
         ]);
 
+        $statusFilter = $validated['status'] ?? null;
+
         $query = EstimatorRequest::query()
             ->with([
                 'customer:id,name,pt_group',
@@ -79,10 +81,10 @@ class EstimatorRequestController extends Controller
                     }
                 });
             })
-            ->when(($validated['status'] ?? null) === 'open', fn ($query) => $query
+            ->when($statusFilter === 'open', fn ($query) => $query
                 ->whereIn('status', EstimatorRequest::OPEN_STATUSES))
-            ->when(($validated['status'] ?? null) && $validated['status'] !== 'open', fn ($query, string $status) => $query
-                ->where('status', $status))
+            ->when($statusFilter && $statusFilter !== 'open', fn ($query) => $query
+                ->where('status', $statusFilter))
             ->when($validated['date_from'] ?? null, fn ($query, string $date) => $query
                 ->whereDate('created_at', '>=', $date))
             ->when($validated['date_to'] ?? null, fn ($query, string $date) => $query
@@ -107,8 +109,14 @@ class EstimatorRequestController extends Controller
 
         // Antrean baru dipisah ke kartu sendiri supaya langsung terlihat
         // oleh Estimator; tabel di bawah khusus request yang sudah dikerjakan.
-        $newRequests = $isEstimator
+        $newRequestsQuery = $isEstimator
             ? (clone $query)->where('status', 'submitted')
+            : null;
+
+        $newRequestsTotal = $newRequestsQuery ? (clone $newRequestsQuery)->count() : 0;
+
+        $newRequests = $newRequestsQuery
+            ? $newRequestsQuery
                 ->with(['customer:id,name,pt_group', 'requester:id,name'])
                 ->withCount('items')
                 ->orderBy('created_at')
@@ -116,7 +124,9 @@ class EstimatorRequestController extends Controller
                 ->get()
             : collect();
 
-        if ($isEstimator) {
+        // Request baru tetap punya kartu ringkas di atas, tetapi tabel harus
+        // bisa menampilkannya saat user memilih filter status "Submitted".
+        if ($isEstimator && ($validated['status'] ?? null) !== 'submitted') {
             $query->where('status', '!=', 'submitted');
         }
 
@@ -129,6 +139,7 @@ class EstimatorRequestController extends Controller
         return view('estimator.requests.index', [
             'requests' => $requests,
             'newRequests' => $newRequests,
+            'newRequestsTotal' => $newRequestsTotal,
             'isEstimator' => $isEstimator,
             'statuses' => EstimatorRequest::STATUSES,
             'summary' => $summary,
@@ -148,13 +159,39 @@ class EstimatorRequestController extends Controller
                     ? route('projects.show', (int) $request->query('project_id'))
                     : route('estimator.requests.index')));
 
+        $presetCustomerId = $request->query('customer_id');
+        $presetProposalId = $request->query('proposal_id');
+
+        $prefillItems = [];
+        if ($presetProposalId) {
+            $proposal = Proposal::with(['items.product:id,name,sku,unit', 'lead:id,customer_id'])
+                ->find((int) $presetProposalId);
+
+            $belongsToCustomer = ! $presetCustomerId
+                || (int) $proposal?->lead?->customer_id === (int) $presetCustomerId;
+
+            if ($proposal && $belongsToCustomer) {
+                $prefillItems = $proposal->items
+                    ->map(fn ($item) => [
+                        'product_id' => $item->product_id ? (string) $item->product_id : '',
+                        'description' => $item->description ?: ($item->product?->name ?? ''),
+                        'quantity' => (float) $item->quantity,
+                        'unit' => $item->unit ?: ($item->product?->unit ?: 'pcs'),
+                        'notes' => '',
+                    ])
+                    ->values()
+                    ->all();
+            }
+        }
+
         return view('estimator.requests.create', [
             'customers' => $this->customerOptions($user),
             'products' => Product::saleable()->orderBy('name')->limit(500)->get(['id', 'sku', 'name', 'unit']),
-            'presetCustomerId' => $request->query('customer_id'),
+            'presetCustomerId' => $presetCustomerId,
             'presetLeadId' => $request->query('lead_id'),
             'presetProjectId' => $request->query('project_id'),
-            'presetProposalId' => $request->query('proposal_id'),
+            'presetProposalId' => $presetProposalId,
+            'prefillItems' => $prefillItems,
             'backUrl' => $backUrl,
         ]);
     }
@@ -566,7 +603,6 @@ class EstimatorRequestController extends Controller
 
         $logs = ProductPriceLog::query()
             ->where('price_type', 'cost')
-            ->whereNotNull('estimator_request_item_id')
             ->with([
                 'product:id,name,sku',
                 'supplier:id,name',

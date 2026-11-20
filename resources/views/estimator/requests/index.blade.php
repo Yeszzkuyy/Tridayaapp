@@ -47,9 +47,22 @@
                             <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent-500"></span>
                         </span>
                         {{ __('New Requests') }}
-                        <span class="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-accent-700 dark:bg-accent-900/40 dark:text-accent-300">{{ $newRequests->count() }}</span>
+                        <span class="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-accent-700 dark:bg-accent-900/40 dark:text-accent-300">{{ $newRequestsTotal }}</span>
                     </h2>
-                    <span class="text-xs text-slate-400">{{ __('Waiting for your price') }}</span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs text-slate-400">{{ __('Waiting for your price') }}</span>
+                        @if($newRequestsTotal > $newRequests->count())
+                            <x-icon-button as="a" icon="view"
+                                           :href="route('estimator.requests.index', array_filter([
+                                               'status' => 'submitted',
+                                               'q' => request('q'),
+                                               'date_from' => request('date_from'),
+                                               'date_to' => request('date_to'),
+                                           ], fn ($value) => $value !== null && $value !== ''))"
+                                           label="{{ __('View all :count', ['count' => $newRequestsTotal]) }}"
+                                           title="{{ __('View all new requests') }}" />
+                        @endif
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                     @foreach($newRequests as $newRequest)

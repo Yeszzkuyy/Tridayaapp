@@ -204,4 +204,31 @@ class EstimatorPriceHistoryTest extends TestCase
             ->assertSee('725.000')
             ->assertSee('Vendor Biaya');
     }
+
+    public function test_price_history_includes_cost_updates_outside_estimator_requests(): void
+    {
+        $estimator = $this->userWithRole('estimator');
+        $product = $this->product(['name' => 'Produk Pricelist Massal']);
+        $supplier = Supplier::create(['name' => 'Vendor Pricelist Massal']);
+
+        ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 880000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '2 years',
+            'valid_until' => now()->addDays(20),
+            'updated_by' => $estimator->id,
+            'notes' => 'Bulk price update',
+        ]);
+
+        $this->actingAs($estimator)
+            ->get(route('estimator.price-history'))
+            ->assertOk()
+            ->assertSee('Produk Pricelist Massal')
+            ->assertSee('880.000')
+            ->assertSee('Pricelist / Bulk update');
+    }
 }

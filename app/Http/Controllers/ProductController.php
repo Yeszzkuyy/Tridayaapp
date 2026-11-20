@@ -14,13 +14,22 @@ use App\Support\Rupiah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
         $canManageCost = Gate::allows('manageCost', Product::class);
+
+        // Satu pintu untuk update harga massal: tautan lama ?bulk=1
+        // diarahkan ke halaman Bulk Price yang sudah memakai PPN + review.
+        if ($canManageCost && $request->boolean('bulk')) {
+            return redirect()->route('products.bulk-price', array_filter([
+                'search' => $request->input('search'),
+                'category' => $request->input('category'),
+                'quick' => $request->input('quick'),
+            ], fn ($value) => $value !== null && $value !== ''));
+        }
 
         $quick = $request->input('quick');
         if ($quick === null && $request->boolean('price_review')) {
@@ -29,8 +38,6 @@ class ProductController extends Controller
         $quick = in_array($quick, ['active', 'needs_recheck', 'negative_margin', 'expiring_soon'], true)
             ? $quick
             : 'all';
-
-        $bulkMode = $canManageCost && $request->boolean('bulk');
 
         $base = Product::query()
             ->when($request->filled('search'), fn ($q) => $q->where(
@@ -44,7 +51,6 @@ class ProductController extends Controller
             'all' => (clone $base)->count(),
             'active' => (clone $base)->priceActive()->count(),
             'needs_recheck' => (clone $base)->needsRecheck()->count(),
-            'bulk_needs' => (clone $base)->needsRecheck()->whereHas('latestCostLog')->count(),
             'negative_margin' => (clone $base)->negativeMargin()->count(),
             'expiring_soon' => (clone $base)->expiringSoon()->count(),
         ];
@@ -55,26 +61,15 @@ class ProductController extends Controller
             ->when($quick === 'needs_recheck', fn ($q) => $q->needsRecheck())
             ->when($quick === 'negative_margin', fn ($q) => $q->negativeMargin())
             ->when($quick === 'expiring_soon', fn ($q) => $q->expiringSoon())
-            ->when($bulkMode, fn ($q) => $q->whereHas('latestCostLog'))
             ->latest()
-            ->paginate($bulkMode ? 50 : 15)
+            ->paginate(15)
             ->withQueryString();
-
-        $supplierOptions = $bulkMode
-            ? Supplier::active()->orderBy('name')->get(['id', 'name'])
-                ->map(fn (Supplier $supplier) => [
-                    'value' => (string) $supplier->id,
-                    'label' => $supplier->name,
-                ])->values()->all()
-            : [];
 
         return view('sales.products.index', [
             'products' => $products,
             'counts' => $counts,
             'quick' => $quick,
-            'bulkMode' => $bulkMode,
             'canManageCost' => $canManageCost,
-            'supplierOptions' => $supplierOptions,
         ]);
     }
 
@@ -503,111 +498,6 @@ class ProductController extends Controller
             'success',
             __(':count product prices updated.', ['count' => $updatedCount]),
         );
-    }
-
-    /**
-     * Simpan beberapa harga modal sekaligus.
-     *
-     * Hanya produk yang sudah punya riwayat harga yang boleh masuk mode ini
-     * (Stock/Warranty disalin dari log terakhir). Baris yang tidak berubah
-     * tidak membuat log baru.
-     */
-    public function bulkUpdatePrice(Request $request)
-    {
-        Gate::authorize('manageCost', Product::class);
-
-        $prices = collect($request->input('prices', []))
-            ->map(function ($row) {
-                if (is_array($row) && array_key_exists('cost', $row)) {
-                    $row['cost'] = Rupiah::normalize($row['cost']);
-                }
-
-                return $row;
-            })->all();
-
-        $request->merge(['prices' => $prices]);
-
-        $validated = $request->validate([
-            'prices' => 'required|array|min:1',
-            'prices.*.cost' => 'required|numeric|min:0.01|max:999999999999',
-            'prices.*.supplier_id' => 'required|exists:suppliers,id',
-            'prices.*.valid_until' => 'nullable|date',
-        ]);
-
-        $rows = $validated['prices'];
-        $ids = array_map('intval', array_keys($rows));
-        $products = Product::query()
-            ->whereIn('id', $ids)
-            ->with('latestCostLog')
-            ->get()
-            ->keyBy('id');
-
-        if ($products->count() !== count($ids)) {
-            throw ValidationException::withMessages([
-                'prices' => __('One or more products could not be found.'),
-            ]);
-        }
-
-        if ($products->contains(fn (Product $product) => ! $product->latestCostLog)) {
-            throw ValidationException::withMessages([
-                'prices' => __('Bulk price update is only available for products with price history.'),
-            ]);
-        }
-
-        $updated = 0;
-
-        DB::transaction(function () use ($request, $rows, $products, &$updated): void {
-            $service = app(ProductPriceService::class);
-
-            foreach ($rows as $id => $row) {
-                $product = $products->get((int) $id);
-                $log = $product?->latestCostLog;
-
-                if (! $product || ! $log) {
-                    continue;
-                }
-
-                $price = (float) $row['cost'];
-                $supplierId = (int) $row['supplier_id'];
-                $validUntil = $row['valid_until'] ?? null;
-                $currentValidUntil = $log->valid_until?->toDateString();
-
-                $unchanged = abs((float) $log->price - $price) < 0.005
-                    && (int) $log->supplier_id === $supplierId
-                    && (string) ($currentValidUntil ?? '') === (string) ($validUntil ?? '');
-
-                if ($unchanged) {
-                    continue;
-                }
-
-                $service->recordCost($product, [
-                    'supplier_id' => $supplierId,
-                    'price' => $price,
-                    'stock_status' => $log->stock_status ?: 'ready',
-                    'stock_eta' => $log->stock_eta,
-                    'warranty_info' => $log->warranty_info ?: '',
-                    'valid_until' => $validUntil,
-                    'notes' => __('Bulk price update'),
-                ], $request->user()->id);
-
-                $updated++;
-            }
-        });
-
-        $filters = array_filter([
-            'search' => $request->input('search'),
-            'category' => $request->input('category'),
-            'quick' => $request->input('quick'),
-            'bulk' => $request->boolean('bulk') ? 1 : null,
-        ], fn ($value) => $value !== null && $value !== '');
-
-        if ($updated === 0) {
-            return redirect()->route('products.index', $filters)
-                ->with('warning', __('No price changes were saved.'));
-        }
-
-        return redirect()->route('products.index', $filters)
-            ->with('success', trans_choice(':count product price updated.|:count product prices updated.', $updated, ['count' => $updated]));
     }
 
     /**

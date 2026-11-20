@@ -17,9 +17,6 @@
                 @endif
             </div>
             <div class="flex items-center gap-2">
-                @can('create', \App\Models\EstimatorRequest::class)
-                    <x-icon-button as="a" icon="tools" href="{{ route('estimator.requests.create', ['customer_id' => $proposal->lead?->customer_id, 'lead_id' => $proposal->lead_id, 'proposal_id' => $proposal->id]) }}" title="{{ __('Request Product Price') }}" />
-                @endcan
                 <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.index') }}" title="{{ __('Back') }}" />
             </div>
         </div>
@@ -36,6 +33,20 @@
                         <a href="{{ route('sales.price-requests.show', $proposal->priceRequest) }}" class="font-medium text-accent-600 dark:text-accent-400 hover:underline">#{{ $proposal->priceRequest->id }}</a>
                     </p>
                 @endif
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Quotation Items') }}</h2>
+                @can('create', \App\Models\EstimatorRequest::class)
+                    <x-icon-button as="a" icon="tools"
+                                   :href="route('estimator.requests.create', [
+                                       'customer_id' => $proposal->lead?->customer_id,
+                                       'lead_id' => $proposal->lead_id,
+                                       'proposal_id' => $proposal->id,
+                                   ])"
+                                   label="{{ __('Request Product Price') }}"
+                                   title="{{ __('Request Product Price') }}" />
+                @endcan
             </div>
 
             <div class="overflow-x-auto">
