@@ -211,7 +211,9 @@ class LeadTaskQuotationItemsTest extends TestCase
             ->assertOk()
             ->assertSee('Estimator Items')
             ->assertSee('Switch Estimator')
-            ->assertSee('data-use-estimator-item', false);
+            ->assertSee('data-use-estimator-item', false)
+            ->assertSee('data-estimator-item-row', false)
+            ->assertSee('Use All');
     }
 
     public function test_quotation_create_warns_when_quantity_differs_from_estimator(): void
@@ -252,6 +254,145 @@ class LeadTaskQuotationItemsTest extends TestCase
             ->assertOk()
             ->assertSee('Check item quantities')
             ->assertSee('quantity differs', false);
+    }
+
+    public function test_batch_saves_items_and_deletes_removed_rows(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+
+        $keep = $this->makeItem($task, ['description' => 'Item Lama', 'quantity' => 1, 'unit_price' => 100000]);
+        $remove = $this->makeItem($task, ['description' => 'Item Hapus', 'quantity' => 1, 'unit_price' => 200000]);
+
+        $this->actingAs($inside)->put(route('lead-tasks.items.batch', $task), [
+            'items' => [
+                [
+                    'id' => $keep->id,
+                    'description' => 'Item Diperbarui',
+                    'quantity' => 2,
+                    'unit' => 'pcs',
+                    'unit_price' => '10.000.000',
+                    'discount' => '0',
+                    'target_margin_percent' => 20,
+                ],
+                [
+                    'description' => 'Item Tambahan',
+                    'quantity' => 1,
+                    'unit' => 'unit',
+                    'unit_price' => '5.000.000',
+                    'discount' => '0',
+                    'target_margin_percent' => 20,
+                ],
+            ],
+        ])->assertRedirect();
+
+        $this->assertSame(2, $task->items()->count());
+        $this->assertDatabaseHas('lead_task_items', [
+            'id' => $keep->id,
+            'description' => 'Item Diperbarui',
+            'unit_price' => 10000000,
+            'subtotal' => 20000000,
+        ]);
+        $this->assertDatabaseHas('lead_task_items', [
+            'lead_task_id' => $task->id,
+            'description' => 'Item Tambahan',
+        ]);
+        $this->assertDatabaseMissing('lead_task_items', ['id' => $remove->id]);
+    }
+
+    public function test_batch_rejects_item_below_cost(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+
+        $this->actingAs($inside)->put(route('lead-tasks.items.batch', $task), [
+            'items' => [[
+                'description' => 'Item Rugi',
+                'quantity' => 1,
+                'unit' => 'pcs',
+                'unit_price' => '18.000.000',
+                'unit_cost' => '20.000.000',
+                'discount' => 0,
+            ]],
+        ])->assertSessionHasErrors('items.0.unit_price');
+
+        $this->assertSame(0, $task->items()->count());
+    }
+
+    public function test_batch_uses_product_cost_log_and_rejects_tampered_cost(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+        $product = $this->product('Router Uji');
+        $supplier = Supplier::create(['name' => 'Supplier Router Uji']);
+
+        $log = ProductPriceLog::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'price' => 20000000,
+            'price_type' => 'cost',
+            'currency' => 'IDR',
+            'stock_status' => 'ready',
+            'warranty_info' => '1 year',
+            'updated_by' => $sales->id,
+        ]);
+
+        $this->actingAs($inside)->put(route('lead-tasks.items.batch', $task), [
+            'items' => [[
+                'product_id' => $product->id,
+                'product_price_log_id' => $log->id,
+                'description' => 'Router Uji',
+                'quantity' => 2,
+                'unit' => 'pcs',
+                'unit_price' => '50.000.000',
+                'unit_cost' => '1',
+                'discount' => 0,
+            ]],
+        ])->assertRedirect();
+
+        $item = $task->items()->firstOrFail();
+        $this->assertSame(20000000.0, (float) $item->unit_cost);
+        $this->assertSame($log->id, $item->product_price_log_id);
+        $this->assertSame(100000000.0, (float) $item->subtotal);
+
+        $this->actingAs($inside)->put(route('lead-tasks.items.batch', $task), [
+            'items' => [[
+                'id' => $item->id,
+                'product_id' => $product->id,
+                'product_price_log_id' => $log->id,
+                'description' => 'Router Uji',
+                'quantity' => 1,
+                'unit' => 'pcs',
+                'unit_price' => '15.000.000',
+                'discount' => 0,
+            ]],
+        ])->assertSessionHasErrors('items.0.unit_price');
+
+        $this->assertSame(100000000.0, (float) $item->fresh()->subtotal);
+    }
+
+    public function test_task_show_renders_hidden_cost_as_whole_rupiah(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $inside = $this->userWithRole('inside-sales');
+        $lead = $this->makeLead($sales);
+        $task = $this->makeTask($lead, $sales, $inside);
+
+        $this->makeItem($task, [
+            'description' => 'Item dengan modal',
+            'unit_cost' => 20000000.00,
+            'unit_price' => 25000000,
+        ]);
+
+        $this->actingAs($inside)->get(route('lead-tasks.show', $task))
+            ->assertOk()
+            ->assertSee('name="items[0][unit_cost]" value="20000000"', false);
     }
 
     public function test_accepting_file_creates_quotation_with_items(): void
@@ -314,6 +455,9 @@ class LeadTaskQuotationItemsTest extends TestCase
         $this->actingAs($inside)->get(route('lead-tasks.show', $task))
             ->assertOk()
             ->assertSee('Quotation Items')
-            ->assertSee('Cisco IP Phone 780');
+            ->assertSee('Cisco IP Phone 780')
+            ->assertSee('Save Items')
+            ->assertSee(route('lead-tasks.items.batch', $task), false)
+            ->assertSee('Add Item');
     }
 }

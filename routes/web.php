@@ -878,6 +878,7 @@ Route::middleware('auth')->group(function () {
 
             // Item quotation yang diisi Inside Sales sebelum file diterima.
             Route::post('/{leadTask}/items', [LeadTaskController::class, 'storeItem'])->name('items.store');
+            Route::put('/{leadTask}/items/batch', [LeadTaskController::class, 'syncItems'])->name('items.batch');
             Route::delete('/{leadTask}/items/{item}', [LeadTaskController::class, 'destroyItem'])->name('items.destroy');
 
             // Lampiran quotation (riwayat versi, disimpan di disk privat).

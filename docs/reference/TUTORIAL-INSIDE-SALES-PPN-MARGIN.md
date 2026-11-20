@@ -2,8 +2,8 @@
 
 **Status:** Panduan review
 **Menu:** Estimator, Inside Sales, Sales Quotation, Admin Panel
-**Data uji:** Customer `PT Uji Coba 3DY (TEST)`
-**Login per peran:** Admin: Yeski, Estimator: Vanesha, Inside Sales: Audi, Sales: Felisia
+**Data uji:** Customer `PT Uji Coba 3 (TEST)`
+**Login per peran:** Admin: Yeski, Estimator: Vanesha, Inside Sales: Audi, Sales: Irfan
 
 ---
 
@@ -27,12 +27,12 @@ bisa dihapus setelah review.
 
 | Data | Nama | Dipegang oleh |
 |---|---|---|
-| Customer | `PT Uji Coba 3DY (TEST)` | - |
-| Lead | `Uji Coba PPN & Margin (TEST)` | Felisia (Sales WANI) |
-| Task Inside Sales | `Uji Coba PPN & Margin (TEST)` | Audi (Inside Sales) |
-| Request Harga | `Simulasi harga supplier termasuk PPN` | Felisia (peminta), Vanesha (Estimator) |
-| Produk | `IP PABX 32 Extension` (`PABX-IP`) | - |
-| Riwayat harga produk | 8 riwayat harga modal | - |
+| Customer | `PT Uji Coba 3 (TEST)` | - |
+| Lead | `Uji Coba Quotation 3 (TEST)` | Irfan (Sales NTI) |
+| Task Inside Sales | `Uji Coba Quotation 3 (TEST)` | Audi (Inside Sales) |
+| Request Harga | `Request #17` | Irfan (peminta), Vanesha (Estimator) |
+| Produk | 4 item (PABX, switch, kabel, jasa) | - |
+| Riwayat harga produk | Beberapa riwayat harga modal per produk | - |
 
 Lead dipegang Sales, task dipegang Inside Sales, dan request harga diminta
 oleh Sales lalu dijawab Estimator. Jadi setiap peran bisa mengecek menu dan
@@ -43,8 +43,9 @@ memakai kode baru.
 
 Link langsung ke data uji (tempel di belakang URL preview):
 
-- Task Inside Sales: `/lead-tasks/15`
-- Request Harga: `/estimator/requests/15`
+- Task Inside Sales: `/lead-tasks/17`
+- Request Harga: `/estimator/requests/17`
+- Lead: `/leads/53`
 - Daftar Quotation Sales: `/sales/proposals`
 - Pengaturan Admin: `/admin-panel/pricing`
 
@@ -57,7 +58,7 @@ Link langsung ke data uji (tempel di belakang URL preview):
    - **Yeski** untuk Admin Panel.
    - **Vanesha** (`vanesha@tridayaapp.com`) untuk Estimator.
    - **Audi** (`audi@tridayaapp.com`) untuk Inside Sales.
-   - **Felisia** (`felisia@tridayaapp.com`) untuk Sales pemilik lead.
+   - **Irfan** (`irfan@tridayaapp.com`) untuk Sales pemilik lead.
 3. Kalau lupa password salah satu akun, reset dulu lewat
    **Admin Panel → Users → Edit**.
 4. Login sebagai **Yeski**, lalu buka **Admin Panel → Pajak & Margin**.
@@ -72,11 +73,13 @@ Link langsung ke data uji (tempel di belakang URL preview):
 
 **Login:** Vanesha (Estimator)
 
+> Request #17 sudah berstatus dijawab. Untuk mencoba input harga baru, buat
+> request harga baru dari lead yang sama, lalu ikuti langkah di bawah.
+
 ### Langkah
 
 1. Buka menu **Estimator → Request Harga**.
-2. Cari request **`Simulasi harga supplier termasuk PPN`** untuk customer
-   `PT Uji Coba 3DY (TEST)`.
+2. Cari request harga untuk customer `PT Uji Coba 3 (TEST)`.
 3. Buka request tersebut.
 4. Isi baris produk `IP PABX 32 Extension`:
    - Supplier: pilih supplier yang biasa dipakai.
@@ -102,97 +105,106 @@ Link langsung ke data uji (tempel di belakang URL preview):
 
 ---
 
-## 5. Skenario 2 - Inside Sales Memilih Riwayat Harga dan Margin
+## 5. Skenario 2 - Inside Sales Mengisi Item Quotation dan Riwayat Harga
 
 **Login:** Audi (Inside Sales)
 
-Task ini belum punya item. Audi harus menambahkan produk dulu, lalu membuat
-quotation. Setelah quotation dibuat, baru muncul di menu Sales milik Felisia.
+Task ini sudah berisi 4 item hasil uji. Kalau ingin mencoba alur dari kosong,
+hapus semua kartu item lalu klik **Save Items** terlebih dahulu.
 
 ### Langkah
 
 1. Buka menu **Inside Sales → Dashboard**.
-2. Cari task **`Uji Coba PPN & Margin (TEST)`**.
+2. Cari task **`Uji Coba Quotation 3 (TEST)`** atau buka langsung
+   `/lead-tasks/17`.
 3. Buka task tersebut.
-4. Di bagian **Quotation Items**, pilih produk `IP PABX 32 Extension`.
-5. Setelah produk dipilih, dropdown **Price History** akan muncul.
-6. Perhatikan pilihan paling atas. Harus ada harga baru dari langkah Estimator:
-   - Harga bersih sekitar `Rp 1.000.000`.
-   - Keterangan `incl. VAT` dengan harga asli `Rp 1.120.000`.
-7. Pilih harga baru tersebut.
-   - Harga modal terisi `1.000.000`.
-   - Harga jual belum otomatis berubah kalau sudah pernah diisi.
-8. Isi **Target Margin (%)** dengan `20`.
-   - Harga jual otomatis menjadi `Rp 1.250.000`.
-   - Margin tampil `Rp 250.000 (20,00%)`.
-9. Coba pilih harga lama dari dropdown.
-   - Harga modal berubah.
-   - Harga jual tidak ikut berubah.
-   - Persentase margin ikut menyesuaikan.
-10. Pilih kembali harga baru, lalu isi target margin `20` lagi.
-11. Klik **Add**.
-12. Cek baris item yang muncul:
-    - Harga modal `Rp 1.000.000`.
-    - Margin `Rp 250.000 (20,00%)`.
-    - Target `20%`.
-13. Klik **Create Quotation**.
+4. Di panel **Estimator Items**, lihat 4 item hasil jawaban Estimator:
+   - `IP PABX 32 Extension` - 1 unit.
+   - `Switch Managed 24 Port Gigabit` - 2 unit.
+   - `Kabel UTP Cat6 + Instalasi` - 100 meter.
+   - `Jasa Survey & Desain Sistem` - 1 lot.
+5. Klik **Use All** untuk memasukkan semuanya, atau klik **Use** pada satu
+   baris saja.
+6. Setiap item langsung menjadi kartu di bagian **Quotation Items**:
+   - Baris atas: Product, Description, Scope of Supply, Lead Time, Section.
+   - Baris bawah: Qty, Cost Price, Target Margin, Selling Price, Discount.
+   - Footer kartu: Subtotal dan Margin.
+   - Baris Estimator yang sudah dipakai menampilkan badge **Added**.
+7. Untuk mengganti harga modal, klik ikon jam di samping **Cost Price**.
+8. Modal **Price History** menampilkan:
+   - Tanggal.
+   - Harga modal sebelum PPN.
+   - Harga supplier termasuk PPN.
+   - Supplier.
+   - Masa berlaku.
+   - Tombol **Select**.
+9. Pilih salah satu riwayat. Harga modal dan harga jual otomatis
+   menyesuaikan target margin.
+10. Ubah **Target Margin (%)** menjadi `20`.
+    - Harga jual dihitung dari harga modal sebelum PPN.
+    - Margin ditampilkan dalam Rupiah dan persen.
+    - Harga jual di bawah modal akan ditolak saat menyimpan.
+11. Coba **Add Item** untuk menambah baris kosong, lalu hapus dengan tombol
+    tempat sampah. Perubahan belum tersimpan sampai **Save Items** diklik.
+12. Klik **Save Items**. Semua kartu disimpan sekaligus.
+13. Klik **Generate Quotation**. Halaman quotation terbuka di tab baru.
 14. Isi data quotation:
     - Tanggal: hari ini.
     - Customer: otomatis dari lead.
-    - PT / Kop: `WANI`.
+    - PT / Kop: `NTI`.
     - Payment: `TT in Advance`.
     - Delivery: `Ready stock`.
     - Warranty: `1 year official distributor`.
-15. Klik **Generate Quotation**.
+15. Klik **Generate Quotation** di halaman quotation.
 
 ### Hasil yang diharapkan
 
+- Subtotal 4 item: `Rp 57.500.000`.
+- Margin total: `Rp 11.500.000 (20,00%)`.
+- PPN `12%`: `Rp 6.900.000`.
+- Grand total: `Rp 64.400.000`.
 - Quotation draft terbentuk dengan nomor quotation baru.
-- Item quotation memakai harga jual `Rp 1.250.000`.
-- PPN `12%` dihitung dari harga jual sebelum PPN:
-  - PPN: `Rp 150.000`.
-  - Total: `Rp 1.400.000`.
-- Margin item tetap `Rp 250.000 (20,00%)`.
 - PDF quotation bisa diunduh dari halaman task.
 - Audi bisa melihat nomor quotation dan mengunduh PDF. Untuk membuka detail
-  dan mengedit, login sebagai **Felisia** (Sales pemilik lead).
+  dan mengedit, login sebagai **Irfan** (Sales pemilik lead).
 
 ### Yang perlu dinilai dari UX
 
-- Apakah dropdown riwayat harga mudah ditemukan setelah memilih produk?
-- Apakah keterangan tanggal, harga, supplier, dan masa berlaku cukup jelas?
+- Apakah tombol **Use All** dan badge **Added** cukup jelas?
+- Apakah ikon jam untuk riwayat harga mudah ditemukan?
+- Apakah isi modal riwayat harga (tanggal, harga sebelum/sesudah PPN,
+  supplier, masa berlaku) cukup jelas?
 - Apakah pengisian target margin terasa membantu atau justru mengubah harga
   jual secara mengejutkan?
-- Apakah label `Target Margin (%)`, `Selling Price`, dan `Cost Price` mudah
-  dibedakan?
+- Apakah tombol **Save Items** dan indikator **Unsaved changes** cukup jelas?
 
 ---
 
 ## 6. Skenario 3 - Sales Melihat dan Mengedit Quotation
 
-**Login:** Felisia (Sales WANI)
+**Login:** Irfan (Sales NTI)
 
 ### Langkah
 
 1. Buka menu **Sales → Quotation**.
-2. Buka quotation untuk customer `PT Uji Coba 3DY (TEST)`.
-3. Cek ringkasan:
-   - Harga jual: `Rp 1.250.000`.
-   - Harga modal: `Rp 1.000.000`.
-   - Margin: `Rp 250.000 (20,00%)`.
-   - PPN: `12%` atau `Rp 150.000`.
-   - Total: `Rp 1.400.000`.
+2. Buka quotation untuk customer `PT Uji Coba 3 (TEST)`.
+3. Cek ringkasan 4 item:
+   - Total unit: `Rp 57.500.000`.
+   - Total modal: `Rp 46.000.000`.
+   - Margin: `Rp 11.500.000 (20,00%)`.
+   - PPN: `12%` atau `Rp 6.900.000`.
+   - Grand total: `Rp 64.400.000`.
 4. Klik **Edit**.
-5. Ubah **Margin %** item dari `20` menjadi `25`.
-   - Harga jual otomatis menjadi sekitar `Rp 1.333.334`.
-   - Margin menjadi sekitar `Rp 333.334 (25,00%)`.
-   - PPN otomatis menyesuaikan.
+5. Ubah **Margin %** salah satu item, misalnya `IP PABX 32 Extension`
+   dari `20` menjadi `25`.
+   - Harga jual item itu otomatis dihitung ulang.
+   - Subtotal, PPN, dan grand total ikut menyesuaikan.
 6. Simpan.
 7. Buka kembali detail quotation.
 8. Unduh PDF.
 9. Cek isi PDF:
-   - Kop PT WANI.
-   - Scope of supply dan lead time masih ada.
+   - Kop PT NTI.
+   - 4 item dengan scope of supply dan lead time.
    - Harga jual dan total sesuai perubahan.
    - PPN memakai tarif quotation, bukan tarif default yang berubah-ubah.
 10. Buka riwayat revisi. Harus ada versi baru setelah simpan.

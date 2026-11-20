@@ -17,6 +17,7 @@ use App\Services\QuotationNumberService;
 use App\Services\QuotationVersionService;
 use App\Support\Rupiah;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -400,6 +401,135 @@ class LeadTaskController extends Controller
     }
 
     /** Hapus item quotation milik task ini. */
+    public function syncItems(Request $request, LeadTask $leadTask)
+    {
+        $this->authorizeTaskItems($leadTask);
+
+        // Normalisasi input Rupiah per baris sebelum validasi.
+        $request->merge([
+            'items' => collect($request->input('items', []))->map(function ($item) {
+                if (! is_array($item)) {
+                    return $item;
+                }
+
+                foreach (['unit_price', 'unit_cost', 'discount'] as $key) {
+                    if (array_key_exists($key, $item)) {
+                        $item[$key] = $item[$key] === null || $item[$key] === ''
+                            ? null
+                            : Rupiah::normalize($item[$key]);
+                    }
+                }
+
+                return $item;
+            })->all(),
+        ]);
+
+        $validated = $request->validate([
+            'items' => 'nullable|array|max:100',
+            'items.*.id' => 'nullable|integer',
+            'items.*.product_id' => 'nullable|exists:products,id',
+            'items.*.product_price_log_id' => 'nullable|integer|exists:product_price_logs,id',
+            'items.*.description' => 'required|string|max:255',
+            'items.*.scope_of_supply' => 'nullable|string|max:100',
+            'items.*.lead_time' => 'nullable|string|max:100',
+            'items.*.section' => 'nullable|string|max:100',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit' => 'nullable|string|max:16',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.unit_cost' => 'nullable|numeric|min:0',
+            'items.*.target_margin_percent' => 'nullable|numeric|min:0|max:99.99',
+            'items.*.discount' => 'nullable|numeric|min:0',
+        ]);
+
+        $items = $validated['items'] ?? [];
+        $existing = $leadTask->items()->get()->keyBy('id');
+        $keepIds = [];
+
+        DB::transaction(function () use ($request, $leadTask, $items, $existing, &$keepIds) {
+            foreach ($items as $index => $data) {
+                $qty = (float) $data['quantity'];
+                $price = (float) $data['unit_price'];
+                $discount = (float) ($data['discount'] ?? 0);
+
+                abort_if(
+                    ! empty($data['product_price_log_id']) && empty($data['product_id']),
+                    422,
+                    __('Select a product before choosing a price history.')
+                );
+
+                $priceLog = null;
+                if (! empty($data['product_price_log_id'])) {
+                    $priceLog = ProductPriceLog::query()
+                        ->whereKey($data['product_price_log_id'])
+                        ->where('price_type', 'cost')
+                        ->when(! empty($data['product_id']), fn ($query) => $query
+                            ->where('product_id', $data['product_id']))
+                        ->first();
+
+                    abort_if(! $priceLog, 422, __('The selected price history does not match this product.'));
+                }
+
+                if (! $priceLog && ! empty($data['product_id'])) {
+                    $priceLog = ProductPriceLog::query()
+                        ->where('product_id', $data['product_id'])
+                        ->where('price_type', 'cost')
+                        ->latest('created_at')
+                        ->latest('id')
+                        ->first();
+                }
+
+                $unitCost = $priceLog?->price !== null
+                    ? (float) $priceLog->price
+                    : ($request->user()->can('manage-inside-sales')
+                        && isset($data['unit_cost'])
+                        && $data['unit_cost'] !== ''
+                        ? (float) $data['unit_cost']
+                        : null);
+
+                if ($unitCost !== null && (($price * $qty) - $discount) < ($unitCost * $qty)) {
+                    throw ValidationException::withMessages([
+                        "items.{$index}.unit_price" => __('Selling price is below cost. Fix the selling price or target margin first.'),
+                    ]);
+                }
+
+                $item = null;
+                if (! empty($data['id'])) {
+                    $item = $existing->get((int) $data['id']);
+                    abort_unless($item, 404);
+                }
+
+                $payload = [
+                    'product_id' => $data['product_id'] ?? null,
+                    'product_price_log_id' => $priceLog?->id,
+                    'description' => $data['description'],
+                    'scope_of_supply' => $data['scope_of_supply'] ?? null,
+                    'lead_time' => $data['lead_time'] ?? null,
+                    'section' => ($data['section'] ?? null) ?: 'MATERIAL',
+                    'quantity' => $qty,
+                    'unit' => $data['unit'] ?? 'pcs',
+                    'unit_price' => $price,
+                    'unit_cost' => $unitCost,
+                    'target_margin_percent' => $data['target_margin_percent'] ?? null,
+                    'discount' => $discount,
+                    'subtotal' => LeadTaskItem::subtotalFor($qty, $price, $discount),
+                ];
+
+                if ($item) {
+                    $item->update($payload);
+                } else {
+                    $item = $leadTask->items()->create($payload);
+                }
+
+                $keepIds[] = $item->id;
+            }
+
+            $leadTask->items()->whereNotIn('id', $keepIds)->delete();
+        });
+
+        return redirect()->route('lead-tasks.show', $leadTask)
+            ->with('success', __('Quotation items saved.'));
+    }
+
     public function destroyItem(LeadTask $leadTask, LeadTaskItem $item)
     {
         $this->authorizeTaskItems($leadTask);
