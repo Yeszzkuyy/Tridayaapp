@@ -167,7 +167,7 @@
                 </thead>
                 <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-600">
                     @forelse($leads as $lead)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition align-middle">
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition align-middle" data-lead-row="{{ $lead->id }}">
                             <td class="px-6 py-4">
                                 <div class="font-medium text-slate-900">{{ $lead->customer->name ?? __('N/A') }}</div>
                                 <div class="text-sm text-slate-500">
@@ -175,7 +175,7 @@
                                     {{ $lead->customer?->picName() ? 'PIC: '.$lead->customer->picName() : '' }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-4 text-center" data-assignee-cell>
                                 @if($lead->assignee)
                                     <div class="inline-flex items-center justify-center gap-2">
                                         <x-user-avatar :user="$lead->assignee" size="w-7 h-7" text="text-[11px]" color="green" :clickable="false" />
@@ -255,7 +255,9 @@
                                             ['label' => __('Move to'), 'value' => __('Selected sales')],
                                         ]));
                                     @endphp
-                                    <form action="{{ route('manage-sales.assign', $lead) }}" method="POST" class="flex items-center gap-2" data-loading-text="{{ __('Assigning…') }}"
+                                    <form action="{{ route('manage-sales.assign', $lead) }}" method="POST" class="flex items-center gap-2"
+                                          data-ajax data-assign-form
+                                          @if(request('assignment') === 'new') data-ajax-remove="tr" @endif
                                           data-confirm="{{ $hasProgress
                                               ? __('This lead already has progress. Move it to the selected sales? History stays with the lead, but the new sales becomes the owner.')
                                               : __('Move this lead to the selected sales?') }}"
@@ -298,4 +300,40 @@
             {{ $leads->links() }}
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('ajax:success', function (event) {
+                const form = event.detail?.form;
+                if (!form || !form.matches('[data-assign-form]')) return;
+
+                const data = event.detail?.data || {};
+                const row = form.closest('[data-lead-row]');
+                const cell = row?.querySelector('[data-assignee-cell]');
+                if (!cell || !data.assignee_name) return;
+
+                const wrap = document.createElement('div');
+                wrap.className = 'inline-flex items-center justify-center gap-2';
+
+                const avatar = document.createElement('span');
+                avatar.className = 'inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300';
+                avatar.textContent = data.assignee_initial || String(data.assignee_name).charAt(0).toUpperCase();
+
+                const info = document.createElement('div');
+                info.className = 'flex flex-col items-start text-left leading-tight';
+
+                const name = document.createElement('span');
+                name.className = 'text-xs font-semibold text-content-primary';
+                name.textContent = data.assignee_name;
+
+                const status = document.createElement('span');
+                status.className = 'text-xs uppercase tracking-wide text-emerald-600 dark:text-emerald-400';
+                status.textContent = @json(__('Assigned'));
+
+                info.append(name, status);
+                wrap.append(avatar, info);
+                cell.replaceChildren(wrap);
+            });
+        </script>
+    @endpush
 </x-app-layout>

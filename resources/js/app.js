@@ -410,6 +410,10 @@ document.addEventListener('submit', async (e) => {
         if (!res.ok) throw new Error();
         const data = await res.json();
         if (data.message) window.toast(data.message, true);
+        form.dispatchEvent(new CustomEvent('ajax:success', {
+            bubbles: true,
+            detail: { form, data },
+        }));
         if (data.redirect) {
             window.location.href = data.redirect;
             return;

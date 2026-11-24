@@ -7,9 +7,11 @@ use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\User;
+use App\Notifications\LeadAssignedNotification;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class ManageSalesTest extends TestCase
@@ -76,6 +78,7 @@ class ManageSalesTest extends TestCase
         $sales = User::factory()->create();
         $sales->assignRole('sales');
         $lead = $this->makeLead();
+        $this->withoutDefer();
 
         $this->actingAs($management)
             ->post(route('manage-sales.assign', $lead), ['assigned_to' => $sales->id])
@@ -88,6 +91,31 @@ class ManageSalesTest extends TestCase
         $this->assertNotNull(LeadActivity::where('lead_id', $lead->id)->where('action', 'assigned')->first());
 
         $this->actingAs($management)->get(route('manage-sales.index'))->assertOk();
+    }
+
+    public function test_management_assigns_lead_to_sales_via_json(): void
+    {
+        $management = $this->loginAs('management');
+        $sales = User::factory()->create();
+        $sales->assignRole('sales');
+        $lead = $this->makeLead();
+        $this->withoutDefer();
+        Notification::fake();
+
+        $debug = $this->actingAs($management)
+            ->postJson(route('manage-sales.assign', $lead), ['assigned_to' => $sales->id]);
+        $debug->assertOk()
+            ->assertJson([
+                'lead_id' => $lead->id,
+                'assigned_to' => $sales->id,
+                'assignee_name' => $sales->name,
+            ]);
+
+        $lead->refresh();
+        $this->assertSame($sales->id, $lead->assigned_to);
+        $this->assertSame($management->id, $lead->assigned_by);
+        $this->assertNotNull($lead->assigned_at);
+        Notification::assertSentTo($sales, LeadAssignedNotification::class);
     }
 
     public function test_management_cannot_assign_to_non_sales_user(): void

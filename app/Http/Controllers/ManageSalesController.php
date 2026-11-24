@@ -159,8 +159,12 @@ class ManageSalesController extends Controller
         $this->trackAssignment($lead, $salesUser->id);
         $lead->save();
 
-        $this->notifyAssignee($lead, $previousAssignee);
-        $this->notifyPreviousAssignee($lead, $previousAssignee, $salesUser->id);
+        // Notifikasi tetap realtime, tetapi dikirim setelah response agar
+        // email/push dan broadcast tidak menahan toast/assign di layar.
+        defer(function () use ($lead, $previousAssignee, $salesUser): void {
+            $this->notifyAssignee($lead, $previousAssignee);
+            $this->notifyPreviousAssignee($lead, $previousAssignee, $salesUser->id);
+        });
 
         // Assign pertama vs reassign dibedakan; old diambil sebelum save.
         $this->logActivity($lead, $previousAssignee ? 'reassigned' : 'assigned', [
@@ -168,6 +172,16 @@ class ManageSalesController extends Controller
         ]);
 
         $this->clearLeadNotifications($lead);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => __('Lead assigned to :name', ['name' => $salesUser->name]),
+                'lead_id' => $lead->id,
+                'assigned_to' => $salesUser->id,
+                'assignee_name' => $salesUser->name,
+                'assignee_initial' => mb_strtoupper(mb_substr($salesUser->name, 0, 1)),
+            ]);
+        }
 
         return redirect()
             ->route('manage-sales.index')
@@ -983,17 +997,15 @@ class ManageSalesController extends Controller
     private function clearLeadNotifications(Lead $lead): void
     {
         DatabaseNotification::where('type', NewLeadNotification::class)
-            ->get()
-            ->filter(fn ($n) => ($n->data['lead_id'] ?? null) == $lead->id)
-            ->each->delete();
+            ->where('data->lead_id', $lead->id)
+            ->delete();
 
         // Bersihkan notif assign basi milik sales lain (mis. reassign):
         // bell tiap sales hanya berisi lead miliknya sendiri.
         DatabaseNotification::where('type', LeadAssignedNotification::class)
-            ->get()
-            ->filter(fn ($n) => ($n->data['lead_id'] ?? null) == $lead->id
-                && (int) $n->notifiable_id !== (int) $lead->assigned_to)
-            ->each->delete();
+            ->where('data->lead_id', $lead->id)
+            ->where('notifiable_id', '!=', $lead->assigned_to)
+            ->delete();
     }
 
     private function logActivity(Lead $lead, string $action, ?array $changes = null): void
