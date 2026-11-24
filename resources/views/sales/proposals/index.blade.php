@@ -241,7 +241,7 @@
                     <table class="min-w-full">
                         <thead class="sticky top-0 z-10 bg-surface">
                             <tr class="border-b border-line">
-                                <th scope="col" aria-sort="{{ $ariaSort('number') }}" class="w-48 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
+                                <th scope="col" aria-sort="{{ $ariaSort('number') }}" class="border-b border-line bg-surface w-48 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
                                     <a href="{{ $sortUrl('number') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Quotation No.') }}
                                         @if($sortKey === 'number')
@@ -251,7 +251,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" aria-sort="{{ $ariaSort('customer') }}" class="min-w-56 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
+                                <th scope="col" aria-sort="{{ $ariaSort('customer') }}" class="border-b border-line bg-surface min-w-56 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
                                     <a href="{{ $sortUrl('customer') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Customer') }}
                                         @if($sortKey === 'customer')
@@ -261,7 +261,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" aria-sort="{{ $ariaSort('amount') }}" class="w-36 px-4 py-3 text-right text-xs font-semibold text-content-secondary">
+                                <th scope="col" aria-sort="{{ $ariaSort('amount') }}" class="border-b border-line bg-surface w-36 px-4 py-3 text-right text-xs font-semibold text-content-secondary">
                                     <a href="{{ $sortUrl('amount') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Amount') }}
                                         @if($sortKey === 'amount')
@@ -271,7 +271,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" aria-sort="{{ $ariaSort('status') }}" class="w-44 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
+                                <th scope="col" aria-sort="{{ $ariaSort('status') }}" class="border-b border-line bg-surface w-44 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
                                     <a href="{{ $sortUrl('status') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Status') }}
                                         @if($sortKey === 'status')
@@ -281,7 +281,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" aria-sort="{{ $ariaSort('valid_until') }}" class="w-36 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
+                                <th scope="col" aria-sort="{{ $ariaSort('valid_until') }}" class="border-b border-line bg-surface w-36 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
                                     <a href="{{ $sortUrl('valid_until') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Valid Until') }}
                                         @if($sortKey === 'valid_until')
@@ -291,8 +291,8 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" class="hidden w-36 px-4 py-3 text-left text-xs font-semibold text-content-secondary lg:table-cell">{{ __('Sales PIC') }}</th>
-                                <th scope="col" aria-sort="{{ $ariaSort('created_at') }}" class="hidden w-32 px-4 py-3 text-left text-xs font-semibold text-content-secondary lg:table-cell">
+                                <th scope="col" class="border-b border-line bg-surface hidden w-36 px-4 py-3 text-left text-xs font-semibold text-content-secondary lg:table-cell">{{ __('Sales PIC') }}</th>
+                                <th scope="col" aria-sort="{{ $ariaSort('created_at') }}" class="border-b border-line bg-surface hidden w-32 px-4 py-3 text-left text-xs font-semibold text-content-secondary lg:table-cell">
                                     <a href="{{ $sortUrl('created_at') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Created') }}
                                         @if($sortKey === 'created_at')
@@ -302,7 +302,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" class="w-12 px-2 py-3 text-center text-xs font-semibold text-content-secondary">
+                                <th scope="col" class="border-b border-line bg-surface w-12 px-2 py-3 text-center text-xs font-semibold text-content-secondary">
                                     <span class="sr-only">{{ __('Actions') }}</span>
                                 </th>
                             </tr>
