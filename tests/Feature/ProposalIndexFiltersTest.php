@@ -23,7 +23,7 @@ class ProposalIndexFiltersTest extends TestCase
 
     private function makeProposal(string $status, float $amount, array $attributes = []): Proposal
     {
-        $customer = Customer::create(['name' => 'PT Index ' . uniqid()]);
+        $customer = Customer::create(['name' => 'PT Index '.uniqid()]);
         $lead = Lead::create([
             'customer_id' => $customer->id,
             'pt_group' => 'NTI',
@@ -33,7 +33,7 @@ class ProposalIndexFiltersTest extends TestCase
 
         $proposal = Proposal::create([
             'lead_id' => $lead->id,
-            'proposal_number' => $attributes['proposal_number'] ?? 'Q/2026/11/' . uniqid(),
+            'proposal_number' => $attributes['proposal_number'] ?? 'Q/2026/11/'.uniqid(),
             'created_by' => $attributes['created_by'] ?? $lead->created_by ?? User::factory()->create()->id,
             'proposal_date' => now()->toDateString(),
             'customer' => $customer->name,
@@ -139,5 +139,18 @@ class ProposalIndexFiltersTest extends TestCase
             ->get(route('sales.proposals.index', ['per_page' => 25]))
             ->assertOk()
             ->assertSee('Rows per page');
+    }
+
+    public function test_index_shows_actions_header_and_row_action_link(): void
+    {
+        $management = $this->management();
+        $proposal = $this->makeProposal('draft', 1000000, ['created_by' => $management->id]);
+
+        $this->actingAs($management)
+            ->get(route('sales.proposals.index'))
+            ->assertOk()
+            ->assertSee('Actions')
+            ->assertSee('data-row-action', false)
+            ->assertSee(route('sales.proposals.show', $proposal), false);
     }
 }
