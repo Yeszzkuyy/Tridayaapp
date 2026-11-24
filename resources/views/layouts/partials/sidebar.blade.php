@@ -85,7 +85,7 @@
     </div>
 
     {{-- Menu --}}
-    <nav id="sidebar-navigation" aria-label="{{ __('Main navigation') }}" class="sidebar-nav relative z-10 flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
+    <nav id="sidebar-navigation" aria-label="{{ __('Main navigation') }}" class="sidebar-nav no-scrollbar relative z-10 flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4"
          data-nav-active="{{ $navActive }} sb-active" data-nav-inactive="{{ $navInactive }}">
         <div class="space-y-6">
             <section aria-labelledby="sidebar-main-label">
