@@ -19,6 +19,7 @@ use App\Services\SalesService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ManageSalesController extends Controller
 {
@@ -996,16 +997,29 @@ class ManageSalesController extends Controller
 
     private function clearLeadNotifications(Lead $lead): void
     {
-        DatabaseNotification::where('type', NewLeadNotification::class)
-            ->where('data->lead_id', $lead->id)
-            ->delete();
+        $this->notificationsForLead(NewLeadNotification::class, $lead)->delete();
 
         // Bersihkan notif assign basi milik sales lain (mis. reassign):
         // bell tiap sales hanya berisi lead miliknya sendiri.
-        DatabaseNotification::where('type', LeadAssignedNotification::class)
-            ->where('data->lead_id', $lead->id)
+        $this->notificationsForLead(LeadAssignedNotification::class, $lead)
             ->where('notifiable_id', '!=', $lead->assigned_to)
             ->delete();
+    }
+
+    /**
+     * Notifikasi lama bisa tersimpan sebagai json/jsonb (pgsql) atau text.
+     * Cast pgsql agar filter tetap terbatas pada lead ini, bukan memindai
+     * seluruh notifikasi.
+     */
+    private function notificationsForLead(string $type, Lead $lead)
+    {
+        $query = DatabaseNotification::where('type', $type);
+
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            return $query->whereRaw("(data::jsonb)->>'lead_id' = ?", [(string) $lead->id]);
+        }
+
+        return $query->where('data->lead_id', $lead->id);
     }
 
     private function logActivity(Lead $lead, string $action, ?array $changes = null): void
