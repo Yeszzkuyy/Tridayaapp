@@ -321,24 +321,33 @@
                 max-width var(--sb-label-in) var(--sb-ease-soft) var(--sb-label-in-delay);
         }
 
-        .sidebar{position:fixed;top:0;left:0;height:100vh;width:var(--sb-w);background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);z-index:999;transform:translateX(-100%);transition:transform .3s ease-in-out,width var(--sb-dur) var(--sb-ease);overflow-y:auto}
+        /* ============================================================
+           App shell terkunci ke viewport: tidak ada scrollbar di level
+           browser. Scroll hanya terjadi di dalam panel konten (iframe
+           workspace atau wrapper tabel masing-masing halaman).
+           ============================================================ */
+        html,body{height:100%;overflow:hidden}
+        .app-wrapper{display:flex;width:100%;height:100vh;height:100dvh;min-height:0;overflow:hidden}
+        .app-header,.main-content > footer{flex-shrink:0}
+        .sidebar{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:var(--sb-w);background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);z-index:999;transform:translateX(-100%);transition:transform .3s ease-in-out,width var(--sb-dur) var(--sb-ease);overflow:hidden}
         .sidebar.open{transform:translateX(0)}
         .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998}
         .sidebar-overlay.active{display:block}
-        .main-content{margin-left:0;width:100%;min-height:100vh;display:flex;flex-direction:column;transition:margin-left var(--sb-dur) var(--sb-ease),width var(--sb-dur) var(--sb-ease)}
+        .main-content{margin-left:0;width:100%;height:100vh;height:100dvh;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;transition:margin-left var(--sb-dur) var(--sb-ease),width var(--sb-dur) var(--sb-ease)}
 
         /* Rail hover: strip tipis di tepi sidebar, muncul garis saat hover.
-           Memakai --sb-w-rail (bukan 76px) supaya rail ikut.spring. */
-        .sb-rail{position:absolute;top:0;bottom:0;left:100%;width:1rem;z-index:21;cursor:pointer;background:transparent;transition:background-color 200ms ease}
+           Memakai --sb-w-rail (bukan 76px) supaya rail ikut.spring.
+           Posisi fixed (bukan left:100% relatif body) agar strip tidak
+           melewati tepi kanan viewport dan memicu scroll horizontal. */
+        .sb-rail{position:fixed;top:0;bottom:0;left:var(--sb-w);width:1rem;z-index:21;cursor:pointer;background:transparent;transition:left var(--sb-dur) var(--sb-ease),background-color 200ms ease}
         .sb-rail:hover,.sb-rail:focus-visible{background:rgb(var(--accent-500)/.07)}
         .sb-rail::after{content:"";position:absolute;top:50%;left:50%;width:1px;height:34px;margin-top:-17px;margin-left:-.5px;border-radius:2px;background:var(--sidebar-border);opacity:0;transition:opacity 200ms ease,background-color 200ms ease}
         .sb-rail:hover::after,.sb-rail:focus-visible::after{opacity:1;background:rgb(var(--accent-500)/.5)}
 
         @media(min-width:1024px){
-            .sidebar{position:fixed;left:0;top:0;transform:translateX(0)!important;width:var(--sb-w);height:100vh;overflow:hidden}
+            .sidebar{position:fixed;left:0;top:0;transform:translateX(0)!important;width:var(--sb-w);height:100vh;height:100dvh;overflow:hidden}
             .sidebar-overlay{display:none!important}
-            .main-content{margin-left:var(--sb-w);width:calc(100% - var(--sb-w));flex:1;min-width:0}
-            .app-wrapper{display:flex;min-height:100vh}
+            .main-content{margin-left:var(--sb-w);width:calc(100% - var(--sb-w));flex:1 1 0;min-width:0;min-height:0}
             #hamburgerBtn{display:none!important}
             .sb-rail{display:block}
         }
@@ -390,9 +399,8 @@
             html.sidebar-collapsed .sidebar-collapse{justify-content:center;padding-left:0;padding-right:0}
         }
         @media(max-width:1023px){
-            .app-wrapper{display:flex;min-height:100vh}
-            .sidebar{width:18rem}
-            .main-content{flex:1}
+            .sidebar{width:18rem;height:100vh;height:100dvh}
+            .main-content{flex:1 1 0;min-width:0;min-height:0}
         }
 
         /* Reduced motion: matikan morph lebar + label + stagger (template:
@@ -447,11 +455,14 @@
         /* Progress bar pindah menu (wire:navigate): strip accent meluncur
            kiri-ke-kanan selama navigating; hormati reduced-motion. */
         #navigate-progress{position:fixed;top:0;left:0;height:3px;width:35%;z-index:1002;opacity:0;pointer-events:none;border-radius:0 3px 3px 0;background:linear-gradient(90deg,rgb(var(--accent-500)/0),rgb(var(--accent-500)),rgb(var(--accent-400)));box-shadow:0 0 12px rgb(var(--accent-500)/.7);transform:translateX(-110%);transition:opacity .25s ease}
-        .workspace-stage{display:flex;flex-direction:column;flex:1;min-height:calc(100vh - 5rem)}
+        .workspace-stage{display:flex;flex-direction:column;flex:1 1 0;min-height:0;min-width:0;overflow:hidden}
         .workspace-stage--split{flex-direction:row;align-items:stretch}
-        .workspace-pane{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:calc(100vh - 5rem)}
+        .workspace-pane{position:relative;display:flex;flex-direction:column;flex:1 1 0;min-width:0;min-height:0;overflow:hidden}
         .workspace-pane.hidden{display:none!important}
-        .workspace-pane iframe{flex:1;min-height:calc(100vh - 5rem);width:100%}
+        .workspace-pane iframe{flex:1 1 0;min-height:0;width:100%;height:100%;display:block}
+        /* Fallback klasik (workspace dimatikan / layout termuat di iframe):
+           kontennya sendiri yang menggulir, bukan shell luar. */
+        #workspace-fallback{flex:1 1 auto;min-height:0;min-width:0;overflow-y:auto;overscroll-behavior:contain}
         .workspace-pane--focused::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:rgb(var(--accent-500));z-index:2;pointer-events:none}
         #workspace-split-divider{display:none;order:2;flex:0 0 6px;margin:0 2px;border-radius:9999px;background:var(--card-border);cursor:col-resize;align-self:stretch;touch-action:none}
         .workspace-stage--split #workspace-split-divider{display:block}

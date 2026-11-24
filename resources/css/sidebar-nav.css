@@ -182,11 +182,18 @@ html.sidebar-collapsed .sidebar .sb-sub {
     display: none;
 }
 
-/* ---------- Ruang scrollbar dicadangkan ----------
-   Tanpa ini, tiap sub-menu dibuka nav memanjang → scrollbar vertikal
-   muncul mendadak → isi bergeser horizontal (efek "jebret"). */
+/* ---------- Scrollbar nav disembunyikan ----------
+   Menu tetap bisa digulir dengan mouse wheel/trackpad, tetapi
+   scrollbar tidak ditampilkan agar tepi sidebar terlihat bersih.
+   Tidak perlu scrollbar-gutter: scrollbar yang disembunyikan tidak
+   memakan ruang, jadi isi tidak bergeser saat menu memanjang. */
 #sidebar-navigation {
-    scrollbar-gutter: stable;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#sidebar-navigation::-webkit-scrollbar {
+    display: none;
 }
 
 /* ---------- Reduced motion ---------- */
