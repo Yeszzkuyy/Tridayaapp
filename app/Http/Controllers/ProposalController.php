@@ -429,10 +429,25 @@ class ProposalController extends Controller
                 ->whereYear('updated_at', now()->year)->count(),
         ];
 
-        $query = (clone $base)->with(['lead.customer', 'creator'])->orderByDesc('created_at');
+        $query = (clone $base)->with(['lead.customer', 'creator']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->get('status'));
+        $status = (string) $request->get('status', '');
+        if ($status !== '' && in_array($status, Proposal::STATUSES, true)) {
+            $query->where('status', $status);
+        }
+
+        // Filter turunan mengikuti definisi KPI di atas supaya jumlah kartu
+        // selalu sama dengan jumlah baris hasil filter.
+        $filter = (string) $request->get('filter', '');
+        if ($filter === 'expiring') {
+            $query->whereIn('status', ['ready', 'sent', 'viewed'])
+                ->whereNotNull('valid_until')
+                ->whereDate('valid_until', '>=', today())
+                ->whereDate('valid_until', '<=', today()->addDays(7));
+        } elseif ($filter === 'won_month') {
+            $query->where('status', 'accepted')
+                ->whereMonth('updated_at', now()->month)
+                ->whereYear('updated_at', now()->year);
         }
 
         if ($request->filled('search')) {
@@ -441,7 +456,30 @@ class ProposalController extends Controller
                 ->orWhereLike('customer', "%{$search}%"));
         }
 
-        $proposals = $query->paginate(15)->withQueryString();
+        // Sorting memakai nilai mentah (angka/tanggal), bukan teks yang tampil.
+        $sortable = [
+            'number' => 'proposal_number',
+            'customer' => 'customer',
+            'amount' => 'grand_total',
+            'status' => 'status',
+            'valid_until' => 'valid_until',
+            'created_at' => 'created_at',
+        ];
+        $sort = (string) $request->get('sort', '');
+        $direction = strtolower((string) $request->get('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        if (isset($sortable[$sort])) {
+            $query->orderBy($sortable[$sort], $direction);
+        } else {
+            $query->orderByDesc('created_at');
+        }
+
+        $perPage = (int) $request->get('per_page', 10);
+        if (! in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
+        $proposals = $query->paginate($perPage)->withQueryString();
         $statuses = Proposal::STATUSES;
 
         return view('sales.proposals.index', compact('proposals', 'kpi', 'statuses'));
