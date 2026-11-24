@@ -118,19 +118,19 @@
     @endphp
 
     <div class="pb-24">
-        {{-- Header: tombol kembali di kiri judul, CTA di kanan. --}}
-        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-start gap-3">
-                <x-back-button :href="route('sales.dashboard')" :label="__('Back')" />
-                <div class="min-w-0">
-                    <h1 class="font-outfit text-2xl font-bold tracking-tight text-content-primary">{{ __('Quotations') }}</h1>
-                    <p class="mt-1 text-sm text-content-secondary">{{ __('Sales quotation & pricing list.') }}</p>
-                </div>
+        {{-- Header: judul di kiri, aksi standar di kanan. --}}
+        <div class="mb-6 flex items-start justify-between gap-4">
+            <div class="min-w-0">
+                <h1 class="font-outfit text-2xl font-bold tracking-tight text-content-primary">{{ __('Quotations') }}</h1>
+                <p class="mt-1 text-sm text-content-secondary">{{ __('Sales quotation & pricing list.') }}</p>
             </div>
-            @canany(['manage-inside-sales', 'manage-sales-leads'])
-                <x-icon-button as="a" icon="add" variant="solid" href="{{ route('sales.proposals.create') }}"
-                               label="{{ __('New Quotation') }}" title="{{ __('New Quotation') }}" />
-            @endcanany
+            <div class="flex shrink-0 items-center gap-2">
+                <x-icon-button as="a" icon="back" href="{{ route('sales.dashboard') }}" title="{{ __('Back') }}" />
+                @canany(['manage-inside-sales', 'manage-sales-leads'])
+                    <x-icon-button as="a" icon="add" variant="solid" href="{{ route('sales.proposals.create') }}"
+                                   label="{{ __('New Quotation') }}" title="{{ __('New Quotation') }}" />
+                @endcanany
+            </div>
         </div>
 
         {{-- KPI: satu baris 6 kartu, klik = filter status yang sama. --}}
@@ -147,12 +147,12 @@
                             : $listUrl(['filter' => $card['filter']], ['status']));
                 @endphp
                 <a href="{{ $href }}" aria-pressed="{{ $isActive ? 'true' : 'false' }}" title="{{ $card['tooltip'] }}"
-                   class="group flex h-24 flex-col justify-center gap-1.5 rounded-2xl border bg-surface px-4 py-3 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 {{ $isActive ? 'border-accent-600 ring-1 ring-accent-600/20 dark:border-accent-400 dark:ring-accent-400/25' : 'border-line' }}">
-                    <span class="flex items-center gap-2 text-xs font-semibold uppercase leading-tight tracking-wider text-content-secondary">
-                        <span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {{ $card['color'] }};"></span>
+                   class="group flex flex-col justify-center gap-2 rounded-2xl border bg-surface p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 {{ $isActive ? 'border-accent-600 ring-1 ring-accent-600/20 dark:border-accent-400 dark:ring-accent-400/25' : 'border-line' }}">
+                    <span class="text-xs font-semibold uppercase leading-tight tracking-wider text-content-secondary">
                         {{ $card['label'] }}
                     </span>
-                    <span class="text-3xl font-extrabold leading-none tabular-nums {{ $card['value'] === 0 ? 'text-content-tertiary' : 'text-content-primary' }}">
+                    <span class="inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xl font-extrabold leading-none tabular-nums"
+                          style="color: {{ $card['color'] }}; background-color: color-mix(in srgb, {{ $card['color'] }} 12%, transparent);">
                         {{ $card['value'] }}
                     </span>
                 </a>
@@ -262,7 +262,7 @@
                                     </a>
                                 </th>
                                 <th scope="col" aria-sort="{{ $ariaSort('amount') }}" class="border-b border-line bg-surface w-36 px-4 py-3 text-right text-xs font-semibold text-content-secondary">
-                                    <a href="{{ $sortUrl('amount') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
+                                    <a href="{{ $sortUrl('amount') }}" class="flex w-full items-center justify-end gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Amount') }}
                                         @if($sortKey === 'amount')
                                             <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
@@ -271,8 +271,8 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" aria-sort="{{ $ariaSort('status') }}" class="border-b border-line bg-surface w-44 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
-                                    <a href="{{ $sortUrl('status') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
+                                <th scope="col" aria-sort="{{ $ariaSort('status') }}" class="border-b border-line bg-surface w-44 px-4 py-3 text-center text-xs font-semibold text-content-secondary">
+                                    <a href="{{ $sortUrl('status') }}" class="flex w-full items-center justify-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Status') }}
                                         @if($sortKey === 'status')
                                             <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
@@ -281,8 +281,8 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" aria-sort="{{ $ariaSort('valid_until') }}" class="border-b border-line bg-surface w-36 px-4 py-3 text-left text-xs font-semibold text-content-secondary">
-                                    <a href="{{ $sortUrl('valid_until') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
+                                <th scope="col" aria-sort="{{ $ariaSort('valid_until') }}" class="border-b border-line bg-surface w-36 px-4 py-3 text-center text-xs font-semibold text-content-secondary">
+                                    <a href="{{ $sortUrl('valid_until') }}" class="flex w-full items-center justify-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Valid Until') }}
                                         @if($sortKey === 'valid_until')
                                             <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
@@ -292,8 +292,8 @@
                                     </a>
                                 </th>
                                 <th scope="col" class="border-b border-line bg-surface hidden w-36 px-4 py-3 text-left text-xs font-semibold text-content-secondary lg:table-cell">{{ __('Sales PIC') }}</th>
-                                <th scope="col" aria-sort="{{ $ariaSort('created_at') }}" class="border-b border-line bg-surface hidden w-32 px-4 py-3 text-left text-xs font-semibold text-content-secondary lg:table-cell">
-                                    <a href="{{ $sortUrl('created_at') }}" class="inline-flex items-center gap-1 transition-colors hover:text-content-primary">
+                                <th scope="col" aria-sort="{{ $ariaSort('created_at') }}" class="border-b border-line bg-surface hidden w-32 px-4 py-3 text-center text-xs font-semibold text-content-secondary lg:table-cell">
+                                    <a href="{{ $sortUrl('created_at') }}" class="flex w-full items-center justify-center gap-1 transition-colors hover:text-content-primary">
                                         {{ __('Created') }}
                                         @if($sortKey === 'created_at')
                                             <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
@@ -302,8 +302,8 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th scope="col" class="border-b border-line bg-surface w-12 px-2 py-3 text-center text-xs font-semibold text-content-secondary">
-                                    <span class="sr-only">{{ __('Actions') }}</span>
+                                <th scope="col" class="border-b border-line bg-surface w-20 px-4 py-3 text-center text-xs font-semibold text-content-secondary">
+                                    {{ __('Actions') }}
                                 </th>
                             </tr>
                         </thead>
@@ -337,10 +337,10 @@
                                             <span class="text-sm font-semibold text-content-tertiary" title="{{ __('No items yet') }}">-</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3">
+                                    <td class="px-4 py-3 text-center">
                                         <x-proposal-status-badge :status="$proposal->status" />
                                     </td>
-                                    <td class="whitespace-nowrap px-4 py-3 text-sm tabular-nums">
+                                    <td class="whitespace-nowrap px-4 py-3 text-center text-sm tabular-nums">
                                         @if($proposal->status === 'expired' || $validUntil)
                                             @if($isExpired)
                                                 <span class="inline-flex items-center gap-1.5 font-semibold" style="color: var(--danger);">
@@ -373,14 +373,12 @@
                                             <span class="text-sm text-content-tertiary">-</span>
                                         @endif
                                     </td>
-                                    <td class="hidden whitespace-nowrap px-4 py-3 text-sm tabular-nums text-content-secondary lg:table-cell">
+                                    <td class="hidden whitespace-nowrap px-4 py-3 text-center text-sm tabular-nums text-content-secondary lg:table-cell">
                                         {{ $proposal->created_at?->translatedFormat('d M Y') ?? '-' }}
                                     </td>
                                     <td class="px-2 py-3 text-center">
-                                        <a href="{{ $showUrl }}" data-row-action title="{{ __('View details') }}" aria-label="{{ __('View details') }}"
-                                           class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-content-tertiary transition-all duration-200 hover:border-line hover:bg-surface hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 dark:hover:text-accent-300">
-                                            <x-icon name="eye" class="h-4 w-4" />
-                                        </a>
+                                        <x-icon-button as="a" icon="view" :href="$showUrl" data-row-action
+                                                       title="{{ __('View details') }}" />
                                     </td>
                                 </tr>
                             @empty
