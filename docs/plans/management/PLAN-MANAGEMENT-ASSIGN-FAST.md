@@ -1,6 +1,6 @@
 # PLAN-MANAGEMENT-ASSIGN-FAST: Assign Lead Cepat dengan Toast
 
-**Status Pengerjaan:** Siap Dikerjakan
+**Status Pengerjaan:** Selesai
 **Work:** MNG-ASSIGN-FAST
 **PIC:** Yeski
 **Menu:** Management / Manage Sales
@@ -33,4 +33,4 @@ Tidak termasuk: perubahan aturan assignment, status lead, atau data lain.
 - [x] Toast sukses muncul.
 - [x] Notifikasi sales penerima dibuat.
 - [x] Test terkait lulus dan browser dicek.
-- [ ] User menyatakan hasilnya sesuai.
+- [x] User menyatakan hasilnya sesuai.
