@@ -460,7 +460,7 @@
                     @endif
                     <span class="text-xs font-medium text-content-secondary">{{ __('Rows per page') }}</span>
                     <div class="w-20">
-                        <x-glide-select name="per_page" size="md" :label="__('Rows per page')"
+                        <x-glide-select name="per_page" size="field" :label="__('Rows per page')"
                             :options="[['value' => '10', 'label' => '10'], ['value' => '25', 'label' => '25'], ['value' => '50', 'label' => '50']]"
                             :value="(string) request('per_page', '10')" autosubmit />
                     </div>
