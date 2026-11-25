@@ -544,6 +544,23 @@ class EstimatorRequestTest extends TestCase
             ->assertSee('style="display: none"', false);
     }
 
+    public function test_answered_request_uses_emerald_alert_and_neutral_edit_button(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $estimator = $this->userWithRole('estimator');
+        $request = $this->makeRequest($sales, ['status' => 'answered']);
+
+        $html = $this->actingAs($estimator)->get(route('estimator.requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Prices have been submitted to Sales.', $html);
+        $this->assertStringContainsString('bg-emerald-500/[0.07]', $html);
+        $this->assertStringContainsString('x-on:click="editing = true"', $html);
+        $this->assertStringContainsString('text-slate-200 bg-slate-800/80', $html);
+        $this->assertStringNotContainsString('This request has already been answered', $html);
+    }
+
     public function test_estimator_can_open_supplier_directory_but_sales_cannot(): void
     {
         $sales = $this->userWithRole('sales');

@@ -224,14 +224,26 @@
                                        x-show="editing" onclick="copyFirstValidUntilToAll()" />
                     @endif
                     @if($canAnswer && $estimatorRequest->status === 'answered')
-                        <x-icon-button type="button" icon="edit" label="{{ __('Edit Prices') }}" title="{{ __('Edit Prices') }}" x-on:click="editing = true" />
+                        <button type="button" x-on:click="editing = true"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 hover:border-slate-600 rounded-lg transition-colors">
+                            <x-icon name="edit" class="h-3.5 w-3.5 text-slate-400" />
+                            {{ __('Edit Prices') }}
+                        </button>
                     @endif
                 </div>
             </div>
 
             @if($canAnswer && ! $formOpen && in_array($estimatorRequest->status, ['answered', 'completed'], true))
-                <div class="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-500/10 dark:text-amber-300">
-                    {{ __('This request has already been answered. The price form is closed.') }}
+                <div class="flex items-center gap-3 px-4 py-3 bg-emerald-500/[0.07] border-y border-emerald-500/15 text-sm text-emerald-300/90">
+                    <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m8.5 12.3 2.4 2.4 4.8-5" />
+                    </svg>
+                    <p>
+                        {{ __('Prices have been submitted to Sales. Click') }}
+                        <span class="font-medium text-emerald-200">{{ __('Edit Prices') }}</span>
+                        {{ __('if you need to make changes.') }}
+                    </p>
                 </div>
             @endif
 
