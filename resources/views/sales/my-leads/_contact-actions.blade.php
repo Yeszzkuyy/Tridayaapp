@@ -16,11 +16,13 @@
     {{-- target=_top: formulir dibuka sebagai halaman penuh. Tanpa itu, isi tab
          langsung memantul ke daftar Follow Up karena alamatnya satu keluarga
          menu Follow Up. --}}
-    @if($first)
-        <span data-tour="followup">
+    @can('manage-sales')
+        @if($first)
+            <span data-tour="followup">
+                <x-icon-button as="a" icon="add" target="_top" :href="$followUpUrl" title="{{ __('Follow Up') }}" />
+            </span>
+        @else
             <x-icon-button as="a" icon="add" target="_top" :href="$followUpUrl" title="{{ __('Follow Up') }}" />
-        </span>
-    @else
-        <x-icon-button as="a" icon="add" target="_top" :href="$followUpUrl" title="{{ __('Follow Up') }}" />
-    @endif
+        @endif
+    @endcan
 </div>

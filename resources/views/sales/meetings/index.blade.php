@@ -14,11 +14,13 @@
             <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Meeting') }}</h1>
             <p class="mt-1 text-slate-500 dark:text-slate-400">{{ __('Daily meeting tracker — results, proof, and follow-up progress.') }}</p>
         </div>
-        <x-icon-button as="a" variant="solid" reveal icon="add"
-                       href="{{ route('sales.meetings.create') }}"
-                       label="{{ __('New Meeting') }}"
-                       title="{{ __('New Meeting') }}"
-                       class="shrink-0" />
+        @canany(['manage-sales', 'manage-inside-sales'])
+            <x-icon-button as="a" variant="solid" reveal icon="add"
+                           href="{{ route('sales.meetings.create') }}"
+                           label="{{ __('New Meeting') }}"
+                           title="{{ __('New Meeting') }}"
+                           class="shrink-0" />
+        @endcanany
     </div>
 
     {{-- KPI --}}
@@ -81,7 +83,9 @@
     @if($grouped->isEmpty())
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-600 dark:bg-slate-800">
             <x-empty-state label="{{ __('meetings') }}" description="{{ __('No meetings in this period yet.') }}">
-                <x-icon-button as="a" icon="add" href="{{ route('sales.meetings.create') }}" label="{{ __('New Meeting') }}" title="{{ __('New Meeting') }}" />
+                @canany(['manage-sales', 'manage-inside-sales'])
+                    <x-icon-button as="a" icon="add" href="{{ route('sales.meetings.create') }}" label="{{ __('New Meeting') }}" title="{{ __('New Meeting') }}" />
+                @endcanany
             </x-empty-state>
         </div>
     @else

@@ -88,29 +88,35 @@
 
                 <td class="px-2 py-3">
                     <div class="relative min-w-[80px]">
-                        <select x-model="stage" @change="stageChanged($event.target.value)" :disabled="stageSaving"
-                                class="h-9 w-full rounded-xl border border-slate-300 bg-[var(--card-bg)] px-2 text-xs font-semibold text-content-secondary focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
-                            @foreach($statuses as $status)
-                                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                            @endforeach
-                        </select>
-                        <p x-show="stageSaving" x-cloak class="mt-1 text-xs text-content-tertiary">{{ __('Saving...') }}</p>
-
-                        <div x-show="lostOpen" x-cloak class="absolute left-0 top-11 z-30 w-64 rounded-xl border border-slate-200 bg-[var(--card-bg)] p-3 shadow-xl dark:border-slate-600 dark:bg-slate-800">
-                            <p class="text-xs font-semibold text-content-secondary">{{ __('Loss reason') }}</p>
-                            <select x-model="lostReason" class="mt-1 w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 text-content-primary">
-                                <option value="">{{ __('Choose reason') }}</option>
-                                @foreach($reasonOptions as $reason)
-                                    <option value="{{ $reason['value'] }}">{{ $reason['label'] }}</option>
+                        @can('manage-sales')
+                            <select x-model="stage" @change="stageChanged($event.target.value)" :disabled="stageSaving"
+                                    class="h-9 w-full rounded-xl border border-slate-300 bg-[var(--card-bg)] px-2 text-xs font-semibold text-content-secondary focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
+                                @foreach($statuses as $status)
+                                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
                                 @endforeach
                             </select>
-                            <input type="text" x-model="lostNote" maxlength="2000" placeholder="{{ __('Short note') }}"
-                                   class="mt-2 w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 text-content-primary">
-                            <div class="mt-2 flex gap-2">
-                                <button type="button" @click="confirmLost()" class="h-8 flex-1 rounded-xl bg-red-600 text-xs font-semibold text-white transition hover:bg-red-700 active:scale-95">{{ __('Confirm') }}</button>
-                                <button type="button" @click="cancelLost()" class="h-8 flex-1 rounded-xl border border-slate-200 text-xs font-medium text-content-secondary transition hover:bg-slate-50 active:scale-95 dark:border-slate-600 dark:hover:bg-slate-700">{{ __('Cancel') }}</button>
+                            <p x-show="stageSaving" x-cloak class="mt-1 text-xs text-content-tertiary">{{ __('Saving...') }}</p>
+
+                            <div x-show="lostOpen" x-cloak class="absolute left-0 top-11 z-30 w-64 rounded-xl border border-slate-200 bg-[var(--card-bg)] p-3 shadow-xl dark:border-slate-600 dark:bg-slate-800">
+                                <p class="text-xs font-semibold text-content-secondary">{{ __('Loss reason') }}</p>
+                                <select x-model="lostReason" class="mt-1 w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 text-content-primary">
+                                    <option value="">{{ __('Choose reason') }}</option>
+                                    @foreach($reasonOptions as $reason)
+                                        <option value="{{ $reason['value'] }}">{{ $reason['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                <input type="text" x-model="lostNote" maxlength="2000" placeholder="{{ __('Short note') }}"
+                                       class="mt-2 w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 text-content-primary">
+                                <div class="mt-2 flex gap-2">
+                                    <button type="button" @click="confirmLost()" class="h-8 flex-1 rounded-xl bg-red-600 text-xs font-semibold text-white transition hover:bg-red-700 active:scale-95">{{ __('Confirm') }}</button>
+                                    <button type="button" @click="cancelLost()" class="h-8 flex-1 rounded-xl border border-slate-200 text-xs font-medium text-content-secondary transition hover:bg-slate-50 active:scale-95 dark:border-slate-600 dark:hover:bg-slate-700">{{ __('Cancel') }}</button>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <span class="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-[var(--card-bg)] px-2 text-xs font-semibold text-content-secondary dark:border-slate-600">
+                                {{ ucfirst($lead->status) }}
+                            </span>
+                        @endcan
                     </div>
                 </td>
 

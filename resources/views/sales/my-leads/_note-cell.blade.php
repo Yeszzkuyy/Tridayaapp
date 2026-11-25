@@ -5,13 +5,16 @@
            :title="note"
            :class="note ? '' : 'text-content-tertiary'"
            x-text="note || {{ json_encode(__('No note yet')) }}">{{ ($cfg['note'] ?? '') !== '' ? $cfg['note'] : __('No note yet') }}</p>
-        <button type="button" @click="startNote()" title="{{ __('Edit note') }}"
-                class="mt-0.5 shrink-0 rounded-xl p-1 text-content-tertiary opacity-70 transition hover:bg-slate-100 hover:text-accent-600 hover:opacity-100 focus-visible:opacity-100 dark:hover:bg-slate-700">
-            <x-icon name="edit" class="h-3.5 w-3.5" />
-            <span class="sr-only">{{ __('Edit note') }}</span>
-        </button>
+        @can('manage-sales')
+            <button type="button" @click="startNote()" title="{{ __('Edit note') }}"
+                    class="mt-0.5 shrink-0 rounded-xl p-1 text-content-tertiary opacity-70 transition hover:bg-slate-100 hover:text-accent-600 hover:opacity-100 focus-visible:opacity-100 dark:hover:bg-slate-700">
+                <x-icon name="edit" class="h-3.5 w-3.5" />
+                <span class="sr-only">{{ __('Edit note') }}</span>
+            </button>
+        @endcan
     </div>
 
+    @can('manage-sales')
     <div x-show="editingNote" x-cloak class="mt-2 space-y-1.5">
         <textarea x-model="draftNote" rows="4" maxlength="2000" placeholder="{{ __('What happened with this lead?') }}"
                   class="w-full rounded-xl border-slate-300 text-xs focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 text-content-primary"></textarea>
@@ -28,4 +31,5 @@
             </button>
         </div>
     </div>
+    @endcan
 </div>

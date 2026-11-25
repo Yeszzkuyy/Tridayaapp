@@ -5,11 +5,13 @@
             <h1 class="text-3xl font-bold text-content-primary">{{ __('My Leads') }}</h1>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-2">
-            <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" label="{{ __('Add Lead') }}" title="{{ __('Add Lead') }}" />
-            <x-flow-button as="a" :href="route('sales.follow-ups.create')"
-                           icon="add"
-                           label="{{ __('Add Follow Up') }}"
-                           title="{{ __('Add Follow Up') }}" />
+            @can('manage-sales')
+                <x-icon-button as="a" icon="add" href="{{ route('leads.create') }}" label="{{ __('Add Lead') }}" title="{{ __('Add Lead') }}" />
+                <x-flow-button as="a" :href="route('sales.follow-ups.create')"
+                               icon="add"
+                               label="{{ __('Add Follow Up') }}"
+                               title="{{ __('Add Follow Up') }}" />
+            @endcan
             <button type="button"
                     @click="tips = true; localStorage.setItem('sales_followup_tips', 'on')"
                     class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-[var(--card-bg)] text-content-secondary transition-all duration-300 hover:bg-slate-50 hover:text-accent-600 active:scale-95 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"

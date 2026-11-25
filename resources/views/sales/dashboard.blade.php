@@ -441,11 +441,13 @@
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{{ __('Report Pending') }}</p>
                 <p class="mt-1.5 text-2xl font-extrabold text-amber-600 dark:text-amber-400 tabular-nums">{{ $dailyReport['pending'] }}</p>
             </div>
-            <a href="{{ $dailyReport['pending'] > 0 ? route('sales.meetings.index', ['status' => 'pending']) : route('sales.meetings.create') }}"
-               class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent-300 px-4 py-3 text-sm font-semibold text-accent-700 transition hover:bg-accent-50 dark:border-accent-700 dark:text-accent-300 dark:hover:bg-accent-900/20">
-                <x-icon name="add" class="h-4 w-4" />
-                {{ $dailyReport['pending'] > 0 ? __('Send report') : __('New Meeting') }}
-            </a>
+            @canany(['manage-sales', 'manage-inside-sales'])
+                <a href="{{ $dailyReport['pending'] > 0 ? route('sales.meetings.index', ['status' => 'pending']) : route('sales.meetings.create') }}"
+                   class="flex items-center justify-center gap-2 rounded-xl border border-dashed border-accent-300 px-4 py-3 text-sm font-semibold text-accent-700 transition hover:bg-accent-50 dark:border-accent-700 dark:text-accent-300 dark:hover:bg-accent-900/20">
+                    <x-icon name="add" class="h-4 w-4" />
+                    {{ $dailyReport['pending'] > 0 ? __('Send report') : __('New Meeting') }}
+                </a>
+            @endcanany
         </div>
         @if($dailyReport['total'] === 0)
             <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">{{ __('No meeting today.') }}</p>
