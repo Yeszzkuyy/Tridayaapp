@@ -12,6 +12,7 @@
     $bastTemplates = collect(config('services.bast-templates'))->filter();
 @endphp
 
+@canany(['manage-technician', 'manage-admin'])
 @if($bastTemplates->isNotEmpty())
     <x-dropdown align="right" width="w-56">
         <x-slot name="trigger">
@@ -66,3 +67,4 @@
         </x-slot>
     </x-dropdown>
 @endif
+@endcanany

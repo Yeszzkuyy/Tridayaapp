@@ -30,7 +30,9 @@
             <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 sm:text-3xl">{{ __('Request Sales') }}</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Incoming requests - take one to process or reply. You can also create an installation price request with the same file form.') }}</p>
         </div>
-        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Installation Price') }}" title="{{ __('New Installation Price') }}" class="shrink-0" />
+        @canany(['manage-technician', 'manage-sales', 'manage-inside-sales'])
+            <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Installation Price') }}" title="{{ __('New Installation Price') }}" class="shrink-0" />
+        @endcanany
     </div>
 
     <x-request-hub-tabs :tabs="$tabs" :active="$tab" :counts="$openCounts" route-name="teknisi.requests.index" />
@@ -71,7 +73,9 @@
                 </x-request-list-item>
             @empty
                 <x-empty-state label="{{ __('price requests') }}" description="{{ __('No installation price requests yet - attach a quotation PDF and Engineering will reply with the price.') }}">
-                    <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Installation Price') }}" title="{{ __('New Installation Price') }}" />
+                    @canany(['manage-technician', 'manage-sales', 'manage-inside-sales'])
+                        <x-icon-button as="a" icon="add" href="{{ route('sales.price-requests.create') }}" label="{{ __('New Installation Price') }}" title="{{ __('New Installation Price') }}" />
+                    @endcanany
                 </x-empty-state>
             @endforelse
 
