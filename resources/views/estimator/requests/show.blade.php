@@ -234,14 +234,14 @@
             </div>
 
             @if($canAnswer && ! $formOpen && in_array($estimatorRequest->status, ['answered', 'completed'], true))
-                <div class="flex items-center gap-3 px-4 py-3 bg-emerald-500/[0.07] border-y border-emerald-500/15 text-sm text-emerald-300/90">
-                    <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <div class="flex items-center gap-3 px-4 py-3 bg-emerald-500/[0.07] border-y border-emerald-500/15 text-sm text-emerald-700 dark:text-emerald-300/90">
+                    <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" />
                         <path d="m8.5 12.3 2.4 2.4 4.8-5" />
                     </svg>
                     <p>
                         {{ __('Prices have been submitted to Sales. Click') }}
-                        <span class="font-medium text-emerald-200">{{ __('Edit Prices') }}</span>
+                        <span class="font-medium text-emerald-700 dark:text-emerald-200">{{ __('Edit Prices') }}</span>
                         {{ __('if you need to make changes.') }}
                     </p>
                 </div>
