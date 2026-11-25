@@ -135,6 +135,19 @@ class Lead extends Model
         };
     }
 
+    /** Warna penanda stage di My Leads (selaras badge status). */
+    public static function statusDotClasses(?string $status): string
+    {
+        return match ($status) {
+            'cool' => 'bg-blue-500',
+            'warm' => 'bg-amber-400',
+            'hot' => 'bg-orange-500',
+            'won' => 'bg-emerald-500',
+            'lost' => 'bg-red-500',
+            default => 'bg-slate-300 dark:bg-slate-600',
+        };
+    }
+
     public static function colorLabel(?string $color): string
     {
         return match ($color) {

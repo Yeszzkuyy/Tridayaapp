@@ -17,7 +17,6 @@ class TypographyPilotTest extends TestCase
             'resources/views/sales/my-leads/_cards.blade.php',
             'resources/views/sales/my-leads/_next-cell.blade.php',
             'resources/views/sales/my-leads/_note-cell.blade.php',
-            'resources/views/sales/my-leads/_color-picker.blade.php',
             'resources/views/customers/show.blade.php',
             'resources/views/customers/project-card.blade.php',
             'resources/views/customers/doc-card.blade.php',

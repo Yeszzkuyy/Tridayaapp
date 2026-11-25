@@ -240,16 +240,17 @@ class MyLeadsWorkspaceTest extends TestCase
         $this->assertNull($lead->fresh()->color_tag);
     }
 
-    public function test_my_leads_shows_note_form_below_existing_note_and_color_picker(): void
+    public function test_my_leads_shows_note_form_and_stage_dropdown(): void
     {
         $sales = $this->sales();
-        $lead = $this->lead($sales, ['color_tag' => 'yellow']);
+        $this->lead($sales, ['color_tag' => 'yellow']);
 
         $html = $this->actingAs($sales)->get(route('sales.my-leads'))->assertOk()->getContent();
 
         $this->assertStringContainsString('x-show="editingNote"', $html);
-        $this->assertStringContainsString('Lead color', $html);
-        $this->assertStringContainsString('bg-amber-400', $html);
+        $this->assertStringContainsString('pipeline_stage', $html);
+        $this->assertStringContainsString('stageDotClass', $html);
+        $this->assertStringNotContainsString('Lead color', $html);
     }
 
     public function test_latest_note_keeps_multiline_text(): void
