@@ -1,98 +1,174 @@
 <x-app-layout>
     @php $isOwner = in_array(auth()->id(), [$proposal->created_by, $proposal->lead->assigned_to]); @endphp
     <div>
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ $proposal->proposal_number }}</h1>
-                <p class="text-slate-500 mt-1">
-                    <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($proposal->status) }}">{{ \App\Models\Proposal::statusLabel($proposal->status) }}</span> •
-                    Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}
-                </p>
-                <x-handoff-status :proposal="$proposal" class="mt-2" />
-                @if($proposal->sent_at)
-                    <p class="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                        ✓ {{ __('Sent via :channel', ['channel' => $proposal->sentChannelLabel() ?? __('Manual')]) }}
-                        · {{ $proposal->sent_at->translatedFormat('d M Y H:i') }}
-                    </p>
-                @endif
-            </div>
-            <div class="flex items-center gap-2">
+        <section class="mb-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <h1 class="font-outfit text-2xl font-bold tracking-tight text-content-primary">{{ $proposal->proposal_number }}</h1>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <x-proposal-status-badge :status="$proposal->status" />
+                        <span class="text-xs text-content-tertiary">{{ __('Last updated') }} {{ $proposal->updated_at?->translatedFormat('d M Y H:i') }}</span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <x-handoff-status :proposal="$proposal" />
+                        @if($proposal->sent_at)
+                            <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+                                  style="color: var(--success); background-color: color-mix(in srgb, var(--success) 12%, transparent);">
+                                {{ __('Sent via :channel', ['channel' => $proposal->sentChannelLabel() ?? __('Manual')]) }}
+                                · {{ $proposal->sent_at->translatedFormat('d M Y H:i') }}
+                            </span>
+                        @endif
+                    </div>
+                </div>
                 <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.index') }}" title="{{ __('Back') }}" />
             </div>
-        </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 p-6 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <p class="text-slate-500">{{ __('Customer') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->customer }}</span></p>
-                <p class="text-slate-500">{{ __('Date') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->proposal_date?->format('d M Y') ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Valid Until') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->valid_until?->format('d M Y') ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Sales Owner') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->lead->assignee?->name ?? '-' }}</span></p>
-                <p class="text-slate-500">{{ __('Prepared By') }}: <span class="text-slate-800 dark:text-slate-100 font-medium">{{ $proposal->creator?->name ?? '-' }}</span></p>
-                @if($proposal->priceRequest)
-                    <p class="text-slate-500">{{ __('Price Request') }}:
-                        <a href="{{ route('sales.price-requests.show', $proposal->priceRequest) }}" class="font-medium text-accent-600 dark:text-accent-400 hover:underline">#{{ $proposal->priceRequest->id }}</a>
-                    </p>
-                @endif
+            <div class="mt-5 border-t border-line pt-4">
+                <p class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Grand Total') }}</p>
+                <p class="mt-1 font-outfit text-3xl font-extrabold tabular-nums text-content-primary">Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</p>
             </div>
+        </section>
 
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ __('Quotation Items') }}</h2>
-                @can('create', \App\Models\EstimatorRequest::class)
-                    <x-icon-button as="a" icon="tools"
-                                   :href="route('estimator.requests.create', [
-                                       'customer_id' => $proposal->lead?->customer_id,
-                                       'lead_id' => $proposal->lead_id,
-                                       'proposal_id' => $proposal->id,
-                                   ])"
-                                   label="{{ __('Request Product Price') }}"
-                                   title="{{ __('Request Product Price') }}" />
-                @endcan
-            </div>
+        <div class="space-y-6">
+            <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Quotation Information') }}</h2>
+                <dl class="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-xs font-medium text-content-tertiary">{{ __('Customer') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $proposal->customer ?: '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-content-tertiary">{{ __('Quotation Date') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $proposal->proposal_date?->translatedFormat('d M Y') ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-content-tertiary">{{ __('Valid Until') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $proposal->valid_until?->translatedFormat('d M Y') ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-content-tertiary">{{ __('Sales Owner') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $proposal->lead->assignee?->name ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-content-tertiary">{{ __('Prepared By') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $proposal->creator?->name ?? '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-content-tertiary">{{ __('Quotation Number') }}</dt>
+                        <dd class="mt-1 text-sm font-medium text-content-primary">{{ $proposal->proposal_number }}</dd>
+                    </div>
+                    @if($proposal->priceRequest)
+                        <div>
+                            <dt class="text-xs font-medium text-content-tertiary">{{ __('Price Request') }}</dt>
+                            <dd class="mt-1">
+                                <a href="{{ route('sales.price-requests.show', $proposal->priceRequest) }}" class="text-sm font-semibold text-accent-600 hover:underline dark:text-accent-400">#{{ $proposal->priceRequest->id }}</a>
+                            </dd>
+                        </div>
+                    @endif
+                </dl>
+            </section>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="text-left text-xs text-slate-500 border-b border-slate-200 dark:border-slate-700">
-                            <th class="py-2 pr-2">{{ __('Description') }}</th>
-                            <th class="py-2 pr-2 text-right">{{ __('Qty') }}</th>
-                            <th class="py-2 pr-2 text-right">{{ __('Price') }}</th>
-                            <th class="py-2 text-right">{{ __('Subtotal') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($proposal->items as $item)
-                            <tr class="border-b border-slate-100 dark:border-slate-700">
-                                <td class="py-2 pr-2">{{ $item->description }} <span class="text-xs text-slate-400">({{ $item->unit }})</span></td>
-                                <td class="py-2 pr-2 text-right">{{ rtrim(rtrim(number_format($item->quantity, 2, ',', '.'), '0'), ',') }}</td>
-                                <td class="py-2 pr-2 text-right">{{ number_format($item->unit_price, 0, ',', '.') }}</td>
-                                <td class="py-2 text-right">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-end">
-                <div class="w-full md:w-64 text-sm space-y-1">
-                    <p class="flex justify-between text-slate-500"><span>{{ __('Subtotal') }}</span><span>{{ number_format($proposal->subtotal, 0, ',', '.') }}</span></p>
-                    <p class="flex justify-between text-slate-500"><span>{{ __('Discount') }}</span><span>{{ number_format($proposal->discount, 0, ',', '.') }}</span></p>
-                    <p class="flex justify-between text-slate-500"><span>{{ __('Tax') }}@if($proposal->tax_rate !== null) ({{ rtrim(rtrim(number_format((float) $proposal->tax_rate, 2, ',', '.'), '0'), ',') }}%)@endif</span><span>{{ number_format($proposal->tax, 0, ',', '.') }}</span></p>
-                    <p class="flex justify-between font-bold text-slate-800 dark:text-slate-100"><span>{{ __('Grand Total') }}</span><span>Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</span></p>
+            <section class="rounded-2xl border border-line bg-surface shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Quotation Items') }}</h2>
+                    @can('create', \App\Models\EstimatorRequest::class)
+                        <x-icon-button as="a" icon="tools"
+                                       :href="route('estimator.requests.create', [
+                                           'customer_id' => $proposal->lead?->customer_id,
+                                           'lead_id' => $proposal->lead_id,
+                                           'proposal_id' => $proposal->id,
+                                       ])"
+                                       label="{{ __('Request Product Price') }}"
+                                       title="{{ __('Request Product Price') }}" />
+                    @endcan
                 </div>
-            </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-line text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">
+                                <th class="px-5 py-3">{{ __('Product / Description') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('Qty') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('Unit Price') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('Subtotal') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($proposal->items as $item)
+                                <tr class="border-b border-line last:border-0">
+                                    <td class="px-5 py-4">
+                                        <p class="text-sm font-medium text-content-primary">{{ $item->description }}</p>
+                                        <p class="mt-0.5 text-xs text-content-tertiary">{{ $item->unit ?: __('Unit') }}</p>
+                                    </td>
+                                    <td class="px-5 py-4 text-right tabular-nums text-content-secondary">{{ rtrim(rtrim(number_format($item->quantity, 2, ',', '.'), '0'), ',') }}</td>
+                                    <td class="px-5 py-4 text-right tabular-nums text-content-secondary">Rp {{ number_format($item->unit_price, 0, ',', '.') }}</td>
+                                    <td class="px-5 py-4 text-right font-semibold tabular-nums text-content-primary">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="px-5 py-8 text-center text-sm text-content-tertiary">{{ __('No items yet') }}</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-end border-t border-line px-5 py-4">
+                    <dl class="w-full max-w-sm space-y-2 text-sm">
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-content-secondary">{{ __('Subtotal') }}</dt>
+                            <dd class="tabular-nums text-content-primary">Rp {{ number_format($proposal->subtotal, 0, ',', '.') }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-content-secondary">{{ __('Discount') }}</dt>
+                            <dd class="tabular-nums text-content-primary">Rp {{ number_format($proposal->discount, 0, ',', '.') }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <dt class="text-content-secondary">{{ __('Tax') }}@if($proposal->tax_rate !== null) ({{ rtrim(rtrim(number_format((float) $proposal->tax_rate, 2, ',', '.'), '0'), ',') }}%)@endif</dt>
+                            <dd class="tabular-nums text-content-primary">Rp {{ number_format($proposal->tax, 0, ',', '.') }}</dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-4 border-t border-line pt-3">
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Grand Total') }}</dt>
+                            <dd class="text-lg font-extrabold tabular-nums text-content-primary">Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
 
             @can('viewCost', \App\Models\Proposal::class)
-                <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 text-sm space-y-1">
-                    <p class="font-semibold text-slate-700 dark:text-slate-200">{{ __('Internal Financials') }}</p>
+                <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Internal Financials') }}</h2>
                     @if($proposal->hasCompleteCostData())
-                        <p class="flex justify-between text-slate-500"><span>{{ __('Net Sales') }}</span><span>Rp {{ number_format($proposal->netSales(), 0, ',', '.') }}</span></p>
-                        <p class="flex justify-between text-slate-500"><span>{{ __('Total Cost') }}</span><span>Rp {{ number_format($proposal->total_cost, 0, ',', '.') }}</span></p>
-                        <p class="flex justify-between text-slate-500"><span>{{ __('Gross Profit') }}</span><span>Rp {{ number_format($proposal->gross_profit, 0, ',', '.') }}</span></p>
-                        <p class="flex justify-between font-bold text-slate-800 dark:text-slate-100"><span>{{ __('Gross Margin') }}</span><span>{{ $proposal->gross_margin === null ? '-' : number_format($proposal->gross_margin, 2) . '%' }}</span></p>
+                        @php
+                            $grossProfit = (float) $proposal->gross_profit;
+                            $grossMargin = $proposal->gross_margin;
+                            $profitLabel = $grossProfit > 0 ? __('PROFIT') : ($grossProfit < 0 ? __('LOSS') : __('BREAK EVEN'));
+                            $profitColor = $grossProfit > 0 ? 'var(--success)' : ($grossProfit < 0 ? 'var(--danger)' : 'var(--text-tertiary)');
+                        @endphp
+                        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <p class="text-xs font-medium text-content-tertiary">{{ __('Net Sales') }}</p>
+                                <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">Rp {{ number_format($proposal->netSales(), 0, ',', '.') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-content-tertiary">{{ __('Total Cost') }}</p>
+                                <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">Rp {{ number_format($proposal->total_cost, 0, ',', '.') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-content-tertiary">{{ __('Gross Profit') }}</p>
+                                <p class="mt-1 text-lg font-bold tabular-nums" style="color: {{ $profitColor }}">Rp {{ number_format($grossProfit, 0, ',', '.') }}</p>
+                                <span class="mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wider"
+                                      style="color: {{ $profitColor }}; background-color: color-mix(in srgb, {{ $profitColor }} 12%, transparent);">{{ $profitLabel }}</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium text-content-tertiary">{{ __('Gross Margin') }}</p>
+                                <p class="mt-1 text-lg font-bold tabular-nums" style="color: {{ $profitColor }}">{{ $grossMargin === null ? '-' : number_format($grossMargin, 2) . '%' }}</p>
+                            </div>
+                        </div>
                         @if($proposal->items->contains(fn ($item) => $item->unit_cost !== null))
-                            <details class="pt-1">
-                                <summary class="cursor-pointer text-xs text-slate-500">{{ __('Cost per item') }}</summary>
-                                <ul class="mt-1 space-y-0.5 text-xs text-slate-500">
+                            <details class="mt-4 border-t border-line pt-3">
+                                <summary class="cursor-pointer text-xs font-semibold text-content-secondary">{{ __('Cost per item') }}</summary>
+                                <ul class="mt-2 space-y-1 text-xs text-content-secondary">
                                     @foreach($proposal->items as $item)
                                         @php
                                             $itemMarginAmount = $item->unit_cost !== null
@@ -117,60 +193,74 @@
                             </details>
                         @endif
                     @else
-                        <p class="text-amber-600 dark:text-amber-400">
-                            {{ __('Profit calculation incomplete') }} — {{ __(':count item(s) do not have a cost price yet.', ['count' => $proposal->missingCostItemsCount()]) }}
+                        <p class="mt-3 text-sm text-content-secondary">
+                            {{ __('Profit calculation incomplete') }} - {{ __(':count item(s) do not have a cost price yet.', ['count' => $proposal->missingCostItemsCount()]) }}
                         </p>
                     @endif
-                </div>
+                </section>
             @endcan
 
             @if($proposal->notes)
-                <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $proposal->notes }}</p>
+                <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Notes') }}</h2>
+                    <p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-content-secondary">{{ $proposal->notes }}</p>
+                </section>
             @endif
 
             @if($proposal->internal_notes)
-                <div class="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
-                    <p class="text-xs font-semibold text-amber-700 dark:text-amber-300">{{ __('Internal Notes') }}</p>
-                    <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{{ $proposal->internal_notes }}</p>
-                </div>
+                <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <svg class="h-4 w-4 text-content-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M7 3h10a2 2 0 0 1 2 2v14l-4-3-4 3-4-3V5a2 2 0 0 1 2-2Z" />
+                            <path d="M9 8h6M9 12h4" />
+                        </svg>
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Internal Notes') }}</h2>
+                    </div>
+                    <p class="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-content-secondary">{{ $proposal->internal_notes }}</p>
+                </section>
             @endif
 
             @if($proposal->attachments->isNotEmpty())
-                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Quotation File') }}</p>
-                    <ul class="mt-2 space-y-2">
+                <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Quotation File') }}</h2>
+                    <ul class="mt-3 space-y-3">
                         @foreach($proposal->attachments as $file)
                             <li class="flex flex-wrap items-center justify-between gap-2">
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{{ $file->original_name }}</p>
-                                    <p class="text-xs text-slate-400">
+                                    <p class="truncate text-sm font-medium text-content-primary">{{ $file->original_name }}</p>
+                                    <p class="text-xs text-content-tertiary">
                                         {{ $file->humanSize() }} · {{ $file->uploader?->name ?? __('System') }}
                                         · {{ $file->created_at?->translatedFormat('d M Y H:i') }}
                                     </p>
                                 </div>
-                                <x-file-preview :url="route('sales.proposals.attachments.preview', [$proposal, $file])"
-                                                :download="route('sales.proposals.attachments.download', [$proposal, $file])"
-                                                :name="$file->original_name" />
-                                <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" title="{{ __('Download') }}" />
+                                <div class="flex items-center gap-2">
+                                    <x-file-preview :url="route('sales.proposals.attachments.preview', [$proposal, $file])"
+                                                    :download="route('sales.proposals.attachments.download', [$proposal, $file])"
+                                                    :name="$file->original_name" />
+                                    <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.attachments.download', [$proposal, $file]) }}" title="{{ __('Download') }}" />
+                                </div>
                             </li>
                         @endforeach
                     </ul>
-                </div>
+                </section>
             @endif
 
             @if($proposal->versions->isNotEmpty())
-                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Revision History') }}</p>
-                    <ul class="mt-3 space-y-2">
+                <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Revision History') }}</h2>
+                    <ol class="mt-4 space-y-4">
                         @foreach($proposal->versions as $version)
-                            <li class="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40">
-                                <span class="inline-flex shrink-0 items-center rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-200">{{ $version->label ?? 'v'.$version->version }}</span>
+                            <li class="relative flex gap-3">
+                                <span class="mt-1.5 inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
+                                      style="background-color: {{ $loop->last ? 'var(--accent-600)' : 'var(--text-tertiary)' }};"></span>
                                 <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $version->change_summary ?: __('Initial quotation') }}</p>
-                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    <p class="text-sm font-semibold text-content-primary">
+                                        {{ $version->label ?? 'v'.$version->version }} · {{ $version->change_summary ?: __('Initial quotation') }}
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-content-tertiary">
                                         {{ $version->created_at?->translatedFormat('d M Y H:i') }} · {{ $version->changer?->name ?? __('System') }}
                                     </p>
-                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    <p class="mt-0.5 text-xs text-content-secondary">
                                         {{ __('Total') }}: Rp {{ number_format((float) $version->total_after, 0, ',', '.') }}
                                         @if($version->total_before !== null)
                                             · {{ __('Previous') }}: Rp {{ number_format((float) $version->total_before, 0, ',', '.') }}
@@ -179,11 +269,12 @@
                                 </div>
                             </li>
                         @endforeach
-                    </ul>
-                </div>
+                    </ol>
+                </section>
             @endif
 
-            <div class="flex flex-wrap gap-2 pt-2">
+            <section class="rounded-2xl border border-line bg-surface p-4 shadow-sm">
+                <div class="flex flex-wrap items-center gap-2">
                 <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.preview', $proposal) }}" target="_blank" label="{{ __('Preview') }}" title="{{ __('Preview') }}" />
                 @if($proposal->pdf_path)
                     <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.pdf', $proposal) }}" label="{{ __('Download PDF') }}" title="{{ __('Download PDF') }}" />
@@ -194,7 +285,7 @@
                 @if($isOwner && $proposal->status === 'draft')
                     <form action="{{ route('sales.proposals.ready', $proposal) }}" method="POST" class="inline">
                         @csrf
-                        <x-icon-button type="submit" icon="sparkles" label="{{ __('Ready') }}" title="{{ __('Ready') }}" />
+                        <x-icon-button type="submit" icon="sparkles" label="{{ __('Ready') }}" title="{{ __('Ready') }}" variant="solid" />
                     </form>
                     <form action="{{ route('sales.proposals.submit-technical', $proposal) }}" method="POST" class="inline"
                           data-confirm="{{ __('The draft is sent to the technical team for review.') }}"
@@ -218,7 +309,7 @@
                     @canany(['manage-technician', 'manage-admin'])
                         <form action="{{ route('sales.proposals.complete-technical', $proposal) }}" method="POST" class="inline">
                             @csrf
-                            <x-icon-button type="submit" icon="sparkles" label="{{ __('Done & Ready') }}" title="{{ __('Done & Ready') }}" />
+                            <x-icon-button type="submit" icon="sparkles" label="{{ __('Done & Ready') }}" title="{{ __('Done & Ready') }}" variant="solid" />
                         </form>
                         <form action="{{ route('sales.proposals.return-technical', $proposal) }}" method="POST" class="inline">
                             @csrf
@@ -233,7 +324,7 @@
                           data-confirm-tone="success"
                           data-confirm-label="{{ __('Yes, mark as sent') }}">
                         @csrf
-                        <x-icon-button type="submit" icon="mail" label="{{ __('Mark as Sent') }}" title="{{ __('Mark as Sent (confirmation only, does not send email)') }}" />
+                        <x-icon-button type="submit" icon="mail" label="{{ __('Mark as Sent') }}" title="{{ __('Mark as Sent (confirmation only, does not send email)') }}" variant="solid" />
                     </form>
                 @endif
                 @if($isOwner && $proposal->status === 'ready' && ($wa = $proposal->lead->customer?->whatsapp))
@@ -284,7 +375,7 @@
                           data-confirm-label="{{ __('Yes, mark accepted') }}">
                         @csrf
                         <input type="hidden" name="decision" value="accepted">
-                        <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" />
+                        <x-icon-button type="submit" icon="sparkles" label="{{ __('Accept') }}" title="{{ __('Accept') }}" variant="solid" />
                     </form>
                     <form action="{{ route('sales.proposals.respond', $proposal) }}" method="POST" class="inline"
                           data-confirm="{{ __('The proposal is closed as rejected.') }}"
@@ -310,7 +401,8 @@
                                        onclick="document.getElementById('convert-modal').classList.remove('hidden')" />
                     @endif
                 @endif
-            </div>
+                </div>
+            </section>
 
             {{-- Customer PO (pesanan pelanggan ke 3DY) — bukan Supplier PO --}}
             @if($proposal->status === 'accepted')

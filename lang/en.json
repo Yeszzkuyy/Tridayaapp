@@ -5643,5 +5643,12 @@
     "No quotations match your filters.": "No quotations match your filters.",
     "Try a different search or clear the filters.": "Try a different search or clear the filters.",
     "Quotations created from leads will appear here.": "Quotations created from leads will appear here.",
-    "Lead assigned to :name": "Lead assigned to :name"
+    "Lead assigned to :name": "Lead assigned to :name",
+    "Quotation Information": "Quotation Information",
+    "Last updated": "Last updated",
+    "Product / Description": "Product / Description",
+    "Quotation Number": "Quotation Number",
+    "PROFIT": "PROFIT",
+    "LOSS": "LOSS",
+    "BREAK EVEN": "BREAK EVEN"
 }
