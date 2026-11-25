@@ -5643,5 +5643,12 @@
     "No quotations match your filters.": "Tidak ada quotation yang cocok dengan filter.",
     "Try a different search or clear the filters.": "Coba kata kunci lain atau hapus filter.",
     "Quotations created from leads will appear here.": "Quotation yang dibuat dari lead akan muncul di sini.",
-    "Lead assigned to :name": "Lead ditugaskan ke :name"
+    "Lead assigned to :name": "Lead ditugaskan ke :name",
+    "Quotation Information": "Informasi Quotation",
+    "Last updated": "Terakhir diperbarui",
+    "Product / Description": "Produk / Deskripsi",
+    "Quotation Number": "Nomor Quotation",
+    "PROFIT": "UNTUNG",
+    "LOSS": "RUGI",
+    "BREAK EVEN": "BREAK EVEN"
 }
