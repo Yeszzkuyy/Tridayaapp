@@ -106,37 +106,22 @@
                 nextState: config.nextState || 'upcoming',
                 nextSaving: false,
                 hasAcceptedProposal: !!config.hasAcceptedProposal,
-                color: config.color || '',
-                colorSaving: false,
-                colorDotClass() {
-                    const map = config.colorClasses || {};
-                    return map[this.color || 'default'] || map.default || 'bg-slate-300 dark:bg-slate-600';
+                stageDotClass() {
+                    const map = {
+                        cool: 'bg-blue-500',
+                        warm: 'bg-amber-400',
+                        hot: 'bg-orange-500',
+                        won: 'bg-emerald-500',
+                        lost: 'bg-red-500',
+                    };
+                    return map[this.stage] || 'bg-slate-300 dark:bg-slate-600';
                 },
-                setColor(value) {
-                    const color = value === 'default' ? '' : value;
-                    if (color === (this.color || '')) return;
-
-                    this.colorSaving = true;
-                    fetch(config.colorUrl, {
-                        method: 'PATCH',
-                        headers: jsonHeaders,
-                        body: JSON.stringify({ color_tag: color || null }),
-                    })
-                        .then(async (response) => {
-                            const data = await response.json().catch(() => ({}));
-                            if (!response.ok) {
-                                throw new Error((data.errors && data.errors.color_tag && data.errors.color_tag[0]) || data.message || config.genericError);
-                            }
-                            return data;
-                        })
-                        .then((data) => {
-                            this.color = data.color || '';
-                            if (window.toast) window.toast(data.message || config.colorSaved, true);
-                        })
-                        .catch((error) => {
-                            if (window.toast) window.toast(error.message, false);
-                        })
-                        .finally(() => { this.colorSaving = false; });
+                setStageSelect(value) {
+                    const mount = this.$root.querySelector('[data-glide-mount]');
+                    if (!mount || !window.__glideRemount) return;
+                    let options = [];
+                    try { options = JSON.parse(mount.dataset.options || '[]'); } catch (e) {}
+                    window.__glideRemount(mount, options, value);
                 },
                 startNote() {
                     this.draftNote = this.note;
@@ -178,11 +163,13 @@
                 stageChanged(value) {
                     if (value === 'lost') {
                         this.stage = this.savedStage;
+                        this.setStageSelect(this.savedStage);
                         this.lostOpen = true;
                         return;
                     }
                     if (value === 'won' && !this.hasAcceptedProposal) {
                         this.stage = this.savedStage;
+                        this.setStageSelect(this.savedStage);
                         if (window.toast) window.toast(config.wonNeedsQuotation, false);
                         return;
                     }
@@ -205,11 +192,13 @@
                         .then(() => {
                             this.savedStage = value;
                             this.stage = value;
+                            this.setStageSelect(value);
                             this.lostOpen = false;
                             if (window.toast) window.toast(config.stageSaved, true);
                         })
                         .catch((error) => {
                             this.stage = this.savedStage;
+                            this.setStageSelect(this.savedStage);
                             if (window.toast) window.toast(error.message, false);
                         })
                         .finally(() => { this.stageSaving = false; });
@@ -226,6 +215,7 @@
                     this.lostReason = '';
                     this.lostNote = '';
                     this.stage = this.savedStage;
+                    this.setStageSelect(this.savedStage);
                 },
                 openNext() {
                     this.nextOpen = true;

@@ -26,7 +26,7 @@
             @endphp
             <tr x-data="myLeadsRow({{ json_encode($cfg) }})" class="group transition hover:bg-slate-50 dark:hover:bg-slate-700/40">
                 <td class="relative px-3 py-3 text-xs text-content-tertiary whitespace-nowrap">
-                    <span class="absolute inset-y-0 left-0 w-1" :class="colorDotClass()" aria-hidden="true"></span>
+                    <span class="absolute inset-y-0 left-0 w-1" :class="stageDotClass()" aria-hidden="true"></span>
                     {{ $leads->firstItem() + $loop->index }}
                 </td>
 
@@ -36,7 +36,6 @@
                             {{ $lead->customer?->name ?? '-' }}
                         </a>
                         <div class="mt-1 flex flex-wrap items-center gap-1">
-                            @include('sales.my-leads._color-picker')
                             @if($lead->pt_group)
                                 <span class="inline-flex px-1.5 py-0.5 rounded text-xs font-semibold {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700' }}">{{ $lead->pt_group }}</span>
                             @endif
@@ -87,14 +86,12 @@
                 </td>
 
                 <td class="px-2 py-3">
-                    <div class="relative min-w-[80px]">
+                    <div class="relative min-w-[112px]" :class="stageSaving ? 'pointer-events-none opacity-60' : ''">
                         @can('manage-sales')
-                            <select x-model="stage" @change="stageChanged($event.target.value)" :disabled="stageSaving"
-                                    class="h-9 w-full rounded-xl border border-slate-300 bg-[var(--card-bg)] px-2 text-xs font-semibold text-content-secondary focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
-                                @foreach($statuses as $status)
-                                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                                @endforeach
-                            </select>
+                            <x-glide-select name="pipeline_stage" size="md" :empty="false"
+                                            :options="collect($statuses)->map(fn ($status) => ['value' => $status, 'label' => ucfirst($status)])->all()"
+                                            :value="$lead->status"
+                                            x-on:change="stageChanged($event.target.value)" />
                             <p x-show="stageSaving" x-cloak class="mt-1 text-xs text-content-tertiary">{{ __('Saving...') }}</p>
 
                             <div x-show="lostOpen" x-cloak class="absolute left-0 top-11 z-30 w-64 rounded-xl border border-slate-200 bg-[var(--card-bg)] p-3 shadow-xl dark:border-slate-600 dark:bg-slate-800">

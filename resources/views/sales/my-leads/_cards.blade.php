@@ -6,12 +6,11 @@
             ->map(fn ($reason) => ['value' => $reason, 'label' => \App\Models\Lead::lostReasonLabel($reason)]);
     @endphp
     <div x-data="myLeadsRow({{ json_encode($cfg) }})" class="relative overflow-hidden rounded-2xl border border-slate-200 bg-[var(--card-bg)] p-4 dark:border-slate-600 dark:bg-slate-800">
-        <span class="absolute inset-y-0 left-0 w-1" :class="colorDotClass()" aria-hidden="true"></span>
+        <span class="absolute inset-y-0 left-0 w-1" :class="stageDotClass()" aria-hidden="true"></span>
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
                 <a href="{{ route('leads.show', $lead) }}" class="font-semibold text-content-primary">{{ $lead->customer?->name ?? '-' }}</a>
                 <div class="mt-1 flex flex-wrap items-center gap-1">
-                    @include('sales.my-leads._color-picker')
                     @if($lead->pt_group)
                         <span class="inline-flex px-1.5 py-0.5 rounded text-xs font-semibold {{ \App\Models\Lead::PT_COLORS[$lead->pt_group] ?? 'bg-indigo-50 text-indigo-700' }}">{{ $lead->pt_group }}</span>
                     @endif
@@ -24,14 +23,12 @@
                     <span class="text-xs text-content-tertiary">{{ $lead->project_name ?: '-' }}</span>
                 </div>
             </div>
-            <div class="relative shrink-0">
+            <div class="relative shrink-0" :class="stageSaving ? 'pointer-events-none opacity-60' : ''">
                 @can('manage-sales')
-                    <select x-model="stage" @change="stageChanged($event.target.value)" :disabled="stageSaving"
-                            class="h-8 rounded-xl border border-slate-300 bg-[var(--card-bg)] px-2 text-xs font-semibold text-content-secondary focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900">
-                        @foreach($statuses as $status)
-                            <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                        @endforeach
-                    </select>
+                    <x-glide-select name="pipeline_stage" size="md" :empty="false"
+                                    :options="collect($statuses)->map(fn ($status) => ['value' => $status, 'label' => ucfirst($status)])->all()"
+                                    :value="$lead->status"
+                                    x-on:change="stageChanged($event.target.value)" />
                     <div x-show="lostOpen" x-cloak class="absolute right-0 top-9 z-30 w-64 rounded-xl border border-slate-200 bg-[var(--card-bg)] p-3 shadow-xl dark:border-slate-600 dark:bg-slate-800">
                         <select x-model="lostReason" class="w-full rounded-xl border-slate-300 text-xs dark:border-slate-600 dark:bg-slate-900 text-content-primary">
                             <option value="">{{ __('Loss reason') }}</option>

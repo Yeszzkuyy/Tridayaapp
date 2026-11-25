@@ -8,6 +8,7 @@
     'label' => null,
     'full' => true,
     'emptyLabel' => null,
+    'empty' => true,
     'required' => false,
     'error' => null,
     'id' => null,
@@ -21,12 +22,12 @@
     $placeholder ??= __('Select…');
     $label ??= $placeholder;
     // Baris kosong di menu agar pilihan bisa dikosongkan lagi (seperti <option value="">).
-    $items = array_merge(
-        [['value' => '', 'label' => $emptyLabel ?? $placeholder]],
-        collect($options)->map(fn ($o) => is_array($o)
-            ? ['value' => (string) ($o['value'] ?? ''), 'label' => $o['label'] ?? '', 'tag' => $o['tag'] ?? null]
-            : ['value' => (string) $o, 'label' => (string) $o])->all(),
-    );
+    $mapped = collect($options)->map(fn ($o) => is_array($o)
+        ? ['value' => (string) ($o['value'] ?? ''), 'label' => $o['label'] ?? '', 'tag' => $o['tag'] ?? null]
+        : ['value' => (string) $o, 'label' => (string) $o])->all();
+    $items = $empty
+        ? array_merge([['value' => '', 'label' => $emptyLabel ?? $placeholder]], $mapped)
+        : $mapped;
     $value = (string) $value;
 @endphp
 

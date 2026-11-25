@@ -54,8 +54,7 @@ class ReadOnlyUiTest extends TestCase
         $this->assertStringNotContainsString(route('leads.create'), $html);
         $this->assertStringNotContainsString(route('sales.follow-ups.create'), $html);
         $this->assertStringNotContainsString(__('Edit note'), $html);
-        $this->assertStringNotContainsString(__('Change lead color'), $html);
-        $this->assertStringNotContainsString('x-model="stage"', $html);
+        $this->assertStringNotContainsString('pipeline_stage', $html);
         $this->assertStringNotContainsString('x-model="nextDate"', $html);
     }
 
@@ -69,8 +68,8 @@ class ReadOnlyUiTest extends TestCase
         $this->assertStringContainsString(route('leads.create'), $html);
         $this->assertStringContainsString(route('sales.follow-ups.create'), $html);
         $this->assertStringContainsString(__('Edit note'), $html);
-        $this->assertStringContainsString(__('Change lead color'), $html);
-        $this->assertStringContainsString('x-model="stage"', $html);
+        $this->assertStringContainsString('pipeline_stage', $html);
+        $this->assertStringNotContainsString('x-model="stage"', $html);
         $this->assertStringContainsString('x-model="nextDate"', $html);
     }
 
