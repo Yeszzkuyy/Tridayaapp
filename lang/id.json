@@ -5650,5 +5650,16 @@
     "Quotation Number": "Nomor Quotation",
     "PROFIT": "UNTUNG",
     "LOSS": "RUGI",
-    "BREAK EVEN": "BREAK EVEN"
+    "BREAK EVEN": "BREAK EVEN",
+    "Item Note (Optional)": "Catatan Item (Opsional)",
+    "Add Another Item": "Tambah Item Lain",
+    "Remove item": "Hapus item",
+    "What do you need?": "Apa yang kamu butuhkan?",
+    "Pick from catalog": "Pilih dari katalog",
+    "Linked to catalog": "Tertaut ke katalog",
+    "Unlink catalog product": "Lepas tautan produk katalog",
+    "Product name + main specs (e.g. IP PABX 32 Extension + 32-user license)": "Nama produk + spek utama (contoh: IP PABX 32 Extension + lisensi 32 user)",
+    "Target vendor, color, warranty, or delivery terms...": "Target vendor, warna, garansi, atau syarat pengiriman...",
+    "Prices have been submitted to Sales. Click": "Harga sudah dikirim ke Sales. Klik",
+    "if you need to make changes.": "jika perlu melakukan perubahan."
 }
