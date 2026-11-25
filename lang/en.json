@@ -5650,5 +5650,16 @@
     "Quotation Number": "Quotation Number",
     "PROFIT": "PROFIT",
     "LOSS": "LOSS",
-    "BREAK EVEN": "BREAK EVEN"
+    "BREAK EVEN": "BREAK EVEN",
+    "Item Note (Optional)": "Item Note (Optional)",
+    "Add Another Item": "Add Another Item",
+    "Remove item": "Remove item",
+    "What do you need?": "What do you need?",
+    "Pick from catalog": "Pick from catalog",
+    "Linked to catalog": "Linked to catalog",
+    "Unlink catalog product": "Unlink catalog product",
+    "Product name + main specs (e.g. IP PABX 32 Extension + 32-user license)": "Product name + main specs (e.g. IP PABX 32 Extension + 32-user license)",
+    "Target vendor, color, warranty, or delivery terms...": "Target vendor, color, warranty, or delivery terms...",
+    "Prices have been submitted to Sales. Click": "Prices have been submitted to Sales. Click",
+    "if you need to make changes.": "if you need to make changes."
 }
