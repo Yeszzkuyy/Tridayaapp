@@ -3,7 +3,9 @@
         <div>
             <h1 class="text-3xl font-bold text-content-primary dark:text-white">{{ __('Payment Management') }}</h1>
         </div>
-        <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Record Payment') }}" title="{{ __('Record Payment') }}" />
+        @can('manage-admin')
+            <x-icon-button as="a" variant="solid" reveal icon="add" href="{{ route('admin.payments.create') }}" label="{{ __('Record Payment') }}" title="{{ __('Record Payment') }}" />
+        @endcan
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
