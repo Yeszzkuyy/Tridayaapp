@@ -33,7 +33,7 @@ class ManageMenuTest extends TestCase
 
     public function test_non_management_roles_cannot_open_manage_placeholders(): void
     {
-        foreach (['marketing', 'sales', 'technician', 'lead-technician', 'ceo'] as $role) {
+        foreach (['marketing', 'sales', 'technician', 'lead-technician'] as $role) {
             $this->actingAs($this->loginAs($role));
 
             foreach (['manage.marketing.index', 'manage.technical.index'] as $route) {
@@ -44,8 +44,8 @@ class ManageMenuTest extends TestCase
 
     public function test_hub_roles_can_open_manage_placeholders(): void
     {
-        // Hub management kini satu role tunggal.
-        foreach (['management'] as $role) {
+        // Management penuh + CEO read-only (view-management).
+        foreach (['management', 'ceo'] as $role) {
             $this->actingAs($this->loginAs($role));
 
             foreach (['manage.marketing.index', 'manage.technical.index'] as $route) {

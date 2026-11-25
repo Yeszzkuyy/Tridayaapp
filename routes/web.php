@@ -809,16 +809,20 @@ Route::middleware('auth')->group(function () {
 
     // ============================================
     // MANAGE SALES — Management (assign lead ke sales)
+    // Baca boleh untuk CEO (view-management); aksi tulis tetap manage-sales-leads.
     // ============================================
-    Route::middleware('permission:manage-sales-leads')->prefix('manage-sales')->name('manage-sales.')->group(function () {
+    Route::middleware('permission:manage-sales-leads|view-management')->prefix('manage-sales')->name('manage-sales.')->group(function () {
         Route::get('/', [ManageSalesController::class, 'index'])->name('index');
         Route::get('/kpi', [ManageSalesController::class, 'kpi'])->name('kpi');
-        Route::post('/targets', [ManageSalesController::class, 'updateTarget'])->name('targets.update');
         Route::get('/activity-log', [ManageSalesController::class, 'activityLog'])->name('activity-log');
         Route::get('/activity-log/feed', [ManageSalesController::class, 'activityLogFeed'])->name('activity-log.feed');
         Route::get('/team-activity', [ManageSalesController::class, 'teamActivity'])->name('team-activity');
         // Drill-down supervisi: snapshot dashboard + customer milik satu sales.
         Route::get('/sales-rep/{user}', [ManageSalesController::class, 'showSalesRep'])->name('sales-rep');
+    });
+
+    Route::middleware('permission:manage-sales-leads')->prefix('manage-sales')->name('manage-sales.')->group(function () {
+        Route::post('/targets', [ManageSalesController::class, 'updateTarget'])->name('targets.update');
         Route::get('/{lead}/edit', [ManageSalesController::class, 'edit'])->name('edit');
         Route::put('/{lead}', [ManageSalesController::class, 'update'])->name('update');
         Route::post('/{lead}/assign', [ManageSalesController::class, 'assign'])->name('assign');
@@ -827,13 +831,13 @@ Route::middleware('auth')->group(function () {
     // ============================================
     // MANAGEMENT — sub-modul baru & Admin Hub
     // ============================================
-    Route::middleware('permission:view-admin|manage-admin|manage-sales-leads')->prefix('manage')->name('manage.')->group(function () {
+    Route::middleware('permission:view-admin|manage-admin|manage-sales-leads|view-management')->prefix('manage')->name('manage.')->group(function () {
         Route::get('admin', [AdminController::class, 'hub'])
-            ->middleware('permission:view-admin-hub|manage-admin|manage-sales-leads')
+            ->middleware('permission:view-admin-hub|manage-admin|manage-sales-leads|view-management')
             ->name('admin.index');
     });
 
-    Route::middleware('permission:manage-sales-leads')->prefix('manage')->name('manage.')->group(function () {
+    Route::middleware('permission:manage-sales-leads|view-management')->prefix('manage')->name('manage.')->group(function () {
         Route::view('marketing', 'manage.placeholder', ['title' => 'Manage Marketing'])->name('marketing.index');
         Route::view('technical', 'manage.placeholder', ['title' => 'Manage Technical'])->name('technical.index');
     });

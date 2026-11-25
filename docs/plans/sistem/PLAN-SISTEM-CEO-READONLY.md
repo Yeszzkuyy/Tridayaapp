@@ -25,8 +25,14 @@ Yang dikerjakan:
 - Sweep 37 halaman menu sebagai CEO: status HTTP, shell/iframe, error
   JavaScript, dan overflow layout.
 - Perbaikan error Alpine di WhatsApp Center saat belum ada percakapan aktif.
+- Membuka menu Management read-only (Manage Sales, KPI, Activity Log,
+  Team Activity, Manage Marketing/Technical/Admin) tanpa aksi assign atau
+  ubah target.
+- Membuka menu Estimator read-only (Queue, Price History, Pricelist,
+  Suppliers) tanpa aksi proses harga.
 - Penyembunyian aksi tulis di halaman yang dibuka CEO: My Leads, Meeting,
-  Request teknisi, Sizing, BAST, Payment, Invoice, dan WhatsApp Center.
+  Request teknisi, Sizing, BAST, Payment, Invoice, WhatsApp Center, dan
+  Management.
 - Test regresi `ReadOnlyUiTest` untuk memastikan role penulis tetap melihat
   aksinya.
 
@@ -48,6 +54,7 @@ Yang tidak dikerjakan:
 
 - Login CEO berhasil.
 - 37 halaman menu mengembalikan 200 dan tidak ada error JavaScript.
+- Management dan Estimator bisa dibuka read-only; Admin Panel tetap 403.
 - Tombol aksi tulis tidak tampil untuk CEO, tetapi tetap tampil untuk role
   penulis (sales, teknisi, admin, marketing).
 - `php artisan test tests/Feature/ReadOnlyUiTest.php` lulus.

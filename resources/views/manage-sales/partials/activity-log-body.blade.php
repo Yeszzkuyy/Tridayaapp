@@ -136,11 +136,18 @@
                                                     {{ $activity->actionLabel() }}
                                                 </span>
                                                 @if($activity->lead && $activity->lead->customer)
-                                                    <a href="{{ route('manage-sales.edit', $activity->lead) }}"
-                                                       class="font-medium rounded-full px-2.5 py-0.5 hover:opacity-80 transition"
-                                                       style="background: {{ $customerBadgeBg }}; color: {{ $customerBadgeText }}">
-                                                        {{ $activity->lead->customer->name }}
-                                                    </a>
+                                                    @can('manage-sales-leads')
+                                                        <a href="{{ route('manage-sales.edit', $activity->lead) }}"
+                                                           class="font-medium rounded-full px-2.5 py-0.5 hover:opacity-80 transition"
+                                                           style="background: {{ $customerBadgeBg }}; color: {{ $customerBadgeText }}">
+                                                            {{ $activity->lead->customer->name }}
+                                                        </a>
+                                                    @else
+                                                        <span class="font-medium rounded-full px-2.5 py-0.5"
+                                                              style="background: {{ $customerBadgeBg }}; color: {{ $customerBadgeText }}">
+                                                            {{ $activity->lead->customer->name }}
+                                                        </span>
+                                                    @endcan
                                                 @else
                                                     <span class="text-slate-400 italic text-xs">{{ __('lead has been permanently deleted') }}</span>
                                                 @endif

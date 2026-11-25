@@ -169,4 +169,43 @@ class ReadOnlyUiTest extends TestCase
             ->assertDontSee('bot-settings', false)
             ->assertSee(__('Mode baca. Anda tidak memiliki izin untuk mengirim pesan.'));
     }
+
+    public function test_ceo_can_view_management_but_not_write(): void
+    {
+        $sales = $this->makeUserWithRole([], 'sales');
+        $lead = $this->leadFor($sales);
+
+        $ceo = $this->makeUserWithRole([], 'ceo');
+
+        $index = $this->actingAs($ceo)->get(route('manage-sales.index'))->assertOk()->getContent();
+        $this->assertStringContainsString(__('Manage Sales'), $index);
+        $this->assertStringNotContainsString(route('manage-sales.assign', $lead), $index);
+        $this->assertStringNotContainsString(__('Assign to Sales'), $index);
+
+        $kpi = $this->actingAs($ceo)->get(route('manage-sales.kpi'))->assertOk()->getContent();
+        $this->assertStringNotContainsString(route('manage-sales.targets.update'), $kpi);
+        $this->assertStringNotContainsString(__('Atur Target Bulanan Sales'), $kpi);
+
+        $this->actingAs($ceo)->get(route('manage-sales.activity-log'))->assertOk();
+        $this->actingAs($ceo)->get(route('manage.marketing.index'))->assertOk();
+        $this->actingAs($ceo)->get(route('manage.technical.index'))->assertOk();
+        $this->actingAs($ceo)->get(route('manage.admin.index'))->assertOk();
+        $this->actingAs($ceo)->get(route('admin-panel.index'))->assertForbidden();
+    }
+
+    public function test_ceo_can_view_estimator_read_only(): void
+    {
+        $ceo = $this->makeUserWithRole([], 'ceo');
+
+        $queue = $this->actingAs($ceo)->get(route('estimator.requests.index'))->assertOk()->getContent();
+        $this->assertStringNotContainsString(route('estimator.requests.create'), $queue);
+        $this->assertStringNotContainsString(__('Process Request'), $queue);
+
+        $products = $this->actingAs($ceo)->get(route('products.index'))->assertOk()->getContent();
+        $this->assertStringNotContainsString(route('products.create'), $products);
+        $this->assertStringNotContainsString(__('Add Product'), $products);
+
+        $this->actingAs($ceo)->get(route('estimator.price-history'))->assertOk();
+        $this->actingAs($ceo)->get(route('estimator.suppliers'))->assertOk();
+    }
 }

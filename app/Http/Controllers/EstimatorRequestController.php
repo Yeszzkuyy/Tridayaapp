@@ -348,7 +348,8 @@ class EstimatorRequestController extends Controller
         abort_unless(
             $user->can('manage-price-requests')
             || $user->can('manage-admin')
-            || $user->can('manage-sales-leads'),
+            || $user->can('manage-sales-leads')
+            || $user->can('view-management'),
             403
         );
 

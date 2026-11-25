@@ -167,6 +167,21 @@ class RoleMenuTest extends TestCase
         $this->actingAs($u)->get('/leads')->assertOk();
         $this->actingAs($u)->get('/customers')->assertOk();
         $this->actingAs($u)->get('/monitoring')->assertOk();
+        // Management read-only untuk CEO, Admin Panel tetap tertutup.
+        $this->actingAs($u)->get(route('manage-sales.index'))->assertOk();
+        $this->actingAs($u)->get(route('manage.marketing.index'))->assertOk();
+        $this->actingAs($u)->get(route('manage.technical.index'))->assertOk();
+        $this->actingAs($u)->get(route('manage.admin.index'))->assertOk();
+        $this->actingAs($u)->get(route('admin-panel.index'))->assertForbidden();
+        // Estimator read-only juga terlihat untuk CEO.
+        $this->actingAs($u)->get(route('estimator.requests.index'))->assertOk();
+        $this->actingAs($u)->get(route('estimator.price-history'))->assertOk();
+        $this->actingAs($u)->get(route('estimator.suppliers'))->assertOk();
+        $this->actingAs($u)->get(route('products.index'))->assertOk();
+
+        $html = $this->actingAs($u)->get('/dashboard')->getContent();
+        $this->assertStringContainsString(route('manage-sales.index'), $html);
+        $this->assertStringContainsString(route('estimator.requests.index'), $html);
     }
 
     public function test_super_admin_sees_all()

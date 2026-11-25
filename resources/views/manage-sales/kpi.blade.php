@@ -148,7 +148,9 @@
                             <th class="py-3.5 px-4 min-w-[180px]">{{ __('Target vs Closing PO/Deal') }}</th>
                             <th class="py-3.5 px-4 min-w-[180px]">{{ __('Target vs Gross Margin') }}</th>
                             <th class="py-3.5 px-4">{{ __('Status Penilaian') }}</th>
-                            <th class="py-3.5 px-4 text-center w-24">{{ __('Aksi') }}</th>
+                            @can('manage-sales-leads')
+                                <th class="py-3.5 px-4 text-center w-24">{{ __('Aksi') }}</th>
+                            @endcan
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -252,13 +254,15 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="py-4 px-4 text-center">
-                                    <x-icon-button icon="edit" type="button" @click="openEditTarget({{ json_encode($row) }})" title="{{ __('Atur Target Sales') }}" />
-                                </td>
+                                @can('manage-sales-leads')
+                                    <td class="py-4 px-4 text-center">
+                                        <x-icon-button icon="edit" type="button" @click="openEditTarget({{ json_encode($row) }})" title="{{ __('Atur Target Sales') }}" />
+                                    </td>
+                                @endcan
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="py-8 text-center text-slate-400">
+                                <td colspan="{{ auth()->user()->can('manage-sales-leads') ? 7 : 6 }}" class="py-8 text-center text-slate-400">
                                     {{ __('Belum ada pengguna dengan role Sales terdaftar.') }}
                                 </td>
                             </tr>
@@ -268,6 +272,7 @@
             </div>
         </div>
 
+        @can('manage-sales-leads')
         {{-- Modal Pengaturan Target Sales --}}
         <div x-cloak x-show="editModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -341,5 +346,6 @@
                 </div>
             </div>
         </div>
+        @endcan
     </div>
 </x-app-layout>

@@ -55,6 +55,8 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Hub Management: melihat & meng-assign lead + membuka placeholder Manage
         $permissions[] = 'manage-sales-leads';
+        // Baca hub Management tanpa hak assign/ubah target (mis. CEO read-only).
+        $permissions[] = 'view-management';
 
         // Inside Sales: mengerjakan task permintaan dari sales (bukan manage divisi)
         $permissions[] = 'manage-inside-sales';
@@ -145,6 +147,7 @@ class RoleAndPermissionSeeder extends Seeder
 
         // CEO: semua view, tanpa manage (read-only; enforcement menyusul)
         $mk('ceo', [
+            'view-management',
             'view-marketing', 'view-sales', 'view-admin', 'view-technician',
             'view-monitoring',
             'view-admin-hub', 'view-supplier-pos', 'view-supplier-invoices',

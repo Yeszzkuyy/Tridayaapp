@@ -15,7 +15,7 @@
     $salesActive = request()->routeIs('sales.*') || request()->routeIs('projects*') || request()->routeIs('leads.pipeline') || request()->routeIs('lead-tasks*') || request()->routeIs('products*') || request()->routeIs('estimator.*');
     $adminActive = request()->routeIs('admin.hub') || request()->routeIs('admin.invoices.*') || request()->routeIs('admin.pos.*') || request()->routeIs('admin.payments.*') || request()->routeIs('admin.purchasing.*') || request()->routeIs('admin.supplier-pos.*') || request()->routeIs('admin.suppliers.*') || request()->routeIs('admin.goods-receipts.*') || request()->routeIs('admin.goods-deliveries.*') || request()->routeIs('admin.supplier-invoices.*') || request()->routeIs('admin.bast.*');
     $estimatorActive = request()->routeIs('estimator.*')
-        || (auth()->user()->can('manage-price-requests') && request()->routeIs('products*'));
+        || ((auth()->user()->can('manage-price-requests') || auth()->user()->can('view-management')) && request()->routeIs('products*'));
     $adminPanelActive = request()->routeIs('admin-panel*') || request()->routeIs('dev.worklog*');
 
     $roleName = auth()->user()->roles->first()?->name ?? 'User';
@@ -133,12 +133,12 @@
                 </div>
             </section>
 
-            @canany(['manage-sales-leads', 'view-technician', 'view-marketing', 'view-sales', 'view-admin', 'manage-inside-sales', 'manage-price-requests'])
+            @canany(['manage-sales-leads', 'view-management', 'view-technician', 'view-marketing', 'view-sales', 'view-admin', 'manage-inside-sales', 'manage-price-requests'])
                 <section aria-labelledby="sidebar-departments-label">
                     <p id="sidebar-departments-label" class="sidebar-hide px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Departments') }}</p>
                     <div class="space-y-1">
                         {{-- Management (Management Hub) --}}
-                        @can('manage-sales-leads')
+                        @canany(['manage-sales-leads', 'view-management'])
                             <div x-data="{ open: {{ $managementActive ? 'true' : 'false' }} }" class="sb-group"{{ $managementActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="management">
                                 <div class="sb-head {{ $navLink }} group w-full {{ $managementActive ? $navActive.' sb-active' : $navInactive }}">
                                     <a wire:navigate.hover href="{{ route('manage-sales.index') }}"
@@ -197,7 +197,7 @@
                                     </div>
 </div>
 </div>
-                        @endcan
+                        @endcanany
 
                         {{-- Teknisi --}}
                         @can('view-technician')
@@ -390,7 +390,7 @@
                         @endcanany
 
                         {{-- Estimator: antrean Price Request + histori harga produk --}}
-                        @can('manage-price-requests')
+                        @canany(['manage-price-requests', 'view-management'])
                             <div x-data="{ open: {{ $estimatorActive ? 'true' : 'false' }} }" class="sb-group"{{ $estimatorActive ? 'data-open' : '' }} :data-open="open ? '' : null" data-sb-group="estimator">
                                 <div class="sb-head {{ $navLink }} group w-full {{ $estimatorActive ? $navActive.' sb-active' : $navInactive }}">
                                     <a wire:navigate.hover href="{{ route('estimator.requests.index') }}"
@@ -435,7 +435,7 @@
                                     </div>
                                 </div>
                             </div>
-                        @endcan
+                        @endcanany
 
                         {{-- Admin: Dashboard, Invoice, PO, Payment --}}
                         @can('view-admin')
