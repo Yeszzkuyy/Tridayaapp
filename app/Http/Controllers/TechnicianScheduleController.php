@@ -8,6 +8,7 @@ use App\Models\GoogleAppCredential;
 use App\Models\Project;
 use App\Models\TechnicianSchedule;
 use App\Models\User;
+use App\Rules\ActiveCustomer;
 use App\Services\GoogleCalendarService;
 use Closure;
 use Illuminate\Http\Request;
@@ -69,7 +70,7 @@ class TechnicianScheduleController extends Controller
         $this->autoSyncSoon();
         $technicians = User::role(User::TECHNICIAN_ROLES)->orderBy('name')->limit(200)->get(['id', 'name']);
         $projects = Project::with('customer:id,name')->whereNotNull('project_name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::active()->orderBy('name')->get(['id', 'name']);
         $connection = $this->google->connectionStatus(auth()->user());
         $credential = GoogleAppCredential::current();
         // Jaga-jaga saat deploy: kolom customer baru bisa saja belum
@@ -349,7 +350,7 @@ class TechnicianScheduleController extends Controller
             return $this->denyResponse($request, __('You do not have permission to edit this schedule.'));
         }
 
-        $data = $this->validateSchedule($request);
+        $data = $this->validateSchedule($request, $schedule);
         $schedule = $this->google->updateSchedule($schedule, $data);
 
         if ($request->expectsJson()) {
@@ -438,12 +439,12 @@ class TechnicianScheduleController extends Controller
             ->get();
     }
 
-    private function validateSchedule(Request $request): array
+    private function validateSchedule(Request $request, ?TechnicianSchedule $schedule = null): array
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'project_id' => 'nullable|exists:projects,id',
-            'customer_id' => 'nullable|exists:customers,id',
+            'customer_id' => ['nullable', new ActiveCustomer($schedule?->customer_id)],
             'technician_ids' => 'nullable|array',
             'technician_ids.*' => [
                 'integer',

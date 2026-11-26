@@ -344,7 +344,7 @@ class SalesScheduleController extends Controller
      */
     private function customerOptions($user): array
     {
-        return CustomerAccess::queryFor($user)
+        return CustomerAccess::activeQueryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])

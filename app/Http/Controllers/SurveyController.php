@@ -8,6 +8,7 @@ use App\Models\Survey;
 use App\Models\User;
 use App\Notifications\SurveyCreatedNotification;
 use App\Notifications\SurveyReportUploadedNotification;
+use App\Rules\ActiveCustomer;
 use App\Rules\SecureFile;
 use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
@@ -53,7 +54,7 @@ class SurveyController extends Controller
     public function create(Request $request)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $customers = Customer::active()->orderBy('name')->limit(200)->get(['id', 'name']);
         $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
             ->orderBy('name')->limit(200)->get(['id', 'name']);
         $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
@@ -72,7 +73,7 @@ class SurveyController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'customer_id' => 'nullable|exists:customers,id',
+            'customer_id' => ['nullable', new ActiveCustomer],
             'project_id' => 'nullable|exists:projects,id',
             'sales_user_id' => 'required|exists:users,id',
             'technician_user_id' => 'nullable|exists:users,id',
@@ -187,7 +188,7 @@ class SurveyController extends Controller
     public function edit(Survey $survey)
     {
         $projects = Project::with('customer:id,name')->orderBy('project_name')->limit(200)->get(['id', 'project_name', 'customer_id']);
-        $customers = Customer::orderBy('name')->limit(200)->get(['id', 'name']);
+        $customers = Customer::selectable($survey->customer_id)->orderBy('name')->limit(200)->get(['id', 'name']);
         $salesUsers = User::whereHas('roles', fn ($q) => $q->where('name', 'sales')->orWhere('name', 'like', 'sales-%'))
             ->orderBy('name')->limit(200)->get(['id', 'name']);
         $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
@@ -200,7 +201,7 @@ class SurveyController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'customer_id' => 'nullable|exists:customers,id',
+            'customer_id' => ['nullable', new ActiveCustomer($survey->customer_id)],
             'project_id' => 'nullable|exists:projects,id',
             'sales_user_id' => 'required|exists:users,id',
             'technician_user_id' => 'nullable|exists:users,id',
