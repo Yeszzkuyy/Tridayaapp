@@ -74,7 +74,8 @@ class CustomerListUiTest extends TestCase
             ->assertSee('PT Detail Bersih')
             ->assertDontSee('Customer Detail')
             ->assertDontSee('from-white via-indigo-50')
-            ->assertSee('sticky top-16 z-20', false)
+            // Tab detail ikut tergulir bersama halaman, tidak menempel di atas.
+            ->assertDontSee('sticky top-16', false)
             ->assertSee('aria-label="Edit Customer"', false);
     }
 
