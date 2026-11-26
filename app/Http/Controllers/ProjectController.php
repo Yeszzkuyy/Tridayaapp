@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\ProjectStatus;
 use App\Models\User;
 use App\Models\WorkType;
+use App\Rules\ActiveCustomer;
 use App\Rules\ActiveWorkType;
 use App\Services\Project\ProjectService;
 use App\Services\Project\ProjectWorkflowService;
@@ -100,6 +101,8 @@ class ProjectController extends Controller
 
         $customer = Customer::findOrFail($customerId);
 
+        abort_if($customer->isArchived(), 403, __('Archived customers are read-only.'));
+
         // Project manual khusus teknisi (sales lewat Convert to Project).
         abort_unless(auth()->user()->can('create', Project::class), 403);
         $workTypes = WorkType::active()->orderBy('name')->get();
@@ -114,14 +117,10 @@ class ProjectController extends Controller
 
     public function store(Request $request)
     {
-        $customer = Customer::findOrFail(
-            $request->validate(['customer_id' => 'required|exists:customers,id'])['customer_id']
-        );
-
         abort_unless(auth()->user()->can('create', Project::class), 403);
 
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'name' => 'required|string|max:255',
             'work_type_id' => ['required', new ActiveWorkType],
             'account_manager_id' => 'nullable|exists:account_managers,id',
@@ -167,7 +166,7 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
 
-        $customers = Customer::all();
+        $customers = Customer::selectable($project->customer_id)->get();
         $workTypes = WorkType::selectable($project->work_type_id)->orderBy('name')->get();
         $accountManagers = AccountManager::all();
         $statuses = ProjectStatus::orderBy('sort_order')->get();

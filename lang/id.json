@@ -5635,6 +5635,7 @@
     "Customer unarchived successfully.": "Customer berhasil dikeluarkan dari arsip.",
     "This customer cannot be deleted because it still has transaction history: :relations. Archive it instead.": "Customer ini tidak bisa dihapus karena masih punya riwayat transaksi: :relations. Arsipkan saja.",
     "Trash cleared. Some records were kept because they still have transaction history.": "Trash sudah dibersihkan. Sebagian data dipertahankan karena masih punya riwayat transaksi.",
+    "The selected customer is archived, deleted, or unavailable.": "Customer yang dipilih sudah diarsipkan, dihapus, atau tidak tersedia.",
     "Invoices / payments": "Invoice / pembayaran",
     "Leads / quotations": "Lead / quotation",
     "Customer purchase orders": "Purchase order customer",

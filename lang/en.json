@@ -5635,6 +5635,7 @@
     "Customer unarchived successfully.": "Customer unarchived successfully.",
     "This customer cannot be deleted because it still has transaction history: :relations. Archive it instead.": "This customer cannot be deleted because it still has transaction history: :relations. Archive it instead.",
     "Trash cleared. Some records were kept because they still have transaction history.": "Trash cleared. Some records were kept because they still have transaction history.",
+    "The selected customer is archived, deleted, or unavailable.": "The selected customer is archived, deleted, or unavailable.",
     "Invoices / payments": "Invoices / payments",
     "Leads / quotations": "Leads / quotations",
     "Customer purchase orders": "Customer purchase orders",

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\PriceRequestCompletedNotification;
 use App\Notifications\PriceRequestCreatedNotification;
 use App\Notifications\PriceRequestReviewedNotification;
+use App\Rules\ActiveCustomer;
 use App\Rules\SecureFile;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class PriceRequestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'project_id' => 'nullable|exists:projects,id',
             'notes' => 'nullable|string|max:2000',
             'quotation' => 'required|file|max:10240|mimes:'.self::FILE_MIMES,
@@ -477,6 +478,7 @@ class PriceRequestController extends Controller
         $pts = PtAccess::userPts($user);
 
         return Customer::query()
+            ->active()
             ->when($pts !== [], fn ($q) => $q->where(
                 fn ($w) => $w->whereIn('pt_group', $pts)->orWhereNull('pt_group')
             ))

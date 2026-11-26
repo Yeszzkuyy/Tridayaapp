@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
 use App\Models\Poc;
+use App\Rules\ActiveCustomer;
 use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class PocController extends Controller
 
     public function create(Request $request)
     {
-        $customers = CustomerAccess::queryFor(auth()->user())->orderBy('name')->get(['id', 'name']);
+        $customers = CustomerAccess::activeQueryFor(auth()->user())->orderBy('name')->get(['id', 'name']);
         $preselectedCustomerId = $request->query('customer_id');
         $preselectedLeadId = $request->query('lead_id');
         $leads = $this->leadOptions($preselectedCustomerId ? (int) $preselectedCustomerId : null);
@@ -60,7 +61,7 @@ class PocController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'lead_id' => 'nullable|exists:leads,id',
             'type' => 'required|in:' . implode(',', Poc::TYPES),
             'scheduled_date' => 'nullable|date',
@@ -104,7 +105,8 @@ class PocController extends Controller
     public function edit(Poc $poc)
     {
         $this->authorizePocView($poc);
-        $customers = CustomerAccess::queryFor(auth()->user())->orderBy('name')->get(['id', 'name']);
+        $customers = CustomerAccess::activeQueryFor(auth()->user(), $poc->customer_id)
+            ->orderBy('name')->get(['id', 'name']);
         $leads = $this->leadOptions($poc->customer_id);
 
         return view('sales.pocs.edit', compact('poc', 'customers', 'leads'));
@@ -118,7 +120,7 @@ class PocController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer($poc->customer_id)],
             'lead_id' => 'nullable|exists:leads,id',
             'type' => 'required|in:' . implode(',', Poc::TYPES),
             'scheduled_date' => 'nullable|date',

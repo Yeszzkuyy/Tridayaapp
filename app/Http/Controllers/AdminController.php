@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Project;
 use App\Models\Proposal;
 use App\Models\PurchaseOrder;
+use App\Rules\ActiveCustomer;
 use App\Rules\SecureFile;
 use App\Services\AdminService;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class AdminController extends Controller
 
     public function invoicesCreate(Request $request)
     {
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::active()->orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
         // Status paid/partial hanya boleh lahir dari payment record.
         $statuses = ['unpaid' => __('Unpaid'), 'cancelled' => __('Cancelled')];
@@ -127,7 +128,7 @@ class AdminController extends Controller
         $request->merge(['items' => $this->normalizedInvoiceItemsInput($request->input('items'))]);
 
         $validated = $request->validate(array_merge([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
             'customer_po_number' => 'nullable|string|max:100',
@@ -168,7 +169,7 @@ class AdminController extends Controller
     public function invoicesEdit(Invoice $invoice)
     {
         $invoice->load(['proposal', 'items']);
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::selectable($invoice->customer_id)->orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
         $statuses = ['unpaid' => __('Unpaid'), 'partial' => __('Partial'), 'paid' => __('Paid'), 'cancelled' => __('Cancelled')];
         $types = collect(Invoice::TYPES)->mapWithKeys(fn ($type) => [$type => Invoice::typeLabel($type)])->all();
@@ -181,7 +182,7 @@ class AdminController extends Controller
         $request->merge(['items' => $this->normalizedInvoiceItemsInput($request->input('items'))]);
 
         $validated = $request->validate(array_merge([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer($invoice->customer_id)],
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
             'customer_po_number' => 'nullable|string|max:100',
@@ -244,7 +245,7 @@ class AdminController extends Controller
 
     public function posCreate(Request $request)
     {
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::active()->orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
         $statuses = ['draft' => __('Draft'), 'diproses' => __('In Process'), 'selesai' => __('Completed'), 'dibatalkan' => __('Cancelled')];
         $customerId = $request->integer('customer_id') ?: null;
@@ -310,7 +311,7 @@ class AdminController extends Controller
 
     public function posEdit(PurchaseOrder $purchaseOrder)
     {
-        $customers = Customer::orderBy('name')->get(['id', 'name']);
+        $customers = Customer::selectable($purchaseOrder->customer_id)->orderBy('name')->get(['id', 'name']);
         $projects = Project::orderBy('project_name')->get(['id', 'project_name', 'customer_id']);
         $statuses = ['draft' => __('Draft'), 'diproses' => __('In Process'), 'selesai' => __('Completed'), 'dibatalkan' => __('Cancelled')];
 
