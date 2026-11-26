@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\Project;
 use App\Models\ProjectDocument;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\CustomerArchiveService;
 use App\Services\ProjectDocumentCleanup;
 use App\Support\DocumentAccess;
@@ -114,7 +115,17 @@ class TrashController extends Controller
     public function restoreCustomer(int $id)
     {
         $customer = $this->findTrash(Customer::class, $id, 'restore');
+        $old = ['deleted_at' => $customer->deleted_at?->toDateTimeString()];
         $customer->restore();
+
+        AuditLogger::log(
+            'customer',
+            'restored',
+            $customer,
+            $old,
+            ['deleted_at' => null],
+            __('Customer restored'),
+        );
 
         return redirect()->route('trash.index')
             ->with('success', __('Customer ":name" berhasil direstore', ['name' => $customer->name]));
@@ -219,11 +230,15 @@ class TrashController extends Controller
         // tetap disimpan. Hanya customer bersih yang boleh dikosongkan.
         $candidateCustomers = Customer::onlyTrashed()->whereIn('id', $customerIds)->get();
         $deletableCustomerIds = [];
+        $deletableCustomers = collect();
+        $oldSnapshots = [];
         $keptCustomerIds = [];
 
         foreach ($candidateCustomers as $customer) {
             if ($archiveService->isDeletable($customer)) {
                 $deletableCustomerIds[] = (int) $customer->id;
+                $deletableCustomers->push($customer);
+                $oldSnapshots[$customer->id] = AuditLogger::snapshot($customer, ['name', 'pt_group', 'status', 'created_at', 'archived_at']);
             } else {
                 $keptCustomerIds[] = (int) $customer->id;
             }
@@ -281,6 +296,18 @@ class TrashController extends Controller
         // RESTRICT, jadi customer dengan riwayat tidak ikut terhapus di sini.
         if ($deletableCustomerIds) {
             Customer::onlyTrashed()->whereIn('id', $deletableCustomerIds)->forceDelete();
+
+            foreach ($deletableCustomers as $customer) {
+                AuditLogger::log(
+                    'customer',
+                    'force_deleted',
+                    $customer,
+                    $oldSnapshots[$customer->id] ?? [],
+                    [],
+                    __('Customer permanently deleted'),
+                    ['bulk' => true],
+                );
+            }
         }
         $remainingProjects = $deletableProjectIds
             ? Project::onlyTrashed()->whereIn('id', $deletableProjectIds)->pluck('id')->all()

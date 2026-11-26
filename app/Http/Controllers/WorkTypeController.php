@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\WorkType;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 
 class WorkTypeController extends Controller
@@ -30,7 +31,16 @@ class WorkTypeController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        WorkType::create($validated);
+        $workType = WorkType::create($validated);
+
+        AuditLogger::log(
+            'work_type',
+            'created',
+            $workType,
+            [],
+            ['name' => $workType->name, 'is_active' => $workType->isActive()],
+            __('Work Type created'),
+        );
 
         return redirect()
             ->route('admin-panel.work-types.index')
@@ -48,7 +58,13 @@ class WorkTypeController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
+        $old = ['name' => $workType->name, 'is_active' => $workType->isActive()];
         $workType->update($validated);
+        $new = ['name' => $workType->name, 'is_active' => $workType->isActive()];
+
+        if ($old !== $new) {
+            AuditLogger::log('work_type', 'updated', $workType, $old, $new, __('Work Type updated'));
+        }
 
         return redirect()
             ->route('admin-panel.work-types.index')
@@ -69,7 +85,19 @@ class WorkTypeController extends Controller
 
         // Tidak ada hard delete: Work Type hanya dinonaktifkan agar riwayat
         // dan referensi lama tetap aman.
+        $wasActive = $workType->isActive();
         $workType->update(['is_active' => false]);
+
+        if ($wasActive) {
+            AuditLogger::log(
+                'work_type',
+                'deactivated',
+                $workType,
+                ['is_active' => true],
+                ['is_active' => false],
+                __('Work Type deactivated'),
+            );
+        }
 
         return redirect()
             ->route('admin-panel.work-types.index')
@@ -78,7 +106,17 @@ class WorkTypeController extends Controller
 
     public function toggleActive(WorkType $workType)
     {
-        $workType->update(['is_active' => ! $workType->isActive()]);
+        $old = $workType->isActive();
+        $workType->update(['is_active' => ! $old]);
+
+        AuditLogger::log(
+            'work_type',
+            $workType->isActive() ? 'activated' : 'deactivated',
+            $workType,
+            ['is_active' => $old],
+            ['is_active' => $workType->isActive()],
+            $workType->isActive() ? __('Work Type activated') : __('Work Type deactivated'),
+        );
 
         return redirect()
             ->route('admin-panel.work-types.index')

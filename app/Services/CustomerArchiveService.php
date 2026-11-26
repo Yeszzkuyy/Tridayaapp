@@ -42,6 +42,16 @@ final class CustomerArchiveService
             'archived_at' => now(),
             'archived_by' => $actor->getKey(),
         ])->save();
+
+        AuditLogger::log(
+            'customer',
+            'archived',
+            $customer,
+            ['archived_at' => null, 'archived_by' => null],
+            ['archived_at' => $customer->archived_at?->toDateTimeString(), 'archived_by' => $customer->archived_by],
+            __('Customer archived'),
+            ['name' => $customer->name],
+        );
     }
 
     public function unarchive(Customer $customer): void
@@ -50,10 +60,23 @@ final class CustomerArchiveService
             return;
         }
 
+        $oldArchivedAt = $customer->archived_at?->toDateTimeString();
+        $oldArchivedBy = $customer->archived_by;
+
         $customer->forceFill([
             'archived_at' => null,
             'archived_by' => null,
         ])->save();
+
+        AuditLogger::log(
+            'customer',
+            'unarchived',
+            $customer,
+            ['archived_at' => $oldArchivedAt, 'archived_by' => $oldArchivedBy],
+            ['archived_at' => null, 'archived_by' => null],
+            __('Customer unarchived'),
+            ['name' => $customer->name],
+        );
     }
 
     /** @return list<string> */
@@ -99,7 +122,10 @@ final class CustomerArchiveService
                 return ['deleted' => false, 'archived' => false, 'blockers' => $blockers];
             }
 
+            $old = AuditLogger::snapshot($locked, ['name', 'pt_group', 'status', 'created_at', 'archived_at']);
             $locked->delete();
+
+            AuditLogger::log('customer', 'deleted', $locked, $old, [], __('Customer deleted'), ['bulk' => false]);
 
             return ['deleted' => true, 'archived' => false, 'blockers' => []];
         });
@@ -130,11 +156,15 @@ final class CustomerArchiveService
                 return ['deleted' => false, 'archived' => false, 'blockers' => $blockers];
             }
 
+            $old = AuditLogger::snapshot($locked, ['name', 'pt_group', 'status', 'created_at', 'archived_at']);
+
             if ($beforeDelete !== null) {
                 $beforeDelete($locked);
             }
 
             $locked->forceDelete();
+
+            AuditLogger::log('customer', 'force_deleted', $locked, $old, [], __('Customer permanently deleted'), ['bulk' => false]);
 
             return ['deleted' => true, 'archived' => false, 'blockers' => []];
         });
