@@ -72,7 +72,8 @@ class LeadDetailTest extends TestCase
     {
         $user = $this->userWithRole('marketing');
         $lead = $this->makeLead();
-        $lead->customer->delete(); // soft-delete: relasi withTrashed tetap tampil
+        // Simulasi data legacy: customer dengan lead sudah soft-deleted.
+        Customer::withoutEvents(fn () => $lead->customer->delete());
 
         $res = $this->actingAs($user)->get(route('leads.show', $lead));
 

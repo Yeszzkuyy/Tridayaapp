@@ -20,7 +20,7 @@ class FollowUpTrackerTest extends TestCase
             'follow_up_date' => now(),
         ]);
 
-        $customer->delete();
+        Customer::withoutEvents(fn () => $customer->delete());
 
         $this->assertSame('PT Bina', $followUp->fresh()->customer->name);
     }

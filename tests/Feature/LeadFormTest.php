@@ -231,7 +231,7 @@ class LeadFormTest extends TestCase
             'incoming_date' => now()->toDateString(),
             'status' => 'cool',
         ]);
-        $customer->delete();
+        Customer::withoutEvents(fn () => $customer->delete());
 
         $response = $this->actingAs($user)->put(route('leads.update', $lead), [
             'customer_mode' => 'existing',

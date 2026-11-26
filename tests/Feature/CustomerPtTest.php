@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
-use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -36,9 +35,14 @@ class CustomerPtTest extends TestCase
         return [$hendri, $multi, $plain, $sa];
     }
 
-    private function customer(string $name, ?string $pt): Customer
+    private function customer(string $name, ?string $pt, ?User $owner = null): Customer
     {
-        return Customer::create(['name' => $name, 'pt_group' => $pt, 'status' => 'deal']);
+        return Customer::create([
+            'name' => $name,
+            'pt_group' => $pt,
+            'status' => 'deal',
+            'created_by' => $owner?->id,
+        ]);
     }
 
     public function test_same_pt_can_edit()
@@ -103,10 +107,9 @@ class CustomerPtTest extends TestCase
     {
         [$hendri, , , $sa] = $this->setUpUsers();
 
-        // Budi owner (via lead) tapi pegang PT NTI -> tidak boleh restore MGK.
+        // Budi owner, tetapi pegang PT NTI -> tidak boleh restore MGK.
         $budi = $this->sales('Budi', ['sales-nti']);
-        $customer = $this->customer('PT MGK Trash', 'MGK');
-        Lead::create(['customer_id' => $customer->id, 'assigned_to' => $budi->id]);
+        $customer = $this->customer('PT MGK Trash', 'MGK', $budi);
         $this->actingAs($sa)->delete('/customers/'.$customer->id);
         $this->assertSoftDeleted('customers', ['id' => $customer->id]);
 
@@ -118,11 +121,9 @@ class CustomerPtTest extends TestCase
     {
         [$hendri] = $this->setUpUsers();
 
-        // Hendri (MGK) jadi owner dua-duanya via lead, tapi satu NTI.
-        $mgk = $this->customer('PT MGK Trash', 'MGK');
-        $nti = $this->customer('PT NTI Trash', 'NTI');
-        Lead::create(['customer_id' => $mgk->id, 'assigned_to' => $hendri->id]);
-        Lead::create(['customer_id' => $nti->id, 'assigned_to' => $hendri->id]);
+        // Hendri (MGK) jadi owner dua-duanya, tetapi satu NTI.
+        $mgk = $this->customer('PT MGK Trash', 'MGK', $hendri);
+        $nti = $this->customer('PT NTI Trash', 'NTI', $hendri);
 
         // Dihapus super-admin agar deleted_by bukan Hendri (tetap milik Hendri).
         $sa = User::factory()->create();

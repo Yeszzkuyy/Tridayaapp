@@ -182,7 +182,7 @@ class ProjectDocumentTrashTest extends TestCase
         Storage::disk('private')->assertMissing($path);
     }
 
-    public function test_hapus_customer_dari_trash_ikut_menghapus_file_dokumen(): void
+    public function test_hapus_customer_dari_trash_dengan_dokumen_ditolak(): void
     {
         $admin = $this->userWithRole('super-admin');
         $this->actingAs($admin);
@@ -191,12 +191,15 @@ class ProjectDocumentTrashTest extends TestCase
         $document = $this->makeDocument($customer);
         $path = $document->file_path;
 
-        $customer->delete();
+        Customer::withoutEvents(fn () => $customer->delete());
 
-        $this->delete(route('trash.destroy-customer', $customer->id))->assertRedirect();
+        $this->delete(route('trash.destroy-customer', $customer->id))
+            ->assertRedirect(route('trash.index'))
+            ->assertSessionHas('error');
 
-        $this->assertNull(ProjectDocument::withTrashed()->find($document->id));
-        Storage::disk('private')->assertMissing($path);
+        $this->assertNotNull(Customer::onlyTrashed()->find($customer->id));
+        $this->assertNotNull(ProjectDocument::withTrashed()->find($document->id));
+        Storage::disk('private')->assertExists($path);
     }
 
     public function test_kartu_dokumen_memakai_aksi_arsip_bukan_hapus_permanen(): void
