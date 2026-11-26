@@ -296,7 +296,7 @@ class CustomerDocumentUploadTest extends TestCase
             'doc_type' => 'invoice',
         ]);
     }
-    public function test_hapus_customer_ikut_hapus_dokumen_umum(): void
+    public function test_hapus_customer_dengan_dokumen_ditolak_dan_dokumen_tetap_disimpan(): void
     {
         $sales = $this->userWithRoles('Sales NTI', ['sales', 'sales-nti']);
         $this->actingAs($sales);
@@ -308,9 +308,12 @@ class CustomerDocumentUploadTest extends TestCase
         ])->assertRedirect();
         $doc = \App\Models\ProjectDocument::where('customer_id', $customer->id)->firstOrFail();
 
-        $customer->delete();
+        $this->delete(route('customers.destroy', $customer))
+            ->assertRedirect(route('customers.index'))
+            ->assertSessionHas('error');
 
-        $this->assertSoftDeleted('project_documents', ['id' => $doc->id]);
+        $this->assertNotSoftDeleted('customers', ['id' => $customer->id]);
+        $this->assertNotSoftDeleted('project_documents', ['id' => $doc->id]);
     }
 
     public function test_rename_menyimpan_nama_dan_ekstensi_asli(): void

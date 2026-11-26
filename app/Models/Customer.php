@@ -205,15 +205,24 @@ class Customer extends Model
 
     /**
      * Owner bisnis untuk Trash: sales yang memegang lead customer ini.
-     * Tepat 1 sales -> owner. 0 / lebih dari 1 -> tak tentu (super-admin only).
-     * deleted_by TIDAK dipakai di sini (murni audit trail).
+     * Tepat 1 sales -> owner. Tanpa lead -> pembuat customer. Lebih dari
+     * 1 sales -> tak tentu (super-admin only). deleted_by TIDAK dipakai di
+     * sini (murni audit trail).
      */
     public function trashOwnerId(): ?int
     {
         $ids = $this->leads()->withTrashed()->whereNotNull('assigned_to')
             ->distinct()->pluck('assigned_to');
 
-        return $ids->count() === 1 ? (int) $ids->first() : null;
+        if ($ids->count() === 1) {
+            return (int) $ids->first();
+        }
+
+        if ($ids->isEmpty() && $this->created_by !== null) {
+            return (int) $this->created_by;
+        }
+
+        return null;
     }
 
     public function projects()
@@ -249,6 +258,31 @@ class Customer extends Model
     public function leads()
     {
         return $this->hasMany(Lead::class);
+    }
+
+    public function priceRequests()
+    {
+        return $this->hasMany(PriceRequest::class);
+    }
+
+    public function estimatorRequests()
+    {
+        return $this->hasMany(EstimatorRequest::class);
+    }
+
+    public function surveys()
+    {
+        return $this->hasMany(Survey::class);
+    }
+
+    public function instalasis()
+    {
+        return $this->hasMany(Instalasi::class);
+    }
+
+    public function technicianSchedules()
+    {
+        return $this->hasMany(TechnicianSchedule::class);
     }
 
     public function whatsappAccount()

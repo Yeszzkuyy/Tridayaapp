@@ -32,7 +32,7 @@ class CustomerPolicy
 
     public function delete(User $user, Customer $customer): bool
     {
-        return $this->canManage($user, $customer);
+        return ! $customer->isArchived() && $this->canManage($user, $customer);
     }
 
     public function archive(User $user, Customer $customer): bool
@@ -52,7 +52,7 @@ class CustomerPolicy
 
     public function forceDelete(User $user, Customer $customer): bool
     {
-        return $this->ownsTrash($user, $customer);
+        return ! $customer->isArchived() && $this->ownsTrash($user, $customer);
     }
 
     private function canManage(User $user, Customer $customer): bool

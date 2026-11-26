@@ -569,7 +569,21 @@ class CustomerController extends Controller
     {
         $this->authorize('delete', $customer);
 
-        $customer->delete();
+        $result = $this->archiveService->delete($customer);
+
+        if ($result['archived']) {
+            return redirect()
+                ->route('customers.index')
+                ->with('error', __('Archived customers are read-only. Unarchive this customer before deleting it.'));
+        }
+
+        if ($result['blockers'] !== []) {
+            return redirect()
+                ->route('customers.index')
+                ->with('error', __('This customer cannot be deleted because it still has transaction history: :relations. Archive it instead.', [
+                    'relations' => implode(', ', $result['blockers']),
+                ]));
+        }
 
         return redirect()
             ->route('customers.index')

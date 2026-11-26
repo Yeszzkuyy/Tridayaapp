@@ -44,7 +44,7 @@ class CustomerLifecycleService
 
     public function promote(Customer $customer): bool
     {
-        if ($customer->trashed()) {
+        if ($customer->trashed() || $customer->isArchived()) {
             return false;
         }
 
