@@ -52,10 +52,9 @@
             --danger: #dc2626;
             --warn: #b45309;
             --success: #15803d;
-            --aurora-1: rgb(30 90 200 / .5);
-            --aurora-2: rgb(14 130 200 / .35);
-            --aurora-3: rgb(16 150 130 / .5);
-            --aurora-4: rgb(70 90 220 / .22);
+            --aurora-1: rgb(37 99 235 / .9);
+            --aurora-2: rgb(6 182 212 / .85);
+            --aurora-3: rgb(99 102 241 / .8);
             --vig: transparent;
             --ring-dim: rgb(100 116 139 / .5);
         }
@@ -74,11 +73,10 @@
             --danger: #fb7185;
             --warn: #fbbf24;
             --success: #34d399;
-            --aurora-1: rgb(30 90 200 / .5);
-            --aurora-2: rgb(14 130 200 / .35);
-            --aurora-3: rgb(16 150 130 / .5);
-            --aurora-4: rgb(70 90 220 / .22);
-            --vig: rgb(0 0 0 / .5);
+            --aurora-1: rgb(37 99 235 / .9);
+            --aurora-2: rgb(6 182 212 / .85);
+            --aurora-3: rgb(99 102 241 / .8);
+            --vig: transparent;
             --ring-dim: rgb(148 163 184 / .35);
         }
 
@@ -95,46 +93,65 @@
             text-rendering: optimizeLegibility;
         }
 
-        /* ===== Lightweight Ambient Mesh Background (Zero WebGL lag, 60 FPS) ===== */
-        .bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #070a14; }
-        .orb {
+        /* ===== Aurora Ambient Background (GPU-only, tanpa filter blur) ===== */
+        .bg {
+            position: fixed; inset: 0; z-index: 0; overflow: hidden;
+            isolation: isolate;
+            background: #050814;
+        }
+        .aurora {
             position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: .42;
-            will-change: transform;
+            background: radial-gradient(ellipse closest-side at center,
+                var(--aurora-color) 0%,
+                var(--aurora-color-2) 25%,
+                transparent 60%);
+            opacity: .24;
             pointer-events: none;
+            transform: translate3d(0, 0, 0);
+            will-change: transform, opacity;
         }
-        .orb-1 {
-            top: -10%; left: 8%;
-            width: 520px; height: 520px;
-            background: radial-gradient(circle, #2563eb, #1d4ed8);
-            animation: orb-drift-1 18s ease-in-out infinite alternate;
+        .aurora-1 {
+            top: -12%; left: -33%;
+            width: clamp(820px, 92vw, 1420px);
+            height: clamp(300px, 33vw, 500px);
+            rotate: -15deg;
+            --aurora-color: var(--aurora-1);
+            --aurora-color-2: var(--aurora-3);
+            animation: aurora-drift-1 18s ease-in-out infinite;
+            animation-delay: -4s;
         }
-        .orb-2 {
-            bottom: -15%; right: 4%;
-            width: 560px; height: 560px;
-            background: radial-gradient(circle, #0284c7, #0f766e);
-            animation: orb-drift-2 22s ease-in-out infinite alternate;
+        .aurora-2 {
+            top: 66%; left: 52%;
+            width: clamp(740px, 84vw, 1240px);
+            height: clamp(240px, 27vw, 400px);
+            rotate: 18deg;
+            --aurora-color: var(--aurora-2);
+            --aurora-color-2: var(--aurora-1);
+            animation: aurora-drift-2 22s ease-in-out infinite;
+            animation-delay: -9s;
         }
-        .orb-3 {
-            top: 38%; right: 28%;
-            width: 440px; height: 440px;
-            background: radial-gradient(circle, #4f46e5, #1e1b4b);
-            opacity: .32;
-            animation: orb-drift-3 16s ease-in-out infinite alternate;
+        .aurora-3 {
+            top: 2%; left: 60%;
+            width: clamp(620px, 70vw, 1020px);
+            height: clamp(220px, 23vw, 340px);
+            rotate: -8deg;
+            --aurora-color: var(--aurora-3);
+            --aurora-color-2: var(--aurora-2);
+            opacity: .18;
+            animation: aurora-drift-3 26s ease-in-out infinite;
+            animation-delay: -14s;
         }
-        @keyframes orb-drift-1 {
-            0% { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(70px, 50px, 0) scale(1.1); }
+        @keyframes aurora-drift-1 {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .2; }
+            50% { transform: translate3d(60px, 30px, 0) scale(1.1); opacity: .38; }
         }
-        @keyframes orb-drift-2 {
-            0% { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(-60px, -45px, 0) scale(1.08); }
+        @keyframes aurora-drift-2 {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); opacity: .18; }
+            50% { transform: translate3d(-55px, -35px, 0) scale(.94); opacity: .36; }
         }
-        @keyframes orb-drift-3 {
-            0% { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(35px, -35px, 0) scale(1.12); }
+        @keyframes aurora-drift-3 {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .18; }
+            50% { transform: translate3d(35px, -25px, 0) scale(1.06); opacity: .32; }
         }
         .grid-pattern {
             position: absolute; inset: 0;
@@ -146,7 +163,7 @@
         }
         .vig {
             position: absolute; inset: 0;
-            background: radial-gradient(circle at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.65) 100%);
+            background: radial-gradient(circle at 50% 50%, transparent 60%, var(--vig) 100%);
             pointer-events: none;
         }
 
@@ -455,14 +472,15 @@
 
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; animation-delay: 0s !important; }
+            .aurora { animation: none !important; }
         }
     </style>
 </head>
 <body>
     <div class="bg" aria-hidden="true">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+        <div class="aurora aurora-3"></div>
         <div class="grid-pattern"></div>
         <div class="vig"></div>
         <div class="glowline"></div>
