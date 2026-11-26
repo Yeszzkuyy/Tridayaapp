@@ -27,16 +27,22 @@ class CustomerPolicy
 
     public function update(User $user, Customer $customer): bool
     {
-        return $user->can('manage-sales')
-            && PtAccess::canWritePt($user, $customer->pt_group)
-            && CustomerAccess::canView($user, $customer);
+        return ! $customer->isArchived() && $this->canManage($user, $customer);
     }
 
     public function delete(User $user, Customer $customer): bool
     {
-        return $user->can('manage-sales')
-            && PtAccess::canWritePt($user, $customer->pt_group)
-            && CustomerAccess::canView($user, $customer);
+        return $this->canManage($user, $customer);
+    }
+
+    public function archive(User $user, Customer $customer): bool
+    {
+        return ! $customer->isArchived() && $this->canManage($user, $customer);
+    }
+
+    public function unarchive(User $user, Customer $customer): bool
+    {
+        return $customer->isArchived() && $this->canManage($user, $customer);
     }
 
     public function restore(User $user, Customer $customer): bool
@@ -47,6 +53,13 @@ class CustomerPolicy
     public function forceDelete(User $user, Customer $customer): bool
     {
         return $this->ownsTrash($user, $customer);
+    }
+
+    private function canManage(User $user, Customer $customer): bool
+    {
+        return $user->can('manage-sales')
+            && PtAccess::canWritePt($user, $customer->pt_group)
+            && CustomerAccess::canView($user, $customer);
     }
 
     /**

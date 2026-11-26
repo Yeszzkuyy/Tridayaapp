@@ -90,6 +90,8 @@ $actionColor = match ($variant) {
         'mail' => 'cyan',
         'download', 'upload', 'import', 'print' => 'teal',
         'reset', 'more' => 'slate',
+        'archive' => 'amber',
+        'unarchive' => 'green',
         default => 'accent',
     },
 };

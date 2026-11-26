@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Services\CustomerArchiveService;
 use App\Services\CustomerContactService;
 use App\Support\CustomerAccess;
 use App\Support\PtAccess;
@@ -14,7 +15,10 @@ use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
-    public function __construct(private CustomerContactService $contacts) {}
+    public function __construct(
+        private CustomerContactService $contacts,
+        private CustomerArchiveService $archiveService,
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -24,6 +28,7 @@ class CustomerController extends Controller
         $this->authorize('viewAny', Customer::class);
 
         $isRestricted = CustomerAccess::isRestricted($request->user());
+        $statusFilter = $request->string('status')->toString();
 
         $customers = CustomerAccess::queryFor($request->user())
             ->withCount('projects')
@@ -53,14 +58,21 @@ class CustomerController extends Controller
                 }
             })
             ->when($request->filled('pt_group') && ! $isRestricted, fn ($query) => $query->where('pt_group', $request->string('pt_group')))
-            // Default: lead/prospek tidak tampil sampai menjadi deal.
-            // ?status=lead hanya prospek, ?status=all customer + prospek.
+            // Default: lead/prospek dan customer arsip tidak tampil.
+            // ?status=lead hanya prospek, ?status=all customer + prospek,
+            // ?status=archived hanya customer yang diarsipkan.
             ->when(
-                $request->string('status')->toString() === 'lead',
-                fn ($query) => $query->where('status', 'lead'),
-                fn ($query) => $request->string('status')->toString() === 'all'
-                    ? $query
-                    : $query->where('status', '!=', 'lead'),
+                $statusFilter === 'archived',
+                fn ($query) => $query->whereNotNull('archived_at'),
+                function ($query) use ($statusFilter) {
+                    $query->whereNull('archived_at');
+
+                    if ($statusFilter === 'lead') {
+                        $query->where('status', 'lead');
+                    } elseif ($statusFilter !== 'all') {
+                        $query->where('status', '!=', 'lead');
+                    }
+                },
             )
             ->latest()
             ->paginate(15)
@@ -186,6 +198,7 @@ class CustomerController extends Controller
         // kerja (task selesai/total + dokumen) — dimuat di sini supaya tidak
         // N+1 saat merender grid kartu.
         $customer->load([
+            'archivedBy',
             'projects' => function ($query) {
                 $query->with(['status', 'workType'])
                     ->withCount([
@@ -428,6 +441,8 @@ class CustomerController extends Controller
     {
         $this->authorize('update', $customer);
 
+        abort_if($customer->isArchived(), 403, __('Archived customers are read-only.'));
+
         $customer->load(['contacts' => fn ($query) => $query->orderByDesc('is_primary')->latest()]);
 
         return view('customers.edit', ['customer' => $customer, 'ptGroups' => $this->writablePtGroups()]);
@@ -461,6 +476,8 @@ class CustomerController extends Controller
     public function update(Request $request, Customer $customer)
     {
         $this->authorize('update', $customer);
+
+        abort_if($customer->isArchived(), 403, __('Archived customers are read-only.'));
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -557,5 +574,27 @@ class CustomerController extends Controller
         return redirect()
             ->route('customers.index')
             ->with('success', __('Customer deleted successfully'));
+    }
+
+    public function archive(Customer $customer)
+    {
+        $this->authorize('archive', $customer);
+
+        $this->archiveService->archive($customer, auth()->user());
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', __('Customer archived successfully.'));
+    }
+
+    public function unarchive(Customer $customer)
+    {
+        $this->authorize('unarchive', $customer);
+
+        $this->archiveService->unarchive($customer);
+
+        return redirect()
+            ->route('customers.show', $customer)
+            ->with('success', __('Customer unarchived successfully.'));
     }
 }

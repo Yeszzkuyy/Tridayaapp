@@ -86,7 +86,11 @@
                     <div class="w-full sm:w-40 sm:shrink-0">
                         <label for="customer-status" class="sr-only">{{ __('Status') }}</label>
                         <x-glide-select id="customer-status" name="status" size="field" :label="__('Status')"
-                            :options="[['value' => 'lead', 'label' => __('Prospects')], ['value' => 'all', 'label' => __('Customers & Prospects')]]"
+                            :options="[
+                                ['value' => 'lead', 'label' => __('Prospects')],
+                                ['value' => 'all', 'label' => __('Customers & Prospects')],
+                                ['value' => 'archived', 'label' => __('Archived')],
+                            ]"
                             :value="request('status', '')" :empty-label="__('Customers')" autosubmit />
                     </div>
 

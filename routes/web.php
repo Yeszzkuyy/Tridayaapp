@@ -156,6 +156,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
         Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
         Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+        Route::patch('/customers/{customer}/archive', [CustomerController::class, 'archive'])->name('customers.archive');
+        Route::patch('/customers/{customer}/unarchive', [CustomerController::class, 'unarchive'])->name('customers.unarchive');
 
         Route::get('/customers/{customer}/contacts/create', [CustomerContactController::class, 'create'])->name('customer-contacts.create');
         Route::post('/customers/{customer}/contacts', [CustomerContactController::class, 'store'])->name('customer-contacts.store');

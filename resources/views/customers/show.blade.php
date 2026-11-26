@@ -14,6 +14,9 @@
                         @if($customer->pt_group)
                             <span class="inline-flex rounded-lg px-2 py-0.5 text-xs font-semibold {{ \App\Models\Lead::PT_COLORS[$customer->pt_group] ?? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' }}">{{ $customer->pt_group }}</span>
                         @endif
+                        @if($customer->isArchived())
+                            <x-status-badge color="slate">{{ __('Archived') }}</x-status-badge>
+                        @endif
                     </div>
                     <p class="mt-1 flex items-center gap-1.5 truncate text-xs text-content-secondary">
                         <x-icon name="map-pin" class="h-3.5 w-3.5 shrink-0" />
@@ -23,14 +26,60 @@
             </div>
 
             <div class="flex shrink-0 items-center gap-2">
-                @can('update', $customer)
-                    <x-flow-button as="a" href="{{ route('customers.edit', $customer) }}"
-                                   icon="edit"
-                                   label="{{ __('Edit Customer') }}" title="{{ __('Edit Customer') }}" />
-                @endcan
+                @if($customer->isArchived())
+                    @can('unarchive', $customer)
+                        <form action="{{ route('customers.unarchive', $customer) }}" method="POST"
+                              data-confirm="{{ __('This customer will be active again and can be used in new transactions.') }}"
+                              data-confirm-title="{{ __('Unarchive this customer?') }}"
+                              data-confirm-tone="success"
+                              data-confirm-label="{{ __('Yes, unarchive') }}">
+                            @csrf
+                            @method('PATCH')
+                            <x-flow-button as="button" type="submit" icon="unarchive"
+                                           label="{{ __('Unarchive Customer') }}" title="{{ __('Unarchive Customer') }}" />
+                        </form>
+                    @endcan
+                @else
+                    @can('update', $customer)
+                        <x-flow-button as="a" href="{{ route('customers.edit', $customer) }}"
+                                       icon="edit"
+                                       label="{{ __('Edit Customer') }}" title="{{ __('Edit Customer') }}" />
+                    @endcan
+                    @can('archive', $customer)
+                        <form action="{{ route('customers.archive', $customer) }}" method="POST"
+                              data-confirm="{{ __('This customer will be read-only and hidden from new transactions. Historical data stays available.') }}"
+                              data-confirm-title="{{ __('Archive this customer?') }}"
+                              data-confirm-tone="warning"
+                              data-confirm-label="{{ __('Yes, archive') }}">
+                            @csrf
+                            @method('PATCH')
+                            <x-icon-button icon="archive" type="submit" title="{{ __('Archive customer') }}" />
+                        </form>
+                    @endcan
+                @endif
                 <x-back-button href="{{ route('customers.index') }}" />
             </div>
         </div>
+
+        @if($customer->isArchived())
+            <div class="mb-5 flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200" data-rise="1">
+                <div class="flex items-start gap-2.5">
+                    <x-icon name="archive" class="mt-0.5 h-4 w-4 shrink-0" />
+                    <p>
+                        <span class="font-semibold">{{ __('Archived') }}</span>
+                        {{ __('Archived customers are read-only. Historical data stays available.') }}
+                        @if($customer->archived_at)
+                            <span class="block text-xs text-amber-800 dark:text-amber-300">
+                                {{ __('Archived on :date by :name', [
+                                    'date' => $customer->archived_at->format('d M Y H:i'),
+                                    'name' => $customer->archivedBy?->name ?? '-',
+                                ]) }}
+                            </span>
+                        @endif
+                    </p>
+                </div>
+            </div>
+        @endif
 
         {{-- Tabs --}}
         <div x-data="{
@@ -209,11 +258,13 @@
                 {{-- TAB 3: CONTACTS --}}
                 <div x-show="tab === 'contacts'" x-transition>
                     <x-section-header title="{{ __('PIC / Customer Contacts List') }}">
-                        @can('update', $customer)
-                            <x-flow-button as="a" href="{{ route('customer-contacts.create', $customer) }}"
-                                           icon="users"
-                                           label="{{ __('Add PIC') }}" title="{{ __('Add PIC') }}" />
-                        @endcan
+                        @if(! $customer->isArchived())
+                            @can('update', $customer)
+                                <x-flow-button as="a" href="{{ route('customer-contacts.create', $customer) }}"
+                                               icon="users"
+                                               label="{{ __('Add PIC') }}" title="{{ __('Add PIC') }}" />
+                            @endcan
+                        @endif
                     </x-section-header>
 
                     @if($customer->contacts->isNotEmpty())
@@ -237,40 +288,46 @@
                                             <span class="text-xs text-content-tertiary">{{ $contact->email ?? '-' }}</span>
                                         </td>
                                         <td class="px-6 py-3 align-middle">
-                                            @can('update', $customer)
-                                                <form action="{{ route('customer-contacts.primary', $contact) }}" method="POST">
-                                                    @csrf @method('PATCH')
-                                                    <label class="flex cursor-pointer items-center gap-1.5">
-                                                        <input type="checkbox" value="1" {{ $contact->is_primary ? 'checked' : '' }}
-                                                               onchange="this.form.submit()"
-                                                               class="h-5 w-5 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
-                                                        <span class="text-xs text-content-secondary">{{ __('Primary') }}</span>
-                                                    </label>
-                                                </form>
-                                            @else
-                                                @if($contact->is_primary)
-                                                    <x-status-badge color="green">{{ __('Primary') }}</x-status-badge>
-                                                @endif
-                                            @endcan
+                                            @if(! $customer->isArchived())
+                                                @can('update', $customer)
+                                                    <form action="{{ route('customer-contacts.primary', $contact) }}" method="POST">
+                                                        @csrf @method('PATCH')
+                                                        <label class="flex cursor-pointer items-center gap-1.5">
+                                                            <input type="checkbox" value="1" {{ $contact->is_primary ? 'checked' : '' }}
+                                                                   onchange="this.form.submit()"
+                                                                   class="h-5 w-5 rounded border-slate-300 text-accent-600 focus:ring-accent-500">
+                                                            <span class="text-xs text-content-secondary">{{ __('Primary') }}</span>
+                                                        </label>
+                                                    </form>
+                                                @else
+                                                    @if($contact->is_primary)
+                                                        <x-status-badge color="green">{{ __('Primary') }}</x-status-badge>
+                                                    @endif
+                                                @endcan
+                                            @elseif($contact->is_primary)
+                                                <x-status-badge color="green">{{ __('Primary') }}</x-status-badge>
+                                            @endif
                                         </td>
                                         <td class="px-6 py-3 text-right align-middle">
-                                            @can('update', $customer)
-                                                <a href="{{ route('customer-contacts.edit', $contact) }}"
-                                                   class="text-amber-600 hover:text-amber-800 text-sm inline-block align-middle">{{ __('Edit') }}</a>
-                                            @endcan
-                                            @can('update', $customer)
-                                                <form action="{{ route('customer-contacts.destroy', $contact) }}"
-                                                      method="POST"
-                                                      data-confirm="{{ __('Delete this PIC?') }}" data-confirm-tone="danger"
-                                                      class="inline-block align-middle ml-2">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="text-red-600 hover:text-red-800 text-sm inline-block align-middle bg-transparent border-0 cursor-pointer p-0">
-                                                        {{ __('Delete') }}
-                                                    </button>
-                                                </form>
-                                            @endcan
+                                            @if(! $customer->isArchived())
+                                                @can('update', $customer)
+                                                    <a href="{{ route('customer-contacts.edit', $contact) }}"
+                                                       class="text-amber-600 hover:text-amber-800 text-sm inline-block align-middle">{{ __('Edit') }}</a>
+                                                @endcan
+                                                @can('update', $customer)
+                                                    <form action="{{ route('customer-contacts.destroy', $contact) }}"
+                                                          method="POST"
+                                                          data-confirm="{{ __('Delete this PIC?') }}" data-confirm-tone="danger"
+                                                          class="inline-block align-middle ml-2">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit"
+                                                                class="text-red-600 hover:text-red-800 text-sm inline-block align-middle bg-transparent border-0 cursor-pointer p-0">
+                                                            {{ __('Delete') }}
+                                                        </button>
+                                                    </form>
+                                                @endcan
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -284,8 +341,10 @@
                 {{-- TAB 4: DOCUMENTS --}}
                 <div x-show="tab === 'documents'" x-transition>
                     @php
-                        $canUploadDocs = auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician');
-                        $canUploadAnyDoc = $canUploadDocs || auth()->user()->can('manage-admin');
+                        $canUploadDocs = ! $customer->isArchived()
+                            && (auth()->user()->can('update', $customer) || auth()->user()->can('manage-technician'));
+                        $canUploadAnyDoc = ! $customer->isArchived()
+                            && ($canUploadDocs || auth()->user()->can('manage-admin'));
                         // Split dokumen berdasarkan jenis: project & general
                         // (dokumen transaksi sudah dipisah di controller).
                         $projectDocuments = $documents->whereNotNull('project_id');
@@ -580,11 +639,13 @@
                     <div class="space-y-8">
                         <div>
                             <x-section-header title="{{ __('Follow Up') }}">
-                                @can('update', $customer)
-                                    <x-flow-button as="a" href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}"
-                                                   icon="phone"
-                                                   label="{{ __('Add Follow Up') }}" title="{{ __('Add Follow Up') }}" />
-                                @endcan
+                                @if(! $customer->isArchived())
+                                    @can('update', $customer)
+                                        <x-flow-button as="a" href="{{ route('sales.follow-ups.create', ['customer_id' => $customer->id]) }}"
+                                                       icon="phone"
+                                                       label="{{ __('Add Follow Up') }}" title="{{ __('Add Follow Up') }}" />
+                                    @endcan
+                                @endif
                             </x-section-header>
                             @php $followups = $customer->followUps()->with(['creator'])->latest('follow_up_date')->get(); @endphp
                             @if($followups->isNotEmpty())

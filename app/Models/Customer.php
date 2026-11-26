@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Pastikan ini ada
 
@@ -30,12 +31,42 @@ class Customer extends Model
         'notes',
         'status',
         'deleted_by',
+        'archived_at',
+        'archived_by',
         'whatsapp_account_id',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'archived_at' => 'datetime',
     ];
+
+    /** Arsip terpisah dari Trash (`deleted_at`). */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Pilihan record untuk form: hanya customer aktif, tetapi record yang
+     * sedang dipakai sebuah transaksi lama tetap boleh tampil walau sudah
+     * diarsipkan agar transaksi lama tidak kehilangan relasinya.
+     */
+    public function scopeSelectable(Builder $query, ?int $includeArchivedId = null): Builder
+    {
+        return $query->where(function (Builder $query) use ($includeArchivedId) {
+            $query->whereNull('archived_at');
+
+            if ($includeArchivedId !== null) {
+                $query->orWhereKey($includeArchivedId);
+            }
+        });
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
 
     public function contacts()
     {
@@ -165,6 +196,11 @@ class Customer extends Model
     public function deleter()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function archivedBy()
+    {
+        return $this->belongsTo(User::class, 'archived_by');
     }
 
     /**

@@ -16,7 +16,7 @@ class CustomerContactController extends Controller
      */
     public function create(Customer $customer)
     {
-        $this->authorize('update', $customer);
+        $this->authorizeManage($customer);
 
         return view('customer_contacts.create', compact('customer'));
     }
@@ -26,7 +26,7 @@ class CustomerContactController extends Controller
      */
     public function store(Request $request, Customer $customer)
     {
-        $this->authorize('update', $customer);
+        $this->authorizeManage($customer);
 
         $validated = $this->validateContact($request);
         $validated['is_primary'] = $request->boolean('is_primary');
@@ -43,7 +43,7 @@ class CustomerContactController extends Controller
      */
     public function edit(CustomerContact $customerContact)
     {
-        $this->authorize('update', $customerContact->customer);
+        $this->authorizeManage($customerContact->customer);
 
         $customer = $customerContact->customer;
 
@@ -55,7 +55,7 @@ class CustomerContactController extends Controller
      */
     public function update(Request $request, CustomerContact $customerContact)
     {
-        $this->authorize('update', $customerContact->customer);
+        $this->authorizeManage($customerContact->customer);
 
         $validated = $this->validateContact($request);
         $validated['is_primary'] = $request->boolean('is_primary');
@@ -72,7 +72,7 @@ class CustomerContactController extends Controller
      */
     public function togglePrimary(CustomerContact $customerContact)
     {
-        $this->authorize('update', $customerContact->customer);
+        $this->authorizeManage($customerContact->customer);
 
         if (! $customerContact->is_primary) {
             $this->contacts->setPrimary($customerContact);
@@ -88,7 +88,7 @@ class CustomerContactController extends Controller
      */
     public function destroy(CustomerContact $customerContact)
     {
-        $this->authorize('update', $customerContact->customer);
+        $this->authorizeManage($customerContact->customer);
 
         $customer = $customerContact->customer;
         $this->contacts->delete($customerContact);
@@ -96,6 +96,13 @@ class CustomerContactController extends Controller
         return redirect()
             ->route('customers.show', $customer)
             ->with('success', __('PIC deleted successfully.'));
+    }
+
+    private function authorizeManage(Customer $customer): void
+    {
+        $this->authorize('update', $customer);
+
+        abort_if($customer->isArchived(), 403, __('Archived customers are read-only.'));
     }
 
     /** @return array<string,mixed> */
