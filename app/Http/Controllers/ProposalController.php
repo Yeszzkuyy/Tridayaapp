@@ -21,6 +21,7 @@ use App\Models\WorkType;
 use App\Notifications\ProjectConvertedNotification;
 use App\Notifications\ProposalStatusNotification;
 use App\Notifications\PurchasingHandoffNotification;
+use App\Rules\ActiveWorkType;
 use App\Rules\SecureFile;
 use App\Services\CustomerLifecycleService;
 use App\Services\Project\ProjectWorkflowService;
@@ -647,7 +648,7 @@ class ProposalController extends Controller
         $this->authorizeView($proposal);
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
-            ? WorkType::orderBy('name')->get(['id', 'name'])
+            ? WorkType::active()->orderBy('name')->get(['id', 'name'])
             : collect();
 
         $technicians = $proposal->status === 'accepted' && ! $proposal->project
@@ -1098,7 +1099,7 @@ class ProposalController extends Controller
         abort_unless($proposal->isPoVerified(), 422, __('Verify the customer PO before converting to a project.'));
 
         $validated = $request->validate([
-            'work_type_id' => 'required|exists:work_types,id',
+            'work_type_id' => ['required', new ActiveWorkType],
             'start_date' => 'nullable|date',
             'requires_delivery' => 'nullable|boolean',
             'requires_installation' => 'nullable|boolean',

@@ -18,6 +18,7 @@ use App\Models\WhatsappAccount;
 use App\Models\WhatsappMessage;
 use App\Notifications\LeadAssignedNotification;
 use App\Notifications\NewLeadNotification;
+use App\Rules\ActiveWorkType;
 use App\Services\CustomerContactService;
 use App\Services\CustomerLifecycleService;
 use App\Services\LeadPipelineService;
@@ -610,7 +611,7 @@ class LeadController extends Controller
         $lead->load(['customer.contacts', 'partner', 'assignee', 'tasks.assignee', 'activities.user', 'customer.projects.documents', 'followUps.creator', 'salesSchedules.assignee', 'technicalRequests.requester', 'technicalRequests.technician', 'proposals.creator']);
         $documents = $lead->customer ? $lead->customer->projects->flatMap->documents : collect();
         $projectStatuses = ProjectStatus::orderBy('sort_order')->get(['id', 'name']);
-        $workTypes = WorkType::orderBy('name')->get(['id', 'name']);
+        $workTypes = WorkType::active()->orderBy('name')->get(['id', 'name']);
 
         // Riwayat follow-up milik lead ini, terbaru dulu.
         $timeline = $this->buildFollowUpTimeline($lead);
@@ -925,7 +926,7 @@ class LeadController extends Controller
         $validated = request()->validate([
             'project_name' => 'required|string|max:255',
             'project_status_id' => 'required|exists:project_statuses,id',
-            'work_type_id' => 'required|exists:work_types,id',
+            'work_type_id' => ['required', new ActiveWorkType],
             'closing_note' => 'nullable|string|max:2000',
         ]);
 

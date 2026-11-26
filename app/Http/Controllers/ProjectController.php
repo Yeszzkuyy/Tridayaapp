@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\ProjectStatus;
 use App\Models\User;
 use App\Models\WorkType;
+use App\Rules\ActiveWorkType;
 use App\Services\Project\ProjectService;
 use App\Services\Project\ProjectWorkflowService;
 use Illuminate\Http\Request;
@@ -101,7 +102,7 @@ class ProjectController extends Controller
 
         // Project manual khusus teknisi (sales lewat Convert to Project).
         abort_unless(auth()->user()->can('create', Project::class), 403);
-        $workTypes = WorkType::all();
+        $workTypes = WorkType::active()->orderBy('name')->get();
         $accountManagers = AccountManager::all();
         $statuses = ProjectStatus::orderBy('sort_order')->get();
         $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
@@ -122,7 +123,7 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'name' => 'required|string|max:255',
-            'work_type_id' => 'required|exists:work_types,id',
+            'work_type_id' => ['required', new ActiveWorkType],
             'account_manager_id' => 'nullable|exists:account_managers,id',
             'teknisi_user_id' => 'nullable|exists:users,id',
             'pic_engineer' => 'nullable|string|max:255',
@@ -167,7 +168,7 @@ class ProjectController extends Controller
         $this->authorize('update', $project);
 
         $customers = Customer::all();
-        $workTypes = WorkType::all();
+        $workTypes = WorkType::selectable($project->work_type_id)->orderBy('name')->get();
         $accountManagers = AccountManager::all();
         $statuses = ProjectStatus::orderBy('sort_order')->get();
         $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
@@ -183,7 +184,7 @@ class ProjectController extends Controller
 
         $validated = $request->validate([
             'project_name' => 'required|string|max:255',
-            'work_type_id' => 'required|exists:work_types,id',
+            'work_type_id' => ['required', new ActiveWorkType($project->work_type_id)],
             'account_manager_id' => 'nullable|exists:account_managers,id',
             'teknisi_user_id' => 'nullable|exists:users,id',
             'pic_engineer' => 'nullable|string|max:255',
