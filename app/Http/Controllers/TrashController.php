@@ -7,6 +7,8 @@ use App\Models\Lead;
 use App\Models\Project;
 use App\Models\ProjectDocument;
 use App\Models\User;
+use App\Services\AuditLogger;
+use App\Services\CustomerArchiveService;
 use App\Services\ProjectDocumentCleanup;
 use App\Support\DocumentAccess;
 use App\Support\PtAccess;
@@ -113,7 +115,17 @@ class TrashController extends Controller
     public function restoreCustomer(int $id)
     {
         $customer = $this->findTrash(Customer::class, $id, 'restore');
+        $old = ['deleted_at' => $customer->deleted_at?->toDateTimeString()];
         $customer->restore();
+
+        AuditLogger::log(
+            'customer',
+            'restored',
+            $customer,
+            $old,
+            ['deleted_at' => null],
+            __('Customer restored'),
+        );
 
         return redirect()->route('trash.index')
             ->with('success', __('Customer ":name" berhasil direstore', ['name' => $customer->name]));
@@ -128,15 +140,28 @@ class TrashController extends Controller
             ->with('success', __('Project ":name" berhasil direstore', ['name' => $project->project_name]));
     }
 
-    public function destroyCustomer(int $id, ProjectDocumentCleanup $cleanup)
+    public function destroyCustomer(int $id, ProjectDocumentCleanup $cleanup, CustomerArchiveService $archiveService)
     {
         $customer = $this->findTrash(Customer::class, $id, 'forceDelete');
         $name = $customer->name;
 
-        // Hapus file dokumen dulu supaya tidak ada file menggantung saat
-        // baris customer (dan anak-anaknya) dihapus permanen.
-        $cleanup->purgeForCustomer($customer->id);
-        $customer->forceDelete();
+        $result = $archiveService->forceDelete($customer, function (Customer $locked) use ($cleanup) {
+            // Hapus file dokumen dulu supaya tidak ada file menggantung saat
+            // baris customer (dan anak-anaknya) dihapus permanen.
+            $cleanup->purgeForCustomer($locked->id);
+        });
+
+        if ($result['archived']) {
+            return redirect()->route('trash.index')
+                ->with('error', __('Archived customers are read-only. Unarchive this customer before deleting it.'));
+        }
+
+        if ($result['blockers'] !== []) {
+            return redirect()->route('trash.index')
+                ->with('error', __('This customer cannot be deleted because it still has transaction history: :relations. Archive it instead.', [
+                    'relations' => implode(', ', $result['blockers']),
+                ]));
+        }
 
         return redirect()->route('trash.index')
             ->with('success', __('Customer ":name" dihapus permanen', ['name' => $name]));
@@ -187,7 +212,7 @@ class TrashController extends Controller
     /**
      * Empty My Trash: hanya milik owner. Super-admin: global.
      */
-    public function clear(ProjectDocumentCleanup $cleanup)
+    public function clear(ProjectDocumentCleanup $cleanup, CustomerArchiveService $archiveService)
     {
         $user = auth()->user();
 
@@ -201,9 +226,55 @@ class TrashController extends Controller
             $projectIds = $this->ptWritableProjectIds($user, $projectIds);
         }
 
+        // Customer dengan riwayat transaksi (atau yang masih diarsipkan)
+        // tetap disimpan. Hanya customer bersih yang boleh dikosongkan.
+        $candidateCustomers = Customer::onlyTrashed()->whereIn('id', $customerIds)->get();
+        $deletableCustomerIds = [];
+        $deletableCustomers = collect();
+        $oldSnapshots = [];
+        $keptCustomerIds = [];
+
+        foreach ($candidateCustomers as $customer) {
+            if ($archiveService->isDeletable($customer)) {
+                $deletableCustomerIds[] = (int) $customer->id;
+                $deletableCustomers->push($customer);
+                $oldSnapshots[$customer->id] = AuditLogger::snapshot($customer, ['name', 'pt_group', 'status', 'created_at', 'archived_at']);
+            } else {
+                $keptCustomerIds[] = (int) $customer->id;
+            }
+        }
+
+        // Project milik customer yang dipertahankan ikut disimpan agar
+        // riwayat customer tersebut tidak hilang dari Trash.
+        $projectCustomerMap = $projectIds
+            ? Project::onlyTrashed()->whereIn('id', $projectIds)->pluck('customer_id', 'id')->all()
+            : [];
+        $keptProjectIds = $keptCustomerIds
+            ? array_keys(array_filter(
+                $projectCustomerMap,
+                fn ($customerId) => in_array((int) $customerId, $keptCustomerIds, true)
+            ))
+            : [];
+        $deletableProjectIds = array_values(array_diff($projectIds, $keptProjectIds));
+
         // Dokumen di Trash yang terlihat user ikut dikosongkan (file fisik
-        // dihapus lewat service, bukan hanya baris DB).
-        $documentIds = $this->documentsTrashQuery(request(), $user)->pluck('id')->all();
+        // dihapus lewat service, bukan hanya baris DB), kecuali dokumen milik
+        // customer/project yang dipertahankan.
+        $documentQuery = $this->documentsTrashQuery(request(), $user);
+
+        if ($keptCustomerIds) {
+            $documentQuery->where(fn ($query) => $query
+                ->whereNull('customer_id')
+                ->orWhereNotIn('customer_id', $keptCustomerIds));
+        }
+
+        if ($keptProjectIds) {
+            $documentQuery->where(fn ($query) => $query
+                ->whereNull('project_id')
+                ->orWhereNotIn('project_id', $keptProjectIds));
+        }
+
+        $documentIds = $documentQuery->pluck('id')->all();
         foreach (array_chunk($documentIds, 100) as $chunk) {
             ProjectDocument::withTrashed()
                 ->whereIn('id', $chunk)
@@ -214,27 +285,43 @@ class TrashController extends Controller
 
         // File dokumen milik customer/project yang akan dihapus juga dibersihkan
         // supaya tidak tertinggal di disk.
-        foreach ($customerIds as $customerId) {
+        foreach ($deletableCustomerIds as $customerId) {
             $cleanup->purgeForCustomer($customerId);
         }
-        foreach ($projectIds as $projectId) {
+        foreach ($deletableProjectIds as $projectId) {
             $cleanup->purgeForProject($projectId);
         }
 
-        // Customer dulu (cascade DB ikut membersihkan anaknya),
-        // lalu project yang masih tersisa.
-        if ($customerIds) {
-            Customer::onlyTrashed()->whereIn('id', $customerIds)->forceDelete();
+        // Customer dulu, lalu project yang masih tersisa. FK bisnis memakai
+        // RESTRICT, jadi customer dengan riwayat tidak ikut terhapus di sini.
+        if ($deletableCustomerIds) {
+            Customer::onlyTrashed()->whereIn('id', $deletableCustomerIds)->forceDelete();
+
+            foreach ($deletableCustomers as $customer) {
+                AuditLogger::log(
+                    'customer',
+                    'force_deleted',
+                    $customer,
+                    $oldSnapshots[$customer->id] ?? [],
+                    [],
+                    __('Customer permanently deleted'),
+                    ['bulk' => true],
+                );
+            }
         }
-        $remainingProjects = $projectIds
-            ? Project::onlyTrashed()->whereIn('id', $projectIds)->pluck('id')->all()
+        $remainingProjects = $deletableProjectIds
+            ? Project::onlyTrashed()->whereIn('id', $deletableProjectIds)->pluck('id')->all()
             : [];
         if ($remainingProjects) {
             Project::onlyTrashed()->whereIn('id', $remainingProjects)->forceDelete();
         }
 
+        $message = ($keptCustomerIds || $keptProjectIds)
+            ? __('Trash cleared. Some records were kept because they still have transaction history.')
+            : __('Trash cleared successfully');
+
         return redirect()->route('trash.index')
-            ->with('success', __('Trash cleared successfully'));
+            ->with(($keptCustomerIds || $keptProjectIds) ? 'warning' : 'success', $message);
     }
 
     /**
@@ -269,10 +356,22 @@ class TrashController extends Controller
             ->select('customer_id', 'assigned_to')->distinct()->get()
             ->groupBy('customer_id');
 
+        $customers = Customer::withTrashed()
+            ->whereIn('id', $customerIds)
+            ->pluck('created_by', 'id');
+
         $map = [];
         foreach ($customerIds as $id) {
             $owners = $grouped[$id] ?? collect();
-            $map[$id] = $owners->count() === 1 ? (int) $owners->first()->assigned_to : null;
+
+            if ($owners->count() === 1) {
+                $map[$id] = (int) $owners->first()->assigned_to;
+            } elseif ($owners->isEmpty() && $customers[$id] !== null) {
+                // Customer tanpa lead tetap punya pemilik bila dibuat manual.
+                $map[$id] = (int) $customers[$id];
+            } else {
+                $map[$id] = null;
+            }
         }
 
         return $map;

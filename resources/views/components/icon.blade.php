@@ -28,6 +28,10 @@ $icons = [
 
     'restore' => '<path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" />',
 
+    'archive' => '<rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8" /><path d="M10 12h4" />',
+
+    'unarchive' => '<rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8" /><path d="M12 17v-5" /><path d="m9.5 14.5 2.5-2.5 2.5 2.5" />',
+
     'chevron-right' => '<path d="M9 5l7 7-7 7" />',
     'chevron-down' => '<path d="M6 9l6 6 6-6" />',
 

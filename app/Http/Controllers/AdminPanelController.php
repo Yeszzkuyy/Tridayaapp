@@ -254,14 +254,6 @@ class AdminPanelController extends Controller
             ->with('success', __('Tax and margin settings saved.'));
     }
 
-    // ========== AUDIT LOG ==========
-    
-    public function auditLog()
-    {
-        $logs = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
-        return view('admin-panel.audit-log', compact('logs'));
-    }
-
     private function groupedPermissions()
     {
         return Permission::all()->groupBy(function ($p) {

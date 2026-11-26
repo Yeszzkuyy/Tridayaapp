@@ -50,6 +50,11 @@
                             <a href="{{ route('customers.show', $customer) }}" class="font-semibold text-content-primary hover:text-accent-600 dark:hover:text-accent-400">
                                 {{ $customer->name }}
                             </a>
+                            @if($customer->isArchived())
+                                <span class="ml-2 inline-flex align-middle">
+                                    <x-status-badge color="slate">{{ __('Archived') }}</x-status-badge>
+                                </span>
+                            @endif
                             <p class="mt-1 max-w-sm truncate text-xs text-content-secondary">
                                 {{ $customer->address ?: __('Address not filled') }}
                             </p>
@@ -84,17 +89,43 @@
                             <div class="flex justify-end gap-2">
                                 <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}" title="{{ __('View customer') }}" />
 
-                                @can('update', $customer)
-                                    <x-icon-button as="a" icon="edit" href="{{ route('customers.edit', $customer) }}" title="{{ __('Edit customer') }}" />
-                                @endcan
+                                @if($customer->isArchived())
+                                    @can('unarchive', $customer)
+                                        <form action="{{ route('customers.unarchive', $customer) }}" method="POST" class="inline-flex"
+                                              data-confirm="{{ __('This customer will be active again and can be used in new transactions.') }}"
+                                              data-confirm-title="{{ __('Unarchive this customer?') }}"
+                                              data-confirm-tone="success"
+                                              data-confirm-label="{{ __('Yes, unarchive') }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <x-icon-button icon="unarchive" type="submit" title="{{ __('Unarchive customer') }}" />
+                                        </form>
+                                    @endcan
+                                @else
+                                    @can('update', $customer)
+                                        <x-icon-button as="a" icon="edit" href="{{ route('customers.edit', $customer) }}" title="{{ __('Edit customer') }}" />
+                                    @endcan
 
-                                @can('delete', $customer)
-                                    <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" data-confirm="{{ __('Delete this customer?') }}" data-confirm-tone="danger">
-                                        @csrf
-                                        @method('DELETE')
-                                        <x-icon-button icon="delete" type="submit" title="{{ __('Delete customer') }}" />
-                                    </form>
-                                @endcan
+                                    @can('archive', $customer)
+                                        <form action="{{ route('customers.archive', $customer) }}" method="POST" class="inline-flex"
+                                              data-confirm="{{ __('This customer will be read-only and hidden from new transactions. Historical data stays available.') }}"
+                                              data-confirm-title="{{ __('Archive this customer?') }}"
+                                              data-confirm-tone="warning"
+                                              data-confirm-label="{{ __('Yes, archive') }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <x-icon-button icon="archive" type="submit" title="{{ __('Archive customer') }}" />
+                                        </form>
+                                    @endcan
+
+                                    @can('delete', $customer)
+                                        <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="inline-flex" data-confirm="{{ __('Delete this customer?') }}" data-confirm-tone="danger">
+                                            @csrf
+                                            @method('DELETE')
+                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete customer') }}" />
+                                        </form>
+                                    @endcan
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -115,15 +146,34 @@
                         <a href="{{ route('customers.show', $customer) }}" class="block truncate font-semibold text-content-primary">
                             {{ $customer->name }}
                         </a>
+                        @if($customer->isArchived())
+                            <span class="mt-1 inline-flex">
+                                <x-status-badge color="slate">{{ __('Archived') }}</x-status-badge>
+                            </span>
+                        @endif
                         <p class="mt-0.5 truncate text-xs text-content-secondary">
                             {{ $customer->address ?: __('Address not filled') }}
                         </p>
                     </div>
                     <div class="flex shrink-0 gap-1.5">
                         <x-icon-button as="a" icon="view" href="{{ route('customers.show', $customer) }}" title="{{ __('View customer') }}" />
-                        @can('update', $customer)
-                            <x-icon-button as="a" icon="edit" href="{{ route('customers.edit', $customer) }}" title="{{ __('Edit customer') }}" />
-                        @endcan
+                        @if($customer->isArchived())
+                            @can('unarchive', $customer)
+                                <form action="{{ route('customers.unarchive', $customer) }}" method="POST" class="inline-flex"
+                                      data-confirm="{{ __('This customer will be active again and can be used in new transactions.') }}"
+                                      data-confirm-title="{{ __('Unarchive this customer?') }}"
+                                      data-confirm-tone="success"
+                                      data-confirm-label="{{ __('Yes, unarchive') }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <x-icon-button icon="unarchive" type="submit" title="{{ __('Unarchive customer') }}" />
+                                </form>
+                            @endcan
+                        @else
+                            @can('update', $customer)
+                                <x-icon-button as="a" icon="edit" href="{{ route('customers.edit', $customer) }}" title="{{ __('Edit customer') }}" />
+                            @endcan
+                        @endif
                     </div>
                 </div>
 

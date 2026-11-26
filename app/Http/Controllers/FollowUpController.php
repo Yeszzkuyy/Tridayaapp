@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\RespondsAjax;
 use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
+use App\Rules\ActiveCustomer;
 use App\Services\SalesService;
 use App\Support\CustomerAccess;
 use App\Support\PtAccess;
@@ -87,7 +88,7 @@ class FollowUpController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'lead_id' => 'nullable|exists:leads,id',
             'description' => 'required|string',
             'type' => 'nullable|in:'.implode(',', FollowUp::ALLOWED_TYPES),
@@ -208,7 +209,7 @@ class FollowUpController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer($followUp->customer_id)],
             'lead_id' => 'nullable|exists:leads,id',
             'description' => 'required|string',
             'type' => 'nullable|in:'.implode(',', FollowUp::ALLOWED_TYPES),
@@ -335,7 +336,7 @@ class FollowUpController extends Controller
      */
     private function customerOptions($user, bool $withPtSuffix = true): array
     {
-        return CustomerAccess::queryFor($user)
+        return CustomerAccess::activeQueryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $this->customerLabel($c, $withPtSuffix)])

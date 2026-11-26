@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Pastikan ini ada
 
@@ -30,12 +31,42 @@ class Customer extends Model
         'notes',
         'status',
         'deleted_by',
+        'archived_at',
+        'archived_by',
         'whatsapp_account_id',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'archived_at' => 'datetime',
     ];
+
+    /** Arsip terpisah dari Trash (`deleted_at`). */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Pilihan record untuk form: hanya customer aktif, tetapi record yang
+     * sedang dipakai sebuah transaksi lama tetap boleh tampil walau sudah
+     * diarsipkan agar transaksi lama tidak kehilangan relasinya.
+     */
+    public function scopeSelectable(Builder $query, ?int $includeArchivedId = null): Builder
+    {
+        return $query->where(function (Builder $query) use ($includeArchivedId) {
+            $query->whereNull('archived_at');
+
+            if ($includeArchivedId !== null) {
+                $query->orWhereKey($includeArchivedId);
+            }
+        });
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
 
     public function contacts()
     {
@@ -167,17 +198,31 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function archivedBy()
+    {
+        return $this->belongsTo(User::class, 'archived_by');
+    }
+
     /**
      * Owner bisnis untuk Trash: sales yang memegang lead customer ini.
-     * Tepat 1 sales -> owner. 0 / lebih dari 1 -> tak tentu (super-admin only).
-     * deleted_by TIDAK dipakai di sini (murni audit trail).
+     * Tepat 1 sales -> owner. Tanpa lead -> pembuat customer. Lebih dari
+     * 1 sales -> tak tentu (super-admin only). deleted_by TIDAK dipakai di
+     * sini (murni audit trail).
      */
     public function trashOwnerId(): ?int
     {
         $ids = $this->leads()->withTrashed()->whereNotNull('assigned_to')
             ->distinct()->pluck('assigned_to');
 
-        return $ids->count() === 1 ? (int) $ids->first() : null;
+        if ($ids->count() === 1) {
+            return (int) $ids->first();
+        }
+
+        if ($ids->isEmpty() && $this->created_by !== null) {
+            return (int) $this->created_by;
+        }
+
+        return null;
     }
 
     public function projects()
@@ -213,6 +258,31 @@ class Customer extends Model
     public function leads()
     {
         return $this->hasMany(Lead::class);
+    }
+
+    public function priceRequests()
+    {
+        return $this->hasMany(PriceRequest::class);
+    }
+
+    public function estimatorRequests()
+    {
+        return $this->hasMany(EstimatorRequest::class);
+    }
+
+    public function surveys()
+    {
+        return $this->hasMany(Survey::class);
+    }
+
+    public function instalasis()
+    {
+        return $this->hasMany(Instalasi::class);
+    }
+
+    public function technicianSchedules()
+    {
+        return $this->hasMany(TechnicianSchedule::class);
     }
 
     public function whatsappAccount()

@@ -133,7 +133,7 @@ class PurchasingHandoffController extends Controller
         ]);
 
         $workTypes = ! $proposal->project
-            ? \App\Models\WorkType::orderBy('name')->get(['id', 'name'])
+            ? \App\Models\WorkType::active()->orderBy('name')->get(['id', 'name'])
             : collect();
 
         return view('admin.purchasing.handoff.show', compact('proposal', 'workTypes'));

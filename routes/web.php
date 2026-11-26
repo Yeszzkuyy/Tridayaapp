@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountManagerController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminPanelController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BastController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CustomerContactController;
@@ -156,6 +157,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
         Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
         Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+        Route::patch('/customers/{customer}/archive', [CustomerController::class, 'archive'])->name('customers.archive');
+        Route::patch('/customers/{customer}/unarchive', [CustomerController::class, 'unarchive'])->name('customers.unarchive');
 
         Route::get('/customers/{customer}/contacts/create', [CustomerContactController::class, 'create'])->name('customer-contacts.create');
         Route::post('/customers/{customer}/contacts', [CustomerContactController::class, 'store'])->name('customer-contacts.store');
@@ -921,6 +924,11 @@ Route::middleware('auth')->group(function () {
         [MonitoringController::class, 'index']
     )->middleware(['auth', 'verified', 'permission:view-monitoring|manage-monitoring'])->name('monitoring.index');
 
+    // Audit Log read-only: Super Admin, Management, dan CEO.
+    Route::get('/admin-panel/audit-log', [AuditLogController::class, 'index'])
+        ->middleware(['auth', 'verified', 'permission:view-monitoring|manage-monitoring'])
+        ->name('admin-panel.audit-log');
+
     // ============================================
     // ADMIN PANEL — Super Admin only (settings, config)
     // ============================================
@@ -945,9 +953,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/roles/{role}', [AdminPanelController::class, 'updateRole'])->name('roles.update');
         Route::delete('/roles/{role}', [AdminPanelController::class, 'destroyRole'])->name('roles.destroy');
 
-        // Audit Log
-        Route::get('/audit-log', [AdminPanelController::class, 'auditLog'])->name('audit-log');
-
         // Account Manager
         Route::get('/account-managers', [AccountManagerController::class, 'index'])->name('account-managers.index');
         Route::resource('account-managers', AccountManagerController::class)->except(['index']);
@@ -955,6 +960,7 @@ Route::middleware('auth')->group(function () {
         // Work Type
         Route::get('/work-types', [WorkTypeController::class, 'index'])->name('work-types.index');
         Route::resource('work-types', WorkTypeController::class)->except(['index']);
+        Route::patch('/work-types/{workType}/toggle-active', [WorkTypeController::class, 'toggleActive'])->name('work-types.toggle-active');
 
         // Document Categories
         Route::get('/document-categories', [DocumentCategoryController::class, 'index'])->name('document-categories.index');

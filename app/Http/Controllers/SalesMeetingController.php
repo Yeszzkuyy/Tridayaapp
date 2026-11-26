@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\FollowUp;
 use App\Models\Lead;
 use App\Models\User;
+use App\Rules\ActiveCustomer;
 use App\Support\CustomerAccess;
 use App\Support\PtAccess;
 use Illuminate\Http\Request;
@@ -90,7 +91,7 @@ class SalesMeetingController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'lead_id' => 'nullable|exists:leads,id',
             'follow_up_date' => 'required|date',
             'activity_time' => 'nullable|date_format:H:i',
@@ -191,7 +192,7 @@ class SalesMeetingController extends Controller
     /** Customer yang boleh dipilih user ini (milik Sales, bukan seluruh PT). */
     private function customerOptions(User $user): array
     {
-        return CustomerAccess::queryFor($user)
+        return CustomerAccess::activeQueryFor($user)
             ->orderBy('name')
             ->get(['id', 'name', 'pt_group'])
             ->mapWithKeys(fn ($c) => [$c->id => $c->name.($c->pt_group ? " ({$c->pt_group})" : '')])

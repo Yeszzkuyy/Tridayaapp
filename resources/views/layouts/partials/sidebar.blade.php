@@ -561,6 +561,15 @@
                             </a>
                         @endcan
 
+                        @can('view-monitoring')
+                            <a wire:navigate.hover href="{{ route('admin-panel.audit-log') }}"
+                               aria-current="{{ request()->routeIs('admin-panel.audit-log') ? 'page' : 'false' }}"
+                               class="{{ $navLink }} {{ request()->routeIs('admin-panel.audit-log') ? $navActive : $navInactive }}">
+                                <x-icon name="activity" class="h-5 w-5 shrink-0" />
+                                <span>{{ __('Audit Log') }}</span>
+                            </a>
+                        @endcan
+
                         {{-- Knowledge Base (Admin only) --}}
                         @can('manage-admin')
                             <a wire:navigate.hover href="{{ route('knowledge-base.index') }}"
@@ -625,12 +634,6 @@
                                        class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.project-statuses.*') ? $navActive : $navInactive }}">
                                         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
                                         <span>{{ __('Project Status') }}</span>
-                                    </a>
-                                    <a wire:navigate.hover href="{{ route('admin-panel.audit-log') }}"
-                                       aria-current="{{ request()->routeIs('admin-panel.audit-log') ? 'page' : 'false' }}"
-                                       class="sb-sub-item {{ $subNavLink }} {{ request()->routeIs('admin-panel.audit-log') ? $navActive : $navInactive }}">
-                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" aria-hidden="true"></span>
-                                        <span>{{ __('Audit Log') }}</span>
                                     </a>
                                     <a wire:navigate.hover href="{{ route('dev.worklog.index') }}"
                                        aria-current="{{ request()->routeIs('dev.worklog*') ? 'page' : 'false' }}"

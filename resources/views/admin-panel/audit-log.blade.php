@@ -1,90 +1,113 @@
 <x-app-layout>
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-content-primary">{{ __('Audit Log') }}</h1>
-            <p class="text-content-secondary mt-1">{{ __('History of user activity in the system') }}</p>
-        </div>
-    </div>
-
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600 overflow-hidden">
-        <div class="p-4 border-b border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700">
-            <form method="GET" action="{{ route('admin-panel.audit-log') }}" class="flex flex-wrap gap-4">
-                <div>
-                    <label for="date_from" class="sr-only">{{ __('From Date') }}</label>
-                    <x-datepicker id="date_from" name="date_from" value="{{ request('date_from') }}"></x-datepicker>
-                </div>
-                <div>
-                    <label for="date_to" class="sr-only">{{ __('To Date') }}</label>
-                    <x-datepicker id="date_to" name="date_to" value="{{ request('date_to') }}"></x-datepicker>
-                </div>
-                <div>
-                    <label for="action" class="sr-only">{{ __('Action') }}</label>
-                    <select id="action" name="action" class="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
-                        <option value="">{{ __('All Actions') }}</option>
-                        <option value="created" {{ request('action') === 'created' ? 'selected' : '' }}>{{ __('Created') }}</option>
-                        <option value="updated" {{ request('action') === 'updated' ? 'selected' : '' }}>{{ __('Updated') }}</option>
-                        <option value="deleted" {{ request('action') === 'deleted' ? 'selected' : '' }}>{{ __('Deleted') }}</option>
-                    </select>
-                </div>
-                <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
-                <x-icon-button as="a" icon="reset" href="{{ route('admin-panel.audit-log') }}" title="{{ __('Reset') }}" />
-            </form>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('User') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Action') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Model') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Description') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Properties') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('IP Address') }}</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-content-secondary uppercase tracking-wider">{{ __('Waktu') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
-                    @forelse($logs as $log)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-3">
-                                <div class="font-medium text-content-primary">{{ $log->causer->name ?? __('System') }}</div>
-                                <div class="text-sm text-content-secondary">{{ $log->causer->email ?? '-' }}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium
-                                    {{ $log->action === 'created' ? 'bg-green-100 text-green-800' : ($log->action === 'updated' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800') }}">
-                                    {{ ucfirst($log->action) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-content-secondary">{{ class_basename($log->subject_type) ?? '-' }}</td>
-                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->description ?? '-' }}</td>
-                            <td class="px-4 py-3">
-                                <div class="text-xs text-content-secondary max-w-xs truncate">
-                                    {{ $log->properties ? json_encode($log->properties) : '-' }}
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->ip ?? '-' }}</td>
-                            <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->created_at->format('d M Y H:i') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-content-tertiary">
-                                <svg class="w-12 h-12 mx-auto text-content-tertiary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <p>{{ __('No audit log yet') }}</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($logs->hasPages())
-            <div class="px-4 py-3 border-t border-slate-200">
-                {{ $logs->links() }}
+    <div class="px-4 sm:px-6 lg:px-8">
+        <div class="mb-6 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-content-primary sm:text-3xl">{{ __('Audit Log') }}</h1>
+                <p class="mt-1 text-sm text-content-secondary">{{ __('Read-only history of important actions in the system.') }}</p>
             </div>
-        @endif
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
+            <div class="border-b border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+                <form method="GET" action="{{ route('admin-panel.audit-log') }}" class="flex flex-wrap items-end gap-3">
+                    <div class="w-full sm:w-40">
+                        <x-datepicker id="date_from" name="date_from" :value="$filters['date_from'] ?? ''" />
+                    </div>
+                    <div class="w-full sm:w-40">
+                        <x-datepicker id="date_to" name="date_to" :value="$filters['date_to'] ?? ''" />
+                    </div>
+                    <div class="w-full sm:w-48">
+                        <x-glide-select name="module" size="field" :label="__('Module')"
+                            :options="$modules->map(fn ($module) => ['value' => $module, 'label' => ucfirst(str_replace('_', ' ', $module))])->all()"
+                            :value="$filters['module'] ?? ''" :empty-label="__('All Modules')" />
+                    </div>
+                    <div class="w-full sm:w-44">
+                        <x-glide-select name="action" size="field" :label="__('Action')"
+                            :options="$actions->map(fn ($action) => ['value' => $action, 'label' => ucfirst(str_replace('_', ' ', $action))])->all()"
+                            :value="$filters['action'] ?? ''" :empty-label="__('All Actions')" />
+                    </div>
+                    <x-icon-button icon="filter" type="submit" title="{{ __('Filter') }}" />
+                    <x-icon-button as="a" icon="reset" href="{{ route('admin-panel.audit-log') }}" title="{{ __('Reset') }}" />
+                </form>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[980px]">
+                    <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('User') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Module') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Action') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Record') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Changes') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('IP Address') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-content-secondary">{{ __('Time') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-600">
+                        @forelse($logs as $log)
+                            @php
+                                $old = $log->old_values ?? [];
+                                $new = $log->new_values ?? [];
+                                $keys = array_values(array_unique(array_merge(array_keys($old), array_keys($new))));
+                                $tone = match ($log->action) {
+                                    'created', 'activated', 'restored' => 'green',
+                                    'updated', 'archived' => 'blue',
+                                    'deleted', 'deactivated' => 'red',
+                                    default => 'slate',
+                                };
+                            @endphp
+                            <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-content-primary">{{ $log->causer_name ?: ($log->causer?->name ?? __('System')) }}</div>
+                                    <div class="text-xs text-content-secondary">{{ $log->causer_email ?: ($log->causer?->email ?? '-') }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-content-secondary">{{ ucfirst(str_replace('_', ' ', $log->module)) }}</td>
+                                <td class="px-4 py-3">
+                                    <x-status-badge :color="$tone">{{ ucfirst(str_replace('_', ' ', $log->action)) }}</x-status-badge>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-content-secondary">
+                                    {{ $log->subject_type ? class_basename($log->subject_type) : '-' }}@if($log->subject_id) #{{ $log->subject_id }}@endif
+                                    @if($log->description)
+                                        <div class="mt-0.5 text-xs text-content-tertiary">{{ $log->description }}</div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if($keys === [])
+                                        <span class="text-xs text-content-tertiary">-</span>
+                                    @else
+                                        <div class="max-w-sm space-y-0.5 text-xs text-content-secondary">
+                                            @foreach($keys as $key)
+                                                <div class="truncate">
+                                                    <span class="font-medium">{{ $key }}</span>:
+                                                    {{ is_scalar($old[$key] ?? null) ? ($old[$key] ?? '-') : json_encode($old[$key] ?? null) }}
+                                                    <span class="text-content-tertiary">→</span>
+                                                    {{ is_scalar($new[$key] ?? null) ? ($new[$key] ?? '-') : json_encode($new[$key] ?? null) }}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->ip_address ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-content-secondary">{{ $log->created_at?->format('d M Y H:i:s') ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-4 py-12 text-center text-content-tertiary">
+                                    <x-icon name="activity" class="mx-auto mb-2 h-10 w-10" />
+                                    <p>{{ __('No audit log yet') }}</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if($logs->hasPages())
+                <div class="border-t border-slate-200 px-4 py-3 dark:border-slate-600">
+                    {{ $logs->links() }}
+                </div>
+            @endif
+        </div>
     </div>
 </x-app-layout>

@@ -33,7 +33,9 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Jenis Pekerjaan') }}</label>
                     <select name="work_type_id" class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
                         @foreach($workTypes as $workType)
-                            <option value="{{ $workType->id }}" {{ $project->work_type_id == $workType->id ? 'selected' : '' }}>{{ $workType->name }}</option>
+                            <option value="{{ $workType->id }}" {{ $project->work_type_id == $workType->id ? 'selected' : '' }}>
+                                {{ $workType->name }}@if(! $workType->isActive()) ({{ __('Inactive') }})@endif
+                            </option>
                         @endforeach
                     </select>
                 </div>

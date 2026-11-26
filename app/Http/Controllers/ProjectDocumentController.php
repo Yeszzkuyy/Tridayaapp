@@ -117,6 +117,8 @@ class ProjectDocumentController extends Controller
 
     public function storeForCustomer(Request $request, \App\Models\Customer $customer)
     {
+        abort_if($customer->isArchived(), 403, __('Archived customers are read-only.'));
+
         $user = auth()->user();
         $ownsCustomer = $customer->leads()->where('assigned_to', $user->id)->exists()
             || $customer->projects()->where('sales_user_id', $user->id)->exists();

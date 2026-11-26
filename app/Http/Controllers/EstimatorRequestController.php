@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Notifications\EstimatorRequestAnsweredNotification;
 use App\Notifications\EstimatorRequestCreatedNotification;
 use App\Notifications\EstimatorRequestRevisionNotification;
+use App\Rules\ActiveCustomer;
 use App\Support\Pricing;
 use App\Support\PtAccess;
 use App\Support\Rupiah;
@@ -201,7 +202,7 @@ class EstimatorRequestController extends Controller
         $this->authorize('create', EstimatorRequest::class);
 
         $validated = $request->validate([
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => ['required', new ActiveCustomer],
             'lead_id' => 'nullable|exists:leads,id',
             'project_id' => 'nullable|exists:projects,id',
             'proposal_id' => 'nullable|exists:proposals,id',
@@ -727,6 +728,7 @@ class EstimatorRequestController extends Controller
         $pts = PtAccess::userPts($user);
 
         return Customer::query()
+            ->active()
             ->when($pts !== [], fn ($query) => $query->where(
                 fn ($query) => $query->whereIn('pt_group', $pts)->orWhereNull('pt_group')
             ))

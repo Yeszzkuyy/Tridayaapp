@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Customer;
-use App\Models\Lead;
 use App\Models\Project;
 use App\Models\ProjectStatus;
 use App\Models\User;
@@ -39,10 +38,12 @@ class TrashPerUserTest extends TestCase
 
     private function ownedCustomer(User $owner, string $name): Customer
     {
-        $customer = Customer::create(['name' => $name]);
-        Lead::create(['customer_id' => $customer->id, 'assigned_to' => $owner->id]);
-
-        return $customer;
+        // Customer tanpa transaksi tetap bisa dihapus ke Trash. Owner dibaca
+        // dari created_by bila belum ada lead yang meng-assign customer.
+        return Customer::create([
+            'name' => $name,
+            'created_by' => $owner->id,
+        ]);
     }
 
     private function ownedProject(User $owner, Customer $customer, string $name): Project

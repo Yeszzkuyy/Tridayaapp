@@ -46,6 +46,18 @@ final class CustomerAccess
             || $user->can('manage-inside-sales');
     }
 
+    /**
+     * Pilihan customer untuk transaksi baru: hanya customer aktif.
+     * Record yang sedang dipakai transaksi lama boleh disertakan agar
+     * form edit tidak kehilangan relasinya.
+     *
+     * @return Builder<Customer>
+     */
+    public static function activeQueryFor(User $user, ?int $includeArchivedId = null): Builder
+    {
+        return self::queryFor($user)->selectable($includeArchivedId);
+    }
+
     /** @return Builder<Customer> */
     public static function queryFor(User $user): Builder
     {
