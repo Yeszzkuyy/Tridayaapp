@@ -54,7 +54,10 @@ class ProjectService
                 'start_date' => $data['start_date'] ?? null,
                 'project_status_id' => $data['project_status_id']
                     ?? ProjectStatus::where('is_default', true)->value('id'),
-                'progress' => $data['progress'] ?? 17,
+                'requires_delivery' => $data['requires_delivery'] ?? true,
+                'requires_installation' => $data['requires_installation'] ?? true,
+                'requires_survey' => $data['requires_survey'] ?? true,
+                'requires_sizing' => $data['requires_sizing'] ?? true,
                 'workflow_state' => $data['workflow_state'] ?? ['request'],
             ]);
 
@@ -84,8 +87,11 @@ class ProjectService
                     : $project->teknisi_user_id,
                 'pic_engineer' => $picName ?? $project->pic_engineer,
                 'support_technicians' => $supportNames ?? $project->support_technicians,
-                'progress' => $data['progress'] ?? $project->progress,
                 'project_status_id' => $data['project_status_id'] ?? $project->project_status_id,
+                'requires_delivery' => $data['requires_delivery'] ?? $project->requires_delivery,
+                'requires_installation' => $data['requires_installation'] ?? $project->requires_installation,
+                'requires_survey' => $data['requires_survey'] ?? $project->requires_survey,
+                'requires_sizing' => $data['requires_sizing'] ?? $project->requires_sizing,
                 'description' => $data['description'] ?? $project->description,
             ]);
 

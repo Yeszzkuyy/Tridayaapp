@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\ProjectActivity;
 use App\Models\ProjectStatus;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectObserver
@@ -56,14 +57,25 @@ class ProjectObserver
         }
 
         $oldStatus = ProjectStatus::find($project->getOriginal('project_status_id'))?->name;
+        $newStatus = ProjectStatus::find($project->project_status_id)?->name;
 
         ProjectActivity::create([
             'project_id' => $project->id,
             'user_id' => $userId,
             'activity_date' => now(),
             'title' => __('Status Changed'),
-            'description' => __('Status project diubah dari :old menjadi :new', ['old' => $oldStatus, 'new' => $project->status?->name]),
+            'description' => __('Status project diubah dari :old menjadi :new', ['old' => $oldStatus, 'new' => $newStatus]),
         ]);
+
+        AuditLogger::log(
+            'project',
+            'status_changed',
+            $project,
+            ['project_status_id' => $project->getOriginal('project_status_id'), 'status' => $oldStatus],
+            ['project_status_id' => $project->project_status_id, 'status' => $newStatus],
+            __('Project status changed'),
+            ['project_id' => $project->id],
+        );
     }
 
     public function deleted(Project $project): void

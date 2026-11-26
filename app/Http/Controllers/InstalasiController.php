@@ -9,11 +9,13 @@ use App\Models\ProjectDocument;
 use App\Models\User;
 use App\Notifications\InstallationCompletedNotification;
 use App\Rules\SecureFile;
+use App\Services\AuditLogger;
 use App\Services\DocumentRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class InstalasiController extends Controller
 {
@@ -248,22 +250,37 @@ class InstalasiController extends Controller
     public function updateBast(Request $request, Instalasi $instalasi)
     {
         $user = $request->user();
-        abort_unless($user && ($user->can('manage-technician') || $user->can('manage-admin')), 403);
+        abort_unless($user && $user->can('manage-admin'), 403);
 
         $validated = $request->validate([
             'bast_number' => 'nullable|string|max:100',
             'bast_date' => 'nullable|date',
-            'bast_file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
-            'bast_signed_3dy_name' => 'nullable|string|max:150',
-            'bast_signed_3dy_at' => 'nullable|date',
-            'bast_signed_customer_name' => 'nullable|string|max:150',
-            'bast_signed_customer_at' => 'nullable|date',
+            'bast_file' => [
+                Rule::requiredIf(fn () => ! $instalasi->bast_document_id),
+                'file',
+                'mimes:pdf,doc,docx',
+                'max:10240',
+                new SecureFile(
+                    ['pdf', 'doc', 'docx'],
+                    [
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    ],
+                ),
+            ],
         ]);
 
         $file = $request->file('bast_file');
         unset($validated['bast_file']);
 
         $oldDocument = $instalasi->bastDocument;
+        $oldBast = AuditLogger::snapshot($instalasi, [
+            'bast_number',
+            'bast_date',
+            'bast_document_id',
+            'bast_ready_at',
+        ]);
 
         if ($file) {
             $path = $file->storeAs(
@@ -312,7 +329,21 @@ class InstalasiController extends Controller
         $instalasi->refresh();
         $instalasi->refreshBastReady();
 
-        return back()->with('success', __('BAST saved. The installation is complete after both parties sign.'));
+        AuditLogger::log(
+            'installation',
+            'bast_updated',
+            $instalasi,
+            $oldBast,
+            AuditLogger::snapshot($instalasi, [
+                'bast_number',
+                'bast_date',
+                'bast_document_id',
+                'bast_ready_at',
+            ]),
+            __('Installation BAST file updated'),
+        );
+
+        return back()->with('success', __('BAST file saved. The installation is ready for Finance.'));
     }
 
     public function destroy(Instalasi $instalasi)

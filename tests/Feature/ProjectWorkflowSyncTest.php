@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\DocumentCategory;
 use App\Models\Instalasi;
+use App\Models\Invoice;
 use App\Models\Lead;
+use App\Models\PriceRequest;
 use App\Models\Project;
 use App\Models\ProjectDocument;
 use App\Models\ProjectStatus;
@@ -124,7 +126,7 @@ class ProjectWorkflowSyncTest extends TestCase
         $this->assertFalse($step['done']);
     }
 
-    public function test_signed_bast_is_detected_and_does_not_close_without_invoice(): void
+    public function test_bast_file_is_detected_and_does_not_close_without_invoice(): void
     {
         $project = $this->makeProject();
         $category = DocumentCategory::firstOrCreate(['name' => 'BAST']);
@@ -141,8 +143,6 @@ class ProjectWorkflowSyncTest extends TestCase
         $project->forceFill([
             'bast_number' => 'BAST-001',
             'bast_document_id' => $document->id,
-            'bast_signed_3dy_at' => now(),
-            'bast_signed_customer_at' => now(),
         ])->save();
 
         $workflow = app(ProjectWorkflowService::class)->evaluate($project->fresh());
@@ -151,6 +151,126 @@ class ProjectWorkflowSyncTest extends TestCase
         $this->assertTrue($bastStep['done']);
         // Tanpa invoice, project belum boleh Done.
         $this->assertNotSame('Done', $project->fresh()->status?->name);
+    }
+
+    public function test_bast_file_upload_triggers_workflow_and_closing(): void
+    {
+        Storage::fake('private');
+
+        $admin = $this->userWithRole('admin');
+        $project = $this->makeProject([
+            'requires_survey' => false,
+            'requires_sizing' => false,
+            'requires_installation' => true,
+            'requires_delivery' => false,
+        ]);
+
+        PriceRequest::create([
+            'customer_id' => $project->customer_id,
+            'project_id' => $project->id,
+            'requested_by' => auth()->id(),
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        Instalasi::create([
+            'project_id' => $project->id,
+            'status' => 'completed',
+            'report_file' => 'instalasis/reports/bast-close.pdf',
+            'report_file_name' => 'bast-close.pdf',
+        ]);
+
+        Invoice::create([
+            'invoice_number' => 'INV-BAST-'.uniqid(),
+            'customer_id' => $project->customer_id,
+            'project_id' => $project->id,
+            'amount' => 1000000,
+            'status' => 'paid',
+            'issue_date' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.bast.update', $project), [
+            'bast_number' => 'BAST-CLOSE-1',
+            'bast_date' => now()->toDateString(),
+            'bast_file' => UploadedFile::fake()->create('bast.pdf', 100, 'application/pdf'),
+            'requires_installation' => 1,
+        ])->assertRedirect();
+
+        $project->refresh();
+
+        $this->assertTrue($project->isBastReady());
+        $this->assertSame(100, $project->progress);
+        $this->assertNotNull($project->commercial_closed_at);
+        $this->assertSame('Done', $project->status?->name);
+    }
+
+    public function test_delivery_only_project_skips_survey_sizing_installation_and_bast(): void
+    {
+        $project = $this->makeProject([
+            'requires_survey' => false,
+            'requires_sizing' => false,
+            'requires_installation' => false,
+            'requires_delivery' => true,
+        ]);
+
+        PriceRequest::create([
+            'customer_id' => $project->customer_id,
+            'project_id' => $project->id,
+            'requested_by' => auth()->id(),
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $workflow = app(ProjectWorkflowService::class)->evaluate($project->fresh());
+        $keys = collect($workflow['steps'])->pluck('key')->all();
+
+        $this->assertContains('request', $keys);
+        $this->assertContains('price_request', $keys);
+        $this->assertNotContains('survey', $keys);
+        $this->assertNotContains('sizing', $keys);
+        $this->assertNotContains('installation', $keys);
+        $this->assertNotContains('bast', $keys);
+        $this->assertSame(100, $workflow['progress']);
+    }
+
+    public function test_manual_progress_and_done_status_are_rejected(): void
+    {
+        $project = $this->makeProject();
+        $done = ProjectStatus::where('name', 'Done')->firstOrFail();
+
+        $this->put(route('projects.update', $project), [
+            'project_name' => $project->project_name,
+            'work_type_id' => $project->work_type_id,
+            'project_status_id' => $done->id,
+            'progress' => 100,
+        ])->assertSessionHasErrors('project_status_id');
+
+        $project->refresh();
+
+        $this->assertNotSame($done->id, $project->project_status_id);
+        $this->assertNotSame(100, $project->progress);
+    }
+
+    public function test_technician_cannot_upload_installation_bast(): void
+    {
+        Storage::fake('private');
+
+        $technician = $this->userWithRole('technician');
+        $customer = Customer::create(['name' => 'PT Instalasi BAST Guard', 'pt_group' => 'NTI']);
+
+        $installation = Instalasi::create([
+            'customer_id' => $customer->id,
+            'location' => 'Jakarta',
+            'status' => 'completed',
+            'report_file' => 'instalasis/reports/guard.pdf',
+            'report_file_name' => 'guard.pdf',
+        ]);
+
+        $this->actingAs($technician)->put(route('teknisi.instalasis.bast', $installation), [
+            'bast_file' => UploadedFile::fake()->create('bast.pdf', 100, 'application/pdf'),
+        ])->assertForbidden();
+
+        $this->assertNull($installation->fresh()->bast_document_id);
     }
 
     public function test_convert_can_assign_pic_and_support_engineers(): void
@@ -249,10 +369,6 @@ class ProjectWorkflowSyncTest extends TestCase
         $this->actingAs($admin)->put(route('teknisi.instalasis.bast', $installation), [
             'bast_number' => 'BAST-LEPAS-1',
             'bast_date' => now()->toDateString(),
-            'bast_signed_3dy_name' => 'Admin 3DY',
-            'bast_signed_3dy_at' => now()->toDateString(),
-            'bast_signed_customer_name' => 'Pak Customer',
-            'bast_signed_customer_at' => now()->toDateString(),
             'bast_file' => UploadedFile::fake()->create('bast.pdf', 100, 'application/pdf'),
         ])->assertRedirect();
 

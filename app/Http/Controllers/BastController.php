@@ -9,6 +9,8 @@ use App\Models\ProjectDocument;
 use App\Models\User;
 use App\Notifications\BastReadyNotification;
 use App\Rules\SecureFile;
+use App\Services\AuditLogger;
+use App\Services\Project\ProjectWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -20,18 +22,16 @@ use Illuminate\Validation\ValidationException;
  * Tahap 5 — BAST (Berita Acara Serah Terima).
  *
  * Alur:
- * 1. Teknisi menandai instalasi selesai secara teknis + mengisi hasil.
- * 2. Admin memeriksa kelengkapan, membuat dokumen dari template perusahaan,
- *    lalu mengunggah BAST yang sudah ditandatangani.
- * 3. Tanda tangan 3DY + pelanggan dicatat; setelah dokumen lengkap,
- *    `bast_ready_at` diisi dan Finance bisa melihat dokumennya.
+ * 1. Teknisi menandai instalasi selesai secara teknis dan menyerahkan BAST
+ *    fisik yang sudah ditandatangani kepada Admin.
+ * 2. Admin mengunggah file BAST. Sistem tidak membaca atau memverifikasi
+ *    tanda tangan di dalam file.
+ * 3. File BAST menjadi penanda `bast_ready_at`; Finance bisa melihat dokumen.
  * 4. Setelah BAST + pengiriman + pelunasan lengkap,
  *    Project::evaluateCommercialClosing() menutup proyek.
  */
 class BastController extends Controller
 {
-    private const BAST_FILE_RULES = ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'];
-
     private function bastFileRule(): SecureFile
     {
         return new SecureFile(
@@ -63,7 +63,7 @@ class BastController extends Controller
                 } elseif ($request->status === 'open') {
                     $q->whereNull('commercial_closed_at');
                 } elseif ($request->status === 'bast') {
-                    $q->whereNotNull('bast_number');
+                    $q->whereNotNull('bast_document_id');
                 } elseif ($request->status === 'ready') {
                     $q->whereNotNull('bast_ready_at');
                 } elseif ($request->status === 'waiting_signature') {
@@ -88,6 +88,8 @@ class BastController extends Controller
 
     public function edit(Project $project)
     {
+        abort_unless(auth()->user()?->can('manage-admin'), 403);
+
         $project->load([
             'customer', 'proposal.items', 'bastDocument',
             'documents.category', 'invoices.payments', 'goodsDeliveries',
@@ -99,18 +101,21 @@ class BastController extends Controller
 
     public function update(Request $request, Project $project)
     {
+        abort_unless(auth()->user()?->can('manage-admin'), 403);
+
         $validated = $request->validate([
             'bast_number' => [
                 'nullable', 'string', 'max:100',
                 Rule::unique('projects', 'bast_number')->ignore($project->id),
             ],
             'bast_date' => 'nullable|date',
-            'bast_document_id' => 'nullable|exists:project_documents,id',
-            'bast_file' => array_merge(self::BAST_FILE_RULES, [$this->bastFileRule()]),
-            'bast_signed_3dy_name' => 'nullable|string|max:150',
-            'bast_signed_3dy_at' => 'nullable|date',
-            'bast_signed_customer_name' => 'nullable|string|max:150',
-            'bast_signed_customer_at' => 'nullable|date',
+            'bast_file' => [
+                Rule::requiredIf(fn () => ! $project->bast_document_id),
+                'file',
+                'mimes:pdf,doc,docx',
+                'max:10240',
+                $this->bastFileRule(),
+            ],
             'requires_installation' => 'nullable|boolean',
             'delivery_deadline' => 'nullable|date',
         ]);
@@ -118,14 +123,13 @@ class BastController extends Controller
         $file = $request->file('bast_file');
         unset($validated['bast_file']);
 
-        if (! empty($validated['bast_document_id'])) {
-            $belongs = $project->documents()->whereKey($validated['bast_document_id'])->exists();
-            if (! $belongs) {
-                throw ValidationException::withMessages([
-                    'bast_document_id' => __('The selected document does not belong to this project.'),
-                ]);
-            }
-        }
+        $wasReady = filled($project->bast_ready_at);
+        $oldBast = AuditLogger::snapshot($project, [
+            'bast_number',
+            'bast_date',
+            'bast_document_id',
+            'bast_ready_at',
+        ]);
 
         if ($file) {
             $validated['bast_document_id'] = $this->storeBastFile($project, $file)->id;
@@ -135,17 +139,35 @@ class BastController extends Controller
         $project->update($validated);
         $project->refresh();
 
-        $wasReady = filled($project->bast_ready_at);
-        $isReady = $project->refreshBastReady();
+        $project->refreshBastReady();
+        $project->refresh();
 
-        if ($isReady && ! $wasReady) {
+        // BAST adalah pemicu: hitung ulang progress/status, lalu evaluasi Closing.
+        app(ProjectWorkflowService::class)->sync($project);
+        $project->refresh();
+        $project->evaluateCommercialClosing();
+
+        if ($project->isBastReady() && ! $wasReady) {
             $this->notifyFinance($project);
         }
 
-        $project->evaluateCommercialClosing();
+        AuditLogger::log(
+            'project',
+            'bast_updated',
+            $project,
+            $oldBast,
+            AuditLogger::snapshot($project, [
+                'bast_number',
+                'bast_date',
+                'bast_document_id',
+                'bast_ready_at',
+            ]),
+            __('BAST file updated'),
+            ['project_id' => $project->id],
+        );
 
         return redirect()->route('admin.bast.index')
-            ->with('success', __('BAST saved. Commercial closing is evaluated automatically.'));
+            ->with('success', __('BAST saved. Workflow and commercial closing are evaluated automatically.'));
     }
 
     /**

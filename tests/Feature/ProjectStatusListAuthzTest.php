@@ -261,6 +261,45 @@ class ProjectStatusListAuthzTest extends TestCase
         $this->actingAs($admin)->delete(route('admin-panel.project-statuses.destroy', 999999))->assertNotFound();
     }
 
+    public function test_system_status_cannot_be_deleted_or_renamed_via_livewire(): void
+    {
+        $admin = $this->loginAs('super-admin');
+        $status = ProjectStatus::where('is_system', true)->where('name', 'Open')->firstOrFail();
+
+        $this->actingAs($admin);
+
+        Livewire::test(ProjectStatusList::class)->call('delete', $status->id);
+        $this->assertNotNull(ProjectStatus::find($status->id), 'Status inti tidak boleh terhapus.');
+
+        Livewire::test(ProjectStatusList::class)
+            ->call('edit', $status->id)
+            ->set('editName', 'Diubah')
+            ->call('update');
+
+        $this->assertSame('Open', $status->fresh()->name, 'Nama status inti tidak boleh berubah.');
+    }
+
+    public function test_system_status_cannot_be_deleted_or_renamed_via_http(): void
+    {
+        $admin = $this->loginAs('super-admin');
+        $status = ProjectStatus::where('is_system', true)->where('name', 'Open')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('admin-panel.project-statuses.update', $status), [
+                'name' => 'Diubah',
+                'color' => '#ff0000',
+            ])
+            ->assertSessionHasErrors('name');
+
+        $this->assertSame('Open', $status->fresh()->name);
+
+        $this->actingAs($admin)
+            ->delete(route('admin-panel.project-statuses.destroy', $status))
+            ->assertRedirect(route('admin-panel.project-statuses.index'));
+
+        $this->assertNotNull(ProjectStatus::find($status->id), 'Status inti tidak boleh terhapus.');
+    }
+
     // ---------------------------------------------------------------
     // UX penolakan akses: halaman 403 harus ramah, bukan teks mentah
     // ---------------------------------------------------------------

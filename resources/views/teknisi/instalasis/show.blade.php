@@ -125,7 +125,7 @@
                 <div>
                     <p class="text-xs text-slate-400">{{ __('BAST') }}</p>
                     <p class="text-sm font-semibold {{ $instalasi->isBastReady() ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }}">
-                        {{ $instalasi->isBastReady() ? __('Signed by both parties') : __('Waiting for BAST') }}
+                        {{ $instalasi->isBastReady() ? __('BAST file uploaded') : __('Waiting for BAST file') }}
                     </p>
                 </div>
                 @if($instalasi->bastDocument)
@@ -143,50 +143,37 @@
                         <a href="{{ route('admin.bast.edit', $instalasi->project_id) }}" class="ml-1 font-semibold text-accent-600 hover:underline dark:text-accent-400">{{ __('Open BAST') }}</a>
                     @endif
                 </div>
-            @elseif(auth()->user()->can('manage-technician') || auth()->user()->can('manage-admin'))
-                <form action="{{ route('teknisi.instalasis.bast', $instalasi) }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    @csrf
-                    @method('PUT')
-                    <div>
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('BAST Number') }}</label>
-                        <input type="text" name="bast_number" value="{{ old('bast_number', $instalasi->bast_number) }}"
-                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+            @else
+                @can('manage-admin')
+                    <form action="{{ route('teknisi.instalasis.bast', $instalasi) }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <label class="mb-1 block text-xs text-slate-500">{{ __('BAST Number') }}</label>
+                            <input type="text" name="bast_number" value="{{ old('bast_number', $instalasi->bast_number) }}"
+                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs text-slate-500">{{ __('BAST Date') }}</label>
+                            <input type="date" name="bast_date" value="{{ old('bast_date', $instalasi->bast_date?->format('Y-m-d')) }}"
+                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="mb-1 block text-xs text-slate-500">{{ __('BAST File') }}</label>
+                            <input type="file" name="bast_file" accept=".pdf,.doc,.docx"
+                                   class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-slate-600 dark:bg-slate-700">
+                            <p class="mt-1 text-xs text-slate-400">{{ __('PDF or DOC, max 10 MB. Upload the signed physical BAST. The system does not verify signatures inside the file.') }}</p>
+                            @error('bast_file') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="sm:col-span-2 flex justify-end">
+                            <x-primary-button>{{ __('Save BAST') }}</x-primary-button>
+                        </div>
+                    </form>
+                @else
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+                        {{ __('BAST is uploaded by Admin after the signed physical document is received from the technician.') }}
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('BAST Date') }}</label>
-                        <input type="date" name="bast_date" value="{{ old('bast_date', $instalasi->bast_date?->format('Y-m-d')) }}"
-                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('3DY Signer') }}</label>
-                        <input type="text" name="bast_signed_3dy_name" value="{{ old('bast_signed_3dy_name', $instalasi->bast_signed_3dy_name) }}"
-                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('3DY Signed At') }}</label>
-                        <input type="date" name="bast_signed_3dy_at" value="{{ old('bast_signed_3dy_at', $instalasi->bast_signed_3dy_at?->format('Y-m-d')) }}"
-                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('Customer Signer') }}</label>
-                        <input type="text" name="bast_signed_customer_name" value="{{ old('bast_signed_customer_name', $instalasi->bast_signed_customer_name) }}"
-                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('Customer Signed At') }}</label>
-                        <input type="date" name="bast_signed_customer_at" value="{{ old('bast_signed_customer_at', $instalasi->bast_signed_customer_at?->format('Y-m-d')) }}"
-                               class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-700">
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs text-slate-500">{{ __('Signed BAST File') }}</label>
-                        <input type="file" name="bast_file" accept=".pdf,.doc,.docx"
-                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-accent-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white dark:border-slate-600 dark:bg-slate-700">
-                        @error('bast_file') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                    </div>
-                    <div class="sm:col-span-2 flex justify-end">
-                        <x-primary-button>{{ __('Save BAST') }}</x-primary-button>
-                    </div>
-                </form>
+                @endcan
             @endif
         </div>
     </div>

@@ -29,6 +29,8 @@ class Project extends Model
         'workflow_synced_at',
         'requires_delivery',
         'requires_installation',
+        'requires_survey',
+        'requires_sizing',
         'bast_number',
         'bast_date',
         'bast_document_id',
@@ -53,6 +55,8 @@ class Project extends Model
         'workflow_synced_at' => 'datetime',
         'requires_installation' => 'boolean',
         'requires_delivery' => 'boolean',
+        'requires_survey' => 'boolean',
+        'requires_sizing' => 'boolean',
         'bast_date' => 'date',
         'bast_signed_3dy_at' => 'datetime',
         'bast_signed_customer_at' => 'datetime',
@@ -201,14 +205,12 @@ class Project extends Model
     }
 
     /**
-     * BAST dianggap siap untuk Finance bila dokumennya sudah tersimpan dan
-     * sudah ditandatangani kedua pihak (3DY + pelanggan).
+     * BAST dianggap siap untuk Finance bila file BAST sudah diunggah Admin.
+     * Tanda tangan berada di dalam dokumen fisik, bukan diverifikasi sistem.
      */
     public function isBastReady(): bool
     {
-        return filled($this->bast_document_id)
-            && filled($this->bast_signed_3dy_at)
-            && filled($this->bast_signed_customer_at);
+        return filled($this->bast_document_id);
     }
 
     /**
@@ -248,7 +250,7 @@ class Project extends Model
         $procurementDone = $this->deliveryObligationsMet();
 
         $installationDone = ! $this->requires_installation
-            || (filled($this->bast_number)
+            || ($this->isBastReady()
                 && ((int) $this->progress >= 100
                     || strcasecmp((string) $this->status?->name, 'Done') === 0));
 

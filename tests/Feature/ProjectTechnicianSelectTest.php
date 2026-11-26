@@ -50,8 +50,9 @@ class ProjectTechnicianSelectTest extends TestCase
             ->assertSee('Teknisi Satu')
             ->assertSee('Teknisi Dua');
 
-        // Update dengan beberapa support sekaligus + ganti status project
-        $done = \App\Models\ProjectStatus::create(['name' => 'Done', 'color' => 'green', 'sort_order' => 2]);
+        // Update dengan beberapa support sekaligus + status manual Hold.
+        // Status Done/On Progress dikelola workflow, bukan form edit.
+        $hold = \App\Models\ProjectStatus::create(['name' => 'Hold', 'color' => 'red', 'sort_order' => 2]);
 
         $this->put(route('projects.update', $project), [
             'project_name' => 'Project Uji Pilih Teknisi',
@@ -59,12 +60,12 @@ class ProjectTechnicianSelectTest extends TestCase
             'work_type_id' => $project->work_type_id,
             'pic_engineer' => 'Teknisi Dua',
             'support_technicians' => ['Teknisi Satu', 'Teknisi Dua'],
-            'project_status_id' => $done->id,
+            'project_status_id' => $hold->id,
         ])->assertRedirect();
 
         $project->refresh();
         $this->assertSame('Teknisi Satu, Teknisi Dua', $project->support_technicians);
-        $this->assertSame($done->id, $project->project_status_id, 'Status project harus ikut tersimpan saat update.');
+        $this->assertSame($hold->id, $project->project_status_id, 'Status manual Hold harus tersimpan saat update.');
 
         // Project berstatus non-aktif tidak boleh hilang dari daftar
         $this->get(route('projects.index'))

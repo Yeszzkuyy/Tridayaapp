@@ -131,8 +131,18 @@ class ProjectController extends Controller
             'support_technicians' => 'nullable|array',
             'support_technicians.*' => 'string|max:255',
             'project_status_id' => 'nullable|exists:project_statuses,id',
+            'requires_survey' => 'nullable|boolean',
+            'requires_sizing' => 'nullable|boolean',
+            'requires_installation' => 'nullable|boolean',
+            'requires_delivery' => 'nullable|boolean',
             'description' => 'nullable|string',
         ]);
+
+        foreach (['requires_survey', 'requires_sizing', 'requires_installation', 'requires_delivery'] as $flag) {
+            if ($request->has($flag)) {
+                $validated[$flag] = $request->boolean($flag);
+            }
+        }
 
         $project = $this->projectService->create($validated);
 
@@ -169,7 +179,13 @@ class ProjectController extends Controller
         $customers = Customer::selectable($project->customer_id)->get();
         $workTypes = WorkType::selectable($project->work_type_id)->orderBy('name')->get();
         $accountManagers = AccountManager::all();
-        $statuses = ProjectStatus::orderBy('sort_order')->get();
+        $statuses = ProjectStatus::query()
+            ->where(function ($query) use ($project) {
+                $query->whereIn('name', ProjectWorkflowService::MANUAL_STATUSES)
+                    ->orWhere('id', $project->project_status_id);
+            })
+            ->orderBy('sort_order')
+            ->get();
         $technicians = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['technician', 'lead-technician', 'prakerin-technician']))
             ->orderBy('name')
             ->get(['id', 'name']);
@@ -191,10 +207,36 @@ class ProjectController extends Controller
             'support_user_ids.*' => 'exists:users,id',
             'support_technicians' => 'nullable|array',
             'support_technicians.*' => 'string|max:255',
-            'project_status_id' => 'nullable|exists:project_statuses,id',
-            'progress' => 'nullable|integer|min:0|max:100',
+            'project_status_id' => [
+                'nullable',
+                'exists:project_statuses,id',
+                function (string $attribute, $value, \Closure $fail) use ($project) {
+                    if ($value === null || (int) $value === (int) $project->project_status_id) {
+                        return;
+                    }
+
+                    $allowed = ProjectStatus::whereIn('name', ProjectWorkflowService::MANUAL_STATUSES)
+                        ->pluck('id')
+                        ->map(fn ($id) => (int) $id)
+                        ->all();
+
+                    if (! in_array((int) $value, $allowed, true)) {
+                        $fail(__('Project status is controlled by the workflow. Only Hold, Cancelled, Warranty, or Maintenance can be set manually.'));
+                    }
+                },
+            ],
+            'requires_survey' => 'nullable|boolean',
+            'requires_sizing' => 'nullable|boolean',
+            'requires_installation' => 'nullable|boolean',
+            'requires_delivery' => 'nullable|boolean',
             'description' => 'nullable|string',
         ]);
+
+        foreach (['requires_survey', 'requires_sizing', 'requires_installation', 'requires_delivery'] as $flag) {
+            if ($request->has($flag)) {
+                $validated[$flag] = $request->boolean($flag);
+            }
+        }
 
         $this->projectService->update($project, $validated);
 

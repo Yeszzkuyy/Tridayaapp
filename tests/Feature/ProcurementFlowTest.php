@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\GoodsDelivery;
 use App\Models\GoodsReceipt;
+use App\Models\Instalasi;
 use App\Models\Invoice;
 use App\Models\Lead;
+use App\Models\PriceRequest;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Proposal;
@@ -71,7 +73,7 @@ class ProcurementFlowTest extends TestCase
         ]);
     }
 
-    private function makeProject(?User $sales = null): Project
+    private function makeProject(?User $sales = null, array $overrides = []): Project
     {
         $customer = Customer::create([
             'name' => 'PT Customer '.Str::random(4),
@@ -81,14 +83,14 @@ class ProcurementFlowTest extends TestCase
         $workType = WorkType::firstOrCreate(['name' => 'Instalasi & Aktivasi']);
 
         // Observer activity butuh user login; test ini tidak menguji observer.
-        return Project::withoutEvents(fn () => Project::create([
+        return Project::withoutEvents(fn () => Project::create(array_merge([
             'customer_id' => $customer->id,
             'work_type_id' => $workType->id,
             'project_name' => 'Project '.Str::random(5),
             'project_code' => 'PRJ-'.Str::upper(Str::random(6)),
             'progress' => 100,
             'requires_installation' => true,
-        ]));
+        ], $overrides)));
     }
 
     private function makeOrder(Project $project, Supplier $supplier, Product $product, float $qty = 10): SupplierPurchaseOrder
@@ -195,7 +197,25 @@ class ProcurementFlowTest extends TestCase
     public function test_delivery_note_and_closing_flow_requires_delivery_bast_and_paid_invoice(): void
     {
         $admin = $this->userWithRole('admin');
-        $project = $this->makeProject();
+        $project = $this->makeProject(null, [
+            'requires_survey' => false,
+            'requires_sizing' => false,
+        ]);
+
+        // Workflow: harga sudah final dan instalasi selesai. BAST menyusul.
+        PriceRequest::create([
+            'customer_id' => $project->customer_id,
+            'project_id' => $project->id,
+            'requested_by' => $admin->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        Instalasi::create([
+            'project_id' => $project->id,
+            'status' => 'completed',
+            'report_file' => 'instalasis/reports/procurement-bast.pdf',
+            'report_file_name' => 'procurement-bast.pdf',
+        ]);
 
         // 1. Buat surat jalan (belum terkirim).
         $this->actingAs($admin)->post(route('admin.goods-deliveries.store'), [
@@ -215,6 +235,7 @@ class ProcurementFlowTest extends TestCase
         $this->actingAs($admin)->put(route('admin.bast.update', $project), [
             'bast_number' => 'BAST-001',
             'bast_date' => now()->toDateString(),
+            'bast_file' => UploadedFile::fake()->create('bast.pdf', 100, 'application/pdf'),
             'requires_installation' => 1,
         ])->assertRedirect();
 

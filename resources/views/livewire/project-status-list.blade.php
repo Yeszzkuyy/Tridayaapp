@@ -49,7 +49,12 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                     @forelse($statuses as $status)
                         <tr class="hover:bg-slate-50 transition" wire:key="status-{{ $status->id }}">
-                            <td class="px-6 py-4 font-medium text-slate-800">{{ $status->name }}</td>
+                            <td class="px-6 py-4 font-medium text-slate-800">
+                                {{ $status->name }}
+                                @if($status->isSystem())
+                                    <span class="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700 dark:text-content-secondary">{{ __('System') }}</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4">
                                 <span data-status-color="{{ $status->color ?? '#3b82f6' }}" class="px-3 py-1 text-xs font-semibold rounded-full"
                                       style="background-color: {{ $status->color ?? '#3b82f6' }}20; color: {{ $status->color ?? '#3b82f6' }}">
@@ -60,16 +65,18 @@
                                 @if($status->is_default)
                                     <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">{{ __('Primary') }}</span>
                                 @else
-                                    <span class="text-slate-400">-</span>
+                                    <span class="text-content-tertiary">-</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-3">
                                     <x-icon-button icon="edit" label="{{ __('Edit') }}" title="{{ __('Edit') }}"
                                            wire:click="edit({{ $status->id }})" />
-                                    <button wire:click="delete({{ $status->id }})"
-                                            data-confirm="{{ __('Delete this status?') }}" data-confirm-tone="danger"
-                                            class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">{{ __('Delete') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
+                                    @unless($status->isSystem())
+                                        <button wire:click="delete({{ $status->id }})"
+                                                data-confirm="{{ __('Delete this status?') }}" data-confirm-tone="danger"
+                                                class="group relative overflow-hidden rounded-lg border border-red-200 bg-white px-6 py-2.5 text-sm font-medium text-red-600 transition-all duration-300 hover:scale-105 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:scale-95 dark:border-slate-700 dark:bg-slate-800 dark:text-red-400 dark:hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white">{{ __('Delete') }}<span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span></button>
+                                    @endunless
                                 </div>
                             </td>
                         </tr>
@@ -82,7 +89,11 @@
                                         <div>
                                             <input type="text" 
                                                    wire:model="editName" 
-                                                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                                                   @disabled($status->isSystem())
+                                                   class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 disabled:bg-slate-100 disabled:text-content-tertiary">
+                                            @if($status->isSystem())
+                                                <p class="mt-1 text-xs text-content-tertiary">{{ __('System status name is locked. Color and default can still be changed.') }}</p>
+                                            @endif
                                             @error('editName') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                         </div>
                                         <div class="flex items-center gap-3">
@@ -115,7 +126,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td colspan="4" class="py-16 text-center text-slate-400">
+                            <td colspan="4" class="py-16 text-center text-content-tertiary">
                                 {{ __('No statuses yet.') }}
                             </td>
                         </tr>

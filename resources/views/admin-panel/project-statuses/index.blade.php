@@ -23,7 +23,12 @@
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-600">
                         @forelse($statuses as $status)
                             <tr class="hover:bg-slate-50 transition">
-                                <td class="px-6 py-4 font-medium text-content-primary">{{ __($status->name) }}</td>
+                                <td class="px-6 py-4 font-medium text-content-primary">
+                                    {{ __($status->name) }}
+                                    @if($status->isSystem())
+                                        <span class="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-content-secondary dark:bg-slate-700 dark:text-content-secondary">{{ __('System') }}</span>
+                                    @endif
+                                </td>
                                 <td class="px-6 py-4">
                                     <span class="px-3 py-1 text-xs font-semibold rounded-full" style="background-color: {{ $status->color ?? '#gray' }}20; color: {{ $status->color ?? '#gray' }}">
                                         {{ $status->color ?? __('Default') }}
@@ -40,14 +45,16 @@
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-3">
                                         <x-icon-button as="a" icon="edit" href="{{ route('admin-panel.project-statuses.edit', $status) }}" title="{{ __('Edit') }}" />
-                                        <form action="{{ route('admin-panel.project-statuses.destroy', $status) }}" 
-                                              method="POST" 
-                                              data-confirm="{{ __('Delete this status?') }}" data-confirm-tone="danger"
-                                              class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
-                                        </form>
+                                        @unless($status->isSystem())
+                                            <form action="{{ route('admin-panel.project-statuses.destroy', $status) }}"
+                                                  method="POST"
+                                                  data-confirm="{{ __('Delete this status?') }}" data-confirm-tone="danger"
+                                                  class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <x-icon-button icon="delete" type="submit" title="{{ __('Delete') }}" />
+                                            </form>
+                                        @endunless
                                     </div>
                                 </td>
                             </tr>

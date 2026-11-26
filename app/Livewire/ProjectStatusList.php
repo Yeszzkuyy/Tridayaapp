@@ -76,8 +76,15 @@ class ProjectStatusList extends Component
         ]);
 
         $status = ProjectStatus::findOrFail($this->editId);
+
+        if ($status->isSystem() && $this->editName !== $status->name) {
+            $this->dispatch('toast', message: __('System status name cannot be changed.'), type: 'error');
+
+            return;
+        }
+
         $status->update([
-            'name' => $this->editName,
+            'name' => $status->isSystem() ? $status->name : $this->editName,
             'color' => $this->editColor,
             'is_default' => $this->editIsDefault ? true : false,
         ]);
@@ -90,6 +97,13 @@ class ProjectStatusList extends Component
     {
         $this->authorizeManage();
         $status = ProjectStatus::findOrFail($id);
+
+        if ($status->isSystem()) {
+            $this->dispatch('toast', message: __('System status cannot be deleted.'), type: 'error');
+
+            return;
+        }
+
         $status->delete();
         $this->dispatch('toast', message: __('Status deleted successfully!'), type: 'success');
     }

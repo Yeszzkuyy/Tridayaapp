@@ -133,10 +133,6 @@ class BastWorkflowTest extends TestCase
                 'bast_number' => 'BAST-'.uniqid(),
                 'bast_date' => now()->toDateString(),
                 'bast_file' => UploadedFile::fake()->create('bast-signed.pdf', 100, 'application/pdf'),
-                'bast_signed_3dy_name' => 'Perwakilan 3DY',
-                'bast_signed_3dy_at' => now()->toDateString(),
-                'bast_signed_customer_name' => 'Perwakilan Customer',
-                'bast_signed_customer_at' => now()->toDateString(),
                 'requires_installation' => 1,
             ])
             ->assertRedirect(route('admin.bast.index'));
@@ -156,7 +152,7 @@ class BastWorkflowTest extends TestCase
         Notification::assertSentTo($finance, BastReadyNotification::class);
     }
 
-    public function test_bast_is_not_ready_until_both_signatures_are_filled(): void
+    public function test_bast_file_is_required_on_first_save(): void
     {
         Storage::fake('private');
 
@@ -167,18 +163,33 @@ class BastWorkflowTest extends TestCase
             ->put(route('admin.bast.update', $project), [
                 'bast_number' => 'BAST-'.uniqid(),
                 'bast_date' => now()->toDateString(),
-                'bast_file' => UploadedFile::fake()->create('bast-signed.pdf', 100, 'application/pdf'),
-                'bast_signed_3dy_name' => 'Perwakilan 3DY',
-                'bast_signed_3dy_at' => now()->toDateString(),
                 'requires_installation' => 1,
             ])
-            ->assertRedirect(route('admin.bast.index'));
+            ->assertSessionHasErrors('bast_file');
 
         $project->refresh();
 
-        $this->assertNotNull($project->bast_document_id);
+        $this->assertNull($project->bast_document_id);
         $this->assertNull($project->bast_ready_at);
         $this->assertFalse($project->isBastReady());
+    }
+
+    public function test_technician_cannot_upload_project_bast(): void
+    {
+        Storage::fake('private');
+
+        $technician = $this->userWithRole('technician');
+        $project = $this->makeProject();
+
+        $this->actingAs($technician)
+            ->put(route('admin.bast.update', $project), [
+                'bast_number' => 'BAST-'.uniqid(),
+                'bast_file' => UploadedFile::fake()->create('bast.pdf', 100, 'application/pdf'),
+                'requires_installation' => 1,
+            ])
+            ->assertForbidden();
+
+        $this->assertNull($project->fresh()->bast_document_id);
     }
 
     public function test_replacing_bast_file_updates_the_same_document(): void
@@ -220,8 +231,6 @@ class BastWorkflowTest extends TestCase
         $this->actingAs($admin)->put(route('admin.bast.update', $project), [
             'bast_number' => 'BAST-'.uniqid(),
             'bast_file' => UploadedFile::fake()->create('bast-signed.pdf', 100, 'application/pdf'),
-            'bast_signed_3dy_at' => now()->toDateString(),
-            'bast_signed_customer_at' => now()->toDateString(),
             'requires_installation' => 1,
         ])->assertRedirect();
 

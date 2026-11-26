@@ -31,6 +31,27 @@
                     @error('work_type_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Workflow Requirements') }}</label>
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        @foreach([
+                            'requires_survey' => __('Survey'),
+                            'requires_sizing' => __('Sizing'),
+                            'requires_installation' => __('Installation / BAST'),
+                            'requires_delivery' => __('Delivery'),
+                        ] as $field => $label)
+                            <label class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer">
+                                <input type="hidden" name="{{ $field }}" value="0">
+                                <input type="checkbox" name="{{ $field }}" value="1"
+                                       class="rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+                                       @checked(old($field, true))>
+                                {{ $label }}
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">{{ __('Uncheck steps that are not needed. Progress only counts the checked steps.') }}</p>
+                </div>
+
                 {{-- PIC Engineer --}}
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">

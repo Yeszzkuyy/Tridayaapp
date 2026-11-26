@@ -26,7 +26,7 @@ class ProjectWorkflowService
     public const STEPS = ['request', 'survey', 'sizing', 'price_request', 'installation', 'bast'];
 
     /** Status project yang tidak boleh ditimpa otomatis. */
-    private const MANUAL_STATUSES = ['Hold', 'Cancelled', 'Warranty', 'Maintenance'];
+    public const MANUAL_STATUSES = ['Hold', 'Cancelled', 'Warranty', 'Maintenance'];
 
     /**
      * Hitung kondisi workflow tanpa mengubah data.
@@ -68,16 +68,21 @@ class ProjectWorkflowService
                 && $completedPriceRequests->count() === $activePriceRequests->count())
             || ($activePriceRequests->isEmpty() && filled($project->proposal_id));
 
-        $steps = [
-            [
-                'key' => 'request',
-                'label' => __('Request'),
-                'done' => true,
-                'detail' => __('Project created'),
-                'count' => 1,
-                'url' => null,
-            ],
-            $this->step(
+        $requiresSurvey = (bool) ($project->requires_survey ?? true);
+        $requiresSizing = (bool) ($project->requires_sizing ?? true);
+        $requiresInstallation = (bool) ($project->requires_installation ?? true);
+
+        $steps = [[
+            'key' => 'request',
+            'label' => __('Request'),
+            'done' => true,
+            'detail' => __('Project created'),
+            'count' => 1,
+            'url' => null,
+        ]];
+
+        if ($requiresSurvey) {
+            $steps[] = $this->step(
                 'survey',
                 __('Survey'),
                 $surveyDone,
@@ -87,8 +92,11 @@ class ProjectWorkflowService
                     'project_id' => $project->id,
                     'customer_id' => $project->customer_id,
                 ]),
-            ),
-            $this->step(
+            );
+        }
+
+        if ($requiresSizing) {
+            $steps[] = $this->step(
                 'sizing',
                 __('Sizing'),
                 $sizingDone,
@@ -97,22 +105,26 @@ class ProjectWorkflowService
                 $sizings->first() ? route('teknisi.sizing-projects.show', $sizings->first()) : route('teknisi.sizing-projects.create', [
                     'project_id' => $project->id,
                 ]),
-            ),
-            [
-                'key' => 'price_request',
-                'label' => __('Price Request'),
-                'done' => $pricingDone,
-                'detail' => $completedPriceRequests->isNotEmpty()
-                    ? __(':count completed', ['count' => $completedPriceRequests->count()])
-                    : ($pricingDone ? __('Pricing final from the accepted quotation') : __('No data yet')),
-                'count' => $priceRequests->count(),
-                'url' => $priceRequests->first()
-                    ? route('sales.price-requests.show', $priceRequests->first())
-                    : (filled($project->proposal_id)
-                        ? route('sales.proposals.show', $project->proposal_id)
-                        : route('sales.price-requests.create', ['customer_id' => $project->customer_id, 'project_id' => $project->id])),
-            ],
-            $this->step(
+            );
+        }
+
+        $steps[] = [
+            'key' => 'price_request',
+            'label' => __('Price Request'),
+            'done' => $pricingDone,
+            'detail' => $completedPriceRequests->isNotEmpty()
+                ? __(':count completed', ['count' => $completedPriceRequests->count()])
+                : ($pricingDone ? __('Pricing final from the accepted quotation') : __('No data yet')),
+            'count' => $priceRequests->count(),
+            'url' => $priceRequests->first()
+                ? route('sales.price-requests.show', $priceRequests->first())
+                : (filled($project->proposal_id)
+                    ? route('sales.proposals.show', $project->proposal_id)
+                    : route('sales.price-requests.create', ['customer_id' => $project->customer_id, 'project_id' => $project->id])),
+        ];
+
+        if ($requiresInstallation) {
+            $steps[] = $this->step(
                 'installation',
                 __('Installation'),
                 $installationDone,
@@ -121,20 +133,21 @@ class ProjectWorkflowService
                 $instalasis->first() ? route('teknisi.instalasis.show', $instalasis->first()) : route('teknisi.instalasis.create', [
                     'project_id' => $project->id,
                 ]),
-            ),
-            [
+            );
+
+            $steps[] = [
                 'key' => 'bast',
                 'label' => __('BAST'),
                 'done' => $project->isBastReady(),
                 'detail' => $project->isBastReady()
-                    ? __('Signed by both parties')
-                    : (filled($project->bast_number) ? __('Waiting for signatures') : __('No BAST yet')),
+                    ? __('BAST file uploaded')
+                    : __('No BAST file yet'),
                 'count' => $project->isBastReady() ? 1 : 0,
                 'url' => auth()->user()?->can('manage-admin')
                     ? route('admin.bast.edit', $project)
                     : route('project-documents.index', $project),
-            ],
-        ];
+            ];
+        }
 
         $done = collect($steps)->where('done', true)->count();
         $total = count($steps);
@@ -146,7 +159,10 @@ class ProjectWorkflowService
             'done' => $done,
             'total' => $total,
             'progress' => $total > 0 ? (int) round($done / $total * 100) : 0,
-            'has_activity' => $surveys->isNotEmpty() || $sizings->isNotEmpty() || $instalasis->isNotEmpty() || $priceRequests->isNotEmpty(),
+            'has_activity' => ($requiresSurvey && $surveys->isNotEmpty())
+                || ($requiresSizing && $sizings->isNotEmpty())
+                || ($requiresInstallation && $instalasis->isNotEmpty())
+                || $priceRequests->isNotEmpty(),
         ];
     }
 
@@ -277,17 +293,17 @@ class ProjectWorkflowService
         if ($workflow['done'] === $workflow['total']) {
             // Tutup komersial hanya bila BAST siap + invoice pelanggan lunas.
             if ($project->evaluateCommercialClosing()) {
-                return $this->statusId('Done');
+                return $this->statusId(ProjectStatus::CODE_DONE, 'Done');
             }
 
             return in_array($current, ['Pending', 'Open', 'On Progress'], true)
-                ? $this->statusId('On Progress')
+                ? $this->statusId(ProjectStatus::CODE_ON_PROGRESS, 'On Progress')
                 : null;
         }
 
         if ($workflow['has_activity'] || $this->hasFieldStep($workflow)) {
             return in_array($current, ['Pending', 'Open'], true)
-                ? $this->statusId('On Progress')
+                ? $this->statusId(ProjectStatus::CODE_ON_PROGRESS, 'On Progress')
                 : null;
         }
 
@@ -302,9 +318,10 @@ class ProjectWorkflowService
         );
     }
 
-    private function statusId(string $name): ?int
+    private function statusId(string $code, string $fallbackName): ?int
     {
-        return ProjectStatus::where('name', $name)->value('id');
+        return ProjectStatus::where('code', $code)->value('id')
+            ?? ProjectStatus::where('name', $fallbackName)->value('id');
     }
 
     /** @param array<int, array<string, mixed>> $steps */
