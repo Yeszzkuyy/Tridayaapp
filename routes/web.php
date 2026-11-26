@@ -953,6 +953,7 @@ Route::middleware('auth')->group(function () {
         // Work Type
         Route::get('/work-types', [WorkTypeController::class, 'index'])->name('work-types.index');
         Route::resource('work-types', WorkTypeController::class)->except(['index']);
+        Route::patch('/work-types/{workType}/toggle-active', [WorkTypeController::class, 'toggleActive'])->name('work-types.toggle-active');
 
         // Document Categories
         Route::get('/document-categories', [DocumentCategoryController::class, 'index'])->name('document-categories.index');

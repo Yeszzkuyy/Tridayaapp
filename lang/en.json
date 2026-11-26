@@ -5645,5 +5645,15 @@
     "Price requests": "Price requests",
     "Surveys": "Surveys",
     "Installations": "Installations",
-    "Technician schedules": "Technician schedules"
+    "Technician schedules": "Technician schedules",
+    "Activate": "Activate",
+    "Yes, deactivate": "Yes, deactivate",
+    "Work Type deactivated successfully.": "Work Type deactivated successfully.",
+    "Work Type activated successfully.": "Work Type activated successfully.",
+    "The selected work type is inactive or unavailable.": "The selected work type is inactive or unavailable.",
+    "Work Types used by projects can only be deactivated.": "Work Types used by projects can only be deactivated.",
+    "New Work Types are active by default.": "New Work Types are active by default.",
+    "This Work Type is used by :count project(s). Deactivate it instead of deleting.": "This Work Type is used by :count project(s). Deactivate it instead of deleting.",
+    "This Work Type will no longer be available for new projects. Existing projects keep using it.": "This Work Type will no longer be available for new projects. Existing projects keep using it.",
+    "Deactivate this Work Type?": "Deactivate this Work Type?"
 }

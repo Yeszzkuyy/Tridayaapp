@@ -1,14 +1,14 @@
 <x-app-layout>
     <div class="px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between mb-6">
+        <div class="mb-6 flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-content-primary">{{ __('Edit Work Type') }}</h1>
-                <p class="text-content-secondary mt-1">{{ __('Edit:') }} <span class="font-semibold text-content-secondary">{{ $workType->name }}</span></p>
+                <h1 class="text-2xl font-bold text-content-primary sm:text-3xl">{{ __('Edit Work Type') }}</h1>
+                <p class="mt-1 text-sm text-content-secondary">{{ __('Edit:') }} <span class="font-semibold text-content-secondary">{{ $workType->name }}</span></p>
             </div>
-            <x-icon-button as="a" icon="back" href="{{ route('admin-panel.work-types.index') }}" title="{{ __('Back') }}" />
+            <x-back-button href="{{ route('admin-panel.work-types.index') }}" />
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full max-w-2xl">
+        <div class="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-600 dark:bg-slate-800">
             <form action="{{ route('admin-panel.work-types.update', $workType) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -23,16 +23,8 @@
                 </div>
 
                 <div class="mt-6 flex gap-3">
-                    <button type="submit"
-                            class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-600 hover:bg-accent-700 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95">
-                        {{ __('Update') }}
-                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                    </button>
-                    <a href="{{ route('admin-panel.work-types.index') }}" 
-                       class="group relative overflow-hidden px-6 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white text-sm font-medium transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/50 hover:brightness-110 active:scale-95 text-center">
-                        {{ __('Cancel') }}
-                        <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
-                    </a>
+                    <x-primary-button>{{ __('Update') }}</x-primary-button>
+                    <x-secondary-button as="a" href="{{ route('admin-panel.work-types.index') }}">{{ __('Cancel') }}</x-secondary-button>
                 </div>
             </form>
         </div>

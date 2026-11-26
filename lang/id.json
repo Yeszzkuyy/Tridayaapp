@@ -5645,5 +5645,15 @@
     "Price requests": "Permintaan harga",
     "Surveys": "Survey",
     "Installations": "Instalasi",
-    "Technician schedules": "Jadwal teknisi"
+    "Technician schedules": "Jadwal teknisi",
+    "Activate": "Aktifkan",
+    "Yes, deactivate": "Ya, nonaktifkan",
+    "Work Type deactivated successfully.": "Work Type berhasil dinonaktifkan.",
+    "Work Type activated successfully.": "Work Type berhasil diaktifkan.",
+    "The selected work type is inactive or unavailable.": "Work Type yang dipilih sudah nonaktif atau tidak tersedia.",
+    "Work Types used by projects can only be deactivated.": "Work Type yang dipakai project hanya bisa dinonaktifkan.",
+    "New Work Types are active by default.": "Work Type baru otomatis aktif.",
+    "This Work Type is used by :count project(s). Deactivate it instead of deleting.": "Work Type ini dipakai :count project. Nonaktifkan saja, jangan dihapus.",
+    "This Work Type will no longer be available for new projects. Existing projects keep using it.": "Work Type ini tidak akan muncul di project baru. Project lama tetap memakainya.",
+    "Deactivate this Work Type?": "Nonaktifkan Work Type ini?"
 }
