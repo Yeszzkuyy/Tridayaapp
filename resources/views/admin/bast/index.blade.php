@@ -17,8 +17,8 @@
             <select id="status" name="status" class="rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:bg-slate-800 dark:border-slate-600">
                 <option value="">{{ __('All') }}</option>
                 <option value="ready" @selected($status === 'ready')>{{ __('Ready for Finance') }}</option>
-                <option value="waiting_signature" @selected($status === 'waiting_signature')>{{ __('Waiting for signed BAST') }}</option>
-                <option value="bast" @selected($status === 'bast')>{{ __('BAST filled') }}</option>
+                <option value="waiting_signature" @selected($status === 'waiting_signature')>{{ __('Waiting for BAST file') }}</option>
+                <option value="bast" @selected($status === 'bast')>{{ __('BAST file uploaded') }}</option>
                 <option value="open" @selected($status === 'open')>{{ __('Not closed') }}</option>
                 <option value="closed" @selected($status === 'closed')>{{ __('Closed') }}</option>
             </select>
@@ -36,7 +36,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Customer') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('Installation') }}</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-content-secondary uppercase">{{ __('BAST') }}</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Signatures') }}</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('BAST File') }}</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Finance') }}</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-content-secondary uppercase">{{ __('Closing') }}</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-content-secondary uppercase">{{ __('Actions') }}</th>
@@ -76,26 +76,23 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                @if($project->bast_number)
-                                    <span class="font-mono text-sm text-content-primary">{{ $project->bast_number }}</span>
-                                    <span class="block text-xs text-content-tertiary">{{ $project->bast_date?->format('d M Y') ?? __('Not filled') }}</span>
-                                @else
-                                    <span class="text-xs text-content-tertiary">{{ __('Not filled') }}</span>
-                                @endif
                                 @if($project->bastDocument)
+                                    <span class="font-mono text-sm text-content-primary">{{ $project->bast_number ?: __('BAST file') }}</span>
+                                    <span class="block text-xs text-content-tertiary">{{ $project->bast_date?->format('d M Y') ?? __('Uploaded') }}</span>
                                     <a href="{{ route('admin.bast.document', $project) }}" target="_blank" rel="noopener"
                                        class="mt-1 inline-flex text-xs font-medium text-accent-600 hover:underline dark:text-accent-400">
                                         {{ __('Open document') }}
                                     </a>
+                                @else
+                                    <span class="text-xs text-content-tertiary">{{ __('Not filled') }}</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center text-xs">
-                                <span class="block {{ $project->bast_signed_3dy_at ? 'text-green-600 dark:text-green-400' : 'text-content-tertiary' }}">
-                                    3DY: {{ $project->bast_signed_3dy_at ? $project->bast_signed_3dy_at->format('d M') : __('No') }}
-                                </span>
-                                <span class="block {{ $project->bast_signed_customer_at ? 'text-green-600 dark:text-green-400' : 'text-content-tertiary' }}">
-                                    {{ __('Customer') }}: {{ $project->bast_signed_customer_at ? $project->bast_signed_customer_at->format('d M') : __('No') }}
-                                </span>
+                                @if($project->isBastReady())
+                                    <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">{{ __('Uploaded') }}</span>
+                                @else
+                                    <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{{ __('Not yet') }}</span>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-center">
                                 @if($project->bast_ready_at)
@@ -178,7 +175,7 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $job->isBastReady() ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' }}">
-                                        {{ $job->isBastReady() ? __('Signed') : __('Waiting') }}
+                                        {{ $job->isBastReady() ? __('Uploaded') : __('Waiting') }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3 text-right">

@@ -544,8 +544,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/instalasis/{instalasi}/edit', [InstalasiController::class, 'edit'])->name('instalasis.edit');
     });
 
-    // BAST instalasi (project & non-project) — lead engineer atau admin.
-    Route::middleware('permission:manage-technician|manage-admin')->prefix('teknisi')->name('teknisi.')->group(function () {
+    // BAST instalasi (project & non-project) — hanya Admin yang mengunggah file.
+    Route::middleware('permission:manage-admin')->prefix('teknisi')->name('teknisi.')->group(function () {
         Route::put('/instalasis/{instalasi}/bast', [InstalasiController::class, 'updateBast'])->name('instalasis.bast');
     });
 

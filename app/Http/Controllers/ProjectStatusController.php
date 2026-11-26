@@ -54,6 +54,16 @@ class ProjectStatusController extends Controller
             'is_default' => 'nullable|boolean',
         ]);
 
+        if ($projectStatus->isSystem() && $validated['name'] !== $projectStatus->name) {
+            return back()
+                ->withInput()
+                ->withErrors(['name' => __('System status name cannot be changed.')]);
+        }
+
+        $validated['name'] = $projectStatus->isSystem()
+            ? $projectStatus->name
+            : $validated['name'];
+
         $projectStatus->update($validated);
         Cache::forget('master:project-statuses');
         Cache::forget('tek:status-counts');
@@ -66,6 +76,12 @@ class ProjectStatusController extends Controller
     public function destroy(ProjectStatus $projectStatus)
     {
         Gate::authorize('manage', ProjectStatus::class);
+
+        if ($projectStatus->isSystem()) {
+            return redirect()
+                ->route('admin-panel.project-statuses.index')
+                ->with('error', __('System status cannot be deleted.'));
+        }
 
         $projectStatus->delete();
         Cache::forget('master:project-statuses');

@@ -17,7 +17,11 @@
                     <div>
                         <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Status Name') }} <span class="text-red-500">*</span></label>
                         <input type="text" name="name" value="{{ old('name', $projectStatus->name) }}" required
-                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500">
+                               @readonly($projectStatus->isSystem())
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 read-only:bg-slate-100 read-only:text-content-tertiary">
+                        @if($projectStatus->isSystem())
+                            <p class="mt-1 text-xs text-content-tertiary">{{ __('System status name is locked. Color and default can still be changed.') }}</p>
+                        @endif
                         @error('name') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                     </div>
 

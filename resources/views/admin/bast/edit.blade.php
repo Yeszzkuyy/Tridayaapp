@@ -10,7 +10,7 @@
                     </span>
                 @else
                     <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                        {{ __('Waiting for signed BAST') }}
+                        {{ __('Waiting for BAST file') }}
                     </span>
                 @endif
             </div>
@@ -56,7 +56,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Upload Signed BAST') }}</label>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Upload BAST File') }}</label>
                     @if($project->bastDocument)
                         <div class="mb-2 flex items-center gap-2">
                             <x-icon-button as="a" icon="view" href="{{ route('admin.bast.document', $project) }}" target="_blank" rel="noopener" title="{{ __('View BAST') }}" />
@@ -65,48 +65,18 @@
                     @endif
                     <input type="file" name="bast_file" accept=".pdf,.doc,.docx"
                            class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium">
-                    <p class="mt-2 text-xs text-content-tertiary">{{ __('PDF or DOC, max 10 MB. Upload the BAST that has been signed by 3DY and the customer.') }}</p>
+                    <p class="mt-2 text-xs text-content-tertiary">{{ __('PDF or DOC, max 10 MB. Upload the signed physical BAST. The system stores the file and does not verify signatures inside it.') }}</p>
                     @error('bast_file') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4 space-y-4">
-                    <h3 class="text-sm font-semibold text-content-primary">{{ __('Signatures') }}</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-content-secondary">{{ __('Signed by 3DY') }}</label>
-                            <input type="text" name="bast_signed_3dy_name" value="{{ old('bast_signed_3dy_name', $project->bast_signed_3dy_name) }}" maxlength="150"
-                                   placeholder="{{ __('Name') }}"
-                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
-                            <x-datepicker name="bast_signed_3dy_at" value="{{ old('bast_signed_3dy_at', $project->bast_signed_3dy_at?->format('Y-m-d')) }}" />
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-content-secondary">{{ __('Signed by Customer') }}</label>
-                            <input type="text" name="bast_signed_customer_name" value="{{ old('bast_signed_customer_name', $project->bast_signed_customer_name) }}" maxlength="150"
-                                   placeholder="{{ __('Name') }}"
-                                   class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
-                            <x-datepicker name="bast_signed_customer_at" value="{{ old('bast_signed_customer_at', $project->bast_signed_customer_at?->format('Y-m-d')) }}" />
-                        </div>
-                    </div>
-                    <p class="text-xs text-content-tertiary">{{ __('BAST is marked ready for Finance after the document is uploaded and both signature dates are filled.') }}</p>
+                <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-4">
+                    <h3 class="text-sm font-semibold text-content-primary">{{ __('File-based BAST') }}</h3>
+                    <p class="mt-1 text-xs text-content-tertiary">{{ __('The signed BAST is a physical document. Admin uploads the file; the system marks BAST complete when the file is saved. The file can be replaced at any time.') }}</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('BAST Document') }}</label>
-                        <select name="bast_document_id" class="w-full rounded-xl border-slate-300 text-sm focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-900 dark:text-content-primary">
-                            <option value="">{{ __('-- No linked document --') }}</option>
-                            @foreach($project->documents as $document)
-                                <option value="{{ $document->id }}" @selected((int) old('bast_document_id', $project->bast_document_id) === $document->id)>
-                                    {{ $document->file_name }} · {{ $document->document_type }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <p class="mt-1 text-xs text-content-tertiary">{{ __('Documents uploaded by the technician for this project.') }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Delivery Deadline') }}</label>
-                        <x-datepicker name="delivery_deadline" value="{{ old('delivery_deadline', $project->delivery_deadline?->format('Y-m-d')) }}" />
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-content-secondary mb-1">{{ __('Delivery Deadline') }}</label>
+                    <x-datepicker name="delivery_deadline" value="{{ old('delivery_deadline', $project->delivery_deadline?->format('Y-m-d')) }}" />
                 </div>
 
                 <label class="inline-flex items-center gap-2 text-sm text-content-secondary">
@@ -219,7 +189,7 @@
                     $invoiceActive = $project->invoices->where('status', '!=', 'cancelled');
                     $invoiceDone = $invoiceActive->isNotEmpty() && $invoiceActive->every(fn ($i) => $i->status === 'paid');
                     $installationDone = ! $project->requires_installation
-                        || (filled($project->bast_number) && filled($project->bast_ready_at)
+                        || ($project->isBastReady()
                             && ((int) $project->progress >= 100 || strcasecmp((string) $project->status?->name, 'Done') === 0));
                 @endphp
                 <div class="flex items-center justify-between">
@@ -227,7 +197,7 @@
                     <span class="{{ $deliveryDone ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }}">{{ $deliveryDone ? __('Yes') : __('No') }}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span>{{ __('BAST ready (document + signatures)') }}</span>
+                    <span>{{ __('BAST file uploaded') }}</span>
                     <span class="{{ $project->bast_ready_at ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }}">{{ $project->bast_ready_at ? __('Yes') : __('No') }}</span>
                 </div>
                 <div class="flex items-center justify-between">

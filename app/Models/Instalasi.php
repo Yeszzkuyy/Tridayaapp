@@ -81,14 +81,12 @@ class Instalasi extends Model
     }
 
     /**
-     * BAST dianggap siap bila dokumen tersimpan dan sudah ditandatangani
-     * kedua pihak (3DY + pelanggan). Sama dengan aturan BAST project.
+     * BAST dianggap siap bila file BAST sudah diunggah Admin.
+     * Tanda tangan berada di dalam dokumen fisik, bukan diverifikasi sistem.
      */
     public function isBastReady(): bool
     {
-        return filled($this->bast_document_id)
-            && filled($this->bast_signed_3dy_at)
-            && filled($this->bast_signed_customer_at);
+        return filled($this->bast_document_id);
     }
 
     public function refreshBastReady(): bool
