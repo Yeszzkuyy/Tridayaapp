@@ -99,8 +99,8 @@
              data-rise="1"
              class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-600">
 
-            {{-- Tab Navigation (sticky saat scroll) --}}
-            <div class="sticky top-16 z-20 rounded-t-2xl border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-600 dark:bg-slate-800/95 sm:top-20">
+            {{-- Tab Navigation: ikut tergulir bersama halaman (tidak menempel) --}}
+            <div class="rounded-t-2xl border-b border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
                 <nav x-ref="tabs" class="relative flex gap-4 sm:gap-6 px-4 sm:px-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     <span x-ref="indicator" class="tab-indicator absolute bottom-0 left-0 h-0.5 w-0 rounded-full bg-accent-500"></span>
 
