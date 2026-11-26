@@ -9,7 +9,8 @@ use Tests\TestCase;
 
 /**
  * S16 — pastikan Admin Panel dan alat developer (dev-worklog)
- * hanya bisa diakses Super Admin (manage-monitoring).
+ * hanya bisa diakses Super Admin (manage-monitoring), sedangkan Audit Log
+ * bisa dibaca role dengan view-monitoring.
  */
 class AdminPanelSecurityTest extends TestCase
 {
@@ -71,6 +72,20 @@ class AdminPanelSecurityTest extends TestCase
             $user = $this->userWithRole($role);
 
             $this->actingAs($user)->get(route('admin-panel.index'))->assertForbidden();
+        }
+    }
+
+    public function test_audit_log_allows_monitoring_read_roles(): void
+    {
+        foreach (['super-admin', 'management', 'ceo'] as $role) {
+            $user = $this->userWithRole($role);
+
+            $this->actingAs($user)->get(route('admin-panel.audit-log'))->assertOk();
+        }
+
+        foreach (['sales', 'technician', 'admin'] as $role) {
+            $user = $this->userWithRole($role);
+
             $this->actingAs($user)->get(route('admin-panel.audit-log'))->assertForbidden();
         }
     }

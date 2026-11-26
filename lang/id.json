@@ -5655,5 +5655,21 @@
     "New Work Types are active by default.": "Work Type baru otomatis aktif.",
     "This Work Type is used by :count project(s). Deactivate it instead of deleting.": "Work Type ini dipakai :count project. Nonaktifkan saja, jangan dihapus.",
     "This Work Type will no longer be available for new projects. Existing projects keep using it.": "Work Type ini tidak akan muncul di project baru. Project lama tetap memakainya.",
-    "Deactivate this Work Type?": "Nonaktifkan Work Type ini?"
+    "Deactivate this Work Type?": "Nonaktifkan Work Type ini?",
+    "Customer archived": "Customer diarsipkan",
+    "Customer unarchived": "Customer dikeluarkan dari arsip",
+    "Customer deleted": "Customer dihapus",
+    "Customer permanently deleted": "Customer dihapus permanen",
+    "Customer restored": "Customer direstore",
+    "Work Type created": "Work Type dibuat",
+    "Work Type updated": "Work Type diperbarui",
+    "Work Type deactivated": "Work Type dinonaktifkan",
+    "Work Type activated": "Work Type diaktifkan",
+    "Read-only history of important actions in the system.": "Riwayat hanya-baca untuk aksi penting di sistem.",
+    "Module": "Modul",
+    "All Modules": "Semua Modul",
+    "Record": "Record",
+    "Changes": "Perubahan",
+    "Audit log is append-only and cannot be changed.": "Audit log bersifat append-only dan tidak bisa diubah.",
+    "Audit log is append-only and cannot be deleted.": "Audit log bersifat append-only dan tidak bisa dihapus."
 }

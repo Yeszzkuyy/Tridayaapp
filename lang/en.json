@@ -5655,5 +5655,21 @@
     "New Work Types are active by default.": "New Work Types are active by default.",
     "This Work Type is used by :count project(s). Deactivate it instead of deleting.": "This Work Type is used by :count project(s). Deactivate it instead of deleting.",
     "This Work Type will no longer be available for new projects. Existing projects keep using it.": "This Work Type will no longer be available for new projects. Existing projects keep using it.",
-    "Deactivate this Work Type?": "Deactivate this Work Type?"
+    "Deactivate this Work Type?": "Deactivate this Work Type?",
+    "Customer archived": "Customer archived",
+    "Customer unarchived": "Customer unarchived",
+    "Customer deleted": "Customer deleted",
+    "Customer permanently deleted": "Customer permanently deleted",
+    "Customer restored": "Customer restored",
+    "Work Type created": "Work Type created",
+    "Work Type updated": "Work Type updated",
+    "Work Type deactivated": "Work Type deactivated",
+    "Work Type activated": "Work Type activated",
+    "Read-only history of important actions in the system.": "Read-only history of important actions in the system.",
+    "Module": "Module",
+    "All Modules": "All Modules",
+    "Record": "Record",
+    "Changes": "Changes",
+    "Audit log is append-only and cannot be changed.": "Audit log is append-only and cannot be changed.",
+    "Audit log is append-only and cannot be deleted.": "Audit log is append-only and cannot be deleted."
 }
