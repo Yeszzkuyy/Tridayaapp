@@ -11,6 +11,13 @@
 
 const STORAGE_KEY_PREFIX = 'workspace-tabs:v1:';
 
+/**
+ * Penanda build modul tab. Naikkan saat ada perbaikan yang wajib memaksa
+ * browser mengambil aset baru: file di public/build di-cache immutable
+ * satu tahun, jadi nama file harus berubah agar perbaikan ikut terpakai.
+ */
+const WORKSPACE_TABS_BUILD = '2026-11-27-edit-user-fix';
+
 /** Identitas tiap divisi: kode badge, nama tampilan, ikon, dan warna badge. */
 const DEPT_META = {
     management: { code: 'MGMT', name: 'Management', icon: 'briefcase', color: 'slate' },
@@ -191,6 +198,8 @@ function inferDeptKey(path) {
 
 export function registerWorkspaceStore(Alpine) {
     if (!Alpine || Alpine.store('workspace')) return;
+
+    window.__workspaceTabsBuild = WORKSPACE_TABS_BUILD;
 
     const cfg = window.__workspaceConfig || {};
     const userKey = STORAGE_KEY_PREFIX + String(cfg.userId || 'guest');
