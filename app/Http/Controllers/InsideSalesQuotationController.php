@@ -150,7 +150,7 @@ class InsideSalesQuotationController extends Controller
                 'updated' => $updated,
                 'missing' => $missing,
             ])
-        );
+        )->with('success_card', true);
     }
 
     public function store(Request $request, LeadTask $leadTask, QuotationPdfService $pdfService)

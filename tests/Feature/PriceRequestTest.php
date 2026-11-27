@@ -150,14 +150,29 @@ class PriceRequestTest extends TestCase
         Notification::assertSentTo($leadTech, PriceRequestCreatedNotification::class);
     }
 
-    public function test_quotation_file_is_required(): void
+    public function test_quotation_file_is_optional_when_notes_describe_items(): void
     {
         $sales = $this->userWithRole('sales');
         $customer = $this->makeCustomer();
 
         $this->actingAs($sales)->post(route('sales.price-requests.store'), [
             'customer_id' => $customer->id,
-        ])->assertSessionHasErrors('quotation');
+            'notes' => 'Butuh harga 8 kamera CCTV dan 1 NVR.',
+        ])->assertRedirect();
+
+        $request = PriceRequest::firstOrFail();
+        $this->assertNull($request->quotation_path);
+        $this->assertSame('Butuh harga 8 kamera CCTV dan 1 NVR.', $request->notes);
+    }
+
+    public function test_price_request_requires_a_file_or_notes(): void
+    {
+        $sales = $this->userWithRole('sales');
+        $customer = $this->makeCustomer();
+
+        $this->actingAs($sales)->post(route('sales.price-requests.store'), [
+            'customer_id' => $customer->id,
+        ])->assertSessionHasErrors('notes');
 
         $this->assertSame(0, PriceRequest::count());
     }

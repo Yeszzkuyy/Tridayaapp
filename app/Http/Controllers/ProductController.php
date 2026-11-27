@@ -280,6 +280,12 @@ class ProductController extends Controller
             __('Only Admin/Purchasing can change the selling price.')
         );
 
+        abort_if(
+            $request->has('default_price') && ! $canManageSellingPrice,
+            403,
+            __('Only Admin/Purchasing can change the selling price.')
+        );
+
         $rules = [
             'sku' => 'nullable|string|max:255|unique:products,sku',
             'name' => 'required|string|max:255',
@@ -324,6 +330,12 @@ class ProductController extends Controller
         $this->assertCostTampering($request, $canManageCost);
         $this->assertSupplierTampering($request);
         $this->normalizeMoneyInput($request, ['default_price', 'cost_price']);
+
+        abort_if(
+            $request->has('default_price') && ! $canManageSellingPrice,
+            403,
+            __('Only Admin/Purchasing can change the selling price.')
+        );
 
         abort_if(
             $request->has('default_price') && ! $canManageSellingPrice,

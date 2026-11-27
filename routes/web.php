@@ -359,6 +359,8 @@ Route::middleware('auth')->group(function () {
         Route::get('technical-requests/{technicalRequest}', [TechnicalRequestController::class, 'show'])->name('technical-requests.show');
         Route::get('technical-requests/{technicalRequest}/attachment', [TechnicalRequestController::class, 'downloadAttachment'])->name('technical-requests.attachment');
         Route::get('technical-requests/{technicalRequest}/attachment/preview', [TechnicalRequestController::class, 'previewAttachment'])->name('technical-requests.attachment.preview');
+        Route::get('price-requests', [PriceRequestController::class, 'index'])->name('price-requests.index');
+        Route::get('price-requests/export-excel', [PriceRequestController::class, 'exportExcel'])->name('price-requests.export-excel');
         Route::get('price-requests/{priceRequest}', [PriceRequestController::class, 'show'])->name('price-requests.show');
         Route::get('price-requests/{priceRequest}/quotation', [PriceRequestController::class, 'downloadQuotation'])->name('price-requests.quotation');
         Route::get('price-requests/{priceRequest}/quotation/preview', [PriceRequestController::class, 'previewQuotation'])->name('price-requests.quotation.preview');
