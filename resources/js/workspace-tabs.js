@@ -680,8 +680,13 @@ export function registerWorkspaceStore(Alpine) {
 
         /**
          * Cari menu sidebar yang paling cocok untuk sebuah URL.
-         * Selain URL menu langsung, mendukung akar grup seperti /estimator
-         * (dipetakan ke link header grup, mis. /estimator/requests).
+         * Link yang benar-benar memuat URL (exact atau prefix) selalu menang.
+         * Fallback child-link/header grup hanya dipakai untuk URL induk yang
+         * tidak punya link persis, mis. /estimator -> /estimator/requests.
+         *
+         * Penting: /admin-panel harus tetap User Management, bukan Audit Log,
+         * meskipun /admin-panel/audit-log juga berawalan /admin-panel dan
+         * posisinya lebih dulu di DOM.
          */
         resolveMenuForUrl(rawUrl) {
             const path = normalizePath(rawUrl);
@@ -693,16 +698,17 @@ export function registerWorkspaceStore(Alpine) {
 
             links.forEach((link) => {
                 const linkPath = normalizePath(link.href);
-
-                if (path === linkPath || path.startsWith(linkPath + '/')) {
-                    if (linkPath.length > bestLen) {
-                        best = link;
-                        bestLen = linkPath.length;
-                    }
-                    return;
+                if ((path === linkPath || path.startsWith(linkPath + '/')) && linkPath.length > bestLen) {
+                    best = link;
+                    bestLen = linkPath.length;
                 }
+            });
 
-                if (path !== '/' && linkPath.startsWith(path + '/')) {
+            if (!best) {
+                links.forEach((link) => {
+                    const linkPath = normalizePath(link.href);
+                    if (path === '/' || !linkPath.startsWith(path + '/')) return;
+
                     if (link.closest('.sb-head') && (groupHead === null || linkPath.length < groupHeadLen)) {
                         groupHead = link;
                         groupHeadLen = linkPath.length;
@@ -711,8 +717,8 @@ export function registerWorkspaceStore(Alpine) {
                         best = link;
                         bestLen = linkPath.length;
                     }
-                }
-            });
+                });
+            }
 
             const chosen = groupHead || best;
             if (!chosen) return null;
@@ -814,6 +820,7 @@ export function registerWorkspaceStore(Alpine) {
                 const parsed = raw ? JSON.parse(raw) : null;
                 restoredSplit = parsed?.split || null;
                 if (Array.isArray(parsed?.tabs)) {
+                    const seenIds = new Set(['dashboard']);
                     restored = parsed.tabs
                         .filter(
                             (tab) =>
@@ -822,24 +829,35 @@ export function registerWorkspaceStore(Alpine) {
                                 typeof tab.url === 'string' &&
                                 tab.id !== 'dashboard',
                         )
-                        .slice(0, this.maxDesktop - 1)
                         .map((tab) => {
-                            const resolved = this.resolveMetaForPath(tab.url);
-                            const homeMenu = this.resolveMenuForUrl(tab.id);
+                            const url = cleanUrl(tab.url);
+                            const path = normalizePath(url);
+                            // Id & home dipulihkan dari URL, bukan dari id lama.
+                            // Tab User Management pernah tersimpan dengan id/home
+                            // Audit Log sehingga tombol Edit user terlempar ke
+                            // Audit Log. Normalisasi ini menyembuhkannya.
+                            const menu = this.resolveMenuForUrl(url);
+                            const resolved = this.resolveMetaForPath(url);
                             return {
-                                id: tab.id,
+                                id: menu?.id || tabIdFromPath(path),
                                 title: resolved?.title || cleanStoredTitle(tab.title),
                                 dept: resolved?.dept || tab.dept || null,
                                 deptName: resolved?.deptName || tab.deptName || null,
-                                url: cleanUrl(tab.url),
-                                path: normalizePath(tab.url),
-                                homeUrl: tab.homeUrl || homeMenu?.menuPath || cleanUrl(tab.url),
+                                url,
+                                path,
+                                homeUrl: menu?.menuPath || tab.homeUrl || url,
                                 icon: resolved?.icon || String(tab.icon || 'grid'),
                                 pinned: false,
                                 dirty: false,
                                 loaded: false,
                             };
-                        });
+                        })
+                        .filter((tab) => {
+                            if (seenIds.has(tab.id)) return false;
+                            seenIds.add(tab.id);
+                            return true;
+                        })
+                        .slice(0, this.maxDesktop - 1);
                 }
             } catch (e) {
                 restored = [];
