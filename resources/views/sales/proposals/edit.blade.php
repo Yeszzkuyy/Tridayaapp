@@ -3,7 +3,15 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100">{{ __('Edit Quotation') }}</h1>
-                <p class="text-slate-500 mt-1">{{ $proposal->proposal_number }}</p>
+                <p class="text-slate-500 mt-1">
+                    {{ $proposal->proposal_number }}
+                    @if((int) $proposal->revision_number > 0)
+                        <span class="ml-2 inline-flex items-center rounded-full bg-accent-500/10 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-500/15 dark:text-accent-300">{{ $proposal->revisionLabel() }}</span>
+                    @endif
+                </p>
+                @if((int) $proposal->revision_number > 0)
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ __('You are editing :revision. Saving changes updates this version only; earlier versions stay in history.', ['revision' => $proposal->revisionLabel()]) }}</p>
+                @endif
             </div>
             <x-icon-button as="a" icon="back" href="{{ route('sales.proposals.show', $proposal) }}" title="{{ __('Back') }}" />
         </div>

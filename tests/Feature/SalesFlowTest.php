@@ -327,7 +327,7 @@ class SalesFlowTest extends TestCase
         ])->assertRedirect();
 
         $proposal = Proposal::where('lead_id', $lead->id)->firstOrFail();
-        $this->assertMatchesRegularExpression('#^[A-Z]+/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
+        $this->assertMatchesRegularExpression('#^\d{3}/[A-Z]{2,10}-[A-Z]+/\d{4}$#', $proposal->proposal_number);
         // (2*50000-5000) + 100000 = 195000; -10000 +11000 => 196000
         $this->assertSame(195000.0, (float) $proposal->subtotal);
         $this->assertSame(196000.0, (float) $proposal->grand_total);

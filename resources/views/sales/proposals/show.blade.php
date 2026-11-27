@@ -7,6 +7,9 @@
                 <p class="text-slate-500 mt-1">
                     <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold {{ \App\Models\Proposal::statusBadgeClasses($proposal->status) }}">{{ \App\Models\Proposal::statusLabel($proposal->status) }}</span> •
                     Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}
+                    @if((int) $proposal->revision_number > 0)
+                        <span class="ml-1 inline-flex items-center rounded-full bg-accent-500/10 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-500/15 dark:text-accent-300">{{ $proposal->revisionLabel() }}</span>
+                    @endif
                 </p>
                 <x-handoff-status :proposal="$proposal" class="mt-2" />
                 @if($proposal->sent_at)
@@ -147,9 +150,41 @@
                 </div>
             @endif
 
+            @if($revisionHistory->count() > 1)
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Version History') }}</p>
+                    <ul class="mt-3 space-y-2">
+                        @foreach($revisionHistory as $version)
+                            <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40">
+                                <div class="min-w-0">
+                                    <p class="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
+                                        <span>{{ $version->revisionLabel() }}</span>
+                                        <span class="truncate">{{ $version->proposal_number }}</span>
+                                        @if($version->isLatest())
+                                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">{{ __('Current') }}</span>
+                                        @endif
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        {{ \App\Models\Proposal::statusLabel($version->status) }}
+                                        · {{ $version->created_at?->translatedFormat('d M Y H:i') }}
+                                        · Rp {{ number_format((float) $version->grand_total, 0, ',', '.') }}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <x-icon-button as="a" icon="view" href="{{ route('sales.proposals.show', $version) }}" title="{{ __('View details') }}" />
+                                    @if($version->pdf_path)
+                                        <x-icon-button as="a" icon="download" href="{{ route('sales.proposals.pdf', $version) }}" title="{{ __('Download PDF') }}" />
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             @if($proposal->versions->isNotEmpty())
                 <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Revision History') }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{{ __('Change History') }}</p>
                     <ul class="mt-3 space-y-2">
                         @foreach($proposal->versions as $version)
                             <li class="flex items-start gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-700/40">
@@ -179,6 +214,16 @@
                 @endif
                 @if($isOwner && (in_array($proposal->status, ['draft', 'revision'], true) || ($proposal->status === 'ready' && (float) $proposal->grand_total <= 0)))
                     <x-icon-button as="a" icon="edit" href="{{ route('sales.proposals.edit', $proposal) }}" label="{{ __('Edit') }}" title="{{ __('Edit') }}" />
+                @endif
+                @if($canRevise)
+                    <form action="{{ route('sales.proposals.new-revision', $proposal) }}" method="POST" class="inline"
+                          data-confirm="{{ __('A new revision number is created with a copy of these items. The current version is kept as history.') }}"
+                          data-confirm-title="{{ __('Create a new revision?') }}"
+                          data-confirm-tone="warning"
+                          data-confirm-label="{{ __('Yes, create revision') }}">
+                        @csrf
+                        <x-icon-button type="submit" icon="edit" label="{{ __('New Revision') }}" title="{{ __('New Revision') }}" />
+                    </form>
                 @endif
                 @if($isOwner && $proposal->status === 'draft')
                     <form action="{{ route('sales.proposals.ready', $proposal) }}" method="POST" class="inline">

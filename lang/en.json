@@ -5602,5 +5602,19 @@
     "Prices are shown in Indonesian Rupiah.": "Prices are shown in Indonesian Rupiah.",
     "Supplier is required.": "Supplier is required.",
     "Product Pricing": "Product Pricing",
-    "products": "products"
+    "products": "products",
+    "A new revision number is created with a copy of these items. The current version is kept as history.": "A new revision number is created with a copy of these items. The current version is kept as history.",
+    "Create a new revision?": "Create a new revision?",
+    "Yes, create revision": "Yes, create revision",
+    "New Revision": "New Revision",
+    "You are editing :revision. Saving changes updates this version only; earlier versions stay in history.": "You are editing :revision. Saving changes updates this version only; earlier versions stay in history.",
+    "Version History": "Version History",
+    "Current": "Current",
+    "Change History": "Change History",
+    "This quotation cannot be revised in its current status.": "This quotation cannot be revised in its current status.",
+    "Revision :revision created from :number.": "Revision :revision created from :number.",
+    "Revision :number created. The previous version is kept in history.": "Revision :number created. The previous version is kept in history.",
+    "This task has no quotation yet.": "This task has no quotation yet.",
+    "This quotation is not the latest version.": "This quotation is not the latest version.",
+    "The revision number already exists. Please try again.": "The revision number already exists. Please try again."
 }

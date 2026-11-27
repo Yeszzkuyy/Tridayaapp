@@ -67,7 +67,9 @@ class LeadTask extends Model
 
     public function proposal()
     {
-        return $this->hasOne(Proposal::class);
+        // Satu task bisa punya beberapa revisi; yang dipakai selalu versi
+        // dengan revision_number tertinggi (R0, R1, R2, ...).
+        return $this->hasOne(Proposal::class)->latestOfMany('revision_number');
     }
 
     public static function statusLabel(?string $status): string

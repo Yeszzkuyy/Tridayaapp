@@ -10,6 +10,7 @@ use App\Models\Proposal;
 use App\Notifications\QuotationGeneratedNotification;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationPdfService;
+use App\Services\QuotationRevisionService;
 use App\Services\QuotationVersionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class InsideSalesQuotationController extends Controller
     public function __construct(
         private QuotationNumberService $numbers,
         private QuotationVersionService $versions,
+        private QuotationRevisionService $revisions,
     ) {}
     public function create(LeadTask $leadTask)
     {
@@ -187,15 +189,15 @@ class InsideSalesQuotationController extends Controller
         $deliveryTerms = $validated['delivery_terms'] ?? $this->stockSummary($items);
         $warrantyTerms = $validated['warranty_terms'] ?? $this->warrantySummary($items);
         $salesOwner = $leadTask->lead?->assignee ?? $leadTask->creator;
-        $proposalNumber = $this->numbers->generate($validated['letterhead_pt'], $salesOwner ?? auth()->user());
+        $number = $this->numbers->next($validated['letterhead_pt'], $salesOwner ?? auth()->user());
         $taxRate = AppSetting::vatRate();
         $defaultMargin = AppSetting::defaultMarginPercent();
 
-        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $proposalNumber, $deliveryTerms, $warrantyTerms, $taxRate, $defaultMargin) {
+        $proposal = DB::transaction(function () use ($leadTask, $items, $validated, $pdfService, $salesOwner, $number, $deliveryTerms, $warrantyTerms, $taxRate, $defaultMargin) {
             $proposal = Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
-                'proposal_number' => $proposalNumber,
+                ...$number,
                 'created_by' => $salesOwner?->id ?? auth()->id(),
                 'proposal_date' => $validated['proposal_date'],
                 'customer' => $validated['customer'],
@@ -261,6 +263,47 @@ class InsideSalesQuotationController extends Controller
         return redirect()
             ->route('lead-tasks.show', $leadTask)
             ->with('success', __('Quotation :number and PDF created successfully.', ['number' => $proposal->proposal_number]));
+    }
+
+    /**
+     * Buat revisi quotation dari task Inside Sales: nomor baru (R1, R2, ...)
+     * dengan isi + item disalin, lalu buka halaman edit revisi tersebut.
+     */
+    public function revise(LeadTask $leadTask)
+    {
+        $this->authorizeTask($leadTask);
+
+        $proposal = $leadTask->proposal;
+        abort_unless($proposal, 404, __('This task has no quotation yet.'));
+        abort_unless($proposal->canBeRevised(), 422, __('This quotation cannot be revised in its current status.'));
+
+        try {
+            $revision = $this->revisions->revise($proposal);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $this->versions->record(
+            $revision,
+            (float) $proposal->grand_total,
+            __('Revision :revision created from :number.', [
+                'revision' => $revision->revisionLabel(),
+                'number' => $proposal->proposal_number,
+            ]),
+            auth()->id(),
+        );
+
+        try {
+            app(QuotationPdfService::class)->generate($revision);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()
+            ->route('sales.proposals.edit', $revision)
+            ->with('success', __('Revision :number created. The previous version is kept in history.', [
+                'number' => $revision->proposal_number,
+            ]));
     }
 
     public function pdf(LeadTask $leadTask)

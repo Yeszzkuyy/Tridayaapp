@@ -49,7 +49,13 @@
             @forelse($proposals as $proposal)
                 <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 {{ !$loop->last ? 'border-b border-slate-100 dark:border-slate-700' : '' }}">
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{{ $proposal->proposal_number }} • {{ $proposal->customer }}</p>
+                        <p class="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-slate-100">
+                            <span class="truncate">{{ $proposal->proposal_number }}</span>
+                            @if((int) $proposal->revision_number > 0)
+                                <span class="inline-flex shrink-0 items-center rounded-full bg-accent-500/10 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-500/15 dark:text-accent-300">{{ $proposal->revisionLabel() }}</span>
+                            @endif
+                            <span class="truncate">• {{ $proposal->customer }}</span>
+                        </p>
                         <p class="text-xs text-slate-500">
                             Rp {{ number_format($proposal->grand_total, 0, ',', '.') }}
                             • {{ $proposal->lead->customer?->name ?? '' }}

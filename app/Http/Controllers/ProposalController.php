@@ -26,6 +26,7 @@ use App\Services\CustomerLifecycleService;
 use App\Services\Project\ProjectWorkflowService;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationPdfService;
+use App\Services\QuotationRevisionService;
 use App\Services\QuotationVersionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -42,6 +43,7 @@ class ProposalController extends Controller
         private QuotationNumberService $numbers,
         private QuotationVersionService $versions,
         private QuotationPdfService $pdfService,
+        private QuotationRevisionService $revisionService,
     ) {}
 
     private function log(Lead $lead, string $action, array $changes = []): void
@@ -91,6 +93,19 @@ class ProposalController extends Controller
     private function isOwner(Proposal $proposal): bool
     {
         return in_array(auth()->id(), [$proposal->created_by, $proposal->lead->assigned_to]);
+    }
+
+    /**
+     * Inside Sales yang ditugaskan pada task quotation ini boleh melihat dan
+     * mengubah draf revisi, tetapi TIDAK memperoleh hak kirim/terima.
+     */
+    private function isInsideSalesAssignee(Proposal $proposal): bool
+    {
+        $user = auth()->user();
+
+        return $user
+            && $user->can('manage-inside-sales')
+            && (int) ($proposal->leadTask?->assigned_to ?? 0) === (int) $user->id;
     }
 
     /**
@@ -163,6 +178,7 @@ class ProposalController extends Controller
 
         abort_unless(
             $this->isOwner($proposal)
+            || $this->isInsideSalesAssignee($proposal)
             || $user->can('manage-sales-leads')
             || $user->can('manage-admin')
             || $user->can('manage-technician')
@@ -199,7 +215,11 @@ class ProposalController extends Controller
 
     private function authorizeEdit(Proposal $proposal): void
     {
-        $this->authorizeManage($proposal);
+        // Inside Sales pemilik task boleh menyunting draf revisi tanpa
+        // mendapat hak kirim/terima (authorizeManage tetap milik Sales).
+        if (! $this->isInsideSalesAssignee($proposal)) {
+            $this->authorizeManage($proposal);
+        }
 
         // Selama pending_technical, BOQ dikunci dari sales; hanya tim teknis/admin yang boleh ubah.
         if ($proposal->status === 'pending_technical') {
@@ -211,6 +231,14 @@ class ProposalController extends Controller
         $canFixZeroReady = $proposal->status === 'ready' && (float) $proposal->grand_total <= 0;
 
         abort_unless(in_array($proposal->status, ['draft', 'revision'], true) || $canFixZeroReady, 422);
+    }
+
+    /** Buat revisi immutable: pemilik quotation atau Inside Sales pemilik task. */
+    private function authorizeRevision(Proposal $proposal): void
+    {
+        $this->authorizeView($proposal);
+
+        abort_unless($this->isOwner($proposal) || $this->isInsideSalesAssignee($proposal), 403);
     }
 
     /** Aksi tim teknis/admin: owner tidak wajib, cukup permission teknis. */
@@ -230,13 +258,18 @@ class ProposalController extends Controller
         $this->authorizeManage($proposal);
     }
 
-    private function generateNumber(Lead $lead): string
+    /**
+     * Metadata nomor quotation baru untuk lead ini.
+     *
+     * @return array{proposal_number:string,sequence_number:int,revision_number:int,company_code:string,quotation_year:int,user_initials:string}
+     */
+    private function quotationNumberData(Lead $lead): array
     {
         $pt = $lead->pt_group ?: $lead->customer?->pt_group ?: 'WANI';
 
         // Inisial pada nomor quotation milik Sales pemilik lead, bukan
         // pembuat draf (Inside Sales / Management).
-        return $this->numbers->generate($pt, $lead->assignee ?? auth()->user());
+        return $this->numbers->next($pt, $lead->assignee ?? auth()->user());
     }
 
     /**
@@ -452,7 +485,7 @@ class ProposalController extends Controller
     {
         $user = auth()->user();
 
-        $query = Proposal::query();
+        $query = Proposal::query()->where('is_latest', true);
 
         if (! $user->can('manage-sales-leads') && ! $user->can('manage-admin')) {
             $query->where(function ($q) use ($user) {
@@ -582,7 +615,7 @@ class ProposalController extends Controller
             $proposal = DB::transaction(function () use ($validated, $lead, $canManageCost, $priceRequest, $items) {
                 $proposal = Proposal::create([
                     'lead_id' => $lead->id,
-                    'proposal_number' => $this->generateNumber($lead),
+                    ...$this->quotationNumberData($lead),
                     'created_by' => auth()->id(),
                     'proposal_date' => $validated['proposal_date'],
                     'valid_until' => $validated['valid_until'] ?? null,
@@ -643,8 +676,12 @@ class ProposalController extends Controller
 
     public function show(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator', 'project', 'priceRequest', 'attachments', 'versions.changer']);
+        $proposal->load(['lead.customer', 'lead.assignee', 'leadTask', 'items', 'creator', 'project', 'priceRequest', 'attachments', 'versions.changer']);
         $this->authorizeView($proposal);
+
+        $revisionHistory = $proposal->revisionHistory();
+        $canRevise = $proposal->canBeRevised()
+            && ($this->isOwner($proposal) || $this->isInsideSalesAssignee($proposal));
 
         $workTypes = $proposal->status === 'accepted' && ! $proposal->project
             ? WorkType::orderBy('name')->get(['id', 'name'])
@@ -656,7 +693,7 @@ class ProposalController extends Controller
                 ->get(['id', 'name'])
             : collect();
 
-        return view('sales.proposals.show', compact('proposal', 'workTypes', 'technicians'));
+        return view('sales.proposals.show', compact('proposal', 'workTypes', 'technicians', 'revisionHistory', 'canRevise'));
     }
 
     public function preview(Proposal $proposal)
@@ -919,6 +956,49 @@ class ProposalController extends Controller
         $this->versions->record($proposal, (float) $proposal->grand_total, __('Requested revision from customer.'));
 
         return back()->with('success', __('Proposal returned for revision.'));
+    }
+
+    /**
+     * Buat revisi immutable: nomor baru (R1, R2, ...), baris quotation baru,
+     * item disalin, versi lama tetap tersimpan sebagai arsip.
+     */
+    public function newRevision(Proposal $proposal)
+    {
+        $this->authorizeRevision($proposal);
+
+        abort_unless($proposal->canBeRevised(), 422, __('This quotation cannot be revised in its current status.'));
+
+        try {
+            $revision = $this->revisionService->revise($proposal);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $this->versions->record(
+            $revision,
+            (float) $proposal->grand_total,
+            __('Revision :revision created from :number.', [
+                'revision' => $revision->revisionLabel(),
+                'number' => $proposal->proposal_number,
+            ]),
+        );
+
+        $this->log($proposal->lead, 'proposal_new_revision', [
+            'from' => $proposal->proposal_number,
+            'to' => $revision->proposal_number,
+        ]);
+
+        try {
+            $this->pdfService->generate($revision);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()
+            ->route('sales.proposals.edit', $revision)
+            ->with('success', __('Revision :number created. The previous version is kept in history.', [
+                'number' => $revision->proposal_number,
+            ]));
     }
 
     public function respond(Request $request, Proposal $proposal)

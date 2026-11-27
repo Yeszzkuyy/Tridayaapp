@@ -249,6 +249,7 @@ Route::middleware('auth')->group(function () {
         Route::post('proposals/{proposal}/sent-via/{channel}', [ProposalController::class, 'markSentVia'])->name('proposals.sent-via');
         Route::post('proposals/{proposal}/viewed', [ProposalController::class, 'markViewed'])->name('proposals.viewed');
         Route::post('proposals/{proposal}/revise', [ProposalController::class, 'revise'])->name('proposals.revise');
+        Route::post('proposals/{proposal}/new-revision', [ProposalController::class, 'newRevision'])->name('proposals.new-revision');
         Route::post('proposals/{proposal}/respond', [ProposalController::class, 'respond'])->name('proposals.respond');
         Route::post('proposals/{proposal}/cancel', [ProposalController::class, 'cancel'])->name('proposals.cancel');
         Route::post('proposals/{proposal}/submit-technical', [ProposalController::class, 'submitTechnical'])->name('proposals.submit-technical');
@@ -908,6 +909,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'create'])->name('quotations.create');
             Route::post('/tasks/{leadTask}/quotation/pull-prices', [InsideSalesQuotationController::class, 'pullPrices'])->name('quotations.pull-prices');
             Route::post('/tasks/{leadTask}/quotation', [InsideSalesQuotationController::class, 'store'])->name('quotations.store');
+            Route::post('/tasks/{leadTask}/quotation/revise', [InsideSalesQuotationController::class, 'revise'])->name('quotations.revise');
             Route::get('/tasks/{leadTask}/quotation/pdf', [InsideSalesQuotationController::class, 'pdf'])->name('quotations.pdf');
         });
 

@@ -18,7 +18,14 @@ class Proposal extends Model
     protected $fillable = [
         'lead_id',
         'lead_task_id',
+        'parent_quotation_id',
+        'is_latest',
         'proposal_number',
+        'sequence_number',
+        'revision_number',
+        'company_code',
+        'quotation_year',
+        'user_initials',
         'created_by',
         'proposal_date',
         'valid_until',
@@ -66,6 +73,10 @@ class Proposal extends Model
     ];
 
     protected $casts = [
+        'is_latest' => 'boolean',
+        'sequence_number' => 'integer',
+        'revision_number' => 'integer',
+        'quotation_year' => 'integer',
         'proposal_date' => 'date',
         'valid_until' => 'date',
         'po_date' => 'date',
@@ -121,6 +132,69 @@ class Proposal extends Model
     public function versions()
     {
         return $this->hasMany(ProposalVersion::class)->orderBy('version');
+    }
+
+    /** Dokumen induk (R0) untuk revisi; null bila ini dokumen awal. */
+    public function parentQuotation()
+    {
+        return $this->belongsTo(Proposal::class, 'parent_quotation_id');
+    }
+
+    /** Seluruh revisi turunan dokumen ini (R1, R2, ...). */
+    public function revisions()
+    {
+        return $this->hasMany(Proposal::class, 'parent_quotation_id')->orderBy('revision_number');
+    }
+
+    /** Id dokumen induk; dokumen awal memakai id sendiri. */
+    public function quotationRootId(): int
+    {
+        return (int) ($this->parent_quotation_id ?: $this->getKey());
+    }
+
+    /**
+     * Seluruh versi satu dokumen (R0 + revisi) berurutan.
+     *
+     * @return \Illuminate\Support\Collection<int, static>
+     */
+    public function revisionHistory()
+    {
+        $rootId = $this->quotationRootId();
+
+        return static::query()
+            ->where(fn ($query) => $query->whereKey($rootId)->orWhere('parent_quotation_id', $rootId))
+            ->orderBy('revision_number')
+            ->orderBy('id')
+            ->get();
+    }
+
+    public function isLatest(): bool
+    {
+        // Baris baru dari database memakai default true; nilai null hanya
+        // terjadi pada instance yang belum di-refresh setelah insert.
+        return $this->is_latest === null ? true : (bool) $this->is_latest;
+    }
+
+    /** Label versi dokumen: R0 (awal), R1, R2, ... */
+    public function revisionLabel(): string
+    {
+        return 'R'.(int) ($this->revision_number ?? 0);
+    }
+
+    /**
+     * Revisi baru hanya untuk versi aktif yang belum final.
+     * Accepted/rejected/cancelled/expired dikunci sebagai arsip.
+     */
+    public function canBeRevised(): bool
+    {
+        return $this->isLatest()
+            && in_array($this->status, ['draft', 'revision', 'pending_technical', 'ready', 'sent', 'viewed'], true);
+    }
+
+    /** Hanya versi terbaru satu dokumen (dipakai daftar quotation). */
+    public function scopeLatestOnly($query)
+    {
+        return $query->where('is_latest', true);
     }
 
     /**

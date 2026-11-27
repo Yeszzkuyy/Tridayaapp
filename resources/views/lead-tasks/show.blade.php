@@ -164,6 +164,9 @@
                     @if($task->proposal)
                         <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
                             <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $task->proposal->proposal_number }}</span>
+                            @if((int) $task->proposal->revision_number > 0)
+                                <span class="ml-1 inline-flex items-center rounded-full bg-accent-500/10 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-500/15 dark:text-accent-300">{{ $task->proposal->revisionLabel() }}</span>
+                            @endif
                             <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ ucfirst($task->proposal->status) }}
                             <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>{{ $task->proposal->created_at?->format('d M Y H:i') }}
                         </p>
@@ -185,6 +188,16 @@
                     <x-icon-button as="a" variant="solid" icon="sparkles" label="{{ __('Create Quotation') }}"
                                    href="{{ route('inside-sales.quotations.create', $task) }}?embed=1" target="_blank" rel="noopener"
                                    title="{{ __('Create Quotation') }}" />
+                @endif
+                @if($task->proposal && $task->proposal->canBeRevised() && auth()->user()->can('manage-inside-sales'))
+                    <form action="{{ route('inside-sales.quotations.revise', $task) }}" method="POST" class="inline"
+                          data-confirm="{{ __('A new revision number is created with a copy of these items. The current version is kept as history.') }}"
+                          data-confirm-title="{{ __('Create a new revision?') }}"
+                          data-confirm-tone="warning"
+                          data-confirm-label="{{ __('Yes, create revision') }}">
+                        @csrf
+                        <x-icon-button type="submit" icon="edit" label="{{ __('New Revision') }}" title="{{ __('New Revision') }}" />
+                    </form>
                 @endif
             </div>
         </div>

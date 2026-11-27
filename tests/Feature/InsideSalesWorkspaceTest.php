@@ -359,7 +359,7 @@ class InsideSalesWorkspaceTest extends TestCase
         $proposal = Proposal::query()->firstOrFail();
         $this->assertSame($task->id, $proposal->lead_task_id);
         $this->assertSame($sales->id, $proposal->created_by);
-        $this->assertMatchesRegularExpression('#^WANI/\d{3}/[A-Z]+/\d{4}$#', $proposal->proposal_number);
+        $this->assertMatchesRegularExpression('#^\d{3}/WANI-[A-Z]+/\d{4}$#', $proposal->proposal_number);
         $this->assertSame('WANI', $proposal->letterhead_pt);
         $this->assertSame('draft', $proposal->status);
         $this->assertSame(2240000.0, (float) $proposal->grand_total);

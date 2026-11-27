@@ -77,7 +77,7 @@ class ProposalNumberingRevisionTest extends TestCase
             ->assertRedirect();
 
         $proposal = Proposal::firstOrFail();
-        $this->assertSame('MGK/001/AS/'.now()->year, $proposal->proposal_number);
+        $this->assertSame('001/MGK-AS/'.now()->year, $proposal->proposal_number);
         $this->assertSame('MGK', $proposal->letterhead_pt);
     }
 
@@ -94,8 +94,8 @@ class ProposalNumberingRevisionTest extends TestCase
         $this->actingAs($management)->post(route('sales.proposals.store'), $this->storePayload($lead2));
 
         $numbers = Proposal::orderBy('id')->pluck('proposal_number')->all();
-        $this->assertStringContainsString('/001/', $numbers[0]);
-        $this->assertStringContainsString('/002/', $numbers[1]);
+        $this->assertStringContainsString('001/MGK-', $numbers[0]);
+        $this->assertStringContainsString('002/MGK-', $numbers[1]);
     }
 
     public function test_revision_creates_version_history(): void
@@ -130,7 +130,7 @@ class ProposalNumberingRevisionTest extends TestCase
         $this->actingAs($sales)
             ->get(route('sales.proposals.show', $proposal))
             ->assertOk()
-            ->assertSee('Revision History')
+            ->assertSee('Change History')
             ->assertSee('v2');
     }
 

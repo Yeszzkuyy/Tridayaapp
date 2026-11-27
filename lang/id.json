@@ -5602,5 +5602,19 @@
     "Prices are shown in Indonesian Rupiah.": "Harga ditampilkan dalam Rupiah Indonesia.",
     "Supplier is required.": "Pemasok wajib dipilih.",
     "Product Pricing": "Harga Produk",
-    "products": "produk"
+    "products": "produk",
+    "A new revision number is created with a copy of these items. The current version is kept as history.": "Nomor revisi baru dibuat dengan salinan item ini. Versi saat ini disimpan sebagai riwayat.",
+    "Create a new revision?": "Buat revisi baru?",
+    "Yes, create revision": "Ya, buat revisi",
+    "New Revision": "Revisi Baru",
+    "You are editing :revision. Saving changes updates this version only; earlier versions stay in history.": "Anda sedang mengedit :revision. Perubahan yang disimpan hanya memperbarui versi ini; versi sebelumnya tetap tersimpan di riwayat.",
+    "Version History": "Riwayat Versi",
+    "Current": "Terkini",
+    "Change History": "Riwayat Perubahan",
+    "This quotation cannot be revised in its current status.": "Quotation ini tidak dapat direvisi pada status saat ini.",
+    "Revision :revision created from :number.": "Revisi :revision dibuat dari :number.",
+    "Revision :number created. The previous version is kept in history.": "Revisi :number dibuat. Versi sebelumnya tetap tersimpan di riwayat.",
+    "This task has no quotation yet.": "Task ini belum memiliki quotation.",
+    "This quotation is not the latest version.": "Quotation ini bukan versi terbaru.",
+    "The revision number already exists. Please try again.": "Nomor revisi sudah ada. Silakan coba lagi."
 }

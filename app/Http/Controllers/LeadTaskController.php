@@ -711,7 +711,7 @@ class LeadTaskController extends Controller
             $proposal = \App\Models\Proposal::create([
                 'lead_id' => $leadTask->lead_id,
                 'lead_task_id' => $leadTask->id,
-                'proposal_number' => $this->generateProposalNumber($lead),
+                ...$this->generateProposalNumber($lead),
                 'created_by' => $lead?->assigned_to ?? auth()->id(),
                 'proposal_date' => now()->toDateString(),
                 'customer' => $lead?->customer?->name ?? '-',
@@ -781,12 +781,16 @@ class LeadTaskController extends Controller
             ->with('success', __('Quotation created from the accepted file.'));
     }
 
-    /** Nomor quotation baku: PT/urut/inisial/tahun. */
-    private function generateProposalNumber(?Lead $lead): string
+    /**
+     * Metadata nomor quotation baku: `{urut}/{PT}-{inisial}/{tahun}`.
+     *
+     * @return array{proposal_number:string,sequence_number:int,revision_number:int,company_code:string,quotation_year:int,user_initials:string}
+     */
+    private function generateProposalNumber(?Lead $lead): array
     {
         $pt = $lead?->pt_group ?: $lead?->customer?->pt_group ?: 'WANI';
 
-        return $this->numbers->generate($pt, $lead?->assignee ?? auth()->user());
+        return $this->numbers->next($pt, $lead?->assignee ?? auth()->user());
     }
 
     public function downloadAttachment(LeadTask $leadTask, \App\Models\LeadTaskAttachment $attachment)
