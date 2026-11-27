@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\QuotationMail;
 use App\Models\AppSetting;
 use App\Models\GoodsReceipt;
 use App\Models\Lead;
@@ -32,6 +33,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -693,29 +695,40 @@ class ProposalController extends Controller
                 ->get(['id', 'name'])
             : collect();
 
-        return view('sales.proposals.show', compact('proposal', 'workTypes', 'technicians', 'revisionHistory', 'canRevise'));
+        $emailDraft = $this->pdfService->emailDraft($proposal);
+
+        return view('sales.proposals.show', compact('proposal', 'workTypes', 'technicians', 'revisionHistory', 'canRevise', 'emailDraft'));
     }
 
     public function preview(Proposal $proposal)
     {
-        $proposal->load(['lead.customer', 'lead.assignee', 'items', 'creator']);
         $this->authorizeView($proposal);
 
-        return view('sales.proposals.preview', compact('proposal'));
+        $data = $this->pdfService->viewData($proposal, false);
+        $data['previewMode'] = true;
+
+        return view($this->pdfService->viewName($proposal), $data);
     }
 
     public function downloadPdf(Proposal $proposal)
     {
         $this->authorizeView($proposal);
 
+        try {
+            $path = $this->pdfService->generate($proposal);
+        } catch (\Throwable $e) {
+            report($e);
+            $path = $proposal->pdf_path;
+        }
+
         abort_unless(
-            $proposal->pdf_path && Storage::disk('private')->exists($proposal->pdf_path),
+            $path && Storage::disk('private')->exists($path),
             404,
             __('Quotation PDF not found.')
         );
 
         return Storage::disk('private')->download(
-            $proposal->pdf_path,
+            $path,
             preg_replace('/[^A-Za-z0-9._-]/', '_', $proposal->proposal_number).'.pdf'
         );
     }
@@ -893,6 +906,73 @@ class ProposalController extends Controller
         }
 
         return back()->with('success', __('Proposal marked as sent.'));
+    }
+
+    /**
+     * Kirim quotation lewat email dengan lampiran PDF resmi sesuai PT.
+     * Subjek/body otomatis memakai nomor quotation + penanda revisi.
+     */
+    public function sendEmail(Request $request, Proposal $proposal)
+    {
+        $this->authorizeManage($proposal);
+
+        abort_unless(
+            in_array($proposal->status, ['ready', 'revision', 'sent', 'viewed'], true),
+            422
+        );
+
+        $this->assertQuotationHasBillableContent($proposal);
+
+        $validated = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'message' => ['nullable', 'string', 'max:10000'],
+        ]);
+
+        $draft = $this->pdfService->emailDraft($proposal);
+        $subject = trim((string) ($validated['subject'] ?? '')) ?: $draft['subject'];
+        $body = trim((string) ($validated['message'] ?? '')) ?: $draft['body'];
+
+        try {
+            $pdfPath = $this->pdfService->generate($proposal);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('Failed to render the quotation PDF. Please try again.'));
+        }
+
+        try {
+            Mail::to($validated['email'])->send(
+                new QuotationMail($proposal, $subject, $body, $pdfPath)
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('Failed to send the quotation email. Please check the mail configuration.'));
+        }
+
+        $proposal->update([
+            'status' => 'sent',
+            'sent_at' => now(),
+            'sent_by' => auth()->id(),
+            'sent_channel' => 'email',
+        ]);
+
+        $this->log($proposal->lead, 'proposal_sent', [
+            'number' => $proposal->proposal_number,
+            'channel' => 'email',
+            'to' => $validated['email'],
+        ]);
+
+        $assignee = $proposal->lead?->assignee;
+        if ($assignee && (int) $assignee->id !== (int) auth()->id()) {
+            $assignee->notify(new ProposalStatusNotification($proposal->fresh(), 'sent'));
+        }
+
+        return back()->with('success', __('Quotation :number has been emailed to :email.', [
+            'number' => $this->pdfService->numberWithRevision($proposal),
+            'email' => $validated['email'],
+        ]));
     }
 
     /**

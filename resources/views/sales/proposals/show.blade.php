@@ -288,17 +288,9 @@
                         </svg>
                     </x-icon-button>
                 @endif
-                @if($isOwner && $proposal->status === 'ready' && ($emailTo = $proposal->lead->customer?->email))
-                    @php
-                        $mailSubject = __('Quotation :number', ['number' => $proposal->proposal_number]);
-                        $mailBody = __('Halo, berikut penawaran :number senilai Rp :total (berlaku sampai :until). Mohon konfirmasinya, terima kasih.', [
-                            'number' => $proposal->proposal_number,
-                            'total' => number_format($proposal->grand_total, 0, ',', '.'),
-                            'until' => $proposal->valid_until?->format('d M Y') ?? '-',
-                        ]);
-                    @endphp
-                    <x-icon-button as="a" icon="mail" href="mailto:{{ $emailTo }}?subject={{ rawurlencode($mailSubject) }}&body={{ rawurlencode($mailBody) }}"
-                                   label="{{ __('Send via Email') }}" title="{{ __('Open your email app (mailto)') }}" />
+                @if($isOwner && in_array($proposal->status, ['ready', 'revision', 'sent', 'viewed'], true))
+                    <x-icon-button icon="mail" label="{{ __('Send via Email') }}" title="{{ __('Send via Email') }}"
+                                   onclick="document.getElementById('send-email-modal').classList.remove('hidden')" />
                 @endif
                 @if($isOwner && $proposal->status === 'sent')
                     <form action="{{ route('sales.proposals.viewed', $proposal) }}" method="POST" class="inline">
@@ -588,6 +580,42 @@
             @endif
         </div>
     </div>
+
+    @if($isOwner && in_array($proposal->status, ['ready', 'revision', 'sent', 'viewed'], true))
+        <div id="send-email-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ __('Send Quotation Email') }}</h2>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('The official quotation PDF for this company is attached automatically.') }}</p>
+                <form action="{{ route('sales.proposals.send-email', $proposal) }}" method="POST" class="mt-4 space-y-3">
+                    @csrf
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="quotation-email-to">{{ __('Email To') }}</label>
+                        <input id="quotation-email-to" type="email" name="email" required value="{{ old('email', $emailDraft['to'] ?? '') }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="quotation-email-subject">{{ __('Subject') }}</label>
+                        <input id="quotation-email-subject" type="text" name="subject" maxlength="255" value="{{ old('subject', $emailDraft['subject'] ?? '') }}"
+                               class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300" for="quotation-email-message">{{ __('Message') }}</label>
+                        <textarea id="quotation-email-message" name="message" rows="7"
+                                  class="w-full rounded-xl border-slate-300 focus:border-accent-500 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800">{{ old('message', $emailDraft['body'] ?? '') }}</textarea>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="document.getElementById('send-email-modal').classList.add('hidden')"
+                                class="group relative overflow-hidden rounded-xl bg-accent-500 px-6 py-2.5 text-center text-sm font-medium text-white transition-all duration-300 hover:bg-accent-600 hover:brightness-110 active:scale-95">
+                            {{ __('Cancel') }}
+                            <span class="pointer-events-none absolute inset-0 -translate-x-full -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" aria-hidden="true"></span>
+                        </button>
+                        <x-icon-button type="submit" icon="mail" label="{{ __('Send Email') }}" title="{{ __('Send Email') }}" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
     @once
     <script>
         /**

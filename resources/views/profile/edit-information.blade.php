@@ -21,7 +21,7 @@
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('Manage the information shown on your profile.') }}</p>
             </header>
 
-            <form method="POST" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+            <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-6 space-y-6">
                 @csrf
                 @method('patch')
 
@@ -52,6 +52,25 @@
                     <div>
                         <x-input-label for="join_date" :value="__('Join Date')" />
                         <x-text-input id="join_date" type="text" class="mt-1 block w-full bg-slate-100 dark:bg-slate-700" :value="$joinDate" readonly />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <x-input-label for="signature" :value="__('Digital Signature (PNG, transparent background)')" />
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {{ __('Used automatically in the signature block of the official quotation PDF.') }}
+                        </p>
+                        @if($user->signature_path)
+                            <div class="mt-3 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                                <img src="{{ asset('storage/'.$user->signature_path) }}" alt="{{ __('Digital Signature') }}" class="h-20 w-auto object-contain">
+                                <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                    <input type="checkbox" name="remove_signature" value="1" class="rounded border-slate-300 text-red-600 focus:ring-red-500">
+                                    {{ __('Remove current signature') }}
+                                </label>
+                            </div>
+                        @endif
+                        <input id="signature" name="signature" type="file" accept="image/png,image/webp"
+                               class="mt-3 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-accent-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:file:bg-slate-700 dark:file:text-slate-100">
+                        <x-input-error class="mt-2" :messages="$errors->get('signature')" />
                     </div>
                 </div>
 

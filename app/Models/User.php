@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable; // ← Tambahkan ini
+use Illuminate\Support\Facades\Storage;
 use Laravel\Ai\Concerns\HasConversations;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -27,6 +28,8 @@ class User extends Authenticatable
         'password',
         'password_changed_at',
         'avatar',
+        'phone',
+        'signature_path',
         'google_id',
         'google_avatar',
         'cover',
@@ -71,6 +74,20 @@ class User extends Authenticatable
         }
 
         return strtoupper($letters) ?: 'X';
+    }
+
+    /**
+     * Path absolut TTD digital untuk Dompdf; null bila belum diunggah.
+     */
+    public function signatureFilePath(): ?string
+    {
+        if (! filled($this->signature_path)) {
+            return null;
+        }
+
+        $path = Storage::disk('public')->path($this->signature_path);
+
+        return is_file($path) ? $path : null;
     }
 
     /** True bila user memegang salah satu role teknisi. */

@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules;
 
 class AdminPanelController extends Controller
@@ -71,6 +72,9 @@ class AdminPanelController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:30',
+            'signature' => ['nullable', 'image', 'max:2048', \App\Rules\SecureFile::images()],
+            'remove_signature' => 'nullable|boolean',
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'roles' => 'array',
             'roles.*' => 'exists:roles,name',
@@ -82,7 +86,21 @@ class AdminPanelController extends Controller
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
         ]);
+
+        if ($request->boolean('remove_signature') && $user->signature_path) {
+            Storage::disk('public')->delete($user->signature_path);
+            $user->forceFill(['signature_path' => null])->save();
+        }
+        if ($request->hasFile('signature')) {
+            if ($user->signature_path) {
+                Storage::disk('public')->delete($user->signature_path);
+            }
+            $user->forceFill([
+                'signature_path' => $request->file('signature')->store('signatures', 'public'),
+            ])->save();
+        }
 
         if ($request->filled('password')) {
             // Sengaja TIDAK menyentuh password_changed_at: reset oleh admin

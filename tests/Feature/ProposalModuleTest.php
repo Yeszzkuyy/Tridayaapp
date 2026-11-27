@@ -303,7 +303,7 @@ class ProposalModuleTest extends TestCase
             ->assertOk()
             ->assertSee('DP 30% setelah PO, pelunasan setelah BAST')
             ->assertSee('Ready stock 3-5 hari kerja')
-            ->assertSee('3DY GROUP')
+            ->assertSee(config('companies.NTI.name'))
             ->assertSee(__('Print / Save as PDF'));
     }
 

@@ -18,7 +18,10 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:16'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'avatar' => ['nullable', 'image', 'max:5120', \App\Rules\SecureFile::images()],
+            'signature' => ['nullable', 'image', 'max:2048', \App\Rules\SecureFile::images()],
+            'remove_signature' => ['nullable', 'boolean'],
             'email' => [
                 'required',
                 'string',

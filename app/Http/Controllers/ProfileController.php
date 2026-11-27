@@ -41,6 +41,19 @@ class ProfileController extends Controller
             unset($data['avatar']);
         }
 
+        // TTD digital Sales: PNG transparan untuk blok tanda tangan quotation.
+        unset($data['signature'], $data['remove_signature']);
+        if ($request->boolean('remove_signature') && $user->signature_path) {
+            Storage::disk('public')->delete($user->signature_path);
+            $data['signature_path'] = null;
+        }
+        if ($request->hasFile('signature')) {
+            if ($user->signature_path) {
+                Storage::disk('public')->delete($user->signature_path);
+            }
+            $data['signature_path'] = $request->file('signature')->store('signatures', 'public');
+        }
+
         $user->fill($data);
 
         if ($user->isDirty('email')) {

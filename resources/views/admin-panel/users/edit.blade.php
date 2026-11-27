@@ -8,7 +8,7 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-        <form method="POST" action="{{ route('admin-panel.users.update', $user) }}">
+        <form method="POST" action="{{ route('admin-panel.users.update', $user) }}" enctype="multipart/form-data">
             @csrf @method('PUT')
             
             <div class="mb-4">
@@ -21,6 +21,30 @@
                 <label for="email" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
                 <input type="email" id="email" name="email" required value="{{ $user->email }}"
                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
+            </div>
+
+            <div class="mb-4">
+                <label for="phone" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Phone / WhatsApp') }}</label>
+                <input type="tel" id="phone" name="phone" maxlength="30" value="{{ old('phone', $user->phone) }}" placeholder="08xxxxxxxxxx"
+                       class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent">
+                @error('phone') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="mb-4">
+                <label for="signature" class="block text-sm font-medium text-slate-700 mb-1">{{ __('Digital Signature (PNG, transparent background)') }}</label>
+                <p class="mb-2 text-xs text-slate-500">{{ __('Used automatically in the signature block of the official quotation PDF.') }}</p>
+                @if($user->signature_path)
+                    <div class="mb-3 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <img src="{{ asset('storage/'.$user->signature_path) }}" alt="{{ __('Digital Signature') }}" class="h-20 w-auto object-contain">
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-600">
+                            <input type="checkbox" name="remove_signature" value="1" class="rounded border-slate-300 text-red-600 focus:ring-red-500">
+                            {{ __('Remove current signature') }}
+                        </label>
+                    </div>
+                @endif
+                <input type="file" id="signature" name="signature" accept="image/png,image/webp"
+                       class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-accent-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-accent-700">
+                @error('signature') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
             </div>
 
             <div class="mb-4">
